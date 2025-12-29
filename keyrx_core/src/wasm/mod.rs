@@ -41,11 +41,20 @@ pub use simulation::{
 // Global Configuration Storage
 // ============================================================================
 
+use crate::runtime::DeviceState;
+
+/// Configuration entry with associated state
+struct ConfigEntry {
+    config: ConfigRoot,
+    state: DeviceState,
+    last_sim_state: Option<SimulationState>,
+}
+
 /// Global storage for loaded configurations.
 ///
 /// Configurations are stored in a Vec and referenced by their index (ConfigHandle).
 /// The Mutex ensures thread-safe access, though WASM is currently single-threaded.
-static CONFIG_STORE: Lazy<Mutex<Vec<ConfigRoot>>> = Lazy::new(|| Mutex::new(Vec::new()));
+static CONFIG_STORE: Lazy<Mutex<Vec<ConfigEntry>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
 // ============================================================================
 // Public Types
@@ -88,7 +97,11 @@ pub fn wasm_init() {
 fn store_config(config: ConfigRoot) -> ConfigHandle {
     let mut store = CONFIG_STORE.lock().unwrap();
     let index = store.len();
-    store.push(config);
+    store.push(ConfigEntry {
+        config,
+        state: DeviceState::new(),
+        last_sim_state: None,
+    });
     ConfigHandle(index)
 }
 
@@ -99,7 +112,34 @@ fn get_config(handle: ConfigHandle) -> Result<ConfigRoot, JsValue> {
     let store = CONFIG_STORE.lock().unwrap();
     store
         .get(handle.0)
-        .cloned()
+        .map(|entry| entry.config.clone())
+        .ok_or_else(|| JsValue::from_str(&format!("Invalid ConfigHandle: {}", handle.0)))
+}
+
+/// Retrieve the last simulation state from the CONFIG_STORE by handle.
+///
+/// Returns an error if the handle is invalid or no simulation has been run.
+fn get_sim_state_from_store(handle: ConfigHandle) -> Result<SimulationState, JsValue> {
+    let store = CONFIG_STORE.lock().unwrap();
+    store
+        .get(handle.0)
+        .and_then(|entry| entry.last_sim_state.clone())
+        .ok_or_else(|| JsValue::from_str("No simulation state available. Run a simulation first."))
+}
+
+/// Update the simulation state in the CONFIG_STORE.
+///
+/// Returns an error if the handle is invalid.
+fn update_sim_state_in_store(
+    handle: ConfigHandle,
+    sim_state: SimulationState,
+) -> Result<(), JsValue> {
+    let mut store = CONFIG_STORE.lock().unwrap();
+    store
+        .get_mut(handle.0)
+        .map(|entry| {
+            entry.last_sim_state = Some(sim_state);
+        })
         .ok_or_else(|| JsValue::from_str(&format!("Invalid ConfigHandle: {}", handle.0)))
 }
 
@@ -389,9 +429,99 @@ pub fn simulate(config: ConfigHandle, events_json: &str) -> Result<JsValue, JsVa
     let result =
         simulation::run_simulation(&lookup, &event_sequence).map_err(|e| JsValue::from_str(&e))?;
 
+    // Store the final state for get_state to access
+    update_sim_state_in_store(config, result.final_state.clone())?;
+
     // Serialize to JSON
     serde_wasm_bindgen::to_value(&result)
         .map_err(|e| JsValue::from_str(&format!("Failed to serialize result: {}", e)))
+}
+
+/// Get current simulation state.
+///
+/// Returns the state from the most recent simulation for the given configuration.
+/// This matches the DaemonStateResponse format from the daemon API.
+///
+/// # Arguments
+/// * `config` - Handle to a loaded configuration
+///
+/// # Returns
+/// * `Ok(JsValue)` - DaemonStateResponse as JSON with:
+///   - active_layer: Optional<String> - Current active layer (if any)
+///   - modifiers: Vec<String> - Active modifier IDs as strings
+///   - locks: Vec<String> - Active lock IDs as strings
+///   - raw_state: Vec<bool> - 255-bit state vector
+///   - active_modifier_count: usize - Number of active modifiers
+///   - active_lock_count: usize - Number of active locks
+/// * `Err(JsValue)` - Error message if no simulation has been run
+///
+/// # Errors
+/// Returns an error if:
+/// - ConfigHandle is invalid
+/// - No simulation has been run yet (no state available)
+///
+/// # Example (JavaScript)
+/// ```javascript
+/// // After running a simulation
+/// const state = get_state(configHandle);
+/// console.log(`Active modifiers: ${state.active_modifier_count}`);
+/// console.log(`Active locks: ${state.active_lock_count}`);
+/// ```
+#[wasm_bindgen]
+pub fn get_state(config: ConfigHandle) -> Result<JsValue, JsValue> {
+    // Validate ConfigHandle and get simulation state
+    let sim_state = get_sim_state_from_store(config)?;
+
+    // Convert to DaemonStateResponse format
+    #[derive(Serialize)]
+    struct DaemonStateResponse {
+        active_layer: Option<String>,
+        modifiers: Vec<String>,
+        locks: Vec<String>,
+        raw_state: Vec<bool>,
+        active_modifier_count: usize,
+        active_lock_count: usize,
+    }
+
+    // Convert modifier IDs to strings
+    let modifiers: Vec<String> = sim_state
+        .active_modifiers
+        .iter()
+        .map(|id| format!("MD_{:02X}", id))
+        .collect();
+
+    // Convert lock IDs to strings
+    let locks: Vec<String> = sim_state
+        .active_locks
+        .iter()
+        .map(|id| format!("LK_{:02X}", id))
+        .collect();
+
+    // Build 255-bit raw state vector
+    let mut raw_state = vec![false; 255];
+    for &id in &sim_state.active_modifiers {
+        if (id as usize) < 255 {
+            raw_state[id as usize] = true;
+        }
+    }
+    for &id in &sim_state.active_locks {
+        if (id as usize) < 255 {
+            raw_state[id as usize] = true;
+        }
+    }
+
+    let response = DaemonStateResponse {
+        active_layer: sim_state.active_layer,
+        modifiers: modifiers.clone(),
+        locks: locks.clone(),
+        raw_state,
+        active_modifier_count: modifiers.len(),
+        active_lock_count: locks.len(),
+    };
+
+    // Serialize to JSON
+    serde_wasm_bindgen::to_value(&response)
+        .map_err(|e| JsValue::from_str(&format!("Failed to serialize state: {}", e)))
 }
 
 // ============================================================================

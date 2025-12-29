@@ -29,9 +29,12 @@ rhai = { workspace = true, optional = true }
 sha2 = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 
+# WASM random number generation support
+getrandom = { version = "0.2", features = ["js"], optional = true }
+
 [features]
 default = []
-wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_cell", "rhai", "sha2", "serde_json"]
+wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_cell", "rhai", "sha2", "serde_json", "getrandom"]
 
 [dev-dependencies]
 proptest = { workspace = true }

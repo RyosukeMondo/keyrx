@@ -198,10 +198,29 @@ fn parse_keycode(keycode_str: &str) -> Result<KeyCode, String> {
 
 /// Capture current simulation state.
 fn capture_state(state: &DeviceState) -> SimulationState {
+    // Extract active modifiers (IDs 0-254)
+    let mut active_modifiers = Vec::new();
+    for id in 0..255 {
+        if state.is_modifier_active(id) {
+            active_modifiers.push(id);
+        }
+    }
+
+    // Extract active locks (IDs 0-254)
+    let mut active_locks = Vec::new();
+    for id in 0..255 {
+        if state.is_lock_active(id) {
+            active_locks.push(id);
+        }
+    }
+
+    // TODO: Extract active layer from state once layer support is added
+    let active_layer = None;
+
     SimulationState {
-        active_modifiers: Vec::new(), // TODO: Extract from state
-        active_locks: Vec::new(),     // TODO: Extract from state
-        active_layer: None,           // TODO: Extract from state
+        active_modifiers,
+        active_locks,
+        active_layer,
     }
 }
 
