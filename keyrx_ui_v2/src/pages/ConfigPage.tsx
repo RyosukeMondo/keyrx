@@ -1,25 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/Card';
 import { Dropdown } from '@/components/Dropdown';
-
-// Placeholder for KeyboardVisualizer (Task 16)
-// TODO: Replace with actual KeyboardVisualizer component once implemented
-const KeyboardVisualizerPlaceholder: React.FC<{
-  layout: string;
-  onKeyClick: (keyCode: string) => void;
-}> = ({ layout }) => {
-  return (
-    <div className="bg-slate-800 rounded-lg p-8 text-center">
-      <p className="text-slate-400 mb-2">KeyboardVisualizer Component</p>
-      <p className="text-sm text-slate-500">
-        Layout: {layout} - This will be replaced with Task 16 implementation
-      </p>
-      <div className="mt-4 text-xs text-slate-600">
-        Interactive keyboard with {layout === 'ANSI_104' ? '104' : '105'} keys
-      </div>
-    </div>
-  );
-};
+import { KeyboardVisualizer } from '@/components/KeyboardVisualizer';
+import { KeyMapping } from '@/components/KeyButton';
 
 interface ConfigPageProps {
   profileName?: string;
@@ -28,9 +11,11 @@ interface ConfigPageProps {
 export const ConfigPage: React.FC<ConfigPageProps> = ({
   profileName = 'Default',
 }) => {
-  const [selectedLayout, setSelectedLayout] = useState('ANSI_104');
+  const [selectedLayout, setSelectedLayout] =
+    useState<'ANSI_104' | 'ISO_105' | 'JIS_109' | 'HHKB' | 'NUMPAD'>('ANSI_104');
   const [selectedLayer, setSelectedLayer] = useState('base');
   const [previewMode, setPreviewMode] = useState(false);
+  const [keyMappings] = useState<Map<string, KeyMapping>>(new Map());
 
   // Layout options
   const layoutOptions = [
@@ -115,8 +100,9 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
 
           {/* Keyboard Visualizer */}
           <div className="py-4">
-            <KeyboardVisualizerPlaceholder
+            <KeyboardVisualizer
               layout={selectedLayout}
+              keyMappings={keyMappings}
               onKeyClick={handleKeyClick}
             />
           </div>

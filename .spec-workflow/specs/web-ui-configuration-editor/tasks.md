@@ -708,7 +708,7 @@
   - _Requirements: Req 7 (User Flows - Keyboard Configuration)_
   - _Success: ✅ Layout matches design.md, ✅ Layer selector works, ✅ Clicking key opens dialog
 
-- [ ] 16. Create KeyboardVisualizer component
+- [x] 16. Create KeyboardVisualizer component
   - File: `src/components/KeyboardVisualizer.tsx`, `src/components/KeyButton.tsx`, `src/utils/kle-parser.ts`, `src/data/layouts/*.json`
   - Purpose: Visual representation of keyboard layout with interactive keys. Renders 104-109 keys based on selected layout preset (ANSI, ISO, JIS, HHKB, Numpad). Shows current mappings via tooltips, handles click events to open configuration dialog. Most visually complex component in the application - used on ConfigPage and SimulatorPage.
   - Requirements: Req 7.1 (render based on layout preset), Req 7.2 (hover tooltips showing current mapping), Req 7.3 (click opens KeyConfigDialog), Req 3 (Accessibility - keyboard navigation)
