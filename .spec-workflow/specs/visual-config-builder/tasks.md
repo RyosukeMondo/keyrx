@@ -67,7 +67,7 @@
   - Test simple mappings, layers, modifiers
   - _Prompt: Role: Test Engineer | Task: Test Rhai generator | Success: ✅ All cases tested_
 
-- [-] 13. Write component tests
+- [x] 13. Write component tests
   - Test drag-and-drop interactions
   - _Prompt: Role: React Test Engineer | Task: Test visual builder UI | Success: ✅ Tests pass_
 
