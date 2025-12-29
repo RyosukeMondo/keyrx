@@ -293,7 +293,7 @@
 
 ## Phase 5: Testing & Documentation
 
-- [ ] 22. Write unit tests for WASM module in keyrx_core/tests/wasm_tests.rs
+- [x] 22. Write unit tests for WASM module in keyrx_core/tests/wasm_tests.rs
   - File: keyrx_core/tests/wasm_tests.rs
   - Use wasm-bindgen-test for browser-based tests
   - Test load_config with valid/invalid Rhai configs
