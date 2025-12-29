@@ -1,0 +1,7 @@
+[
+  ["Num Lock", "Num /", "Num *", "Num -"],
+  ["Num 7\nHome", "Num 8\nUp", "Num 9\nPgUp", {"h": 2}, "Num +"],
+  ["Num 4\nLeft", "Num 5", "Num 6\nRight"],
+  ["Num 1\nEnd", "Num 2\nDown", "Num 3\nPgDn", {"h": 2}, "Num Enter"],
+  [{"w": 2}, "Num 0\nIns", "Num .\nDel"]
+]

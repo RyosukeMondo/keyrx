@@ -312,7 +312,7 @@
   - _Requirements: 3.1-3.7_
   - _Prompt: Role: Rust developer with compiler/AST expertise | Task: Create RhaiGenerator in keyrx_daemon/src/config/rhai_generator.rs using Rhai AST manipulation | Restrictions: Parse AST not string concat, regenerate syntactically valid code, preserve comments | Success: Generated Rhai compiles successfully, AST modifications preserve structure, tests pass | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts_
 
-- [ ] 4. Create LayoutManager for KLE JSON handling
+- [x] 4. Create LayoutManager for KLE JSON handling
   - File: `keyrx_daemon/src/config/layout_manager.rs` (new file)
   - Embed builtin layouts (ansi_104, iso_105, jis_109, hhkb, numpad) using include_str!
   - Implement import with KLE JSON validation
