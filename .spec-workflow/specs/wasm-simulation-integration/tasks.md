@@ -81,7 +81,7 @@
 
 ## Phase 2: Build Pipeline & TypeScript Integration
 
-- [ ] 8. Add wasm-pack build script to keyrx_ui/package.json
+- [x] 8. Add wasm-pack build script to keyrx_ui/package.json
   - File: keyrx_ui/package.json
   - Add npm script: "build:wasm": "cd ../keyrx_core && wasm-pack build --target web --out-dir ../keyrx_ui/src/wasm/pkg"
   - Add npm script: "dev:wasm": "npm run build:wasm && vite"

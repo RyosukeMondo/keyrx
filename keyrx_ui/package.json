@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:wasm": "cd ../keyrx_core && wasm-pack build --target web --out-dir ../keyrx_ui/src/wasm/pkg",
+    "dev:wasm": "npm run build:wasm && vite",
     "lint": "eslint .",
     "preview": "vite preview"
   },
