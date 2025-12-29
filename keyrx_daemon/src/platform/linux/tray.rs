@@ -61,7 +61,9 @@ impl ksni::Tray for TrayService {
             StandardItem {
                 label: "Reload Config".into(),
                 activate: Box::new(move |_this: &mut Self| {
-                    let _ = reload_sender.send(TrayControlEvent::Reload);
+                    log::info!("Tray menu: Reload Config clicked");
+                    let result = reload_sender.send(TrayControlEvent::Reload);
+                    log::info!("Tray menu: Reload event sent: {:?}", result);
                 }),
                 ..Default::default()
             }
@@ -70,7 +72,9 @@ impl ksni::Tray for TrayService {
             StandardItem {
                 label: "Exit".into(),
                 activate: Box::new(move |_this: &mut Self| {
-                    let _ = exit_sender.send(TrayControlEvent::Exit);
+                    log::info!("Tray menu: Exit clicked");
+                    let result = exit_sender.send(TrayControlEvent::Exit);
+                    log::info!("Tray menu: Exit event sent: {:?}", result);
                 }),
                 ..Default::default()
             }

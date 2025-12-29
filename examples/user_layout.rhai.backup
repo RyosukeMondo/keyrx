@@ -329,7 +329,7 @@ map("VK_I", "VK_H");                // I -> H
 map("VK_J", "VK_B");                // J -> B
 map("VK_K", "VK_M");                // K -> M
 map("VK_L", "VK_W");                // L -> W
-tap_hold("VK_N", "VK_N", "MD_10", 200);  // N: tap=N, hold=MD_10 (Shift layer)               // N -> Custom Shift Layer (MD_10)
+map("VK_N", "MD_10");               // N -> Custom Shift Layer (MD_10)
 map("VK_O", "VK_T");                // O -> T
 map("VK_P", "VK_N");                // P -> N
 map("VK_R", "VK_E");                // R -> E

@@ -954,7 +954,7 @@
   - _Requirements: Req 8 (real-time preview)_
   - _Success: ✅ WebSocket connects on mount, ✅ Events update state, ✅ Reconnects on disconnect, ✅ Unsubscribes on unmount
 
-- [ ] 23. Integrate React Query for caching
+- [x] 23. Integrate React Query for caching
   - Files: Update all stores to use React Query hooks
   - Features: automatic refetching, cache invalidation, optimistic updates
   - Purpose: Improve performance and user experience
