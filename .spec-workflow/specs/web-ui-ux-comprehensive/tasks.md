@@ -419,7 +419,7 @@
   - _Requirements: 7.6_
   - _Prompt: Role: Rust CLI developer with QA expertise | Task: Implement `keyrx test` command in keyrx_daemon/src/cli/test.rs | Restrictions: Built-in scenarios as JSON files, detailed failure output, exit code 1 if any fail | Success: All scenarios pass for valid configs, failures detailed, integration tests pass | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts_
 
-- [-] 13. Implement `keyrx status` command
+- [x] 13. Implement `keyrx status` command
   - File: `keyrx_daemon/src/cli/status.rs` (new file)
   - Query daemon via IPC or shared memory
   - Output: running, uptime, active_profile, device_count
