@@ -129,7 +129,7 @@
 
 ## Phase 3: React UI Components
 
-- [ ] 12. Create SimulatorPanel container component in keyrx_ui/src/components/Simulator/SimulatorPanel.tsx
+- [x] 12. Create SimulatorPanel container component in keyrx_ui/src/components/Simulator/SimulatorPanel.tsx
   - File: keyrx_ui/src/components/Simulator/SimulatorPanel.tsx
   - Create main container component with layout (config loader, scenario selector, results display)
   - Manage state: loaded config (ConfigHandle), simulation result, loading/error states
@@ -248,7 +248,7 @@
   - _Requirements: 6.1-6.4 (Performance Monitoring)_
   - _Prompt: Role: React Data Visualization Developer with expertise in performance metrics display | Task: Create LatencyStats component in keyrx_ui/src/components/Simulator/LatencyStats.tsx following requirements 6.1-6.4, displaying latency statistics with warnings for values exceeding thresholds | Restrictions: File ≤250 lines, must display all metrics (min/avg/max/p95/p99), highlight max in red if >5ms, show green checkmark if all <1ms, format values clearly (μs suffix), add tooltip explaining p95/p99 | Success: All latency metrics displayed correctly, warnings trigger at correct thresholds, users understand performance characteristics_
 
-- [ ] 18. Add SimulatorPanel route to keyrx_ui/src/App.tsx
+- [x] 18. Add SimulatorPanel route to keyrx_ui/src/App.tsx
   - File: keyrx_ui/src/App.tsx
   - Import SimulatorPanel component
   - Add route: /simulator → SimulatorPanel

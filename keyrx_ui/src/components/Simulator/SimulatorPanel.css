@@ -1,0 +1,137 @@
+.simulator-panel {
+  width: 100%;
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  text-align: left;
+}
+
+.simulator-header {
+  margin-bottom: 2rem;
+}
+
+.simulator-header h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: inherit;
+}
+
+.simulator-header p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+}
+
+.simulator-section {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.simulator-section h3 {
+  font-size: 1.25rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: inherit;
+}
+
+.error-banner {
+  background-color: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  color: #f87171;
+}
+
+.error-banner strong {
+  font-weight: 600;
+}
+
+.loading-spinner {
+  padding: 1rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
+.placeholder-message {
+  padding: 1rem;
+  background-color: rgba(100, 200, 255, 0.1);
+  border: 1px dashed rgba(100, 200, 255, 0.3);
+  border-radius: 6px;
+  color: rgba(100, 200, 255, 0.9);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.disabled-message {
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  text-align: center;
+}
+
+.dev-info {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: monospace;
+}
+
+.dev-info p {
+  margin: 0;
+}
+
+.dev-info strong {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Light mode overrides */
+@media (prefers-color-scheme: light) {
+  .simulator-header p {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .simulator-section {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+
+  .error-banner {
+    background-color: rgba(248, 113, 113, 0.1);
+    border-color: rgba(248, 113, 113, 0.3);
+    color: #dc2626;
+  }
+
+  .loading-spinner {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .placeholder-message {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: rgba(30, 64, 175, 0.9);
+  }
+
+  .disabled-message {
+    background-color: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: rgba(0, 0, 0, 0.5);
+  }
+
+  .dev-info {
+    background-color: rgba(0, 0, 0, 0.02);
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .dev-info strong {
+    color: rgba(0, 0, 0, 0.8);
+  }
+}
