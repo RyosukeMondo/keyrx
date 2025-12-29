@@ -91,7 +91,7 @@
   - _Requirements: 1.1 (WASM Build Pipeline), 1.3 (WASM module JavaScript API)_
   - _Prompt: Role: Frontend Build Engineer with expertise in npm scripts and WASM tooling | Task: Add wasm-pack build scripts to keyrx_ui/package.json following requirements 1.1 and 1.3, integrating WASM compilation into UI build workflow with output to src/wasm/pkg directory | Restrictions: Do not break existing build scripts, ensure wasm-pack is available or document installation, maintain build reproducibility | Success: npm run build:wasm compiles WASM successfully, output appears in keyrx_ui/src/wasm/pkg/, dev workflow includes WASM build_
 
-- [ ] 9. Configure Vite to support WASM in keyrx_ui/vite.config.ts
+- [x] 9. Configure Vite to support WASM in keyrx_ui/vite.config.ts
   - File: keyrx_ui/vite.config.ts
   - Add vite-plugin-wasm to plugins
   - Add vite-plugin-top-level-await if needed
