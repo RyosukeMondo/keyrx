@@ -476,7 +476,7 @@
   - _Requirements: Req 3 (Accessibility - Escape closes, focus returns)_
   - _Success: ✅ Modal opens/closes with animation, ✅ Escape closes modal, ✅ Focus returns to trigger, ✅ Focus trapped within modal
 
-- [ ] 6. Create Dropdown component
+- [x] 6. Create Dropdown component
   - File: `src/components/Dropdown.tsx`
   - Features: searchable, keyboard navigation (arrow keys)
   - States: open, closed, focused
@@ -709,15 +709,188 @@
   - _Success: ✅ Layout matches design.md, ✅ Layer selector works, ✅ Clicking key opens dialog
 
 - [ ] 16. Create KeyboardVisualizer component
-  - File: `src/components/KeyboardVisualizer.tsx`
-  - Features: render keyboard from KLE JSON, interactive keys, hover tooltips
-  - States: default, hover (lighter), modified (blue tint)
-  - Layout: ANSI 104, ISO 105, JIS 109, HHKB, Numpad (selectable)
-  - Click handler: opens KeyConfigDialog
-  - Purpose: Visual keyboard representation
-  - _Leverage: SVG or CSS Grid for key layout_
-  - _Requirements: Req 7.2 (hover tooltips), Req 7.3 (click opens dialog)_
-  - _Success: ✅ All layouts render correctly, ✅ Hover shows tooltip, ✅ Click opens config dialog, ✅ Modified keys have blue tint
+  - File: `src/components/KeyboardVisualizer.tsx`, `src/components/KeyButton.tsx`, `src/utils/kle-parser.ts`, `src/data/layouts/*.json`
+  - Purpose: Visual representation of keyboard layout with interactive keys. Renders 104-109 keys based on selected layout preset (ANSI, ISO, JIS, HHKB, Numpad). Shows current mappings via tooltips, handles click events to open configuration dialog. Most visually complex component in the application - used on ConfigPage and SimulatorPage.
+  - Requirements: Req 7.1 (render based on layout preset), Req 7.2 (hover tooltips showing current mapping), Req 7.3 (click opens KeyConfigDialog), Req 3 (Accessibility - keyboard navigation)
+  - Prompt: Role: React UI Developer | Task: Create KeyboardVisualizer component with:
+
+    **TypeScript Interfaces**:
+    ```typescript
+    interface KeyboardVisualizerProps {
+      layout: 'ANSI_104' | 'ISO_105' | 'JIS_109' | 'HHKB' | 'NUMPAD';
+      keyMappings: Map<string, KeyMapping>;  // keyCode → mapping
+      onKeyClick: (keyCode: string) => void;  // Opens KeyConfigDialog
+      simulatorMode?: boolean;  // If true, shows pressed state
+      pressedKeys?: Set<string>;  // For simulator mode
+      className?: string;
+    }
+
+    interface KeyMapping {
+      type: 'simple' | 'tap_hold' | 'macro' | 'layer_switch';
+      tapAction?: string;
+      holdAction?: string;
+      threshold?: number;
+      macroSteps?: MacroStep[];
+      targetLayer?: string;
+    }
+
+    interface KeyButton {
+      keyCode: string;
+      label: string;
+      gridRow: number;
+      gridColumn: number;
+      gridColumnSpan: number;  // For wide keys (Space, Enter, etc.)
+      width: number;  // In keyboard units (1u = 48px desktop)
+    }
+
+    interface KLEData {
+      // Keyboard Layout Editor JSON format
+      keys: Array<{ label: string; code: string; x: number; y: number; w?: number }>;
+    }
+    ```
+
+    **Layout Data** (store in src/data/layouts/):
+    - ANSI_104.json, ISO_105.json, JIS_109.json, HHKB.json, NUMPAD.json
+    - Parse from Keyboard Layout Editor (KLE) JSON format
+    - Each key has: keyCode, label, gridRow, gridColumn, gridColumnSpan
+
+    **KLE Parser** (src/utils/kle-parser.ts):
+    ```typescript
+    export function parseKLEJson(kleData: KLEData): KeyButton[] {
+      return kleData.keys.map((key) => ({
+        keyCode: key.code,
+        label: key.label,
+        gridRow: Math.floor(key.y) + 1,  // 1-indexed for CSS Grid
+        gridColumn: Math.floor(key.x) + 1,
+        gridColumnSpan: key.w || 1,
+        width: key.w || 1,
+      }));
+    }
+    ```
+
+    **KeyButton Component** (src/components/KeyButton.tsx):
+    ```typescript
+    interface KeyButtonProps {
+      keyCode: string;
+      label: string;
+      mapping?: KeyMapping;
+      onClick: () => void;
+      isPressed?: boolean;  // For simulator mode
+      className?: string;
+    }
+
+    export const KeyButton = React.memo<KeyButtonProps>(({
+      keyCode,
+      label,
+      mapping,
+      onClick,
+      isPressed = false,
+      className = '',
+    }) => {
+      const hasMapping = mapping && mapping.type !== 'simple';
+
+      const tooltipContent = useMemo(() => {
+        if (!mapping) return `${keyCode} (Default)`;
+
+        switch (mapping.type) {
+          case 'simple':
+            return `${keyCode} → ${mapping.tapAction}`;
+          case 'tap_hold':
+            return `${keyCode} → Tap: ${mapping.tapAction}, Hold: ${mapping.holdAction} (${mapping.threshold}ms)`;
+          case 'macro':
+            return `${keyCode} → Macro (${mapping.macroSteps?.length || 0} steps)`;
+          case 'layer_switch':
+            return `${keyCode} → Layer: ${mapping.targetLayer}`;
+        }
+      }, [keyCode, mapping]);
+
+      return (
+        <Tooltip content={tooltipContent}>
+          <button
+            onClick={onClick}
+            aria-label={`Key ${keyCode}. Current mapping: ${tooltipContent}. Click to configure.`}
+            className={cn(
+              'relative flex items-center justify-center',
+              'rounded border border-slate-600 text-slate-100 text-xs font-mono',
+              'transition-all duration-150',
+              'hover:bg-slate-600 hover:scale-105',
+              'focus:outline focus:outline-2 focus:outline-primary-500',
+              hasMapping ? 'bg-blue-700' : 'bg-slate-700',  // Blue tint for custom mappings
+              isPressed && 'bg-green-500',  // Green when pressed in simulator
+              className
+            )}
+            style={{
+              aspectRatio: '1',  // Square keys
+            }}
+          >
+            {label}
+          </button>
+        </Tooltip>
+      );
+    });
+    ```
+
+    **KeyboardVisualizer Component**:
+    ```typescript
+    export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
+      layout,
+      keyMappings,
+      onKeyClick,
+      simulatorMode = false,
+      pressedKeys = new Set(),
+      className = '',
+    }) => {
+      const keyButtons = useMemo(() => {
+        const kleData = layoutData[layout];  // Load from JSON
+        return parseKLEJson(kleData);
+      }, [layout]);
+
+      // Calculate grid dimensions
+      const maxRow = Math.max(...keyButtons.map(k => k.gridRow));
+      const maxCol = Math.max(...keyButtons.map(k => k.gridColumn + k.gridColumnSpan - 1));
+
+      return (
+        <div
+          className={cn('keyboard-grid', className)}
+          style={{
+            display: 'grid',
+            gridTemplateRows: `repeat(${maxRow}, 48px)`,
+            gridTemplateColumns: `repeat(${maxCol}, 48px)`,
+            gap: '4px',
+            padding: '16px',
+            backgroundColor: 'var(--color-bg-secondary)',
+            borderRadius: '12px',
+          }}
+        >
+          {keyButtons.map((key) => (
+            <div
+              key={key.keyCode}
+              style={{
+                gridRow: key.gridRow,
+                gridColumn: `${key.gridColumn} / span ${key.gridColumnSpan}`,
+              }}
+            >
+              <KeyButton
+                keyCode={key.keyCode}
+                label={key.label}
+                mapping={keyMappings.get(key.keyCode)}
+                onClick={() => onKeyClick(key.keyCode)}
+                isPressed={pressedKeys.has(key.keyCode)}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    };
+    ```
+
+    **Responsive Key Sizing**:
+    - Desktop (≥1280px): 48px per unit
+    - Tablet (768-1279px): 40px per unit
+    - Mobile (<768px): 32px per unit, horizontal scroll enabled
+
+  | Restrictions: File ≤500 lines total (extract KeyButton to separate component if needed), parseKLEJson function ≤50 lines, must use React.memo on KeyButton (104 keys re-rendering is expensive), CSS Grid for layout (no manual positioning), useMemo for keyButtons array (don't recalculate on every render), Tooltip must not cause performance issues (virtualize if needed)
+  | Success: ✅ All 5 layouts render correctly with accurate key positions, ✅ Hover shows tooltip with current mapping description, ✅ Modified keys (custom mappings) have blue tint (bg-blue-700), ✅ Tooltip positions correctly without viewport overflow, ✅ Click calls onKeyClick with correct keyCode, ✅ Simulator mode shows pressed keys in green, ✅ Keyboard navigation works (Tab through keys, Enter clicks), ✅ aria-label describes key and mapping, ✅ No dropped frames during hover (60fps maintained), ✅ Component memoized and performant (no unnecessary re-renders)
 
 - [ ] 17. Create KeyConfigDialog modal
   - File: `src/components/KeyConfigDialog.tsx`
