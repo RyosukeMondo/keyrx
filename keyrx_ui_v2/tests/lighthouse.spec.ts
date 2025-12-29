@@ -20,8 +20,10 @@ const routes = [
   { path: '/simulator', name: 'SimulatorPage' },
 ];
 
+// Force Chromium browser for Lighthouse tests
+test.use({ browserName: 'chromium' });
+
 test.describe('Lighthouse Audits', () => {
-  test.use({ browserName: 'chromium' });
 
   for (const route of routes) {
     test(`${route.name} should meet accessibility score threshold (≥95)`, async ({

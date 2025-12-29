@@ -1085,7 +1085,7 @@
   - _Requirements: Req 5-7 (user flows)_
   - _Success: ✅ All flows work, ✅ API mocks return expected data, ✅ No race conditions
 
-- [ ] 34. E2E tests with Playwright
+- [x] 34. E2E tests with Playwright
   - Files: `tests/e2e/*.spec.ts`
   - Scenarios:
     - Create profile → configure key → activate → verify in simulator
