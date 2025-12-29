@@ -181,7 +181,7 @@
   - _Requirements: Testing strategy_
   - _Prompt: Role: React Component Test Engineer | Task: Write comprehensive component tests for ConfigEditor in keyrx_ui/src/components/ConfigEditor.test.tsx, testing rendering, validation integration, and user interactions | **Test rendering**: Render ConfigEditor, verify Monaco editor appears (check for `.monaco-editor` class) | **Test validation**: Type invalid config, wait 500ms (vi.advanceTimersByTime), verify error squiggles appear (mock Monaco markers API) | **Test save disabled**: Set validationResult with errors via mocked hook, verify save button has disabled attribute | **Test F8 shortcut**: Simulate F8 keypress, verify editor cursor moves to first error line | Restrictions: File ≤400 lines, use @testing-library/react, mock useConfigValidator hook, mock Monaco editor API (updateEditorMarkers, etc.), coverage ≥80% | Success: ✅ All rendering tests pass, ✅ Validation integration works, ✅ Save disabled correctly, ✅ Keyboard shortcuts functional_
 
-- [ ] 17. Write accessibility tests for ValidationStatusPanel in keyrx_ui/src/components/ValidationStatusPanel.test.tsx
+- [-] 17. Write accessibility tests for ValidationStatusPanel in keyrx_ui/src/components/ValidationStatusPanel.test.tsx
   - File: keyrx_ui/src/components/ValidationStatusPanel.test.tsx
   - Test ARIA labels and roles
   - Test keyboard navigation (Tab, Enter)
