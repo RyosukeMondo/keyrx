@@ -568,6 +568,10 @@ mod tests {
     fn test_virtual_keyboard_name_uniqueness() {
         crate::skip_if_no_uinput!();
         let kb1 = VirtualKeyboard::create("test-unique").expect("Failed to create first keyboard");
+
+        // Sleep to ensure different millisecond timestamp for second keyboard
+        std::thread::sleep(std::time::Duration::from_millis(2));
+
         let kb2 = VirtualKeyboard::create("test-unique").expect("Failed to create second keyboard");
 
         // Names should be different due to timestamp suffix

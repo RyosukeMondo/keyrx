@@ -1070,11 +1070,12 @@ mod tests {
 
         let device_name = keyboard.name().to_string();
 
-        // Give the device a moment to be registered in the kernel
-        std::thread::sleep(Duration::from_millis(100));
+        // Give the device more time to be registered in the kernel
+        // (increased from 100ms to handle parallel test execution)
+        std::thread::sleep(Duration::from_millis(250));
 
-        // Try to find it with OutputCapture
-        let capture = OutputCapture::find_by_name(&device_name, Duration::from_secs(2))
+        // Try to find it with OutputCapture (increased timeout for parallel test stability)
+        let capture = OutputCapture::find_by_name(&device_name, Duration::from_secs(5))
             .expect("Failed to find virtual keyboard device");
 
         // Verify the device was found correctly

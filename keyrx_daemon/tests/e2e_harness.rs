@@ -40,6 +40,10 @@ use keyrx_core::config::{
 use keyrx_core::runtime::KeyEvent;
 use keyrx_daemon::test_utils::{OutputCapture, VirtualDeviceError, VirtualKeyboard};
 
+// E2EHarness tests require serial_test when feature is enabled
+#[cfg(any(feature = "linux", feature = "windows"))]
+use serial_test::serial;
+
 // ============================================================================
 // TestTimeoutPhase - Phase tracking for timeout diagnostics
 // ============================================================================
@@ -2261,7 +2265,11 @@ where
 // Unit Tests
 // ============================================================================
 
+// E2EHarness infrastructure tests require Linux-specific features to run the daemon
+// These tests are separate from the actual E2E tests in virtual_e2e_tests.rs
+// To run these tests: cargo test --test e2e_harness --features linux
 #[cfg(test)]
+#[cfg(any(feature = "linux", feature = "windows"))]
 mod tests {
     use super::*;
 
@@ -2573,6 +2581,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_find_daemon_binary_uses_environment_variable() {
         // Set up a fake path via environment variable
         // This won't find the binary but tests the lookup logic
@@ -2604,6 +2613,7 @@ mod tests {
 
     /// Test that E2EHarness::setup creates all components correctly
     #[test]
+    #[serial]
     fn test_e2e_harness_setup() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -2623,6 +2633,7 @@ mod tests {
 
     /// Test that E2EHarness cleanup works on drop
     #[test]
+    #[serial]
     fn test_e2e_harness_cleanup() {
         keyrx_daemon::skip_if_no_uinput!();
         let config_path;
@@ -2646,6 +2657,7 @@ mod tests {
 
     /// Test that E2EHarness fails gracefully when daemon binary is missing
     #[test]
+    #[serial]
     fn test_e2e_harness_setup_fails_without_binary() {
         // Set environment to a nonexistent path to ensure binary isn't found
         let original_path = std::env::var("KEYRX_DAEMON_PATH").ok();
@@ -2673,6 +2685,7 @@ mod tests {
 
     /// Test that inject, capture, and verify methods can be called on harness
     #[test]
+    #[serial]
     fn test_e2e_harness_inject_capture_verify() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -2695,6 +2708,7 @@ mod tests {
 
     /// Test the test_mapping convenience method
     #[test]
+    #[serial]
     fn test_e2e_harness_test_mapping() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -2712,6 +2726,7 @@ mod tests {
 
     /// Test inject_with_delay method
     #[test]
+    #[serial]
     fn test_e2e_harness_inject_with_delay() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -2746,6 +2761,7 @@ mod tests {
 
     /// Test capture_n method
     #[test]
+    #[serial]
     fn test_e2e_harness_capture_n() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -2774,6 +2790,7 @@ mod tests {
 
     /// Test inject_and_capture_n method
     #[test]
+    #[serial]
     fn test_e2e_harness_inject_and_capture_n() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -2795,6 +2812,7 @@ mod tests {
 
     /// Test drain method
     #[test]
+    #[serial]
     fn test_e2e_harness_drain() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -2821,6 +2839,7 @@ mod tests {
 
     /// Test verify returns error on mismatch
     #[test]
+    #[serial]
     fn test_e2e_harness_verify_mismatch() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -2843,6 +2862,7 @@ mod tests {
 
     /// Test passthrough behavior for unmapped keys
     #[test]
+    #[serial]
     fn test_e2e_harness_passthrough() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -2960,6 +2980,7 @@ mod tests {
 
     /// Test that explicit teardown works correctly
     #[test]
+    #[serial]
     fn test_e2e_harness_explicit_teardown() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -2990,6 +3011,7 @@ mod tests {
 
     /// Test teardown with custom timeout
     #[test]
+    #[serial]
     fn test_e2e_harness_teardown_with_timeout() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
@@ -3009,6 +3031,7 @@ mod tests {
 
     /// Test that Drop cleans up properly when harness is simply dropped
     #[test]
+    #[serial]
     fn test_e2e_harness_drop_cleanup() {
         keyrx_daemon::skip_if_no_uinput!();
         let config_path;
@@ -3343,6 +3366,7 @@ mod tests {
     /// Note: This test doesn't require uinput as it tests the timeout wrapper behavior
     /// when setup fails (which it will without uinput access)
     #[test]
+    #[serial]
     fn test_with_timeout_handles_setup_failure() {
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
 
@@ -3450,6 +3474,7 @@ mod tests {
 
     /// Test that the timeout wrapper runs on E2E tests when available
     #[test]
+    #[serial]
     fn test_timeout_wrapper_with_real_harness() {
         keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);

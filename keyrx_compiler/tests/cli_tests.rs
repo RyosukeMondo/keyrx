@@ -435,8 +435,9 @@ fn test_hash_determinism() {
     let krx_file1 = temp_dir.path().join("config1.krx");
     let krx_file2 = temp_dir.path().join("config2.krx");
 
-    // Compile twice
+    // Compile twice with deterministic build mode
     get_binary()
+        .env("KEYRX_DETERMINISTIC_BUILD", "1")
         .arg("compile")
         .arg(&input)
         .arg("-o")
@@ -445,6 +446,7 @@ fn test_hash_determinism() {
         .success();
 
     get_binary()
+        .env("KEYRX_DETERMINISTIC_BUILD", "1")
         .arg("compile")
         .arg(&input)
         .arg("-o")

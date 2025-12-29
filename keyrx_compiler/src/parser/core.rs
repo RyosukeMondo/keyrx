@@ -136,11 +136,18 @@ impl Parser {
         let hash_result = hasher.finalize();
         let source_hash = hex::encode(hash_result);
 
-        let metadata = Metadata {
-            compilation_timestamp: SystemTime::now()
+        // Use deterministic timestamp (0) for reproducible builds if env var is set
+        let compilation_timestamp = if std::env::var("KEYRX_DETERMINISTIC_BUILD").is_ok() {
+            0
+        } else {
+            SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
-                .as_secs(),
+                .as_secs()
+        };
+
+        let metadata = Metadata {
+            compilation_timestamp,
             compiler_version: env!("CARGO_PKG_VERSION").to_string(),
             source_hash,
         };
