@@ -11,6 +11,7 @@ import type { ConfigHandle, EventSequence, SimulationResult } from '../../wasm/c
 import { ConfigLoader } from './ConfigLoader';
 import { ScenarioSelector } from './ScenarioSelector';
 import { EventSequenceEditor } from './EventSequenceEditor';
+import SimulationResults from './SimulationResults';
 import './SimulatorPanel.css';
 
 type LoadingState = 'idle' | 'loading' | 'success' | 'error';
@@ -124,10 +125,7 @@ export function SimulatorPanel() {
       {simulationResult && (
         <>
           <section className="simulator-section results-section">
-            <h3>3. Simulation Results</h3>
-            <div className="placeholder-message">
-              SimulationResults component will be inserted here (Task 16)
-            </div>
+            <SimulationResults result={simulationResult} />
           </section>
 
           <section className="simulator-section latency-section">
