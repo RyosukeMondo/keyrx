@@ -31,7 +31,9 @@ export const Input = React.memo<InputProps>(
     const [isFocused, setIsFocused] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      onChange(e.target.value);
+      if (!disabled) {
+        onChange(e.target.value);
+      }
     };
 
     const handleFocus = () => {

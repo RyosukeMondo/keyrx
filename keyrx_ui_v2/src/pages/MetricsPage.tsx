@@ -307,7 +307,7 @@ export const MetricsPage: React.FC = () => {
             </div>
           </div>
         </Card>
-      </div>
+      </section>
 
       {/* Latency Chart */}
       <Card>
