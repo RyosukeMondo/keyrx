@@ -9,6 +9,9 @@ repository.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
 [dependencies]
 rkyv = { workspace = true }
 fixedbitset = { workspace = true }
@@ -29,8 +32,9 @@ rhai = { workspace = true, optional = true }
 sha2 = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 
-# WASM random number generation support
-getrandom = { version = "0.2", features = ["js"], optional = true }
+# WASM random number generation (for transitive dependencies like ahash)
+# wasm_js feature is required for WASM targets
+getrandom = { version = "0.3", features = ["wasm_js"], optional = true }
 
 [features]
 default = []

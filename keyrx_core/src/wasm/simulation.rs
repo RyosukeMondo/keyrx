@@ -6,7 +6,7 @@
 extern crate std;
 
 use serde::{Deserialize, Serialize};
-use std::vec::Vec;
+use std::{format, string::String, string::ToString, vec::Vec};
 use wasm_bindgen::prelude::*;
 
 use crate::config::KeyCode;

@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/config-validation-linting/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-29T15:28:31.401Z",
+      "trigger": "initial",
+      "approvalId": "approval_1767022111393_m2mu718ug",
+      "approvalTitle": "Config Validation & Linting - Tasks"
+    }
+  ]
+}

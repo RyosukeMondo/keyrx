@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:wasm": "cd ../keyrx_core && wasm-pack build --target web --out-dir ../keyrx_ui/src/wasm/pkg",
+    "build:wasm": "cd ../keyrx_core && RUSTFLAGS='--cfg wasm_js' wasm-pack build --target web --features wasm && rm -rf ../keyrx_ui/src/wasm/pkg && cp -r pkg ../keyrx_ui/src/wasm/",
     "dev:wasm": "npm run build:wasm && vite",
     "lint": "eslint .",
     "preview": "vite preview"

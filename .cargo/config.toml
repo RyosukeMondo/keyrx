@@ -1,0 +1,5 @@
+# Cargo configuration for WASM builds
+
+[target.wasm32-unknown-unknown]
+# Enable JavaScript random number generation for WASM (getrandom 0.3+)
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']

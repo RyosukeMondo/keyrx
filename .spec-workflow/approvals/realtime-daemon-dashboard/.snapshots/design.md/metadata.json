@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/realtime-daemon-dashboard/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-29T15:28:32.108Z",
+      "trigger": "initial",
+      "approvalId": "approval_1767022112100_kq1ytwe1b",
+      "approvalTitle": "Real-Time Daemon Dashboard - Design"
+    }
+  ]
+}

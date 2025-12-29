@@ -21,10 +21,17 @@ pub mod simulation;
 extern crate std;
 
 use once_cell::sync::Lazy;
-use std::path::Path;
-use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::vec::Vec;
+use rkyv::Deserialize;
+use serde::Serialize;
+use std::{
+    boxed::Box,
+    format,
+    string::String,
+    sync::Mutex,
+    time::{SystemTime, UNIX_EPOCH},
+    vec,
+    vec::Vec,
+};
 use wasm_bindgen::prelude::*;
 
 use sha2::{Digest, Sha256};
@@ -426,8 +433,8 @@ pub fn simulate(config: ConfigHandle, events_json: &str) -> Result<JsValue, JsVa
     let lookup = KeyLookup::from_device_config(device_config);
 
     // Run simulation
-    let result =
-        simulation::run_simulation(&lookup, &event_sequence).map_err(|e| JsValue::from_str(&e))?;
+    let result = simulation::run_simulation(&lookup, &event_sequence)
+        .map_err(|e| JsValue::from_str(e.as_str()))?;
 
     // Store the final state for get_state to access
     update_sim_state_in_store(config, result.final_state.clone())?;
