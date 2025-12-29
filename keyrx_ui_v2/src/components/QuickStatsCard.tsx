@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from './Card';
+import { LoadingSkeleton } from './LoadingSkeleton';
 
 interface QuickStats {
   latencyAvg: number; // in milliseconds
@@ -42,9 +43,13 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
   if (loading) {
     return (
       <Card className={className}>
-        <div className="flex flex-col gap-md animate-pulse">
-          <div className="h-6 w-32 bg-slate-700 rounded" />
-          <div className="h-4 w-full bg-slate-700 rounded" />
+        <div className="flex flex-col gap-md">
+          <LoadingSkeleton variant="text" width="150px" height="24px" />
+          <div className="flex flex-wrap gap-md">
+            <LoadingSkeleton variant="text" width="100px" height="16px" />
+            <LoadingSkeleton variant="text" width="120px" height="16px" />
+            <LoadingSkeleton variant="text" width="80px" height="16px" />
+          </div>
         </div>
       </Card>
     );

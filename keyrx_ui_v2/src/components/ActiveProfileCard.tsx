@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from './Card';
 import { Button } from './Button';
+import { LoadingSkeleton } from './LoadingSkeleton';
 
 interface ActiveProfile {
   name: string;
@@ -44,9 +45,17 @@ export const ActiveProfileCard: React.FC<ActiveProfileCardProps> = ({
   if (loading) {
     return (
       <Card className={className}>
-        <div className="flex flex-col gap-md animate-pulse">
-          <div className="h-6 w-32 bg-slate-700 rounded" />
-          <div className="h-4 w-48 bg-slate-700 rounded" />
+        <div className="flex flex-col gap-md">
+          <LoadingSkeleton variant="text" width="40%" height="24px" />
+          <div className="flex items-center gap-sm">
+            <LoadingSkeleton variant="circular" width="32px" height="32px" />
+            <LoadingSkeleton variant="text" width="60%" height="28px" />
+          </div>
+          <div className="flex gap-md">
+            <LoadingSkeleton variant="text" width="80px" height="16px" />
+            <LoadingSkeleton variant="text" width="120px" height="16px" />
+            <LoadingSkeleton variant="text" width="100px" height="16px" />
+          </div>
         </div>
       </Card>
     );

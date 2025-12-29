@@ -3,6 +3,7 @@ import { Card } from '@/components/Card';
 import { Dropdown } from '@/components/Dropdown';
 import { KeyboardVisualizer } from '@/components/KeyboardVisualizer';
 import { KeyMapping } from '@/components/KeyButton';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 
 interface ConfigPageProps {
   profileName?: string;
@@ -11,6 +12,7 @@ interface ConfigPageProps {
 export const ConfigPage: React.FC<ConfigPageProps> = ({
   profileName = 'Default',
 }) => {
+  const [loading, setLoading] = useState(false);
   const [selectedLayout, setSelectedLayout] =
     useState<'ANSI_104' | 'ISO_105' | 'JIS_109' | 'HHKB' | 'NUMPAD'>('ANSI_104');
   const [selectedLayer, setSelectedLayer] = useState('base');
@@ -54,6 +56,41 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
 
   // Mock modified keys count (would come from configuration store)
   const modifiedKeysCount = 37;
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <LoadingSkeleton variant="text" width="250px" height="32px" />
+            <LoadingSkeleton variant="text" width="150px" height="20px" />
+          </div>
+          <LoadingSkeleton variant="rectangular" width="180px" height="44px" />
+        </div>
+
+        <Card variant="default" padding="lg">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-700">
+              <LoadingSkeleton variant="text" width="150px" height="24px" />
+              <LoadingSkeleton variant="rectangular" width="192px" height="40px" />
+            </div>
+            <LoadingSkeleton variant="rectangular" height="400px" />
+          </div>
+        </Card>
+
+        <Card variant="default" padding="lg">
+          <div className="flex flex-col gap-4">
+            <LoadingSkeleton variant="text" width="100px" height="24px" />
+            <div className="flex gap-2">
+              <LoadingSkeleton variant="rectangular" width="80px" height="32px" />
+              <LoadingSkeleton variant="rectangular" width="80px" height="32px" />
+              <LoadingSkeleton variant="rectangular" width="80px" height="32px" />
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">

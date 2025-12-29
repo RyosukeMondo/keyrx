@@ -11,6 +11,7 @@ import {
 import { FixedSizeList as List } from 'react-window';
 import { Card } from '../components/Card';
 import { Activity, Clock, Cpu, Zap } from 'lucide-react';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 
 interface LatencyDataPoint {
   timestamp: number;
@@ -35,6 +36,8 @@ interface StateSnapshot {
 }
 
 export const MetricsPage: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+
   // Mock data - in production, this would come from WebSocket
   const [latencyData, setLatencyData] = useState<LatencyDataPoint[]>([]);
   const [eventLog, setEventLog] = useState<EventLogEntry[]>([]);
@@ -192,6 +195,48 @@ export const MetricsPage: React.FC = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
+        <div>
+          <LoadingSkeleton variant="text" width="250px" height="32px" />
+          <LoadingSkeleton variant="text" width="300px" height="20px" className="mt-2" />
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <Card padding="md">
+            <LoadingSkeleton variant="rectangular" height="60px" />
+          </Card>
+          <Card padding="md">
+            <LoadingSkeleton variant="rectangular" height="60px" />
+          </Card>
+          <Card padding="md">
+            <LoadingSkeleton variant="rectangular" height="60px" />
+          </Card>
+          <Card padding="md">
+            <LoadingSkeleton variant="rectangular" height="60px" />
+          </Card>
+        </div>
+
+        <Card padding="lg">
+          <LoadingSkeleton variant="text" width="150px" height="24px" className="mb-4" />
+          <LoadingSkeleton variant="rectangular" height="300px" />
+        </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          <Card padding="lg">
+            <LoadingSkeleton variant="text" width="120px" height="24px" className="mb-4" />
+            <LoadingSkeleton variant="rectangular" height="400px" />
+          </Card>
+          <Card padding="lg">
+            <LoadingSkeleton variant="text" width="140px" height="24px" className="mb-4" />
+            <LoadingSkeleton variant="rectangular" height="400px" />
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">

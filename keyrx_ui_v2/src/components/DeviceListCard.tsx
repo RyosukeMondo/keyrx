@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from './Card';
 import { Button } from './Button';
+import { LoadingSkeleton } from './LoadingSkeleton';
 
 interface Device {
   id: string;
@@ -42,10 +43,15 @@ export const DeviceListCard: React.FC<DeviceListCardProps> = ({
   if (loading) {
     return (
       <Card className={className}>
-        <div className="flex flex-col gap-md animate-pulse">
-          <div className="h-6 w-48 bg-slate-700 rounded" />
-          <div className="h-20 bg-slate-700 rounded" />
-          <div className="h-20 bg-slate-700 rounded" />
+        <div className="flex flex-col gap-md">
+          <div className="flex items-center justify-between">
+            <LoadingSkeleton variant="text" width="180px" height="24px" />
+            <LoadingSkeleton variant="rectangular" width="140px" height="36px" />
+          </div>
+          <div className="flex flex-col gap-md">
+            <LoadingSkeleton variant="rectangular" height="80px" />
+            <LoadingSkeleton variant="rectangular" height="80px" />
+          </div>
         </div>
       </Card>
     );

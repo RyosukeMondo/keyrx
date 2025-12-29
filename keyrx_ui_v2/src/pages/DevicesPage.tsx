@@ -4,6 +4,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Dropdown } from '../components/Dropdown';
 import { Modal } from '../components/Modal';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 
 interface Device {
   id: string;
@@ -44,6 +45,8 @@ const LAYOUT_OPTIONS = [
  * Requirements: Req 5 (Device Management User Flows)
  */
 export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
+  const [loading, setLoading] = useState(false);
+
   // Mock data - will be replaced with API integration
   const [devices, setDevices] = useState<Device[]>([
     {
@@ -132,6 +135,27 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   };
 
   const forgetDevice = devices.find((d) => d.id === forgetDeviceId);
+
+  if (loading) {
+    return (
+      <div className={`flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8 ${className}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <LoadingSkeleton variant="text" width="150px" height="32px" />
+          <LoadingSkeleton variant="rectangular" width="100px" height="36px" />
+        </div>
+
+        <Card>
+          <div className="flex flex-col gap-md">
+            <LoadingSkeleton variant="text" width="200px" height="24px" />
+            <div className="flex flex-col gap-md">
+              <LoadingSkeleton variant="rectangular" height="120px" />
+              <LoadingSkeleton variant="rectangular" height="120px" />
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8 ${className}`}>

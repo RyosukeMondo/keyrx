@@ -527,6 +527,153 @@ mod tests {
     }
 
     #[test]
+    fn test_modifier_multiple_cycles_no_sticky() {
+        // Regression test: verify modifier doesn't become sticky after multiple press/release cycles
+        // This catches the bug where MD_10 would stay active after release
+        let config = create_test_config(vec![KeyMapping::modifier(KeyCode::N, 10)]);
+        let lookup = KeyLookup::from_device_config(&config);
+        let mut state = DeviceState::new();
+
+        // Verify initial state
+        assert!(!state.is_modifier_active(10), "MD_10 should start inactive");
+
+        // Cycle 1
+        let _ = process_event(KeyEvent::Press(KeyCode::N), &lookup, &mut state);
+        assert!(
+            state.is_modifier_active(10),
+            "MD_10 should activate on press"
+        );
+        let _ = process_event(KeyEvent::Release(KeyCode::N), &lookup, &mut state);
+        assert!(
+            !state.is_modifier_active(10),
+            "MD_10 should deactivate on release"
+        );
+
+        // Cycle 2
+        let _ = process_event(KeyEvent::Press(KeyCode::N), &lookup, &mut state);
+        assert!(
+            state.is_modifier_active(10),
+            "MD_10 should activate on second press"
+        );
+        let _ = process_event(KeyEvent::Release(KeyCode::N), &lookup, &mut state);
+        assert!(
+            !state.is_modifier_active(10),
+            "MD_10 should deactivate on second release"
+        );
+
+        // Cycle 3
+        let _ = process_event(KeyEvent::Press(KeyCode::N), &lookup, &mut state);
+        assert!(
+            state.is_modifier_active(10),
+            "MD_10 should activate on third press"
+        );
+        let _ = process_event(KeyEvent::Release(KeyCode::N), &lookup, &mut state);
+        assert!(
+            !state.is_modifier_active(10),
+            "MD_10 should deactivate on third release"
+        );
+    }
+
+    #[test]
+    fn test_modifier_rapid_sequence_cleanup() {
+        // Test rapid press/release sequences to ensure proper cleanup
+        let config = create_test_config(vec![KeyMapping::modifier(KeyCode::B, 0)]);
+        let lookup = KeyLookup::from_device_config(&config);
+        let mut state = DeviceState::new();
+
+        // Rapid sequence: press, release, press, release, press, release
+        for i in 0..10 {
+            let _ = process_event(KeyEvent::Press(KeyCode::B), &lookup, &mut state);
+            assert!(
+                state.is_modifier_active(0),
+                "MD_00 should be active after press {}",
+                i
+            );
+            let _ = process_event(KeyEvent::Release(KeyCode::B), &lookup, &mut state);
+            assert!(
+                !state.is_modifier_active(0),
+                "MD_00 should be inactive after release {}",
+                i
+            );
+        }
+
+        // Final verification
+        assert!(!state.is_modifier_active(0), "MD_00 should end inactive");
+    }
+
+    #[test]
+    fn test_modifier_state_independent_per_id() {
+        // Test that different modifier IDs are independent and don't interfere
+        let config = create_test_config(vec![
+            KeyMapping::modifier(KeyCode::B, 0),
+            KeyMapping::modifier(KeyCode::V, 1),
+            KeyMapping::modifier(KeyCode::M, 2),
+        ]);
+        let lookup = KeyLookup::from_device_config(&config);
+        let mut state = DeviceState::new();
+
+        // Activate MD_00
+        let _ = process_event(KeyEvent::Press(KeyCode::B), &lookup, &mut state);
+        assert!(state.is_modifier_active(0));
+        assert!(!state.is_modifier_active(1));
+        assert!(!state.is_modifier_active(2));
+
+        // Activate MD_01 (MD_00 still active)
+        let _ = process_event(KeyEvent::Press(KeyCode::V), &lookup, &mut state);
+        assert!(state.is_modifier_active(0));
+        assert!(state.is_modifier_active(1));
+        assert!(!state.is_modifier_active(2));
+
+        // Deactivate MD_00 (MD_01 still active)
+        let _ = process_event(KeyEvent::Release(KeyCode::B), &lookup, &mut state);
+        assert!(
+            !state.is_modifier_active(0),
+            "MD_00 should deactivate independently"
+        );
+        assert!(state.is_modifier_active(1), "MD_01 should remain active");
+        assert!(!state.is_modifier_active(2));
+
+        // Activate MD_02
+        let _ = process_event(KeyEvent::Press(KeyCode::M), &lookup, &mut state);
+        assert!(!state.is_modifier_active(0));
+        assert!(state.is_modifier_active(1));
+        assert!(state.is_modifier_active(2));
+
+        // Deactivate all
+        let _ = process_event(KeyEvent::Release(KeyCode::V), &lookup, &mut state);
+        let _ = process_event(KeyEvent::Release(KeyCode::M), &lookup, &mut state);
+        assert!(!state.is_modifier_active(0));
+        assert!(!state.is_modifier_active(1));
+        assert!(!state.is_modifier_active(2));
+    }
+
+    #[test]
+    fn test_modifier_no_output_events() {
+        // Verify that modifier mappings NEVER produce output events
+        // This is critical: modifiers only modify state, never inject keys
+        let config = create_test_config(vec![KeyMapping::modifier(KeyCode::CapsLock, 5)]);
+        let lookup = KeyLookup::from_device_config(&config);
+        let mut state = DeviceState::new();
+
+        // Press should return empty Vec
+        let output_press = process_event(KeyEvent::Press(KeyCode::CapsLock), &lookup, &mut state);
+        assert_eq!(
+            output_press.len(),
+            0,
+            "Modifier press should produce no output"
+        );
+
+        // Release should return empty Vec
+        let output_release =
+            process_event(KeyEvent::Release(KeyCode::CapsLock), &lookup, &mut state);
+        assert_eq!(
+            output_release.len(),
+            0,
+            "Modifier release should produce no output"
+        );
+    }
+
+    #[test]
     fn test_process_event_lock_mapping() {
         // Test Lock mapping: toggles on press, no output
         let config = create_test_config(vec![KeyMapping::lock(KeyCode::ScrollLock, 1)]);

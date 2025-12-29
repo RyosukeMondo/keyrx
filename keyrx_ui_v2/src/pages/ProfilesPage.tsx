@@ -4,6 +4,7 @@ import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { Input } from '../components/Input';
 import { Plus } from 'lucide-react';
+import { SkeletonCard } from '../components/LoadingSkeleton';
 
 interface Profile {
   id: string;
@@ -31,6 +32,8 @@ interface Profile {
  * Requirements: Req 6 (Profile Management User Flow)
  */
 export const ProfilesPage: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+
   // Mock data - will be replaced with API calls
   const [profiles, setProfiles] = useState<Profile[]>([
     {
@@ -180,6 +183,22 @@ export const ProfilesPage: React.FC = () => {
     setNewProfileDescription('');
     setNameError('');
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <SkeletonCard className="h-8 w-32" />
+          <SkeletonCard className="h-10 w-40" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">

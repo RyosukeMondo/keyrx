@@ -991,8 +991,8 @@
   - _Requirements: Req 4 (animations use transform/opacity), Req 4.6 (reduced motion)_
   - _Success: ✅ Animations smooth (60fps), ✅ Reduced motion disables animations, ✅ No layout shifts
 
-- [ ] 26. Add loading states and skeletons
-  - Files: Create LoadingSkeleton component, update all pages
+- [x] 26. Add loading states and skeletons
+  - Files: `src/components/LoadingSkeleton.tsx`, `src/components/LoadingSpinner.tsx`, Updated all pages (HomePage, DevicesPage, ProfilesPage, ConfigPage, MetricsPage)
   - Skeleton screens: matching layout structure, pulsing animation
   - Loading spinners: for buttons during async operations
   - Purpose: Feedback during data loading
