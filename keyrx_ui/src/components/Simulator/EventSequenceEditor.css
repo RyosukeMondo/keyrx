@@ -38,7 +38,14 @@
   color: var(--text-primary);
 }
 
-.btn-add {
+.header-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-add,
+.btn-export,
+.btn-import {
   background: var(--primary-color);
   color: white;
   border: none;
@@ -47,15 +54,38 @@
   cursor: pointer;
   font-size: 0.9rem;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 
-.btn-add:hover:not(:disabled) {
+.btn-add:hover:not(:disabled),
+.btn-export:hover:not(:disabled),
+.btn-import:hover {
   background: var(--primary-hover);
 }
 
-.btn-add:disabled {
+.btn-add:disabled,
+.btn-export:disabled,
+.btn-import:has(input:disabled) {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn-export {
+  background: #2196F3;
+}
+
+.btn-export:hover:not(:disabled) {
+  background: #1976D2;
+}
+
+.btn-import {
+  background: #FF9800;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-import:hover {
+  background: #F57C00;
 }
 
 .empty-state {

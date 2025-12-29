@@ -153,6 +153,129 @@ export const EventSequenceEditor: React.FC<EventSequenceEditorProps> = ({
     onSubmit(sequence);
   };
 
+  const handleExport = () => {
+    if (events.length === 0) {
+      alert('No events to export. Please add at least one event.');
+      return;
+    }
+
+    // Convert EventForm[] to EventSequence
+    const keyEvents: SimKeyEvent[] = events.map((e) => ({
+      keycode: e.keyCode,
+      event_type: e.eventType,
+      timestamp_us: e.timestamp,
+    }));
+
+    const sequence: EventSequence = {
+      events: keyEvents,
+    };
+
+    // Create JSON blob
+    const json = JSON.stringify(sequence, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    // Create download link
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `event-sequence-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (max 1MB)
+    const MAX_FILE_SIZE = 1024 * 1024; // 1MB
+    if (file.size > MAX_FILE_SIZE) {
+      alert('File is too large. Maximum file size is 1MB.');
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    // Read file
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = event.target?.result as string;
+        const sequence = JSON.parse(json) as EventSequence;
+
+        // Validate JSON structure
+        if (!sequence || typeof sequence !== 'object') {
+          throw new Error('Invalid JSON structure');
+        }
+
+        if (!Array.isArray(sequence.events)) {
+          throw new Error('Missing or invalid "events" array');
+        }
+
+        // Validate each event
+        const importedEvents: EventForm[] = [];
+        for (let i = 0; i < sequence.events.length; i++) {
+          const event = sequence.events[i];
+
+          if (!event || typeof event !== 'object') {
+            throw new Error(`Event ${i + 1} is not a valid object`);
+          }
+
+          if (typeof event.keycode !== 'string' || !event.keycode.trim()) {
+            throw new Error(`Event ${i + 1} has invalid or missing keycode`);
+          }
+
+          if (event.event_type !== 'press' && event.event_type !== 'release') {
+            throw new Error(`Event ${i + 1} has invalid event_type (must be "press" or "release")`);
+          }
+
+          if (typeof event.timestamp_us !== 'number' || event.timestamp_us < 0) {
+            throw new Error(`Event ${i + 1} has invalid timestamp (must be a non-negative number)`);
+          }
+
+          // Check timestamps are in ascending order
+          if (i > 0 && event.timestamp_us <= sequence.events[i - 1].timestamp_us) {
+            throw new Error(
+              `Event ${i + 1} timestamp (${event.timestamp_us}μs) must be greater than previous event (${sequence.events[i - 1].timestamp_us}μs)`
+            );
+          }
+
+          importedEvents.push({
+            id: `imported-${i}`,
+            keyCode: event.keycode,
+            eventType: event.event_type,
+            timestamp: event.timestamp_us,
+          });
+        }
+
+        // Import successful - replace current events
+        setEvents(importedEvents);
+        setNextId(importedEvents.length + 1);
+        setValidationErrors({});
+        setSelectedEventId(null);
+        setEditingId(null);
+
+        alert(`Successfully imported ${importedEvents.length} events.`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error occurred';
+        alert(`Failed to import sequence:\n\n${message}\n\nPlease check the file format and try again.`);
+      }
+
+      // Reset file input
+      e.target.value = '';
+    };
+
+    reader.onerror = () => {
+      alert('Failed to read file. Please try again.');
+      e.target.value = '';
+    };
+
+    reader.readAsText(file);
+  };
+
   const adjustTimestamp = (id: string, delta: number) => {
     setEvents(
       events.map((e) =>
@@ -242,14 +365,34 @@ export const EventSequenceEditor: React.FC<EventSequenceEditorProps> = ({
     <div className="event-sequence-editor" ref={containerRef} tabIndex={0}>
       <div className="editor-header">
         <h3>Custom Event Sequence</h3>
-        <button
-          onClick={addEvent}
-          disabled={disabled}
-          className="btn-add"
-          title="Add new event (Ctrl+Enter)"
-        >
-          + Add Event
-        </button>
+        <div className="header-buttons">
+          <button
+            onClick={addEvent}
+            disabled={disabled}
+            className="btn-add"
+            title="Add new event (Ctrl+Enter)"
+          >
+            + Add Event
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={disabled || events.length === 0}
+            className="btn-export"
+            title="Export sequence as JSON file"
+          >
+            Export
+          </button>
+          <label className="btn-import" title="Import sequence from JSON file">
+            Import
+            <input
+              type="file"
+              accept=".json,application/json"
+              onChange={handleImport}
+              disabled={disabled}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
       </div>
 
       <div className="keyboard-shortcuts-hint">

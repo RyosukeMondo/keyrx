@@ -390,7 +390,7 @@
   - _Requirements: Usability (user experience enhancements)_
   - _Prompt: Role: UX Engineer with expertise in keyboard interactions and accessibility | Task: Add keyboard shortcuts to EventSequenceEditor following usability best practices, implementing Ctrl+Enter (add event), Delete (remove), arrow keys (adjust timing) | Restrictions: Must not conflict with browser shortcuts, ensure accessibility (screen reader compatible), provide visual feedback for shortcuts, document shortcuts in UI tooltip or help text | Success: Shortcuts work reliably, improve editing speed, accessible to keyboard-only users, shortcuts documented in UI_
 
-- [ ] 30. Add export/import for custom event sequences in EventSequenceEditor
+- [x] 30. Add export/import for custom event sequences in EventSequenceEditor
   - File: keyrx_ui/src/components/Simulator/EventSequenceEditor.tsx (modify from task 15)
   - Add "Export Sequence" button (downloads JSON file)
   - Add "Import Sequence" file upload (loads JSON)
