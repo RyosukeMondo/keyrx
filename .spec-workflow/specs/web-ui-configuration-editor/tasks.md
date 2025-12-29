@@ -1013,7 +1013,7 @@
 
 ## Phase 6: Accessibility Implementation
 
-- [-] 28. Add ARIA labels and roles
+- [x] 28. Add ARIA labels and roles
   - Files: All interactive components
   - Requirements:
     - All buttons have aria-label
