@@ -626,7 +626,7 @@
 
 ## Phase 2: Layout Components
 
-- [ ] 8. Create AppShell layout
+- [x] 8. Create AppShell layout
   - File: `src/components/AppShell.tsx`
   - Components: TopBar, Sidebar (desktop), BottomNav (mobile), MainContent
   - Responsive: sidebar → bottom nav at <768px
