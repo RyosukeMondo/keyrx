@@ -327,4 +327,176 @@ mod tests {
         let event = KeyEvent::press(KeyCode::A).with_timestamp(MAX_EVENTS as u64);
         assert!(recorder.capture_event(event).is_err());
     }
+
+    #[test]
+    fn test_default_trait() {
+        let recorder = MacroRecorder::default();
+        assert!(!recorder.is_recording());
+        assert_eq!(recorder.event_count(), 0);
+    }
+
+    #[test]
+    fn test_clone_recorder() {
+        let recorder = MacroRecorder::new();
+        recorder.start_recording().unwrap();
+        recorder
+            .capture_event(KeyEvent::press(KeyCode::A).with_timestamp(1000))
+            .unwrap();
+
+        // Clone should share the same state
+        let cloned = recorder.clone();
+        assert!(cloned.is_recording());
+        assert_eq!(cloned.event_count(), 1);
+
+        // Stop recording on original
+        recorder.stop_recording().unwrap();
+
+        // Clone should also reflect the change
+        assert!(!cloned.is_recording());
+    }
+
+    #[test]
+    fn test_multiple_recordings() {
+        let recorder = MacroRecorder::new();
+
+        // First recording
+        recorder.start_recording().unwrap();
+        recorder
+            .capture_event(KeyEvent::press(KeyCode::A).with_timestamp(1000))
+            .unwrap();
+        recorder
+            .capture_event(KeyEvent::release(KeyCode::A).with_timestamp(1100))
+            .unwrap();
+        recorder.stop_recording().unwrap();
+
+        let events1 = recorder.get_recorded_events().unwrap();
+        assert_eq!(events1.len(), 2);
+
+        // Second recording - should clear first
+        recorder.start_recording().unwrap();
+        recorder
+            .capture_event(KeyEvent::press(KeyCode::B).with_timestamp(2000))
+            .unwrap();
+        recorder.stop_recording().unwrap();
+
+        let events2 = recorder.get_recorded_events().unwrap();
+        assert_eq!(events2.len(), 1);
+        assert_eq!(events2[0].event.keycode(), KeyCode::B);
+    }
+
+    #[test]
+    fn test_timestamp_overflow_handling() {
+        let recorder = MacroRecorder::new();
+        recorder.start_recording().unwrap();
+
+        // Test with very large timestamps (near u64 max)
+        let large_ts = u64::MAX - 1000;
+        recorder
+            .capture_event(KeyEvent::press(KeyCode::A).with_timestamp(large_ts))
+            .unwrap();
+
+        // Next timestamp - saturating_sub prevents overflow
+        recorder
+            .capture_event(KeyEvent::release(KeyCode::A).with_timestamp(u64::MAX))
+            .unwrap();
+
+        let events = recorder.get_recorded_events().unwrap();
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].relative_timestamp_us, 0);
+        // Relative timestamp is calculated with saturating_sub
+        assert_eq!(events[1].relative_timestamp_us, 1000);
+    }
+
+    #[test]
+    fn test_concurrent_access() {
+        use std::thread;
+
+        let recorder = MacroRecorder::new();
+        recorder.start_recording().unwrap();
+
+        let recorder_clone = recorder.clone();
+        let handle = thread::spawn(move || {
+            for i in 0..100 {
+                let _ = recorder_clone
+                    .capture_event(KeyEvent::press(KeyCode::A).with_timestamp(i * 100));
+            }
+        });
+
+        for i in 0..100 {
+            let _ =
+                recorder.capture_event(KeyEvent::press(KeyCode::B).with_timestamp(i * 100 + 50));
+        }
+
+        handle.join().unwrap();
+
+        // Should have captured events from both threads
+        let events = recorder.get_recorded_events().unwrap();
+        assert_eq!(events.len(), 200);
+    }
+
+    #[test]
+    fn test_event_serialization() {
+        let event = MacroEvent {
+            event: KeyEvent::press(KeyCode::A).with_timestamp(1000),
+            relative_timestamp_us: 500,
+        };
+
+        // Test that MacroEvent can be serialized/deserialized
+        let json = serde_json::to_string(&event).unwrap();
+        let deserialized: MacroEvent = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.relative_timestamp_us, 500);
+        assert_eq!(deserialized.event.keycode(), KeyCode::A);
+    }
+
+    #[test]
+    fn test_clear_while_recording() {
+        let recorder = MacroRecorder::new();
+        recorder.start_recording().unwrap();
+
+        // Add some events
+        recorder
+            .capture_event(KeyEvent::press(KeyCode::A).with_timestamp(1000))
+            .unwrap();
+        recorder
+            .capture_event(KeyEvent::release(KeyCode::A).with_timestamp(1100))
+            .unwrap();
+        assert_eq!(recorder.event_count(), 2);
+
+        // Clear events but keep recording
+        recorder.clear_events().unwrap();
+        assert_eq!(recorder.event_count(), 0);
+        assert!(recorder.is_recording());
+
+        // Add new events - should have fresh timestamps
+        recorder
+            .capture_event(KeyEvent::press(KeyCode::B).with_timestamp(2000))
+            .unwrap();
+
+        let events = recorder.get_recorded_events().unwrap();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].relative_timestamp_us, 0); // Fresh start
+    }
+
+    #[test]
+    fn test_get_events_while_recording() {
+        let recorder = MacroRecorder::new();
+        recorder.start_recording().unwrap();
+
+        // Can get events while recording
+        recorder
+            .capture_event(KeyEvent::press(KeyCode::A).with_timestamp(1000))
+            .unwrap();
+
+        let events = recorder.get_recorded_events().unwrap();
+        assert_eq!(events.len(), 1);
+
+        // Continue recording
+        recorder
+            .capture_event(KeyEvent::release(KeyCode::A).with_timestamp(1100))
+            .unwrap();
+
+        let events2 = recorder.get_recorded_events().unwrap();
+        assert_eq!(events2.len(), 2);
+    }
 }
