@@ -6,4 +6,5 @@
 pub mod config;
 pub mod devices;
 pub mod layers;
+pub mod layouts;
 pub mod profiles;

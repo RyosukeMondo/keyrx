@@ -382,7 +382,7 @@
   - _Requirements: 4.1-4.5_
   - _Prompt: Role: Rust CLI developer | Task: Implement `keyrx layers` command in keyrx_daemon/src/cli/layers.rs | Restrictions: Confirm flag for delete, list all keys in layer for show, integrate with Rhai AST | Success: Layer CRUD works, show displays mappings, integration tests pass | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts_
 
-- [ ] 10. Implement `keyrx layouts` command
+- [-] 10. Implement `keyrx layouts` command
   - File: `keyrx_daemon/src/cli/layouts.rs` (new file)
   - Implement list, show, import, delete
   - Output KLE JSON for show
