@@ -1037,7 +1037,7 @@
   - _Requirements: Req 3.1-3.2 (Tab, Escape navigation)_
   - _Success: ✅ All features accessible via keyboard, ✅ Focus visible, ✅ Tab order logical
 
-- [ ] 30. Implement focus management
+- [x] 30. Implement focus management
   - Files: Modal, Dropdown components
   - Requirements:
     - Focus trapped in modal (Tab loops within)
