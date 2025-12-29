@@ -430,7 +430,7 @@
   - _Requirements: 5.1_
   - _Prompt: Role: Rust CLI developer with IPC expertise | Task: Implement `keyrx status` command in keyrx_daemon/src/cli/status.rs | Restrictions: Non-blocking query, handle daemon not running gracefully, JSON output | Success: Status accurate, fails gracefully when daemon offline, integration tests pass | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts_
 
-- [ ] 14. Implement `keyrx state inspect` command
+- [x] 14. Implement `keyrx state inspect` command
   - File: `keyrx_daemon/src/cli/state.rs` (new file)
   - Query current modifier/lock state from daemon
   - Output 255-bit state as JSON array

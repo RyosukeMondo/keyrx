@@ -88,6 +88,11 @@ enum Commands {
     /// Displays daemon running state, uptime, active profile, and device count.
     Status(keyrx_daemon::cli::status::StatusArgs),
 
+    /// Inspect runtime state (modifier/lock state).
+    ///
+    /// Queries the daemon for the current 255-bit modifier/lock state via IPC.
+    State(keyrx_daemon::cli::state::StateArgs),
+
     /// List available input devices on the system.
     ///
     /// Displays all input devices with their names, paths, and serial numbers.
@@ -180,6 +185,10 @@ fn main() {
             Err(e) => Err((exit_codes::CONFIG_ERROR, e.to_string())),
         },
         Commands::Status(args) => match keyrx_daemon::cli::status::execute(args) {
+            Ok(()) => Ok(()),
+            Err(e) => Err((exit_codes::CONFIG_ERROR, e.to_string())),
+        },
+        Commands::State(args) => match keyrx_daemon::cli::state::execute(args) {
             Ok(()) => Ok(()),
             Err(e) => Err((exit_codes::CONFIG_ERROR, e.to_string())),
         },
