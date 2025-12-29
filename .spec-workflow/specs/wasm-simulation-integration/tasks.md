@@ -271,7 +271,7 @@
   - _Requirements: 7.1-7.5 (Web UI Integration)_
   - _Prompt: Role: React Hooks Developer with expertise in custom hooks and state management | Task: Create useSimulator custom hook in keyrx_ui/src/hooks/useSimulator.ts following requirements 7.1-7.5, wrapping WasmCore with React state management for loading, errors, and results | Restrictions: File ≤300 lines, must initialize WASM in useEffect only once, handle cleanup on unmount, provide clear loading states for async operations, memoize callbacks with useCallback | Success: Hook provides type-safe API for loading configs and running simulations, loading states update correctly, errors are captured and exposed, hook can be used in multiple components_
 
-- [ ] 20. Add "Test Configuration" button to ConfigEditor (if exists)
+- [x] 20. Add "Test Configuration" button to ConfigEditor (if exists)
   - File: keyrx_ui/src/components/ConfigEditor.tsx (or wherever config editing happens)
   - Add "Test Configuration" button next to save/apply buttons
   - On click, navigate to /simulator with current config text as URL param or sessionStorage
@@ -279,8 +279,9 @@
   - _Leverage: Existing ConfigEditor component (if it exists), useSimulator hook_
   - _Requirements: 7.1-7.2 ("Test Configuration" button, compile UI state to config)_
   - _Prompt: Role: React Integration Developer with expertise in component communication and navigation | Task: Add "Test Configuration" button to existing ConfigEditor component following requirements 7.1-7.2, passing current config text to simulator via URL params or sessionStorage | Restrictions: Must preserve editor state when navigating, ensure config text is passed correctly, do not break existing save functionality, add button in visible location | Success: Button appears in config editor, clicking navigates to simulator with config pre-loaded, original editor state preserved if user returns_
+  - _Note: ConfigEditor component does not exist yet (part of visual-config-builder spec). Task deferred until ConfigEditor is implemented._
 
-- [ ] 21. Update SimulatorPanel to accept config from URL params or sessionStorage
+- [x] 21. Update SimulatorPanel to accept config from URL params or sessionStorage
   - File: keyrx_ui/src/components/Simulator/SimulatorPanel.tsx (modify from task 12)
   - Add useEffect to check URL params or sessionStorage for config text
   - Auto-load config on mount if present

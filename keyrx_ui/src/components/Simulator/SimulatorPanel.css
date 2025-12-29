@@ -21,6 +21,23 @@
   font-size: 0.95rem;
 }
 
+.auto-load-notice {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  color: rgba(96, 165, 250, 0.95);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auto-load-notice .notice-icon {
+  font-size: 1.1rem;
+}
+
 .simulator-section {
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
@@ -98,6 +115,12 @@
 @media (prefers-color-scheme: light) {
   .simulator-header p {
     color: rgba(0, 0, 0, 0.6);
+  }
+
+  .auto-load-notice {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: rgba(30, 64, 175, 0.9);
   }
 
   .simulator-section {

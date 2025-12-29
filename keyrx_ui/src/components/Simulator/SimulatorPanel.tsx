@@ -5,9 +5,10 @@
  * event sequence simulation, and results visualization.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { wasmCore, WasmError } from '../../wasm/core';
 import type { ConfigHandle, EventSequence, SimulationResult } from '../../wasm/core';
+import { getPendingConfig, clearPendingConfig } from '../../utils/simulatorNavigation';
 import { ConfigLoader } from './ConfigLoader';
 import { ScenarioSelector } from './ScenarioSelector';
 import { EventSequenceEditor } from './EventSequenceEditor';
@@ -23,6 +24,7 @@ export function SimulatorPanel() {
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
 
   /**
    * Handle configuration loading from Rhai source.
@@ -82,11 +84,41 @@ export function SimulatorPanel() {
     }
   }, [loadedConfig]);
 
+  /**
+   * Auto-load configuration from URL params or sessionStorage on mount.
+   * This supports the "Test Configuration" flow from the config editor.
+   */
+  useEffect(() => {
+    // Only attempt auto-load once
+    if (autoLoadAttempted) {
+      return;
+    }
+
+    setAutoLoadAttempted(true);
+
+    // Check for pending config from URL params or sessionStorage
+    const pendingConfig = getPendingConfig();
+
+    if (pendingConfig) {
+      // Load the config
+      handleLoadConfig(pendingConfig);
+
+      // Clear the pending config after loading to prevent stale data
+      clearPendingConfig();
+    }
+  }, [autoLoadAttempted, handleLoadConfig]);
+
   return (
     <div className="simulator-panel">
       <header className="simulator-header">
         <h2>Configuration Simulator</h2>
         <p>Test your keyboard remapping configurations in the browser</p>
+        {autoLoadAttempted && loadedConfig && (
+          <div className="auto-load-notice">
+            <span className="notice-icon">ℹ️</span>
+            Configuration automatically loaded from editor
+          </div>
+        )}
       </header>
 
       {/* Config Loader Section */}
