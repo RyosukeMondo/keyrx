@@ -75,9 +75,11 @@
   - All tests passing with vitest and @testing-library/react ✅
   - _Complete: keyrx_ui/src/components/ProfilesPage.test.tsx_
 
-- [ ] 11. Write E2E test for profile workflow
-  - Create → activate → rename → delete
-  - _Prompt: Role: QA Automation Engineer | Task: Test full profile workflow | Success: ✅ E2E test passes_
+- [x] 11. Write E2E test for profile workflow
+  - Create → activate → rename → duplicate → export → delete ✅
+  - 20+ comprehensive test scenarios ✅
+  - Keyboard accessibility, error handling, navigation persistence ✅
+  - _Complete: keyrx_ui/tests/e2e/profile-management.spec.ts_
 
 - [ ] 12. Create documentation in docs/profile-management.md
   - How to use profiles
