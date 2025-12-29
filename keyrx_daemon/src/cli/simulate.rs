@@ -192,8 +192,7 @@ fn print_json_output(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write;
-    use tempfile::{NamedTempFile, TempDir};
+    use tempfile::TempDir;
 
     fn create_test_environment() -> (TempDir, PathBuf) {
         let temp_dir = TempDir::new().unwrap();

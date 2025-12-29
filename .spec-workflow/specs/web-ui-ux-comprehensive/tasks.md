@@ -395,7 +395,7 @@
 
 ## Phase 4: CLI Commands (Simulation & Monitoring)
 
-- [-] 11. Implement `keyrx simulate` command
+- [x] 11. Implement `keyrx simulate` command
   - File: `keyrx_daemon/src/cli/simulate.rs` (new file)
   - Support inline events: `--events "press:A,wait:50,release:A"`
   - Support event files: `--events-file scenario.json`
