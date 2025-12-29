@@ -1048,7 +1048,7 @@
   - _Requirements: Req 3.2 (focus returns on modal close)_
   - _Success: ✅ Focus trapped in modal, ✅ Focus returns on close, ✅ First element focused on open
 
-- [ ] 31. Test with accessibility tools
+- [x] 31. Test with accessibility tools
   - Tools: axe-core, Lighthouse, WAVE
   - Requirements:
     - 0 violations in axe-core automated scan
