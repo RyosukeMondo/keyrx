@@ -311,6 +311,41 @@ impl RhaiGenerator {
         Ok(())
     }
 
+    /// List all layers with their mapping counts
+    pub fn list_layers(&self) -> Vec<(String, usize)> {
+        self.layer_order
+            .iter()
+            .filter_map(|id| {
+                self.layers
+                    .get(id)
+                    .map(|lines| (id.clone(), count_mappings(lines)))
+            })
+            .collect()
+    }
+
+    /// Get all mappings in a layer
+    pub fn get_layer_mappings(&self, layer_id: &str) -> Result<Vec<String>, GeneratorError> {
+        if layer_id == "base" || layer_id.is_empty() {
+            Ok(self
+                .base_mappings
+                .iter()
+                .filter(|line| !line.trim().is_empty() && !line.trim().starts_with("//"))
+                .map(|line| line.trim().to_string())
+                .collect())
+        } else {
+            self.layers
+                .get(layer_id)
+                .map(|lines| {
+                    lines
+                        .iter()
+                        .filter(|line| !line.trim().is_empty() && !line.trim().starts_with("//"))
+                        .map(|line| line.trim().to_string())
+                        .collect()
+                })
+                .ok_or_else(|| GeneratorError::LayerNotFound(layer_id.to_string()))
+        }
+    }
+
     /// Save to file
     pub fn save(&self, path: &Path) -> Result<(), GeneratorError> {
         let content = self.generate_source();
@@ -460,6 +495,17 @@ enum Section {
     DeviceBody,
     InWhenBlock,
     Footer,
+}
+
+/// Count non-comment, non-empty lines in a layer
+fn count_mappings(lines: &[String]) -> usize {
+    lines
+        .iter()
+        .filter(|line| {
+            let trimmed = line.trim();
+            !trimmed.is_empty() && !trimmed.starts_with("//")
+        })
+        .count()
 }
 
 impl fmt::Display for RhaiGenerator {

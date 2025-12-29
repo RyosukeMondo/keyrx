@@ -372,7 +372,7 @@
   - _Requirements: 3.1-3.7_
   - _Prompt: Role: Rust CLI developer | Task: Implement `keyrx config` command in keyrx_daemon/src/cli/config.rs | Restrictions: Auto-recompile on set-key, validate without applying, detailed compile errors | Success: Mappings applied correctly, errors show line numbers, integration tests pass | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts_
 
-- [ ] 9. Implement `keyrx layers` command
+- [-] 9. Implement `keyrx layers` command
   - File: `keyrx_daemon/src/cli/layers.rs` (new file)
   - Implement list, create, rename, delete, show
   - Integrate with RhaiGenerator (AST modification for layers)
