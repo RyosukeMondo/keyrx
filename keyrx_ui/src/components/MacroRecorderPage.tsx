@@ -11,6 +11,12 @@
 import { useState, useEffect } from 'react';
 import { useMacroRecorder, type MacroEvent } from '../hooks/useMacroRecorder';
 import { EventTimeline } from './EventTimeline';
+import {
+  eventCodeToVK,
+  generateRhaiMacro,
+  generateMacroJSON,
+  getMacroStats,
+} from '../utils/macroGenerator';
 import './MacroRecorderPage.css';
 
 /**
@@ -29,80 +35,9 @@ function formatTimestamp(timestampUs: number): string {
  * Formats a key code to a human-readable key name.
  */
 function formatKeyCode(code: number): string {
-  // Common Linux input event codes
-  const keyMap: Record<number, string> = {
-    1: 'ESC',
-    2: '1',
-    3: '2',
-    4: '3',
-    5: '4',
-    6: '5',
-    7: '6',
-    8: '7',
-    9: '8',
-    10: '9',
-    11: '0',
-    14: 'BACKSPACE',
-    15: 'TAB',
-    16: 'Q',
-    17: 'W',
-    18: 'E',
-    19: 'R',
-    20: 'T',
-    21: 'Y',
-    22: 'U',
-    23: 'I',
-    24: 'O',
-    25: 'P',
-    28: 'ENTER',
-    29: 'LCTRL',
-    30: 'A',
-    31: 'S',
-    32: 'D',
-    33: 'F',
-    34: 'G',
-    35: 'H',
-    36: 'J',
-    37: 'K',
-    38: 'L',
-    42: 'LSHIFT',
-    54: 'RSHIFT',
-    56: 'LALT',
-    57: 'SPACE',
-    97: 'RCTRL',
-    100: 'RALT',
-  };
-
-  return keyMap[code] || `KEY_${code}`;
-}
-
-/**
- * Generates Rhai macro code from recorded events.
- */
-function generateRhaiCode(events: MacroEvent[]): string {
-  if (events.length === 0) {
-    return '// No events recorded yet';
-  }
-
-  const lines: string[] = [
-    '// Generated macro from recorded events',
-    'macro("recorded_macro", || {',
-  ];
-
-  for (const event of events) {
-    const keyName = formatKeyCode(event.event.code);
-    const action = event.event.value === 1 ? 'press' : 'release';
-    const delayMs = event.relative_timestamp_us / 1000;
-
-    if (delayMs > 0) {
-      lines.push(`    delay(${Math.round(delayMs)});`);
-    }
-    lines.push(`    ${action}(${keyName});`);
-  }
-
-  lines.push('});');
-
-  return lines.join('\n');
+  const vkName = eventCodeToVK(code);
+  // Extract just the key part (remove VK_ prefix)
+  return vkName.replace('VK_', '').replace('Unknown', 'KEY_');
 }
 
 /**
@@ -114,6 +49,7 @@ export function MacroRecorderPage() {
 
   const [rhaiCode, setRhaiCode] = useState<string>('');
   const [editedEvents, setEditedEvents] = useState<MacroEvent[]>([]);
+  const [triggerKey, setTriggerKey] = useState<string>('VK_F13');
 
   // Sync edited events with recorded events
   useEffect(() => {
@@ -122,8 +58,18 @@ export function MacroRecorderPage() {
 
   // Update Rhai code preview when events change
   useEffect(() => {
-    setRhaiCode(generateRhaiCode(editedEvents));
-  }, [editedEvents]);
+    if (editedEvents.length === 0) {
+      setRhaiCode('// No events recorded yet\n// Click "Start Recording" to begin');
+    } else {
+      setRhaiCode(
+        generateRhaiMacro(editedEvents, triggerKey, {
+          macroName: 'Recorded Macro',
+          includeComments: true,
+          deviceId: '*',
+        })
+      );
+    }
+  }, [editedEvents, triggerKey]);
 
   const handleStartRecording = async () => {
     await startRecording();
@@ -142,7 +88,14 @@ export function MacroRecorderPage() {
   };
 
   const handleExportEvents = () => {
-    const dataStr = JSON.stringify(editedEvents, null, 2);
+    const stats = getMacroStats(editedEvents);
+    const metadata = {
+      macroName: 'Recorded Macro',
+      triggerKey,
+      recordedAt: new Date().toISOString(),
+      stats,
+    };
+    const dataStr = generateMacroJSON(editedEvents, metadata);
     const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
     const exportFileDefaultName = `macro_${Date.now()}.json`;
 
@@ -222,13 +175,31 @@ export function MacroRecorderPage() {
         <div className="events-panel">
           <div className="panel-header">
             <h3>Recorded Events ({editedEvents.length})</h3>
-            <button
-              onClick={handleExportEvents}
-              disabled={editedEvents.length === 0}
-              className="btn-export"
-            >
-              Export JSON
-            </button>
+            <div className="panel-header-actions">
+              <label htmlFor="trigger-key-select" className="trigger-key-label">
+                Trigger Key:
+              </label>
+              <select
+                id="trigger-key-select"
+                value={triggerKey}
+                onChange={(e) => setTriggerKey(e.target.value)}
+                className="trigger-key-select"
+              >
+                <option value="VK_F13">F13</option>
+                <option value="VK_F14">F14</option>
+                <option value="VK_F15">F15</option>
+                <option value="VK_F16">F16</option>
+                <option value="VK_F17">F17</option>
+                <option value="VK_F18">F18</option>
+              </select>
+              <button
+                onClick={handleExportEvents}
+                disabled={editedEvents.length === 0}
+                className="btn-export"
+              >
+                Export JSON
+              </button>
+            </div>
           </div>
 
           <div className="events-list">
