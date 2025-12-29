@@ -75,7 +75,7 @@
   - Test keyboard navigation for drag-and-drop
   - _Prompt: Role: Accessibility QA | Task: Test WCAG compliance | Success: ✅ 0 axe violations_
 
-- [ ] 15. Create documentation in docs/visual-config-builder.md
+- [x] 15. Create documentation in docs/visual-config-builder.md
   - How to use visual builder
   - _Prompt: Role: Technical Writer | Task: Document visual builder | Success: ✅ Docs complete_
 
