@@ -79,7 +79,7 @@
   - _Requirements: 1.2 (red squiggly lines), 2.1 (orange warning underlines)_
   - _Prompt: Role: Monaco Editor API Specialist | Task: Implement updateEditorMarkers() function in keyrx_ui/src/utils/monacoMarkers.ts to display validation errors/warnings as Monaco markers following requirements 1.2 and 2.1 | **Function signature**: `updateEditorMarkers(editor: monaco.editor.IStandaloneCodeEditor, validationResult: ValidationResult): void` | **Marker conversion**: Map ValidationError to { severity: monaco.MarkerSeverity.Error, startLineNumber: err.line, startColumn: err.column, endLineNumber: err.endLine || err.line, endColumn: err.endColumn || err.column + 10, message: err.message, code: err.code } | **Warning markers**: Map ValidationWarning to MarkerSeverity.Warning | **Clear markers**: Call `monaco.editor.setModelMarkers(model, 'config-validator', markers)` to replace all markers | Restrictions: File ≤200 lines, TypeScript strict mode, handle null model gracefully, endColumn defaults to column + 10 if not provided, markers must clear when validationResult.errors is empty | Success: ✅ Error markers appear as red squiggles, ✅ Warning markers appear as orange squiggles, ✅ Markers clear when errors fixed, ✅ Hover shows error message_
 
-- [ ] 8. Implement Quick Fix code actions in keyrx_ui/src/utils/monacoQuickFix.ts
+- [x] 8. Implement Quick Fix code actions in keyrx_ui/src/utils/monacoQuickFix.ts
   - File: keyrx_ui/src/utils/monacoQuickFix.ts
   - Register Monaco code action provider for "Quick Fix"
   - Convert QuickFix to Monaco ICodeAction format
