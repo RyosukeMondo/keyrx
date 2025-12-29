@@ -62,6 +62,6 @@
   - How to record and use macros
   - _Prompt: Role: Technical Writer | Task: Document macro recorder | Success: ✅ Docs complete_
 
-- [ ] 13. Log implementation artifacts
+- [x] 13. Log implementation artifacts
   - Use spec-workflow log-implementation tool
   - _Prompt: Role: Documentation Engineer | Task: Log artifacts | Success: ✅ Artifacts logged_
