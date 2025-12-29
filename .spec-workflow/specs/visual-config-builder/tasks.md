@@ -56,7 +56,7 @@
   - Warn on unsupported features
   - _Prompt: Role: Parser Developer | Task: Parse Rhai to visual state | Restrictions: File ≤400 lines, handle basic mappings only | Success: ✅ Basic parsing works_
 
-- [ ] 11. Add import/export buttons
+- [x] 11. Add import/export buttons
   - Import .rhai file → parse → visualize
   - Export ConfigState → generate Rhai → download
   - _Prompt: Role: File I/O Developer | Task: Add import/export functionality | Success: ✅ Import/export works_
