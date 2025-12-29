@@ -192,7 +192,7 @@
   - _Requirements: Accessibility requirements, WCAG 3.3 Input Assistance_
   - _Prompt: Role: Accessibility QA Engineer | Task: Write comprehensive accessibility tests for ValidationStatusPanel in keyrx_ui/src/components/ValidationStatusPanel.test.tsx following WCAG 2.1 AA standards | **Axe audit**: Render component, run `const results = await axe(container); expect(results).toHaveNoViolations();` | **ARIA labels**: Verify error list has aria-label="Validation Errors", buttons have aria-label="Jump to error" | **Keyboard navigation**: Simulate Tab key, verify focus moves through error list, simulate Enter on "Jump" button, verify onErrorClick called | **Screen reader**: Verify error count has aria-live="polite" for real-time updates | **Color contrast**: Verify error badge (red) and warning badge (orange) meet 3:1 contrast ratio (use axe color-contrast rule) | Restrictions: File ≤300 lines, use jest-axe (import { axe, toHaveNoViolations } from 'jest-axe'), ZERO axe violations required, all interactive elements must be keyboard-accessible | Success: ✅ 0 axe violations, ✅ All ARIA attributes correct, ✅ Keyboard navigation works, ✅ Screen reader announces updates_
 
-- [ ] 18. Write E2E test for full validation workflow in keyrx_ui/tests/e2e/config-validation.spec.ts
+- [-] 18. Write E2E test for full validation workflow in keyrx_ui/tests/e2e/config-validation.spec.ts
   - File: keyrx_ui/tests/e2e/config-validation.spec.ts
   - Test user journey: open editor → type invalid config → see error → fix error → save
   - Test Quick Fix action
