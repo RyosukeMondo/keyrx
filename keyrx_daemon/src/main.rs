@@ -63,6 +63,21 @@ enum Commands {
     /// Configuration commands for setting key mappings, tap-hold, macros, etc.
     Config(keyrx_daemon::cli::config::ConfigArgs),
 
+    /// Manage layers (create, rename, delete, show).
+    ///
+    /// Layer management commands for organizing key mappings.
+    Layers(keyrx_daemon::cli::layers::LayersArgs),
+
+    /// Manage keyboard layouts (import, list, show KLE JSON).
+    ///
+    /// Layout management commands for keyboard layout presets.
+    Layouts(keyrx_daemon::cli::layouts::LayoutsArgs),
+
+    /// Run deterministic simulation tests.
+    ///
+    /// Simulation commands for testing configurations with event replay.
+    Simulate(keyrx_daemon::cli::simulate::SimulateArgs),
+
     /// List available input devices on the system.
     ///
     /// Displays all input devices with their names, paths, and serial numbers.
@@ -138,6 +153,18 @@ fn main() {
                 Err(code) => Err((code, String::new())), // Error already printed by execute
             }
         }
+        Commands::Layers(args) => match keyrx_daemon::cli::layers::execute(args) {
+            Ok(()) => Ok(()),
+            Err(e) => Err((exit_codes::CONFIG_ERROR, e.to_string())),
+        },
+        Commands::Layouts(args) => match keyrx_daemon::cli::layouts::execute(args) {
+            Ok(()) => Ok(()),
+            Err(e) => Err((exit_codes::CONFIG_ERROR, e.to_string())),
+        },
+        Commands::Simulate(args) => match keyrx_daemon::cli::simulate::execute(args) {
+            Ok(()) => Ok(()),
+            Err(e) => Err((exit_codes::CONFIG_ERROR, e.to_string())),
+        },
         Commands::ListDevices => handle_list_devices(),
         Commands::Validate { config } => handle_validate(&config),
         Commands::Record { output, device } => handle_record(&output, device.as_deref()),
