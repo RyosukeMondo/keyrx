@@ -1076,7 +1076,7 @@
   - _Requirements: Non-functional (quality)_
   - _Success: ✅ All tests pass, ✅ Coverage ≥80%, ✅ No console errors
 
-- [-] 33. Integration tests for pages
+- [x] 33. Integration tests for pages
   - Files: `src/pages/*.test.tsx`
   - Test: User flows (device rename, profile activation, key config)
   - Mock API calls with MSW (Mock Service Worker)
