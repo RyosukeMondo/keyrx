@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from 'react';
 import { useMacroRecorder, type MacroEvent } from '../hooks/useMacroRecorder';
+import { useSimulator } from '../hooks/useSimulator';
 import { EventTimeline } from './EventTimeline';
 import {
   eventCodeToVK,
@@ -17,6 +18,7 @@ import {
   generateMacroJSON,
   getMacroStats,
 } from '../utils/macroGenerator';
+import type { EventSequence, SimKeyEvent } from '../wasm/core';
 import './MacroRecorderPage.css';
 
 /**
@@ -41,15 +43,31 @@ function formatKeyCode(code: number): string {
 }
 
 /**
+ * Convert MacroEvent array to EventSequence for simulator.
+ */
+function macroEventsToEventSequence(events: MacroEvent[]): EventSequence {
+  const simEvents: SimKeyEvent[] = events.map((event) => ({
+    keycode: eventCodeToVK(event.event.code),
+    event_type: event.event.value === 1 ? 'press' : 'release',
+    timestamp_us: event.relative_timestamp_us,
+  }));
+
+  return { events: simEvents };
+}
+
+/**
  * MacroRecorderPage component.
  */
 export function MacroRecorderPage() {
   const { state, startRecording, stopRecording, clearEvents, clearError } =
     useMacroRecorder();
 
+  const simulator = useSimulator();
+
   const [rhaiCode, setRhaiCode] = useState<string>('');
   const [editedEvents, setEditedEvents] = useState<MacroEvent[]>([]);
   const [triggerKey, setTriggerKey] = useState<string>('VK_F13');
+  const [showTestPanel, setShowTestPanel] = useState<boolean>(false);
 
   // Sync edited events with recorded events
   useEffect(() => {
@@ -103,6 +121,22 @@ export function MacroRecorderPage() {
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
+  };
+
+  const handleTestMacro = async () => {
+    if (editedEvents.length === 0) return;
+
+    // Load the generated Rhai code into the simulator
+    await simulator.loadConfig(rhaiCode);
+
+    // Convert macro events to simulation format
+    const eventSequence = macroEventsToEventSequence(editedEvents);
+
+    // Run the simulation
+    await simulator.simulate(eventSequence);
+
+    // Show the test panel
+    setShowTestPanel(true);
   };
 
   return (
@@ -238,13 +272,22 @@ export function MacroRecorderPage() {
         <div className="code-panel">
           <div className="panel-header">
             <h3>Rhai Code Preview</h3>
-            <button
-              onClick={handleCopyCode}
-              disabled={state.events.length === 0}
-              className="btn-copy"
-            >
-              Copy Code
-            </button>
+            <div className="panel-header-actions">
+              <button
+                onClick={handleTestMacro}
+                disabled={editedEvents.length === 0 || simulator.state.loadingState === 'loading'}
+                className="btn-test"
+              >
+                {simulator.state.loadingState === 'loading' ? 'Testing...' : 'Test Macro'}
+              </button>
+              <button
+                onClick={handleCopyCode}
+                disabled={state.events.length === 0}
+                className="btn-copy"
+              >
+                Copy Code
+              </button>
+            </div>
           </div>
 
           <div className="code-preview">
@@ -254,6 +297,109 @@ export function MacroRecorderPage() {
           </div>
         </div>
       </div>
+
+      {/* Test Results Panel */}
+      {showTestPanel && simulator.state.result && (
+        <div className="test-panel">
+          <div className="panel-header">
+            <h3>Test Results</h3>
+            <button onClick={() => setShowTestPanel(false)} className="btn-close">
+              ×
+            </button>
+          </div>
+
+          {simulator.state.error && (
+            <div className="test-error">
+              <strong>Error:</strong> {simulator.state.error}
+            </div>
+          )}
+
+          {!simulator.state.error && (
+            <div className="test-results">
+              <div className="test-stats">
+                <h4>Latency Statistics</h4>
+                <table className="stats-table">
+                  <tbody>
+                    <tr>
+                      <td>Min Latency:</td>
+                      <td>{(simulator.state.result.latency_stats.min_us / 1000).toFixed(3)} ms</td>
+                    </tr>
+                    <tr>
+                      <td>Avg Latency:</td>
+                      <td>{(simulator.state.result.latency_stats.avg_us / 1000).toFixed(3)} ms</td>
+                    </tr>
+                    <tr>
+                      <td>Max Latency:</td>
+                      <td>{(simulator.state.result.latency_stats.max_us / 1000).toFixed(3)} ms</td>
+                    </tr>
+                    <tr>
+                      <td>P95 Latency:</td>
+                      <td>{(simulator.state.result.latency_stats.p95_us / 1000).toFixed(3)} ms</td>
+                    </tr>
+                    <tr>
+                      <td>P99 Latency:</td>
+                      <td>{(simulator.state.result.latency_stats.p99_us / 1000).toFixed(3)} ms</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="test-timeline">
+                <h4>Event Timeline ({simulator.state.result.timeline.length} events)</h4>
+                <div className="timeline-list">
+                  {simulator.state.result.timeline.slice(0, 20).map((entry, index) => (
+                    <div key={index} className="timeline-entry">
+                      <span className="timeline-timestamp">
+                        {formatTimestamp(entry.timestamp_us)}
+                      </span>
+                      {entry.input && (
+                        <span className="timeline-input">
+                          Input: {entry.input.keycode} ({entry.input.event_type})
+                        </span>
+                      )}
+                      {entry.outputs.length > 0 && (
+                        <span className="timeline-outputs">
+                          Outputs: {entry.outputs.map(o => `${o.keycode}(${o.event_type})`).join(', ')}
+                        </span>
+                      )}
+                      <span className="timeline-latency">
+                        {(entry.latency_us / 1000).toFixed(3)} ms
+                      </span>
+                    </div>
+                  ))}
+                  {simulator.state.result.timeline.length > 20 && (
+                    <div className="timeline-more">
+                      ... and {simulator.state.result.timeline.length - 20} more events
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="test-final-state">
+                <h4>Final State</h4>
+                <div className="state-info">
+                  <div>
+                    <strong>Active Modifiers:</strong>{' '}
+                    {simulator.state.result.final_state.active_modifiers.length > 0
+                      ? simulator.state.result.final_state.active_modifiers.join(', ')
+                      : 'None'}
+                  </div>
+                  <div>
+                    <strong>Active Locks:</strong>{' '}
+                    {simulator.state.result.final_state.active_locks.length > 0
+                      ? simulator.state.result.final_state.active_locks.join(', ')
+                      : 'None'}
+                  </div>
+                  <div>
+                    <strong>Active Layer:</strong>{' '}
+                    {simulator.state.result.final_state.active_layer || 'None'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
