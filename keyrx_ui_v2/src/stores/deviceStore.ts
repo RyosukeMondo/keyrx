@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { DeviceEntry, DeviceScope } from '../types';
+import * as deviceApi from '../api/devices';
+import { ApiError } from '../api/client';
 
 interface DeviceStore {
   // State
@@ -25,15 +27,11 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
   fetchDevices: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('/api/devices');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch devices: ${response.statusText}`);
-      }
-      const devices: DeviceEntry[] = await response.json();
+      const devices = await deviceApi.fetchDevices();
       set({ devices, loading: false });
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage, loading: false });
     }
   },
@@ -50,20 +48,12 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     set({ devices: updatedDevices, error: null });
 
     try {
-      const response = await fetch(`/api/devices/${id}/name`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to rename device: ${response.statusText}`);
-      }
+      await deviceApi.renameDevice(id, name);
     } catch (error) {
       // Rollback on error
       set({ devices: oldDevices });
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage });
       throw error;
     }
@@ -81,20 +71,12 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     set({ devices: updatedDevices, error: null });
 
     try {
-      const response = await fetch(`/api/devices/${id}/scope`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scope }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to set device scope: ${response.statusText}`);
-      }
+      await deviceApi.setDeviceScope(id, scope);
     } catch (error) {
       // Rollback on error
       set({ devices: oldDevices });
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage });
       throw error;
     }
@@ -110,18 +92,12 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     set({ devices: updatedDevices, error: null });
 
     try {
-      const response = await fetch(`/api/devices/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to forget device: ${response.statusText}`);
-      }
+      await deviceApi.forgetDevice(id);
     } catch (error) {
       // Rollback on error
       set({ devices: oldDevices });
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage });
       throw error;
     }

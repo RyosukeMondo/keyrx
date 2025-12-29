@@ -5,6 +5,8 @@ import type {
   DaemonState,
   WSMessage,
 } from '../types';
+import * as metricsApi from '../api/metrics';
+import { ApiError } from '../api/client';
 
 interface MetricsStore {
   // State
@@ -40,28 +42,16 @@ export const useMetricsStore = create<MetricsStore>((set, get) => ({
   fetchMetrics: async () => {
     set({ loading: true, error: null });
     try {
-      // Fetch latency stats
-      const latencyResponse = await fetch('/api/metrics/latency');
-      if (!latencyResponse.ok) {
-        throw new Error(
-          `Failed to fetch latency: ${latencyResponse.statusText}`
-        );
-      }
-      const latencyStats: LatencyStats = await latencyResponse.json();
-
-      // Fetch event log
-      const eventsResponse = await fetch('/api/metrics/events');
-      if (!eventsResponse.ok) {
-        throw new Error(
-          `Failed to fetch events: ${eventsResponse.statusText}`
-        );
-      }
-      const eventLog: EventRecord[] = await eventsResponse.json();
+      // Fetch latency stats and event log in parallel
+      const [latencyStats, eventLog] = await Promise.all([
+        metricsApi.fetchLatencyStats(),
+        metricsApi.fetchEventLog(),
+      ]);
 
       set({ latencyStats, eventLog, loading: false });
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage, loading: false });
     }
   },

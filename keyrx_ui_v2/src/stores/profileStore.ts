@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { ProfileMetadata, Template, ActivationResult } from '../types';
+import * as profileApi from '../api/profiles';
+import { ApiError } from '../api/client';
 
 interface ProfileStore {
   // State
@@ -32,11 +34,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   fetchProfiles: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('/api/profiles');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch profiles: ${response.statusText}`);
-      }
-      const profiles: ProfileMetadata[] = await response.json();
+      const profiles = await profileApi.fetchProfiles();
 
       // Find active profile
       const active = profiles.find((p) => p.isActive);
@@ -47,7 +45,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
       });
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage, loading: false });
     }
   },
@@ -56,21 +54,13 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   createProfile: async (name: string, template: Template) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('/api/profiles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, template }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create profile: ${response.statusText}`);
-      }
+      await profileApi.createProfile(name, template);
 
       // Refresh profiles list
       await get().fetchProfiles();
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage, loading: false });
       throw error;
     }
@@ -80,15 +70,7 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   activateProfile: async (name: string) => {
     set({ activating: true, activationProgress: 0, error: null });
     try {
-      const response = await fetch(`/api/profiles/${name}/activate`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to activate profile: ${response.statusText}`);
-      }
-
-      const result: ActivationResult = await response.json();
+      const result = await profileApi.activateProfile(name);
 
       if (result.success) {
         // Update profiles to reflect new active status
@@ -105,15 +87,13 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
         });
       } else {
         set({ activating: false, activationProgress: 0 });
-        throw new Error(
-          result.errors?.join(', ') || 'Activation failed'
-        );
+        throw new Error(result.errors?.join(', ') || 'Activation failed');
       }
 
       return result;
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage, activating: false, activationProgress: 0 });
       throw error;
     }
@@ -137,18 +117,12 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
     set({ profiles: updatedProfiles, error: null });
 
     try {
-      const response = await fetch(`/api/profiles/${name}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete profile: ${response.statusText}`);
-      }
+      await profileApi.deleteProfile(name);
     } catch (error) {
       // Rollback on error
       set({ profiles: oldProfiles });
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage });
       throw error;
     }

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { KeyMapping } from '../types';
+import * as configApi from '../api/config';
+import { ApiError } from '../api/client';
 
 interface ConfigStore {
   // State
@@ -29,12 +31,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
   fetchConfig: async (profile: string) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`/api/config/${profile}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch config: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await configApi.fetchConfig(profile);
 
       // Convert key mappings object to Map
       const keyMappings = new Map<string, KeyMapping>(
@@ -49,7 +46,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       });
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage, loading: false });
     }
   },
@@ -65,7 +62,6 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     }
 
     // Store old mapping for rollback
-    const oldMapping = keyMappings.get(key);
     const oldMappings = new Map(keyMappings);
 
     // Optimistic update
@@ -74,20 +70,12 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     set({ keyMappings: updatedMappings, error: null });
 
     try {
-      const response = await fetch(`/api/config/${currentProfile}/key`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, mapping }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to set key mapping: ${response.statusText}`);
-      }
+      await configApi.setKeyMapping(currentProfile, key, mapping);
     } catch (error) {
       // Rollback on error
       set({ keyMappings: oldMappings });
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage });
       throw error;
     }
@@ -104,7 +92,6 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     }
 
     // Store old mapping for rollback
-    const oldMapping = keyMappings.get(key);
     const oldMappings = new Map(keyMappings);
 
     // Optimistic update
@@ -113,22 +100,12 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     set({ keyMappings: updatedMappings, error: null });
 
     try {
-      const response = await fetch(`/api/config/${currentProfile}/key`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key }),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to delete key mapping: ${response.statusText}`
-        );
-      }
+      await configApi.deleteKeyMapping(currentProfile, key);
     } catch (error) {
       // Rollback on error
       set({ keyMappings: oldMappings });
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof ApiError ? error.message : 'Unknown error';
       set({ error: errorMessage });
       throw error;
     }

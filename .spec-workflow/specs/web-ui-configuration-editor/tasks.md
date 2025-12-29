@@ -935,7 +935,7 @@
   - _Requirements: Design.md State Management Architecture_
   - _Success: ✅ All stores defined, ✅ Actions call API, ✅ State updates trigger re-renders
 
-- [ ] 21. Implement API client
+- [x] 21. Implement API client
   - Files: `src/api/devices.ts`, `profiles.ts`, `config.ts`, `metrics.ts`
   - Endpoints: match CLI API from web-ui-ux-comprehensive spec
   - Error handling: throw descriptive errors with API error codes
