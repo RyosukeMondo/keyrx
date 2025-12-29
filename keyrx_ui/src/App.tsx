@@ -5,8 +5,9 @@ import { SimulatorPanel } from './components/Simulator/SimulatorPanel'
 import { ConfigurationPage } from './components/ConfigurationPage'
 import { MacroRecorderPage } from './components/MacroRecorderPage'
 import { ProfilesPage } from './components/ProfilesPage'
+import { VisualBuilderPage } from './components/VisualBuilderPage'
 
-type ActiveView = 'devices' | 'simulator' | 'config' | 'macros' | 'profiles'
+type ActiveView = 'devices' | 'simulator' | 'config' | 'macros' | 'profiles' | 'visual'
 
 function App() {
   const [activeView, setActiveView] = useState<ActiveView>('devices')
@@ -47,6 +48,12 @@ function App() {
           >
             Profiles
           </button>
+          <button
+            className={activeView === 'visual' ? 'nav-button active' : 'nav-button'}
+            onClick={() => setActiveView('visual')}
+          >
+            Visual Builder
+          </button>
         </nav>
       </header>
       <main>
@@ -55,6 +62,7 @@ function App() {
         {activeView === 'config' && <ConfigurationPage />}
         {activeView === 'macros' && <MacroRecorderPage />}
         {activeView === 'profiles' && <ProfilesPage />}
+        {activeView === 'visual' && <VisualBuilderPage />}
       </main>
     </div>
   )
