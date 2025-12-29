@@ -50,7 +50,7 @@
   - Test event capture, timestamp accuracy
   - _Prompt: Role: Rust Test Engineer | Task: Test macro recorder | Success: ✅ Tests pass_
 
-- [ ] 10. Write component tests for MacroRecorderPage
+- [x] 10. Write component tests for MacroRecorderPage
   - Test recording flow, editing
   - _Prompt: Role: React Test Engineer | Task: Test macro UI | Success: ✅ Tests pass_
 
