@@ -14,6 +14,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       // Mock WASM module imports for testing
       './pkg/keyrx_core': path.resolve(__dirname, './src/wasm/__mocks__/pkg.ts'),
+      // Mock Monaco editor for testing
+      'monaco-editor': path.resolve(__dirname, './src/test/__mocks__/monaco.ts'),
     },
   },
 });
