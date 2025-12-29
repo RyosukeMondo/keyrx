@@ -33,7 +33,7 @@
 
 ## Phase 2: Core Validation Logic
 
-- [ ] 4. Create ConfigValidator service in keyrx_ui/src/utils/validator.ts
+- [x] 4. Create ConfigValidator service in keyrx_ui/src/utils/validator.ts
   - File: keyrx_ui/src/utils/validator.ts
   - Implement ConfigValidator class with validate() method
   - Integrate with WasmCore.loadConfig() for syntax validation
