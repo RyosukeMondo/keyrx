@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from 'react';
 import { useMacroRecorder, type MacroEvent } from '../hooks/useMacroRecorder';
+import { EventTimeline } from './EventTimeline';
 import './MacroRecorderPage.css';
 
 /**
@@ -112,11 +113,17 @@ export function MacroRecorderPage() {
     useMacroRecorder();
 
   const [rhaiCode, setRhaiCode] = useState<string>('');
+  const [editedEvents, setEditedEvents] = useState<MacroEvent[]>([]);
+
+  // Sync edited events with recorded events
+  useEffect(() => {
+    setEditedEvents(state.events);
+  }, [state.events]);
 
   // Update Rhai code preview when events change
   useEffect(() => {
-    setRhaiCode(generateRhaiCode(state.events));
-  }, [state.events]);
+    setRhaiCode(generateRhaiCode(editedEvents));
+  }, [editedEvents]);
 
   const handleStartRecording = async () => {
     await startRecording();
@@ -135,7 +142,7 @@ export function MacroRecorderPage() {
   };
 
   const handleExportEvents = () => {
-    const dataStr = JSON.stringify(state.events, null, 2);
+    const dataStr = JSON.stringify(editedEvents, null, 2);
     const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
     const exportFileDefaultName = `macro_${Date.now()}.json`;
 
@@ -202,13 +209,22 @@ export function MacroRecorderPage() {
         </div>
       </div>
 
+      {/* Event Timeline Editor */}
+      {editedEvents.length > 0 && (
+        <EventTimeline
+          events={editedEvents}
+          onEventsChange={setEditedEvents}
+          editable={state.recordingState !== 'recording'}
+        />
+      )}
+
       <div className="recorder-content">
         <div className="events-panel">
           <div className="panel-header">
-            <h3>Recorded Events ({state.events.length})</h3>
+            <h3>Recorded Events ({editedEvents.length})</h3>
             <button
               onClick={handleExportEvents}
-              disabled={state.events.length === 0}
+              disabled={editedEvents.length === 0}
               className="btn-export"
             >
               Export JSON
@@ -216,7 +232,7 @@ export function MacroRecorderPage() {
           </div>
 
           <div className="events-list">
-            {state.events.length === 0 ? (
+            {editedEvents.length === 0 ? (
               <div className="events-empty">
                 <p>No events recorded yet</p>
                 <p className="events-hint">Click "Start Recording" to begin capturing events</p>
@@ -232,7 +248,7 @@ export function MacroRecorderPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {state.events.map((event, index) => (
+                  {editedEvents.map((event, index) => (
                     <tr key={index}>
                       <td>{index + 1}</td>
                       <td>{formatTimestamp(event.relative_timestamp_us)}</td>

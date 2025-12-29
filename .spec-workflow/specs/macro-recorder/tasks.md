@@ -19,7 +19,7 @@
   - Generate Rhai code
   - _Prompt: Role: React Developer | Task: Create macro recorder page | Restrictions: File ≤400 lines, show recording indicator, list events, preview Rhai code | Success: ✅ Recording UI works_
 
-- [ ] 4. Create EventTimeline component in keyrx_ui/src/components/EventTimeline.tsx
+- [x] 4. Create EventTimeline component in keyrx_ui/src/components/EventTimeline.tsx
   - Visual timeline for event editing
   - Drag events to adjust timing
   - _Prompt: Role: React UI Developer | Task: Create event timeline editor | Restrictions: File ≤300 lines, draggable events, timestamp editing | Success: ✅ Timeline editable_
