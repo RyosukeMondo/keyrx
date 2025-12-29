@@ -260,13 +260,17 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
         daemon.device_count()
     );
 
+    // Create broadcast channel for event streaming to WebSocket clients
+    let (event_tx, _event_rx) = tokio::sync::broadcast::channel(1000);
+    let event_tx_clone = event_tx.clone();
+
     // Start web server in background (optional)
-    std::thread::spawn(|| {
+    std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
         rt.block_on(async {
             let addr: std::net::SocketAddr = ([127, 0, 0, 1], 9867).into();
             log::info!("Starting web server on http://{}", addr);
-            match keyrx_daemon::web::serve(addr).await {
+            match keyrx_daemon::web::serve(addr, event_tx_clone).await {
                 Ok(()) => log::info!("Web server stopped"),
                 Err(e) => log::error!("Web server error: {}", e),
             }

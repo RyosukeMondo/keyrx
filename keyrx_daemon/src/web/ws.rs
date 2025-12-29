@@ -4,26 +4,40 @@
 //! real-time events from the daemon to connected web clients.
 
 use axum::{
-    extract::ws::{Message, WebSocket, WebSocketUpgrade},
+    extract::{
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        State,
+    },
     response::IntoResponse,
     routing::get,
     Router,
 };
 use serde_json::json;
+use tokio::sync::broadcast;
 use tokio::time::{interval, Duration};
 
-pub fn create_router() -> Router {
-    Router::new().route("/", get(websocket_handler))
+use crate::web::events::DaemonEvent;
+
+pub fn create_router(event_tx: broadcast::Sender<DaemonEvent>) -> Router {
+    Router::new()
+        .route("/", get(websocket_handler))
+        .with_state(event_tx)
 }
 
 /// WebSocket upgrade handler
-async fn websocket_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
-    ws.on_upgrade(handle_websocket)
+async fn websocket_handler(
+    ws: WebSocketUpgrade,
+    State(event_tx): State<broadcast::Sender<DaemonEvent>>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_websocket(socket, event_tx))
 }
 
 /// Handle WebSocket connection
-async fn handle_websocket(mut socket: WebSocket) {
+async fn handle_websocket(mut socket: WebSocket, event_tx: broadcast::Sender<DaemonEvent>) {
     log::info!("WebSocket client connected");
+
+    // Subscribe to daemon events
+    let mut event_rx = event_tx.subscribe();
 
     // Send welcome message
     let welcome = json!({
@@ -51,6 +65,22 @@ async fn handle_websocket(mut socket: WebSocket) {
 
     loop {
         tokio::select! {
+            // Forward daemon events to client
+            Ok(event) = event_rx.recv() => {
+                let json_msg = match serde_json::to_string(&event) {
+                    Ok(json) => json,
+                    Err(e) => {
+                        log::warn!("Failed to serialize event: {}", e);
+                        continue;
+                    }
+                };
+
+                if socket.send(Message::Text(json_msg)).await.is_err() {
+                    log::info!("WebSocket client disconnected (send failed)");
+                    break;
+                }
+            }
+
             // Send heartbeat
             _ = heartbeat_interval.tick() => {
                 let heartbeat = json!({
@@ -205,7 +235,8 @@ mod tests {
 
     #[test]
     fn test_create_router() {
-        let router = create_router();
+        let (event_tx, _) = broadcast::channel(100);
+        let router = create_router(event_tx);
         assert!(std::mem::size_of_val(&router) > 0);
     }
 }
