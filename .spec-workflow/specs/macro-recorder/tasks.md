@@ -30,7 +30,7 @@
   - Convert MacroEvent[] to Rhai macro syntax
   - _Prompt: Role: Code Generation Expert | Task: Generate Rhai macro code | Restrictions: File ≤300 lines, generate valid Rhai syntax | Success: ✅ Valid Rhai generated_
 
-- [ ] 6. Add macro testing with simulator
+- [x] 6. Add macro testing with simulator
   - Test macro playback in WASM simulator
   - _Prompt: Role: Integration Developer | Task: Test macro via simulator | Success: ✅ Testing works_
 
