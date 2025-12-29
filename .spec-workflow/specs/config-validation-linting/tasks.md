@@ -159,7 +159,7 @@
   - _Requirements: Testing strategy from design doc_
   - _Prompt: Role: TypeScript Test Engineer | Task: Write comprehensive unit tests for ConfigValidator in keyrx_ui/src/utils/validator.test.ts, mocking WasmCore to test error parsing and linting | **Test valid config**: Mock WasmCore.loadConfig to return ConfigHandle, verify validate() returns { errors: [], warnings: [], hints: [] } | **Test syntax error**: Mock WasmCore.loadConfig to throw error with message "Parse error at line 4, column 9: Missing semicolon", verify validate() returns error with line: 4, column: 9 | **Test linting**: Call validate() with config having unused layer, verify warning returned | **Test WASM crash**: Mock WasmCore to throw unexpected error, verify graceful fallback error | Restrictions: File ≤400 lines, use Vitest, mock WasmCore completely (import { vi } from 'vitest'), test all error paths, coverage ≥90% | Success: ✅ All tests pass, ✅ Line/column extraction verified, ✅ Linting rules tested, ✅ WASM crashes handled_
 
-- [ ] 15. Write unit tests for useConfigValidator hook in keyrx_ui/src/hooks/useConfigValidator.test.ts
+- [x] 15. Write unit tests for useConfigValidator hook in keyrx_ui/src/hooks/useConfigValidator.test.ts
   - File: keyrx_ui/src/hooks/useConfigValidator.test.ts
   - Test debouncing (validate only after 500ms idle)
   - Test validation state updates (isValidating flag)
