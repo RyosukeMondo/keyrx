@@ -14,6 +14,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@floating-ui/react": "^0.26.6",
     "@headlessui/react": "^1.7.17",
     "@tanstack/react-query": "^5.17.0",
     "autoprefixer": "^10.4.16",
