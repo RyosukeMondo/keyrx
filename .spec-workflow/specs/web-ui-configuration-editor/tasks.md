@@ -689,7 +689,7 @@
   - _Requirements: Req 5 (User Flows - Device Management)_
   - _Success: ✅ Rename works inline, ✅ Scope toggle saves immediately, ✅ Forget device shows confirmation
 
-- [ ] 14. Create ProfilesPage
+- [x] 14. Create ProfilesPage
   - File: `src/pages/ProfilesPage.tsx`
   - Features: profile cards grid, create button, activate/edit/delete actions
   - Components: ProfileCard (repeating)
