@@ -347,7 +347,7 @@
   - _Requirements: 1.1-1.7_
   - _Prompt: Role: Rust CLI developer | Task: Implement `keyrx devices` command in keyrx_daemon/src/cli/devices.rs | Restrictions: Use clap, support --json flag, exit codes (0=success, 1=error), helpful error messages | Success: All subcommands work, JSON parseable, integration tests pass | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts_
 
-- [-] 7. Implement `keyrx profiles` command
+- [x] 7. Implement `keyrx profiles` command
   - File: `keyrx_daemon/src/cli/profiles.rs` (new file)
   - Implement subcommands: list, create, activate, delete, duplicate, export, import
   - JSON output with compilation timing (compile_time_ms, reload_time_ms)
