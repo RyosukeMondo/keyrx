@@ -16,6 +16,8 @@
 
 #![cfg(feature = "wasm")]
 
+pub mod simulation;
+
 extern crate std;
 
 use once_cell::sync::Lazy;
@@ -28,6 +30,12 @@ use wasm_bindgen::prelude::*;
 use sha2::{Digest, Sha256};
 
 use crate::config::{ConfigRoot, Metadata, Version};
+use crate::runtime::KeyLookup;
+
+// Re-export simulation types
+pub use simulation::{
+    EventSequence, LatencyStats, SimKeyEvent, SimulationResult, SimulationState, TimelineEntry,
+};
 
 // ============================================================================
 // Global Configuration Storage
@@ -294,13 +302,8 @@ pub fn load_krx(binary: &[u8]) -> Result<ConfigHandle, JsValue> {
     }
 
     // Deserialize and validate using rkyv
-    // The 'validation' feature in rkyv will check:
-    // - Archive format is correct
-    // - All internal pointers are valid
-    // - Data structures are well-formed
     let archived = unsafe {
-        // SAFETY: rkyv requires unsafe for archived_root, but the validation
-        // feature ensures the data is safe to access. We check the bounds above.
+        // SAFETY: rkyv requires unsafe for archived_root
         rkyv::archived_root::<ConfigRoot>(binary)
     };
 
@@ -313,14 +316,82 @@ pub fn load_krx(binary: &[u8]) -> Result<ConfigHandle, JsValue> {
     }
 
     // Deserialize to owned ConfigRoot
-    // Note: With rkyv, the archived data can be used directly for zero-copy access.
-    // However, for WASM we need owned data for CONFIG_STORE.
     let config: ConfigRoot = archived
         .deserialize(&mut rkyv::Infallible)
         .map_err(|_| JsValue::from_str("Deserialization failed: corrupted .krx file"))?;
 
     // Store config and return handle
     Ok(store_config(config))
+}
+
+// ============================================================================
+// Event Simulation
+// ============================================================================
+
+/// Simulate keyboard event sequence.
+///
+/// Processes a sequence of keyboard events through the remapping configuration,
+/// tracking state changes and performance metrics.
+///
+/// # Arguments
+/// * `config` - Handle to a loaded configuration
+/// * `events_json` - JSON string containing EventSequence
+///
+/// # Returns
+/// * `Ok(JsValue)` - SimulationResult as JSON
+/// * `Err(JsValue)` - Error message
+///
+/// # Errors
+/// Returns an error if:
+/// - ConfigHandle is invalid
+/// - JSON is malformed or doesn't match EventSequence schema
+/// - Event keycodes are invalid
+/// - Simulation exceeds 1000 events
+///
+/// # Example (JavaScript)
+/// ```javascript
+/// const events = {
+///   events: [
+///     { keycode: "A", event_type: "press", timestamp_us: 0 },
+///     { keycode: "A", event_type: "release", timestamp_us: 100000 }
+///   ]
+/// };
+/// const result = simulate(configHandle, JSON.stringify(events));
+/// ```
+#[wasm_bindgen]
+pub fn simulate(config: ConfigHandle, events_json: &str) -> Result<JsValue, JsValue> {
+    // Validate ConfigHandle
+    let config_root = get_config(config)?;
+
+    // Parse EventSequence from JSON
+    let event_sequence: EventSequence = serde_json::from_str(events_json)
+        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+
+    // Validate event count (max 1000 events)
+    const MAX_EVENTS: usize = 1000;
+    if event_sequence.events.len() > MAX_EVENTS {
+        return Err(JsValue::from_str(&format!(
+            "Too many events: {} (max {})",
+            event_sequence.events.len(),
+            MAX_EVENTS
+        )));
+    }
+
+    // Initialize runtime components
+    let device_config = config_root
+        .devices
+        .first()
+        .ok_or_else(|| JsValue::from_str("Configuration has no devices"))?;
+
+    let lookup = KeyLookup::from_device_config(device_config);
+
+    // Run simulation
+    let result =
+        simulation::run_simulation(&lookup, &event_sequence).map_err(|e| JsValue::from_str(&e))?;
+
+    // Serialize to JSON
+    serde_wasm_bindgen::to_value(&result)
+        .map_err(|e| JsValue::from_str(&format!("Failed to serialize result: {}", e)))
 }
 
 // ============================================================================
@@ -347,7 +418,6 @@ mod tests {
 
     #[test]
     fn test_load_krx_too_large() {
-        // Create a binary that exceeds 10MB limit
         let large_binary = vec![0u8; 11 * 1024 * 1024];
         let result = load_krx(&large_binary);
         assert!(result.is_err());
@@ -355,7 +425,6 @@ mod tests {
 
     #[test]
     fn test_load_krx_too_small() {
-        // Create a binary that is too small to be valid
         let small_binary = vec![0u8; 4];
         let result = load_krx(&small_binary);
         assert!(result.is_err());
@@ -363,7 +432,8 @@ mod tests {
 
     #[test]
     fn test_load_krx_valid() {
-        // Create a simple config and serialize it
+        use crate::config::{DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping};
+
         let config = ConfigRoot {
             version: Version::current(),
             devices: alloc::vec![DeviceConfig {
@@ -379,14 +449,10 @@ mod tests {
             },
         };
 
-        // Serialize to bytes
         let bytes = rkyv::to_bytes::<_, 1024>(&config).expect("Serialization failed");
-
-        // Load the binary
         let result = load_krx(&bytes);
         assert!(result.is_ok());
 
-        // Verify the handle is valid
         let handle = result.unwrap();
         let loaded_config = get_config(handle);
         assert!(loaded_config.is_ok());

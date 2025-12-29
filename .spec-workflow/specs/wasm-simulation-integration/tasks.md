@@ -46,7 +46,7 @@
   - _Requirements: 2.3 (Configuration Loading - .krx support)_
   - _Prompt: Role: Rust Serialization Expert with expertise in rkyv zero-copy deserialization | Task: Implement load_krx function in keyrx_core/src/wasm.rs following requirement 2.3, using rkyv to deserialize and validate .krx binary format with bytecheck validation | Restrictions: File ≤500 lines, must validate binary format before deserialization to prevent panics, limit binary size to 10MB, ensure zero-copy deserialization works in WASM linear memory | Success: Valid .krx binaries deserialize correctly, invalid binaries return clear error messages, deserialization is zero-copy and efficient_
 
-- [ ] 5. Implement simulate function in keyrx_core/src/wasm.rs
+- [x] 5. Implement simulate function in keyrx_core/src/wasm.rs
   - File: keyrx_core/src/wasm.rs (continue from task 4)
   - Create #[wasm_bindgen] function: simulate(config: ConfigHandle, events_json: &str) -> Result<JsValue, JsValue>
   - Deserialize EventSequence from JSON using serde-wasm-bindgen
