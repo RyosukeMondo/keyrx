@@ -424,3 +424,5 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     </div>
   );
 };
+
+export default DevicesPage;

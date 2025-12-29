@@ -442,3 +442,5 @@ export const SimulatorPage: React.FC = () => {
     </div>
   );
 };
+
+export default SimulatorPage;

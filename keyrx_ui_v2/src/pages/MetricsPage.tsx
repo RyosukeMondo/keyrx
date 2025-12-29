@@ -461,3 +461,5 @@ export const MetricsPage: React.FC = () => {
     </main>
   );
 };
+
+export default MetricsPage;

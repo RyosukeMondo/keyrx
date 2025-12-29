@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:analyze": "npm run build && node scripts/analyze-bundle.js",
     "lint": "eslint .",
     "format": "prettier --write src",
     "format:check": "prettier --check src",
@@ -58,6 +59,8 @@
     "playwright": "^1.40.1",
     "playwright-lighthouse": "^4.0.0",
     "prettier": "^3.1.1",
+    "rollup-plugin-visualizer": "^6.0.5",
+    "terser": "^5.44.1",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vite-plugin-compression": "^0.5.1",

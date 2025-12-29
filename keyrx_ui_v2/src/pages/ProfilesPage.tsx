@@ -366,3 +366,5 @@ export const ProfilesPage: React.FC = () => {
     </div>
   );
 };
+
+export default ProfilesPage;
