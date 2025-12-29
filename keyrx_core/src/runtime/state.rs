@@ -18,20 +18,24 @@ const MAX_VALID_ID: u8 = 254;
 /// This should cover even the most extreme cases (10-finger roll)
 const MAX_PRESSED_KEYS: usize = 32;
 
+/// Maximum number of output keys per input key
+/// Covers ModifiedOutput with all 4 modifiers: Shift+Ctrl+Alt+Win+PrimaryKey = 5 keys
+const MAX_OUTPUT_KEYS_PER_INPUT: usize = 5;
+
 /// Device state tracking modifier, lock, and pressed key state
 ///
 /// Uses 255-bit vectors for efficient state management:
 /// - Modifiers: Temporary state (set on press, clear on release)
 /// - Locks: Toggle state (toggle on press, ignore release)
-/// - Pressed keys: Maps input keys to output keys for press/release consistency
+/// - Pressed keys: Maps input keys to multiple output keys for press/release consistency
 ///
 /// Bit layout: IDs 0-254 are valid, ID 255 is reserved and will be rejected.
 ///
 /// # Press/Release Consistency
 ///
-/// When a key press is remapped (e.g., A→B), we track this mapping.
-/// When A is released, we ensure B is released, even if the mapping
-/// has changed due to modifier state changes. This prevents stuck keys.
+/// When a key press is remapped (e.g., A→Shift+B), we track ALL output keys.
+/// When A is released, we release all tracked keys in reverse order,
+/// even if the mapping has changed due to modifier state changes. This prevents stuck keys.
 ///
 /// # Example
 ///
@@ -49,9 +53,10 @@ pub struct DeviceState {
     locks: BitVec<u8, Lsb0>,
     /// Tap-hold processor for dual-function keys
     tap_hold: TapHoldProcessor<DEFAULT_MAX_PENDING>,
-    /// Pressed key tracking: (input_key, output_key) pairs
+    /// Pressed key tracking: (input_key, [output_keys]) pairs
     /// This ensures release events match their corresponding press events
-    pressed_keys: ArrayVec<(KeyCode, KeyCode), MAX_PRESSED_KEYS>,
+    /// Supports multiple output keys per input (e.g., Shift+Z generates 2 keys)
+    pressed_keys: ArrayVec<(KeyCode, ArrayVec<KeyCode, MAX_OUTPUT_KEYS_PER_INPUT>), MAX_PRESSED_KEYS>,
 }
 
 impl DeviceState {

@@ -1063,7 +1063,7 @@
 
 ## Phase 7: Testing & Quality
 
-- [-] 32. Unit tests for components
+- [x] 32. Unit tests for components
   - Files: `src/components/*.test.tsx`
   - Test: Button, Input, Card, Modal, Dropdown
   - Coverage: ≥80% for all components
