@@ -54,7 +54,7 @@
   - Test recording flow, editing
   - _Prompt: Role: React Test Engineer | Task: Test macro UI | Success: ✅ Tests pass_
 
-- [ ] 11. Write E2E test for macro workflow
+- [x] 11. Write E2E test for macro workflow
   - Record → edit → test → save
   - _Prompt: Role: QA Automation Engineer | Task: Test full macro workflow | Success: ✅ E2E test passes_
 
