@@ -1000,8 +1000,8 @@
   - _Requirements: Req 4 (visual feedback <16ms)_
   - _Success: ✅ Skeletons match page layout, ✅ Spinners show during API calls, ✅ No "flash of no content"
 
-- [ ] 27. Implement error states and boundaries
-  - Files: Create ErrorBoundary component, ErrorState component
+- [x] 27. Implement error states and boundaries
+  - Files: `src/components/ErrorBoundary.tsx`, `src/components/ErrorState.tsx`, `src/components/ErrorTest.tsx`, Updated `src/main.tsx`
   - Error boundary: catch React errors, show fallback UI
   - Error states: for failed API calls (retry button)
   - Purpose: Graceful error handling
