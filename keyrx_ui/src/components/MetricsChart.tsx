@@ -94,19 +94,19 @@ export function MetricsChart() {
           <>
             <div className="metric-stat">
               <span className="metric-label">Avg:</span>
-              <span className={\`metric-value \${metrics.avg / 1000 > LATENCY_THRESHOLD_MS ? 'high' : ''}\`}>
+              <span className={`metric-value ${metrics.avg / 1000 > LATENCY_THRESHOLD_MS ? 'high' : ''}`}>
                 {(metrics.avg / 1000).toFixed(2)}ms
               </span>
             </div>
             <div className="metric-stat">
               <span className="metric-label">P95:</span>
-              <span className={\`metric-value \${metrics.p95 / 1000 > LATENCY_THRESHOLD_MS ? 'high' : ''}\`}>
+              <span className={`metric-value ${metrics.p95 / 1000 > LATENCY_THRESHOLD_MS ? 'high' : ''}`}>
                 {(metrics.p95 / 1000).toFixed(2)}ms
               </span>
             </div>
             <div className="metric-stat">
               <span className="metric-label">P99:</span>
-              <span className={\`metric-value \${metrics.p99 / 1000 > LATENCY_THRESHOLD_MS ? 'high' : ''}\`}>
+              <span className={`metric-value ${metrics.p99 / 1000 > LATENCY_THRESHOLD_MS ? 'high' : ''}`}>
                 {(metrics.p99 / 1000).toFixed(2)}ms
               </span>
             </div>
