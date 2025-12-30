@@ -11,6 +11,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { MacroEvent } from '../hooks/useMacroRecorder';
 import { formatDuration } from '../utils/timeFormatting';
+import { formatKeyCode } from '../utils/keyCodeMapping';
 import './EventTimeline.css';
 
 interface EventTimelineProps {
@@ -20,20 +21,6 @@ interface EventTimelineProps {
   onEventsChange: (events: MacroEvent[]) => void;
   /** Whether the timeline is editable */
   editable?: boolean;
-}
-
-/**
- * Formats a key code to a human-readable key name.
- */
-function formatKeyCode(code: number): string {
-  const keyMap: Record<number, string> = {
-    1: 'ESC', 16: 'Q', 17: 'W', 18: 'E', 19: 'R', 20: 'T',
-    21: 'Y', 22: 'U', 23: 'I', 24: 'O', 25: 'P',
-    30: 'A', 31: 'S', 32: 'D', 33: 'F', 34: 'G',
-    35: 'H', 36: 'J', 37: 'K', 38: 'L',
-    28: 'ENTER', 29: 'LCTRL', 42: 'LSHIFT', 56: 'LALT', 57: 'SPACE',
-  };
-  return keyMap[code] || `KEY_${code}`;
 }
 
 /**

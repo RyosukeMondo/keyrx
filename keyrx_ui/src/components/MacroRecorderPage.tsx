@@ -25,17 +25,9 @@ import {
   TEXT_SNIPPET_TEMPLATES,
 } from '../utils/textSnippetTemplate';
 import { formatTimestampMs } from '../utils/timeFormatting';
+import { formatKeyCode } from '../utils/keyCodeMapping';
 import type { EventSequence, SimKeyEvent } from '../wasm/core';
 import './MacroRecorderPage.css';
-
-/**
- * Formats a key code to a human-readable key name.
- */
-function formatKeyCode(code: number): string {
-  const vkName = eventCodeToVK(code);
-  // Extract just the key part (remove VK_ prefix)
-  return vkName.replace('VK_', '').replace('Unknown', 'KEY_');
-}
 
 /**
  * Convert MacroEvent array to EventSequence for simulator.
