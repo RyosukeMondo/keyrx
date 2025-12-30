@@ -56,7 +56,7 @@
 
 ## Phase 4: Testing & Documentation
 
-- [-] 10. Write unit tests for WebSocket broadcasting (Rust)
+- [x] 10. Write unit tests for WebSocket broadcasting (Rust)
   - Test broadcast channel publishes events
   - Test batching when >100 events/sec
   - _Prompt: Role: Rust Test Engineer | Task: Write unit tests for WebSocket broadcasting | Success: ✅ All tests pass, ✅ Batching verified_
