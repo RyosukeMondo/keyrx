@@ -8,6 +8,7 @@
 import { useDaemonWebSocket } from '../hooks/useDaemonWebSocket';
 import { useDashboardStore } from '../store/dashboardStore';
 import { StateIndicatorPanel } from './StateIndicatorPanel';
+import { MetricsChart } from './MetricsChart';
 import './DashboardPage.css';
 
 /**
@@ -80,45 +81,6 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-/**
- * Placeholder for MetricsChart component
- * Will be replaced with actual implementation in task 8
- */
-function MetricsChart() {
-  const metrics = useDashboardStore((state) => state.metrics);
-
-  return (
-    <div className="metrics-chart-placeholder">
-      {metrics ? (
-        <div className="metrics-stats">
-          <div className="stat">
-            <span className="stat-label">Min:</span>
-            <span className="stat-value">{(metrics.min / 1000).toFixed(2)}ms</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">Avg:</span>
-            <span className="stat-value">{(metrics.avg / 1000).toFixed(2)}ms</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">Max:</span>
-            <span className="stat-value">{(metrics.max / 1000).toFixed(2)}ms</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">P95:</span>
-            <span className="stat-value">{(metrics.p95 / 1000).toFixed(2)}ms</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">P99:</span>
-            <span className="stat-value">{(metrics.p99 / 1000).toFixed(2)}ms</span>
-          </div>
-        </div>
-      ) : (
-        <div className="empty-state">No metrics available</div>
-      )}
     </div>
   );
 }
