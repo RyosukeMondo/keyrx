@@ -115,7 +115,7 @@
 
 ## Phase 4: Missing Test Coverage
 
-- [ ] 13. Create unit tests for ProfileCard component
+- [x] 13. Create unit tests for ProfileCard component
   - File: keyrx_ui/src/components/ProfileCard.test.tsx
   - Test rendering, interactions, time formatting, actions (activate, delete, export)
   - Achieve ≥80% coverage
