@@ -33,22 +33,22 @@
 
 ## Phase 3: Dashboard UI Components
 
-- [ ] 6. Create DashboardPage component in keyrx_ui/src/pages/DashboardPage.tsx
+- [x] 6. Create DashboardPage component in keyrx_ui/src/pages/DashboardPage.tsx
   - Main dashboard layout with state panel, metrics chart, event timeline
   - Connect to useDaemonWebSocket hook and Zustand store
   - _Prompt: Role: React Developer | Task: Create dashboard page with real-time data display | Restrictions: File ≤400 lines, use hooks for WebSocket and store, show connection status, display all 3 panels | Success: ✅ Layout matches design, ✅ Real-time updates work_
 
-- [ ] 7. Create StateIndicatorPanel component in keyrx_ui/src/components/StateIndicatorPanel.tsx
+- [x] 7. Create StateIndicatorPanel component in keyrx_ui/src/components/StateIndicatorPanel.tsx
   - Display active modifiers/locks/layer as color-coded badges
   - Animate badge changes
   - _Prompt: Role: React UI Developer | Task: Create state indicator with badges | Restrictions: File ≤200 lines, badges color-coded (blue=mod, orange=lock, green=layer), ARIA labels for accessibility | Success: ✅ Badges display correctly, ✅ Animations smooth, ✅ 0 axe violations_
 
-- [ ] 8. Create MetricsChart component in keyrx_ui/src/components/MetricsChart.tsx
+- [x] 8. Create MetricsChart component in keyrx_ui/src/components/MetricsChart.tsx
   - Line chart showing latency over 60-second window
   - Highlight values >5ms in red
   - _Prompt: Role: React Visualization Developer | Task: Create latency metrics chart with recharts | Restrictions: File ≤250 lines, use recharts LineChart, 60-second rolling window, red line when >5ms | Success: ✅ Chart renders, ✅ Data updates in real-time, ✅ Red highlighting works_
 
-- [ ] 9. Create EventTimeline component in keyrx_ui/src/components/EventTimeline.tsx
+- [x] 9. Create EventTimeline component in keyrx_ui/src/components/DashboardEventTimeline.tsx
   - Virtualized list (react-window) of last 100 events
   - Pause/resume functionality
   - Tooltips on hover
