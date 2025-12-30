@@ -852,6 +852,312 @@ scripts/launch.sh --headless
 
 Useful for servers or automated testing.
 
+## Shared Utilities and Patterns
+
+### Frontend Utilities (TypeScript/React)
+
+The following utility modules provide reusable functionality across the frontend:
+
+#### Time Formatting (`keyrx_ui/src/utils/timeFormatting.ts`)
+
+Centralized time formatting functions:
+- `formatTimestampMs(micros: number): string` - Converts microseconds to human-readable format (ms/s)
+- `formatTimestampRelative(timestamp: number): string` - Formats as relative time ("2 hours ago")
+- `formatDuration(durationMs: number): string` - Formats duration in milliseconds
+
+**Usage:**
+```typescript
+import { formatTimestampMs, formatTimestampRelative } from '@/utils/timeFormatting';
+
+const formatted = formatTimestampMs(1234567); // "1.23s"
+const relative = formatTimestampRelative(Date.now() - 3600000); // "1 hour ago"
+```
+
+#### Key Code Mapping (`keyrx_ui/src/utils/keyCodeMapping.ts`)
+
+Key code translation utilities:
+- `formatKeyCode(code: number): string` - Formats numeric key code as string
+- `keyCodeToLabel(code: number): string` - Converts to human-readable label ("A", "Enter")
+- `parseKeyCode(label: string): number | null` - Parses label back to numeric code
+
+**Usage:**
+```typescript
+import { keyCodeToLabel, parseKeyCode } from '@/utils/keyCodeMapping';
+
+const label = keyCodeToLabel(65); // "A"
+const code = parseKeyCode("Enter"); // 13
+```
+
+#### Test Utilities (`keyrx_ui/tests/testUtils.tsx`)
+
+Shared test infrastructure for React components:
+- `renderWithProviders(ui: ReactElement, options?: RenderOptions)` - Wraps components with necessary providers
+- `createMockStore(initialState?: Partial<ConfigState>)` - Creates mock Zustand store
+- `waitForAsync(callback: () => void, timeout?: number)` - Waits for async operations
+
+**Usage:**
+```typescript
+import { renderWithProviders, createMockStore } from '../tests/testUtils';
+
+test('component renders', () => {
+  const mockStore = createMockStore({ layers: [...] });
+  const { getByText } = renderWithProviders(<MyComponent />, { store: mockStore });
+  expect(getByText('Hello')).toBeInTheDocument();
+});
+```
+
+### Backend Utilities (Rust)
+
+#### CLI Common Output (`keyrx_daemon/src/cli/common.rs`)
+
+Standardized CLI output formatting:
+- `output_success<T: Serialize>(data: T, json: bool)` - Outputs successful results
+- `output_error(message: &str, code: u32, json: bool)` - Outputs errors
+- `output_list<T: Serialize>(items: Vec<T>, json: bool)` - Outputs lists
+
+**Usage:**
+```rust
+use crate::cli::common::{output_success, output_error};
+
+// Success response
+output_success(&profile_data, args.json)?;
+
+// Error response
+output_error("Profile not found", 1001, args.json);
+```
+
+### Dependency Injection Patterns
+
+#### API Context (`keyrx_ui/src/contexts/ApiContext.tsx`)
+
+Provides injectable API endpoints for testing:
+- Default URLs configurable via environment variables
+- `useApi()` hook returns `{ apiBaseUrl, wsBaseUrl }`
+
+**Usage:**
+```typescript
+import { useApi } from '@/contexts/ApiContext';
+
+function MyComponent() {
+  const { apiBaseUrl } = useApi();
+
+  async function fetchData() {
+    const res = await fetch(`${apiBaseUrl}/api/profiles`);
+    return res.json();
+  }
+}
+```
+
+**Testing:**
+```typescript
+import { ApiProvider } from '@/contexts/ApiContext';
+
+test('component uses custom API', () => {
+  render(
+    <ApiProvider baseUrl="http://mock-api:3000">
+      <MyComponent />
+    </ApiProvider>
+  );
+});
+```
+
+#### ConfigStorage Abstraction (`keyrx_ui/src/services/ConfigStorage.ts`)
+
+Abstract interface for storage operations:
+- `LocalStorageImpl` - Browser localStorage implementation
+- `MockStorageImpl` - In-memory implementation for testing
+
+**Usage:**
+```typescript
+import { LocalStorageImpl, MockStorageImpl } from '@/services/ConfigStorage';
+
+// Production
+const storage = new LocalStorageImpl();
+await storage.save('config', data);
+
+// Testing
+const mockStorage = new MockStorageImpl();
+render(<ConfigurationPage storage={mockStorage} />);
+```
+
+## Technical Debt Prevention
+
+Based on the technical-debt-remediation spec, follow these guidelines to prevent future technical debt:
+
+### 1. File Size Monitoring
+
+**Rule**: Maximum 500 lines of code (excluding comments/blanks) per file
+
+**Enforcement:**
+- Run `scripts/verify_file_sizes.sh` before committing
+- Script uses `tokei` for accurate line counting
+- Violations documented with refactoring plans
+
+**When approaching limit:**
+1. Extract helper functions to separate modules
+2. Split large enums/structs into submodules
+3. Move handlers to dedicated files
+4. Consider if module has multiple responsibilities (violates SRP)
+
+**Example refactoring:**
+```
+cli/config.rs (730 lines) → Split into:
+  - cli/config.rs (dispatch only, ~100 lines)
+  - cli/config/commands.rs (enum definitions, ~200 lines)
+  - cli/config/handlers.rs (implementations, ~400 lines)
+```
+
+### 2. Extract Shared Utilities Early
+
+**Warning signs of duplication:**
+- Same function copied across 2+ files
+- Similar formatting/conversion logic in multiple places
+- Repeated validation or error handling patterns
+
+**Action:**
+- Extract after second duplication, not third
+- Create utility module with comprehensive tests (≥90% coverage)
+- Update all usage sites to import from utility
+
+**TypeScript utilities location:** `keyrx_ui/src/utils/`
+**Rust utilities location:** `keyrx_daemon/src/cli/common.rs` or crate-specific modules
+
+### 3. Dependency Injection Requirements
+
+**All external dependencies must be injectable:**
+- API endpoints (use context providers)
+- Storage mechanisms (use abstraction interfaces)
+- WebSocket connections (pass as props or context)
+- Platform-specific code (use trait abstractions)
+
+**Benefits:**
+- Enables unit testing without real dependencies
+- Allows mock implementations for tests
+- Improves component isolation and reusability
+
+**Example - Before:**
+```typescript
+// ❌ Hard-coded dependency
+async function fetchProfiles() {
+  return fetch('http://localhost:3030/api/profiles');
+}
+```
+
+**Example - After:**
+```typescript
+// ✅ Injected dependency
+function ProfilesPage({ apiBaseUrl }: Props) {
+  async function fetchProfiles() {
+    return fetch(`${apiBaseUrl}/api/profiles`);
+  }
+}
+```
+
+### 4. Test Coverage Standards
+
+**Minimum requirements:**
+- Overall: ≥80% code coverage
+- Critical paths (keyrx_core): ≥90% coverage
+- New components: Must have unit tests before merge
+
+**Test utilities:**
+- Use `keyrx_ui/tests/testUtils.tsx` for React components
+- Use shared mock implementations (`MockStorageImpl`, etc.)
+- Follow React Testing Library best practices (test behavior, not implementation)
+
+**Coverage measurement:**
+- Rust: `cargo tarpaulin`
+- TypeScript: `npm test -- --coverage`
+
+### 5. Error Handling Standards
+
+**Never use silent catch blocks:**
+```typescript
+// ❌ Bad - error ignored
+try {
+  JSON.parse(message);
+} catch {}
+
+// ✅ Good - error logged
+try {
+  JSON.parse(message);
+} catch (err) {
+  console.debug('Non-JSON message received:', message, err);
+}
+```
+
+**Always propagate errors to UI:**
+```typescript
+// ❌ Bad - user unaware of error
+catch (err) {
+  console.warn('Failed:', err);
+}
+
+// ✅ Good - user sees error
+catch (err) {
+  setError(`Failed to save: ${err.message}`);
+  console.error('Save failed:', err);
+}
+```
+
+### 6. Structured Logging
+
+**All logging must be structured (JSON format):**
+
+**Required fields:**
+- `timestamp` - ISO 8601 format
+- `level` - debug, info, warn, error
+- `service` - Component/module name
+- `event` - Event type (user action, error, state change)
+- `context` - Relevant data as JSON object
+
+**Never log:**
+- Secrets, API keys, passwords
+- Personal identifiable information (PII)
+- Full request/response bodies with sensitive data
+
+**Rust example:**
+```rust
+log::info!(
+    event = "profile_activated",
+    profile = profile_name,
+    timestamp = Utc::now().to_rfc3339()
+);
+```
+
+**TypeScript example:**
+```typescript
+console.info(JSON.stringify({
+  timestamp: new Date().toISOString(),
+  level: 'info',
+  service: 'ProfilesPage',
+  event: 'profile_activated',
+  context: { profileName }
+}));
+```
+
+### 7. Documentation Requirements
+
+**All public APIs must have documentation:**
+
+**Rust (rustdoc):**
+- Module-level comments (`//!`) explaining purpose
+- Function comments (`///`) with examples
+- Document errors with `# Errors` section
+- Include usage examples with `# Examples`
+
+**TypeScript (JSDoc):**
+- Component descriptions with purpose and usage
+- All props documented with `@param` tags
+- Return values with `@returns`
+- Complex components include `@example`
+
+**Run documentation checks:**
+```bash
+cargo doc --no-deps --document-private-items
+npm run typedoc
+```
+
 ## References
 
 - **Script Documentation**: `scripts/CLAUDE.md`
