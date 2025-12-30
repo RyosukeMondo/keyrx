@@ -9,6 +9,8 @@ import { useState, useCallback } from 'react';
 import { ConfigEditor } from './ConfigEditor';
 import { ValidationStatusPanel } from './ValidationStatusPanel';
 import type { ValidationResult, ValidationError, ValidationWarning } from '@/types/validation';
+import type { ConfigStorage } from '@/services/ConfigStorage';
+import { LocalStorageImpl } from '@/services/LocalStorageImpl';
 import './ConfigurationPage.css';
 
 /**
@@ -17,6 +19,8 @@ import './ConfigurationPage.css';
 export interface ConfigurationPageProps {
   /** Initial configuration content to load */
   initialConfig?: string;
+  /** Storage implementation for saving configuration (defaults to LocalStorageImpl for backward compatibility) */
+  storage?: ConfigStorage;
 }
 
 /**
@@ -30,35 +34,43 @@ export interface ConfigurationPageProps {
  */
 export function ConfigurationPage({
   initialConfig = '',
+  storage = new LocalStorageImpl(),
 }: ConfigurationPageProps) {
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [isValidating] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string>('');
 
   /**
    * Handle save configuration.
-   * In a real app, this would POST to an API endpoint.
+   * Uses ConfigStorage abstraction for persistence.
+   * TODO: Replace with actual API call to backend (see GitHub issue for API integration)
    */
   const handleSaveConfig = useCallback(async (content: string) => {
     try {
-      // TODO: Replace with actual API call
       console.log('Saving configuration:', content);
 
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // For now, just save to localStorage as a demo
-      localStorage.setItem('keyrx_config', content);
+      // Save using ConfigStorage abstraction
+      await storage.save('keyrx_config', content);
 
       setSaveStatus('success');
+      setSaveErrorMessage('');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (error) {
       console.error('Failed to save configuration:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setSaveStatus('error');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-      throw error;
+      setSaveErrorMessage(errorMessage);
+      setTimeout(() => {
+        setSaveStatus('idle');
+        setSaveErrorMessage('');
+      }, 5000);
+      // Don't rethrow - error is handled via state
     }
-  }, []);
+  }, [storage]);
 
   /**
    * Handle validation result changes from the editor.
@@ -101,6 +113,7 @@ export function ConfigurationPage({
         {saveStatus === 'error' && (
           <div className="save-notification error">
             ✗ Failed to save configuration
+            {saveErrorMessage && <div className="error-details">{saveErrorMessage}</div>}
           </div>
         )}
       </div>
