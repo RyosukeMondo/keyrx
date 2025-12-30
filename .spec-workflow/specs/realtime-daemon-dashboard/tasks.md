@@ -66,7 +66,7 @@
   - Test message parsing
   - _Prompt: Role: React Test Engineer | Task: Write hook tests with mocked WebSocket | Success: ✅ Auto-reconnect tested, ✅ Parsing verified_
 
-- [ ] 12. Write E2E test for dashboard workflow
+- [x] 12. Write E2E test for dashboard workflow
   - Test dashboard loads → WebSocket connects → events appear
   - _Prompt: Role: QA Automation Engineer | Task: Write E2E test for full dashboard | Success: ✅ Dashboard displays real-time data, ✅ Test passes in CI_
 
