@@ -74,8 +74,14 @@ export function DeviceList({
                 activeTimeoutRef.current = null
               }, 500)
             }
-          } catch {
-            // Ignore non-JSON messages
+          } catch (error) {
+            // Log non-JSON messages for debugging
+            if (import.meta.env.DEV) {
+              console.debug('Received non-JSON WebSocket message:', {
+                message: event.data,
+                error: error instanceof Error ? error.message : String(error)
+              })
+            }
           }
         }
 
@@ -86,7 +92,15 @@ export function DeviceList({
         ws.onerror = () => {
           ws?.close()
         }
-      } catch {
+      } catch (error) {
+        // Log WebSocket connection errors for debugging
+        if (import.meta.env.DEV) {
+          console.debug('WebSocket connection failed, scheduling reconnection:', {
+            wsUrl,
+            reconnectDelay: 5000,
+            error: error instanceof Error ? error.message : String(error)
+          })
+        }
         reconnectTimeout = window.setTimeout(connect, 5000)
       }
     }

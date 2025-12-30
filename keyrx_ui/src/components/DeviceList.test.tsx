@@ -355,6 +355,7 @@ describe('DeviceList', () => {
       });
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
 
       renderWithProviders(<DeviceList />);
 
@@ -365,7 +366,7 @@ describe('DeviceList', () => {
       const ws = MockWebSocket.getLastInstance();
       expect(ws).toBeDefined();
 
-      // Simulate non-JSON message (should be silently ignored - line 77)
+      // Simulate non-JSON message (should be logged but not throw)
       ws!.simulateNonJsonMessage('invalid json {');
 
       // Component should still be functional
@@ -374,7 +375,19 @@ describe('DeviceList', () => {
       // Should not have thrown an error
       expect(consoleErrorSpy).not.toHaveBeenCalled();
 
+      // Should have logged the non-JSON message in dev mode
+      if (import.meta.env.DEV) {
+        expect(consoleDebugSpy).toHaveBeenCalledWith(
+          'Received non-JSON WebSocket message:',
+          expect.objectContaining({
+            message: 'invalid json {',
+            error: expect.any(String)
+          })
+        );
+      }
+
       consoleErrorSpy.mockRestore();
+      consoleDebugSpy.mockRestore();
     });
 
     it('should handle WebSocket messages without device_id', async () => {
@@ -431,6 +444,8 @@ describe('DeviceList', () => {
         json: async () => ({ devices: mockDevices }),
       });
 
+      const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
       renderWithProviders(<DeviceList />);
 
       await waitFor(() => {
@@ -439,13 +454,56 @@ describe('DeviceList', () => {
 
       const firstWs = MockWebSocket.getLastInstance();
 
-      // Simulate error (line 89)
+      // Simulate error
       firstWs!.simulateError();
 
       // Should attempt reconnection
       await waitFor(() => {
         expect(MockWebSocket.instances.length).toBeGreaterThan(1);
       }, { timeout: 6000 });
+
+      consoleDebugSpy.mockRestore();
+    });
+
+    it('should log WebSocket connection failures in dev mode', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ devices: mockDevices }),
+      });
+
+      const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+      // Mock WebSocket to throw an error on construction
+      const OriginalWebSocket = global.WebSocket;
+      global.WebSocket = class ThrowingWebSocket {
+        constructor() {
+          throw new Error('WebSocket connection failed');
+        }
+      } as any;
+
+      renderWithProviders(<DeviceList wsUrl="ws://localhost:9867/ws" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Keyboard 1')).toBeInTheDocument();
+      });
+
+      // Should have logged the connection error in dev mode
+      if (import.meta.env.DEV) {
+        await waitFor(() => {
+          expect(consoleDebugSpy).toHaveBeenCalledWith(
+            'WebSocket connection failed, scheduling reconnection:',
+            expect.objectContaining({
+              wsUrl: 'ws://localhost:9867/ws',
+              reconnectDelay: 5000,
+              error: expect.any(String)
+            })
+          );
+        });
+      }
+
+      // Restore original WebSocket
+      global.WebSocket = OriginalWebSocket;
+      consoleDebugSpy.mockRestore();
     });
 
     it('should clear active device timeout on multiple updates', async () => {
