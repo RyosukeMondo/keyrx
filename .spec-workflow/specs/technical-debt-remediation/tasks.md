@@ -2,7 +2,7 @@
 
 ## Phase 1: Utility Extraction (Foundation)
 
-- [-] 1. Extract time formatting utilities to shared module
+- [x] 1. Extract time formatting utilities to shared module
   - File: keyrx_ui/src/utils/timeFormatting.ts
   - Extract formatTimestampMs, formatTimestampRelative, formatDuration from ProfileCard.tsx, MacroRecorderPage.tsx, EventTimeline.tsx
   - Create comprehensive unit tests with edge cases
