@@ -9,6 +9,7 @@ import { useDaemonWebSocket } from '../hooks/useDaemonWebSocket';
 import { useDashboardStore } from '../store/dashboardStore';
 import { StateIndicatorPanel } from './StateIndicatorPanel';
 import { MetricsChart } from './MetricsChart';
+import { DashboardEventTimeline } from './DashboardEventTimeline';
 import './DashboardPage.css';
 
 /**
@@ -74,42 +75,10 @@ export function DashboardPage() {
 
           {/* Event timeline - middle right */}
           <div className="panel events-panel">
-            <h2>Event Timeline</h2>
-            <div className="panel-content">
-              <EventTimeline />
-            </div>
+            <DashboardEventTimeline height={500} />
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-/**
- * Placeholder for EventTimeline component
- * Will be replaced with actual implementation in task 9
- */
-function EventTimeline() {
-  const events = useDashboardStore((state) => state.events);
-
-  return (
-    <div className="event-timeline-placeholder">
-      {events.length === 0 ? (
-        <div className="empty-state">No events yet</div>
-      ) : (
-        <div className="event-list">
-          {events.slice().reverse().map((event, idx) => (
-            <div key={`${event.timestamp}-${idx}`} className="event-item">
-              <span className="event-time">
-                {new Date(event.timestamp / 1000).toLocaleTimeString()}
-              </span>
-              <span className="event-type">{event.eventType}</span>
-              <span className="event-key">{event.input} → {event.output}</span>
-              <span className="event-latency">{(event.latency / 1000).toFixed(2)}ms</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
