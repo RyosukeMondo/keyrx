@@ -3,6 +3,7 @@
 //! This module implements the `keyrx layers` command and all its subcommands
 //! for managing configuration layers in Rhai profiles.
 
+use crate::cli::logging;
 use crate::config::profile_manager::ProfileManager;
 use crate::config::rhai_generator::{LayerMode, RhaiGenerator};
 use clap::{Args, Subcommand};
@@ -210,9 +211,16 @@ fn handle_create(
 
     let mut gen = RhaiGenerator::load(&profile_path)?;
 
+    logging::log_command_start(
+        "layers create",
+        &format!("{} in {}", layer_id, profile_name),
+    );
+
     match gen.add_layer(layer_id, name, mode) {
         Ok(()) => {
             gen.save(&profile_path)?;
+            logging::log_layer_operation(&profile_name, "create", layer_id);
+            logging::log_command_success("layers create", 0);
 
             if json {
                 let output = LayerCreateOutput {
@@ -229,6 +237,7 @@ fn handle_create(
             Ok(())
         }
         Err(e) => {
+            logging::log_command_error("layers create", &e.to_string());
             if json {
                 let output = LayerCreateOutput {
                     success: false,

@@ -3,6 +3,7 @@
 //! This module implements the `keyrx devices` command and all its subcommands
 //! for managing device metadata, including renaming, scope settings, and layout assignment.
 
+use crate::cli::logging;
 use crate::config::device_registry::{DeviceEntry, DeviceRegistry, DeviceScope, RegistryError};
 use clap::{Args, Subcommand};
 use serde::Serialize;
@@ -187,9 +188,15 @@ fn handle_rename(
     new_name: &str,
     json: bool,
 ) -> Result<(), i32> {
+    logging::log_command_start("devices rename", &format!("{} -> {}", device_id, new_name));
+
     match registry.rename(device_id, new_name) {
         Ok(()) => {
             if let Err(e) = registry.save() {
+                logging::log_command_error(
+                    "devices rename",
+                    &format!("Device renamed but failed to save: {}", e),
+                );
                 output_error(
                     &format!("Device renamed but failed to save: {}", e),
                     3001,
@@ -197,6 +204,9 @@ fn handle_rename(
                 );
                 return Err(1);
             }
+
+            logging::log_device_operation("rename", device_id);
+            logging::log_command_success("devices rename", 0);
 
             if json {
                 let output = SuccessOutput {
@@ -210,6 +220,10 @@ fn handle_rename(
             Ok(())
         }
         Err(RegistryError::DeviceNotFound(id)) => {
+            logging::log_command_error(
+                "devices rename",
+                &format!("Device '{}' not found in registry", id),
+            );
             output_error(
                 &format!("Device '{}' not found in registry", id),
                 1001,
@@ -218,10 +232,15 @@ fn handle_rename(
             Err(1)
         }
         Err(RegistryError::InvalidName(msg)) => {
+            logging::log_command_error("devices rename", &format!("Invalid name: {}", msg));
             output_error(&format!("Invalid name: {}", msg), 1006, json);
             Err(1)
         }
         Err(e) => {
+            logging::log_command_error(
+                "devices rename",
+                &format!("Failed to rename device: {}", e),
+            );
             output_error(&format!("Failed to rename device: {}", e), 3001, json);
             Err(1)
         }

@@ -4,6 +4,7 @@
 //! for managing key mappings, validating configurations, and inspecting
 //! compiled .krx files.
 
+use crate::cli::logging;
 use crate::config::profile_manager::ProfileManager;
 use crate::config::rhai_generator::{KeyAction, MacroStep, RhaiGenerator};
 use clap::{Args, Subcommand};
@@ -266,10 +267,19 @@ fn handle_set_key(
     profile: Option<String>,
     json: bool,
 ) -> Result<(), i32> {
+    logging::log_command_start(
+        "config set-key",
+        &format!("{} -> {} (layer: {})", key, target, layer),
+    );
+
     let profile_name = get_profile_name(manager, profile)?;
     let profile_meta = match manager.get(&profile_name) {
         Some(meta) => meta,
         None => {
+            logging::log_command_error(
+                "config set-key",
+                &format!("Profile not found: {}", profile_name),
+            );
             output_error(&format!("Profile not found: {}", profile_name), 1001, json);
             return Err(1);
         }
@@ -279,6 +289,7 @@ fn handle_set_key(
     let mut gen = match RhaiGenerator::load(&profile_meta.rhai_path) {
         Ok(g) => g,
         Err(e) => {
+            logging::log_command_error("config set-key", &format!("Failed to load profile: {}", e));
             output_error(&format!("Failed to load profile: {}", e), 1, json);
             return Err(1);
         }
@@ -290,9 +301,12 @@ fn handle_set_key(
     };
 
     if let Err(e) = gen.set_key_mapping(&layer, &key, action) {
+        logging::log_command_error("config set-key", &format!("Failed to set mapping: {}", e));
         output_error(&format!("Failed to set mapping: {}", e), 1, json);
         return Err(1);
     }
+
+    logging::log_config_change(&profile_name, "set_key", &key, &layer);
 
     // Save the file
     if let Err(e) = gen.save(&profile_meta.rhai_path) {
@@ -307,6 +321,8 @@ fn handle_set_key(
         return Err(1);
     }
     let compile_time = compile_start.elapsed().as_millis() as u64;
+
+    logging::log_command_success("config set-key", compile_time);
 
     if json {
         let output = SetKeyOutput {
@@ -606,6 +622,7 @@ fn handle_validate(
     };
 
     // Attempt dry-run compilation
+    logging::log_command_start("config validate", &profile_name);
     let temp_output = profile_meta.krx_path.with_extension("tmp.krx");
     let result = keyrx_compiler::compile_file(&profile_meta.rhai_path, &temp_output);
 
@@ -614,6 +631,8 @@ fn handle_validate(
 
     match result {
         Ok(_) => {
+            logging::log_config_validate(&profile_name, true, None);
+            logging::log_command_success("config validate", 0);
             if json {
                 let output = ValidationOutput {
                     success: true,
@@ -628,6 +647,8 @@ fn handle_validate(
         }
         Err(e) => {
             let error_msg = format!("{}", e);
+            logging::log_config_validate(&profile_name, false, Some(&error_msg));
+            logging::log_command_error("config validate", &error_msg);
             if json {
                 let output = ValidationOutput {
                     success: false,

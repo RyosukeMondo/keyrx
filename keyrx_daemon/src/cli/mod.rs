@@ -10,6 +10,7 @@ pub mod config_helpers;
 pub mod devices;
 pub mod layers;
 pub mod layouts;
+pub mod logging;
 pub mod metrics;
 pub mod profiles;
 pub mod simulate;

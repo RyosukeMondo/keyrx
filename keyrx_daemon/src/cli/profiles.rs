@@ -5,6 +5,7 @@
 //! deletion, duplication, import, and export.
 
 use crate::cli::common::output_error;
+use crate::cli::logging;
 use crate::config::profile_manager::{
     ProfileError, ProfileManager, ProfileMetadata, ProfileTemplate,
 };
@@ -232,8 +233,13 @@ fn handle_create(
     template: ProfileTemplate,
     json: bool,
 ) -> Result<(), i32> {
+    logging::log_command_start("profiles create", name);
+
     match manager.create(name, template) {
         Ok(metadata) => {
+            logging::log_profile_create(name, metadata.layer_count);
+            logging::log_command_success("profiles create", 0);
+
             if json {
                 let output = ProfileCreatedOutput {
                     success: true,
@@ -256,18 +262,28 @@ fn handle_create(
             Ok(())
         }
         Err(ProfileError::InvalidName(msg)) => {
+            logging::log_command_error("profiles create", &format!("Invalid name: {}", msg));
             output_error(&format!("Invalid name: {}", msg), 1006, json);
             Err(1)
         }
         Err(ProfileError::ProfileLimitExceeded) => {
+            logging::log_command_error("profiles create", "Profile limit exceeded (max 100)");
             output_error("Profile limit exceeded (max 100)", 1014, json);
             Err(1)
         }
         Err(ProfileError::AlreadyExists(name)) => {
+            logging::log_command_error(
+                "profiles create",
+                &format!("Profile '{}' already exists", name),
+            );
             output_error(&format!("Profile '{}' already exists", name), 1015, json);
             Err(1)
         }
         Err(e) => {
+            logging::log_command_error(
+                "profiles create",
+                &format!("Failed to create profile: {}", e),
+            );
             output_error(&format!("Failed to create profile: {}", e), 3001, json);
             Err(1)
         }
@@ -276,8 +292,24 @@ fn handle_create(
 
 /// Handle the `activate` subcommand.
 fn handle_activate(manager: &mut ProfileManager, name: &str, json: bool) -> Result<(), i32> {
+    logging::log_command_start("profiles activate", name);
+
     match manager.activate(name) {
         Ok(result) => {
+            logging::log_profile_activate(name, result.success);
+            if result.success {
+                logging::log_command_success(
+                    "profiles activate",
+                    result.compile_time_ms + result.reload_time_ms,
+                );
+            } else {
+                let error_msg = result
+                    .error
+                    .as_deref()
+                    .unwrap_or("Unknown activation error");
+                logging::log_command_error("profiles activate", error_msg);
+            }
+
             if json {
                 let output = ActivationOutput {
                     success: result.success,
@@ -310,14 +342,23 @@ fn handle_activate(manager: &mut ProfileManager, name: &str, json: bool) -> Resu
             }
         }
         Err(ProfileError::NotFound(name)) => {
+            logging::log_command_error(
+                "profiles activate",
+                &format!("Profile '{}' not found", name),
+            );
             output_error(&format!("Profile '{}' not found", name), 1001, json);
             Err(1)
         }
         Err(ProfileError::Compilation(e)) => {
+            logging::log_command_error("profiles activate", &format!("Compilation error: {}", e));
             output_error(&format!("Compilation error: {}", e), 2004, json);
             Err(1)
         }
         Err(e) => {
+            logging::log_command_error(
+                "profiles activate",
+                &format!("Failed to activate profile: {}", e),
+            );
             output_error(&format!("Failed to activate profile: {}", e), 2001, json);
             Err(1)
         }
@@ -346,8 +387,13 @@ fn handle_delete(
         }
     }
 
+    logging::log_command_start("profiles delete", name);
+
     match manager.delete(name) {
         Ok(()) => {
+            logging::log_profile_delete(name);
+            logging::log_command_success("profiles delete", 0);
+
             if json {
                 let output = SuccessOutput {
                     success: true,
@@ -360,10 +406,15 @@ fn handle_delete(
             Ok(())
         }
         Err(ProfileError::NotFound(name)) => {
+            logging::log_command_error("profiles delete", &format!("Profile '{}' not found", name));
             output_error(&format!("Profile '{}' not found", name), 1001, json);
             Err(1)
         }
         Err(e) => {
+            logging::log_command_error(
+                "profiles delete",
+                &format!("Failed to delete profile: {}", e),
+            );
             output_error(&format!("Failed to delete profile: {}", e), 3001, json);
             Err(1)
         }
