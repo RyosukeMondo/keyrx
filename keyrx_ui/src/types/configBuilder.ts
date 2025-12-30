@@ -84,6 +84,8 @@ export interface ConfigState {
   currentLayerId?: string;
   /** Whether the config has unsaved changes (UI state) */
   isDirty?: boolean;
+  /** Current error message (UI state) */
+  lastError?: string | null;
 }
 
 /**

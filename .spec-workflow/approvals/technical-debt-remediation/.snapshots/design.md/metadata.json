@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/technical-debt-remediation/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-30T01:31:17.986Z",
+      "trigger": "initial",
+      "approvalId": "approval_1767058277972_6r9uiddvj",
+      "approvalTitle": "Design Document - Technical Debt Remediation"
+    }
+  ]
+}

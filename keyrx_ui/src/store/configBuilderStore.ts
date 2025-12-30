@@ -46,6 +46,10 @@ interface ConfigBuilderActions {
   resetConfig: () => void;
   markDirty: () => void;
   markClean: () => void;
+
+  // Error management
+  setError: (error: string | null) => void;
+  clearError: () => void;
 }
 
 /**
@@ -76,6 +80,7 @@ const createInitialState = (): ConfigState => ({
   locks: [],
   currentLayerId: 'base',
   isDirty: false,
+  lastError: null,
 });
 
 /**
@@ -108,7 +113,10 @@ export const useConfigBuilderStore = create<ConfigBuilderStore>((set) => ({
       const layer = state.layers.find((l) => l.id === layerId);
       if (layer?.isBase) {
         console.warn('Cannot remove base layer');
-        return state;
+        return {
+          ...state,
+          lastError: 'Cannot remove the base layer',
+        };
       }
 
       const newLayers = state.layers.filter((l) => l.id !== layerId);
@@ -121,6 +129,7 @@ export const useConfigBuilderStore = create<ConfigBuilderStore>((set) => ({
         layers: newLayers,
         currentLayerId: newCurrentLayerId,
         isDirty: true,
+        lastError: null,
       };
     }),
 
@@ -287,5 +296,16 @@ export const useConfigBuilderStore = create<ConfigBuilderStore>((set) => ({
   markClean: () =>
     set(() => ({
       isDirty: false,
+    })),
+
+  // Error management
+  setError: (error) =>
+    set(() => ({
+      lastError: error,
+    })),
+
+  clearError: () =>
+    set(() => ({
+      lastError: null,
     })),
 }));

@@ -10,6 +10,7 @@ import { VirtualKeyboard } from './VirtualKeyboard';
 import { LayerPanel } from './LayerPanel';
 import { ModifierPanel } from './ModifierPanel';
 import { CodePreview } from './CodePreview';
+import { ErrorToast } from './ErrorToast';
 import { useConfigBuilderStore } from '@/store/configBuilderStore';
 import { parseRhaiConfig } from '@/utils/rhaiParser';
 import { generateRhaiConfig } from '@/utils/rhaiGenerator';
@@ -28,7 +29,7 @@ import './VisualBuilderPage.css';
  */
 export function VisualBuilderPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { config, setConfig } = useConfigBuilderStore();
+  const { config, setConfig, setError } = useConfigBuilderStore();
 
   /**
    * Handle import Rhai file
@@ -55,7 +56,8 @@ export function VisualBuilderPage() {
       }
     } catch (error) {
       console.error('Failed to import configuration:', error);
-      alert(`Failed to import configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Failed to import configuration: ${errorMessage}`);
     }
   };
 
@@ -77,7 +79,8 @@ export function VisualBuilderPage() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to export configuration:', error);
-      alert(`Failed to export configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Failed to export configuration: ${errorMessage}`);
     }
   };
 
@@ -105,6 +108,9 @@ export function VisualBuilderPage() {
 
   return (
     <div className="visual-builder-page">
+      {/* Error Toast */}
+      <ErrorToast />
+
       {/* Hidden file input for import */}
       <input
         ref={fileInputRef}
