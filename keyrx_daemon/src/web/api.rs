@@ -24,7 +24,7 @@ use serde_json::{json, Value};
 use crate::config::{
     device_registry::{DeviceRegistry, DeviceScope},
     layout_manager::LayoutManager,
-    profile_manager::{ProfileManager, ProfileTemplate},
+    profile_manager::{ProfileError, ProfileManager, ProfileTemplate},
     rhai_generator::{GeneratorError, KeyAction, RhaiGenerator},
     simulation_engine::{BuiltinScenario, EventSequence, SimulatedEvent},
 };
@@ -102,6 +102,7 @@ pub fn create_router() -> Router {
         .route("/profiles/:name/activate", post(activate_profile))
         .route("/profiles/:name", delete(delete_profile))
         .route("/profiles/:name/duplicate", post(duplicate_profile))
+        .route("/profiles/:name/rename", put(rename_profile))
         // Configuration
         .route("/config", get(get_config).put(update_config))
         .route("/config/key-mappings", post(set_key_mapping))
@@ -461,6 +462,43 @@ async fn duplicate_profile(
         "profile": {
             "name": metadata.name,
             "rhai_path": metadata.rhai_path.display().to_string(),
+        }
+    })))
+}
+
+/// PUT /api/profiles/:name/rename - Rename profile
+#[derive(Deserialize)]
+struct RenameProfileRequest {
+    new_name: String,
+}
+
+async fn rename_profile(
+    Path(name): Path<String>,
+    Json(payload): Json<RenameProfileRequest>,
+) -> Result<Json<Value>, ApiError> {
+    let config_dir = get_config_dir()?;
+    let mut pm =
+        ProfileManager::new(config_dir).map_err(|e| ApiError::InternalError(e.to_string()))?;
+
+    // Scan profiles to ensure the profile list is up to date
+    pm.scan_profiles()
+        .map_err(|e| ApiError::InternalError(e.to_string()))?;
+
+    let metadata = pm.rename(&name, &payload.new_name).map_err(|e| match e {
+        ProfileError::NotFound(_) => ApiError::NotFound(format!("Profile '{}' not found", name)),
+        ProfileError::AlreadyExists(_) => {
+            ApiError::BadRequest(format!("Profile '{}' already exists", payload.new_name))
+        }
+        ProfileError::InvalidName(_) => ApiError::BadRequest(e.to_string()),
+        _ => ApiError::InternalError(e.to_string()),
+    })?;
+
+    Ok(Json(json!({
+        "success": true,
+        "profile": {
+            "name": metadata.name,
+            "rhai_path": metadata.rhai_path.display().to_string(),
+            "krx_path": metadata.krx_path.display().to_string(),
         }
     })))
 }

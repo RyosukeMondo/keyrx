@@ -397,6 +397,71 @@ layer("lower", #{
         Ok(metadata)
     }
 
+    /// Rename a profile.
+    ///
+    /// # Arguments
+    /// * `old_name` - Current name of the profile
+    /// * `new_name` - New name for the profile
+    ///
+    /// # Errors
+    /// * `ProfileError::NotFound` - If the profile doesn't exist
+    /// * `ProfileError::InvalidName` - If the new name is invalid
+    /// * `ProfileError::AlreadyExists` - If a profile with the new name already exists
+    /// * `ProfileError::IoError` - If file operations fail
+    pub fn rename(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+    ) -> Result<ProfileMetadata, ProfileError> {
+        // Validate new name
+        Self::validate_name(new_name)?;
+
+        // Check if source profile exists
+        let old_profile = self
+            .profiles
+            .get(old_name)
+            .ok_or_else(|| ProfileError::NotFound(old_name.to_string()))?
+            .clone();
+
+        // Check if destination already exists
+        let new_rhai = self
+            .config_dir
+            .join("profiles")
+            .join(format!("{}.rhai", new_name));
+        if new_rhai.exists() {
+            return Err(ProfileError::AlreadyExists(new_name.to_string()));
+        }
+
+        // Rename both .rhai and .krx files
+        let new_krx = self
+            .config_dir
+            .join("profiles")
+            .join(format!("{}.krx", new_name));
+
+        fs::rename(&old_profile.rhai_path, &new_rhai)?;
+
+        // Only rename .krx if it exists (might not exist if profile was never activated)
+        if old_profile.krx_path.exists() {
+            fs::rename(&old_profile.krx_path, &new_krx)?;
+        }
+
+        // Update active profile reference if renaming the active profile
+        {
+            let mut active = self.active_profile.write().unwrap();
+            if active.as_ref() == Some(&old_name.to_string()) {
+                *active = Some(new_name.to_string());
+            }
+        }
+
+        // Remove old entry and add new entry
+        self.profiles.remove(old_name);
+        let new_metadata = self.load_profile_metadata(new_name)?;
+        self.profiles
+            .insert(new_name.to_string(), new_metadata.clone());
+
+        Ok(new_metadata)
+    }
+
     /// Export a profile to a file.
     pub fn export(&self, name: &str, dest: &Path) -> Result<(), ProfileError> {
         let profile = self
