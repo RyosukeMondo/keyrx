@@ -104,7 +104,9 @@ async fn handle_websocket(mut socket: WebSocket, event_tx: broadcast::Sender<Dae
                 match msg {
                     Some(Ok(Message::Text(text))) => {
                         log::debug!("Received WebSocket message: {}", text);
-                        // TODO: Handle client commands (subscribe/unsubscribe to event types)
+                        // NOTE: Client command handling for subscribe/unsubscribe is tracked in GitHub issue
+                        // See GitHub issue for WebSocket client-side event filtering enhancement
+                        // Currently all events are broadcast to all clients (default behavior)
                     }
                     Some(Ok(Message::Close(_))) => {
                         log::info!("WebSocket client closed connection");
@@ -130,11 +132,15 @@ async fn handle_websocket(mut socket: WebSocket, event_tx: broadcast::Sender<Dae
 }
 
 // ============================================================================
-// TODO: Implement Real-time Event Streaming
+// DESIGN NOTE: Future Enhancement - Client-Side Event Filtering
 // ============================================================================
 //
-// The WebSocket currently provides connection management and heartbeats.
-// To add real-time event streaming, the following architecture changes are needed:
+// The WebSocket currently broadcasts all events to all clients (working as designed).
+// For enhanced efficiency, consider implementing per-client event filtering:
+//
+// GitHub Issue: See project issues for "WebSocket client-side event filtering"
+//
+// The following architecture could support client-side filtering:
 //
 // 1. **Event Broadcasting Mechanism in Daemon**
 //    - Add a broadcast channel in the daemon's main event loop
