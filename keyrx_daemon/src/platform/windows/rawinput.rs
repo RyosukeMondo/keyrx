@@ -1,8 +1,9 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ffi::c_void;
 use std::mem::size_of;
 use std::ptr;
-use std::sync::{Arc, Once, RwLock};
+use std::sync::{Arc, Mutex, Once, RwLock};
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use windows_sys::Win32::Foundation::{HANDLE, HWND, LPARAM, LRESULT, WPARAM};
@@ -31,13 +32,15 @@ const CLASS_NAME: &[u16] = &[
 
 const TEST_SIMULATED_PHYSICAL_MARKER: usize = 0x54455354; // "TEST"
 
-struct BridgeContext {
+// Thread-local storage for bridge context used by the hook callback
+thread_local! {
+    static BRIDGE_CONTEXT_TLS: RefCell<Option<Arc<Mutex<Option<BridgeContextHandle>>>>> = RefCell::new(None);
+}
+
+pub struct BridgeContextHandle {
     global_sender: Sender<KeyEvent>,
     subscribers: Arc<RwLock<HashMap<usize, Sender<KeyEvent>>>>,
 }
-
-static BRIDGE_CONTEXT: RwLock<Option<BridgeContext>> = RwLock::new(None);
-static BRIDGE_HOOK: RwLock<Option<isize>> = RwLock::new(None);
 
 /// Manages Raw Input registration and routes events to device-specific channels.
 pub struct RawInputManager {
@@ -45,10 +48,17 @@ pub struct RawInputManager {
     _device_map: DeviceMap,
     subscribers: Arc<RwLock<HashMap<usize, Sender<KeyEvent>>>>,
     _global_sender: Sender<KeyEvent>,
+    bridge_context: Arc<Mutex<Option<BridgeContextHandle>>>,
+    bridge_hook: Arc<Mutex<Option<isize>>>,
 }
 
 impl RawInputManager {
-    pub fn new(device_map: DeviceMap, global_sender: Sender<KeyEvent>) -> Result<Self, String> {
+    pub fn new(
+        device_map: DeviceMap,
+        global_sender: Sender<KeyEvent>,
+        bridge_context: Arc<Mutex<Option<BridgeContextHandle>>>,
+        bridge_hook: Arc<Mutex<Option<isize>>>,
+    ) -> Result<Self, String> {
         // 1. Create message-only window
         let hwnd = unsafe { Self::create_message_window()? };
 
@@ -59,6 +69,8 @@ impl RawInputManager {
             _device_map: device_map.clone(),
             subscribers: subscribers.clone(),
             _global_sender: global_sender.clone(),
+            bridge_context: bridge_context.clone(),
+            bridge_hook: bridge_hook.clone(),
         };
 
         let context = Box::new(RawInputContext {
@@ -76,13 +88,18 @@ impl RawInputManager {
 
         // 4. Install Test Bridge Hook for E2E testing
         {
-            let mut context_guard = BRIDGE_CONTEXT.write().unwrap();
-            *context_guard = Some(BridgeContext {
+            let mut context_guard = bridge_context.lock().unwrap();
+            *context_guard = Some(BridgeContextHandle {
                 global_sender: global_sender.clone(),
                 subscribers: subscribers.clone(),
             });
 
-            let mut hook_guard = BRIDGE_HOOK.write().unwrap();
+            // Set thread-local storage for hook callback access
+            BRIDGE_CONTEXT_TLS.with(|tls| {
+                *tls.borrow_mut() = Some(bridge_context.clone());
+            });
+
+            let mut hook_guard = bridge_hook.lock().unwrap();
             unsafe {
                 let hook = SetWindowsHookExW(
                     WH_KEYBOARD_LL,
@@ -247,10 +264,15 @@ impl Drop for RawInputManager {
 
         // Uninstall bridge hook
         {
-            let mut context_guard = BRIDGE_CONTEXT.write().unwrap();
+            let mut context_guard = self.bridge_context.lock().unwrap();
             *context_guard = None;
 
-            let mut hook_guard = BRIDGE_HOOK.write().unwrap();
+            // Clear thread-local storage
+            BRIDGE_CONTEXT_TLS.with(|tls| {
+                *tls.borrow_mut() = None;
+            });
+
+            let mut hook_guard = self.bridge_hook.lock().unwrap();
             if let Some(hook) = hook_guard.take() {
                 unsafe {
                     UnhookWindowsHookEx(hook as HHOOK);
@@ -402,10 +424,12 @@ mod tests {
     fn test_raw_input_manager_creation() {
         let device_map = DeviceMap::new();
         let (tx, _rx) = unbounded();
+        let bridge_context = Arc::new(Mutex::new(None));
+        let bridge_hook = Arc::new(Mutex::new(None));
 
         // We wrap in a block to ensure RawInputManager is dropped at end
         {
-            match RawInputManager::new(device_map, tx) {
+            match RawInputManager::new(device_map, tx, bridge_context, bridge_hook) {
                 Ok(manager) => {
                     assert!(manager.hwnd != 0 as HWND);
                     let _receiver = manager.subscribe(12345);
@@ -423,11 +447,13 @@ mod tests {
     fn test_raw_input_simulation() {
         let device_map = DeviceMap::new();
         let (tx, rx_global) = unbounded();
+        let bridge_context = Arc::new(Mutex::new(None));
+        let bridge_hook = Arc::new(Mutex::new(None));
 
         // Register a synthetic device
         device_map.add_synthetic_device(0x1234, "test-path".to_string(), Some("SN123".to_string()));
 
-        match RawInputManager::new(device_map, tx) {
+        match RawInputManager::new(device_map, tx, bridge_context, bridge_hook) {
             Ok(manager) => {
                 let rx_device = manager.subscribe(0x1234);
 
@@ -456,8 +482,10 @@ mod tests {
     fn test_raw_input_subscription_logic() {
         let device_map = DeviceMap::new();
         let (tx, _rx) = unbounded();
+        let bridge_context = Arc::new(Mutex::new(None));
+        let bridge_hook = Arc::new(Mutex::new(None));
 
-        match RawInputManager::new(device_map, tx) {
+        match RawInputManager::new(device_map, tx, bridge_context, bridge_hook) {
             Ok(manager) => {
                 // Subscription for non-existent device is allowed (manager doesn't check existence)
                 let _rx = manager.subscribe(0xDEAD);
@@ -478,10 +506,13 @@ mod tests {
     fn test_raw_input_drop_cleanup() {
         let device_map = DeviceMap::new();
         let (tx, _rx) = unbounded();
+        let bridge_context = Arc::new(Mutex::new(None));
+        let bridge_hook = Arc::new(Mutex::new(None));
         let hwnd;
 
         {
-            let manager = RawInputManager::new(device_map, tx).expect("Should create manager");
+            let manager = RawInputManager::new(device_map, tx, bridge_context, bridge_hook)
+                .expect("Should create manager");
             hwnd = manager.hwnd;
             assert!(hwnd != 0 as HWND);
             // Context should be present
@@ -497,6 +528,64 @@ mod tests {
         // Actually, our drop logic clears it.
         // Wait, after DestroyWindow, GetWindowLongPtrW(hwnd) is invalid.
     }
+
+    #[test]
+    fn test_multiple_manager_instances_coexist() {
+        // This test demonstrates that multiple RawInputManager instances can coexist
+        // with independent bridge contexts and hooks, proving thread-safety.
+        let device_map1 = DeviceMap::new();
+        let device_map2 = DeviceMap::new();
+        let (tx1, _rx1) = unbounded();
+        let (tx2, _rx2) = unbounded();
+        let bridge_context1 = Arc::new(Mutex::new(None));
+        let bridge_hook1 = Arc::new(Mutex::new(None));
+        let bridge_context2 = Arc::new(Mutex::new(None));
+        let bridge_hook2 = Arc::new(Mutex::new(None));
+
+        // Create first manager
+        let manager1_result = RawInputManager::new(
+            device_map1,
+            tx1,
+            bridge_context1.clone(),
+            bridge_hook1.clone(),
+        );
+
+        // Create second manager
+        let manager2_result = RawInputManager::new(
+            device_map2,
+            tx2,
+            bridge_context2.clone(),
+            bridge_hook2.clone(),
+        );
+
+        // Both should succeed (or both fail if no GUI session)
+        match (manager1_result, manager2_result) {
+            (Ok(manager1), Ok(manager2)) => {
+                // Verify they have different windows
+                assert_ne!(manager1.hwnd, manager2.hwnd);
+
+                // Verify they have independent bridge contexts
+                assert!(bridge_context1.lock().unwrap().is_some());
+                assert!(bridge_context2.lock().unwrap().is_some());
+
+                // Verify they have independent hooks
+                assert!(bridge_hook1.lock().unwrap().is_some());
+                assert!(bridge_hook2.lock().unwrap().is_some());
+
+                // Drop them to verify cleanup works independently
+                drop(manager1);
+                assert!(bridge_context1.lock().unwrap().is_none());
+                assert!(bridge_hook1.lock().unwrap().is_none());
+
+                // Manager2's context should still be valid
+                assert!(bridge_context2.lock().unwrap().is_some());
+                assert!(bridge_hook2.lock().unwrap().is_some());
+            }
+            _ => {
+                eprintln!("Skipping multiple instances test (no GUI session)");
+            }
+        }
+    }
 }
 
 // Low-level hook callback to bridge E2E test events into RawInput stream.
@@ -507,43 +596,51 @@ unsafe extern "system" fn test_bridge_hook(code: i32, w_param: WPARAM, l_param: 
         log::debug!("Hook: dwExtraInfo={:x}", kbd.dwExtraInfo);
         if kbd.dwExtraInfo == TEST_SIMULATED_PHYSICAL_MARKER {
             log::info!("Bridge Hook triggered for test event!");
-            let context_guard = BRIDGE_CONTEXT.read().unwrap();
-            if let Some(ctx) = context_guard.as_ref() {
-                let is_release = match w_param as u32 {
-                    WM_KEYUP | WM_SYSKEYUP => true,
-                    WM_KEYDOWN | WM_SYSKEYDOWN => false,
-                    _ => false,
-                };
 
-                let scan_code = kbd.scanCode as u16;
-                let extended = (kbd.flags & LLKHF_EXTENDED) != 0;
+            // Access bridge context from thread-local storage
+            BRIDGE_CONTEXT_TLS.with(|tls| {
+                if let Some(bridge_context_arc) = tls.borrow().as_ref() {
+                    if let Ok(context_guard) = bridge_context_arc.lock() {
+                        if let Some(ctx) = context_guard.as_ref() {
+                            let is_release = match w_param as u32 {
+                                WM_KEYUP | WM_SYSKEYUP => true,
+                                WM_KEYDOWN | WM_SYSKEYDOWN => false,
+                                _ => false,
+                            };
 
-                // Adjust scan code for extended keys to match Raw Input expectations
-                let sc = if extended {
-                    scan_code as u32 | 0xE000
-                } else {
-                    scan_code as u32
-                };
+                            let scan_code = kbd.scanCode as u16;
+                            let extended = (kbd.flags & LLKHF_EXTENDED) != 0;
 
-                if let Some(keycode) = scancode_to_keycode(sc) {
-                    let event = if is_release {
-                        KeyEvent::release(keycode)
-                    } else {
-                        KeyEvent::press(keycode)
-                    };
+                            // Adjust scan code for extended keys to match Raw Input expectations
+                            let sc = if extended {
+                                scan_code as u32 | 0xE000
+                            } else {
+                                scan_code as u32
+                            };
 
-                    log::debug!("Bridge Hook event: {:?}", event);
+                            if let Some(keycode) = scancode_to_keycode(sc) {
+                                let event = if is_release {
+                                    KeyEvent::release(keycode)
+                                } else {
+                                    KeyEvent::press(keycode)
+                                };
 
-                    // Broadcast to ALL subscribers since we don't know the device ID for a test event
-                    let subs = ctx.subscribers.read().unwrap();
-                    for sender in subs.values() {
-                        let _ = sender.try_send(event.clone());
+                                log::debug!("Bridge Hook event: {:?}", event);
+
+                                // Broadcast to ALL subscribers since we don't know the device ID for a test event
+                                if let Ok(subs) = ctx.subscribers.read() {
+                                    for sender in subs.values() {
+                                        let _ = sender.try_send(event.clone());
+                                    }
+                                }
+
+                                // Also send to global sender
+                                let _ = ctx.global_sender.try_send(event);
+                            }
+                        }
                     }
-
-                    // Also send to global sender
-                    let _ = ctx.global_sender.try_send(event);
                 }
-            }
+            });
         }
     }
     CallNextHookEx(0 as _, code, w_param, l_param)

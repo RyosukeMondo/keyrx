@@ -98,7 +98,7 @@
 
 ---
 
-- [ ] 3. Remove Windows global BRIDGE_CONTEXT and BRIDGE_HOOK state
+- [x] 3. Remove Windows global BRIDGE_CONTEXT and BRIDGE_HOOK state
   - Files: keyrx_daemon/src/platform/windows/rawinput.rs, keyrx_daemon/src/platform/windows/mod.rs
   - Purpose: Eliminate global static state with RwLock to enable testability and prevent thread synchronization overhead
   - Requirements: FR2, FR5

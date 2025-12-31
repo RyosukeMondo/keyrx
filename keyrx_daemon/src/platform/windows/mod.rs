@@ -8,6 +8,8 @@ pub mod rawinput;
 mod tests;
 pub mod tray;
 
+use std::sync::{Arc, Mutex};
+
 use crossbeam_channel::{unbounded, Sender};
 use keyrx_core::runtime::KeyEvent;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
@@ -18,7 +20,7 @@ pub use input::WindowsKeyboardInput;
 pub use output::WindowsKeyboardOutput;
 
 use self::device_map::DeviceMap;
-use self::rawinput::RawInputManager;
+use self::rawinput::{BridgeContextHandle, RawInputManager};
 
 #[cfg(target_os = "windows")]
 pub struct WindowsPlatform {
@@ -26,6 +28,8 @@ pub struct WindowsPlatform {
     _sender: Sender<KeyEvent>,
     device_map: DeviceMap,
     raw_input_manager: Option<RawInputManager>,
+    bridge_context: Arc<Mutex<Option<BridgeContextHandle>>>,
+    bridge_hook: Arc<Mutex<Option<isize>>>,
 }
 
 #[cfg(target_os = "windows")]
@@ -37,6 +41,8 @@ impl WindowsPlatform {
             _sender: sender,
             device_map: DeviceMap::new(),
             raw_input_manager: None,
+            bridge_context: Arc::new(Mutex::new(None)),
+            bridge_hook: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -46,7 +52,12 @@ impl WindowsPlatform {
 
         // Create Raw Input Manager (creates window + registers devices)
         // Must be done on the same thread that pumps messages (this thread)
-        let manager = RawInputManager::new(self.device_map.clone(), self._sender.clone())?;
+        let manager = RawInputManager::new(
+            self.device_map.clone(),
+            self._sender.clone(),
+            self.bridge_context.clone(),
+            self.bridge_hook.clone(),
+        )?;
         self.raw_input_manager = Some(manager);
 
         Ok(())

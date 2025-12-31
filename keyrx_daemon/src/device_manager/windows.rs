@@ -6,6 +6,7 @@ use keyrx_core::config::DeviceConfig;
 use keyrx_core::runtime::{DeviceState, KeyLookup};
 use log::{info, warn};
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 pub fn enumerate_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
     let device_map = DeviceMap::new();
@@ -147,8 +148,12 @@ impl DeviceManager {
         // RawInputManager registers for WM_INPUT upon creation
         // We pass a dummy sender since DeviceManager uses per-device subscriptions
         let (sender, _) = crossbeam_channel::unbounded();
-        let raw_input_manager = RawInputManager::new(device_map.clone(), sender)
-            .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+        let bridge_context = Arc::new(Mutex::new(None));
+        let bridge_hook = Arc::new(Mutex::new(None));
+        let raw_input_manager =
+            RawInputManager::new(device_map.clone(), sender, bridge_context, bridge_hook).map_err(
+                |e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)),
+            )?;
 
         // Populate initial device list
         device_map
