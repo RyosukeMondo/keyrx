@@ -1,0 +1,104 @@
+Vagrant.configure("2") do |config|
+  # Windows 10 Enterprise Evaluation
+  config.vm.box = "peru/windows-10-enterprise-x64-eval"
+
+  # VM Name
+  config.vm.define "keyrx2-win-test" do |win|
+    win.vm.hostname = "keyrx2-win-test"
+  end
+
+  # Sync project directory to VM
+  # We are in vagrant/windows, so project root is ../..
+  # Using rsync for performance, excluding heavy folders
+  config.vm.synced_folder "../..", "C:/vagrant_project",
+    type: "rsync",
+    rsync__exclude: [".git/", "node_modules/", "vagrant/", "target/", "build/", "coverage/", "logs/", ".spec-workflow/"]
+
+  # Network configuration
+  config.vm.network "private_network", type: "dhcp"
+
+  # Port forwarding
+  config.vm.network "forwarded_port", guest: 3389, host: 13389, host_ip: "0.0.0.0"  # RDP
+  config.vm.network "forwarded_port", guest: 3030, host: 3030, host_ip: "127.0.0.1"  # keyrx_daemon web server
+
+  # Provider configuration - OPTIMIZED
+  config.vm.provider :libvirt do |libvirt|
+    # Resources
+    libvirt.cpus = 4
+    libvirt.memory = 16384  # 16GB for comfortable testing
+
+    # Graphics & Input (Fixes Mouse/GUI issues)
+    libvirt.graphics_type = "spice"
+    libvirt.video_type = "qxl"
+    libvirt.input :type => "tablet", :bus => "usb"  # Critical for mouse sync
+    libvirt.channel :type => 'spicevmc', :target_name => 'com.redhat.spice.0', :target_type => 'virtio'
+
+    # Performance & Hardware
+    libvirt.cpu_mode = "host-passthrough"
+    libvirt.nested = true              # Enable nested virtualization
+    libvirt.disk_bus = "virtio"
+    libvirt.nic_model_type = "virtio"
+
+    # Disk I/O Optimization
+    libvirt.disk_driver :cache => 'none'
+
+    # Network Conflict Resolution (uncomment if using 192.168.121.x on LAN)
+    # libvirt.management_network_address = "10.10.10.0/24"
+  end
+
+  # Provisioning - Install Chocolatey
+  config.vm.provision "shell", privileged: true, name: "install-chocolatey", inline: <<-SHELL
+    if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+      Write-Host "Installing Chocolatey..."
+      Set-ExecutionPolicy Bypass -Scope Process -Force
+      [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+      iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+    } else {
+      Write-Host "Chocolatey already installed"
+    }
+  SHELL
+
+  # Install Development Tools
+  config.vm.provision "shell", privileged: true, name: "install-tools", inline: <<-SHELL
+    Write-Host "Installing development tools..."
+    choco install -y git rustup.install rsync visualstudio2022buildtools visualstudio2022-workload-vctools
+    # Add other tools if needed for keyrx2 development
+  SHELL
+
+  # Enable RDP
+  config.vm.provision "shell", privileged: true, name: "enable-rdp", inline: <<-SHELL
+    Write-Host "Enabling Remote Desktop..."
+    Set-ItemProperty -Path "HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server" -Name "fDenyTSConnections" -Value 0
+    Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+    Restart-Service TermService -Force
+    Write-Host "Remote Desktop enabled - Connect to localhost:13389 (vagrant/vagrant)"
+  SHELL
+
+  # Configure Rust
+  config.vm.provision "shell", privileged: false, name: "configure-rust", inline: <<-SHELL
+    $env:Path += ";$env:USERPROFILE\\.cargo\\bin"
+    if (-not (Get-Command rustc -ErrorAction SilentlyContinue)) {
+      Write-Host "Configuring Rust..."
+      rustup-init.exe -y --default-toolchain stable
+      rustup target add x86_64-pc-windows-msvc 2>&1 | Out-Null
+      Write-Host "Rust configured successfully"
+    } else {
+      Write-Host "Rust already configured"
+      rustup target add x86_64-pc-windows-msvc 2>&1 | Out-Null
+    }
+  SHELL
+
+  # Verify Sync (runs on every vagrant up)
+  config.vm.provision "shell", run: "always", privileged: false, name: "verify-sync", inline: <<-SHELL
+    Write-Host "Checking keyrx2 project sync..."
+    if (Test-Path "C:\\vagrant_project\\Cargo.toml") {
+      Write-Host "Success: keyrx2 project synced successfully"
+      $content = Get-Content "C:\\vagrant_project\\Cargo.toml" -Raw
+      if ($content -match "members") {
+        Write-Host "Success: Workspace structure detected"
+      }
+    } else {
+      Write-Host "Warning: Sync needed - run 'vagrant rsync' from host"
+    }
+  SHELL
+end

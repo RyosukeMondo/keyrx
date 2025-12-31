@@ -9,6 +9,7 @@ dist/
 
 # Log files
 scripts/logs/*.log
+*.log
 
 # OS-specific files
 .DS_Store
@@ -36,3 +37,4 @@ coverage/
 
 # Vagrant
 .vagrant/
+vagrant/**/vagrant_reload.log
