@@ -13,6 +13,7 @@ pub mod config_loader;
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 pub mod daemon;
 pub mod device_manager;
+pub mod error;
 pub mod ipc;
 pub mod macro_recorder;
 pub mod platform;
