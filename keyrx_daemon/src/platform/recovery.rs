@@ -50,11 +50,13 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 /// In practice, this function will recover from poison and return `Ok`,
 /// but the error variant exists for consistency and future extensibility.
 pub fn recover_lock<'a, T>(mutex: &'a Mutex<T>) -> Result<MutexGuard<'a, T>, PlatformError> {
-    mutex.lock().or_else(|poison_error: PoisonError<MutexGuard<T>>| {
-        log::warn!("Mutex poisoned, attempting recovery");
-        // Use poisoned guard (data may be inconsistent but accessible)
-        Ok(poison_error.into_inner())
-    })
+    mutex
+        .lock()
+        .or_else(|poison_error: PoisonError<MutexGuard<T>>| {
+            log::warn!("Mutex poisoned, attempting recovery");
+            // Use poisoned guard (data may be inconsistent but accessible)
+            Ok(poison_error.into_inner())
+        })
 }
 
 /// Attempts to acquire a mutex lock with context for error messages.
@@ -80,10 +82,12 @@ pub fn recover_lock_with_context<'a, T>(
     mutex: &'a Mutex<T>,
     context: &str,
 ) -> Result<MutexGuard<'a, T>, PlatformError> {
-    mutex.lock().or_else(|poison_error: PoisonError<MutexGuard<T>>| {
-        log::error!("Mutex poisoned in {}: recovering", context);
-        Ok(poison_error.into_inner())
-    })
+    mutex
+        .lock()
+        .or_else(|poison_error: PoisonError<MutexGuard<T>>| {
+            log::error!("Mutex poisoned in {}: recovering", context);
+            Ok(poison_error.into_inner())
+        })
 }
 
 #[cfg(test)]
@@ -144,7 +148,8 @@ mod tests {
         assert!(mutex.lock().is_err(), "Mutex should be poisoned");
 
         // Verify recovery with context
-        let guard = recover_lock_with_context(&mutex, "test mutex").expect("Recovery should succeed");
+        let guard =
+            recover_lock_with_context(&mutex, "test mutex").expect("Recovery should succeed");
         assert_eq!(*guard, 100);
     }
 

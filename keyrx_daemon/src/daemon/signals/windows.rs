@@ -1,4 +1,4 @@
-use crate::daemon::ReloadState;
+use crate::daemon::state::ReloadState;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 

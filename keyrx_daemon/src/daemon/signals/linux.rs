@@ -46,7 +46,7 @@ use std::sync::Arc;
 use signal_hook::consts::{SIGHUP, SIGINT, SIGTERM};
 use signal_hook::flag::register_conditional_default;
 
-use super::ReloadState;
+use crate::daemon::state::ReloadState;
 
 /// Signal handler manager for the keyrx daemon.
 ///

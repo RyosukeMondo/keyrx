@@ -117,9 +117,9 @@ pub fn deserialize(bytes: &[u8]) -> Result<&rkyv::Archived<ConfigRoot>, Deserial
 
     // Verify size matches actual data length
     validate_size(size_bytes, 8, "size field")?;
-    let size_array: [u8; 8] = size_bytes.try_into().map_err(|_| {
-        DeserializeError::CorruptedData("Failed to read size field".to_string())
-    })?;
+    let size_array: [u8; 8] = size_bytes
+        .try_into()
+        .map_err(|_| DeserializeError::CorruptedData("Failed to read size field".to_string()))?;
     let expected_size = u64::from_le_bytes(size_array) as usize;
     if data.len() != expected_size {
         return Err(DeserializeError::RkyvError(format!(
@@ -151,9 +151,9 @@ pub fn deserialize(bytes: &[u8]) -> Result<&rkyv::Archived<ConfigRoot>, Deserial
     hasher.update(data);
     let computed_hash: [u8; 32] = hasher.finalize().into();
     validate_size(embedded_hash, 32, "hash field")?;
-    let embedded_hash_array: [u8; 32] = embedded_hash.try_into().map_err(|_| {
-        DeserializeError::CorruptedData("Failed to read hash field".to_string())
-    })?;
+    let embedded_hash_array: [u8; 32] = embedded_hash
+        .try_into()
+        .map_err(|_| DeserializeError::CorruptedData("Failed to read hash field".to_string()))?;
 
     if computed_hash != embedded_hash_array {
         return Err(DeserializeError::HashMismatch {
@@ -203,9 +203,9 @@ fn validate_magic(bytes: &[u8]) -> Result<(), DeserializeError> {
         });
     }
 
-    let magic_bytes: [u8; 4] = bytes[0..4].try_into().map_err(|_| {
-        DeserializeError::CorruptedData("Failed to read magic number".to_string())
-    })?;
+    let magic_bytes: [u8; 4] = bytes[0..4]
+        .try_into()
+        .map_err(|_| DeserializeError::CorruptedData("Failed to read magic number".to_string()))?;
 
     if magic_bytes != KRX_MAGIC {
         return Err(DeserializeError::InvalidMagic {
