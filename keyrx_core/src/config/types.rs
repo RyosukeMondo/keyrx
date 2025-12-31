@@ -1,5 +1,7 @@
 use core::fmt;
-use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+// CheckBytes is used by #[archive(check_bytes)] derive macro
+#[allow(unused_imports)]
+use rkyv::{Archive, CheckBytes, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 /// Version information for binary compatibility checking
@@ -18,6 +20,7 @@ use serde::{Deserialize, Serialize};
     Eq,
     Debug,
 )]
+#[archive(check_bytes)]
 #[repr(C)]
 pub struct Version {
     pub major: u8,
@@ -49,6 +52,7 @@ impl fmt::Display for Version {
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
+#[archive(check_bytes)]
 #[repr(C)]
 pub struct Metadata {
     /// Unix timestamp (seconds since epoch) when the config was compiled

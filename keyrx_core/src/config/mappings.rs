@@ -1,5 +1,7 @@
 use alloc::vec::Vec;
-use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+// CheckBytes is used by #[archive(check_bytes)] derive macro
+#[allow(unused_imports)]
+use rkyv::{Archive, CheckBytes, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 use crate::config::conditions::Condition;
@@ -13,6 +15,7 @@ use crate::config::types::{Metadata, Version};
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
+#[archive(check_bytes)]
 #[repr(C)]
 pub enum BaseKeyMapping {
     /// Simple 1:1 key remapping (A → B)
@@ -51,6 +54,7 @@ pub enum BaseKeyMapping {
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
+#[archive(check_bytes)]
 #[repr(C)]
 pub enum KeyMapping {
     /// Base mapping (one of the 5 fundamental types)
@@ -127,6 +131,7 @@ impl KeyMapping {
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
+#[archive(check_bytes)]
 #[repr(C)]
 pub struct DeviceIdentifier {
     /// Pattern string for matching device names/IDs
@@ -140,6 +145,7 @@ pub struct DeviceIdentifier {
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
+#[archive(check_bytes)]
 #[repr(C)]
 pub struct DeviceConfig {
     /// Device identifier pattern
@@ -155,6 +161,7 @@ pub struct DeviceConfig {
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
+#[archive(check_bytes)]
 #[repr(C)]
 pub struct ConfigRoot {
     /// Binary format version

@@ -1,6 +1,8 @@
 extern crate alloc;
 use alloc::vec::Vec;
-use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+// CheckBytes is used by #[archive(check_bytes)] derive macro
+#[allow(unused_imports)]
+use rkyv::{Archive, CheckBytes, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 /// Basic condition check for a single modifier or lock
@@ -9,6 +11,7 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
+#[archive(check_bytes)]
 pub enum ConditionItem {
     /// Custom modifier is active (MD_XX)
     ModifierActive(u8),
@@ -23,6 +26,7 @@ pub enum ConditionItem {
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
+#[archive(check_bytes)]
 pub enum Condition {
     /// Single custom modifier active (MD_XX)
     ModifierActive(u8),

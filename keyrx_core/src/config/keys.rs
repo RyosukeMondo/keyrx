@@ -1,4 +1,6 @@
-use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+// CheckBytes is used by #[archive(check_bytes)] derive macro
+#[allow(unused_imports)]
+use rkyv::{Archive, CheckBytes, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 /// Platform-agnostic keyboard key codes
@@ -18,6 +20,7 @@ use serde::{Deserialize, Serialize};
     Hash,
     Debug,
 )]
+#[archive(check_bytes)]
 #[repr(u16)]
 pub enum KeyCode {
     // Letters: A-Z (0x00-0x19)

@@ -1,0 +1,22 @@
+[package]
+name = "keyrx_core-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+rkyv = { version = "0.7", features = ["validation"] }
+
+[dependencies.keyrx_core]
+path = "../keyrx_core"
+
+[[bin]]
+name = "fuzz_deserialize"
+path = "fuzz_targets/fuzz_deserialize.rs"
+test = false
+doc = false
+bench = false
