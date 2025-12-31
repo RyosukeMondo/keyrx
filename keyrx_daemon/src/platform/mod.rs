@@ -324,11 +324,7 @@ pub fn create_platform() -> PlatformResult<Box<dyn Platform>> {
 
     #[cfg(target_os = "windows")]
     {
-        // TODO: Uncomment when WindowsPlatform implements Platform trait (task 13)
-        // Ok(Box::new(windows::WindowsPlatform::new()))
-        Err(PlatformError::InitializationFailed(
-            "WindowsPlatform does not implement Platform trait yet".to_string(),
-        ))
+        Ok(Box::new(windows::WindowsPlatform::new()))
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]

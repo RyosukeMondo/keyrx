@@ -29,4 +29,56 @@ mod tests {
         assert!(is_extended_key(VK_LEFT as u16));
         assert!(!is_extended_key(VK_A as u16));
     }
+
+    #[test]
+    fn test_platform_trait_usage() {
+        use crate::platform::{Platform, WindowsPlatform};
+
+        // Verify that WindowsPlatform can be used as a trait object (Box<dyn Platform>)
+        let platform: Box<dyn Platform> = Box::new(WindowsPlatform::new());
+
+        // This compile-time check verifies that the trait implementation is correct
+        let _ = platform;
+    }
+
+    #[test]
+    fn test_parse_vid_pid() {
+        use super::parse_vid_pid;
+
+        // Test with a typical Windows HID device path
+        let path = r"\\?\HID#VID_046D&PID_C52B&MI_00#7&2a00c76d&0&0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}";
+        let (vendor_id, product_id) = parse_vid_pid(path);
+        assert_eq!(vendor_id, 0x046D);
+        assert_eq!(product_id, 0xC52B);
+
+        // Test with partial path
+        let path2 = r"\\?\HID#VID_1234&PID_5678";
+        let (vendor_id2, product_id2) = parse_vid_pid(path2);
+        assert_eq!(vendor_id2, 0x1234);
+        assert_eq!(product_id2, 0x5678);
+
+        // Test with no VID/PID
+        let path3 = r"\\?\HID#SOMEDEVICE";
+        let (vendor_id3, product_id3) = parse_vid_pid(path3);
+        assert_eq!(vendor_id3, 0);
+        assert_eq!(product_id3, 0);
+    }
+
+    #[test]
+    fn test_convert_device_info() {
+        use super::convert_device_info;
+        use crate::platform::windows::device_map::DeviceInfo;
+
+        let device = DeviceInfo {
+            handle: 0x1234,
+            path: r"\\?\HID#VID_046D&PID_C52B&MI_00#7&2a00c76d&0&0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}".to_string(),
+            serial: Some("7&2a00c76d&0&0000".to_string()),
+        };
+
+        let common = convert_device_info(&device);
+        assert_eq!(common.id, "serial-7&2a00c76d&0&0000");
+        assert_eq!(common.vendor_id, 0x046D);
+        assert_eq!(common.product_id, 0xC52B);
+        assert_eq!(common.path, device.path);
+    }
 }
