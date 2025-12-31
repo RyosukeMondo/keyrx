@@ -30,7 +30,6 @@
 
 use std::path::Path;
 
-use keyrx_compiler::error::DeserializeError;
 use keyrx_core::config::ConfigRoot;
 use thiserror::Error;
 
@@ -55,12 +54,12 @@ pub enum ConfigError {
     /// - Hash mismatch (data corruption detected)
     /// - Invalid rkyv archive structure
     #[error("Failed to deserialize configuration: {0}")]
-    Deserialize(DeserializeError),
+    Deserialize(String),
 }
 
-impl From<DeserializeError> for ConfigError {
-    fn from(err: DeserializeError) -> Self {
-        ConfigError::Deserialize(err)
+impl From<keyrx_compiler::error::DeserializeError> for ConfigError {
+    fn from(err: keyrx_compiler::error::DeserializeError) -> Self {
+        ConfigError::Deserialize(err.to_string())
     }
 }
 
@@ -229,12 +228,9 @@ mod tests {
         assert!(display.contains("Failed to read configuration file"));
 
         // Test Deserialize error display
-        let deserialize_error = DeserializeError::InvalidMagic {
-            expected: [0x4B, 0x52, 0x58, 0x0A],
-            got: [0x00, 0x00, 0x00, 0x00],
-        };
-        let config_error = ConfigError::Deserialize(deserialize_error);
+        let config_error = ConfigError::Deserialize("Invalid magic bytes".to_string());
         let display = format!("{}", config_error);
         assert!(display.contains("Failed to deserialize configuration"));
+        assert!(display.contains("Invalid magic bytes"));
     }
 }
