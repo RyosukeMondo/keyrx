@@ -30,19 +30,28 @@ pub struct TrayIconController {
     _tray_icon: TrayIcon,
     menu_receiver: Receiver<MenuEvent>,
     reload_id: String,
+    webui_id: String,
     exit_id: String,
 }
 
 impl SystemTray for TrayIconController {
     fn new() -> Result<Self, TrayError> {
         let tray_menu = Menu::new();
+        let webui_item = MenuItem::new("Open Web UI", true, None);
         let reload_item = MenuItem::new("Reload Config", true, None);
         let exit_item = MenuItem::new("Exit", true, None);
 
         tray_menu
-            .append_items(&[&reload_item, &PredefinedMenuItem::separator(), &exit_item])
+            .append_items(&[
+                &webui_item,
+                &PredefinedMenuItem::separator(),
+                &reload_item,
+                &PredefinedMenuItem::separator(),
+                &exit_item,
+            ])
             .map_err(|e| TrayError::Other(e.to_string()))?;
 
+        let webui_id = webui_item.id().0.clone();
         let reload_id = reload_item.id().0.clone();
         let exit_id = exit_item.id().0.clone();
 
@@ -62,13 +71,16 @@ impl SystemTray for TrayIconController {
             _tray_icon: tray_icon,
             menu_receiver,
             reload_id,
+            webui_id,
             exit_id,
         })
     }
 
     fn poll_event(&self) -> Option<TrayControlEvent> {
         if let Ok(event) = self.menu_receiver.try_recv() {
-            if event.id.0 == self.reload_id {
+            if event.id.0 == self.webui_id {
+                return Some(TrayControlEvent::OpenWebUI);
+            } else if event.id.0 == self.reload_id {
                 return Some(TrayControlEvent::Reload);
             } else if event.id.0 == self.exit_id {
                 return Some(TrayControlEvent::Exit);

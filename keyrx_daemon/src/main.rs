@@ -371,9 +371,48 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     // Create the daemon
     let mut daemon = Daemon::new(platform, config_path).map_err(daemon_error_to_exit)?;
 
-    // Create the tray icon
-    let tray = TrayIconController::new()
-        .map_err(|e| (exit_codes::RUNTIME_ERROR, format!("Tray error: {}", e)))?;
+    // Create broadcast channel for event streaming to WebSocket clients
+    let (event_tx, _event_rx) = tokio::sync::broadcast::channel(1000);
+    let event_tx_clone = event_tx.clone();
+
+    // Start web server in background
+    let macro_recorder = std::sync::Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());
+    let app_state = std::sync::Arc::new(keyrx_daemon::web::AppState::new(macro_recorder));
+
+    std::thread::spawn(move || {
+        let rt = match tokio::runtime::Runtime::new() {
+            Ok(runtime) => runtime,
+            Err(e) => {
+                log::error!("Failed to create tokio runtime for web server: {}", e);
+                log::error!("Web server will not start. Ensure your system has sufficient resources (threads, memory)");
+                return;
+            }
+        };
+        rt.block_on(async {
+            let addr: std::net::SocketAddr = ([127, 0, 0, 1], 9867).into();
+            log::info!("Starting web server on http://{}", addr);
+            match keyrx_daemon::web::serve(addr, event_tx_clone, app_state).await {
+                Ok(()) => log::info!("Web server stopped"),
+                Err(e) => log::error!("Web server error: {}", e),
+            }
+        });
+    });
+
+    // Create the tray icon (optional - may fail in headless/WinRM sessions)
+    let tray = match TrayIconController::new() {
+        Ok(tray) => {
+            log::info!("System tray icon created successfully");
+            Some(tray)
+        }
+        Err(e) => {
+            log::warn!(
+                "Failed to create system tray icon (this is normal in headless/WinRM sessions): {}",
+                e
+            );
+            log::info!("Daemon will continue without system tray. Web UI is available at http://127.0.0.1:9867");
+            None
+        }
+    };
 
     // Check for administrative privileges
     if !is_admin() {
@@ -407,22 +446,24 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
                 return Ok(());
             }
 
-            // Poll tray events
-            if let Some(event) = tray.poll_event() {
-                match event {
-                    TrayControlEvent::Reload => {
-                        log::info!("Reloading config...");
-                        let _ = daemon.reload();
-                    }
-                    TrayControlEvent::OpenWebUI => {
-                        log::info!("Opening web UI...");
-                        if let Err(e) = open_browser("http://127.0.0.1:9867") {
-                            log::error!("Failed to open web UI: {}", e);
+            // Poll tray events (only if tray was created successfully)
+            if let Some(ref tray_controller) = tray {
+                if let Some(event) = tray_controller.poll_event() {
+                    match event {
+                        TrayControlEvent::Reload => {
+                            log::info!("Reloading config...");
+                            let _ = daemon.reload();
                         }
-                    }
-                    TrayControlEvent::Exit => {
-                        log::info!("Exiting...");
-                        return Ok(());
+                        TrayControlEvent::OpenWebUI => {
+                            log::info!("Opening web UI...");
+                            if let Err(e) = open_browser("http://127.0.0.1:9867") {
+                                log::error!("Failed to open web UI: {}", e);
+                            }
+                        }
+                        TrayControlEvent::Exit => {
+                            log::info!("Exiting...");
+                            return Ok(());
+                        }
                     }
                 }
             }
