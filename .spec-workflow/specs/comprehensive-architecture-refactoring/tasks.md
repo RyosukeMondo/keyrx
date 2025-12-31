@@ -483,7 +483,7 @@
 
 ---
 
-- [-] 10. Split web/api.rs into domain-focused endpoint modules (1206 → <500 lines)
+- [x] 10. Split web/api.rs into domain-focused endpoint modules (1247 → <500 lines)
   - Files: keyrx_daemon/src/web/api/ (new directory), multiple endpoint modules
   - Purpose: Organize REST API by domain following Single Responsibility Principle
   - Requirements: FR1, FR3, NFR3
