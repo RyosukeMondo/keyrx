@@ -15,7 +15,7 @@ SKIP_COVERAGE=false
 
 # Check results tracking
 declare -A CHECK_RESULTS
-CHECK_ORDER=("build" "clippy" "fmt" "test" "coverage")
+CHECK_ORDER=("build" "clippy" "fmt" "test" "coverage" "unwraps")
 
 # Usage information
 usage() {
@@ -49,7 +49,8 @@ CHECKS PERFORMED (in order):
     2. Clippy        - cargo clippy --workspace -- -D warnings
     3. Format        - cargo fmt --check
     4. Tests         - cargo test --workspace
-    5. Coverage      - cargo tarpaulin (80% minimum)
+    5. Coverage      - cargo llvm-cov (80% minimum)
+    6. Unwraps       - scripts/check_unwraps.sh (prevent regressions)
 
 OUTPUT MARKERS:
     === accomplished === - All checks passed
@@ -195,6 +196,21 @@ check_coverage() {
     fi
 }
 
+# Run unwrap check
+check_unwraps() {
+    log_info "Running unwrap check..."
+
+    if "$SCRIPT_DIR/check_unwraps.sh" 2>&1; then
+        CHECK_RESULTS["unwraps"]="PASS"
+        log_info "Unwrap check: PASS"
+        return 0
+    else
+        CHECK_RESULTS["unwraps"]="FAIL"
+        log_error "Unwrap check: FAIL - too many unwrap() calls in production code"
+        return 1
+    fi
+}
+
 # Print summary table
 print_summary() {
     if [[ "$QUIET_MODE" == "true" ]]; then
@@ -313,6 +329,9 @@ main() {
             exit_code=1
         fi
         log_error "Aborting verification - coverage check failed"
+    elif ! check_unwraps; then
+        exit_code=1
+        log_error "Aborting verification - unwrap check failed"
     fi
 
     # Print summary
