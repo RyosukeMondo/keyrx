@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/linux-system-tray-multi-device/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-24T16:41:32.552Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766594492547_umydix3ze",
+      "approvalTitle": "Linux System Tray + Multi-Device Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-25T02:37:47.909Z",
+      "trigger": "approved",
+      "approvalId": "approval_1766594492547_umydix3ze",
+      "approvalTitle": "Linux System Tray + Multi-Device Requirements"
+    }
+  ]
+}

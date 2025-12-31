@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/wasm-simulation-integration/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-29T14:43:45.073Z",
+      "trigger": "initial",
+      "approvalId": "approval_1767019425064_80i74h9fp",
+      "approvalTitle": "WASM Simulation Integration Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-29T14:44:05.483Z",
+      "trigger": "approved",
+      "approvalId": "approval_1767019425064_80i74h9fp",
+      "approvalTitle": "WASM Simulation Integration Tasks"
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+/**
+ * StateIndicatorPanel Styles
+ *
+ * Color-coded badges with animations for state changes.
+ */
+
+.state-indicator-panel {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0;
+}
+
+/* State section */
+.state-section {
+  flex: 1;
+  min-width: 200px;
+}
+
+.state-section-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Badge container */
+.badge-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 36px; /* Prevent layout shift when empty */
+}
+
+/* State badges */
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.875rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  animation: badgeFadeIn 0.3s ease;
+}
+
+/* Badge fade-in animation */
+@keyframes badgeFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Badge pulse animation on hover */
+.state-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Modifier badge - Blue */
+.state-badge-modifier {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+}
+
+.state-badge-modifier:hover {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+}
+
+/* Lock badge - Orange */
+.state-badge-lock {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+}
+
+.state-badge-lock:hover {
+  background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+}
+
+/* Layer badge - Green */
+.state-badge-layer {
+  background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+}
+
+.state-badge-layer:hover {
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+}
+
+/* Empty state message */
+.empty-state {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  color: #999;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Responsive layout */
+@media (max-width: 768px) {
+  .state-indicator-panel {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .state-section {
+    min-width: 100%;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .state-badge {
+    animation: none;
+    transition: none;
+  }
+
+  .state-badge:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .state-badge {
+    border: 2px solid currentColor;
+  }
+
+  .state-badge-modifier {
+    background: #0d47a1;
+  }
+
+  .state-badge-lock {
+    background: #e65100;
+  }
+
+  .state-badge-layer {
+    background: #1b5e20;
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "approval_1766290292452_phhpwn39e",
+  "title": "Tech doc (4-crate KISS architecture - simplified)",
+  "filePath": ".spec-workflow/steering/tech.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-12-21T04:11:32.452Z",
+  "category": "steering",
+  "categoryName": "steering",
+  "response": "Feedback Summary (1 comments):\n\nSpecific Text Comments:\n1. \"└── scripts/\n    ├── setup_linux.sh      # udev ru...\": I want to enhance scripting. since we are aiming AI Coding Agent first development, want to have clear reproducible, efficient scripts.\nex. build.sh, verify.sh, launch.sh, test.sh pre configured log output, epochtime time stamped log file name, .gitignore logs, take build.sh --error outputs errors only to let AI Coding Agent consentrate each tasks not commands, scripting.\noutput consistent log like === accomplished === that can AI look for, expect, consistently. have CLAUDE.md for minimum description regarding the usage.\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"selection\",\n      \"comment\": \"I want to enhance scripting. since we are aiming AI Coding Agent first development, want to have clear reproducible, efficient scripts.\\nex. build.sh, verify.sh, launch.sh, test.sh pre configured log output, epochtime time stamped log file name, .gitignore logs, take build.sh --error outputs errors only to let AI Coding Agent consentrate each tasks not commands, scripting.\\noutput consistent log like === accomplished === that can AI look for, expect, consistently. have CLAUDE.md for minimum description regarding the usage.\",\n      \"timestamp\": \"2025-12-21T04:16:08.591Z\",\n      \"selectedText\": \"└── scripts/\\n    ├── setup_linux.sh      # udev rules setup\\n    ├── install_windows.ps1 # Windows registry setup\\n    └── build_release.sh    # Cross-compilation for all targets\",\n      \"highlightColor\": {\n        \"bg\": \"rgba(255, 235, 59, 0.3)\",\n        \"border\": \"#FFEB3B\",\n        \"name\": \"#ffeb3b\"\n      },\n      \"id\": \"comment_1766290568591_r9tlima03\",\n      \"startOffset\": 8605,\n      \"endOffset\": 8781\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nSpecific Text Comments:\\n1. \\\"└── scripts/\\n    ├── setup_linux.sh      # udev ru...\\\": I want to enhance scripting. since we are aiming AI Coding Agent first development, want to have clear reproducible, efficient scripts.\\nex. build.sh, verify.sh, launch.sh, test.sh pre configured log output, epochtime time stamped log file name, .gitignore logs, take build.sh --error outputs errors only to let AI Coding Agent consentrate each tasks not commands, scripting.\\noutput consistent log like === accomplished === that can AI look for, expect, consistently. have CLAUDE.md for minimum description regarding the usage.\\n\",\n  \"timestamp\": \"2025-12-21T04:16:11.005Z\"\n}",
+  "respondedAt": "2025-12-21T04:16:10.635Z",
+  "comments": [
+    {
+      "type": "selection",
+      "comment": "I want to enhance scripting. since we are aiming AI Coding Agent first development, want to have clear reproducible, efficient scripts.\nex. build.sh, verify.sh, launch.sh, test.sh pre configured log output, epochtime time stamped log file name, .gitignore logs, take build.sh --error outputs errors only to let AI Coding Agent consentrate each tasks not commands, scripting.\noutput consistent log like === accomplished === that can AI look for, expect, consistently. have CLAUDE.md for minimum description regarding the usage.",
+      "timestamp": "2025-12-21T04:16:08.591Z",
+      "selectedText": "└── scripts/\n    ├── setup_linux.sh      # udev rules setup\n    ├── install_windows.ps1 # Windows registry setup\n    └── build_release.sh    # Cross-compilation for all targets",
+      "highlightColor": {
+        "bg": "rgba(255, 235, 59, 0.3)",
+        "border": "#FFEB3B",
+        "name": "#ffeb3b"
+      },
+      "id": "comment_1766290568591_r9tlima03",
+      "startOffset": 8605,
+      "endOffset": 8781
+    }
+  ]
+}

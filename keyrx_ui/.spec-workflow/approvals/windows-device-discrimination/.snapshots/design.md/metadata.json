@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/windows-device-discrimination/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-24T16:47:25.858Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766594845851_w82jlwnx8",
+      "approvalTitle": "Windows Device Discrimination Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-25T02:37:53.261Z",
+      "trigger": "approved",
+      "approvalId": "approval_1766594845851_w82jlwnx8",
+      "approvalTitle": "Windows Device Discrimination Design"
+    }
+  ]
+}

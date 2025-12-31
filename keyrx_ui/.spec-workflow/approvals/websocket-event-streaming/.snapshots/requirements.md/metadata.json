@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/websocket-event-streaming/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-29T14:02:24.815Z",
+      "trigger": "initial",
+      "approvalId": "approval_1767016944801_6j43nnqu6",
+      "approvalTitle": "WebSocket Event Streaming Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-29T14:08:47.205Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1767016944801_6j43nnqu6",
+      "approvalTitle": "WebSocket Event Streaming Requirements"
+    }
+  ]
+}

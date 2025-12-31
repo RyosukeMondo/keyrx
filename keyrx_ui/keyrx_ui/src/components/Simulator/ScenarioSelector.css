@@ -1,0 +1,164 @@
+.scenario-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.selector-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.selector-label {
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: inherit;
+}
+
+.scenario-dropdown {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scenario-dropdown:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(100, 200, 255, 0.5);
+}
+
+.scenario-dropdown:focus {
+  outline: none;
+  border-color: rgba(100, 200, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(100, 200, 255, 0.1);
+}
+
+.scenario-dropdown:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scenario-dropdown option {
+  background-color: #1a1a1a;
+  color: white;
+  padding: 0.5rem;
+}
+
+.scenario-description {
+  padding: 1rem;
+  background-color: rgba(100, 200, 255, 0.05);
+  border: 1px solid rgba(100, 200, 255, 0.2);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.scenario-description strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: rgba(100, 200, 255, 0.9);
+  font-weight: 600;
+}
+
+.scenario-description p {
+  margin: 0;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.run-scenario-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  background-color: rgba(100, 200, 255, 0.2);
+  color: rgba(100, 200, 255, 1);
+  border: 1px solid rgba(100, 200, 255, 0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+
+.run-scenario-button:hover:not(:disabled) {
+  background-color: rgba(100, 200, 255, 0.3);
+  border-color: rgba(100, 200, 255, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(100, 200, 255, 0.2);
+}
+
+.run-scenario-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(100, 200, 255, 0.2);
+}
+
+.run-scenario-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(100, 200, 255, 0.3);
+}
+
+.run-scenario-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Light mode overrides */
+@media (prefers-color-scheme: light) {
+  .scenario-dropdown {
+    background-color: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.2);
+  }
+
+  .scenario-dropdown:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  .scenario-dropdown:focus {
+    border-color: rgba(59, 130, 246, 0.7);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .scenario-dropdown option {
+    background-color: white;
+    color: black;
+  }
+
+  .scenario-description {
+    background-color: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+
+  .scenario-description strong {
+    color: rgba(30, 64, 175, 0.9);
+  }
+
+  .scenario-description p {
+    color: rgba(0, 0, 0, 0.8);
+  }
+
+  .run-scenario-button {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: rgba(30, 64, 175, 1);
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+
+  .run-scenario-button:hover:not(:disabled) {
+    background-color: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  }
+
+  .run-scenario-button:active:not(:disabled) {
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
+  }
+
+  .run-scenario-button:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  }
+}

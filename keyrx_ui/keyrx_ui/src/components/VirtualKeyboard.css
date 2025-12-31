@@ -1,0 +1,238 @@
+/**
+ * VirtualKeyboard Styles
+ */
+
+.virtual-keyboard {
+  padding: 20px;
+  background: var(--bg-secondary, #f5f5f5);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.keyboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border-color, #ddd);
+}
+
+.keyboard-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.layer-name {
+  font-size: 14px;
+  color: var(--text-secondary, #666);
+  font-weight: 500;
+}
+
+.keyboard-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.keyboard-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.virtual-key {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  min-width: 60px;
+  padding: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%);
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  box-shadow:
+    0 2px 0 #aaa,
+    0 3px 0 #999,
+    0 4px 8px rgba(0, 0, 0, 0.15);
+  cursor: grab;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.virtual-key:hover {
+  background: linear-gradient(180deg, #f8f8f8 0%, #e8e8e8 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    0 3px 0 #aaa,
+    0 4px 0 #999,
+    0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.virtual-key:active,
+.virtual-key.dragging {
+  cursor: grabbing;
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 #aaa,
+    0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.virtual-key.droppable {
+  cursor: default;
+}
+
+.virtual-key.droppable:hover {
+  transform: none;
+}
+
+.virtual-key.drop-target {
+  background: linear-gradient(180deg, #e3f2fd 0%, #bbdefb 100%);
+  border-color: #2196f3;
+  box-shadow:
+    0 2px 0 #1976d2,
+    0 3px 0 #1565c0,
+    0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+.virtual-key.mapped {
+  background: linear-gradient(180deg, #fff3e0 0%, #ffe0b2 100%);
+  border-color: #ff9800;
+}
+
+.virtual-key.mapped:hover {
+  background: linear-gradient(180deg, #fff8e1 0%, #ffecb3 100%);
+}
+
+.virtual-key.modifier {
+  background: linear-gradient(180deg, #f3e5f5 0%, #e1bee7 100%);
+  border-color: #9c27b0;
+}
+
+.virtual-key.modifier:hover {
+  background: linear-gradient(180deg, #f8f4f9 0%, #e8d5ec 100%);
+}
+
+.virtual-key.special {
+  background: linear-gradient(180deg, #e8f5e9 0%, #c8e6c9 100%);
+  border-color: #4caf50;
+}
+
+.virtual-key.special:hover {
+  background: linear-gradient(180deg, #f1f8f2 0%, #d7eed8 100%);
+}
+
+.key-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+  text-align: center;
+  pointer-events: none;
+}
+
+.mapping-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent-color, #ff9800);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 4px;
+  border-radius: 3px;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .virtual-keyboard {
+    background: var(--bg-secondary, #2c2c2c);
+  }
+
+  .keyboard-header {
+    border-bottom-color: var(--border-color, #444);
+  }
+
+  .keyboard-header h3 {
+    color: var(--text-primary, #f0f0f0);
+  }
+
+  .layer-name {
+    color: var(--text-secondary, #aaa);
+  }
+
+  .virtual-key {
+    background: linear-gradient(180deg, #3c3c3c 0%, #2c2c2c 100%);
+    border-color: #555;
+    box-shadow:
+      0 2px 0 #1a1a1a,
+      0 3px 0 #0a0a0a,
+      0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .virtual-key:hover {
+    background: linear-gradient(180deg, #4c4c4c 0%, #3c3c3c 100%);
+  }
+
+  .key-label {
+    color: var(--text-primary, #f0f0f0);
+  }
+
+  .virtual-key.drop-target {
+    background: linear-gradient(180deg, #1e3a5f 0%, #0d2847 100%);
+    border-color: #2196f3;
+  }
+
+  .virtual-key.mapped {
+    background: linear-gradient(180deg, #4a3c1f 0%, #3a2c0f 100%);
+    border-color: #ff9800;
+  }
+
+  .virtual-key.modifier {
+    background: linear-gradient(180deg, #3a2a4a 0%, #2a1a3a 100%);
+    border-color: #9c27b0;
+  }
+
+  .virtual-key.special {
+    background: linear-gradient(180deg, #2a3a2a 0%, #1a2a1a 100%);
+    border-color: #4caf50;
+  }
+
+  .mapping-indicator {
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .virtual-keyboard {
+    padding: 10px;
+  }
+
+  .virtual-key {
+    height: 50px;
+    min-width: 50px;
+    font-size: 12px;
+  }
+
+  .keyboard-rows {
+    gap: 6px;
+  }
+
+  .keyboard-row {
+    gap: 6px;
+  }
+
+  .mapping-indicator {
+    font-size: 8px;
+  }
+}

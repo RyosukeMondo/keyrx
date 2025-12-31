@@ -1,0 +1,12 @@
+{
+  "id": "approval_1766427125778_2qfumztwn",
+  "title": "Requirements for Virtual E2E Testing",
+  "filePath": ".spec-workflow/specs/virtual-e2e-testing/requirements.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-22T18:12:05.778Z",
+  "category": "spec",
+  "categoryName": "virtual-e2e-testing",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-24T14:50:07.993Z"
+}

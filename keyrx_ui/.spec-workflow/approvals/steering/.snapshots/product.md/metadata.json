@@ -1,0 +1,38 @@
+{
+  "filePath": ".spec-workflow/steering/product.md",
+  "currentVersion": 4,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-21T03:40:02.668Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766288402663_5u2kr81es",
+      "approvalTitle": "Product vision and goals for keyrx"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-21T03:43:44.147Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1766288402663_5u2kr81es",
+      "approvalTitle": "Product vision and goals for keyrx"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2025-12-21T03:45:59.559Z",
+      "trigger": "approved",
+      "approvalId": "approval_1766288685387_cipmbj5ws",
+      "approvalTitle": "Product vision (revised with SSOT & structured logging)"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2025-12-21T04:43:30.813Z",
+      "trigger": "approved",
+      "approvalId": "approval_1766292183891_cs7e9mtk6",
+      "approvalTitle": "Complete steering docs (multi-device + imports)"
+    }
+  ]
+}

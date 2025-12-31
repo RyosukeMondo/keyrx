@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/macro-recorder/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-29T15:28:37.427Z",
+      "trigger": "initial",
+      "approvalId": "approval_1767022117416_vl3y5pdtd",
+      "approvalTitle": "Macro Recorder - Requirements"
+    }
+  ]
+}

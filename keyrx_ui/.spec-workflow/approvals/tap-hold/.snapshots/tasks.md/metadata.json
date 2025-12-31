@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/tap-hold/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-23T04:32:35.058Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766464355054_f361gi5uw",
+      "approvalTitle": "Tap-Hold Tasks Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-24T14:50:13.324Z",
+      "trigger": "approved",
+      "approvalId": "approval_1766464355054_f361gi5uw",
+      "approvalTitle": "Tap-Hold Tasks Document"
+    }
+  ]
+}
