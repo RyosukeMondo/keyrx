@@ -863,7 +863,7 @@
 
 ### Task 13: Implement Device Registry Resilience
 
-- [ ] **13. Implement Device Registry Resilience**
+- [x] **13. Implement Device Registry Resilience**
   - **File**: `keyrx_daemon/src/config/device_registry.rs`
   - **Purpose**: Recover from corrupted registry files by creating empty registry instead of crashing.
   - **Requirements**: FR7, NFR4
