@@ -33,7 +33,7 @@ pub const HEADER_SIZE: usize = 48;
 /// * `config` - The configuration to serialize
 ///
 /// # Returns
-/// A Vec<u8> containing the complete .krx file data
+/// A `Vec<u8>` containing the complete .krx file data
 ///
 /// # Errors
 /// Returns SerializeError if rkyv serialization fails

@@ -1035,7 +1035,7 @@
 
 ---
 
-- [ ] 17. Document all public APIs with rustdoc
+- [x] 17. Document all public APIs with rustdoc
   - Files: All public modules in keyrx_core, keyrx_daemon, keyrx_compiler
   - Purpose: Ensure all public APIs have comprehensive documentation with examples
   - Requirements: FR9, NFR1
@@ -1108,7 +1108,7 @@
 
 ---
 
-- [ ] 18. Run comprehensive validation and fix any issues
+- [x] 18. Run comprehensive validation and fix any issues
   - Purpose: Verify all quality gates pass and no regressions introduced
   - Requirements: All FRs, all NFRs
   - Leverage: scripts/verify_file_sizes.sh, cargo tarpaulin, cargo clippy
