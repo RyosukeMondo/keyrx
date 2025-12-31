@@ -108,6 +108,16 @@ pub enum DeserializeError {
         computed: [u8; 32],
     },
 
+    /// Buffer size doesn't match expected size.
+    InvalidSize {
+        expected: usize,
+        found: usize,
+        context: String,
+    },
+
+    /// Data is corrupted or malformed.
+    CorruptedData(String),
+
     /// rkyv deserialization error.
     RkyvError(String),
 

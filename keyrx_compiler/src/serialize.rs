@@ -104,33 +104,23 @@ pub fn deserialize(bytes: &[u8]) -> Result<&rkyv::Archived<ConfigRoot>, Deserial
         )));
     }
 
-    // Extract header fields
-    let magic = &bytes[0..4];
-    let version_bytes = &bytes[4..8];
+    // Validate magic bytes
+    validate_magic(&bytes[0..4])?;
+
+    // Validate version
+    validate_version(&bytes[4..8])?;
+
+    // Extract header fields after validation
     let embedded_hash = &bytes[8..40];
     let size_bytes = &bytes[40..48];
     let data = &bytes[48..];
 
-    // Verify magic bytes
-    let magic_array: [u8; 4] = magic.try_into().unwrap();
-    if magic_array != KRX_MAGIC {
-        return Err(DeserializeError::InvalidMagic {
-            expected: KRX_MAGIC,
-            got: magic_array,
-        });
-    }
-
-    // Verify version
-    let version = u32::from_le_bytes(version_bytes.try_into().unwrap());
-    if version != KRX_VERSION {
-        return Err(DeserializeError::VersionMismatch {
-            expected: KRX_VERSION,
-            got: version,
-        });
-    }
-
     // Verify size matches actual data length
-    let expected_size = u64::from_le_bytes(size_bytes.try_into().unwrap()) as usize;
+    validate_size(size_bytes, 8, "size field")?;
+    let size_array: [u8; 8] = size_bytes.try_into().map_err(|_| {
+        DeserializeError::CorruptedData("Failed to read size field".to_string())
+    })?;
+    let expected_size = u64::from_le_bytes(size_array) as usize;
     if data.len() != expected_size {
         return Err(DeserializeError::RkyvError(format!(
             "Size mismatch: header says {} bytes, got {} bytes",
@@ -160,7 +150,10 @@ pub fn deserialize(bytes: &[u8]) -> Result<&rkyv::Archived<ConfigRoot>, Deserial
     let mut hasher = Sha256::new();
     hasher.update(data);
     let computed_hash: [u8; 32] = hasher.finalize().into();
-    let embedded_hash_array: [u8; 32] = embedded_hash.try_into().unwrap();
+    validate_size(embedded_hash, 32, "hash field")?;
+    let embedded_hash_array: [u8; 32] = embedded_hash.try_into().map_err(|_| {
+        DeserializeError::CorruptedData("Failed to read hash field".to_string())
+    })?;
 
     if computed_hash != embedded_hash_array {
         return Err(DeserializeError::HashMismatch {
@@ -192,6 +185,83 @@ pub fn deserialize(bytes: &[u8]) -> Result<&rkyv::Archived<ConfigRoot>, Deserial
     rkyv::check_archived_root::<ConfigRoot>(data).map_err(|e| {
         DeserializeError::RkyvError(format!("Failed to validate rkyv archive structure: {}", e))
     })
+}
+
+/// Validates magic number in binary format.
+///
+/// # Errors
+///
+/// Returns `DeserializeError::InvalidSize` if buffer too small.
+/// Returns `DeserializeError::InvalidMagic` if magic number doesn't match.
+/// Returns `DeserializeError::CorruptedData` if slice conversion fails.
+fn validate_magic(bytes: &[u8]) -> Result<(), DeserializeError> {
+    if bytes.len() < 4 {
+        return Err(DeserializeError::InvalidSize {
+            expected: 4,
+            found: bytes.len(),
+            context: "magic number".to_string(),
+        });
+    }
+
+    let magic_bytes: [u8; 4] = bytes[0..4].try_into().map_err(|_| {
+        DeserializeError::CorruptedData("Failed to read magic number".to_string())
+    })?;
+
+    if magic_bytes != KRX_MAGIC {
+        return Err(DeserializeError::InvalidMagic {
+            expected: KRX_MAGIC,
+            got: magic_bytes,
+        });
+    }
+
+    Ok(())
+}
+
+/// Validates version number in binary format.
+///
+/// # Errors
+///
+/// Returns `DeserializeError::InvalidSize` if buffer too small.
+/// Returns `DeserializeError::VersionMismatch` if version doesn't match.
+/// Returns `DeserializeError::CorruptedData` if slice conversion fails.
+fn validate_version(bytes: &[u8]) -> Result<(), DeserializeError> {
+    if bytes.len() < 4 {
+        return Err(DeserializeError::InvalidSize {
+            expected: 4,
+            found: bytes.len(),
+            context: "version number".to_string(),
+        });
+    }
+
+    let version_bytes: [u8; 4] = bytes[0..4].try_into().map_err(|_| {
+        DeserializeError::CorruptedData("Failed to read version number".to_string())
+    })?;
+
+    let found_version = u32::from_le_bytes(version_bytes);
+    if found_version != KRX_VERSION {
+        return Err(DeserializeError::VersionMismatch {
+            expected: KRX_VERSION,
+            got: found_version,
+        });
+    }
+
+    Ok(())
+}
+
+/// Validates that buffer has expected size.
+///
+/// # Errors
+///
+/// Returns `DeserializeError::InvalidSize` if buffer size doesn't match.
+fn validate_size(bytes: &[u8], expected: usize, context: &str) -> Result<(), DeserializeError> {
+    if bytes.len() < expected {
+        return Err(DeserializeError::InvalidSize {
+            expected,
+            found: bytes.len(),
+            context: context.to_string(),
+        });
+    }
+    Ok(())
 }
 
 #[cfg(test)]

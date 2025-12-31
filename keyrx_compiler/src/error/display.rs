@@ -148,6 +148,18 @@ impl fmt::Display for DeserializeError {
                 )
             }
 
+            DeserializeError::InvalidSize {
+                expected,
+                found,
+                context,
+            } => write!(
+                f,
+                "Invalid size for {}: expected {} bytes, found {} bytes",
+                context, expected, found
+            ),
+
+            DeserializeError::CorruptedData(msg) => write!(f, "Corrupted data: {}", msg),
+
             DeserializeError::RkyvError(msg) => write!(f, "Deserialization error: {}", msg),
 
             DeserializeError::IoError(msg) => write!(f, "I/O error: {}", msg),

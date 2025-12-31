@@ -100,6 +100,19 @@ pub fn handle_verify(file: &Path) -> Result<(), VerifyError> {
                     eprintln!("  Expected: {}", hex::encode(expected));
                     eprintln!("  Computed: {}", hex::encode(computed));
                 }
+                DeserializeError::InvalidSize {
+                    expected,
+                    found,
+                    context,
+                } => {
+                    eprintln!("✗ Invalid size for {}", context);
+                    eprintln!("  Expected: {} bytes", expected);
+                    eprintln!("  Found: {} bytes", found);
+                }
+                DeserializeError::CorruptedData(msg) => {
+                    eprintln!("✗ Corrupted data");
+                    eprintln!("  Error: {}", msg);
+                }
                 DeserializeError::RkyvError(msg) => {
                     eprintln!("✗ rkyv deserialization failed");
                     eprintln!("  Error: {}", msg);
