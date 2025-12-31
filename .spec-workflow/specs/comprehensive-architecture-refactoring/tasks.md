@@ -380,7 +380,7 @@
 
 ---
 
-- [ ] 8. Split parser_function_tests.rs by feature (2864 → <500 lines per file)
+- [x] 8. Split parser_function_tests.rs by feature (2864 → <500 lines per file)
   - Files: keyrx_compiler/tests/parser_tests/ (new directory), multiple test modules
   - Purpose: Organize massive test file by parser feature for maintainability
   - Requirements: FR1, NFR1
