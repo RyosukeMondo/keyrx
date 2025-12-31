@@ -7,15 +7,46 @@ use axum::{
 };
 use serde_json::json;
 
-/// API error type that maps to HTTP status codes
+/// API error type that maps to HTTP status codes and provides structured error responses.
+///
+/// All variants automatically convert to appropriate HTTP responses with JSON bodies
+/// containing error codes and messages.
+///
+/// # Examples
+///
+/// ```
+/// use keyrx_daemon::web::api::error::ApiError;
+///
+/// let err = ApiError::NotFound("Profile 'gaming' not found".to_string());
+/// // This will return a 404 response with {"success": false, "error": {...}}
+/// ```
 #[derive(Debug)]
 pub enum ApiError {
+    /// Resource not found (404 NOT_FOUND)
     NotFound(String),
+
+    /// Invalid request parameters (400 BAD_REQUEST)
     BadRequest(String),
+
+    /// Internal server error (500 INTERNAL_SERVER_ERROR)
     InternalError(String),
+
+    /// Daemon service unavailable (503 SERVICE_UNAVAILABLE)
     DaemonNotRunning,
 }
 
+/// Converts `ApiError` into an Axum HTTP response with appropriate status code and JSON body.
+///
+/// The response body follows the format:
+/// ```json
+/// {
+///   "success": false,
+///   "error": {
+///     "code": "ERROR_CODE",
+///     "message": "Error description"
+///   }
+/// }
+/// ```
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let (status, code, message) = match self {
@@ -43,13 +74,14 @@ impl IntoResponse for ApiError {
     }
 }
 
-// Convenience conversions
+/// Converts `std::io::Error` to `ApiError::InternalError`.
 impl From<std::io::Error> for ApiError {
     fn from(e: std::io::Error) -> Self {
         ApiError::InternalError(e.to_string())
     }
 }
 
+/// Converts boxed error trait objects to `ApiError::InternalError`.
 impl From<Box<dyn std::error::Error>> for ApiError {
     fn from(e: Box<dyn std::error::Error>) -> Self {
         ApiError::InternalError(e.to_string())
