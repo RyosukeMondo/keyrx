@@ -17,4 +17,5 @@ pub mod ipc;
 pub mod macro_recorder;
 pub mod platform;
 pub mod processor;
+pub mod services;
 pub mod web;

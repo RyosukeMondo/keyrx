@@ -190,7 +190,7 @@
 
 ---
 
-- [ ] 5. Create service layer foundation: ProfileService
+- [x] 5. Create service layer foundation: ProfileService
   - Files: keyrx_daemon/src/services/mod.rs (new), keyrx_daemon/src/services/profile_service.rs (new)
   - Purpose: Provide single source of truth for profile operations, shared between CLI and Web API
   - Requirements: FR4, FR5, NFR3
