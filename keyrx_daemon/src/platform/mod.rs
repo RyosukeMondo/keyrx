@@ -273,8 +273,8 @@ pub trait Platform: Send + Sync {
 ///
 /// # Platform Selection
 ///
-/// - **Linux**: Returns [`LinuxPlatform`]
-/// - **Windows**: Returns [`WindowsPlatform`]
+/// - **Linux**: Returns `LinuxPlatform`
+/// - **Windows**: Returns `WindowsPlatform`
 /// - **Other**: Returns `PlatformError::Unsupported`
 ///
 /// # Examples

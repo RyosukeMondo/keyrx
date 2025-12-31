@@ -24,9 +24,8 @@
 //!
 //! # Running Tests
 //!
-//! Tests that require uinput access use the [`skip_if_no_uinput!`] macro for runtime
-//! permission checking. Tests will automatically run when uinput is accessible, or
-//! gracefully skip with a message when permissions are not available.
+//! Tests that require uinput access use runtime permission checking to automatically
+//! skip when uinput is not accessible, or gracefully run when permissions are available.
 //!
 //! ```bash
 //! # Run all tests (E2E tests auto-skip if uinput not accessible)
