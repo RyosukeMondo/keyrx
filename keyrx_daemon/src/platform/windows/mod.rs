@@ -185,13 +185,23 @@ impl Platform for WindowsPlatform {
         }
 
         // Clean up hooks
-        if let Some(_hook) = self.bridge_hook.lock().unwrap().take() {
+        if let Some(_hook) = crate::platform::recovery::recover_lock_with_context(
+            &self.bridge_hook,
+            "Windows platform shutdown (bridge hook)",
+        )?
+        .take()
+        {
             // Hook cleanup should happen here if needed
             log::debug!("Released keyboard hook");
         }
 
         // Clean up bridge context
-        if let Some(_context) = self.bridge_context.lock().unwrap().take() {
+        if let Some(_context) = crate::platform::recovery::recover_lock_with_context(
+            &self.bridge_context,
+            "Windows platform shutdown (bridge context)",
+        )?
+        .take()
+        {
             log::debug!("Released bridge context");
         }
 
