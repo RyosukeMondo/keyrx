@@ -9,7 +9,7 @@
 
 ---
 
-- [-] 1. Implement CheckBytes for all rkyv serialized types
+- [x] 1. Implement CheckBytes for all rkyv serialized types
   - Files: keyrx_core/src/runtime/mod.rs, keyrx_compiler/src/serialize.rs, fuzz/fuzz_targets/fuzz_deserialize.rs (new)
   - Purpose: Enable safe deserialization from untrusted input (WASM, network), prevent security vulnerabilities from malformed binary data
   - Requirements: FR10
