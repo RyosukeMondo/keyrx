@@ -378,7 +378,7 @@
 
 ### Task 5: Write Unit Tests for Error Types
 
-- [ ] **5. Write Unit Tests for Error Types**
+- [x] **5. Write Unit Tests for Error Types**
   - **File**: `keyrx_daemon/src/error.rs` (modify existing, add test module)
   - **Purpose**: Achieve ≥100% test coverage on all error types to ensure correctness and prevent regressions.
   - **Requirements**: NFR4, NFR6
