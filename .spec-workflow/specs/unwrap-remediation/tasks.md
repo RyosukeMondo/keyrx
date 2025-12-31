@@ -509,7 +509,7 @@
 
 ### Task 7: Replace lock().unwrap() in WASM API
 
-- [ ] **7. Replace lock().unwrap() in WASM API**
+- [x] **7. Replace lock().unwrap() in WASM API**
   - **File**: `keyrx_core/src/wasm/mod.rs`
   - **Purpose**: Eliminate mutex poison panics in WASM API calls by using poison-aware locking.
   - **Requirements**: FR2, NFR2, NFR4
