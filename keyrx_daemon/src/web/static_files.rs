@@ -7,7 +7,7 @@ use axum::{
 use include_dir::{include_dir, Dir};
 
 // Embed the UI files at compile time
-static UI_DIR: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../keyrx_ui/dist");
+static UI_DIR: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../keyrx_ui_v2/dist");
 
 /// Serve embedded static files
 pub fn serve_static() -> Router {
