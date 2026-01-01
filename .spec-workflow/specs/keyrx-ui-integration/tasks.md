@@ -64,7 +64,7 @@
   - _Requirements: REQ-1 (AC2, AC3)_
   - _Prompt: Role: Backend Developer with expertise in metrics and simulation | Task: Create keyrx_daemon/src/web/handlers/metrics.rs with 5 RPC methods (get_latency returns current metrics, get_events with limit/offset pagination defaults to 100 max 1000, clear_events empties history, simulate uses keyrx_core to run config with input events, reset_simulator clears state), validate all parameters | Restrictions: Pagination limits are mandatory (default 100, max 1000), simulate must use keyrx_core's actual simulator not a mock, results must be deterministic | Success: All methods implemented, pagination works correctly, simulation uses real keyrx_core engine, results are deterministic_
 
-- [ ] 7. Implement Subscription Channel Manager
+- [x] 7. Implement Subscription Channel Manager
   - File: keyrx_daemon/src/web/subscriptions.rs, keyrx_daemon/src/web/ws_rpc.rs
   - Create SubscriptionManager with channel tracking
   - Implement subscribe, unsubscribe, unsubscribe_all, broadcast methods
@@ -74,8 +74,8 @@
   - _Requirements: REQ-1 (AC4, AC8, AC10)_
   - _Prompt: Role: Rust Systems Developer with expertise in pub/sub patterns and concurrency | Task: Create keyrx_daemon/src/web/subscriptions.rs with SubscriptionManager that tracks client subscriptions using HashMap<String, HashSet<ClientId>>, implements subscribe (add client to channel), unsubscribe (remove from channel), unsubscribe_all (remove all subscriptions for client), broadcast (send Event message to all subscribed clients on channel), integrate into WebSocket handler for automatic cleanup on disconnect | Restrictions: Must be thread-safe (use Arc<Mutex> or similar), broadcast must not block, disconnect must automatically clean up all subscriptions | Success: Multiple clients can subscribe to same channel, broadcasts reach all subscribed clients, unsubscribe stops events, disconnect cleans up automatically, integration tests verify pub/sub behavior_
 
-- [ ] 8. Integrate Daemon Event Broadcasting
-  - File: keyrx_daemon/src/main.rs, keyrx_daemon/src/processor.rs
+- [x] 8. Integrate Daemon Event Broadcasting
+  - File: keyrx_daemon/src/main.rs, keyrx_daemon/src/daemon/event_broadcaster.rs
   - Broadcast daemon state changes to "daemon-state" channel
   - Broadcast key events to "events" channel
   - Broadcast latency metrics to "latency" channel every 1 second

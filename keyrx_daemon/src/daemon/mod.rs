@@ -51,11 +51,13 @@ use crate::config_loader::ConfigError;
 use crate::platform::{Platform, PlatformError};
 
 // Submodules
+pub mod event_broadcaster;
 pub mod event_loop;
 pub mod signals;
 pub mod state;
 
 // Re-exports for public API
+pub use event_broadcaster::{start_latency_broadcast_task, EventBroadcaster};
 pub use signals::{install_signal_handlers, SignalHandler};
 pub use state::ReloadState;
 

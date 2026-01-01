@@ -310,6 +310,11 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     // Create broadcast channel for event streaming to WebSocket clients
     let (event_tx, _event_rx) = tokio::sync::broadcast::channel(1000);
     let event_tx_clone = event_tx.clone();
+    let event_tx_for_broadcaster = event_tx.clone();
+
+    // Create event broadcaster for real-time updates
+    let event_broadcaster = keyrx_daemon::daemon::EventBroadcaster::new(event_tx_for_broadcaster);
+    let running_for_broadcaster = daemon.running_flag();
 
     // Create AppState with dependencies for web API
     let macro_recorder = std::sync::Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());
@@ -352,7 +357,7 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
         subscription_manager,
     ));
 
-    // Start web server in background (optional)
+    // Start web server and event broadcasting in background (optional)
     std::thread::spawn(move || {
         let rt = match tokio::runtime::Runtime::new() {
             Ok(runtime) => runtime,
@@ -363,6 +368,12 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
             }
         };
         rt.block_on(async {
+            // Start latency broadcast task
+            tokio::spawn(keyrx_daemon::daemon::start_latency_broadcast_task(
+                event_broadcaster,
+                running_for_broadcaster,
+            ));
+
             let addr: std::net::SocketAddr = ([127, 0, 0, 1], 9867).into();
             log::info!("Starting web server on http://{}", addr);
             match keyrx_daemon::web::serve(addr, event_tx_clone, app_state).await {
@@ -411,6 +422,11 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     // Create broadcast channel for event streaming to WebSocket clients
     let (event_tx, _event_rx) = tokio::sync::broadcast::channel(1000);
     let event_tx_clone = event_tx.clone();
+    let event_tx_for_broadcaster = event_tx.clone();
+
+    // Create event broadcaster for real-time updates
+    let event_broadcaster = keyrx_daemon::daemon::EventBroadcaster::new(event_tx_for_broadcaster);
+    let running_for_broadcaster = daemon.running_flag();
 
     // Start web server in background
     let macro_recorder = std::sync::Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());
@@ -463,6 +479,12 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
             }
         };
         rt.block_on(async {
+            // Start latency broadcast task
+            tokio::spawn(keyrx_daemon::daemon::start_latency_broadcast_task(
+                event_broadcaster,
+                running_for_broadcaster,
+            ));
+
             let addr: std::net::SocketAddr = ([127, 0, 0, 1], 9867).into();
             log::info!("Starting web server on http://{}", addr);
             match keyrx_daemon::web::serve(addr, event_tx_clone, app_state).await {

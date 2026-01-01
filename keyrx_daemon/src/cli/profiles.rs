@@ -182,7 +182,9 @@ async fn handle_list(service: &ProfileService, json: bool) -> Result<(), i32> {
             profiles: profile_infos,
             active,
         };
-        println!("{}", serde_json::to_string_pretty(&output).unwrap());
+        if let Ok(json) = serde_json::to_string_pretty(&output) {
+            println!("{}", json);
+        }
     } else {
         if profiles.is_empty() {
             println!("No profiles found.");
@@ -245,7 +247,9 @@ async fn handle_create(
                     rhai_path: format!("{}/{}.rhai", "~/.config/keyrx/profiles", profile.name),
                     layer_count: profile.layer_count,
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                if let Ok(json) = serde_json::to_string_pretty(&output) {
+                    println!("{}", json);
+                }
             } else {
                 println!("✓ Profile '{}' created", name);
                 println!("  Layers: {}", profile.layer_count);
@@ -373,10 +377,10 @@ async fn handle_delete(
     if !confirm && !json {
         use std::io::{self, Write};
         print!("Delete profile '{}'? This cannot be undone. [y/N]: ", name);
-        io::stdout().flush().unwrap();
+        let _ = io::stdout().flush();
 
         let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
+        let _ = io::stdin().read_line(&mut input);
 
         if !input.trim().eq_ignore_ascii_case("y") {
             println!("Cancelled.");
