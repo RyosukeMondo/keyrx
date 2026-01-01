@@ -454,7 +454,7 @@
   - _Requirements: REQ-8 (AC3, AC6, AC9)_
   - _Prompt: Role: Rust Build Systems Developer with expertise in cargo build scripts and embedding | Task: Modify keyrx_daemon/build.rs to check if ../keyrx_ui_v2/dist directory exists, if not print error "UI directory not found. Run 'scripts/build_ui.sh' first" and panic!, add println!("cargo:rerun-if-changed=../keyrx_ui_v2/dist"), add include_dir to Cargo.toml dependencies, verify keyrx_daemon/src/web/static_files.rs correctly embeds UI_DIR with include_dir!("$CARGO_MANIFEST_DIR/../keyrx_ui_v2/dist") and serves files with SPA fallback to index.html, add unit test in static_files.rs that asserts UI_DIR.get_file("index.html").is_some() | Restrictions: build.rs must fail with clear error if dist missing, must trigger rebuild if UI changes, include_dir macro required for embedding, unit test verification mandatory | Success: build.rs verifies dist exists, fails with helpful error if missing, rebuilds on UI changes, UI_DIR embedded correctly, serves files including SPA routing, unit test verifies index.html present, daemon binary serves UI correctly_
 
-- [ ] 44. Create Master Build Script
+- [x] 44. Create Master Build Script
   - File: scripts/build.sh, Makefile
   - Build in sequence: WASM → UI → daemon
   - Print summary with build times and sizes
