@@ -3,7 +3,7 @@
 #
 # Purpose:
 #   Compiles keyrx_core Rust crate to WASM for browser use
-#   Outputs to keyrx_ui_v2/src/wasm/pkg/ for frontend integration
+#   Outputs to keyrx_ui/src/wasm/pkg/ for frontend integration
 #
 # Dependencies:
 #   - wasm-pack (install: cargo install wasm-pack)
@@ -51,7 +51,7 @@ log_info "wasm-pack found: $(wasm-pack --version)"
 
 # Navigate to keyrx_core directory
 KEYRX_CORE_DIR="$PROJECT_ROOT/keyrx_core"
-OUTPUT_DIR="$PROJECT_ROOT/keyrx_ui_v2/src/wasm/pkg"
+OUTPUT_DIR="$PROJECT_ROOT/keyrx_ui/src/wasm/pkg"
 
 if [[ ! -d "$KEYRX_CORE_DIR" ]]; then
     log_error "keyrx_core directory not found"

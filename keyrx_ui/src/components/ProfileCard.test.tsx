@@ -1,261 +1,141 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProfileCard } from './ProfileCard';
-import { Profile } from './ProfilesPage';
-import { renderWithProviders } from '../../tests/testUtils';
 
 describe('ProfileCard', () => {
-  const mockProfile: Profile = {
-    name: 'test-profile',
-    rhai_path: '/path/to/test.rhai',
-    krx_path: '/path/to/test.krx',
-    modified_at: Date.now() - 3600000, // 1 hour ago
-    layer_count: 3,
-    is_active: false,
-  };
+  const mockOnActivate = vi.fn();
+  const mockOnEdit = vi.fn();
+  const mockOnDelete = vi.fn();
 
-  const mockActiveProfile: Profile = {
-    ...mockProfile,
-    name: 'active-profile',
-    is_active: true,
-  };
-
-  const mockCallbacks = {
-    onActivate: vi.fn(),
-    onDelete: vi.fn(),
-    onDuplicate: vi.fn(),
-    onExport: vi.fn(),
-    onRename: vi.fn(),
+  const defaultProps = {
+    name: 'Test Profile',
+    isActive: false,
+    onActivate: mockOnActivate,
+    onEdit: mockOnEdit,
+    onDelete: mockOnDelete,
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should render profile with correct name', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
-
-    expect(screen.getByText('test-profile')).toBeInTheDocument();
+  it('renders profile name', () => {
+    render(<ProfileCard {...defaultProps} />);
+    expect(screen.getByText('Test Profile')).toBeInTheDocument();
   });
 
-  it('should display layer count', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
+  it('renders description when provided', () => {
+    render(
+      <ProfileCard {...defaultProps} description="Test description" />
     );
-
-    expect(screen.getByText('3 layers')).toBeInTheDocument();
+    expect(screen.getByText('Test description')).toBeInTheDocument();
   });
 
-  it('should display formatted timestamp using formatTimestampRelative', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
+  it('renders last modified when provided', () => {
+    render(
+      <ProfileCard {...defaultProps} lastModified="2025-12-29 10:30" />
     );
-
-    // The formatTimestampRelative should show something like "1 hour ago"
-    expect(screen.getByText(/Modified/)).toBeInTheDocument();
+    expect(screen.getByText(/Modified: 2025-12-29 10:30/)).toBeInTheDocument();
   });
 
-  it('should show inactive status indicator for inactive profile', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
-
-    const statusIndicator = screen.getByText('○');
-    expect(statusIndicator).toBeInTheDocument();
-    expect(statusIndicator).toHaveClass('status-indicator');
+  it('shows ACTIVE badge when profile is active', () => {
+    render(<ProfileCard {...defaultProps} isActive={true} />);
+    expect(screen.getByText('ACTIVE')).toBeInTheDocument();
   });
 
-  it('should show active status indicator for active profile', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockActiveProfile} {...mockCallbacks} />
-    );
-
-    const statusIndicator = screen.getByText('●');
-    expect(statusIndicator).toBeInTheDocument();
-    expect(statusIndicator).toHaveClass('status-indicator', 'active');
+  it('does not show ACTIVE badge when profile is inactive', () => {
+    render(<ProfileCard {...defaultProps} isActive={false} />);
+    expect(screen.queryByText('ACTIVE')).not.toBeInTheDocument();
   });
 
-  it('should apply active CSS class when profile is active', () => {
-    const { container } = renderWithProviders(
-      <ProfileCard profile={mockActiveProfile} {...mockCallbacks} />
-    );
-
-    const profileCard = container.querySelector('.profile-card');
-    expect(profileCard).toHaveClass('active');
+  it('shows Activate button when profile is inactive', () => {
+    render(<ProfileCard {...defaultProps} isActive={false} />);
+    expect(
+      screen.getByRole('button', { name: /Activate profile Test Profile/i })
+    ).toBeInTheDocument();
   });
 
-  it('should not apply active CSS class when profile is inactive', () => {
-    const { container } = renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
-
-    const profileCard = container.querySelector('.profile-card');
-    expect(profileCard).not.toHaveClass('active');
+  it('does not show Activate button when profile is active', () => {
+    render(<ProfileCard {...defaultProps} isActive={true} />);
+    expect(
+      screen.queryByRole('button', { name: /Activate profile/i })
+    ).not.toBeInTheDocument();
   });
 
-  it('should show activate button for inactive profile', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
-
-    expect(screen.getByRole('button', { name: /activate/i })).toBeInTheDocument();
-  });
-
-  it('should not show activate button for active profile', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockActiveProfile} {...mockCallbacks} />
-    );
-
-    expect(screen.queryByRole('button', { name: /activate/i })).not.toBeInTheDocument();
-  });
-
-  it('should show "Active Profile" label for active profile', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockActiveProfile} {...mockCallbacks} />
-    );
-
-    expect(screen.getByText('Active Profile')).toBeInTheDocument();
-  });
-
-  it('should call onActivate when activate button is clicked', async () => {
+  it('calls onActivate when Activate button is clicked', async () => {
     const user = userEvent.setup();
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
+    render(<ProfileCard {...defaultProps} isActive={false} />);
 
-    const activateButton = screen.getByRole('button', { name: /activate/i });
+    const activateButton = screen.getByRole('button', {
+      name: /Activate profile Test Profile/i,
+    });
     await user.click(activateButton);
 
-    expect(mockCallbacks.onActivate).toHaveBeenCalledTimes(1);
+    expect(mockOnActivate).toHaveBeenCalledTimes(1);
   });
 
-  it('should call onRename when rename button is clicked', async () => {
+  it('calls onEdit when Edit button is clicked', async () => {
     const user = userEvent.setup();
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
+    render(<ProfileCard {...defaultProps} />);
 
-    const renameButton = screen.getByRole('button', { name: /rename/i });
-    await user.click(renameButton);
+    const editButton = screen.getByRole('button', {
+      name: /Edit profile Test Profile/i,
+    });
+    await user.click(editButton);
 
-    expect(mockCallbacks.onRename).toHaveBeenCalledTimes(1);
+    expect(mockOnEdit).toHaveBeenCalledTimes(1);
   });
 
-  it('should call onDuplicate when duplicate button is clicked', async () => {
+  it('calls onDelete when Delete button is clicked', async () => {
     const user = userEvent.setup();
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
+    render(<ProfileCard {...defaultProps} isActive={false} />);
 
-    const duplicateButton = screen.getByRole('button', { name: /duplicate/i });
-    await user.click(duplicateButton);
-
-    expect(mockCallbacks.onDuplicate).toHaveBeenCalledTimes(1);
-  });
-
-  it('should call onExport when export button is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
-
-    const exportButton = screen.getByRole('button', { name: /export/i });
-    await user.click(exportButton);
-
-    expect(mockCallbacks.onExport).toHaveBeenCalledTimes(1);
-  });
-
-  it('should call onDelete when delete button is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
-
-    const deleteButton = screen.getByRole('button', { name: /delete/i });
+    const deleteButton = screen.getByRole('button', {
+      name: /Delete profile Test Profile/i,
+    });
     await user.click(deleteButton);
 
-    expect(mockCallbacks.onDelete).toHaveBeenCalledTimes(1);
+    expect(mockOnDelete).toHaveBeenCalledTimes(1);
   });
 
-  it('should disable delete button for active profile', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockActiveProfile} {...mockCallbacks} />
-    );
+  it('disables Delete button when profile is active', () => {
+    render(<ProfileCard {...defaultProps} isActive={true} />);
 
-    const deleteButton = screen.getByRole('button', { name: /delete/i });
+    const deleteButton = screen.getByRole('button', {
+      name: /Delete profile Test Profile/i,
+    });
     expect(deleteButton).toBeDisabled();
   });
 
-  it('should enable delete button for inactive profile', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
+  it('has green border when profile is active', () => {
+    const { container } = render(
+      <ProfileCard {...defaultProps} isActive={true} />
     );
 
-    const deleteButton = screen.getByRole('button', { name: /delete/i });
-    expect(deleteButton).not.toBeDisabled();
+    // Find the Card element (first div child)
+    const card = container.querySelector('.border-green-500');
+    expect(card).toBeInTheDocument();
   });
 
-  it('should display all secondary action buttons', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
-
-    expect(screen.getByRole('button', { name: /rename/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /duplicate/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /export/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+  it('has active profile indicator icon when active', () => {
+    render(<ProfileCard {...defaultProps} isActive={true} />);
+    expect(
+      screen.getByLabelText('Active profile indicator')
+    ).toBeInTheDocument();
   });
 
-  it('should handle profile with 1 layer count (singular form)', () => {
-    const singleLayerProfile: Profile = {
-      ...mockProfile,
-      layer_count: 1,
-    };
+  it('renders all buttons with proper aria-labels', () => {
+    render(<ProfileCard {...defaultProps} isActive={false} />);
 
-    renderWithProviders(
-      <ProfileCard profile={singleLayerProfile} {...mockCallbacks} />
-    );
-
-    expect(screen.getByText('1 layers')).toBeInTheDocument();
-  });
-
-  it('should handle profile with many layers', () => {
-    const manyLayersProfile: Profile = {
-      ...mockProfile,
-      layer_count: 255,
-    };
-
-    renderWithProviders(
-      <ProfileCard profile={manyLayersProfile} {...mockCallbacks} />
-    );
-
-    expect(screen.getByText('255 layers')).toBeInTheDocument();
-  });
-
-  it('should handle profile with zero layers', () => {
-    const zeroLayersProfile: Profile = {
-      ...mockProfile,
-      layer_count: 0,
-    };
-
-    renderWithProviders(
-      <ProfileCard profile={zeroLayersProfile} {...mockCallbacks} />
-    );
-
-    expect(screen.getByText('0 layers')).toBeInTheDocument();
-  });
-
-  it('should have correct title attributes on secondary action buttons', () => {
-    renderWithProviders(
-      <ProfileCard profile={mockProfile} {...mockCallbacks} />
-    );
-
-    expect(screen.getByTitle('Rename')).toBeInTheDocument();
-    expect(screen.getByTitle('Duplicate')).toBeInTheDocument();
-    expect(screen.getByTitle('Export')).toBeInTheDocument();
-    expect(screen.getByTitle('Delete')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Activate profile Test Profile/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Edit profile Test Profile/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Delete profile Test Profile/i })
+    ).toBeInTheDocument();
   });
 });

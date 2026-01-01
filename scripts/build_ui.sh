@@ -4,7 +4,7 @@
 # Purpose:
 #   Builds the complete frontend application including WASM module
 #   Clears previous build artifacts and creates fresh production build
-#   Outputs to keyrx_ui_v2/dist/ for embedding in daemon
+#   Outputs to keyrx_ui/dist/ for embedding in daemon
 #
 # Dependencies:
 #   - Node.js 18+ and npm
@@ -60,7 +60,7 @@ log_info "Node.js found: $(node --version)"
 log_info "npm found: $(npm --version)"
 
 # Define paths
-UI_DIR="$PROJECT_ROOT/keyrx_ui_v2"
+UI_DIR="$PROJECT_ROOT/keyrx_ui"
 DIST_DIR="$UI_DIR/dist"
 
 if [[ ! -d "$UI_DIR" ]]; then

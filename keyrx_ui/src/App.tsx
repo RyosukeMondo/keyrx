@@ -1,82 +1,44 @@
-import { useState } from 'react'
-import './App.css'
-import { ApiProvider } from './contexts/ApiContext'
-import { DeviceList } from './components/DeviceList'
-import { SimulatorPanel } from './components/Simulator/SimulatorPanel'
-import { ConfigurationPage } from './components/ConfigurationPage'
-import { MacroRecorderPage } from './components/MacroRecorderPage'
-import { ProfilesPage } from './components/ProfilesPage'
-import { VisualBuilderPage } from './components/VisualBuilderPage'
-import { DashboardPage } from './components/DashboardPage'
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { Layout } from './components/Layout';
+import { LoadingSpinner } from './components/LoadingSpinner';
 
-type ActiveView = 'devices' | 'simulator' | 'config' | 'macros' | 'profiles' | 'visual' | 'dashboard'
+// Lazy load all page components for code splitting
+const HomePage = lazy(() => import('./pages/HomePage'));
+const DevicesPage = lazy(() => import('./pages/DevicesPage'));
+const ProfilesPage = lazy(() => import('./pages/ProfilesPage'));
+const ConfigPage = lazy(() => import('./pages/ConfigPage'));
+const MetricsPage = lazy(() => import('./pages/MetricsPage'));
+const SimulatorPage = lazy(() => import('./pages/SimulatorPage'));
 
 function App() {
-  const [activeView, setActiveView] = useState<ActiveView>('devices')
-
   return (
-    <ApiProvider>
-      <div className="app">
-        <header>
-          <h1>KeyRX</h1>
-          <p>Advanced Keyboard Remapping</p>
-          <nav className="app-nav">
-            <button
-              className={activeView === 'devices' ? 'nav-button active' : 'nav-button'}
-              onClick={() => setActiveView('devices')}
-            >
-              Devices
-            </button>
-            <button
-              className={activeView === 'simulator' ? 'nav-button active' : 'nav-button'}
-              onClick={() => setActiveView('simulator')}
-            >
-              Simulator
-            </button>
-            <button
-              className={activeView === 'config' ? 'nav-button active' : 'nav-button'}
-              onClick={() => setActiveView('config')}
-            >
-              Config Editor
-            </button>
-            <button
-              className={activeView === 'macros' ? 'nav-button active' : 'nav-button'}
-              onClick={() => setActiveView('macros')}
-            >
-              Macro Recorder
-            </button>
-            <button
-              className={activeView === 'profiles' ? 'nav-button active' : 'nav-button'}
-              onClick={() => setActiveView('profiles')}
-            >
-              Profiles
-            </button>
-            <button
-              className={activeView === 'visual' ? 'nav-button active' : 'nav-button'}
-              onClick={() => setActiveView('visual')}
-            >
-              Visual Builder
-            </button>
-            <button
-              className={activeView === 'dashboard' ? 'nav-button active' : 'nav-button'}
-              onClick={() => setActiveView('dashboard')}
-            >
-              Dashboard
-            </button>
-          </nav>
-        </header>
-        <main>
-          {activeView === 'devices' && <DeviceList />}
-          {activeView === 'simulator' && <SimulatorPanel />}
-          {activeView === 'config' && <ConfigurationPage />}
-          {activeView === 'macros' && <MacroRecorderPage />}
-          {activeView === 'profiles' && <ProfilesPage />}
-          {activeView === 'visual' && <VisualBuilderPage />}
-          {activeView === 'dashboard' && <DashboardPage />}
-        </main>
-      </div>
-    </ApiProvider>
-  )
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Layout>
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center min-h-screen">
+                <LoadingSpinner size="lg" />
+              </div>
+            }
+          >
+            <Routes>
+              <Route path="/" element={<Navigate to="/home" replace />} />
+              <Route path="/home" element={<HomePage />} />
+              <Route path="/devices" element={<DevicesPage />} />
+              <Route path="/profiles" element={<ProfilesPage />} />
+              <Route path="/config" element={<ConfigPage />} />
+              <Route path="/metrics" element={<MetricsPage />} />
+              <Route path="/simulator" element={<SimulatorPage />} />
+              <Route path="*" element={<Navigate to="/home" replace />} />
+            </Routes>
+          </Suspense>
+        </Layout>
+      </BrowserRouter>
+    </ErrorBoundary>
+  );
 }
 
-export default App
+export default App;

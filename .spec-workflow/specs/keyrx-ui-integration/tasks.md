@@ -484,7 +484,7 @@
   - _Requirements: REQ-8 (AC10)_
   - _Prompt: Role: DevOps Engineer with expertise in GitHub Actions and CI/CD pipelines | Task: Modify .github/workflows/ci.yml to: checkout code, setup Rust stable + wasm32-unknown-unknown target, setup Node.js 18, install wasm-pack, cache cargo and npm dependencies, run scripts/build.sh, run scripts/verify.sh, upload coverage reports to artifact, fail build if any step fails; modify .github/workflows/release.yml (triggered on tag push) to: build for Linux and Windows targets, create release artifacts (binaries, UI bundle), create GitHub release with changelog, upload artifacts to release, test CI by pushing to branch | Restrictions: CI must run on push and pull_request, dependencies must be cached for speed, all steps must be logged, coverage upload required, release only on tag push, multi-platform builds mandatory | Success: CI workflow runs on push/PR, builds WASM → UI → daemon, runs all verifications, uploads coverage, caches work correctly, release workflow builds for Linux/Windows, creates GitHub release with binaries, all steps logged, failures stop pipeline_
 
-- [ ] 47. Migrate keyrx_ui_v2 to keyrx_ui
+- [-] 47. Migrate keyrx_ui_v2 to keyrx_ui
   - File: keyrx_ui/ (remove old), keyrx_ui_v2/ (rename to keyrx_ui), scripts/, keyrx_daemon/build.rs, Cargo.toml, .github/workflows/
   - Remove old keyrx_ui directory completely
   - Rename keyrx_ui_v2 to keyrx_ui

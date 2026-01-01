@@ -49,7 +49,7 @@ OUTPUT MARKERS:
 
 BUILD SEQUENCE:
     1. WASM (keyrx_core → WebAssembly)
-    2. UI (keyrx_ui_v2 with embedded WASM)
+    2. UI (keyrx_ui with embedded WASM)
     3. Daemon (keyrx_daemon with embedded UI)
 EOF
 }
@@ -180,8 +180,8 @@ print_summary() {
     fi
 
     local daemon_binary="$build_dir/keyrx_daemon"
-    local wasm_file="keyrx_ui_v2/src/wasm/pkg/keyrx_core_bg.wasm"
-    local ui_index="keyrx_ui_v2/dist/index.html"
+    local wasm_file="keyrx_ui/src/wasm/pkg/keyrx_core_bg.wasm"
+    local ui_index="keyrx_ui/dist/index.html"
 
     echo ""
     log_info "=== Build Summary ==="
@@ -208,7 +208,7 @@ print_summary() {
 
     # UI
     if [[ -f "$ui_index" ]]; then
-        log_info "  UI:     Built (keyrx_ui_v2/dist/)"
+        log_info "  UI:     Built (keyrx_ui/dist/)"
     else
         log_warn "  UI:     not found"
     fi
@@ -336,8 +336,8 @@ main() {
         if [[ -f "$build_dir/keyrx_daemon" ]]; then
             daemon_size=$(get_file_size "$build_dir/keyrx_daemon")
         fi
-        if [[ -f "keyrx_ui_v2/src/wasm/pkg/keyrx_core_bg.wasm" ]]; then
-            wasm_size=$(get_file_size "keyrx_ui_v2/src/wasm/pkg/keyrx_core_bg.wasm")
+        if [[ -f "keyrx_ui/src/wasm/pkg/keyrx_core_bg.wasm" ]]; then
+            wasm_size=$(get_file_size "keyrx_ui/src/wasm/pkg/keyrx_core_bg.wasm")
         fi
 
         local total_time=0

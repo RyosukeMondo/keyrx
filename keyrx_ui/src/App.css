@@ -1,87 +1,42 @@
 #root {
-  max-width: 1400px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0;
+  padding: 2rem;
   text-align: center;
 }
 
-.app {
-  min-height: 100vh;
-  width: 100%;
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-.app header {
-  padding: 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.app header h1 {
-  margin: 0 0 0.5rem 0;
-  font-size: 2rem;
-}
-
-.app header p {
-  margin: 0 0 1.5rem 0;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.app-nav {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
-.nav-button {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.8);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.nav-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 1);
-}
-
-.nav-button.active {
-  background: rgba(100, 200, 255, 0.15);
-  border-color: rgba(100, 200, 255, 0.4);
-  color: rgba(100, 200, 255, 1);
-}
-
-.app main {
-  padding: 0;
-}
-
-@media (prefers-color-scheme: light) {
-  .app header {
-    border-bottom-color: rgba(0, 0, 0, 0.1);
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
   }
-
-  .app header p {
-    color: rgba(0, 0, 0, 0.6);
+  to {
+    transform: rotate(360deg);
   }
+}
 
-  .nav-button {
-    border-color: rgba(0, 0, 0, 0.2);
-    color: rgba(0, 0, 0, 0.8);
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
   }
+}
 
-  .nav-button:hover {
-    background: rgba(0, 0, 0, 0.05);
-    border-color: rgba(0, 0, 0, 0.3);
-    color: rgba(0, 0, 0, 1);
-  }
+.card {
+  padding: 2em;
+}
 
-  .nav-button.active {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.4);
-    color: rgba(30, 64, 175, 1);
-  }
+.read-the-docs {
+  color: #888;
 }

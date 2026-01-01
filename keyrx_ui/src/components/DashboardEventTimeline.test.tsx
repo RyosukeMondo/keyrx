@@ -1,575 +1,387 @@
-/**
- * Unit tests for DashboardEventTimeline component
- *
- * Tests event rendering, pause/resume functionality, virtualization,
- * hover tooltips, and accessibility.
- */
-
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, within, act } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { DashboardEventTimeline } from './DashboardEventTimeline';
-import { useDashboardStore, KeyEvent } from '../store/dashboardStore';
+import type { KeyEvent } from '../types/rpc';
 
-// Mock react-window to avoid JSDOM issues with virtualization
+// Mock react-window
 vi.mock('react-window', () => ({
-  FixedSizeList: ({ children, itemCount, height, width, className, role }: any) => {
-    // Render all items for testing purposes
-    const items = Array.from({ length: itemCount }, (_, index) => {
-      return <div key={index}>{children({ index, style: {} })}</div>;
-    });
-    return (
-      <div
-        className={className}
-        role={role}
-        style={{ height, width: typeof width === 'number' ? `${width}px` : width }}
-      >
-        {items}
-      </div>
-    );
+  FixedSizeList: ({ children, itemCount, height, itemSize, className }: any) => (
+    <div
+      data-testid="virtualized-list"
+      data-item-count={itemCount}
+      data-height={height}
+      data-item-size={itemSize}
+      className={className}
+    >
+      {/* Render first few items for testing */}
+      {Array.from({ length: Math.min(itemCount, 3) }, (_, index) =>
+        children({ index, style: {} })
+      )}
+    </div>
+  ),
+}));
+
+// Mock utility functions
+vi.mock('../utils/keyCodeMapping', () => ({
+  formatKeyCode: (code: number) => {
+    const keyMap: Record<number, string> = {
+      65: 'A',
+      13: 'Enter',
+      32: 'Space',
+      16: 'Shift',
+    };
+    return keyMap[code] || `Key${code}`;
+  },
+}));
+
+vi.mock('../utils/timeFormatting', () => ({
+  formatTimestampRelative: (timestamp: number) => {
+    const now = Date.now();
+    const diff = now - timestamp;
+    if (diff < 1000) return 'just now';
+    if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`;
+    return `${Math.floor(diff / 60000)}m ago`;
   },
 }));
 
 describe('DashboardEventTimeline', () => {
-  // Reset the store before each test
-  beforeEach(() => {
-    useDashboardStore.getState().reset();
+  const mockEvents: KeyEvent[] = [
+    {
+      timestamp: 1000000,
+      keyCode: 65,
+      eventType: 'press',
+      input: 65,
+      output: 66,
+      latency: 500,
+    },
+    {
+      timestamp: 2000000,
+      keyCode: 13,
+      eventType: 'release',
+      input: 13,
+      output: 13,
+      latency: 300,
+    },
+    {
+      timestamp: 3000000,
+      keyCode: 32,
+      eventType: 'press',
+      input: 32,
+      output: 32,
+      latency: 400,
+    },
+  ];
+
+  it('renders title', () => {
+    render(
+      <DashboardEventTimeline
+        events={[]}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Event Timeline')).toBeInTheDocument();
   });
 
-  // Helper function to create mock events
-  const createMockEvent = (
-    timestamp: number,
-    keyCode: string,
-    eventType: 'press' | 'release',
-    input: string,
-    output: string,
-    latency: number
-  ): KeyEvent => ({
-    timestamp,
-    keyCode,
-    eventType,
-    input,
-    output,
-    latency,
+  it('renders pause button with correct text when not paused', () => {
+    render(
+      <DashboardEventTimeline
+        events={[]}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Pause')).toBeInTheDocument();
   });
 
-  describe('Empty State', () => {
-    it('should render empty state when there are no events', () => {
-      render(<DashboardEventTimeline />);
+  it('renders resume button with correct text when paused', () => {
+    render(
+      <DashboardEventTimeline
+        events={[]}
+        isPaused={true}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
 
-      expect(screen.getByRole('status')).toBeInTheDocument();
-      expect(screen.getByText(/no events yet/i)).toBeInTheDocument();
-      expect(screen.getByText(/start typing to see events/i)).toBeInTheDocument();
-    });
-
-    it('should display "0 / 100 events" when empty', () => {
-      render(<DashboardEventTimeline />);
-
-      expect(screen.getByText('0 / 100 events')).toBeInTheDocument();
-    });
-
-    it('should not render event list when empty', () => {
-      render(<DashboardEventTimeline />);
-
-      expect(screen.queryByRole('list')).not.toBeInTheDocument();
-    });
+    expect(screen.getByText('Resume')).toBeInTheDocument();
   });
 
-  describe('Event Rendering', () => {
-    it('should render event list with correct data', () => {
-      const events: KeyEvent[] = [
-        createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500),
-        createMockEvent(1234567891000000, 'KEY_A', 'release', 'A', 'B', 1200),
-        createMockEvent(1234567892000000, 'KEY_C', 'press', 'C', 'D', 8000),
-      ];
+  it('calls onTogglePause when pause button is clicked', () => {
+    const handleTogglePause = vi.fn();
 
-      events.forEach(event => useDashboardStore.getState().addEvent(event));
+    render(
+      <DashboardEventTimeline
+        events={[]}
+        isPaused={false}
+        onTogglePause={handleTogglePause}
+        onClear={vi.fn()}
+      />
+    );
 
-      render(<DashboardEventTimeline />);
-
-      expect(screen.getByRole('list')).toBeInTheDocument();
-      expect(screen.getAllByRole('row')).toHaveLength(3);
-    });
-
-    it('should display events in reverse chronological order (newest first)', () => {
-      const event1 = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      const event2 = createMockEvent(1234567891000000, 'KEY_B', 'press', 'B', 'C', 1200);
-      const event3 = createMockEvent(1234567892000000, 'KEY_C', 'press', 'C', 'D', 1000);
-
-      useDashboardStore.getState().addEvent(event1);
-      useDashboardStore.getState().addEvent(event2);
-      useDashboardStore.getState().addEvent(event3);
-
-      render(<DashboardEventTimeline />);
-
-      const rows = screen.getAllByRole('row');
-
-      // First row should be the newest event (event3)
-      expect(rows[0]).toHaveTextContent('KEY_C');
-      // Last row should be the oldest event (event1)
-      expect(rows[2]).toHaveTextContent('KEY_A');
-    });
-
-    it('should display press event with down arrow', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      const row = screen.getByRole('row');
-      expect(row).toHaveTextContent('↓');
-    });
-
-    it('should display release event with up arrow', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'release', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      const row = screen.getByRole('row');
-      expect(row).toHaveTextContent('↑');
-    });
-
-    it('should display key code correctly', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_ENTER', 'press', 'Enter', 'Enter', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      expect(screen.getByText('KEY_ENTER')).toBeInTheDocument();
-    });
-
-    it('should display input → output mapping', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      expect(screen.getByText('A → B')).toBeInTheDocument();
-    });
-
-    it('should format latency correctly', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      // 1500 microseconds = 1.50ms
-      expect(screen.getByText('1.50ms')).toBeInTheDocument();
-    });
-
-    it('should highlight high latency events (>5ms)', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 6000);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      const row = screen.getByRole('row');
-      expect(row).toHaveClass('high-latency');
-    });
-
-    it('should not highlight normal latency events (≤5ms)', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 3000);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      const row = screen.getByRole('row');
-      expect(row).not.toHaveClass('high-latency');
-    });
-
-    it('should display correct event count', () => {
-      const events = [
-        createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500),
-        createMockEvent(1234567891000000, 'KEY_B', 'press', 'B', 'C', 1200),
-        createMockEvent(1234567892000000, 'KEY_C', 'press', 'C', 'D', 1000),
-      ];
-
-      events.forEach(event => useDashboardStore.getState().addEvent(event));
-
-      render(<DashboardEventTimeline />);
-
-      expect(screen.getByText('3 / 100 events')).toBeInTheDocument();
-    });
+    fireEvent.click(screen.getByText('Pause'));
+    expect(handleTogglePause).toHaveBeenCalledTimes(1);
   });
 
-  describe('Pause/Resume Functionality', () => {
-    it('should render pause button initially', () => {
-      render(<DashboardEventTimeline />);
+  it('calls onClear when clear button is clicked', () => {
+    const handleClear = vi.fn();
 
-      const button = screen.getByRole('button', { name: /pause event timeline/i });
-      expect(button).toBeInTheDocument();
-      expect(button).toHaveTextContent('⏸ Pause');
-    });
+    render(
+      <DashboardEventTimeline
+        events={mockEvents}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={handleClear}
+      />
+    );
 
-    it('should toggle to resume button when paused', () => {
-      render(<DashboardEventTimeline />);
-
-      const button = screen.getByRole('button', { name: /pause event timeline/i });
-      fireEvent.click(button);
-
-      expect(screen.getByRole('button', { name: /resume event timeline/i })).toBeInTheDocument();
-      expect(screen.getByText('▶ Resume')).toBeInTheDocument();
-    });
-
-    it('should capture current events when pausing', () => {
-      const events = [
-        createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500),
-        createMockEvent(1234567891000000, 'KEY_B', 'press', 'B', 'C', 1200),
-      ];
-
-      events.forEach(event => useDashboardStore.getState().addEvent(event));
-
-      render(<DashboardEventTimeline />);
-
-      // Pause the timeline
-      const button = screen.getByRole('button', { name: /pause event timeline/i });
-      fireEvent.click(button);
-
-      // Verify the events are still displayed
-      expect(screen.getAllByRole('row')).toHaveLength(2);
-    });
-
-    it('should not display new events while paused', () => {
-      const event1 = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event1);
-
-      const { rerender } = render(<DashboardEventTimeline />);
-
-      // Pause the timeline
-      const button = screen.getByRole('button', { name: /pause event timeline/i });
-      fireEvent.click(button);
-
-      // Add new event while paused
-      act(() => {
-        const event2 = createMockEvent(1234567891000000, 'KEY_B', 'press', 'B', 'C', 1200);
-        useDashboardStore.getState().addEvent(event2);
-      });
-
-      // Force re-render to ensure state update is reflected
-      rerender(<DashboardEventTimeline />);
-
-      // Should still show only 1 event (the paused snapshot)
-      expect(screen.getAllByRole('row')).toHaveLength(1);
-      expect(screen.queryByText('KEY_B')).not.toBeInTheDocument();
-    });
-
-    it('should show buffered events indicator when paused', () => {
-      const event1 = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event1);
-
-      const { rerender } = render(<DashboardEventTimeline />);
-
-      // Pause
-      const button = screen.getByRole('button', { name: /pause event timeline/i });
-      fireEvent.click(button);
-
-      // Add new events while paused
-      act(() => {
-        useDashboardStore.getState().addEvent(
-          createMockEvent(1234567891000000, 'KEY_B', 'press', 'B', 'C', 1200)
-        );
-        useDashboardStore.getState().addEvent(
-          createMockEvent(1234567892000000, 'KEY_C', 'press', 'C', 'D', 1000)
-        );
-      });
-
-      // Force re-render to ensure state update is reflected
-      rerender(<DashboardEventTimeline />);
-
-      // Should show indicator with buffered count
-      expect(screen.getByText(/timeline paused/i)).toBeInTheDocument();
-      expect(screen.getByText(/2 new events buffered/i)).toBeInTheDocument();
-    });
-
-    it('should resume and display all events when unpaused', () => {
-      const event1 = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event1);
-
-      const { rerender } = render(<DashboardEventTimeline />);
-
-      // Pause
-      let button = screen.getByRole('button', { name: /pause event timeline/i });
-      fireEvent.click(button);
-
-      // Add new events while paused
-      act(() => {
-        useDashboardStore.getState().addEvent(
-          createMockEvent(1234567891000000, 'KEY_B', 'press', 'B', 'C', 1200)
-        );
-      });
-
-      // Resume
-      button = screen.getByRole('button', { name: /resume event timeline/i });
-      fireEvent.click(button);
-
-      // Force re-render
-      rerender(<DashboardEventTimeline />);
-
-      // Should now display all events including the one added while paused
-      expect(screen.getAllByRole('row')).toHaveLength(2);
-      expect(screen.getByText('KEY_B')).toBeInTheDocument();
-    });
-
-    it('should set aria-pressed attribute correctly', () => {
-      render(<DashboardEventTimeline />);
-
-      const button = screen.getByRole('button', { name: /pause event timeline/i });
-
-      // Initially not pressed (not paused)
-      expect(button).toHaveAttribute('aria-pressed', 'false');
-
-      // Click to pause
-      fireEvent.click(button);
-      expect(button).toHaveAttribute('aria-pressed', 'true');
-
-      // Click to resume
-      fireEvent.click(button);
-      expect(button).toHaveAttribute('aria-pressed', 'false');
-    });
+    fireEvent.click(screen.getByText('Clear'));
+    expect(handleClear).toHaveBeenCalledTimes(1);
   });
 
-  describe('Hover Tooltips', () => {
-    it('should show tooltip on hover', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
+  it('shows empty state when events array is empty', () => {
+    render(
+      <DashboardEventTimeline
+        events={[]}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
 
-      render(<DashboardEventTimeline />);
-
-      const row = screen.getByRole('row');
-
-      // No tooltip initially
-      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-
-      // Hover over row
-      fireEvent.mouseEnter(row);
-
-      // Tooltip should appear
-      const tooltip = screen.getByRole('tooltip');
-      expect(tooltip).toBeInTheDocument();
-    });
-
-    it('should hide tooltip on mouse leave', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      const row = screen.getByRole('row');
-
-      // Hover to show tooltip
-      fireEvent.mouseEnter(row);
-      expect(screen.getByRole('tooltip')).toBeInTheDocument();
-
-      // Mouse leave to hide tooltip
-      fireEvent.mouseLeave(row);
-      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-    });
-
-    it('should display all event details in tooltip', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_ENTER', 'press', 'Enter', 'Tab', 2500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      const row = screen.getByRole('row');
-      fireEvent.mouseEnter(row);
-
-      const tooltip = screen.getByRole('tooltip');
-
-      // Check all tooltip content
-      expect(within(tooltip).getByText(/time:/i)).toBeInTheDocument();
-      expect(within(tooltip).getByText(/type:/i)).toBeInTheDocument();
-      expect(within(tooltip).getByText(/press/i)).toBeInTheDocument();
-      expect(within(tooltip).getByText(/key:/i)).toBeInTheDocument();
-      expect(within(tooltip).getByText(/KEY_ENTER/i)).toBeInTheDocument();
-      expect(within(tooltip).getByText(/mapping:/i)).toBeInTheDocument();
-      expect(within(tooltip).getByText(/Enter → Tab/i)).toBeInTheDocument();
-      expect(within(tooltip).getByText(/latency:/i)).toBeInTheDocument();
-      expect(within(tooltip).getByText(/2\.50ms/i)).toBeInTheDocument();
-    });
+    expect(
+      screen.getByText('No events yet. Start typing to see events appear.')
+    ).toBeInTheDocument();
   });
 
-  describe('Accessibility', () => {
-    it('should have correct ARIA labels for timeline region', () => {
-      render(<DashboardEventTimeline />);
+  it('renders virtualized list when events are present', () => {
+    render(
+      <DashboardEventTimeline
+        events={mockEvents}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
 
-      expect(screen.getByRole('region', { name: /event timeline/i })).toBeInTheDocument();
-    });
-
-    it('should have correct ARIA labels for event rows', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      const row = screen.getByRole('row');
-      expect(row).toHaveAttribute('aria-label', 'Event 1: press KEY_A');
-    });
-
-    it('should have aria-live region for event count', () => {
-      render(<DashboardEventTimeline />);
-
-      const eventCount = screen.getByText('0 / 100 events');
-      expect(eventCount).toHaveAttribute('aria-live', 'polite');
-    });
-
-    it('should have aria-live region for paused indicator', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      const { rerender } = render(<DashboardEventTimeline />);
-
-      // Pause
-      const button = screen.getByRole('button', { name: /pause event timeline/i });
-      fireEvent.click(button);
-
-      // Add new event while paused
-      act(() => {
-        useDashboardStore.getState().addEvent(
-          createMockEvent(1234567891000000, 'KEY_B', 'press', 'B', 'C', 1200)
-        );
-      });
-
-      // Force re-render
-      rerender(<DashboardEventTimeline />);
-
-      const indicator = screen.getByText(/timeline paused/i);
-      expect(indicator).toHaveAttribute('aria-live', 'polite');
-    });
-
-    it('should have list role for event list', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline />);
-
-      // The mocked FixedSizeList has role attribute
-      const list = screen.getByRole('list');
-      expect(list).toBeInTheDocument();
-    });
+    const list = screen.getByTestId('virtualized-list');
+    expect(list).toBeInTheDocument();
+    expect(list).toHaveAttribute('data-item-count', '3');
+    expect(list).toHaveAttribute('data-height', '400');
+    expect(list).toHaveAttribute('data-item-size', '50');
   });
 
-  describe('Custom Dimensions', () => {
-    it('should accept custom height prop', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
+  it('displays key codes using formatKeyCode', () => {
+    render(
+      <DashboardEventTimeline
+        events={mockEvents}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
 
-      render(<DashboardEventTimeline height={600} />);
-
-      const list = screen.getByRole('list');
-      expect(list).toHaveStyle({ height: '600px' });
-    });
-
-    it('should accept custom width prop as number', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline width={800} />);
-
-      const list = screen.getByRole('list');
-      expect(list).toHaveStyle({ width: '800px' });
-    });
-
-    it('should accept custom width prop as string', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 1500);
-      useDashboardStore.getState().addEvent(event);
-
-      render(<DashboardEventTimeline width="50%" />);
-
-      const list = screen.getByRole('list');
-      expect(list).toHaveStyle({ width: '50%' });
-    });
+    expect(screen.getByText('A')).toBeInTheDocument();
+    expect(screen.getByText('Enter')).toBeInTheDocument();
+    expect(screen.getByText('Space')).toBeInTheDocument();
   });
 
-  describe('Legend', () => {
-    it('should display legend items', () => {
-      render(<DashboardEventTimeline />);
+  it('displays event types with correct styling', () => {
+    render(
+      <DashboardEventTimeline
+        events={mockEvents}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
 
-      expect(screen.getByText(/press/i)).toBeInTheDocument();
-      expect(screen.getByText(/release/i)).toBeInTheDocument();
-      expect(screen.getByText(/high latency/i)).toBeInTheDocument();
-    });
+    const pressElements = screen.getAllByText('press');
+    const releaseElements = screen.getAllByText('release');
 
-    it('should show press and release icons in legend', () => {
-      render(<DashboardEventTimeline />);
+    expect(pressElements.length).toBeGreaterThan(0);
+    expect(releaseElements.length).toBeGreaterThan(0);
 
-      const legend = screen.getByText(/press/i).closest('.timeline-legend');
-      expect(legend).toBeInTheDocument();
-
-      // Both icons should be in the legend
-      const icons = legend!.querySelectorAll('.legend-icon');
-      expect(icons).toHaveLength(2);
-    });
+    // Verify green background for press
+    expect(pressElements[0]).toHaveClass('bg-green-900');
+    // Verify red background for release
+    expect(releaseElements[0]).toHaveClass('bg-red-900');
   });
 
-  describe('Edge Cases', () => {
-    it('should handle malformed event data gracefully', () => {
-      // Add an event with missing fields (should not crash)
-      const malformedEvent = {
-        timestamp: 1234567890000000,
-        keyCode: 'KEY_A',
-        eventType: 'press' as const,
-        input: 'A',
-        output: 'B',
-        latency: 1500,
-      };
+  it('shows tooltip on hover', () => {
+    const { container } = render(
+      <DashboardEventTimeline
+        events={mockEvents}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
 
-      useDashboardStore.getState().addEvent(malformedEvent);
+    // Find first event row by looking for the relative positioning div
+    const eventRow = container.querySelector('.relative.flex.items-center') as HTMLElement;
+    expect(eventRow).toBeTruthy();
 
-      expect(() => render(<DashboardEventTimeline />)).not.toThrow();
-    });
+    // Trigger hover
+    fireEvent.mouseEnter(eventRow);
 
-    it('should handle very large latency values', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 999999);
-      useDashboardStore.getState().addEvent(event);
+    // Tooltip should appear with timestamp
+    expect(screen.getByText(/1000000μs/)).toBeInTheDocument();
+  });
 
-      render(<DashboardEventTimeline />);
+  it('hides tooltip on mouse leave', () => {
+    const { container } = render(
+      <DashboardEventTimeline
+        events={mockEvents}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
 
-      // 999999 microseconds = 999.99ms (rounded to 1000.00ms)
-      const row = screen.getByRole('row');
-      expect(row).toHaveTextContent(/999\.99ms|1000\.00ms/);
-    });
+    const eventRow = container.querySelector('.relative.flex.items-center') as HTMLElement;
 
-    it('should handle zero latency', () => {
-      const event = createMockEvent(1234567890000000, 'KEY_A', 'press', 'A', 'B', 0);
-      useDashboardStore.getState().addEvent(event);
+    // Show tooltip
+    fireEvent.mouseEnter(eventRow);
+    expect(screen.getByText(/1000000μs/)).toBeInTheDocument();
 
-      render(<DashboardEventTimeline />);
+    // Hide tooltip
+    fireEvent.mouseLeave(eventRow);
+    expect(screen.queryByText(/1000000μs/)).not.toBeInTheDocument();
+  });
 
-      expect(screen.getByText('0.00ms')).toBeInTheDocument();
-    });
+  it('tooltip displays full event details', () => {
+    const { container } = render(
+      <DashboardEventTimeline
+        events={mockEvents}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
 
-    it('should handle maximum events (100)', () => {
-      // Add 100 events
-      for (let i = 0; i < 100; i++) {
-        useDashboardStore.getState().addEvent(
-          createMockEvent(1234567890000000 + i * 1000, `KEY_${i}`, 'press', `${i}`, `${i}`, 1000)
-        );
-      }
+    const eventRow = container.querySelector('.relative.flex.items-center') as HTMLElement;
+    fireEvent.mouseEnter(eventRow);
 
-      render(<DashboardEventTimeline />);
+    // Check for all tooltip fields
+    expect(screen.getByText('Timestamp:')).toBeInTheDocument();
+    expect(screen.getByText('1000000μs')).toBeInTheDocument();
+    expect(screen.getByText('Input:')).toBeInTheDocument();
+    expect(screen.getByText('65')).toBeInTheDocument();
+    expect(screen.getByText('Output:')).toBeInTheDocument();
+    expect(screen.getByText('66')).toBeInTheDocument();
+    expect(screen.getByText('Latency:')).toBeInTheDocument();
+    expect(screen.getByText('500μs')).toBeInTheDocument();
+  });
 
-      expect(screen.getByText('100 / 100 events')).toBeInTheDocument();
-      expect(screen.getAllByRole('row')).toHaveLength(100);
-    });
+  it('pause button has minimum 44px tap target', () => {
+    render(
+      <DashboardEventTimeline
+        events={[]}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
 
-    it('should handle rapid event updates', () => {
-      const { rerender } = render(<DashboardEventTimeline />);
+    const pauseButton = screen.getByText('Pause');
+    expect(pauseButton).toHaveClass('min-h-[44px]');
+  });
 
-      // Add multiple events rapidly
-      act(() => {
-        for (let i = 0; i < 10; i++) {
-          useDashboardStore.getState().addEvent(
-            createMockEvent(1234567890000000 + i * 100, `KEY_${i}`, 'press', `${i}`, `${i}`, 1000)
-          );
-        }
-      });
+  it('clear button has minimum 44px tap target', () => {
+    render(
+      <DashboardEventTimeline
+        events={[]}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
 
-      // Force re-render to ensure all state updates are reflected
-      rerender(<DashboardEventTimeline />);
+    const clearButton = screen.getByText('Clear');
+    expect(clearButton).toHaveClass('min-h-[44px]');
+  });
 
-      expect(screen.getAllByRole('row')).toHaveLength(10);
-      expect(screen.getByText('10 / 100 events')).toBeInTheDocument();
-    });
+  it('has proper ARIA labels on buttons', () => {
+    render(
+      <DashboardEventTimeline
+        events={[]}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText('Pause event updates')).toBeInTheDocument();
+    expect(screen.getByLabelText('Clear all events')).toBeInTheDocument();
+  });
+
+  it('ARIA label changes based on paused state', () => {
+    const { rerender } = render(
+      <DashboardEventTimeline
+        events={[]}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText('Pause event updates')).toBeInTheDocument();
+
+    rerender(
+      <DashboardEventTimeline
+        events={[]}
+        isPaused={true}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText('Resume event updates')).toBeInTheDocument();
+  });
+
+  it('handles large number of events efficiently with virtualization', () => {
+    const manyEvents = Array.from({ length: 1000 }, (_, i) => ({
+      timestamp: i * 1000,
+      keyCode: 65 + (i % 26),
+      eventType: i % 2 === 0 ? 'press' : 'release',
+      input: 65 + (i % 26),
+      output: 65 + (i % 26),
+      latency: 100 + i,
+    })) as KeyEvent[];
+
+    render(
+      <DashboardEventTimeline
+        events={manyEvents}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    const list = screen.getByTestId('virtualized-list');
+    expect(list).toHaveAttribute('data-item-count', '1000');
+
+    // Only first 3 items should be rendered due to our mock
+    const renderedEvents = screen.getAllByText(/press|release/);
+    expect(renderedEvents.length).toBeLessThan(10); // Virtualization limits rendered items
+  });
+
+  it('displays input -> output mapping', () => {
+    render(
+      <DashboardEventTimeline
+        events={mockEvents}
+        isPaused={false}
+        onTogglePause={vi.fn()}
+        onClear={vi.fn()}
+      />
+    );
+
+    // First event: 65 (A) -> 66 (B)
+    expect(screen.getByText(/A → Key66/)).toBeInTheDocument();
   });
 });

@@ -18,7 +18,7 @@ When you commit changes, the following checks run automatically:
 - `cargo fmt --check --` - Verifies code formatting
 - `cargo clippy --all-targets -- -D warnings` - Runs linter (treats warnings as errors)
 
-**For TypeScript/JavaScript files (keyrx_ui_v2/**/*.{ts,tsx,js,jsx}):**
+**For TypeScript/JavaScript files (keyrx_ui/**/*.{ts,tsx,js,jsx}):**
 - `prettier --check` - Verifies code formatting
 - `eslint` - Runs linter
 
@@ -30,8 +30,8 @@ If any check fails, your commit will be blocked. You'll see an error message sho
 
 1. For Rust formatting errors: Run `cargo fmt` to auto-format
 2. For Rust clippy warnings: Fix the warnings shown in the error message
-3. For TypeScript formatting: Run `cd keyrx_ui_v2 && prettier --write .`
-4. For ESLint errors: Run `cd keyrx_ui_v2 && eslint --fix .`
+3. For TypeScript formatting: Run `cd keyrx_ui && prettier --write .`
+4. For ESLint errors: Run `cd keyrx_ui && eslint --fix .`
 
 Then stage your changes and try committing again.
 
@@ -76,7 +76,7 @@ make verify
 cargo fmt --check
 cargo clippy --workspace -- -D warnings
 cargo test --workspace
-cd keyrx_ui_v2 && npm test
+cd keyrx_ui && npm test
 ```
 
 ## Code Quality Standards

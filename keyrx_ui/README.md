@@ -1,74 +1,73 @@
-# KeyRX UI
+# React + TypeScript + Vite
 
-React-based web interface for KeyRX keyboard remapping with WASM integration.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Tech Stack
+Currently, two official plugins are available:
 
-- **React 18+** - Modern UI framework
-- **TypeScript 5+** - Type-safe development
-- **Vite** - Fast build tool with HMR
-- **vite-plugin-wasm** - WebAssembly integration for keyrx_core
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Directory Structure
+## React Compiler
 
-```
-src/
-├── components/     # Reusable React components
-├── wasm/          # WASM integration and bindings
-├── hooks/         # Custom React hooks
-└── App.tsx        # Main application component
-```
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Development
+## Expanding the ESLint configuration
 
-### Prerequisites
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-- Node.js 18+ and npm
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-### Setup
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-```bash
-npm install
-```
-
-### Development Server
-
-```bash
-npm run dev
-```
-
-The dev server will start at http://localhost:5173 with hot module replacement.
-
-### Build
-
-```bash
-npm run build
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-Builds the application for production to the `dist/` directory.
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-### Preview Production Build
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-```bash
-npm run preview
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-## WASM Integration
-
-The UI integrates with `keyrx_core` compiled to WebAssembly. The WASM module is configured in `vite.config.ts` using `vite-plugin-wasm`.
-
-WASM bindings will be added in the `src/wasm/` directory.
-
-## Code Style
-
-- Use TypeScript for all new files
-- Follow React 18+ best practices (functional components, hooks)
-- Component files: PascalCase (e.g., `KeyMapper.tsx`)
-- Utility files: camelCase (e.g., `wasmLoader.ts`)
-
-## Integration with Daemon
-
-The UI communicates with the keyrx_daemon backend via:
-- REST API for configuration
-- WebSocket for real-time updates
-- WASM for client-side key mapping simulation

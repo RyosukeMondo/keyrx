@@ -1,77 +1,75 @@
 /**
- * Time formatting utilities for consistent timestamp display across the application.
+ * Time formatting utilities for converting and displaying timestamps.
  *
- * This module provides pure functions for formatting timestamps and durations
- * in various human-readable formats. All functions are stateless and have no side effects.
- *
- * @module timeFormatting
+ * These utilities handle conversion between microseconds and human-readable
+ * formats, supporting both absolute and relative time displays.
  */
 
 /**
- * Formats a timestamp in microseconds to a human-readable string (ms/s).
+ * Converts microseconds to human-readable format (ms/s).
  *
- * @param timestampUs - Timestamp in microseconds
- * @returns Formatted string like "1.23ms" or "4.567s"
+ * @param micros - Time in microseconds
+ * @returns Formatted string (e.g., "1.23ms", "2.45s")
  *
  * @example
- * formatTimestampMs(500)      // "0.50ms"
- * formatTimestampMs(1500)     // "1.50ms"
- * formatTimestampMs(1500000)  // "1.500s"
+ * formatTimestampMs(1234) // "1.23ms"
+ * formatTimestampMs(1234567) // "1.23s"
  */
-export function formatTimestampMs(timestampUs: number): string {
-  const ms = timestampUs / 1000;
-  if (ms < 1000) {
-    return `${ms.toFixed(2)}ms`;
+export function formatTimestampMs(micros: number): string {
+  if (micros < 1000) {
+    return `${micros}μs`;
+  } else if (micros < 1000000) {
+    return `${(micros / 1000).toFixed(2)}ms`;
+  } else {
+    return `${(micros / 1000000).toFixed(2)}s`;
   }
-  const seconds = ms / 1000;
-  return `${seconds.toFixed(3)}s`;
 }
 
 /**
- * Formats a timestamp (in seconds since epoch) to a relative time string.
+ * Formats timestamp as relative time ("2 hours ago").
  *
- * @param timestamp - Unix timestamp in seconds
- * @returns Relative time string like "Today", "Yesterday", "3d ago", "2w ago", or a date
+ * @param timestamp - Timestamp in milliseconds since UNIX epoch
+ * @returns Formatted relative time string
  *
  * @example
- * formatTimestampRelative(Date.now() / 1000)           // "Today"
- * formatTimestampRelative(Date.now() / 1000 - 86400)   // "Yesterday"
- * formatTimestampRelative(Date.now() / 1000 - 259200)  // "3d ago"
+ * formatTimestampRelative(Date.now() - 3600000) // "1 hour ago"
+ * formatTimestampRelative(Date.now() - 120000) // "2 minutes ago"
  */
 export function formatTimestampRelative(timestamp: number): string {
-  const date = new Date(timestamp * 1000);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const now = Date.now();
+  const diffMs = now - timestamp;
+  const diffSec = Math.floor(diffMs / 1000);
 
-  if (diffDays === 0) {
-    return 'Today';
-  } else if (diffDays === 1) {
-    return 'Yesterday';
-  } else if (diffDays < 7) {
-    return `${diffDays}d ago`;
-  } else if (diffDays < 30) {
-    return `${Math.floor(diffDays / 7)}w ago`;
+  if (diffSec < 1) {
+    return "just now";
+  } else if (diffSec < 60) {
+    return `${diffSec}s ago`;
+  } else if (diffSec < 3600) {
+    const minutes = Math.floor(diffSec / 60);
+    return `${minutes}m ago`;
+  } else if (diffSec < 86400) {
+    const hours = Math.floor(diffSec / 3600);
+    return `${hours}h ago`;
   } else {
-    return date.toLocaleDateString();
+    const days = Math.floor(diffSec / 86400);
+    return `${days}d ago`;
   }
 }
 
 /**
- * Formats a duration in microseconds to a human-readable string.
+ * Formats duration in milliseconds.
  *
- * @param durationUs - Duration in microseconds
- * @returns Formatted string like "123ms" or "1.23s"
+ * @param durationMs - Duration in milliseconds
+ * @returns Formatted duration string
  *
  * @example
- * formatDuration(500)      // "0ms"
- * formatDuration(50000)    // "50ms"
- * formatDuration(1500000)  // "1.50s"
+ * formatDuration(1234) // "1.23s"
+ * formatDuration(123) // "123ms"
  */
-export function formatDuration(durationUs: number): string {
-  const ms = durationUs / 1000;
-  if (ms < 1000) {
-    return `${ms.toFixed(0)}ms`;
+export function formatDuration(durationMs: number): string {
+  if (durationMs < 1000) {
+    return `${durationMs}ms`;
+  } else {
+    return `${(durationMs / 1000).toFixed(2)}s`;
   }
-  return `${(ms / 1000).toFixed(2)}s`;
 }

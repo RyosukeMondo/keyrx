@@ -205,21 +205,21 @@ check_coverage() {
 check_ui_test() {
     log_info "Running UI tests..."
 
-    # Check if keyrx_ui_v2 directory exists
-    if [[ ! -d "keyrx_ui_v2" ]]; then
+    # Check if keyrx_ui directory exists
+    if [[ ! -d "keyrx_ui" ]]; then
         CHECK_RESULTS["ui_test"]="SKIP"
-        log_warn "UI test: SKIPPED (keyrx_ui_v2 not found)"
+        log_warn "UI test: SKIPPED (keyrx_ui not found)"
         return 0
     fi
 
     # Check if node_modules exists
-    if [[ ! -d "keyrx_ui_v2/node_modules" ]]; then
+    if [[ ! -d "keyrx_ui/node_modules" ]]; then
         log_warn "UI node_modules not found, running npm install..."
-        (cd keyrx_ui_v2 && npm install --silent)
+        (cd keyrx_ui && npm install --silent)
     fi
 
     # Run UI tests with coverage
-    if (cd keyrx_ui_v2 && npm test -- --coverage --run 2>&1); then
+    if (cd keyrx_ui && npm test -- --coverage --run 2>&1); then
         # TODO: Parse coverage percentage from output
         CHECK_RESULTS["ui_test"]="PASS"
         log_info "UI test: PASS"
@@ -235,22 +235,22 @@ check_ui_test() {
 check_e2e() {
     log_info "Running E2E tests..."
 
-    # Check if keyrx_ui_v2 directory exists
-    if [[ ! -d "keyrx_ui_v2" ]]; then
+    # Check if keyrx_ui directory exists
+    if [[ ! -d "keyrx_ui" ]]; then
         CHECK_RESULTS["e2e"]="SKIP"
-        log_warn "E2E test: SKIPPED (keyrx_ui_v2 not found)"
+        log_warn "E2E test: SKIPPED (keyrx_ui not found)"
         return 0
     fi
 
     # Check if package.json has test:e2e script
-    if ! grep -q '"test:e2e"' keyrx_ui_v2/package.json 2>/dev/null; then
+    if ! grep -q '"test:e2e"' keyrx_ui/package.json 2>/dev/null; then
         CHECK_RESULTS["e2e"]="SKIP"
         log_warn "E2E test: SKIPPED (test:e2e script not found)"
         return 0
     fi
 
     # Run E2E tests
-    if (cd keyrx_ui_v2 && npm run test:e2e 2>&1); then
+    if (cd keyrx_ui && npm run test:e2e 2>&1); then
         CHECK_RESULTS["e2e"]="PASS"
         log_info "E2E test: PASS"
         return 0

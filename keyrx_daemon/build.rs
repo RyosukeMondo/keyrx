@@ -2,14 +2,14 @@ use std::path::PathBuf;
 
 fn main() {
     // Verify that the UI dist directory exists
-    let ui_dist_path = PathBuf::from("../keyrx_ui_v2/dist");
+    let ui_dist_path = PathBuf::from("../keyrx_ui/dist");
 
     if !ui_dist_path.exists() {
         println!(
             "cargo:warning=UI dist directory not found at {:?}",
             ui_dist_path
         );
-        println!("cargo:warning=Run 'cd keyrx_ui_v2 && npm run build' to build the UI");
+        println!("cargo:warning=Run 'cd keyrx_ui && npm run build' to build the UI");
         println!(
             "cargo:warning=The daemon will still compile but will not be able to serve the UI"
         );
@@ -25,5 +25,5 @@ fn main() {
     }
 
     // Tell cargo to re-run this build script if the UI dist directory changes
-    println!("cargo:rerun-if-changed=../keyrx_ui_v2/dist");
+    println!("cargo:rerun-if-changed=../keyrx_ui/dist");
 }

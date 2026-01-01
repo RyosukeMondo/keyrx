@@ -1,116 +1,112 @@
-/**
- * ProfileCard - Display a keyboard configuration profile with action buttons
- *
- * Renders a card UI showing profile metadata (name, layer count, modified time)
- * and status indicator. Provides action buttons for managing the profile.
- *
- * @example
- * ```tsx
- * <ProfileCard
- *   profile={myProfile}
- *   onActivate={() => activateProfile(myProfile.name)}
- *   onDelete={() => deleteProfile(myProfile.name)}
- *   onDuplicate={() => duplicateProfile(myProfile.name)}
- *   onExport={() => exportProfile(myProfile.name)}
- *   onRename={() => renameProfile(myProfile.name)}
- * />
- * ```
- */
+import React from 'react';
+import { Card } from './Card';
+import { Button } from './Button';
+import { Check } from 'lucide-react';
 
-import { Profile } from './ProfilesPage';
-import { formatTimestampRelative } from '../utils/timeFormatting';
-import './ProfileCard.css';
-
-/**
- * Props for ProfileCard component
- */
-interface ProfileCardProps {
-  /** Profile object containing name, layer count, modification time, and active status */
-  profile: Profile;
-  /** Callback when user clicks the Activate button (only shown if profile is inactive) */
+export interface ProfileCardProps {
+  name: string;
+  description?: string;
+  isActive: boolean;
+  lastModified?: string;
   onActivate: () => void;
-  /** Callback when user clicks the Delete button (disabled if profile is active) */
+  onEdit: () => void;
   onDelete: () => void;
-  /** Callback when user clicks the Duplicate button */
-  onDuplicate: () => void;
-  /** Callback when user clicks the Export button */
-  onExport: () => void;
-  /** Callback when user clicks the Rename button */
-  onRename: () => void;
 }
 
 /**
- * ProfileCard component displays a single profile with metadata and action buttons
+ * ProfileCard Component
  *
- * Features:
- * - Visual status indicator (active/inactive)
- * - Profile metadata (name, layer count, last modified time)
- * - Primary action: Activate button (hidden for active profile)
- * - Secondary actions: Rename, Duplicate, Export, Delete
- * - Delete button is disabled for the active profile
+ * Displays a single profile in a card format with:
+ * - Profile name and optional description
+ * - Active state indicator (green checkmark + "ACTIVE" badge)
+ * - Action buttons: Activate, Edit, Delete
+ * - Last modified timestamp
  *
- * @param props - Component props
- * @returns Rendered profile card component
+ * Used in ProfilesPage grid layout
  */
-export function ProfileCard({
-  profile,
-  onActivate,
-  onDelete,
-  onDuplicate,
-  onExport,
-  onRename,
-}: ProfileCardProps) {
-
-  return (
-    <div className={`profile-card ${profile.is_active ? 'active' : ''}`}>
-      <div className="profile-header">
-        <div className="profile-status">
-          {profile.is_active ? (
-            <span className="status-indicator active">●</span>
-          ) : (
-            <span className="status-indicator">○</span>
-          )}
-        </div>
-        <div className="profile-info">
-          <h3 className="profile-name">{profile.name}</h3>
-          <div className="profile-meta">
-            <span className="profile-layers">{profile.layer_count} layers</span>
-            <span className="profile-separator">•</span>
-            <span className="profile-modified">
-              Modified {formatTimestampRelative(profile.modified_at)}
-            </span>
+export const ProfileCard = React.memo<ProfileCardProps>(
+  ({
+    name,
+    description,
+    isActive,
+    lastModified,
+    onActivate,
+    onEdit,
+    onDelete,
+  }) => {
+    return (
+      <Card
+        variant="default"
+        padding="md"
+        className={`relative ${isActive ? 'border-green-500 border-2' : ''}`}
+      >
+        {/* Active Badge */}
+        {isActive && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
+            <Check size={14} aria-hidden="true" />
+            <span>ACTIVE</span>
           </div>
-        </div>
-      </div>
-
-      <div className="profile-actions">
-        {!profile.is_active && (
-          <button onClick={onActivate} className="action-button activate-button">
-            Activate
-          </button>
         )}
-        {profile.is_active && <span className="active-label">Active Profile</span>}
-      </div>
 
-      <div className="profile-secondary-actions">
-        <button onClick={onRename} className="secondary-action" title="Rename">
-          Rename
-        </button>
-        <button onClick={onDuplicate} className="secondary-action" title="Duplicate">
-          Duplicate
-        </button>
-        <button onClick={onExport} className="secondary-action" title="Export">
-          Export
-        </button>
-        <button
-          onClick={onDelete}
-          className="secondary-action delete-action"
-          title="Delete"
-          disabled={profile.is_active}
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  );
-}
+        {/* Profile Name */}
+        <div className="flex items-start gap-2 mb-2">
+          {isActive && (
+            <Check
+              size={20}
+              className="text-green-500 flex-shrink-0 mt-1"
+              aria-label="Active profile indicator"
+            />
+          )}
+          <h3 className="text-lg font-semibold text-slate-100">{name}</h3>
+        </div>
+
+        {/* Description */}
+        {description && (
+          <p className="text-sm text-slate-400 mb-3 line-clamp-2">
+            {description}
+          </p>
+        )}
+
+        {/* Last Modified */}
+        {lastModified && (
+          <p className="text-xs text-slate-500 mb-4">
+            Modified: {lastModified}
+          </p>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 flex-wrap">
+          {!isActive && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onActivate}
+              aria-label={`Activate profile ${name}`}
+            >
+              Activate
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onEdit}
+            aria-label={`Edit profile ${name}`}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={onDelete}
+            aria-label={`Delete profile ${name}`}
+            disabled={isActive}
+          >
+            Delete
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+);
+
+ProfileCard.displayName = 'ProfileCard';

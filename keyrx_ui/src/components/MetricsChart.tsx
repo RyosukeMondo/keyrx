@@ -1,25 +1,17 @@
 /**
- * MetricsChart - Real-time latency visualization
+ * MetricsChart Component
  *
- * Line chart displaying processing latency over a 60-second rolling window
- * using Recharts library. Highlights high latency (>5ms) with red reference line.
+ * Visualizes latency metrics over time using a line chart.
+ * Displays avg, p95, and p99 latencies with a 5ms performance target reference line.
  *
- * Features:
- * - 60-second rolling window (1 data point per second)
- * - Automatic Y-axis scaling
- * - Red reference line at 5ms threshold
- * - Responsive container (fills parent width)
- * - Hover tooltips showing exact values
- * - X-axis shows relative time (0s to 60s)
- *
+ * @component
  * @example
  * ```tsx
- * // Component reads from dashboardStore automatically
- * <MetricsChart />
+ * <MetricsChart data={latencyHistory} />
  * ```
  */
 
-import { useEffect, useState } from 'react';
+import React, { useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -30,176 +22,125 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine,
-} from 'recharts';
-import { useDashboardStore } from '../store/dashboardStore';
-import type { LatencyStats } from '../store/dashboardStore';
-import './MetricsChart.css';
+} from "recharts";
+import type { LatencyMetrics } from "../types/rpc";
 
-/**
- * Data point for the chart
- */
-interface ChartDataPoint {
-  /** Timestamp in seconds (for X-axis) */
-  time: number;
-  /** Formatted time string for display */
-  timeLabel: string;
-  /** Average latency in milliseconds */
-  avg: number;
-  /** P95 latency in milliseconds */
-  p95: number;
-  /** P99 latency in milliseconds */
-  p99: number;
+interface MetricsChartProps {
+  /** Array of latency metrics to display */
+  data: LatencyMetrics[];
 }
 
 /**
- * Maximum number of data points to display (60 seconds of data)
- */
-const MAX_DATA_POINTS = 60;
-
-/**
- * Latency threshold in milliseconds (values above this are highlighted in red)
- */
-const LATENCY_THRESHOLD_MS = 5;
-
-/**
- * MetricsChart component displaying real-time latency metrics
+ * MetricsChart displays latency metrics over time with avg, p95, and p99 lines.
  *
- * Subscribes to dashboard metrics store and visualizes latency data
- * in a line chart with automatic rolling window management.
+ * Features:
+ * - Converts microseconds to milliseconds for readability
+ * - Shows 5ms reference line as performance target
+ * - Dark theme matching TailwindCSS slate palette
+ * - Responsive width with fixed 300px height
+ * - Tooltip shows values on hover
  *
- * @returns Rendered metrics chart component
+ * @param props - Component props
+ * @param props.data - Array of LatencyMetrics to visualize
  */
-export function MetricsChart() {
-  const metrics = useDashboardStore((state) => state.metrics);
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+export function MetricsChart({ data }: MetricsChartProps) {
+  /**
+   * Transform latency data from microseconds to milliseconds.
+   * Creates chart-friendly format with index, avg, p95, p99.
+   */
+  const chartData = useMemo(() => {
+    return data.map((metrics, index) => ({
+      index,
+      avg: metrics.avg / 1000, // Convert μs to ms
+      p95: metrics.p95 / 1000, // Convert μs to ms
+      p99: metrics.p99 / 1000, // Convert μs to ms
+    }));
+  }, [data]);
 
-  // Update chart data when new metrics arrive
-  useEffect(() => {
-    if (!metrics) return;
-
-    const now = Date.now();
-    const newPoint: ChartDataPoint = {
-      time: now / 1000, // Convert to seconds
-      timeLabel: new Date(now).toLocaleTimeString(),
-      avg: metrics.avg / 1000, // Convert microseconds to milliseconds
-      p95: metrics.p95 / 1000,
-      p99: metrics.p99 / 1000,
-    };
-
-    setChartData((prev) => {
-      const updated = [...prev, newPoint];
-      // Keep only last 60 data points (60-second window)
-      if (updated.length > MAX_DATA_POINTS) {
-        updated.shift();
-      }
-      return updated;
-    });
-  }, [metrics]);
-
-  // Show empty state if no data
-  if (chartData.length === 0) {
-    return (
-      <div className="metrics-chart-empty">
-        <p>Waiting for latency data...</p>
-      </div>
-    );
-  }
+  // Dark theme colors matching TailwindCSS slate palette
+  const colors = {
+    grid: "#334155", // slate-700
+    text: "#cbd5e1", // slate-300
+    avg: "#3b82f6", // blue-500
+    p95: "#f97316", // orange-500
+    p99: "#ef4444", // red-500
+    target: "#dc2626", // red-600
+    background: "#1e293b", // slate-800
+  };
 
   return (
-    <div className="metrics-chart">
-      {/* Current stats summary */}
-      <div className="metrics-summary">
-        {metrics && (
-          <>
-            <div className="metric-stat">
-              <span className="metric-label">Avg:</span>
-              <span className={`metric-value ${metrics.avg / 1000 > LATENCY_THRESHOLD_MS ? 'high' : ''}`}>
-                {(metrics.avg / 1000).toFixed(2)}ms
-              </span>
-            </div>
-            <div className="metric-stat">
-              <span className="metric-label">P95:</span>
-              <span className={`metric-value ${metrics.p95 / 1000 > LATENCY_THRESHOLD_MS ? 'high' : ''}`}>
-                {(metrics.p95 / 1000).toFixed(2)}ms
-              </span>
-            </div>
-            <div className="metric-stat">
-              <span className="metric-label">P99:</span>
-              <span className={`metric-value ${metrics.p99 / 1000 > LATENCY_THRESHOLD_MS ? 'high' : ''}`}>
-                {(metrics.p99 / 1000).toFixed(2)}ms
-              </span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Line chart */}
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart
-          data={chartData}
-          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-          <XAxis
-            dataKey="timeLabel"
-            stroke="#666"
-            tick={{ fontSize: 12 }}
-            interval="preserveStartEnd"
-          />
-          <YAxis
-            stroke="#666"
-            tick={{ fontSize: 12 }}
-            label={{ value: 'Latency (ms)', angle: -90, position: 'insideLeft' }}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#fff',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              padding: '8px',
-            }}
-            formatter={(value: number) => `${value.toFixed(2)}ms`}
-          />
-          <Legend />
-
-          {/* Reference line at 5ms threshold */}
-          <ReferenceLine
-            y={LATENCY_THRESHOLD_MS}
-            stroke="#f44336"
-            strokeDasharray="3 3"
-            label={{ value: '5ms threshold', position: 'right', fill: '#f44336' }}
-          />
-
-          {/* Latency lines */}
-          <Line
-            type="monotone"
-            dataKey="avg"
-            stroke="#2196f3"
-            strokeWidth={2}
-            name="Average"
-            dot={false}
-            isAnimationActive={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="p95"
-            stroke="#ff9800"
-            strokeWidth={2}
-            name="P95"
-            dot={false}
-            isAnimationActive={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="p99"
-            stroke="#f44336"
-            strokeWidth={2}
-            name="P99"
-            dot={false}
-            isAnimationActive={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="rounded-lg bg-slate-800 p-4">
+      <h3 className="mb-4 text-lg font-semibold text-slate-200">Latency Metrics</h3>
+      {data.length === 0 ? (
+        <div className="flex h-[300px] items-center justify-center">
+          <p className="text-slate-400">No latency data available yet...</p>
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart
+            data={chartData}
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+            <XAxis
+              dataKey="index"
+              stroke={colors.text}
+              tick={{ fill: colors.text }}
+              label={{ value: "Time", position: "insideBottom", offset: -5, fill: colors.text }}
+            />
+            <YAxis
+              stroke={colors.text}
+              tick={{ fill: colors.text }}
+              label={{ value: "Latency (ms)", angle: -90, position: "insideLeft", fill: colors.text }}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: colors.background,
+                border: `1px solid ${colors.grid}`,
+                borderRadius: "0.5rem",
+                color: colors.text,
+              }}
+              formatter={(value: number) => `${value.toFixed(2)} ms`}
+            />
+            <Legend wrapperStyle={{ color: colors.text }} />
+            <ReferenceLine
+              y={5}
+              stroke={colors.target}
+              strokeDasharray="3 3"
+              label={{
+                value: "Target (5ms)",
+                position: "right",
+                fill: colors.target,
+                fontSize: 12,
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="avg"
+              stroke={colors.avg}
+              name="Average"
+              dot={false}
+              strokeWidth={2}
+            />
+            <Line
+              type="monotone"
+              dataKey="p95"
+              stroke={colors.p95}
+              name="P95"
+              dot={false}
+              strokeWidth={2}
+            />
+            <Line
+              type="monotone"
+              dataKey="p99"
+              stroke={colors.p99}
+              name="P99"
+              dot={false}
+              strokeWidth={2}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

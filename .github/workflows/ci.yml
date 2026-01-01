@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: keyrx_ui_v2/package-lock.json
+          cache-dependency-path: keyrx_ui/package-lock.json
 
       - name: Cache Cargo
         uses: actions/cache@v3
@@ -46,8 +46,8 @@ jobs:
       - name: Cache npm
         uses: actions/cache@v3
         with:
-          path: keyrx_ui_v2/node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui_v2/package-lock.json') }}
+          path: keyrx_ui/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
 
@@ -74,10 +74,10 @@ jobs:
         run: |
           # Build WASM
           cd keyrx_core
-          wasm-pack build --target web --out-dir ../keyrx_ui_v2/src/wasm/pkg --release --features wasm
+          wasm-pack build --target web --out-dir ../keyrx_ui/src/wasm/pkg --release --features wasm
           cd ..
           # Build UI
-          cd keyrx_ui_v2
+          cd keyrx_ui
           npm ci
           npm run build
           cd ..
