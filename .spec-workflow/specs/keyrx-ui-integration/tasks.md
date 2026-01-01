@@ -403,7 +403,7 @@
   - _Requirements: REQ-7 (AC5, AC10)_
   - _Prompt: Role: Accessibility Testing Specialist with expertise in WCAG compliance and axe-core | Task: Install jest-axe (npm install --save-dev jest-axe), create keyrx_ui_v2/tests/a11y/ with test files for each page (config-page.test.tsx, dashboard-page.test.tsx, profiles-page.test.tsx, devices-page.test.tsx), each test renders component, runs axe(container) to check violations, asserts expect(results).toHaveNoViolations(), test keyboard navigation with userEvent.tab() to verify focus order, verify ARIA labels present on interactive elements, add package.json script ("test:a11y": "vitest run tests/a11y"), configure CI to run accessibility tests and fail build on violations | Restrictions: WCAG AA compliance mandatory, all pages must have zero axe violations, keyboard navigation must be fully functional, ARIA labels required on all interactive elements | Success: jest-axe configured, all pages tested with zero violations, keyboard navigation verified (tab order correct, focus visible), ARIA labels present and correct, accessibility tests run in CI and fail on violations_
 
-- [ ] 39. Setup Performance Tests
+- [-] 39. Setup Performance Tests
   - File: keyrx_ui_v2/tests/performance/, keyrx_ui_v2/.lighthouserc.js, keyrx_ui_v2/package.json
   - Test bundle sizes (main < 500KB, Monaco < 2MB, WASM < 1MB)
   - Configure Lighthouse CI
