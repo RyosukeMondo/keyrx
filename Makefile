@@ -33,6 +33,9 @@ clean: ## Remove build artifacts and logs
 	@rm -rf target/
 	@rm -rf keyrx_ui/node_modules/
 	@rm -rf keyrx_ui/dist/
+	@rm -rf keyrx_ui_v2/node_modules/
+	@rm -rf keyrx_ui_v2/dist/
+	@rm -rf keyrx_ui_v2/src/wasm/pkg/
 	@rm -rf keyrx_daemon/ui_dist/
 	@rm -f scripts/logs/*.log
 	@rm -rf .vite/
