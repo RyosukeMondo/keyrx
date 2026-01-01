@@ -234,7 +234,7 @@
 
 ## Phase 4: Tab-Based Configuration Editor
 
-- [ ] 23. Update ConfigPage with Tab Switching
+- [x] 23. Update ConfigPage with Tab Switching
   - File: keyrx_ui_v2/src/pages/ConfigPage.tsx
   - Add tab state (visual/code) with visual as default
   - Render tab buttons with active styling
