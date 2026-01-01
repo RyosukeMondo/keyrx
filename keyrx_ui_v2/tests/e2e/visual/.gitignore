@@ -1,0 +1,7 @@
+# Ignore test output directories
+test-results/
+*-actual.png
+*-diff.png
+
+# Keep baseline snapshots (these should be committed)
+!*-snapshots/

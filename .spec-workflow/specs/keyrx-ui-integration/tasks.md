@@ -342,7 +342,7 @@
   - _Requirements: REQ-6 (AC5, AC6)_
   - _Prompt: Role: Responsive Dashboard Developer with expertise in data visualization layouts | Task: Modify keyrx_ui_v2/src/pages/DashboardPage.tsx layout: main container flex-col gap-4 p-4 md:p-6, StateIndicatorPanel and MetricsChart in grid grid-cols-1 lg:grid-cols-2 gap-4 (stack mobile/tablet, side-by-side desktop), connection banner text-sm md:text-base, pause/clear buttons flex flex-col sm:flex-row gap-2 (stack mobile), all buttons min-h-[44px] md:min-h-0 | Restrictions: Components must stack vertically on mobile, 2-column grid only on desktop >= 1024px, MetricsChart uses ResponsiveContainer so auto-scales, 44px tap targets mandatory | Success: Components stack vertically on mobile, 2-column grid on desktop, connection banner responsive, pause/clear buttons stack on mobile, all tap targets >= 44px, MetricsChart scales to container width_
 
-- [ ] 33. Create Visual Regression Tests
+- [x] 33. Create Visual Regression Tests
   - File: keyrx_ui_v2/e2e/visual/responsive.spec.ts
   - Capture screenshots at 375px, 768px, 1024px viewports
   - Test all pages at all breakpoints

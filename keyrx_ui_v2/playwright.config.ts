@@ -42,6 +42,14 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
 
+  /* Configure snapshot comparison */
+  expect: {
+    toMatchSnapshot: {
+      /* Allow small pixel differences (font rendering, anti-aliasing) */
+      maxDiffPixels: 100,
+    },
+  },
+
   /* Configure projects for major browsers */
   projects: [
     {
