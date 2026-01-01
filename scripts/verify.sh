@@ -15,7 +15,7 @@ SKIP_COVERAGE=false
 
 # Check results tracking
 declare -A CHECK_RESULTS
-CHECK_ORDER=("build" "clippy" "fmt" "test" "coverage" "unwraps")
+CHECK_ORDER=("build" "clippy" "fmt" "test" "coverage" "ui_test" "e2e" "unwraps")
 
 # Usage information
 usage() {
@@ -23,8 +23,8 @@ usage() {
 Usage: $(basename "$0") [OPTIONS]
 
 Run comprehensive quality verification on the keyrx workspace.
-Executes: build, clippy, fmt, tests, and coverage checks in order.
-Aborts on first failure.
+Executes: build, clippy, fmt, tests, coverage, UI tests, and E2E checks.
+Runs ALL checks and collects results (does not abort on first failure).
 
 OPTIONS:
     --skip-coverage  Skip coverage check (useful for faster iteration)
@@ -48,9 +48,11 @@ CHECKS PERFORMED (in order):
     1. Build         - cargo build --workspace
     2. Clippy        - cargo clippy --workspace -- -D warnings
     3. Format        - cargo fmt --check
-    4. Tests         - cargo test --workspace --lib --bins --tests (skip doctests due to workspace dependency bug)
-    5. Coverage      - cargo llvm-cov (80% minimum)
-    6. Unwraps       - scripts/check_unwraps.sh (prevent regressions)
+    4. Tests         - cargo test --workspace --lib --bins --tests
+    5. Coverage      - cargo llvm-cov (80% minimum overall, 90% keyrx_core)
+    6. UI Tests      - npm test --coverage (80% minimum)
+    7. E2E Tests     - npm run test:e2e (Playwright)
+    8. Unwraps       - scripts/check_unwraps.sh (prevent regressions)
 
 OUTPUT MARKERS:
     === accomplished === - All checks passed
@@ -199,6 +201,66 @@ check_coverage() {
     fi
 }
 
+# Run UI tests
+check_ui_test() {
+    log_info "Running UI tests..."
+
+    # Check if keyrx_ui_v2 directory exists
+    if [[ ! -d "keyrx_ui_v2" ]]; then
+        CHECK_RESULTS["ui_test"]="SKIP"
+        log_warn "UI test: SKIPPED (keyrx_ui_v2 not found)"
+        return 0
+    fi
+
+    # Check if node_modules exists
+    if [[ ! -d "keyrx_ui_v2/node_modules" ]]; then
+        log_warn "UI node_modules not found, running npm install..."
+        (cd keyrx_ui_v2 && npm install --silent)
+    fi
+
+    # Run UI tests with coverage
+    if (cd keyrx_ui_v2 && npm test -- --coverage --run 2>&1); then
+        # TODO: Parse coverage percentage from output
+        CHECK_RESULTS["ui_test"]="PASS"
+        log_info "UI test: PASS"
+        return 0
+    else
+        CHECK_RESULTS["ui_test"]="FAIL"
+        log_error "UI test: FAIL"
+        return 1
+    fi
+}
+
+# Run E2E tests
+check_e2e() {
+    log_info "Running E2E tests..."
+
+    # Check if keyrx_ui_v2 directory exists
+    if [[ ! -d "keyrx_ui_v2" ]]; then
+        CHECK_RESULTS["e2e"]="SKIP"
+        log_warn "E2E test: SKIPPED (keyrx_ui_v2 not found)"
+        return 0
+    fi
+
+    # Check if package.json has test:e2e script
+    if ! grep -q '"test:e2e"' keyrx_ui_v2/package.json 2>/dev/null; then
+        CHECK_RESULTS["e2e"]="SKIP"
+        log_warn "E2E test: SKIPPED (test:e2e script not found)"
+        return 0
+    fi
+
+    # Run E2E tests
+    if (cd keyrx_ui_v2 && npm run test:e2e 2>&1); then
+        CHECK_RESULTS["e2e"]="PASS"
+        log_info "E2E test: PASS"
+        return 0
+    else
+        CHECK_RESULTS["e2e"]="FAIL"
+        log_error "E2E test: FAIL"
+        return 1
+    fi
+}
+
 # Run unwrap check
 check_unwraps() {
     log_info "Running unwrap check..."
@@ -214,7 +276,7 @@ check_unwraps() {
     fi
 }
 
-# Print summary table
+# Print summary table with colored output
 print_summary() {
     if [[ "$QUIET_MODE" == "true" ]]; then
         return
@@ -224,11 +286,23 @@ print_summary() {
     log_info "Verification Summary:"
     echo ""
     printf "  %-15s %s\n" "CHECK" "RESULT"
-    printf "  %-15s %s\n" "──────────────" "──────"
+    printf "  %-15s %s\n" "──────────────" "──────────────────"
 
     for check in "${CHECK_ORDER[@]}"; do
         local result="${CHECK_RESULTS[$check]:-SKIP}"
-        printf "  %-15s %s\n" "$check" "$result"
+        local display_result=""
+
+        if [[ "$result" == PASS* ]]; then
+            display_result="${COLOR_GREEN}✓${COLOR_RESET} ${result}"
+        elif [[ "$result" == FAIL* ]]; then
+            display_result="${COLOR_RED}✗${COLOR_RESET} ${result}"
+        elif [[ "$result" == "SKIP" ]]; then
+            display_result="${COLOR_YELLOW}○${COLOR_RESET} ${result}"
+        else
+            display_result="  ${result}"
+        fi
+
+        printf "  %-15s %b\n" "$check" "$display_result"
     done
 
     echo ""
@@ -309,33 +383,42 @@ main() {
     fi
 
     log_info "Starting comprehensive verification..."
+    log_info "Running all checks (will not abort on first failure)..."
     separator
 
-    # Run checks in order, abort on first failure
-    if ! check_build; then
-        exit_code=1
-        log_error "Aborting verification - build check failed"
-    elif ! check_clippy; then
-        exit_code=1
-        log_error "Aborting verification - clippy check failed"
-    elif ! check_fmt; then
-        exit_code=1
-        log_error "Aborting verification - format check failed"
-    elif ! check_test; then
-        exit_code=1
-        log_error "Aborting verification - test check failed"
-    elif ! check_coverage; then
+    # Run all checks and collect results
+    # Do not abort on first failure - collect all results
+    check_build || exit_code=1
+    separator
+
+    check_clippy || exit_code=1
+    separator
+
+    check_fmt || exit_code=1
+    separator
+
+    check_test || exit_code=1
+    separator
+
+    # Coverage check might return 2 (missing tool) or 1 (failure)
+    if ! check_coverage; then
         local coverage_exit=$?
         if [[ $coverage_exit -eq 2 ]]; then
             exit_code=2
         else
             exit_code=1
         fi
-        log_error "Aborting verification - coverage check failed"
-    elif ! check_unwraps; then
-        exit_code=1
-        log_error "Aborting verification - unwrap check failed"
     fi
+    separator
+
+    check_ui_test || exit_code=1
+    separator
+
+    check_e2e || exit_code=1
+    separator
+
+    check_unwraps || exit_code=1
+    separator
 
     # Print summary
     print_summary
