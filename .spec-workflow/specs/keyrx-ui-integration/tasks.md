@@ -189,7 +189,7 @@
   - _Requirements: REQ-3 (AC1, AC2, AC3)_
   - _Prompt: Role: React Developer with expertise in real-time data visualization and state management | Task: Create keyrx_ui_v2/src/pages/DashboardPage.tsx that uses useUnifiedApi hook, creates RpcClient, uses useEffect to subscribe to daemon-state/events/latency on mount, tracks daemonState (latest), events array (max 100 FIFO), latencyHistory array (max 60) in useState, renders connection banner (green "Connected" if isConnected else red "Disconnected"), renders StateIndicatorPanel with daemonState, MetricsChart with latencyHistory, DashboardEventTimeline with events, unsubscribes on unmount, uses responsive layout (single column mobile, 2-column grid desktop >= 1024px) | Restrictions: Events array must enforce 100 max FIFO (slice on append), latency array must enforce 60 max, must unsubscribe on unmount to prevent leaks, connection banner must show current status | Success: Dashboard connects on mount, connection banner shows correct status, all three channels subscribed, state updates in real-time, FIFO limits enforced, cleanup on unmount, responsive layout works_
 
-- [ ] 19. Create State Indicator Panel Component
+- [x] 19. Create State Indicator Panel Component
   - File: keyrx_ui_v2/src/components/StateIndicatorPanel.tsx
   - Display active modifiers as blue badges
   - Display active locks as orange badges
@@ -200,7 +200,7 @@
   - _Requirements: REQ-3 (AC4)_
   - _Prompt: Role: React Component Developer with expertise in data visualization and accessibility | Task: Create keyrx_ui_v2/src/components/StateIndicatorPanel.tsx accepting state: DaemonState | null prop, if null show loading message, otherwise render 3-column grid (single column mobile), Modifiers section maps state.modifiers to blue badges with "MOD_{id}" text (bg-blue-600), Locks section maps state.locks to orange badges with "LOCK_{id}" (bg-orange-600), Layer section shows green badge with "Layer {state.layer}" (bg-green-600), show "None" in gray if arrays empty, add ARIA labels for accessibility | Restrictions: Must handle null state gracefully, color scheme must match design (blue/orange/green), responsive grid required (1 col mobile, 3 col desktop), ARIA labels mandatory | Success: Modifiers display as blue badges, locks as orange, layer as green, "None" shown when empty, responsive grid works, ARIA labels present, updates immediately when state prop changes_
 
-- [ ] 20. Create Metrics Chart Component
+- [x] 20. Create Metrics Chart Component
   - File: keyrx_ui_v2/src/components/MetricsChart.tsx
   - Render line chart with avg, P95, P99 lines
   - Add 5ms reference line for performance target
