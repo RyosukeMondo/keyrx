@@ -157,7 +157,7 @@
   - _Requirements: REQ-2 (AC1, AC2, AC3, AC4, AC5, AC6, AC7, AC8, AC9, AC10)_
   - _Prompt: Role: Frontend Developer specializing in Monaco editor and code editing features | Task: Create keyrx_ui_v2/src/components/MonacoEditor.tsx using @monaco-editor/react, implement beforeMount to register Rhai language with monarch tokenizer (keywords: let/const/if/else/while/for/loop/break/continue/return/fn, operators, strings, numbers, comments), define rhai-dark theme, implement onMount to configure editor (minimap disabled, fontSize 14, tabSize 2, rulers at 80/120), add F8 keybinding to jump to next error, use useEffect with 500ms debounce to run WASM validation, convert errors to Monaco markers, display status showing error count or success message, handle WASM unavailable gracefully | Restrictions: Must use Monaco's language registration API, validation must be debounced exactly 500ms, F8 must jump to next error and center line, must work without WASM (show unavailable status) | Success: Rhai syntax highlighted correctly, F8 navigates errors, validation runs after 500ms, error markers appear at correct lines, tooltips show error messages, graceful fallback without WASM, all REQ-2 acceptance criteria verified_
 
-- [ ] 16. Implement useWasm Hook
+- [x] 16. Implement useWasm Hook
   - File: keyrx_ui_v2/src/hooks/useWasm.ts
   - Initialize WASM module on mount
   - Provide validateConfig and runSimulation functions

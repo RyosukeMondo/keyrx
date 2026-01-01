@@ -14,9 +14,45 @@ export interface ValidationError {
  * Simulation result structure returned by WASM simulator
  */
 export interface SimulationResult {
-  states: unknown[];
-  outputs: unknown[];
+  states: StateTransition[];
+  outputs: KeyEvent[];
   latency: number[];
+  final_state: {
+    active_modifiers: number[];
+    active_locks: number[];
+    active_layer: string | null;
+  };
+}
+
+interface StateTransition {
+  timestamp_us: number;
+  active_modifiers: number[];
+  active_locks: number[];
+  active_layer: string | null;
+}
+
+interface KeyEvent {
+  keycode: string;
+  event_type: 'press' | 'release';
+  timestamp_us: number;
+}
+
+/**
+ * Input event for simulation
+ */
+export interface SimulationInput {
+  events: Array<{
+    keycode: string;
+    event_type: 'press' | 'release';
+    timestamp_us: number;
+  }>;
+}
+
+// Type definitions for WASM module
+interface WasmModule {
+  wasm_init: () => void;
+  load_config: (source: string) => number; // Returns ConfigHandle
+  simulate: (configHandle: number, eventsJson: string) => unknown;
 }
 
 /**
@@ -27,18 +63,29 @@ export interface SimulationResult {
 export function useWasm() {
   const [isWasmReady, setIsWasmReady] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [wasmModule, setWasmModule] = useState<WasmModule | null>(null);
 
   useEffect(() => {
     // Initialize WASM module
     async function initWasm() {
       try {
-        // TODO: Implement WASM initialization in Task 16
-        // For now, WASM is not available
-        console.warn('WASM module not yet implemented. Validation will be unavailable.');
-        setIsWasmReady(false);
+        // Try to dynamically import the WASM module
+        // The path will be correct once WASM is built (Task 25-26)
+        // @ts-expect-error - WASM module doesn't exist until build:wasm runs
+        const module = await import('@/wasm/pkg/keyrx_core.js').catch(() => {
+          throw new Error('WASM module not found. Run build:wasm to compile the WASM module.');
+        });
+
+        // Initialize WASM with panic hook
+        module.wasm_init();
+
+        setWasmModule(module as unknown as WasmModule);
+        setIsWasmReady(true);
+        console.info('WASM module initialized successfully');
       } catch (err) {
-        console.error('Failed to initialize WASM:', err);
-        setError(err instanceof Error ? err : new Error(String(err)));
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.warn('WASM module not available:', errorMessage);
+        setError(err instanceof Error ? err : new Error(errorMessage));
         setIsWasmReady(false);
       }
     }
@@ -49,27 +96,49 @@ export function useWasm() {
   /**
    * Validate Rhai configuration code
    *
+   * Uses the WASM load_config function which validates and parses the configuration.
+   * If parsing fails, it returns validation errors with line/column information.
+   *
    * @param code - Rhai configuration code to validate
    * @returns Array of validation errors, empty if valid
    */
   const validateConfig = useCallback(
     async (code: string): Promise<ValidationError[]> => {
-      if (!isWasmReady) {
+      if (!isWasmReady || !wasmModule) {
         // Return empty array if WASM not ready - graceful degradation
+        console.debug('WASM not ready, skipping validation');
         return [];
       }
 
       try {
-        // TODO: Implement WASM validation in Task 27
-        // const result = await wasmModule.validate_config(code);
-        // return JSON.parse(result);
+        // Use load_config to validate - it will throw if invalid
+        wasmModule.load_config(code);
+        // If we get here, the config is valid
         return [];
       } catch (err) {
-        console.error('Validation error:', err);
-        return [];
+        // Parse error message to extract line/column information
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.debug('Validation error:', errorMessage);
+
+        // Try to extract line number from error message
+        // Rhai errors typically include line information
+        const lineMatch = errorMessage.match(/line (\d+)/i);
+        const columnMatch = errorMessage.match(/column (\d+)/i);
+
+        const line = lineMatch ? parseInt(lineMatch[1], 10) : 1;
+        const column = columnMatch ? parseInt(columnMatch[1], 10) : 1;
+
+        return [
+          {
+            line,
+            column,
+            length: 1,
+            message: errorMessage,
+          },
+        ];
       }
     },
-    [isWasmReady]
+    [isWasmReady, wasmModule]
   );
 
   /**
@@ -80,24 +149,30 @@ export function useWasm() {
    * @returns Simulation results
    */
   const runSimulation = useCallback(
-    async (code: string, input: unknown): Promise<SimulationResult | null> => {
-      if (!isWasmReady) {
+    async (code: string, input: SimulationInput): Promise<SimulationResult | null> => {
+      if (!isWasmReady || !wasmModule) {
         // Return null if WASM not ready - graceful degradation
+        console.debug('WASM not ready, skipping simulation');
         return null;
       }
 
       try {
-        // TODO: Implement WASM simulation in Task 28
-        // const inputJson = JSON.stringify(input);
-        // const result = await wasmModule.simulate(code, inputJson);
-        // return JSON.parse(result);
-        return null;
+        // Load the configuration
+        const configHandle = wasmModule.load_config(code);
+
+        // Run simulation
+        const inputJson = JSON.stringify(input);
+        const result = wasmModule.simulate(configHandle, inputJson);
+
+        // Parse and return the result
+        return result as SimulationResult;
       } catch (err) {
-        console.error('Simulation error:', err);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('Simulation error:', errorMessage);
         return null;
       }
     },
-    [isWasmReady]
+    [isWasmReady, wasmModule]
   );
 
   return {
