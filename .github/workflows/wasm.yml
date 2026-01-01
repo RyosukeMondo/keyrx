@@ -5,13 +5,13 @@ on:
     branches: ['**']
     paths:
       - 'keyrx_core/**'
-      - 'keyrx_ui/src/wasm/**'
+      - 'keyrx_ui_v2/src/wasm/**'
       - '.github/workflows/wasm.yml'
   pull_request:
     branches: ['**']
     paths:
       - 'keyrx_core/**'
-      - 'keyrx_ui/src/wasm/**'
+      - 'keyrx_ui_v2/src/wasm/**'
       - '.github/workflows/wasm.yml'
 
 jobs:
@@ -168,7 +168,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: keyrx_ui/package-lock.json
+          cache-dependency-path: keyrx_ui_v2/package-lock.json
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -181,15 +181,15 @@ jobs:
           rm -rf binaryen-version_118*
 
       - name: Install UI Dependencies
-        working-directory: keyrx_ui
+        working-directory: keyrx_ui_v2
         run: npm ci
 
       - name: Build WASM for UI
-        working-directory: keyrx_ui
+        working-directory: keyrx_ui_v2
         run: npm run build:wasm
 
       - name: Verify WASM Integration
-        working-directory: keyrx_ui
+        working-directory: keyrx_ui_v2
         run: |
           echo "Checking WASM module exists in UI..."
           if [ ! -f src/wasm/pkg/keyrx_core_bg.wasm ]; then
@@ -206,16 +206,16 @@ jobs:
           echo "✅ WASM module integrated correctly with UI"
 
       - name: TypeScript Type Check (WASM Integration)
-        working-directory: keyrx_ui
+        working-directory: keyrx_ui_v2
         run: npx tsc --noEmit
 
       - name: Build UI with WASM
-        working-directory: keyrx_ui
+        working-directory: keyrx_ui_v2
         run: npm run build
 
       - name: Upload UI Build with WASM
         uses: actions/upload-artifact@v3
         with:
           name: ui-build-with-wasm
-          path: keyrx_ui/dist
+          path: keyrx_ui_v2/dist
           retention-days: 7

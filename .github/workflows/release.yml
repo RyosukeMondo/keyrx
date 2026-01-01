@@ -28,6 +28,17 @@ jobs:
         with:
           toolchain: stable
           target: ${{ matrix.target }}
+          components: rustfmt, clippy
+
+      - name: Add wasm32-unknown-unknown target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: keyrx_ui_v2/package-lock.json
 
       - name: Cache Cargo
         uses: actions/cache@v3
@@ -37,9 +48,51 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-
+            ${{ runner.os }}-cargo-
 
-      - name: Build Release Binaries
-        run: cargo build --release --bin keyrx_compiler --bin keyrx_daemon
+      - name: Cache npm
+        uses: actions/cache@v3
+        with:
+          path: keyrx_ui_v2/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui_v2/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install wasm-pack (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install wasm-pack (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          Invoke-WebRequest -Uri https://github.com/rustwasm/wasm-pack/releases/download/v0.12.1/wasm-pack-v0.12.1-x86_64-pc-windows-msvc.tar.gz -OutFile wasm-pack.tar.gz
+          tar -xzf wasm-pack.tar.gz
+          Move-Item wasm-pack-v0.12.1-x86_64-pc-windows-msvc\wasm-pack.exe C:\Windows\System32\
+        shell: powershell
+
+      - name: Build Complete Release (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          chmod +x scripts/build.sh scripts/build_wasm.sh scripts/build_ui.sh
+          scripts/build.sh
+
+      - name: Build Complete Release (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          # Build WASM
+          cd keyrx_core
+          wasm-pack build --target web --out-dir ../keyrx_ui_v2/src/wasm/pkg --release --features wasm
+          cd ..
+          # Build UI
+          cd keyrx_ui_v2
+          npm ci
+          npm run build
+          cd ..
+          # Build binaries
+          cargo build --release --bin keyrx_compiler --bin keyrx_daemon
+        shell: powershell
 
       - name: Prepare Artifacts (Linux)
         if: matrix.os == 'ubuntu-latest'
@@ -47,6 +100,10 @@ jobs:
           mkdir -p artifacts
           cp target/release/keyrx_compiler artifacts/keyrx_compiler-${{ matrix.artifact_name }}
           cp target/release/keyrx_daemon artifacts/keyrx_daemon-${{ matrix.artifact_name }}
+          # Package UI bundle
+          cd keyrx_ui_v2/dist
+          tar -czf ../../artifacts/keyrx-ui-bundle.tar.gz .
+          cd ../..
 
       - name: Prepare Artifacts (Windows)
         if: matrix.os == 'windows-latest'
@@ -54,6 +111,8 @@ jobs:
           mkdir artifacts
           cp target/release/keyrx_compiler.exe artifacts/keyrx_compiler-${{ matrix.artifact_name }}.exe
           cp target/release/keyrx_daemon.exe artifacts/keyrx_daemon-${{ matrix.artifact_name }}.exe
+          # Package UI bundle (only on one platform to avoid duplicates)
+        shell: powershell
 
       - name: Upload Binaries
         uses: actions/upload-artifact@v3

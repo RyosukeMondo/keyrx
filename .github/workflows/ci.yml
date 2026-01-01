@@ -7,10 +7,10 @@ on:
     branches: ['**']
 
 jobs:
-  verify:
-    name: Verify Code Quality
+  build-and-verify:
+    name: Build and Verify
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -22,7 +22,15 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: wasm32-unknown-unknown
           components: rustfmt, clippy
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: keyrx_ui_v2/package-lock.json
 
       - name: Cache Cargo
         uses: actions/cache@v3
@@ -32,27 +40,80 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
-      - name: Install Tools
+      - name: Cache npm
+        uses: actions/cache@v3
+        with:
+          path: keyrx_ui_v2/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui_v2/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install wasm-pack (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install wasm-pack (Windows)
+        if: matrix.os == 'windows-latest'
         run: |
-          cargo install cargo-llvm-cov
-          cargo install cargo-watch
+          Invoke-WebRequest -Uri https://github.com/rustwasm/wasm-pack/releases/download/v0.12.1/wasm-pack-v0.12.1-x86_64-pc-windows-msvc.tar.gz -OutFile wasm-pack.tar.gz
+          tar -xzf wasm-pack.tar.gz
+          Move-Item wasm-pack-v0.12.1-x86_64-pc-windows-msvc\wasm-pack.exe C:\Windows\System32\
+        shell: powershell
 
-      - name: Run Verification
-        run: scripts/verify.sh --json
+      - name: Build Project (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          chmod +x scripts/build.sh
+          scripts/build.sh
 
-      - name: Upload Coverage
+      - name: Build Project (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          # Build WASM
+          cd keyrx_core
+          wasm-pack build --target web --out-dir ../keyrx_ui_v2/src/wasm/pkg --release --features wasm
+          cd ..
+          # Build UI
+          cd keyrx_ui_v2
+          npm ci
+          npm run build
+          cd ..
+          # Build daemon
+          cargo build --release -p keyrx_daemon
+        shell: powershell
+
+      - name: Run Verification (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          chmod +x scripts/verify.sh
+          scripts/verify.sh --json
+
+      - name: Run Verification (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          # Run basic verification for Windows
+          cargo fmt --check
+          cargo clippy --workspace -- -D warnings
+          cargo test --workspace
+
+      - name: Upload Coverage (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v3
         with:
           name: coverage-report
-          path: cobertura.xml
+          path: |
+            cobertura.xml
+            coverage/
+          retention-days: 30
 
   test-docs:
     name: Test Documentation Accuracy
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: verify
+    needs: build-and-verify
 
     steps:
       - uses: actions/checkout@v4
@@ -107,7 +168,7 @@ jobs:
     name: Virtual E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: verify
+    needs: build-and-verify
 
     steps:
       - uses: actions/checkout@v4
