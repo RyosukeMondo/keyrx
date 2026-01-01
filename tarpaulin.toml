@@ -1,0 +1,53 @@
+[report]
+# Coverage output formats
+# - Html: HTML report in target/tarpaulin/
+# - Lcov: For IDE integration and CI
+# - Json: For programmatic parsing
+out = ["Html", "Lcov", "Json"]
+
+[run]
+# Run with all features enabled
+all-features = true
+
+# Exclude test-only files from coverage
+exclude-files = [
+    "*/tests/*",
+    "*/benches/*",
+    "*/examples/*",
+    "**/test_*.rs",
+    "*_test.rs",
+]
+
+# Overall workspace coverage threshold (80%)
+fail-under = 80.0
+
+# Timeout for each test (seconds)
+timeout = "300s"
+
+# Run tests in release mode for speed
+release = false
+
+# Count tests as part of coverage
+count-tests = false
+
+# Follow symbolic links
+follow-symlinks = true
+
+# Generate coverage for all workspace members
+workspace = true
+
+# Specific thresholds per package
+[[package]]
+name = "keyrx_core"
+# Critical core library requires 90% coverage
+fail-under = 90.0
+
+[[package]]
+name = "keyrx_compiler"
+# Compiler requires standard 80% coverage
+fail-under = 80.0
+
+[[package]]
+name = "keyrx_daemon"
+# Daemon requires standard 80% coverage
+fail-under = 80.0
