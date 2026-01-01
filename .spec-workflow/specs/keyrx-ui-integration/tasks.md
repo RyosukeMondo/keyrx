@@ -352,7 +352,7 @@
   - _Requirements: REQ-6 (AC8)_
   - _Prompt: Role: Visual Testing Engineer with expertise in Playwright and regression testing | Task: Create keyrx_ui_v2/e2e/visual/responsive.spec.ts using Playwright, test all pages (ConfigPage, DashboardPage, ProfilesPage, DevicesPage) at 3 viewports (375px mobile, 768px tablet, 1024px desktop), use page.setViewportSize({width, height}) before each screenshot, capture full page with page.screenshot(), store baseline images in e2e/visual/baselines/, configure Playwright to compare screenshots with threshold tolerance, test scenarios include both tabs on ConfigPage, dashboard with events, profiles list, navigation components | Restrictions: Must test exactly 3 viewports (375/768/1024), full page screenshots required, baseline images must be committed to repo, CI must fail on visual differences | Success: Screenshots captured for all pages at all breakpoints, baselines stored in repo, CI compares and fails on differences, tests run reliably, navigation components captured (BottomNav on mobile, Sidebar on desktop)_
 
-- [ ] 34. Configure TailwindCSS Purge
+- [x] 34. Configure TailwindCSS Purge
   - File: keyrx_ui_v2/tailwind.config.js
   - Configure content paths for purging
   - Define custom theme colors and breakpoints

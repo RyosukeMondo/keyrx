@@ -1,6 +1,17 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
+  safelist: [
+    // Dynamically generated badge colors in StateIndicatorPanel
+    'bg-blue-600',
+    'bg-orange-600',
+    'bg-green-600',
+    // Dynamically generated chart colors in MetricsChart
+    'stroke-blue-500',
+    'stroke-orange-500',
+    'stroke-red-500',
+  ],
   theme: {
     extend: {
       colors: {
