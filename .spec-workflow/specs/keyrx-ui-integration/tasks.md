@@ -424,7 +424,7 @@
 
 ## Phase 8: Build Process Integration
 
-- [ ] 41. Create WASM Build Script
+- [x] 41. Create WASM Build Script
   - File: scripts/build_wasm.sh
   - Build keyrx_core to WASM with wasm-pack
   - Output to keyrx_ui_v2/src/wasm/pkg/
