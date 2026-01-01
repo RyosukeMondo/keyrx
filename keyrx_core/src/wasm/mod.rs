@@ -109,23 +109,27 @@ pub fn wasm_init() {
 /// The data protected by a poisoned mutex may be in an inconsistent state.
 /// However, in the WASM single-threaded context, mutex poisoning should not
 /// occur during normal operation. This recovery is defensive programming.
-fn recover_mutex_lock<T>(
-    mutex: &Mutex<T>,
+fn recover_mutex_lock<'a, T>(
+    mutex: &'a Mutex<T>,
     context: &str,
-) -> Result<std::sync::MutexGuard<T>, JsValue> {
+) -> Result<std::sync::MutexGuard<'a, T>, JsValue> {
     mutex
         .lock()
-        .or_else(|poison_error| {
-            // Log warning in debug builds
-            #[cfg(debug_assertions)]
-            web_sys::console::warn_1(
-                &format!("WASM mutex poisoned in {}: recovering", context).into(),
-            );
+        .or_else(
+            |poison_error: std::sync::PoisonError<std::sync::MutexGuard<'a, T>>| {
+                // Log warning in debug builds
+                #[cfg(debug_assertions)]
+                web_sys::console::warn_1(
+                    &format!("WASM mutex poisoned in {}: recovering", context).into(),
+                );
 
-            // Recover by using the poisoned data
-            Ok(poison_error.into_inner())
+                // Recover by using the poisoned data
+                Ok(poison_error.into_inner())
+            },
+        )
+        .map_err(|_: std::sync::TryLockError<std::sync::MutexGuard<'a, T>>| {
+            JsValue::from_str(&format!("Failed to acquire lock in {}", context))
         })
-        .map_err(|_| JsValue::from_str(&format!("Failed to acquire lock in {}", context)))
 }
 
 /// Store a configuration in the global CONFIG_STORE and return a handle.
@@ -403,6 +407,126 @@ pub fn load_krx(binary: &[u8]) -> Result<ConfigHandle, JsValue> {
 
     // Store config and return handle
     store_config(config)
+}
+
+// ============================================================================
+// Configuration Validation
+// ============================================================================
+
+/// Validate a Rhai configuration source.
+///
+/// Parses the Rhai source and returns validation errors as a JSON array.
+/// Returns an empty array if the configuration is valid.
+///
+/// # Arguments
+/// * `rhai_source` - Rhai DSL source code as a string
+///
+/// # Returns
+/// * `Ok(JsValue)` - JSON array of validation errors. Each error has:
+///   - `line`: number - Line number where the error occurred
+///   - `column`: number - Column number where the error occurred
+///   - `length`: number - Length of the error span
+///   - `message`: string - Error description
+/// * `Err(JsValue)` - Internal error during validation
+///
+/// # Example (JavaScript)
+/// ```javascript
+/// const errors = validate_config(`
+///   device("*") {
+///     map("VK_A", "VK_B");
+///   }
+/// `);
+/// console.log(errors); // [] for valid config
+/// ```
+#[wasm_bindgen]
+pub fn validate_config(rhai_source: &str) -> Result<JsValue, JsValue> {
+    #[derive(Serialize)]
+    struct ValidationError {
+        line: usize,
+        column: usize,
+        length: usize,
+        message: String,
+    }
+
+    // Validate input size (1MB limit)
+    const MAX_CONFIG_SIZE: usize = 1024 * 1024;
+    if rhai_source.len() > MAX_CONFIG_SIZE {
+        let error = ValidationError {
+            line: 1,
+            column: 1,
+            length: 0,
+            message: format!(
+                "Configuration too large: {} bytes (max {})",
+                rhai_source.len(),
+                MAX_CONFIG_SIZE
+            ),
+        };
+        return serde_wasm_bindgen::to_value(&vec![error])
+            .map_err(|e| JsValue::from_str(&format!("Failed to serialize error: {}", e)));
+    }
+
+    // Try to parse the configuration
+    match parse_rhai_config(rhai_source) {
+        Ok(_) => {
+            // Valid configuration - return empty array
+            serde_wasm_bindgen::to_value(&Vec::<ValidationError>::new())
+                .map_err(|e| JsValue::from_str(&format!("Failed to serialize result: {}", e)))
+        }
+        Err(error_msg) => {
+            // Parse error occurred - extract line/column from Rhai error
+            // Rhai error format is typically "... (line X, column Y)"
+            let (line, column) = extract_line_column(&error_msg);
+
+            let error = ValidationError {
+                line,
+                column,
+                length: 1, // Default length for now
+                message: error_msg,
+            };
+
+            serde_wasm_bindgen::to_value(&vec![error])
+                .map_err(|e| JsValue::from_str(&format!("Failed to serialize error: {}", e)))
+        }
+    }
+}
+
+/// Extract line and column numbers from Rhai error message.
+///
+/// Rhai error messages typically contain position information like:
+/// "Parse error: ... (line 5, column 10)"
+fn extract_line_column(error_msg: &str) -> (usize, usize) {
+    // Look for pattern "(line X, column Y)" or "(line X, position Y)"
+    if let Some(start) = error_msg.find("(line ") {
+        let after_line = &error_msg[start + 6..];
+        if let Some(comma) = after_line.find(',') {
+            let line_str = &after_line[..comma];
+            if let Ok(line) = line_str.trim().parse::<usize>() {
+                let after_comma = &after_line[comma + 1..];
+
+                // Try "column" or "position"
+                let col_prefix = if after_comma.contains("column") {
+                    "column "
+                } else if after_comma.contains("position") {
+                    "position "
+                } else {
+                    return (line, 1);
+                };
+
+                if let Some(col_start) = after_comma.find(col_prefix) {
+                    let after_col = &after_comma[col_start + col_prefix.len()..];
+                    if let Some(end) = after_col.find(')') {
+                        let col_str = &after_col[..end];
+                        if let Ok(col) = col_str.trim().parse::<usize>() {
+                            return (line, col);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Default to line 1, column 1 if parsing fails
+    (1, 1)
 }
 
 // ============================================================================
