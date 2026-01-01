@@ -50,3 +50,15 @@ export {
   type WebSocketConfig,
   type WebSocketCallbacks,
 } from './websocket';
+
+// RPC client (unified WebSocket API)
+export { RpcClient } from './rpc';
+export type {
+  Profile,
+  Device,
+  Config,
+  Layer,
+  SimulationInput,
+  SimulationResult,
+  PaginatedEvents,
+} from './types';

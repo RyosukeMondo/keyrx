@@ -115,7 +115,7 @@
   - _Requirements: REQ-1 (AC1, AC2, AC3, AC4, AC6, AC9, AC10)_
   - _Prompt: Role: React Developer with expertise in hooks and WebSocket communication | Task: Implement keyrx_ui_v2/src/hooks/useUnifiedApi.ts using react-use-websocket with auto-reconnect (3s, 10 attempts), create query/command methods that generate UUIDs, track pending requests in useRef Map with {resolve, reject, timeout}, send ClientMessage, return Promise that resolves when matching Response received, implement subscribe/unsubscribe that track handlers in useRef Map and call on Event messages, add 30s timeout that rejects promises, handle Connected message to set isConnected, cleanup subscriptions on unmount | Restrictions: Must use useRef for pending requests/subscriptions (not useState), timeouts are mandatory, must cleanup on unmount, auto-reconnect is required | Success: Requests return Promises that resolve with results, timeouts reject after 30s, subscriptions call handlers on events, auto-reconnects on disconnect, cleanup works correctly, isConnected and readyState exposed_
 
-- [ ] 12. Create Type-Safe RPC Client Wrapper
+- [x] 12. Create Type-Safe RPC Client Wrapper
   - File: keyrx_ui_v2/src/api/rpc.ts, keyrx_ui_v2/src/api/types.ts
   - Create RpcClient class with typed methods for all RPC operations
   - Add JSDoc comments for all methods
