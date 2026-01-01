@@ -222,7 +222,7 @@
   - _Requirements: REQ-3 (AC6, AC7, AC8, AC9)_
   - _Prompt: Role: React Performance Specialist with expertise in virtualization and large lists | Task: Create keyrx_ui_v2/src/components/DashboardEventTimeline.tsx accepting events: KeyEvent[], isPaused: boolean, onTogglePause: () => void, onClear: () => void props, render Pause/Resume and Clear buttons above list, use react-window FixedSizeList with height 400px itemSize 50px, each row displays keyCode (formatted as readable label like "A"/"Enter"), eventType, timestamp (formatted as relative time like "2s ago"), add tooltip on hover showing full details (timestamp in microseconds, latency, layer), component is purely presentational (parent handles state) | Restrictions: Must use react-window for virtualization, list height 400px fixed, each item 50px, formatting functions required (keyCodeToLabel, formatTimestamp), component must not manage isPaused state | Success: Events render in virtualized list, newest first, pause stops updates (verified by parent), clear empties list, tooltip shows full details on hover, keyCode formatted as labels, timestamp as relative time, virtualization performs well with 1000+ events_
 
-- [ ] 22. Write Dashboard Component Tests
+- [x] 22. Write Dashboard Component Tests
   - File: keyrx_ui_v2/src/pages/DashboardPage.test.tsx, keyrx_ui_v2/src/components/StateIndicatorPanel.test.tsx, keyrx_ui_v2/src/components/MetricsChart.test.tsx, keyrx_ui_v2/src/components/DashboardEventTimeline.test.tsx
   - Test all dashboard components
   - Mock WebSocket and subscriptions
