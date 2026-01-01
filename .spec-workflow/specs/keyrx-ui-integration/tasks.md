@@ -289,7 +289,7 @@
   - _Requirements: REQ-5 (AC2, AC3, AC4, AC5, AC6)_
   - _Prompt: Role: Rust Developer with expertise in parsing and error handling | Task: Create keyrx_core/src/wasm/validation.rs that implements validate_config(code: &str) -> String using keyrx_compiler::parse to validate Rhai code, catches parse errors and converts to JSON array format [{line: number, column: number, length: number, message: string}], returns "[]" if valid, export from lib.rs with #[wasm_bindgen] when wasm feature enabled, ensure validation logic is IDENTICAL to daemon (same parser, same error messages) for determinism | Restrictions: Must use existing keyrx_compiler::parse not custom parser, validation must be deterministic (same input always produces same output), JSON format is mandatory, field names must match TypeScript ValidationError interface | Success: Valid configs return empty array, invalid configs return errors with correct line/column numbers, validation matches daemon behavior exactly, deterministic results verified, unit tests compare WASM vs daemon validation_
 
-- [ ] 28. Implement WASM Simulation
+- [x] 28. Implement WASM Simulation
   - File: keyrx_core/src/lib.rs, keyrx_core/src/wasm/simulator.rs
   - Implement simulate using keyrx_core DFA and state machine
   - Accept JSON input events, return JSON results
