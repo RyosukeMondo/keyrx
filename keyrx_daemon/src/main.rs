@@ -321,7 +321,7 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
         .to_path_buf();
 
     // Initialize ProfileManager and ProfileService
-    let profile_manager = match keyrx_daemon::config::ProfileManager::new(config_dir) {
+    let profile_manager = match keyrx_daemon::config::ProfileManager::new(config_dir.clone()) {
         Ok(mgr) => std::sync::Arc::new(mgr),
         Err(e) => {
             log::warn!("Failed to initialize ProfileManager: {}. Profile operations will not be available.", e);
@@ -334,10 +334,13 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     };
     let profile_service =
         std::sync::Arc::new(keyrx_daemon::services::ProfileService::new(profile_manager));
+    let device_service =
+        std::sync::Arc::new(keyrx_daemon::services::DeviceService::new(config_dir));
 
     let app_state = std::sync::Arc::new(keyrx_daemon::web::AppState::new(
         macro_recorder,
         profile_service,
+        device_service,
     ));
 
     // Start web server in background (optional)
@@ -410,7 +413,7 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
         .to_path_buf();
 
     // Initialize ProfileManager and ProfileService
-    let profile_manager = match keyrx_daemon::config::ProfileManager::new(config_dir) {
+    let profile_manager = match keyrx_daemon::config::ProfileManager::new(config_dir.clone()) {
         Ok(mgr) => std::sync::Arc::new(mgr),
         Err(e) => {
             log::warn!("Failed to initialize ProfileManager: {}. Profile operations will not be available.", e);
@@ -423,10 +426,13 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     };
     let profile_service =
         std::sync::Arc::new(keyrx_daemon::services::ProfileService::new(profile_manager));
+    let device_service =
+        std::sync::Arc::new(keyrx_daemon::services::DeviceService::new(config_dir));
 
     let app_state = std::sync::Arc::new(keyrx_daemon::web::AppState::new(
         macro_recorder,
         profile_service,
+        device_service,
     ));
 
     std::thread::spawn(move || {

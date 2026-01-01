@@ -163,12 +163,13 @@ async fn handle_query(
     params: Value,
     state: &AppState,
 ) -> ServerMessage {
-    use crate::web::handlers::profile;
+    use crate::web::handlers::{device, profile};
 
     log::debug!("Handling query: {} with params: {}", method, params);
 
     let result = match method.as_str() {
         "get_profiles" => profile::get_profiles(&state.profile_service, params).await,
+        "get_devices" => device::get_devices(&state.device_service, params).await,
         _ => Err(RpcError::method_not_found(&method)),
     };
 
@@ -193,7 +194,7 @@ async fn handle_command(
     params: Value,
     state: &AppState,
 ) -> ServerMessage {
-    use crate::web::handlers::profile;
+    use crate::web::handlers::{device, profile};
 
     log::debug!("Handling command: {} with params: {}", method, params);
 
@@ -203,6 +204,9 @@ async fn handle_command(
         "delete_profile" => profile::delete_profile(&state.profile_service, params).await,
         "duplicate_profile" => profile::duplicate_profile(&state.profile_service, params).await,
         "rename_profile" => profile::rename_profile(&state.profile_service, params).await,
+        "rename_device" => device::rename_device(&state.device_service, params).await,
+        "set_scope_device" => device::set_scope_device(&state.device_service, params).await,
+        "forget_device" => device::forget_device(&state.device_service, params).await,
         _ => Err(RpcError::method_not_found(&method)),
     };
 
@@ -262,12 +266,14 @@ mod tests {
 
     #[test]
     fn test_create_router() {
-        let profile_manager =
-            Arc::new(ProfileManager::new(PathBuf::from("/tmp/keyrx-test")).unwrap());
+        let config_dir = PathBuf::from("/tmp/keyrx-test");
+        let profile_manager = Arc::new(ProfileManager::new(config_dir.clone()).unwrap());
         let profile_service = Arc::new(ProfileService::new(profile_manager));
+        let device_service = Arc::new(crate::services::DeviceService::new(config_dir));
         let state = Arc::new(AppState::new(
             Arc::new(MacroRecorder::new()),
             profile_service,
+            device_service,
         ));
         let router = create_router(state);
         assert!(std::mem::size_of_val(&router) > 0);

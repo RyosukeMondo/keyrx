@@ -34,7 +34,7 @@
   - _Requirements: REQ-1 (AC2, AC3)_
   - _Prompt: Role: Backend Developer with expertise in CRUD operations and validation | Task: Create keyrx_daemon/src/web/handlers/profile.rs with 6 RPC method implementations (get_profiles, create_profile, activate_profile, delete_profile, duplicate_profile, rename_profile), each accepting AppState and serde_json::Value params, deserializing to typed structs, validating profile names (no '..' or '/' for path traversal), calling profile manager methods, returning Result<serde_json::Value, RpcError> | Restrictions: Must validate all inputs before processing, profile names must not allow path traversal, must use existing profile manager without modification, all errors must be RpcError with appropriate codes | Success: All 6 methods work correctly, invalid profile names rejected, integration tests verify each method with valid/invalid inputs, error codes are appropriate_
 
-- [ ] 4. Implement Device RPC Methods
+- [x] 4. Implement Device RPC Methods
   - File: keyrx_daemon/src/web/handlers/device.rs
   - Implement get_devices, rename_device, set_scope_device, forget_device
   - Validate serial numbers to prevent injection

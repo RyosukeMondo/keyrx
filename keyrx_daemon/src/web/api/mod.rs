@@ -65,12 +65,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_router() {
-        let profile_manager =
-            Arc::new(ProfileManager::new(PathBuf::from("/tmp/keyrx-test")).unwrap());
+        let config_dir = PathBuf::from("/tmp/keyrx-test");
+        let profile_manager = Arc::new(ProfileManager::new(config_dir.clone()).unwrap());
         let profile_service = Arc::new(ProfileService::new(profile_manager));
+        let device_service = Arc::new(crate::services::DeviceService::new(config_dir));
         let state = Arc::new(AppState::new(
             Arc::new(MacroRecorder::new()),
             profile_service,
+            device_service,
         ));
         let router = create_router(state);
         assert!(std::mem::size_of_val(&router) > 0);
@@ -81,10 +83,15 @@ mod tests {
         // This test demonstrates that we can inject a fresh MacroRecorder
         // instance for testing, proving dependency injection works
         let mock_recorder = Arc::new(MacroRecorder::new());
-        let profile_manager =
-            Arc::new(ProfileManager::new(PathBuf::from("/tmp/keyrx-test")).unwrap());
+        let config_dir = PathBuf::from("/tmp/keyrx-test");
+        let profile_manager = Arc::new(ProfileManager::new(config_dir.clone()).unwrap());
         let profile_service = Arc::new(ProfileService::new(profile_manager));
-        let state = Arc::new(AppState::new(mock_recorder.clone(), profile_service));
+        let device_service = Arc::new(crate::services::DeviceService::new(config_dir));
+        let state = Arc::new(AppState::new(
+            mock_recorder.clone(),
+            profile_service,
+            device_service,
+        ));
 
         // Verify state is accessible
         assert_eq!(state.macro_recorder.event_count(), 0);
