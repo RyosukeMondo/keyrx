@@ -1,9 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card } from '@/components/Card';
 import { Dropdown } from '@/components/Dropdown';
 import { KeyboardVisualizer } from '@/components/KeyboardVisualizer';
 import { KeyMapping } from '@/components/KeyButton';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { MonacoEditor } from '@/components/MonacoEditor';
+import { useUnifiedApi } from '@/hooks/useUnifiedApi';
+import { RpcClient } from '@/api/rpc';
+import { ValidationError } from '@/hooks/useWasm';
 
 interface ConfigPageProps {
   profileName?: string;
@@ -12,12 +16,20 @@ interface ConfigPageProps {
 export const ConfigPage: React.FC<ConfigPageProps> = ({
   profileName = 'Default',
 }) => {
+  const api = useUnifiedApi();
+  const rpcClient = new RpcClient(api);
+
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'visual' | 'code'>('visual');
+  const [configCode, setConfigCode] = useState<string>('// Loading configuration...\n');
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [selectedLayout, setSelectedLayout] =
     useState<'ANSI_104' | 'ISO_105' | 'JIS_109' | 'HHKB' | 'NUMPAD'>('ANSI_104');
   const [selectedLayer, setSelectedLayer] = useState('base');
   const [previewMode, setPreviewMode] = useState(false);
   const [keyMappings] = useState<Map<string, KeyMapping>>(new Map());
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   // Layout options
   const layoutOptions = [
@@ -53,6 +65,74 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   const togglePreviewMode = useCallback(() => {
     setPreviewMode((prev) => !prev);
   }, []);
+
+  // Load configuration on mount
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        setLoading(true);
+        const config = await rpcClient.getConfig();
+        setConfigCode(config.code);
+      } catch (error) {
+        console.error('Failed to load configuration:', error);
+        setConfigCode('// Failed to load configuration\n// Error: ' + (error instanceof Error ? error.message : String(error)));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (api.isConnected) {
+      loadConfig();
+    }
+  }, [api.isConnected]);
+
+  // Handle validation callback from Monaco
+  const handleValidation = useCallback((errors: ValidationError[]) => {
+    setValidationErrors(errors);
+  }, []);
+
+  // Handle save
+  const handleSave = useCallback(async () => {
+    // Prevent save if validation errors exist
+    if (validationErrors.length > 0) {
+      setErrorMessage('Cannot save: configuration has validation errors');
+      setSaveStatus('error');
+      setTimeout(() => {
+        setSaveStatus('idle');
+        setErrorMessage('');
+      }, 3000);
+      return;
+    }
+
+    try {
+      setSaveStatus('saving');
+      setErrorMessage('');
+      await rpcClient.updateConfig(configCode);
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Failed to save configuration:', error);
+      setErrorMessage(error instanceof Error ? error.message : String(error));
+      setSaveStatus('error');
+      setTimeout(() => {
+        setSaveStatus('idle');
+        setErrorMessage('');
+      }, 3000);
+    }
+  }, [configCode, validationErrors, rpcClient]);
+
+  // Ctrl+S / Cmd+S keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave]);
 
   // Mock modified keys count (would come from configuration store)
   const modifiedKeysCount = 37;
@@ -106,98 +186,198 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
           </span>
         </div>
         <button
-          onClick={togglePreviewMode}
-          className={`px-4 py-3 md:py-2 rounded-md font-medium transition-colors min-h-[44px] md:min-h-0 ${
-            previewMode
+          onClick={handleSave}
+          disabled={saveStatus === 'saving' || validationErrors.length > 0}
+          className={`px-6 py-3 md:py-2 rounded-md font-medium transition-colors min-h-[44px] md:min-h-0 w-full md:w-auto ${
+            saveStatus === 'saving'
+              ? 'bg-slate-600 text-slate-400 cursor-wait'
+              : validationErrors.length > 0
+              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+              : saveStatus === 'success'
               ? 'bg-green-600 text-white'
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              : saveStatus === 'error'
+              ? 'bg-red-600 text-white'
+              : 'bg-primary-500 text-white hover:bg-primary-600'
           }`}
-          aria-label={`Preview mode is ${previewMode ? 'on' : 'off'}`}
+          aria-label="Save configuration"
         >
-          🧪 Preview Mode: {previewMode ? 'ON' : 'OFF'}
+          {saveStatus === 'saving'
+            ? '💾 Saving...'
+            : saveStatus === 'success'
+            ? '✓ Saved!'
+            : saveStatus === 'error'
+            ? '✗ Error'
+            : '💾 Save (Ctrl+S)'}
         </button>
       </div>
 
-      {/* Keyboard Visualizer Card */}
-      <Card variant="default" padding="lg">
-        <div className="flex flex-col gap-4">
-          {/* Card Header with Layout Selector */}
-          <div className="flex items-center justify-between pb-4 border-b border-slate-700">
-            <h2 className="text-lg font-medium text-slate-100">
-              Keyboard Layout
-            </h2>
-            <div className="w-48">
-              <Dropdown
-                options={layoutOptions}
-                value={selectedLayout}
-                onChange={handleLayoutChange}
-                aria-label="Select keyboard layout"
-                searchable={false}
+      {/* Tab Buttons */}
+      <div className="grid grid-cols-2 sm:flex sm:gap-2" role="tablist" aria-label="Editor mode">
+        <button
+          role="tab"
+          aria-selected={activeTab === 'visual'}
+          aria-controls="visual-panel"
+          onClick={() => setActiveTab('visual')}
+          className={`px-6 py-3 sm:py-2 rounded-md font-medium transition-colors min-h-[44px] sm:min-h-0 ${
+            activeTab === 'visual'
+              ? 'bg-primary-500 text-white'
+              : 'bg-slate-700 text-slate-400 hover:text-slate-300 hover:bg-slate-600'
+          }`}
+        >
+          🎨 Visual Editor
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'code'}
+          aria-controls="code-panel"
+          onClick={() => setActiveTab('code')}
+          className={`px-6 py-3 sm:py-2 rounded-md font-medium transition-colors min-h-[44px] sm:min-h-0 ${
+            activeTab === 'code'
+              ? 'bg-primary-500 text-white'
+              : 'bg-slate-700 text-slate-400 hover:text-slate-300 hover:bg-slate-600'
+          }`}
+        >
+          {'</>'}Code Editor
+        </button>
+      </div>
+
+      {/* Validation Status Panel */}
+      {(validationErrors.length > 0 || saveStatus === 'error') && (
+        <Card variant="danger" padding="md">
+          <div className="flex flex-col gap-2">
+            {validationErrors.length > 0 && (
+              <div className="text-sm md:text-base text-red-300">
+                ⚠️ {validationErrors.length} validation {validationErrors.length === 1 ? 'error' : 'errors'}
+              </div>
+            )}
+            {saveStatus === 'error' && errorMessage && (
+              <div className="text-sm md:text-base text-red-300">
+                ✗ {errorMessage}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {saveStatus === 'success' && (
+        <Card variant="success" padding="md">
+          <div className="text-sm md:text-base text-green-300">
+            ✓ Configuration saved successfully
+          </div>
+        </Card>
+      )}
+
+      {/* Visual Editor Panel */}
+      {activeTab === 'visual' && (
+        <div role="tabpanel" id="visual-panel" aria-labelledby="visual-tab">
+          {/* Keyboard Visualizer Card */}
+          <Card variant="default" padding="lg">
+            <div className="flex flex-col gap-4">
+              {/* Card Header with Layout Selector */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-700">
+                <h2 className="text-lg font-medium text-slate-100">
+                  Keyboard Layout
+                </h2>
+                <div className="w-48">
+                  <Dropdown
+                    options={layoutOptions}
+                    value={selectedLayout}
+                    onChange={handleLayoutChange}
+                    aria-label="Select keyboard layout"
+                    searchable={false}
+                  />
+                </div>
+              </div>
+
+              {/* Keyboard Visualizer - horizontal scroll on mobile */}
+              <div className="py-4 overflow-x-auto md:overflow-x-visible">
+                <KeyboardVisualizer
+                  layout={selectedLayout}
+                  keyMappings={keyMappings}
+                  onKeyClick={handleKeyClick}
+                />
+              </div>
+
+              {/* Example Mapping Display */}
+              <div className="text-sm text-slate-400 italic pt-4 border-t border-slate-700">
+                Example: <span className="font-mono text-slate-300">*Caps*</span> ={' '}
+                Tap: Escape, Hold (200ms): Ctrl
+              </div>
+            </div>
+          </Card>
+
+          {/* Layer Selector Card */}
+          <Card variant="default" padding="lg" className="mt-4 md:mt-6">
+            <div className="flex flex-col gap-4">
+              {/* Card Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                <h2 className="text-base sm:text-lg font-medium text-slate-100">
+                  Active Layer: MD_00 ({selectedLayer})
+                </h2>
+                <button
+                  className="text-sm text-primary-500 hover:text-primary-400 transition-colors self-start sm:self-auto min-h-[44px] sm:min-h-0 flex items-center"
+                  aria-label="Open layer list"
+                >
+                  Layer List ▼
+                </button>
+              </div>
+
+              {/* Layer Buttons - responsive grid on mobile */}
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2" role="group" aria-label="Layer selection">
+                {layerOptions.map((layer) => (
+                  <button
+                    key={layer.value}
+                    onClick={() => handleLayerChange(layer.value)}
+                    className={`px-4 py-3 sm:py-2 rounded-md font-medium transition-all min-h-[44px] sm:min-h-0 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 ${
+                      selectedLayer === layer.value
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                    aria-label={`Switch to ${layer.label} layer`}
+                    aria-pressed={selectedLayer === layer.value}
+                  >
+                    {layer.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Modified Keys Count */}
+              <div className="text-sm text-slate-400 pt-2 border-t border-slate-700">
+                Modified keys in this layer:{' '}
+                <span className="font-semibold text-slate-300">
+                  {modifiedKeysCount}
+                </span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Code Editor Panel */}
+      {activeTab === 'code' && (
+        <div role="tabpanel" id="code-panel" aria-labelledby="code-tab">
+          <Card variant="default" padding="lg">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-700">
+                <h2 className="text-lg font-medium text-slate-100">
+                  Rhai Configuration Code
+                </h2>
+                {validationErrors.length === 0 && (
+                  <span className="text-sm text-green-400">
+                    ✓ No errors
+                  </span>
+                )}
+              </div>
+              <MonacoEditor
+                value={configCode}
+                onChange={setConfigCode}
+                onValidate={handleValidation}
+                height="600px"
               />
             </div>
-          </div>
-
-          {/* Keyboard Visualizer - horizontal scroll on mobile */}
-          <div className="py-4 overflow-x-auto md:overflow-x-visible">
-            <KeyboardVisualizer
-              layout={selectedLayout}
-              keyMappings={keyMappings}
-              onKeyClick={handleKeyClick}
-            />
-          </div>
-
-          {/* Example Mapping Display */}
-          <div className="text-sm text-slate-400 italic pt-4 border-t border-slate-700">
-            Example: <span className="font-mono text-slate-300">*Caps*</span> ={' '}
-            Tap: Escape, Hold (200ms): Ctrl
-          </div>
+          </Card>
         </div>
-      </Card>
-
-      {/* Layer Selector Card */}
-      <Card variant="default" padding="lg">
-        <div className="flex flex-col gap-4">
-          {/* Card Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-            <h2 className="text-base sm:text-lg font-medium text-slate-100">
-              Active Layer: MD_00 ({selectedLayer})
-            </h2>
-            <button
-              className="text-sm text-primary-500 hover:text-primary-400 transition-colors self-start sm:self-auto min-h-[44px] sm:min-h-0 flex items-center"
-              aria-label="Open layer list"
-            >
-              Layer List ▼
-            </button>
-          </div>
-
-          {/* Layer Buttons - responsive grid on mobile */}
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2" role="group" aria-label="Layer selection">
-            {layerOptions.map((layer) => (
-              <button
-                key={layer.value}
-                onClick={() => handleLayerChange(layer.value)}
-                className={`px-4 py-3 sm:py-2 rounded-md font-medium transition-all min-h-[44px] sm:min-h-0 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 ${
-                  selectedLayer === layer.value
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-                aria-label={`Switch to ${layer.label} layer`}
-                aria-pressed={selectedLayer === layer.value}
-              >
-                {layer.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Modified Keys Count */}
-          <div className="text-sm text-slate-400 pt-2 border-t border-slate-700">
-            Modified keys in this layer:{' '}
-            <span className="font-semibold text-slate-300">
-              {modifiedKeysCount}
-            </span>
-          </div>
-        </div>
-      </Card>
+      )}
     </div>
   );
 };
