@@ -299,7 +299,7 @@
   - _Requirements: REQ-5 (AC7, AC8)_
   - _Prompt: Role: Rust Systems Developer with expertise in simulation and determinism | Task: Create keyrx_core/src/wasm/simulator.rs that implements simulate(code: &str, input_json: &str) -> String, parses config and compiles to executable form, parses input JSON as KeyEvent array, initializes simulator state, processes each event through keyrx_core DFA (SAME engine as daemon), records state transitions and output events, uses virtual clock (not wall time) for time-independent determinism, returns JSON with {states: StateTransition[], outputs: KeyEvent[], latency: number[]}, export from lib.rs with #[wasm_bindgen] | Restrictions: Must use keyrx_core's actual DFA not a mock, virtual clock is mandatory for determinism, same input must always produce same output, results must match daemon simulation byte-for-byte | Success: Simulation processes events correctly, results are deterministic (run twice with same input produces identical output), simulation matches daemon behavior exactly, virtual clock makes tests time-independent, unit tests compare WASM vs daemon simulation_
 
-- [ ] 29. Write WASM Integration Tests
+- [x] 29. Write WASM Integration Tests
   - File: keyrx_ui_v2/tests/wasm/validation.test.ts, keyrx_ui_v2/tests/wasm/simulation.test.ts
   - Test validation and simulation functions
   - Verify determinism and daemon parity

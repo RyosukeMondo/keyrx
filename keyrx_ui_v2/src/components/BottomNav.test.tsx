@@ -16,6 +16,7 @@ describe('BottomNav', () => {
     expect(screen.getByText('Profiles')).toBeInTheDocument();
     expect(screen.getByText('Config')).toBeInTheDocument();
     expect(screen.getByText('Metrics')).toBeInTheDocument();
+    expect(screen.getByText('Sim')).toBeInTheDocument();
   });
 
   it('has correct accessibility attributes', () => {

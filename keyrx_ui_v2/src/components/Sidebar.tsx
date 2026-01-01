@@ -24,7 +24,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    to: '/',
+    to: '/home',
     icon: Home,
     label: 'Home',
     ariaLabel: 'Navigate to Home page',

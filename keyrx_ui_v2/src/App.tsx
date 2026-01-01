@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { AppShell } from './components/AppShell';
+import { Layout } from './components/Layout';
 import { LoadingSpinner } from './components/LoadingSpinner';
 
 // Lazy load all page components for code splitting
@@ -16,7 +16,7 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <AppShell>
+        <Layout>
           <Suspense
             fallback={
               <div className="flex items-center justify-center min-h-screen">
@@ -35,7 +35,7 @@ function App() {
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
           </Suspense>
-        </AppShell>
+        </Layout>
       </BrowserRouter>
     </ErrorBoundary>
   );
