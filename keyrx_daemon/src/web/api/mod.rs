@@ -70,11 +70,13 @@ mod tests {
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
         let device_service = Arc::new(crate::services::DeviceService::new(config_dir));
         let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
+        let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
         let state = Arc::new(AppState::new(
             Arc::new(MacroRecorder::new()),
             profile_service,
             device_service,
             config_service,
+            subscription_manager,
         ));
         let router = create_router(state);
         assert!(std::mem::size_of_val(&router) > 0);
@@ -90,11 +92,13 @@ mod tests {
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
         let device_service = Arc::new(crate::services::DeviceService::new(config_dir));
         let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
+        let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
         let state = Arc::new(AppState::new(
             mock_recorder.clone(),
             profile_service,
             device_service,
             config_service,
+            subscription_manager,
         ));
 
         // Verify state is accessible

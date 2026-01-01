@@ -341,11 +341,15 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     let config_service =
         std::sync::Arc::new(keyrx_daemon::services::ConfigService::new(profile_manager));
 
+    let subscription_manager =
+        std::sync::Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
+
     let app_state = std::sync::Arc::new(keyrx_daemon::web::AppState::new(
         macro_recorder,
         profile_service,
         device_service,
         config_service,
+        subscription_manager,
     ));
 
     // Start web server in background (optional)
@@ -438,11 +442,15 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     let config_service =
         std::sync::Arc::new(keyrx_daemon::services::ConfigService::new(profile_manager));
 
+    let subscription_manager =
+        std::sync::Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
+
     let app_state = std::sync::Arc::new(keyrx_daemon::web::AppState::new(
         macro_recorder,
         profile_service,
         device_service,
         config_service,
+        subscription_manager,
     ));
 
     std::thread::spawn(move || {

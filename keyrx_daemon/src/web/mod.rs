@@ -3,6 +3,7 @@ pub mod events;
 pub mod handlers;
 pub mod rpc_types;
 pub mod static_files;
+pub mod subscriptions;
 pub mod ws;
 pub mod ws_rpc;
 
@@ -18,6 +19,7 @@ pub use events::DaemonEvent;
 
 use crate::macro_recorder::MacroRecorder;
 use crate::services::{ConfigService, DeviceService, ProfileService};
+use crate::web::subscriptions::SubscriptionManager;
 
 /// Application state shared across all web handlers
 ///
@@ -34,6 +36,8 @@ pub struct AppState {
     pub device_service: Arc<DeviceService>,
     /// Config service for configuration management operations
     pub config_service: Arc<ConfigService>,
+    /// Subscription manager for WebSocket pub/sub
+    pub subscription_manager: Arc<SubscriptionManager>,
 }
 
 impl AppState {
@@ -43,12 +47,14 @@ impl AppState {
         profile_service: Arc<ProfileService>,
         device_service: Arc<DeviceService>,
         config_service: Arc<ConfigService>,
+        subscription_manager: Arc<SubscriptionManager>,
     ) -> Self {
         Self {
             macro_recorder,
             profile_service,
             device_service,
             config_service,
+            subscription_manager,
         }
     }
 }

@@ -37,7 +37,9 @@ async fn websocket_handler(
 
 /// Handle WebSocket RPC connection
 async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
-    log::info!("WebSocket RPC client connected");
+    // Generate unique client ID
+    let client_id = state.subscription_manager.new_client_id().await;
+    log::info!("WebSocket RPC client {} connected", client_id);
 
     // Send Connected handshake immediately
     let connected = ServerMessage::Connected {
@@ -110,8 +112,13 @@ async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
                 };
 
                 // Process message and queue response
-                process_client_message(client_msg, Arc::clone(&outgoing_queue), Arc::clone(&state))
-                    .await;
+                process_client_message(
+                    client_msg,
+                    client_id,
+                    Arc::clone(&outgoing_queue),
+                    Arc::clone(&state),
+                )
+                .await;
             }
             Some(Ok(Message::Close(_))) => {
                 log::info!("WebSocket RPC client closed connection");
@@ -125,18 +132,21 @@ async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
                 break;
             }
             None => {
-                log::info!("WebSocket RPC client disconnected");
+                log::info!("WebSocket RPC client {} disconnected", client_id);
                 break;
             }
         }
     }
 
-    log::info!("WebSocket RPC connection closed");
+    // Cleanup: unsubscribe from all channels
+    state.subscription_manager.unsubscribe_all(client_id).await;
+    log::info!("WebSocket RPC connection {} closed", client_id);
 }
 
 /// Process a client message and queue the appropriate response
 async fn process_client_message(
     msg: ClientMessage,
+    client_id: usize,
     outgoing_queue: Arc<Mutex<VecDeque<ServerMessage>>>,
     state: Arc<AppState>,
 ) {
@@ -147,8 +157,12 @@ async fn process_client_message(
         ClientMessage::Command { id, method, params } => {
             handle_command(id, method, params, &state).await
         }
-        ClientMessage::Subscribe { id, channel } => handle_subscribe(id, channel).await,
-        ClientMessage::Unsubscribe { id, channel } => handle_unsubscribe(id, channel).await,
+        ClientMessage::Subscribe { id, channel } => {
+            handle_subscribe(id, channel, client_id, &state).await
+        }
+        ClientMessage::Unsubscribe { id, channel } => {
+            handle_unsubscribe(id, channel, client_id, &state).await
+        }
     };
 
     // Queue the response
@@ -235,10 +249,18 @@ async fn handle_command(
 }
 
 /// Handle subscription request
-async fn handle_subscribe(id: String, channel: String) -> ServerMessage {
-    // For now, return success but don't actually subscribe
-    // Actual subscription logic will be implemented in Task 7 (Subscription Channel Manager)
-    log::debug!("Subscribe request for channel: {}", channel);
+async fn handle_subscribe(
+    id: String,
+    channel: String,
+    client_id: usize,
+    state: &AppState,
+) -> ServerMessage {
+    log::debug!("Client {} subscribing to channel: {}", client_id, channel);
+
+    state
+        .subscription_manager
+        .subscribe(client_id, &channel)
+        .await;
 
     ServerMessage::Response {
         id,
@@ -251,10 +273,22 @@ async fn handle_subscribe(id: String, channel: String) -> ServerMessage {
 }
 
 /// Handle unsubscribe request
-async fn handle_unsubscribe(id: String, channel: String) -> ServerMessage {
-    // For now, return success
-    // Actual unsubscribe logic will be implemented in Task 7 (Subscription Channel Manager)
-    log::debug!("Unsubscribe request for channel: {}", channel);
+async fn handle_unsubscribe(
+    id: String,
+    channel: String,
+    client_id: usize,
+    state: &AppState,
+) -> ServerMessage {
+    log::debug!(
+        "Client {} unsubscribing from channel: {}",
+        client_id,
+        channel
+    );
+
+    state
+        .subscription_manager
+        .unsubscribe(client_id, &channel)
+        .await;
 
     ServerMessage::Response {
         id,
@@ -281,11 +315,13 @@ mod tests {
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
         let device_service = Arc::new(crate::services::DeviceService::new(config_dir));
         let config_service = Arc::new(ConfigService::new(profile_manager));
+        let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
         let state = Arc::new(AppState::new(
             Arc::new(MacroRecorder::new()),
             profile_service,
             device_service,
             config_service,
+            subscription_manager,
         ));
         let router = create_router(state);
         assert!(std::mem::size_of_val(&router) > 0);
