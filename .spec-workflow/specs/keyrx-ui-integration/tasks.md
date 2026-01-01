@@ -124,7 +124,7 @@
   - _Requirements: REQ-1 (AC2, AC3, AC4)_
   - _Prompt: Role: TypeScript API Developer with expertise in type-safe client libraries | Task: Create keyrx_ui_v2/src/api/rpc.ts with RpcClient class that wraps useUnifiedApi hook, implement all 20+ RPC methods with proper TypeScript types (e.g., async getProfiles(): Promise<Profile[]> calls this.api.query('getProfiles')), subscription methods like onDaemonState(handler: (state: DaemonState) => void): void call this.api.subscribe('daemon-state', handler), add comprehensive JSDoc comments describing parameters and return types | Restrictions: All methods must have proper TypeScript types, no 'any' types allowed, must not duplicate logic from useUnifiedApi, JSDoc required for all public methods | Success: All RPC methods implemented with correct types, intellisense works in IDE, JSDoc appears in hover tooltips, methods are thin wrappers over useUnifiedApi_
 
-- [ ] 13. Write useUnifiedApi Tests
+- [x] 13. Write useUnifiedApi Tests
   - File: keyrx_ui_v2/src/hooks/useUnifiedApi.test.ts
   - Test connection, query/response, command, subscribe/unsubscribe
   - Test timeout and error scenarios
@@ -134,7 +134,7 @@
   - _Requirements: REQ-1 (AC1, AC2, AC3, AC6, AC9)_
   - _Prompt: Role: React Testing Specialist with expertise in hook testing and WebSocket mocking | Task: Create comprehensive unit tests in keyrx_ui_v2/src/hooks/useUnifiedApi.test.ts using @testing-library/react-hooks and mock-socket, test scenarios: (1) connection and Connected handshake, (2) query sends message and resolves with response, (3) command executes, (4) subscribe receives events, (5) unsubscribe stops events, (6) 30s timeout rejects promise, (7) concurrent requests with different IDs correlated correctly, (8) auto-reconnect on disconnect, (9) server errors reject promises, (10) cleanup on unmount | Restrictions: Must use mock WebSocket not real connections, all assertions must use testing-library best practices, test isolation is required | Success: All test scenarios pass, coverage >= 90%, mocks used correctly, tests are reliable and fast_
 
-- [ ] 14. End-to-End RPC Communication Test
+- [x] 14. End-to-End RPC Communication Test
   - File: keyrx_ui_v2/tests/integration/rpc-communication.test.ts
   - Test complete RPC stack from React to Rust daemon
   - Execute full profile workflow (create, activate, delete)
