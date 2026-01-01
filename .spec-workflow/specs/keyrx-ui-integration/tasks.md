@@ -167,7 +167,7 @@
   - _Requirements: REQ-2 (AC8, AC9), REQ-5 (AC1, AC2, AC3, AC4, AC5, AC6)_
   - _Prompt: Role: Frontend Developer with expertise in WebAssembly integration and React hooks | Task: Create keyrx_ui_v2/src/hooks/useWasm.ts that uses useEffect to call WASM init() on mount and sets isWasmReady on success, implements validateConfig using useCallback that checks isWasmReady, calls WASM validate_config function, parses JSON result to ValidationError array, implements runSimulation similarly for simulate function, tracks error state if init fails, returns {isWasmReady, error, validateConfig, runSimulation} | Restrictions: Must handle init failure gracefully (log error, set error state, don't crash), validateConfig must return empty array if WASM not ready, functions must be memoized with useCallback | Success: WASM initializes on mount, validateConfig returns errors with line/column/message, runSimulation returns results, graceful handling of init failure, functions are properly memoized_
 
-- [ ] 17. Write Monaco Editor Tests
+- [x] 17. Write Monaco Editor Tests
   - File: keyrx_ui_v2/src/components/MonacoEditor.test.tsx
   - Test rendering, syntax highlighting, validation, F8 navigation
   - Mock WASM module
