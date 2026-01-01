@@ -78,6 +78,9 @@ criterion = "0.5"
 serial_test = "3.2"
 # Property-based testing
 proptest = "1.4"
+# WebSocket testing
+tokio-tungstenite = "0.21"
+futures-util = "0.3"
 
 [[bench]]
 name = "input_latency"
