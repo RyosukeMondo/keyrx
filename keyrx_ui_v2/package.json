@@ -26,11 +26,13 @@
   "dependencies": {
     "@floating-ui/react": "^0.26.6",
     "@headlessui/react": "^1.7.17",
+    "@monaco-editor/react": "^4.7.0",
     "@tanstack/react-query": "^5.17.0",
     "@types/react-window": "^1.8.8",
     "autoprefixer": "^10.4.16",
     "framer-motion": "^11.0.3",
     "lucide-react": "^0.562.0",
+    "monaco-editor": "^0.55.1",
     "postcss": "^8.4.32",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
