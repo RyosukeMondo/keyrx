@@ -322,7 +322,7 @@
   - _Requirements: REQ-6 (AC1, AC2)_
   - _Prompt: Role: Frontend Developer with expertise in responsive design and accessibility | Task: Create keyrx_ui_v2/src/components/BottomNav.tsx that renders fixed bottom navigation bar with icons for Profiles/Config/Dashboard/Devices (visible only < 768px using md:hidden), create keyrx_ui_v2/src/components/Sidebar.tsx that renders fixed left sidebar with text links (visible >= 768px using hidden md:block), both use React Router NavLink for active state styling, ensure all nav items have min-h-[44px] min-w-[44px] on mobile for touch accessibility, update keyrx_ui_v2/src/components/Layout.tsx to render both conditionally, add ARIA labels and nav landmarks | Restrictions: BottomNav must be hidden on desktop, Sidebar must be hidden on mobile, minimum tap targets mandatory, NavLink must indicate active page, ARIA labels required | Success: BottomNav shows on mobile only, Sidebar shows on desktop only, active page highlighted, tap targets >= 44px on mobile, smooth transition between breakpoints, ARIA labels present, navigation accessible via keyboard_
 
-- [ ] 31. Make ConfigPage Responsive
+- [x] 31. Make ConfigPage Responsive
   - File: keyrx_ui_v2/src/pages/ConfigPage.tsx
   - Apply responsive classes for single-column mobile, multi-column desktop
   - Ensure 44px tap targets on mobile
