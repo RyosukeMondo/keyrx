@@ -246,7 +246,7 @@
   - _Requirements: REQ-4 (AC1, AC2, AC3, AC4, AC5, AC6, AC7, AC8, AC9, AC10)_
   - _Prompt: Role: React Developer with expertise in complex UI patterns and keyboard shortcuts | Task: Modify keyrx_ui_v2/src/pages/ConfigPage.tsx to add activeTab: 'visual' | 'code' state (default 'visual'), render tab buttons above editor with conditional styling (bg-primary-500 text-white when active, text-slate-400 hover when inactive), conditionally render KeyboardVisualizer when activeTab === 'visual' or MonacoEditor when 'code', both use same configCode state, track validationErrors from Monaco onValidate, implement handleSave that checks errors.length === 0 before calling rpc.updateConfig, add keyboard listener for Ctrl+S / Cmd+S to call handleSave, render validation status panel showing error count or success message | Restrictions: Both editors must share same configCode state (single source of truth), tab switching must not lose unsaved changes, save must be blocked if validation errors exist, keyboard shortcut must work in both tabs | Success: Visual tab active by default, clicking Code tab renders Monaco, clicking Visual renders KeyboardVisualizer, active tab has correct styling, changes persist across tabs, validation status shows in both tabs, save works from both tabs, Ctrl+S triggers save, validation errors prevent save_
 
-- [ ] 24. Write ConfigPage Tab Tests
+- [-] 24. Write ConfigPage Tab Tests
   - File: keyrx_ui_v2/src/pages/ConfigPage.test.tsx
   - Test tab switching and state persistence
   - Test validation integration

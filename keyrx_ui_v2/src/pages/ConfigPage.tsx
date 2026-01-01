@@ -137,7 +137,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   // Mock modified keys count (would come from configuration store)
   const modifiedKeysCount = 37;
 
-  if (loading) {
+  if (!api.isConnected || loading) {
     return (
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -214,6 +214,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
       {/* Tab Buttons */}
       <div className="grid grid-cols-2 sm:flex sm:gap-2" role="tablist" aria-label="Editor mode">
         <button
+          id="visual-tab"
           role="tab"
           aria-selected={activeTab === 'visual'}
           aria-controls="visual-panel"
@@ -227,6 +228,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
           🎨 Visual Editor
         </button>
         <button
+          id="code-tab"
           role="tab"
           aria-selected={activeTab === 'code'}
           aria-controls="code-panel"
