@@ -37,3 +37,6 @@ export {
 
 // WebSocket RPC hooks
 export { useUnifiedApi, type UseUnifiedApiReturn } from './useUnifiedApi';
+
+// Utility hooks
+export { useAutoSave, type UseAutoSaveOptions, type UseAutoSaveResult } from './useAutoSave';
