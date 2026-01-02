@@ -14,6 +14,30 @@ const mockWasmContextValue = {
 const WasmContext = React.createContext(mockWasmContextValue);
 
 /**
+ * Set the isWasmReady state for testing scenarios where WASM is unavailable
+ * This allows testing component behavior when WASM fails to load
+ *
+ * @example
+ * ```typescript
+ * import { setMockWasmReady } from '../tests/WasmProviderWrapper';
+ *
+ * test('handles WASM unavailable', () => {
+ *   setMockWasmReady(false);
+ *   render(<Component />);
+ *   // ... test fallback behavior
+ * });
+ * ```
+ */
+export function setMockWasmReady(ready: boolean) {
+  mockWasmContextValue.isWasmReady = ready;
+  if (!ready) {
+    mockWasmContextValue.error = new Error('WASM not available');
+  } else {
+    mockWasmContextValue.error = null;
+  }
+}
+
+/**
  * WasmProviderWrapper - Test utility for wrapping components with WASM context
  *
  * This wrapper provides a mock WasmProvider context for testing components
