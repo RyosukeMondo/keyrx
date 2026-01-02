@@ -1,8 +1,10 @@
 import React, { useMemo, useRef } from 'react';
+import { useDroppable } from '@dnd-kit/core';
 import { KeyButton, KeyMapping } from './KeyButton';
 import { parseKLEJson } from '../utils/kle-parser';
 import { cn } from '../utils/cn';
 import { useArrowNavigation } from '../utils/keyboard';
+import type { AssignableKey } from './KeyAssignmentPanel';
 
 // Import layout data
 import ANSI_104 from '../data/layouts/ANSI_104.json';
@@ -11,6 +13,7 @@ interface KeyboardVisualizerProps {
   layout: 'ANSI_104' | 'ISO_105' | 'JIS_109' | 'HHKB' | 'NUMPAD';
   keyMappings: Map<string, KeyMapping>;
   onKeyClick: (keyCode: string) => void;
+  onKeyDrop?: (keyCode: string, droppedKey: AssignableKey) => void;
   simulatorMode?: boolean;
   pressedKeys?: Set<string>;
   className?: string;
@@ -25,10 +28,64 @@ const layoutData = {
   NUMPAD: ANSI_104, // Placeholder
 };
 
+interface DroppableKeyWrapperProps {
+  keyCode: string;
+  label: string;
+  mapping?: KeyMapping;
+  isPressed: boolean;
+  onClick: () => void;
+  onDrop?: (droppedKey: AssignableKey) => void;
+  disabled?: boolean;
+}
+
+/**
+ * Wrapper component for individual keys that makes them droppable zones
+ */
+const DroppableKeyWrapper: React.FC<DroppableKeyWrapperProps> = ({
+  keyCode,
+  label,
+  mapping,
+  isPressed,
+  onClick,
+  onDrop,
+  disabled = false,
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `drop-${keyCode}`,
+    data: { keyCode },
+    disabled,
+  });
+
+  const handleClick = () => {
+    if (!disabled) {
+      onClick();
+    }
+  };
+
+  return (
+    <div ref={setNodeRef} className="relative">
+      <KeyButton
+        keyCode={keyCode}
+        label={label}
+        mapping={mapping}
+        onClick={handleClick}
+        isPressed={isPressed}
+        className={cn(
+          isOver && !disabled && 'ring-2 ring-primary-500 ring-offset-2 ring-offset-slate-800',
+          disabled && 'opacity-50 cursor-not-allowed'
+        )}
+      />
+    </div>
+  );
+};
+
+DroppableKeyWrapper.displayName = 'DroppableKeyWrapper';
+
 export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
   layout,
   keyMappings,
   onKeyClick,
+  onKeyDrop,
   simulatorMode = false,
   pressedKeys = new Set(),
   className = '',
@@ -57,6 +114,12 @@ export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
     loop: true,
   });
 
+  const handleKeyDrop = (keyCode: string) => (droppedKey: AssignableKey) => {
+    if (onKeyDrop) {
+      onKeyDrop(keyCode, droppedKey);
+    }
+  };
+
   return (
     <div
       ref={containerRef}
@@ -81,12 +144,14 @@ export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
             gridColumn: `${key.gridColumn} / span ${key.gridColumnSpan}`,
           }}
         >
-          <KeyButton
+          <DroppableKeyWrapper
             keyCode={key.keyCode}
             label={key.label}
             mapping={keyMappings.get(key.keyCode)}
             onClick={() => onKeyClick(key.keyCode)}
+            onDrop={handleKeyDrop(key.keyCode)}
             isPressed={pressedKeys.has(key.keyCode)}
+            disabled={simulatorMode}
           />
         </div>
       ))}

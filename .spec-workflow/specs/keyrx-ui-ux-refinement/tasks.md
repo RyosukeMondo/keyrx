@@ -148,7 +148,7 @@
   - _Requirements: R5 (Visual Configuration Editor with Drag-and-Drop)_
   - _Prompt: Implement the task for spec keyrx-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React Developer with expertise in dropdown components and state management | Task: Create LayerSelector dropdown component that loads layers from profile config using useProfileConfig hook following requirement R5 | Restrictions: Must use controlled component pattern, handle loading state while fetching layers, show "No layers" message when profile has no layers, ensure accessibility (select element or ARIA combobox), keep component under 150 lines | Success: Component fetches layers from profile config, renders dropdown correctly, handles loading/empty states, onChange callback fires on selection, component is accessible | Instructions: After completing the task, run spec-workflow-guide to get the workflow guide, then update tasks.md to mark this task as in-progress [-], log the implementation with log-implementation tool including detailed artifacts (components, integrations with useProfileConfig), and mark as complete [x] when done_
 
-- [ ] 15. Extend KeyboardVisualizer with drag-drop in keyrx_ui/src/components/KeyboardVisualizer.tsx
+- [x] 15. Extend KeyboardVisualizer with drag-drop in keyrx_ui/src/components/KeyboardVisualizer.tsx
   - File: keyrx_ui/src/components/KeyboardVisualizer.tsx
   - Add drop zone handlers using @dnd-kit/core
   - Update visual feedback for drag-over states
