@@ -214,13 +214,14 @@
 
 ## Phase 6: Backend Doc Test Fixes
 
-- [ ] 21. Create doc test fix script
+- [x] 21. Create doc test fix script
   - File: scripts/fix_doc_tests.sh
   - Script to run cargo clean, cargo build --workspace, cargo test --doc
   - Add error handling and verbose output
   - Purpose: Automate doc test compilation fix workflow
   - _Leverage: existing scripts/lib/common.sh utilities_
   - _Requirements: 5.1, 5.2_
+  - _Result: Created comprehensive doc test fix script (scripts/fix_doc_tests.sh) with 3-step workflow: (1) cargo clean to remove build artifacts, (2) cargo build --workspace to rebuild all crates, (3) cargo test --doc to execute documentation tests. Script uses common.sh logging utilities (log_info, log_error, log_accomplished/failed), supports --quiet, --json, --error, --log-file flags, includes proper error handling with specific exit codes (0=success, 1=doc tests failed, 2=missing tool, 3=build failed), parses test results from cargo output, generates structured JSON output in --json mode, and provides clear status markers. Script is idempotent and safe to run multiple times._
   - _Prompt: Role: DevOps Engineer specializing in Rust toolchain and build automation | Task: Create script scripts/fix_doc_tests.sh that automates cargo clean, workspace build, and doc test execution with proper error handling, following requirements 5.1 and 5.2 | Restrictions: Must use scripts/lib/common.sh logging utilities, handle failures gracefully with clear error messages, ensure idempotent (safe to run multiple times) | Success: Script runs cargo clean and full workspace rebuild, executes doc tests successfully, proper error handling and logging, exits with correct status codes for CI integration_
 
 - [ ] 22. Verify backend doc tests pass
