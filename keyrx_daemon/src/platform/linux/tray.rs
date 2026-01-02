@@ -80,7 +80,12 @@ impl SystemTray for LinuxSystemTray {
         let (event_sender, event_receiver) = crossbeam_channel::unbounded();
 
         // Create the AppIndicator
-        let indicator = Indicator::new("keyrx-daemon", "", IndicatorCategory::ApplicationStatus);
+        // Use "input-keyboard" as fallback icon name from icon theme
+        let indicator = Indicator::new(
+            "keyrx-daemon",
+            "input-keyboard",
+            IndicatorCategory::ApplicationStatus,
+        );
         indicator.set_status(IndicatorStatus::Active);
         indicator.set_title(Some("KeyRx Daemon"));
 
@@ -88,6 +93,8 @@ impl SystemTray for LinuxSystemTray {
         let icon_bytes = include_bytes!("../../../assets/icon.png");
         let icon_path = save_icon_to_temp(icon_bytes)?;
         indicator.set_icon_full(&icon_path, "KeyRx");
+
+        log::debug!("AppIndicator created with ID 'keyrx-daemon', icon theme 'input-keyboard', custom icon at: {}", icon_path);
 
         // Create menu
         let menu = gtk::Menu::new();

@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/keyrx-ui-ux-refinement/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-01-02T07:35:36.091Z",
+      "trigger": "initial",
+      "approvalId": "approval_1767339336021_7fk90lo63",
+      "approvalTitle": "KeyRX UI/UX Refinement - Requirements"
+    }
+  ]
+}

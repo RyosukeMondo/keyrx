@@ -522,6 +522,94 @@ layer("lower", #{
         self.profiles.get(name)
     }
 
+    /// Get the configuration content (.rhai file) for a profile.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Profile name
+    ///
+    /// # Returns
+    ///
+    /// The content of the .rhai configuration file as a String.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ProfileError::NotFound` if the profile doesn't exist.
+    /// Returns `ProfileError::IoError` if the file cannot be read.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::path::PathBuf;
+    /// # use keyrx_daemon::config::ProfileManager;
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let manager = ProfileManager::new(PathBuf::from("./config"))?;
+    /// let config = manager.get_config("default")?;
+    /// println!("Config content:\n{}", config);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn get_config(&self, name: &str) -> Result<String, ProfileError> {
+        let profile = self
+            .profiles
+            .get(name)
+            .ok_or_else(|| ProfileError::NotFound(name.to_string()))?;
+
+        fs::read_to_string(&profile.rhai_path).map_err(ProfileError::IoError)
+    }
+
+    /// Set the configuration content (.rhai file) for a profile.
+    ///
+    /// This method writes the configuration content to the profile's .rhai file.
+    /// It does NOT automatically recompile or activate the profile.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Profile name
+    /// * `content` - The new configuration content to write
+    ///
+    /// # Errors
+    ///
+    /// Returns `ProfileError::NotFound` if the profile doesn't exist.
+    /// Returns `ProfileError::IoError` if the file cannot be written.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::path::PathBuf;
+    /// # use keyrx_daemon::config::ProfileManager;
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut manager = ProfileManager::new(PathBuf::from("./config"))?;
+    /// let new_config = r#"
+    /// layer("base", #{
+    ///     "KEY_A": simple("KEY_B"),
+    /// });
+    /// "#;
+    /// manager.set_config("default", new_config)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn set_config(&mut self, name: &str, content: &str) -> Result<(), ProfileError> {
+        let profile = self
+            .profiles
+            .get(name)
+            .ok_or_else(|| ProfileError::NotFound(name.to_string()))?
+            .clone();
+
+        // Write to a temporary file first (atomic write pattern)
+        let temp_path = profile.rhai_path.with_extension("rhai.tmp");
+        fs::write(&temp_path, content)?;
+
+        // Rename to final location (atomic on most filesystems)
+        fs::rename(&temp_path, &profile.rhai_path)?;
+
+        // Update metadata (modified time will have changed)
+        let updated_metadata = self.load_profile_metadata(name)?;
+        self.profiles.insert(name.to_string(), updated_metadata);
+
+        Ok(())
+    }
+
     // Test-only methods (available for integration tests)
     #[doc(hidden)]
     pub fn set_active_for_testing(&mut self, name: String) {

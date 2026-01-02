@@ -282,6 +282,8 @@ fn open_browser(url: &str) -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(target_os = "linux")]
 fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, String)> {
     use keyrx_daemon::daemon::Daemon;
+    use keyrx_daemon::platform::linux::LinuxSystemTray;
+    use keyrx_daemon::platform::{SystemTray, TrayControlEvent};
 
     // Initialize logging
     init_logging(debug);
@@ -307,6 +309,22 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
         daemon.device_count()
     );
 
+    // Create system tray (optional - continues without it if unavailable)
+    let tray = match LinuxSystemTray::new() {
+        Ok(tray) => {
+            log::info!("System tray created successfully");
+            Some(tray)
+        }
+        Err(e) => {
+            log::warn!(
+                "Failed to create system tray (this is normal in headless sessions): {}",
+                e
+            );
+            log::info!("Daemon will continue without system tray. Web UI is available at http://127.0.0.1:9867");
+            None
+        }
+    };
+
     // Create broadcast channel for event streaming to WebSocket clients
     let (event_tx, _event_rx) = tokio::sync::broadcast::channel(1000);
     let event_tx_clone = event_tx.clone();
@@ -315,6 +333,9 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     // Create event broadcaster for real-time updates
     let event_broadcaster = keyrx_daemon::daemon::EventBroadcaster::new(event_tx_for_broadcaster);
     let running_for_broadcaster = daemon.running_flag();
+
+    // Wire the event broadcaster into the daemon for real-time event streaming
+    daemon.set_event_broadcaster(event_broadcaster.clone());
 
     // Create AppState with dependencies for web API
     let macro_recorder = std::sync::Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());
@@ -383,9 +404,45 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
         });
     });
 
-    // Run the daemon event loop
-    // Note: Tray support is handled within the platform implementation
-    daemon.run().map_err(daemon_error_to_exit)?;
+    // Run the daemon event loop with tray polling
+    let running = daemon.running_flag();
+    let result = std::thread::spawn(move || daemon.run());
+
+    // Poll tray in main thread (GTK requires main thread)
+    if let Some(mut tray_controller) = tray {
+        log::info!("Starting tray event loop");
+        while running.load(std::sync::atomic::Ordering::SeqCst) {
+            if let Some(event) = tray_controller.poll_event() {
+                match event {
+                    TrayControlEvent::Reload => {
+                        log::info!("Reload requested via tray menu");
+                        // TODO: Implement config reload
+                    }
+                    TrayControlEvent::OpenWebUI => {
+                        log::info!("Open Web UI requested via tray menu");
+                        if let Err(e) = open_browser("http://127.0.0.1:9867") {
+                            log::error!("Failed to open browser: {}", e);
+                        }
+                    }
+                    TrayControlEvent::Exit => {
+                        log::info!("Exit requested via tray menu");
+                        running.store(false, std::sync::atomic::Ordering::SeqCst);
+                        break;
+                    }
+                }
+            }
+            // Small sleep to prevent busy loop
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+
+        // Shutdown tray before exiting
+        if let Err(e) = tray_controller.shutdown() {
+            log::error!("Failed to shutdown tray: {}", e);
+        }
+    }
+
+    // Wait for daemon thread to finish
+    result.join().unwrap().map_err(daemon_error_to_exit)?;
 
     log::info!("Daemon stopped gracefully");
     Ok(())
@@ -427,6 +484,9 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     // Create event broadcaster for real-time updates
     let event_broadcaster = keyrx_daemon::daemon::EventBroadcaster::new(event_tx_for_broadcaster);
     let running_for_broadcaster = daemon.running_flag();
+
+    // Wire the event broadcaster into the daemon for real-time event streaming
+    daemon.set_event_broadcaster(event_broadcaster.clone());
 
     // Start web server in background
     let macro_recorder = std::sync::Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());

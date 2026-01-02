@@ -552,6 +552,83 @@ impl ProfileService {
     pub async fn get_active_profile(&self) -> Option<String> {
         self.profile_manager.get_active()
     }
+
+    /// Gets the configuration content for a profile.
+    ///
+    /// Returns the raw .rhai configuration file content.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Profile name
+    ///
+    /// # Returns
+    ///
+    /// Configuration content as a String.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ProfileError::NotFound`] if profile doesn't exist.
+    /// Returns [`ProfileError::IoError`] if file cannot be read.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::sync::Arc;
+    /// # use std::path::PathBuf;
+    /// # use keyrx_daemon::config::ProfileManager;
+    /// # use keyrx_daemon::services::ProfileService;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let manager = Arc::new(ProfileManager::new(PathBuf::from("./config"))?);
+    /// let service = ProfileService::new(manager);
+    /// let config = service.get_profile_config("default").await?;
+    /// println!("Config:\n{}", config);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn get_profile_config(&self, name: &str) -> Result<String, ProfileError> {
+        log::debug!("Getting config for profile: {}", name);
+        self.profile_manager.get_config(name)
+    }
+
+    /// Sets the configuration content for a profile.
+    ///
+    /// Writes the configuration content to the profile's .rhai file.
+    /// Does NOT automatically recompile or activate the profile.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Profile name
+    /// * `content` - Configuration content to write
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ProfileError::NotFound`] if profile doesn't exist.
+    /// Returns [`ProfileError::IoError`] if file cannot be written.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use std::sync::Arc;
+    /// # use std::path::PathBuf;
+    /// # use keyrx_daemon::config::ProfileManager;
+    /// # use keyrx_daemon::services::ProfileService;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let manager = Arc::new(ProfileManager::new(PathBuf::from("./config"))?);
+    /// let service = ProfileService::new(manager);
+    /// let new_config = r#"layer("base", #{});"#;
+    /// service.set_profile_config("default", new_config).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn set_profile_config(&self, name: &str, content: &str) -> Result<(), ProfileError> {
+        log::info!("Setting config for profile: {}", name);
+
+        let manager_ptr = Arc::as_ptr(&self.profile_manager) as *mut ProfileManager;
+        unsafe { (*manager_ptr).set_config(name, content)? };
+
+        log::info!("Config updated for profile '{}'", name);
+        Ok(())
+    }
 }
 
 #[cfg(test)]

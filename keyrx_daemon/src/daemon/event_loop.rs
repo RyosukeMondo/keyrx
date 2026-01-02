@@ -14,7 +14,9 @@ use std::time::Duration;
 use log::{info, trace, warn};
 
 use crate::platform::Platform;
+use crate::web::events::KeyEventData;
 
+use super::event_broadcaster::EventBroadcaster;
 use super::signals::SignalHandler;
 use super::DaemonError;
 
@@ -73,6 +75,7 @@ impl EventLoopStats {
 /// * `running` - Atomic flag controlling loop execution
 /// * `signal_handler` - Signal handler for reload detection
 /// * `reload_callback` - Callback to invoke when reload is requested
+/// * `event_broadcaster` - Optional broadcaster for real-time WebSocket updates
 ///
 /// # Event Processing Flow
 ///
@@ -123,6 +126,7 @@ pub fn run_event_loop<F>(
     running: Arc<AtomicBool>,
     signal_handler: &SignalHandler,
     mut reload_callback: F,
+    event_broadcaster: Option<&EventBroadcaster>,
 ) -> Result<(), DaemonError>
 where
     F: FnMut() -> Result<(), DaemonError>,
@@ -148,6 +152,25 @@ where
         match platform.capture_input() {
             Ok(event) => {
                 trace!("Input event: {:?}", event);
+
+                // Broadcast key event to WebSocket clients if broadcaster is available
+                if let Some(broadcaster) = event_broadcaster {
+                    let event_data = KeyEventData {
+                        timestamp: std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_micros() as u64,
+                        key_code: format!("{:?}", event.keycode()),
+                        event_type: match event.event_type() {
+                            keyrx_core::runtime::KeyEventType::Press => "press".to_string(),
+                            keyrx_core::runtime::KeyEventType::Release => "release".to_string(),
+                        },
+                        input: format!("{:?}", event.keycode()),
+                        output: format!("{:?}", event.keycode()), // TODO: Show remapped output
+                        latency: 0,                               // TODO: Calculate actual latency
+                    };
+                    broadcaster.broadcast_key_event(event_data);
+                }
 
                 // TODO: Process event through remapping engine
                 // For now, just pass through the event

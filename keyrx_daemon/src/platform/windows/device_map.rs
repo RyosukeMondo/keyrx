@@ -195,11 +195,12 @@ impl DeviceMap {
                 &mut size,
             ) == u32::MAX
             {
-                // Error checking omitted for brevity in size query
+                let err = std::io::Error::last_os_error();
+                return Err(format!("Failed to get device info size: {}", err));
             }
 
             if size == 0 {
-                return Err("Failed to get device info size".to_string());
+                return Err("Device has no name (size=0)".to_string());
             }
 
             let mut buffer = vec![0u16; size as usize];
@@ -211,7 +212,8 @@ impl DeviceMap {
             );
 
             if result == u32::MAX {
-                return Err("GetRawInputDeviceInfoW failed".to_string());
+                let err = std::io::Error::last_os_error();
+                return Err(format!("GetRawInputDeviceInfoW failed: {}", err));
             }
 
             let len = result as usize;

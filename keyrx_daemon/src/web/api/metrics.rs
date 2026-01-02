@@ -16,6 +16,7 @@ use crate::web::AppState;
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/health", get(health_check))
+        .route("/version", get(get_version))
         .route("/status", get(get_status))
         .route("/metrics/latency", get(get_latency_stats))
         .route(
@@ -31,6 +32,30 @@ async fn health_check() -> Json<Value> {
         "status": "ok",
         "version": env!("CARGO_PKG_VERSION")
     }))
+}
+
+/// Version information response
+#[derive(Serialize)]
+struct VersionInfo {
+    /// Daemon version from Cargo.toml
+    version: String,
+    /// Build timestamp (RFC3339 format)
+    build_time: String,
+    /// Git commit hash (short)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    git_hash: Option<String>,
+    /// Target platform
+    platform: String,
+}
+
+/// GET /api/version - Get version and build information
+async fn get_version() -> Json<VersionInfo> {
+    Json(VersionInfo {
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        build_time: env!("BUILD_TIMESTAMP").to_string(),
+        git_hash: option_env!("GIT_HASH").map(|s| s.to_string()),
+        platform: std::env::consts::OS.to_string(),
+    })
 }
 
 /// GET /api/status - Daemon status

@@ -54,7 +54,8 @@ use crate::runtime::DeviceState;
 /// Configuration entry with associated state
 struct ConfigEntry {
     config: ConfigRoot,
-    state: DeviceState,
+    /// Device state (reserved for future use)
+    _state: DeviceState,
     last_sim_state: Option<SimulationState>,
 }
 
@@ -139,7 +140,7 @@ fn store_config(config: ConfigRoot) -> Result<ConfigHandle, JsValue> {
     let index = store.len();
     store.push(ConfigEntry {
         config,
-        state: DeviceState::new(),
+        _state: DeviceState::new(),
         last_sim_state: None,
     });
     Ok(ConfigHandle(index))

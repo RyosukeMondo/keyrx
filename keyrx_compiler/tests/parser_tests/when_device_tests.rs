@@ -374,7 +374,7 @@ fn test_tap_hold_with_device_pattern() {
             }
             // Tap-hold should be inside the conditional
             assert!(
-                mappings.len() > 0,
+                !mappings.is_empty(),
                 "Should have mappings inside conditional"
             );
         }

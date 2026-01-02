@@ -54,7 +54,7 @@ device_end();
     // Verify mappings from both main and loaded file
     // CapsLock is base mapping, A and B are conditional mappings under MD_00
     // So total is: 1 base + 2 conditional = 3 total, but they're all in the mappings vec
-    assert!(config.devices[0].mappings.len() >= 1); // At least CapsLock
+    assert!(!config.devices[0].mappings.is_empty()); // At least CapsLock
 }
 
 #[test]
@@ -170,7 +170,7 @@ device_end();
 
     assert_eq!(config.devices.len(), 1);
     // CapsLock (base) + A + X (conditional under MD_00)
-    assert!(config.devices[0].mappings.len() >= 1);
+    assert!(!config.devices[0].mappings.is_empty());
 }
 
 #[test]
@@ -281,5 +281,5 @@ device_end();
 
     // Verify mappings were created
     // Space (base) + A and B (conditional under MD_00)
-    assert!(config.devices[0].mappings.len() >= 1); // At least Space
+    assert!(!config.devices[0].mappings.is_empty()); // At least Space
 }

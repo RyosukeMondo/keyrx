@@ -1,0 +1,15 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=KeyRx Daemon
+GenericName=Keyboard Remapper
+Comment=Advanced keyboard remapping daemon with layer support and system tray
+Icon=/home/rmondo/repos/keyrx2/keyrx_daemon/assets/icon.png
+Exec=env GDK_BACKEND=x11 DISPLAY=:1 /home/rmondo/repos/keyrx2/target/debug/keyrx_daemon run --config /home/rmondo/repos/keyrx2/user_layout.krx
+Path=/home/rmondo/repos/keyrx2
+Terminal=false
+Categories=Utility;System;
+Keywords=keyboard;remap;keymap;mapping;input;layer;
+StartupNotify=true
+X-GNOME-Autostart-enabled=true
+X-GNOME-UsesNotifications=true

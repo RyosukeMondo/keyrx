@@ -376,7 +376,7 @@ unsafe extern "system" fn wnd_proc(
                     log::info!("Device arrived: {:x}", lparam);
                     // lparam is HANDLE of device
                     if let Err(e) = context.device_map.add_device(lparam as HANDLE) {
-                        log::error!("Failed to add new device: {}", e);
+                        log::warn!("Failed to query device info (handle={:x}): {} - This is normal for non-keyboard devices or devices that disconnect quickly", lparam, e);
                     }
                 }
                 2 => {

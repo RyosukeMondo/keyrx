@@ -30,10 +30,10 @@ fn test_with_shift_creates_modified_output() {
         }) => {
             assert_eq!(*from, KeyCode::Num2);
             assert_eq!(*to, KeyCode::Num1);
-            assert_eq!(*shift, true);
-            assert_eq!(*ctrl, false);
-            assert_eq!(*alt, false);
-            assert_eq!(*win, false);
+            assert!(*shift);
+            assert!(!(*ctrl));
+            assert!(!(*alt));
+            assert!(!(*win));
         }
         _ => panic!(
             "Expected ModifiedOutput mapping, got {:?}",
@@ -67,10 +67,10 @@ fn test_with_ctrl_creates_modified_output() {
         }) => {
             assert_eq!(*from, KeyCode::A);
             assert_eq!(*to, KeyCode::C);
-            assert_eq!(*shift, false);
-            assert_eq!(*ctrl, true);
-            assert_eq!(*alt, false);
-            assert_eq!(*win, false);
+            assert!(!(*shift));
+            assert!(*ctrl);
+            assert!(!(*alt));
+            assert!(!(*win));
         }
         _ => panic!("Expected ModifiedOutput mapping"),
     }
@@ -101,10 +101,10 @@ fn test_with_alt_creates_modified_output() {
         }) => {
             assert_eq!(*from, KeyCode::F1);
             assert_eq!(*to, KeyCode::F4);
-            assert_eq!(*shift, false);
-            assert_eq!(*ctrl, false);
-            assert_eq!(*alt, true);
-            assert_eq!(*win, false);
+            assert!(!(*shift));
+            assert!(!(*ctrl));
+            assert!(*alt);
+            assert!(!(*win));
         }
         _ => panic!("Expected ModifiedOutput mapping"),
     }
@@ -135,10 +135,10 @@ fn test_with_win_creates_modified_output() {
         }) => {
             assert_eq!(*from, KeyCode::L);
             assert_eq!(*to, KeyCode::L);
-            assert_eq!(*shift, false);
-            assert_eq!(*ctrl, false);
-            assert_eq!(*alt, false);
-            assert_eq!(*win, true);
+            assert!(!(*shift));
+            assert!(!(*ctrl));
+            assert!(!(*alt));
+            assert!(*win);
         }
         _ => panic!("Expected ModifiedOutput mapping"),
     }
@@ -169,10 +169,10 @@ fn test_with_mods_multiple_modifiers() {
         }) => {
             assert_eq!(*from, KeyCode::Num1);
             assert_eq!(*to, KeyCode::Num2);
-            assert_eq!(*shift, true);
-            assert_eq!(*ctrl, true);
-            assert_eq!(*alt, false);
-            assert_eq!(*win, false);
+            assert!(*shift);
+            assert!(*ctrl);
+            assert!(!(*alt));
+            assert!(!(*win));
         }
         _ => panic!("Expected ModifiedOutput mapping"),
     }
@@ -203,10 +203,10 @@ fn test_with_mods_all_modifiers() {
         }) => {
             assert_eq!(*from, KeyCode::A);
             assert_eq!(*to, KeyCode::Z);
-            assert_eq!(*shift, true);
-            assert_eq!(*ctrl, true);
-            assert_eq!(*alt, true);
-            assert_eq!(*win, true);
+            assert!(*shift);
+            assert!(*ctrl);
+            assert!(*alt);
+            assert!(*win);
         }
         _ => panic!("Expected ModifiedOutput mapping"),
     }
@@ -237,10 +237,10 @@ fn test_with_mods_no_modifiers() {
         }) => {
             assert_eq!(*from, KeyCode::X);
             assert_eq!(*to, KeyCode::Y);
-            assert_eq!(*shift, false);
-            assert_eq!(*ctrl, false);
-            assert_eq!(*alt, false);
-            assert_eq!(*win, false);
+            assert!(!(*shift));
+            assert!(!(*ctrl));
+            assert!(!(*alt));
+            assert!(!(*win));
         }
         _ => panic!("Expected ModifiedOutput mapping"),
     }
@@ -414,7 +414,7 @@ fn test_realistic_shift_number_for_symbol() {
         }) => {
             assert_eq!(*from, KeyCode::Num9);
             assert_eq!(*to, KeyCode::Num8);
-            assert_eq!(*shift, true);
+            assert!(*shift);
         }
         _ => panic!("Expected ModifiedOutput mapping"),
     }
@@ -438,7 +438,7 @@ fn test_realistic_ctrl_c_copy() {
         KeyMapping::Base(BaseKeyMapping::ModifiedOutput { from, to, ctrl, .. }) => {
             assert_eq!(*from, KeyCode::F2);
             assert_eq!(*to, KeyCode::C);
-            assert_eq!(*ctrl, true);
+            assert!(*ctrl);
         }
         _ => panic!("Expected ModifiedOutput mapping"),
     }

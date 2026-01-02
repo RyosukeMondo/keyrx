@@ -12,6 +12,7 @@ import { FixedSizeList as List } from 'react-window';
 import { Card } from '../components/Card';
 import { Activity, Clock, Cpu, Zap } from 'lucide-react';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { useMetricsStore } from '../stores/metricsStore';
 
 interface LatencyDataPoint {
   timestamp: number;
@@ -36,112 +37,89 @@ interface StateSnapshot {
 }
 
 export const MetricsPage: React.FC = () => {
-  const [loading, setLoading] = useState(false);
+  // Connect to metrics store (real WebSocket data)
+  const {
+    latencyStats,
+    eventLog: storeEventLog,
+    currentState: storeState,
+    connected,
+    loading,
+    error,
+    subscribeToEvents,
+    unsubscribeFromEvents,
+  } = useMetricsStore();
 
-  // Mock data - in production, this would come from WebSocket
-  const [latencyData, setLatencyData] = useState<LatencyDataPoint[]>([]);
-  const [eventLog, setEventLog] = useState<EventLogEntry[]>([]);
-  const [currentState, setCurrentState] = useState<StateSnapshot>({
-    activeLayer: 'Base',
-    modifiers: [],
-    locks: [],
-    tapHoldTimers: 0,
-    queuedEvents: 0,
-  });
+  // Track latency history for the chart (last 60 data points)
+  const [latencyHistory, setLatencyHistory] = useState<LatencyDataPoint[]>([]);
 
-  // Generate mock latency data
+  // Subscribe to WebSocket on mount
   useEffect(() => {
-    const generateMockData = () => {
-      const now = Date.now();
-      const data: LatencyDataPoint[] = [];
-      for (let i = 60; i >= 0; i--) {
-        data.push({
-          timestamp: now - i * 1000,
-          latency: Math.random() * 5 + 0.5, // Random latency between 0.5-5.5ms
-        });
-      }
-      setLatencyData(data);
-    };
+    subscribeToEvents();
+    return () => unsubscribeFromEvents();
+  }, [subscribeToEvents, unsubscribeFromEvents]);
 
-    generateMockData();
-
-    // Update every second with new data point
-    const interval = setInterval(() => {
-      setLatencyData((prev) => {
-        const newData = [
-          ...prev.slice(1),
-          {
-            timestamp: Date.now(),
-            latency: Math.random() * 5 + 0.5,
-          },
-        ];
-        return newData;
+  // Update latency history when new stats arrive
+  useEffect(() => {
+    if (latencyStats) {
+      setLatencyHistory((prev) => {
+        const newPoint: LatencyDataPoint = {
+          timestamp: Date.now(),
+          latency: latencyStats.avg / 1000, // Convert microseconds to milliseconds
+        };
+        const updated = [...prev, newPoint];
+        // Keep last 60 seconds
+        return updated.slice(-60);
       });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Generate mock event log
-  useEffect(() => {
-    const generateMockEvent = (): EventLogEntry => {
-      const types: EventLogEntry['type'][] = [
-        'press',
-        'release',
-        'tap',
-        'hold',
-        'macro',
-        'layer_switch',
-      ];
-      const keyCodes = [
-        'KEY_A',
-        'KEY_S',
-        'KEY_D',
-        'KEY_F',
-        'KEY_SPACE',
-        'KEY_ENTER',
-        'KEY_LEFTSHIFT',
-      ];
-
-      return {
-        id: `${Date.now()}-${Math.random()}`,
-        timestamp: Date.now(),
-        type: types[Math.floor(Math.random() * types.length)],
-        keyCode: keyCodes[Math.floor(Math.random() * keyCodes.length)],
-        action: Math.random() > 0.5 ? 'KEY_B' : undefined,
-        latency: Math.random() * 3 + 0.2,
-      };
-    };
-
-    // Add initial events
-    const initialEvents: EventLogEntry[] = [];
-    for (let i = 0; i < 100; i++) {
-      initialEvents.push(generateMockEvent());
     }
-    setEventLog(initialEvents);
+  }, [latencyStats]);
 
-    // Add new events periodically
-    const interval = setInterval(() => {
-      const newEvent = generateMockEvent();
-      setEventLog((prev) => [newEvent, ...prev].slice(0, 1000)); // Keep last 1000 events
-    }, 500);
+  // Transform store event log to component format
+  const eventLog: EventLogEntry[] = useMemo(() => {
+    return storeEventLog.map((event) => ({
+      id: event.id,
+      timestamp: new Date(event.timestamp).getTime(),
+      type: event.type === 'key_press' ? 'press' :
+            event.type === 'key_release' ? 'release' :
+            event.type as EventLogEntry['type'],
+      keyCode: event.keyCode,
+      action: event.action,
+      latency: event.latencyUs / 1000, // Convert microseconds to milliseconds
+    }));
+  }, [storeEventLog]);
 
-    return () => clearInterval(interval);
-  }, []);
+  // Transform daemon state to component format
+  const currentState: StateSnapshot = useMemo(() => {
+    if (!storeState) {
+      return {
+        activeLayer: 'Base',
+        modifiers: [],
+        locks: [],
+        tapHoldTimers: 0,
+        queuedEvents: 0,
+      };
+    }
+    return {
+      activeLayer: storeState.activeLayer,
+      modifiers: storeState.modifiers,
+      locks: storeState.locks,
+      tapHoldTimers: storeState.tapHoldPending ? 1 : 0,
+      queuedEvents: 0, // Not tracked yet
+    };
+  }, [storeState]);
 
-  // Calculate statistics
+  // Calculate statistics from real latency stats
   const stats = useMemo(() => {
-    if (latencyData.length === 0)
+    if (!latencyStats) {
       return { avg: 0, min: 0, max: 0, current: 0 };
+    }
 
-    const latencies = latencyData.map((d) => d.latency);
-    const current = latencies[latencies.length - 1];
-    const avg = latencies.reduce((a, b) => a + b, 0) / latencies.length;
-    const min = Math.min(...latencies);
-    const max = Math.max(...latencies);
-
-    return { avg, min, max, current };
-  }, [latencyData]);
+    return {
+      current: latencyStats.avg / 1000, // Convert microseconds to milliseconds
+      avg: latencyStats.avg / 1000,
+      min: latencyStats.min / 1000,
+      max: latencyStats.max / 1000,
+    };
+  }, [latencyStats]);
 
   // Format timestamp for display
   const formatTime = (timestamp: number) => {
@@ -242,12 +220,34 @@ export const MetricsPage: React.FC = () => {
     <main className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6" role="main" aria-label="Performance Metrics">
       {/* Page Header */}
       <header>
-        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
-          Performance Metrics
-        </h1>
-        <p className="text-sm md:text-base text-slate-400 mt-2">
-          Real-time monitoring and debugging tools
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
+              Performance Metrics
+            </h1>
+            <p className="text-sm md:text-base text-slate-400 mt-2">
+              Real-time monitoring and debugging tools
+            </p>
+          </div>
+          {/* Connection Status Indicator */}
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-3 h-3 rounded-full ${
+                connected ? 'bg-green-500' : 'bg-red-500'
+              }`}
+              aria-label={connected ? 'Connected' : 'Disconnected'}
+            />
+            <span className="text-sm text-slate-400">
+              {connected ? 'Live' : 'Disconnected'}
+            </span>
+          </div>
+        </div>
+        {/* Error Display */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-sm text-red-400">{error}</p>
+          </div>
+        )}
       </header>
 
       {/* Latency Statistics Cards - responsive grid */}
@@ -319,7 +319,7 @@ export const MetricsPage: React.FC = () => {
         </div>
 
         <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
-          <LineChart data={latencyData}>
+          <LineChart data={latencyHistory}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
             <XAxis
               dataKey="timestamp"

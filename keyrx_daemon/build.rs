@@ -26,4 +26,21 @@ fn main() {
 
     // Tell cargo to re-run this build script if the UI dist directory changes
     println!("cargo:rerun-if-changed=../keyrx_ui/dist");
+
+    // Set build timestamp
+    println!(
+        "cargo:rustc-env=BUILD_TIMESTAMP={}",
+        chrono::Utc::now().to_rfc3339()
+    );
+
+    // Set git commit hash if available
+    if let Ok(output) = std::process::Command::new("git")
+        .args(["rev-parse", "--short", "HEAD"])
+        .output()
+    {
+        if output.status.success() {
+            let git_hash = String::from_utf8_lossy(&output.stdout);
+            println!("cargo:rustc-env=GIT_HASH={}", git_hash.trim());
+        }
+    }
 }

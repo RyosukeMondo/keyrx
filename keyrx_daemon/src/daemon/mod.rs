@@ -166,6 +166,9 @@ pub struct Daemon {
 
     /// Signal handler for reload detection.
     signal_handler: SignalHandler,
+
+    /// Event broadcaster for WebSocket real-time updates (optional).
+    event_broadcaster: Option<EventBroadcaster>,
 }
 
 impl Daemon {
@@ -230,7 +233,16 @@ impl Daemon {
             platform,
             running,
             signal_handler,
+            event_broadcaster: None,
         })
+    }
+
+    /// Sets the event broadcaster for real-time WebSocket updates.
+    ///
+    /// This method allows injecting an EventBroadcaster after daemon creation.
+    /// The broadcaster will receive key events and state updates during event processing.
+    pub fn set_event_broadcaster(&mut self, broadcaster: EventBroadcaster) {
+        self.event_broadcaster = Some(broadcaster);
     }
 
     /// Returns the number of managed devices.
@@ -363,6 +375,7 @@ impl Daemon {
             Arc::clone(&self.running),
             &self.signal_handler,
             reload_fn,
+            self.event_broadcaster.as_ref(),
         )
     }
 

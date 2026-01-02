@@ -85,3 +85,6 @@ futures-util = "0.3"
 [[bench]]
 name = "input_latency"
 harness = false
+
+[build-dependencies]
+chrono = "0.4"

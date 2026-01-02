@@ -1,7 +1,8 @@
 import { Editor, BeforeMount, OnMount } from '@monaco-editor/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { editor } from 'monaco-editor';
-import { useWasm, ValidationError } from '../hooks/useWasm';
+import type { ValidationError } from '../hooks/useWasm';
+import { useWasmContext } from '../contexts/WasmContext';
 
 /**
  * Monaco Editor component for Rhai configuration editing
@@ -34,9 +35,20 @@ export function MonacoEditor({
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [currentErrorIndex, setCurrentErrorIndex] = useState(0);
   const [errors, setErrors] = useState<ValidationError[]>([]);
-  const [validationStatus, setValidationStatus] = useState<string>('Ready');
+  const [validationStatus, setValidationStatus] = useState<string>('Initializing...');
 
-  const { isWasmReady, validateConfig } = useWasm();
+  const { isWasmReady, isLoading, validateConfig } = useWasmContext();
+
+  // Update status when WASM loading state changes
+  useEffect(() => {
+    if (isLoading) {
+      setValidationStatus('⏳ Loading WASM validator...');
+    } else if (isWasmReady) {
+      setValidationStatus('✓ Ready');
+    } else {
+      setValidationStatus('⚠ WASM unavailable');
+    }
+  }, [isLoading, isWasmReady]);
 
   /**
    * Register Rhai language with Monaco before editor mounts

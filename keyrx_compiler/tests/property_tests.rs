@@ -754,7 +754,7 @@ proptest! {
 
         // Verify the result is valid
         if let Ok(config) = result {
-            prop_assert!(config.devices.len() > 0, "Config should have at least one device");
+            prop_assert!(!config.devices.is_empty(), "Config should have at least one device");
             prop_assert_eq!(config.version.major, 1);
             prop_assert_eq!(config.version.minor, 0);
             prop_assert_eq!(config.version.patch, 0);
@@ -800,7 +800,7 @@ proptest! {
 
         if let Ok(config) = result {
             prop_assert_eq!(config.devices.len(), 1);
-            prop_assert!(config.devices[0].mappings.len() >= 1);
+            prop_assert!(!config.devices[0].mappings.is_empty());
         }
     }
 
@@ -855,7 +855,7 @@ proptest! {
 
         if let Ok(config) = result {
             prop_assert_eq!(config.devices.len(), 1);
-            prop_assert!(config.devices[0].mappings.len() >= 1);
+            prop_assert!(!config.devices[0].mappings.is_empty());
         }
     }
 
@@ -925,7 +925,7 @@ mod parser_edge_case_tests {
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let script_path = temp_dir.path().join("test.rhai");
-        std::fs::write(&script_path, &script).expect("Failed to write script");
+        std::fs::write(&script_path, script).expect("Failed to write script");
 
         let mut parser = Parser::new();
         let result = parser.parse_script(&script_path);
@@ -976,7 +976,7 @@ device_end();
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let script_path = temp_dir.path().join("test.rhai");
-        std::fs::write(&script_path, &script).expect("Failed to write script");
+        std::fs::write(&script_path, script).expect("Failed to write script");
 
         let mut parser = Parser::new();
         let result = parser.parse_script(&script_path);
@@ -984,7 +984,7 @@ device_end();
         assert!(result.is_ok());
         if let Ok(config) = result {
             assert_eq!(config.devices.len(), 1);
-            assert!(config.devices[0].mappings.len() >= 1);
+            assert!(!config.devices[0].mappings.is_empty());
         }
     }
 
@@ -1002,7 +1002,7 @@ device_end();
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let script_path = temp_dir.path().join("test.rhai");
-        std::fs::write(&script_path, &script).expect("Failed to write script");
+        std::fs::write(&script_path, script).expect("Failed to write script");
 
         let mut parser = Parser::new();
         let result = parser.parse_script(&script_path);
@@ -1031,7 +1031,7 @@ device_end();
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let script_path = temp_dir.path().join("test.rhai");
-        std::fs::write(&script_path, &script).expect("Failed to write script");
+        std::fs::write(&script_path, script).expect("Failed to write script");
 
         let mut parser = Parser::new();
         let result = parser.parse_script(&script_path);

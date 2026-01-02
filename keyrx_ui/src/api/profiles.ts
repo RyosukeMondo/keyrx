@@ -18,7 +18,8 @@ interface ProfileResponse {
  * Fetch all profiles
  */
 export async function fetchProfiles(): Promise<ProfileMetadata[]> {
-  return apiClient.get<ProfileMetadata[]>('/api/profiles');
+  const response = await apiClient.get<{ profiles: ProfileMetadata[] }>('/api/profiles');
+  return response.profiles;
 }
 
 /**

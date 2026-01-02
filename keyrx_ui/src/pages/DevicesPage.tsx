@@ -45,35 +45,47 @@ const LAYOUT_OPTIONS = [
  * Requirements: Req 5 (Device Management User Flows)
  */
 export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - will be replaced with API integration
-  const [devices, setDevices] = useState<Device[]>([
-    {
-      id: '1',
-      name: 'Main Keyboard',
-      identifier: 'USB\\VID_1234&PID_5678\\ABC123',
-      scope: 'global',
-      layout: 'ANSI_104',
-      active: true,
-      vendorId: '0x1234',
-      productId: '0x5678',
-      serial: 'ABC123',
-      lastSeen: '3 minutes ago',
-    },
-    {
-      id: '2',
-      name: 'Left Numpad',
-      identifier: 'USB\\VID_5678&PID_1234\\XYZ789',
-      scope: 'device-specific',
-      layout: 'NUMPAD',
-      active: false,
-      vendorId: '0x5678',
-      productId: '0x1234',
-      serial: 'XYZ789',
-      lastSeen: '5 minutes ago',
-    },
-  ]);
+  // Fetch devices from API on mount
+  React.useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch('/api/devices');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch devices: ${response.statusText}`);
+        }
+        const data = await response.json();
+
+        // Transform API response to UI format
+        const transformedDevices: Device[] = (data.devices || []).map((device: any) => ({
+          id: device.id,
+          name: device.name,
+          identifier: device.path,
+          scope: device.scope || 'global',
+          layout: device.layout || 'ANSI_104',
+          active: device.active,
+          vendorId: device.path.match(/VID_([0-9A-F]{4})/)?.[1],
+          productId: device.path.match(/PID_([0-9A-F]{4})/)?.[1],
+          serial: device.serial,
+          lastSeen: 'Just now',
+        }));
+
+        setDevices(transformedDevices);
+      } catch (err) {
+        console.error('Failed to fetch devices:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch devices');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDevices();
+  }, []);
 
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -168,14 +180,21 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
             variant="ghost"
             size="sm"
             onClick={() => {
-              /* Refresh logic */
+              window.location.reload();
             }}
             aria-label="Refresh device list"
+            disabled={loading}
           >
             Refresh
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-900/20 border border-red-700 rounded-lg p-4">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
+      )}
 
       <Card>
         <div className="flex flex-col gap-md">

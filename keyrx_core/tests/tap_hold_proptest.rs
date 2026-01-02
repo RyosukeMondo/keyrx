@@ -473,7 +473,7 @@ proptest! {
         );
 
         // First timeout check
-        let first_output = check_tap_hold_timeouts(timeout_time, &mut state);
+        let _first_output = check_tap_hold_timeouts(timeout_time, &mut state);
         let modifier_active = state.is_modifier_active(0);
 
         // Additional timeout checks at same time should be idempotent
@@ -491,8 +491,9 @@ proptest! {
         }
 
         // First output should have triggered the modifier
+        // Just checking for no panic - always passes
         prop_assert!(
-            modifier_active || !first_output.is_empty() || true, // Always passes - just checking for no panic
+            true,
             "Timeout checking should be idempotent"
         );
     }
@@ -532,7 +533,7 @@ proptest! {
             let _ = process_event(event, &lookup, &mut state);
 
             // Occasional timeout check
-            if time % 50_000 == 0 {
+            if time.is_multiple_of(50_000) {
                 let _ = check_tap_hold_timeouts(time, &mut state);
             }
         }

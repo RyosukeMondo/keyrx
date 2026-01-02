@@ -69,6 +69,30 @@ log_debug() {
     fi
 }
 
+log_success() {
+    if [[ "$QUIET_MODE" == "true" ]]; then
+        return
+    fi
+    local timestamp
+    timestamp=$(get_timestamp)
+    local message="[$timestamp] [SUCCESS] $*"
+    echo -e "${COLOR_GREEN}${message}${COLOR_RESET}"
+    if [[ -n "$LOG_FILE" ]]; then
+        echo "$message" >> "$LOG_FILE"
+    fi
+}
+
+log_header() {
+    if [[ "$QUIET_MODE" == "true" ]]; then
+        return
+    fi
+    echo ""
+    echo -e "${COLOR_BLUE}========================================${COLOR_RESET}"
+    echo -e "${COLOR_BLUE}$*${COLOR_RESET}"
+    echo -e "${COLOR_BLUE}========================================${COLOR_RESET}"
+    echo ""
+}
+
 # Status marker functions
 log_accomplished() {
     local timestamp

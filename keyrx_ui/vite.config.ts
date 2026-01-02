@@ -53,60 +53,12 @@ export default defineConfig({
       },
     },
     rollupOptions: {
+      external: ['env'],  // Fix for wasm-pack "env" import issue
       output: {
         manualChunks: (id) => {
-          // Vendor chunk: React core libraries
-          if (
-            id.includes('node_modules/react') ||
-            id.includes('node_modules/react-dom') ||
-            id.includes('node_modules/react-router-dom')
-          ) {
-            return 'vendor';
-          }
-
-          // Monaco chunk: Monaco editor
-          if (id.includes('node_modules/@monaco-editor/react') || id.includes('node_modules/monaco-editor')) {
-            return 'monaco';
-          }
-
-          // Charts chunk: Recharts
-          if (id.includes('node_modules/recharts')) {
-            return 'charts';
-          }
-
-          // State management
-          if (id.includes('node_modules/zustand')) {
-            return 'zustand';
-          }
-
-          // UI libraries
-          if (id.includes('node_modules/@headlessui') || id.includes('node_modules/@floating-ui')) {
-            return 'ui-libs';
-          }
-
-          // Animation libraries
-          if (id.includes('node_modules/framer-motion')) {
-            return 'framer-motion';
-          }
-
-          // Query library
-          if (id.includes('node_modules/@tanstack/react-query')) {
-            return 'react-query';
-          }
-
-          // Icons
-          if (id.includes('node_modules/lucide-react')) {
-            return 'lucide-icons';
-          }
-
-          // Virtual scrolling
-          if (id.includes('node_modules/react-window')) {
-            return 'react-window';
-          }
-
-          // Other node_modules as other
+          // All node_modules in vendor chunk to avoid circular dependencies
           if (id.includes('node_modules')) {
-            return 'other';
+            return 'vendor';
           }
         },
       },

@@ -30,6 +30,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   const [keyMappings] = useState<Map<string, KeyMapping>>(new Map());
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [connectionTimeout, setConnectionTimeout] = useState(false);
 
   // Layout options
   const layoutOptions = [
@@ -66,6 +67,16 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
     setPreviewMode((prev) => !prev);
   }, []);
 
+  // Connection timeout - show error after 10 seconds
+  useEffect(() => {
+    if (!api.isConnected && !connectionTimeout) {
+      const timer = setTimeout(() => {
+        setConnectionTimeout(true);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [api.isConnected, connectionTimeout]);
+
   // Load configuration on mount
   useEffect(() => {
     const loadConfig = async () => {
@@ -82,6 +93,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
     };
 
     if (api.isConnected) {
+      setConnectionTimeout(false); // Reset timeout on successful connection
       loadConfig();
     }
   }, [api.isConnected]);
@@ -137,9 +149,32 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   // Mock modified keys count (would come from configuration store)
   const modifiedKeysCount = 37;
 
+  // Show timeout error if connection takes too long
+  if (connectionTimeout && !api.isConnected) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-4">
+        <div className="text-red-400 text-xl">⚠️ Connection Timeout</div>
+        <div className="text-slate-300 text-center max-w-md">
+          Failed to connect to the daemon WebSocket. Please ensure the daemon is running and try refreshing the page.
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-3 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors"
+        >
+          Reload Page
+        </button>
+      </div>
+    );
+  }
+
+  // Show loading state while connecting or loading config
   if (!api.isConnected || loading) {
     return (
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
+        <div className="text-center text-slate-400 py-4">
+          {!api.isConnected ? '⏳ Connecting to daemon...' : '⏳ Loading configuration...'}
+        </div>
+
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <LoadingSkeleton variant="text" width="250px" height="32px" />

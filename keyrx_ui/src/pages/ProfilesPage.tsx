@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ProfileCard } from '../components/ProfileCard';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { Input } from '../components/Input';
 import { Plus } from 'lucide-react';
 import { SkeletonCard } from '../components/LoadingSkeleton';
+import {
+  useProfiles,
+  useCreateProfile,
+  useActivateProfile,
+  useDeleteProfile,
+} from '../hooks/useProfiles';
 
 interface Profile {
   id: string;
@@ -32,32 +38,31 @@ interface Profile {
  * Requirements: Req 6 (Profile Management User Flow)
  */
 export const ProfilesPage: React.FC = () => {
-  const [loading, setLoading] = useState(false);
+  // Fetch profiles from real API
+  const { data: profilesData, isLoading, error } = useProfiles();
+  const createProfileMutation = useCreateProfile();
+  const activateProfileMutation = useActivateProfile();
+  const deleteProfileMutation = useDeleteProfile();
 
-  // Mock data - will be replaced with API calls
-  const [profiles, setProfiles] = useState<Profile[]>([
-    {
-      id: '1',
-      name: 'Default',
-      description: 'Default keyboard configuration',
-      isActive: true,
-      lastModified: '2025-12-29 10:30',
-    },
-    {
-      id: '2',
-      name: 'Gaming',
-      description: 'Optimized for gaming with macro keys',
-      isActive: false,
-      lastModified: '2025-12-28 15:45',
-    },
-    {
-      id: '3',
-      name: 'Programming',
-      description: 'Code-focused shortcuts and remappings',
-      isActive: false,
-      lastModified: '2025-12-27 09:20',
-    },
-  ]);
+  // Transform API data to component format
+  const profiles: Profile[] = useMemo(() => {
+    if (!profilesData) return [];
+
+    return profilesData.map((p) => ({
+      id: p.name, // Use name as ID since it's unique
+      name: p.name,
+      description: undefined, // API doesn't provide description yet
+      isActive: p.isActive,
+      lastModified: new Date(p.modifiedAt).toLocaleString('en-CA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }),
+    }));
+  }, [profilesData]);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -85,38 +90,30 @@ export const ProfilesPage: React.FC = () => {
     return true;
   };
 
-  const handleCreateProfile = () => {
+  const handleCreateProfile = async () => {
     if (!validateProfileName(newProfileName)) return;
 
-    const newProfile: Profile = {
-      id: Date.now().toString(),
-      name: newProfileName,
-      description: newProfileDescription,
-      isActive: false,
-      lastModified: new Date().toLocaleString('en-CA', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }),
-    };
+    try {
+      await createProfileMutation.mutateAsync({
+        name: newProfileName,
+        template: 'blank', // Default to blank template
+      });
 
-    setProfiles([...profiles, newProfile]);
-    setCreateModalOpen(false);
-    setNewProfileName('');
-    setNewProfileDescription('');
-    setNameError('');
+      setCreateModalOpen(false);
+      setNewProfileName('');
+      setNewProfileDescription('');
+      setNameError('');
+    } catch (err) {
+      setNameError(err instanceof Error ? err.message : 'Failed to create profile');
+    }
   };
 
-  const handleActivateProfile = (profileId: string) => {
-    setProfiles(
-      profiles.map((p) => ({
-        ...p,
-        isActive: p.id === profileId,
-      }))
-    );
+  const handleActivateProfile = async (profileId: string) => {
+    try {
+      await activateProfileMutation.mutateAsync(profileId);
+    } catch (err) {
+      console.error('Failed to activate profile:', err);
+    }
   };
 
   const handleEditProfile = (profile: Profile) => {
@@ -126,28 +123,12 @@ export const ProfilesPage: React.FC = () => {
     setEditModalOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!selectedProfile || !validateProfileName(newProfileName)) return;
 
-    setProfiles(
-      profiles.map((p) =>
-        p.id === selectedProfile.id
-          ? {
-              ...p,
-              name: newProfileName,
-              description: newProfileDescription,
-              lastModified: new Date().toLocaleString('en-CA', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-              }),
-            }
-          : p
-      )
-    );
+    // TODO: Implement profile rename/update API
+    // For now, just close the modal
+    console.warn('Profile editing not yet implemented in API');
 
     setEditModalOpen(false);
     setSelectedProfile(null);
@@ -161,12 +142,17 @@ export const ProfilesPage: React.FC = () => {
     setDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!selectedProfile) return;
 
-    setProfiles(profiles.filter((p) => p.id !== selectedProfile.id));
-    setDeleteModalOpen(false);
-    setSelectedProfile(null);
+    try {
+      await deleteProfileMutation.mutateAsync(selectedProfile.name);
+      setDeleteModalOpen(false);
+      setSelectedProfile(null);
+    } catch (err) {
+      console.error('Failed to delete profile:', err);
+      // Show error to user (could add error state here)
+    }
   };
 
   const handleCancelCreate = () => {
@@ -184,7 +170,8 @@ export const ProfilesPage: React.FC = () => {
     setNameError('');
   };
 
-  if (loading) {
+  // Show loading state while fetching
+  if (isLoading) {
     return (
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -202,6 +189,15 @@ export const ProfilesPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
+      {/* Error Display */}
+      {error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <p className="text-sm text-red-400">
+            Failed to load profiles: {error instanceof Error ? error.message : 'Unknown error'}
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-slate-100">

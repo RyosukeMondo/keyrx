@@ -74,9 +74,6 @@ pub struct LinuxPlatform {
     device_manager: Option<DeviceManager>,
     /// Virtual output device for injecting remapped events.
     output_device: Option<UinputOutput>,
-    /// Optional system tray for GUI control.
-    /// None if the tray is not available (e.g., headless environment).
-    system_tray: Option<LinuxSystemTray>,
 }
 
 impl LinuxPlatform {
@@ -86,7 +83,6 @@ impl LinuxPlatform {
         Self {
             device_manager: None,
             output_device: None,
-            system_tray: None,
         }
     }
 
@@ -142,22 +138,8 @@ impl LinuxPlatform {
             output_device.name()
         );
 
-        // Initialize system tray (optional - continues without it if unavailable)
-        match LinuxSystemTray::new() {
-            Ok(tray) => {
-                eprintln!("[keyrx] System tray initialized successfully");
-                self.system_tray = Some(tray);
-            }
-            Err(e) => {
-                // Log warning but don't fail - daemon can run without tray
-                eprintln!(
-                    "[keyrx] Warning: System tray not available ({}). \
-                     Running in headless mode.",
-                    e
-                );
-                self.system_tray = None;
-            }
-        }
+        // Note: System tray is now managed in main.rs to ensure proper GTK event loop integration
+        // LinuxPlatform no longer manages the tray directly
 
         self.device_manager = Some(device_manager);
         self.output_device = Some(output_device);
@@ -281,25 +263,7 @@ impl LinuxPlatform {
     pub fn process_events(&mut self) -> Result<ProcessResult, Box<dyn std::error::Error>> {
         use keyrx_core::runtime::event::process_event;
 
-        // Poll system tray for menu events (non-blocking, <1μs overhead)
-        if let Some(ref tray) = self.system_tray {
-            if let Some(event) = tray.poll_event() {
-                match event {
-                    TrayControlEvent::Reload => {
-                        eprintln!("[keyrx] Configuration reload requested via tray menu");
-                        return Ok(ProcessResult::ReloadRequested);
-                    }
-                    TrayControlEvent::OpenWebUI => {
-                        // OpenWebUI is handled in main.rs, just log here
-                        log::debug!("OpenWebUI event received (handled in main)");
-                    }
-                    TrayControlEvent::Exit => {
-                        eprintln!("[keyrx] Exit requested via tray menu");
-                        return Ok(ProcessResult::ExitRequested);
-                    }
-                }
-            }
-        }
+        // Note: System tray is now managed in main.rs
 
         let device_manager = self
             .device_manager
@@ -368,13 +332,7 @@ impl LinuxPlatform {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Shutdown system tray first
-        if let Some(ref mut tray) = self.system_tray {
-            if let Err(e) = tray.shutdown() {
-                eprintln!("[keyrx] Warning: Error shutting down system tray: {}", e);
-            }
-        }
-        self.system_tray = None;
+        // Note: System tray is now managed in main.rs and shutdown there
 
         // Release exclusive access to input devices
         self.release_all_devices()?;
@@ -383,17 +341,6 @@ impl LinuxPlatform {
 
         eprintln!("[keyrx] Daemon shutdown complete");
         Ok(())
-    }
-
-    /// Returns whether the system tray is available.
-    ///
-    /// # Returns
-    ///
-    /// `true` if the system tray was successfully initialized, `false` if
-    /// running in headless mode without a tray.
-    #[must_use]
-    pub fn has_system_tray(&self) -> bool {
-        self.system_tray.is_some()
     }
 }
 
@@ -404,17 +351,8 @@ impl Default for LinuxPlatform {
 }
 
 // SAFETY: LinuxPlatform is used in a single-threaded context in practice.
-// The system_tray field contains GTK types (Rc<RefCell<Indicator>>) which are not Send/Sync,
-// but in the Platform trait usage pattern, all operations happen on the same thread.
 // The DeviceManager and UinputOutput are thread-safe.
-//
-// This implementation is safe because:
-// 1. The Platform trait is used synchronously on a single thread
-// 2. GTK operations (via system_tray) are only called from that same thread
-// 3. The system_tray is None when the tray is unavailable (headless mode)
-//
-// If multi-threaded access is needed in the future, the system_tray field
-// should be refactored to use thread-safe primitives or removed from LinuxPlatform.
+// System tray is now managed separately in main.rs.
 unsafe impl Send for LinuxPlatform {}
 unsafe impl Sync for LinuxPlatform {}
 
