@@ -72,6 +72,7 @@ export const ProfilesPage: React.FC = () => {
   const [newProfileName, setNewProfileName] = useState('');
   const [newProfileDescription, setNewProfileDescription] = useState('');
   const [nameError, setNameError] = useState('');
+  const [activationError, setActivationError] = useState<string | null>(null);
 
   const validateProfileName = (name: string): boolean => {
     if (!name.trim()) {
@@ -109,9 +110,22 @@ export const ProfilesPage: React.FC = () => {
   };
 
   const handleActivateProfile = async (profileId: string) => {
+    // Clear any previous activation errors
+    setActivationError(null);
+
     try {
-      await activateProfileMutation.mutateAsync(profileId);
+      const result = await activateProfileMutation.mutateAsync(profileId);
+
+      // Check for compilation errors in the result
+      if (result.errors && result.errors.length > 0) {
+        const errorMessage = result.errors.join('\n');
+        setActivationError(`Compilation failed:\n${errorMessage}`);
+        console.error('Compilation errors:', result.errors);
+      }
     } catch (err) {
+      // Handle API errors
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setActivationError(`Failed to activate profile: ${errorMessage}`);
       console.error('Failed to activate profile:', err);
     }
   };
@@ -195,6 +209,29 @@ export const ProfilesPage: React.FC = () => {
           <p className="text-sm text-red-400">
             Failed to load profiles: {error instanceof Error ? error.message : 'Unknown error'}
           </p>
+        </div>
+      )}
+
+      {/* Activation Error Display */}
+      {activationError && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-400 mb-2">
+                Profile Activation Error
+              </p>
+              <pre className="text-xs text-red-300 whitespace-pre-wrap font-mono">
+                {activationError}
+              </pre>
+            </div>
+            <button
+              onClick={() => setActivationError(null)}
+              className="text-red-400 hover:text-red-300 ml-4"
+              aria-label="Dismiss error"
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
 

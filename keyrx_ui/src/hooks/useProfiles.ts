@@ -76,9 +76,11 @@ export function useActivateProfile() {
     },
 
     onSuccess: () => {
-      // Invalidate both profiles and config queries
+      // Invalidate profiles, config, daemon state, and active profile queries
       queryClient.invalidateQueries({ queryKey: queryKeys.profiles });
       queryClient.invalidateQueries({ queryKey: ['config'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.daemonState });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activeProfile });
     },
   });
 }

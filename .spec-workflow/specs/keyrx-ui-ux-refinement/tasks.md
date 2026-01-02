@@ -87,7 +87,7 @@
   - _Requirements: R2 (Auto-Save Device Layout Selection)_
   - _Prompt: Implement the task for spec keyrx-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend React Developer with expertise in form handling and UX | Task: Extend DevicesPage to auto-save layout selections using useAutoSave hook, add visual feedback indicators (spinner/checkmark/error), and load saved layouts on mount following requirement R2. Leverage useAutoSave from src/hooks/useAutoSave.ts and RPC methods from src/api/rpc.ts | Restrictions: Must not break existing device list functionality, preserve responsive design, ensure accessibility (ARIA labels for icons), do not block UI during save, show non-intrusive feedback (fade out after 2s) | Success: Layout changes save automatically after 500ms, visual feedback is clear and non-intrusive, saved layouts persist across page refreshes, error handling shows user-friendly messages, component remains accessible | Instructions: After completing the task, run spec-workflow-guide to get the workflow guide, then update tasks.md to mark this task as in-progress [-], log the implementation with log-implementation tool including detailed artifacts (components modified, integrations with hooks and RPC), and mark as complete [x] when done_
 
-- [ ] 9. Update ProfilesPage activation flow in keyrx_ui/src/pages/ProfilesPage.tsx
+- [x] 9. Update ProfilesPage activation flow in keyrx_ui/src/pages/ProfilesPage.tsx
   - File: keyrx_ui/src/pages/ProfilesPage.tsx
   - Update useActivateProfile mutation to call new backend endpoint
   - Update optimistic update to persist active state correctly
