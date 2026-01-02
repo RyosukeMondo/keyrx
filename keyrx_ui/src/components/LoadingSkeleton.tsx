@@ -49,6 +49,7 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
         width: typeof computedWidth === 'number' ? `${computedWidth}px` : computedWidth,
         height: typeof computedHeight === 'number' ? `${computedHeight}px` : computedHeight,
       }}
+      role="status"
       aria-busy="true"
       aria-live="polite"
       aria-label="Loading content"

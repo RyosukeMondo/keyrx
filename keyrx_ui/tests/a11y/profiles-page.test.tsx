@@ -28,10 +28,10 @@ describe('ProfilesPage Accessibility', () => {
   });
 
   it('should have proper heading hierarchy', async () => {
-    const { getByRole } = renderForA11y(<ProfilesPage />);
+    const { findByRole } = renderForA11y(<ProfilesPage />);
 
-    // Check that main heading exists
-    const heading = getByRole('heading', { level: 1 });
+    // Check that main heading exists (wait for async content to load)
+    const heading = await findByRole('heading', { level: 1 }, { timeout: 3000 });
     expect(heading).toBeInTheDocument();
   });
 

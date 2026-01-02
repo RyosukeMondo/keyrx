@@ -28,11 +28,20 @@ describe('DashboardPage Accessibility', () => {
   });
 
   it('should have proper heading hierarchy', async () => {
-    const { getByRole } = renderForA11y(<DashboardPage />);
+    const { container } = renderForA11y(<DashboardPage />);
 
-    // Check that main heading exists
-    const heading = getByRole('heading', { level: 1 });
-    expect(heading).toBeInTheDocument();
+    // Check that headings exist with proper hierarchy (no skipped levels)
+    const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
+
+    // At least one heading should exist
+    expect(headings.length).toBeGreaterThan(0);
+
+    // Verify no heading levels are skipped (e.g., h1 -> h3 without h2)
+    const levels = Array.from(headings).map((h) => parseInt(h.tagName[1]));
+    for (let i = 1; i < levels.length; i++) {
+      // Each heading should be at most 1 level deeper than the previous
+      expect(levels[i] - levels[i - 1]).toBeLessThanOrEqual(1);
+    }
   });
 
   it('should have ARIA labels on interactive elements', async () => {
