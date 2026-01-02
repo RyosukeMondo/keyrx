@@ -206,6 +206,173 @@ All checks enforced by pre-commit hooks and CI:
    - All tests must pass
    - No ignored tests in production code
 
+### Production Quality Gates
+
+All quality gates are enforced in CI/CD pipeline (.github/workflows/ci.yml). Some gates are currently warnings due to known issues being addressed.
+
+#### Backend Quality Gates (Strict - Blocks Merge)
+
+**1. Backend Tests and Verification**
+```bash
+# Run locally
+make verify
+# Or: scripts/verify.sh
+
+# CI enforces:
+# - Cargo build (workspace compilation)
+# - Cargo clippy (no warnings)
+# - Cargo fmt --check (formatting)
+# - Cargo test (all tests pass)
+```
+
+**Status**: ✅ 962/962 tests passing (100%)
+
+**2. Backend Documentation Tests**
+```bash
+# Run locally
+scripts/fix_doc_tests.sh
+
+# Or manually:
+cargo clean
+cargo build --workspace
+cargo test --doc
+```
+
+**Status**: ✅ 9/9 doc tests passing (100%)
+**Requirement**: All documentation examples must compile and execute correctly
+
+#### Frontend Quality Gates
+
+**3. Frontend Tests (Currently Warning - Will Become Strict)**
+```bash
+# Run locally
+cd keyrx_ui
+npm test
+
+# Check specific test files
+npm test -- ProfilesPage.test.tsx
+```
+
+**Status**: ⚠️ 681/897 tests passing (75.9%)
+**Target**: ≥95% pass rate (≥852/897 tests)
+**Blocker**: WebSocket mock infrastructure needs improvement
+**Note**: Currently non-blocking in CI (continue-on-error: true). Will become strict once WebSocket infrastructure is fixed.
+
+**4. Frontend Coverage (Currently Warning)**
+```bash
+# Run locally
+cd keyrx_ui
+npm run test:coverage
+
+# View HTML report
+npm run test:coverage && open coverage/index.html
+```
+
+**Status**: ⚠️ Limited due to test failures
+**Target**: ≥80% line and branch coverage
+**Critical Components Verified**:
+- MonacoEditor: 85.91% line, 90.32% branch ✅
+- useAutoSave: 100% line, 90.62% branch ✅
+
+**5. Accessibility Audit (Strict - Blocks Merge)**
+```bash
+# Run locally
+cd keyrx_ui
+npm run test:a11y
+
+# Run specific accessibility tests
+npm test -- a11y
+```
+
+**Status**: ✅ 23/23 tests passing (100%)
+**Requirement**: Zero WCAG 2.2 Level AA violations
+**Enforcement**: Strict - any violation blocks merge
+
+**WCAG Criteria Verified**:
+- 1.4.3 Color Contrast (≥4.5:1 normal text, ≥3:1 large text)
+- 2.1.1 Keyboard Accessibility (all interactive elements)
+- 2.1.2 No Keyboard Trap
+- 2.4.7 Focus Visible (clear focus indicators)
+- 4.1.2 ARIA Labels and Semantic HTML
+
+#### Running All Quality Gates Locally
+
+**Complete verification (backend + frontend):**
+```bash
+# Backend
+make verify                    # Tests, clippy, fmt, coverage
+scripts/fix_doc_tests.sh       # Doc tests
+
+# Frontend
+cd keyrx_ui
+npm test                       # All tests
+npm run test:coverage          # Coverage analysis
+npm run test:a11y              # Accessibility audit
+```
+
+**Quick pre-commit check:**
+```bash
+make verify && cd keyrx_ui && npm test && npm run test:a11y
+```
+
+#### Quality Gate Thresholds Summary
+
+| Quality Gate | Threshold | Current Status | Enforcement |
+|--------------|-----------|----------------|-------------|
+| Backend Tests | 100% pass | ✅ 962/962 (100%) | Strict |
+| Backend Doc Tests | 100% pass | ✅ 9/9 (100%) | Strict |
+| Frontend Tests | ≥95% pass rate | ⚠️ 681/897 (75.9%) | Warning* |
+| Frontend Coverage | ≥80% line/branch | ⚠️ Blocked by tests | Warning* |
+| Accessibility | Zero WCAG violations | ✅ 23/23 (100%) | Strict |
+
+*Currently warnings in CI due to known WebSocket infrastructure issues. Will become strict enforcement once fixed.
+
+#### Fixing Quality Gate Failures
+
+**Backend test failures:**
+1. Run `cargo test --workspace` to see failures
+2. Fix failing tests
+3. Re-run `make verify` to confirm
+
+**Frontend test failures:**
+1. Run `npm test` to see failures
+2. Check error messages for context (missing providers, async issues)
+3. Update tests to use `renderWithProviders` from `tests/testUtils.tsx`
+4. Ensure async operations use `waitFor` or `findBy` queries
+
+**Coverage below threshold:**
+1. Run `npm run test:coverage` to see uncovered lines
+2. Write tests for uncovered code paths
+3. Focus on critical paths first (aim for ≥90%)
+4. Re-run coverage to verify improvement
+
+**Accessibility violations:**
+1. Run `npm run test:a11y` to see specific violations
+2. Check violation output for WCAG criterion and element
+3. Fix violations (add ARIA labels, improve contrast, fix semantic HTML)
+4. Re-run to verify zero violations
+
+**Doc test failures:**
+1. Run `scripts/fix_doc_tests.sh` to see failures
+2. Update documentation examples to match current API
+3. Ensure examples compile and execute correctly
+4. Re-run to verify all pass
+
+#### CI/CD Integration
+
+Quality gates run automatically on every push and PR:
+- Ubuntu: All gates enforced
+- Windows: Basic verification only (build, clippy, tests)
+
+**Viewing CI results:**
+- Check GitHub Actions for quality gate summary
+- Download artifacts for detailed reports (coverage, accessibility)
+- CI logs show pass/fail for each gate with metrics
+
+**Production readiness report:**
+- See `.spec-workflow/specs/production-readiness-remediation/PRODUCTION_READINESS_REPORT.md`
+- Current status: Backend ✅ READY, Frontend ⚠️ CONDITIONAL
+
 ## Architecture Patterns
 
 ### SOLID Principles
