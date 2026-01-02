@@ -130,7 +130,7 @@
   - _Requirements: R5 (Visual Configuration Editor with Drag-and-Drop)_
   - _Prompt: Implement the task for spec keyrx-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React UI Developer with expertise in drag-and-drop libraries and component design | Task: Create KeyAssignmentPanel component with categorized key palette (VK_*, MD_*, LK_*, Layers, Macros), drag source handlers using @dnd-kit/core, and search filter following requirement R5 | Restrictions: Must follow existing component patterns, ensure keyboard navigation (tab through keys), use semantic HTML, maintain accessibility (ARIA labels), keep component under 300 lines | Success: Component renders categorized key list, keys are draggable, search filter works correctly, keyboard navigation is functional, component is accessible and responsive | Instructions: After completing the task, run spec-workflow-guide to get the workflow guide, then update tasks.md to mark this task as in-progress [-], log the implementation with log-implementation tool including detailed artifacts (components, props, exports), and mark as complete [x] when done_
 
-- [ ] 13. Create DeviceScopeToggle component in keyrx_ui/src/components/DeviceScopeToggle.tsx
+- [x] 13. Create DeviceScopeToggle component in keyrx_ui/src/components/DeviceScopeToggle.tsx
   - File: keyrx_ui/src/components/DeviceScopeToggle.tsx
   - Create segmented control for Global vs Device-Specific toggle
   - Add device selector dropdown (when device-specific mode)
