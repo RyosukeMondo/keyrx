@@ -18,6 +18,8 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/devices", get(list_devices))
         .route("/devices/:id/name", put(rename_device))
         .route("/devices/:id/scope", put(set_device_scope))
+        .route("/devices/:id/layout", put(set_device_layout))
+        .route("/devices/:id/layout", get(get_device_layout))
         .route("/devices/:id", delete(forget_device))
 }
 
@@ -145,6 +147,57 @@ async fn set_device_scope(
         .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
     Ok(Json(json!({ "success": true })))
+}
+
+/// PUT /api/devices/:id/layout - Set device layout
+#[derive(Deserialize)]
+struct SetDeviceLayoutRequest {
+    layout: String,
+}
+
+async fn set_device_layout(
+    Path(id): Path<String>,
+    Json(payload): Json<SetDeviceLayoutRequest>,
+) -> Result<Json<Value>, ApiError> {
+    let config_dir = get_config_dir()?;
+    let registry_path = config_dir.join("devices.json");
+
+    let mut registry = DeviceRegistry::load(&registry_path)
+        .map_err(|e| ApiError::InternalError(format!("Failed to load device registry: {}", e)))?;
+
+    registry
+        .set_layout(&id, &payload.layout)
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?;
+
+    registry
+        .save()
+        .map_err(|e| ApiError::InternalError(e.to_string()))?;
+
+    Ok(Json(json!({ "success": true })))
+}
+
+/// GET /api/devices/:id/layout - Get device layout
+#[derive(Serialize)]
+struct GetDeviceLayoutResponse {
+    layout: Option<String>,
+}
+
+async fn get_device_layout(
+    Path(id): Path<String>,
+) -> Result<Json<GetDeviceLayoutResponse>, ApiError> {
+    let config_dir = get_config_dir()?;
+    let registry_path = config_dir.join("devices.json");
+
+    let registry = DeviceRegistry::load(&registry_path)
+        .map_err(|e| ApiError::InternalError(format!("Failed to load device registry: {}", e)))?;
+
+    let device = registry
+        .get(&id)
+        .ok_or_else(|| ApiError::NotFound(format!("Device not found: {}", id)))?;
+
+    Ok(Json(GetDeviceLayoutResponse {
+        layout: device.layout.clone(),
+    }))
 }
 
 /// DELETE /api/devices/:id - Forget device
