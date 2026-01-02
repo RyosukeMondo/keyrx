@@ -32,7 +32,7 @@
   - _Requirements: R2 (Auto-Save Device Layout Selection)_
   - _Prompt: Implement the task for spec keyrx-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend Developer with expertise in Rust file I/O and API design | Task: Add device layout persistence endpoints (PUT/GET /api/devices/:serial/layout) that store preferences in ~/.config/keyrx/device_layouts.json using serde_json, following requirement R2. Use existing API patterns from keyrx_daemon/src/web/api/mod.rs | Restrictions: Must validate serial numbers (alphanumeric, max 64 chars), validate layout enum values, handle file corruption gracefully (recreate if invalid), use atomic file writes (write to temp, rename), do not block on file I/O | Success: Layout preferences persist across daemon restarts, concurrent writes are safe (no data loss), invalid JSON is handled gracefully, API returns 404 for unknown devices, unit tests cover save/load/corruption scenarios | Instructions: After completing the task, run spec-workflow-guide to get the workflow guide, then update tasks.md to mark this task as in-progress [-], log the implementation with log-implementation tool including detailed artifacts (apiEndpoints, functions for file I/O), and mark as complete [x] when done_
 
-- [-] 4. Add daemon state active_profile field in keyrx_daemon/src/daemon/mod.rs
+- [x] 4. Add daemon state active_profile field in keyrx_daemon/src/daemon/mod.rs
   - File: keyrx_daemon/src/daemon/mod.rs
   - Extend DaemonState struct with active_profile: Option<String>
   - Update WebSocket daemon-state event to include active profile
