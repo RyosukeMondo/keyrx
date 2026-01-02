@@ -1,6 +1,7 @@
 import React, { ReactElement } from 'react';
 import { render, RenderOptions, RenderResult } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { WasmProviderWrapper } from './WasmProviderWrapper';
 
 /**
@@ -18,6 +19,18 @@ export interface TestRenderOptions extends Omit<RenderOptions, 'wrapper'> {
    * @default true - Most components use React Query for data fetching
    */
   wrapWithReactQuery?: boolean;
+
+  /**
+   * Whether to wrap the component with React Router (MemoryRouter)
+   * @default false - Only needed for components using routing hooks (useParams, useSearchParams, etc.)
+   */
+  wrapWithRouter?: boolean;
+
+  /**
+   * Initial route entries for MemoryRouter
+   * @default ['/'] - Single root route
+   */
+  routerInitialEntries?: string[];
 
   /**
    * Custom QueryClient for testing
@@ -63,13 +76,15 @@ function createTestQueryClient(): QueryClient {
  *
  * This helper provides a consistent test setup by automatically wrapping
  * components with:
+ * - React Router MemoryRouter (for routing context)
  * - React Query QueryClientProvider (for data fetching/caching)
  * - WasmProvider (for WASM-based validation and simulation)
  *
  * Provider nesting order (outer to inner):
- * 1. QueryClientProvider (outermost - provides data layer)
- * 2. WasmProvider (innermost - provides WASM context)
- * 3. Component under test
+ * 1. MemoryRouter (outermost - provides routing context)
+ * 2. QueryClientProvider (middle - provides data layer)
+ * 3. WasmProvider (innermost - provides WASM context)
+ * 4. Component under test
  *
  * @example
  * ```typescript
@@ -82,6 +97,12 @@ function createTestQueryClient(): QueryClient {
  *   );
  *   expect(getByRole('textbox')).toBeInTheDocument();
  * });
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Enable Router wrapping for components using routing hooks
+ * renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
  * ```
  *
  * @example
@@ -108,6 +129,8 @@ export function renderWithProviders(
   const {
     wrapWithWasm = true,
     wrapWithReactQuery = true,
+    wrapWithRouter = false,
+    routerInitialEntries = ['/'],
     queryClient,
     ...renderOptions
   } = options;
@@ -115,30 +138,30 @@ export function renderWithProviders(
   // Create QueryClient for this test if not provided
   const testQueryClient = queryClient || createTestQueryClient();
 
-  // Build wrapper component with proper nesting
-  let Wrapper: React.FC<{ children: React.ReactNode }>;
+  // Build wrapper component with proper nesting (outer to inner)
+  // Router > QueryClient > WASM > Component
+  let element = ui;
 
-  if (wrapWithReactQuery && wrapWithWasm) {
-    // Both providers: QueryClient outside, WASM inside
-    Wrapper = ({ children }) => (
-      <QueryClientProvider client={testQueryClient}>
-        <WasmProviderWrapper>{children}</WasmProviderWrapper>
-      </QueryClientProvider>
-    );
-  } else if (wrapWithReactQuery) {
-    // Only QueryClient
-    Wrapper = ({ children }) => (
-      <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>
-    );
-  } else if (wrapWithWasm) {
-    // Only WASM
-    Wrapper = ({ children }) => <WasmProviderWrapper>{children}</WasmProviderWrapper>;
-  } else {
-    // No providers
-    Wrapper = ({ children }) => <>{children}</>;
+  // Layer 3: WasmProvider (innermost, closest to component)
+  if (wrapWithWasm) {
+    element = <WasmProviderWrapper>{element}</WasmProviderWrapper>;
   }
 
-  return render(ui, { wrapper: Wrapper, ...renderOptions });
+  // Layer 2: QueryClientProvider
+  if (wrapWithReactQuery) {
+    element = (
+      <QueryClientProvider client={testQueryClient}>{element}</QueryClientProvider>
+    );
+  }
+
+  // Layer 1: MemoryRouter (outermost)
+  if (wrapWithRouter) {
+    element = (
+      <MemoryRouter initialEntries={routerInitialEntries}>{element}</MemoryRouter>
+    );
+  }
+
+  return render(element, renderOptions);
 }
 
 /**
