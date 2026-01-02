@@ -5,6 +5,9 @@ import { Input } from '../components/Input';
 import { Dropdown } from '../components/Dropdown';
 import { Modal } from '../components/Modal';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { useAutoSave } from '../hooks/useAutoSave';
+import { useUnifiedApi } from '../hooks/useUnifiedApi';
+import { RpcClient } from '../api/rpc';
 
 interface Device {
   id: string;
@@ -32,6 +35,276 @@ const LAYOUT_OPTIONS = [
 ];
 
 /**
+ * DeviceCard Component
+ *
+ * Individual device card with auto-save for layout changes.
+ */
+interface DeviceCardProps {
+  device: Device;
+  isEditing: boolean;
+  editingName: string;
+  nameError: string;
+  rpcClient: RpcClient;
+  onRenameClick: (device: Device) => void;
+  onRenameCancel: () => void;
+  onRenameSave: (deviceId: string) => void;
+  onEditingNameChange: (value: string) => void;
+  onScopeChange: (deviceId: string, scope: 'global' | 'device-specific') => void;
+  onLayoutChange: (deviceId: string, layout: string) => void;
+  onForgetClick: (deviceId: string) => void;
+}
+
+const DeviceCard: React.FC<DeviceCardProps> = ({
+  device,
+  isEditing,
+  editingName,
+  nameError,
+  rpcClient,
+  onRenameClick,
+  onRenameCancel,
+  onRenameSave,
+  onEditingNameChange,
+  onScopeChange,
+  onLayoutChange,
+  onForgetClick,
+}) => {
+  // Local layout state for auto-save
+  const [localLayout, setLocalLayout] = useState(device.layout);
+
+  // Auto-save hook for layout changes
+  const { isSaving, error: saveError, lastSavedAt } = useAutoSave(
+    localLayout,
+    {
+      saveFn: async (layout: string) => {
+        if (!device.serial) {
+          throw new Error('Device serial is required');
+        }
+        await rpcClient.setDeviceLayout(device.serial, layout);
+      },
+      debounceMs: 500,
+      enabled: !!device.serial, // Only enable if device has a serial
+    }
+  );
+
+  // Update local layout when device layout changes externally
+  React.useEffect(() => {
+    setLocalLayout(device.layout);
+  }, [device.layout]);
+
+  const handleLocalLayoutChange = (newLayout: string) => {
+    setLocalLayout(newLayout);
+    onLayoutChange(device.id, newLayout);
+  };
+
+  return (
+    <Card key={device.id} variant="elevated" className="bg-slate-800">
+      <div className="flex flex-col gap-md">
+        {/* Device header */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-sm">
+            <span className="text-xl" role="img" aria-label="Keyboard">
+              🖮
+            </span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-sm">
+                <span className="text-base font-medium text-slate-100">
+                  {device.name}
+                </span>
+                {device.active && (
+                  <span
+                    className="text-xs text-green-500"
+                    aria-label="Connected"
+                  >
+                    ✓ Connected
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-mono text-slate-500">
+                {device.identifier}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Rename section */}
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-300">Name</label>
+          <div className="flex flex-col sm:flex-row items-start gap-2">
+            {isEditing ? (
+              <>
+                <div className="flex-1 w-full">
+                  <div
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        onRenameSave(device.id);
+                      } else if (e.key === 'Escape') {
+                        onRenameCancel();
+                      }
+                    }}
+                  >
+                    <Input
+                      type="text"
+                      value={editingName}
+                      onChange={(value) => onEditingNameChange(value)}
+                      error={nameError}
+                      maxLength={64}
+                      aria-label="Device name"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => onRenameSave(device.id)}
+                    aria-label="Save device name"
+                    className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0"
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onRenameCancel}
+                    aria-label="Cancel rename"
+                    className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex-1 w-full rounded-md border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100">
+                  {device.name}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onRenameClick(device)}
+                  aria-label={`Rename device ${device.name}`}
+                  className="w-full sm:w-auto min-h-[44px] sm:min-h-0"
+                >
+                  Rename
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Scope selector */}
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-300">Scope</label>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+            <button
+              onClick={() => onScopeChange(device.id, 'global')}
+              className={`flex items-center gap-2 rounded-md border px-4 py-3 sm:py-2 text-sm transition-colors min-h-[44px] sm:min-h-0 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 ${
+                device.scope === 'global'
+                  ? 'border-primary-500 bg-primary-500/10 text-primary-500'
+                  : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+              }`}
+              aria-label="Set scope to global"
+              role="radio"
+              aria-checked={device.scope === 'global'}
+            >
+              <span
+                className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
+                  device.scope === 'global'
+                    ? 'border-primary-500 bg-primary-500'
+                    : 'border-slate-500'
+                }`}
+                aria-hidden="true"
+              >
+                {device.scope === 'global' && (
+                  <span className="block h-full w-full rounded-full bg-white" />
+                )}
+              </span>
+              Global
+            </button>
+            <button
+              onClick={() => onScopeChange(device.id, 'device-specific')}
+              className={`flex items-center gap-2 rounded-md border px-4 py-3 sm:py-2 text-sm transition-colors min-h-[44px] sm:min-h-0 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 ${
+                device.scope === 'device-specific'
+                  ? 'border-primary-500 bg-primary-500/10 text-primary-500'
+                  : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+              }`}
+              aria-label="Set scope to device-specific"
+              role="radio"
+              aria-checked={device.scope === 'device-specific'}
+            >
+              <span
+                className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
+                  device.scope === 'device-specific'
+                    ? 'border-primary-500 bg-primary-500'
+                    : 'border-slate-500'
+                }`}
+                aria-hidden="true"
+              >
+                {device.scope === 'device-specific' && (
+                  <span className="block h-full w-full rounded-full bg-white" />
+                )}
+              </span>
+              Device-Specific
+            </button>
+          </div>
+        </div>
+
+        {/* Layout selector with auto-save feedback */}
+        <div className="flex flex-col gap-sm">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-slate-300">Layout</label>
+            <div className="flex items-center gap-2">
+              {isSaving && (
+                <span className="text-xs text-slate-400 flex items-center gap-1">
+                  <span className="animate-spin h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full" />
+                  Saving...
+                </span>
+              )}
+              {!isSaving && lastSavedAt && (
+                <span className="text-xs text-green-500 flex items-center gap-1">
+                  ✓ Saved
+                </span>
+              )}
+              {saveError && (
+                <span className="text-xs text-red-500 flex items-center gap-1" title={saveError.message}>
+                  ✗ Error
+                </span>
+              )}
+            </div>
+          </div>
+          <Dropdown
+            options={LAYOUT_OPTIONS}
+            value={localLayout}
+            onChange={handleLocalLayoutChange}
+            aria-label="Select keyboard layout"
+          />
+        </div>
+
+        {/* Device details */}
+        <div className="flex flex-wrap gap-md text-xs text-slate-400">
+          {device.serial && <span>Serial: {device.serial}</span>}
+          {device.vendorId && <span>• Vendor: {device.vendorId}</span>}
+          {device.productId && <span>• Product: {device.productId}</span>}
+          {device.lastSeen && <span>• Last seen: {device.lastSeen}</span>}
+        </div>
+
+        {/* Forget device button */}
+        <div className="flex justify-end border-t border-slate-700 pt-md">
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => onForgetClick(device.id)}
+            aria-label={`Forget device ${device.name}`}
+          >
+            Forget Device
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+/**
  * DevicesPage Component
  *
  * Device management interface with:
@@ -48,6 +321,10 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   const [loading, setLoading] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // RPC client for API calls
+  const api = useUnifiedApi();
+  const rpcClient = new RpcClient(api);
 
   // Fetch devices from API on mount
   React.useEffect(() => {
@@ -134,6 +411,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   };
 
   const handleLayoutChange = (deviceId: string, newLayout: string) => {
+    // Update local state immediately
     setDevices((prev) =>
       prev.map((d) => (d.id === deviceId ? { ...d, layout: newLayout } : d))
     );
@@ -214,190 +492,21 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                 const isEditing = editingDeviceId === device.id;
 
                 return (
-                  <Card key={device.id} variant="elevated" className="bg-slate-800">
-                    <div className="flex flex-col gap-md">
-                      {/* Device header */}
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-sm">
-                          <span className="text-xl" role="img" aria-label="Keyboard">
-                            🖮
-                          </span>
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-sm">
-                              <span className="text-base font-medium text-slate-100">
-                                {device.name}
-                              </span>
-                              {device.active && (
-                                <span
-                                  className="text-xs text-green-500"
-                                  aria-label="Connected"
-                                >
-                                  ✓ Connected
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-xs font-mono text-slate-500">
-                              {device.identifier}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Rename section */}
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-slate-300">Name</label>
-                        <div className="flex flex-col sm:flex-row items-start gap-2">
-                          {isEditing ? (
-                            <>
-                              <div className="flex-1 w-full">
-                                <div
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleRenameSave(device.id);
-                                    } else if (e.key === 'Escape') {
-                                      handleRenameCancel();
-                                    }
-                                  }}
-                                >
-                                  <Input
-                                    type="text"
-                                    value={editingName}
-                                    onChange={(value) => setEditingName(value)}
-                                    error={nameError}
-                                    maxLength={64}
-                                    aria-label="Device name"
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex gap-2 w-full sm:w-auto">
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => handleRenameSave(device.id)}
-                                  aria-label="Save device name"
-                                  className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0"
-                                >
-                                  Save
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={handleRenameCancel}
-                                  aria-label="Cancel rename"
-                                  className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0"
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="flex-1 w-full rounded-md border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100">
-                                {device.name}
-                              </div>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleRenameClick(device)}
-                                aria-label={`Rename device ${device.name}`}
-                                className="w-full sm:w-auto min-h-[44px] sm:min-h-0"
-                              >
-                                Rename
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Scope selector */}
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-slate-300">Scope</label>
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                          <button
-                            onClick={() => handleScopeChange(device.id, 'global')}
-                            className={`flex items-center gap-2 rounded-md border px-4 py-3 sm:py-2 text-sm transition-colors min-h-[44px] sm:min-h-0 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 ${
-                              device.scope === 'global'
-                                ? 'border-primary-500 bg-primary-500/10 text-primary-500'
-                                : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-300'
-                            }`}
-                            aria-label="Set scope to global"
-                            role="radio"
-                            aria-checked={device.scope === 'global'}
-                          >
-                            <span
-                              className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
-                                device.scope === 'global'
-                                  ? 'border-primary-500 bg-primary-500'
-                                  : 'border-slate-500'
-                              }`}
-                              aria-hidden="true"
-                            >
-                              {device.scope === 'global' && (
-                                <span className="block h-full w-full rounded-full bg-white" />
-                              )}
-                            </span>
-                            Global
-                          </button>
-                          <button
-                            onClick={() => handleScopeChange(device.id, 'device-specific')}
-                            className={`flex items-center gap-2 rounded-md border px-4 py-3 sm:py-2 text-sm transition-colors min-h-[44px] sm:min-h-0 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 ${
-                              device.scope === 'device-specific'
-                                ? 'border-primary-500 bg-primary-500/10 text-primary-500'
-                                : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-300'
-                            }`}
-                            aria-label="Set scope to device-specific"
-                            role="radio"
-                            aria-checked={device.scope === 'device-specific'}
-                          >
-                            <span
-                              className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
-                                device.scope === 'device-specific'
-                                  ? 'border-primary-500 bg-primary-500'
-                                  : 'border-slate-500'
-                              }`}
-                              aria-hidden="true"
-                            >
-                              {device.scope === 'device-specific' && (
-                                <span className="block h-full w-full rounded-full bg-white" />
-                              )}
-                            </span>
-                            Device-Specific
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Layout selector */}
-                      <div className="flex flex-col gap-sm">
-                        <label className="text-sm font-medium text-slate-300">Layout</label>
-                        <Dropdown
-                          options={LAYOUT_OPTIONS}
-                          value={device.layout}
-                          onChange={(value) => handleLayoutChange(device.id, value)}
-                          aria-label="Select keyboard layout"
-                        />
-                      </div>
-
-                      {/* Device details */}
-                      <div className="flex flex-wrap gap-md text-xs text-slate-400">
-                        {device.serial && <span>Serial: {device.serial}</span>}
-                        {device.vendorId && <span>• Vendor: {device.vendorId}</span>}
-                        {device.productId && <span>• Product: {device.productId}</span>}
-                        {device.lastSeen && <span>• Last seen: {device.lastSeen}</span>}
-                      </div>
-
-                      {/* Forget device button */}
-                      <div className="flex justify-end border-t border-slate-700 pt-md">
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setForgetDeviceId(device.id)}
-                          aria-label={`Forget device ${device.name}`}
-                        >
-                          Forget Device
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
+                  <DeviceCard
+                    key={device.id}
+                    device={device}
+                    isEditing={isEditing}
+                    editingName={editingName}
+                    nameError={nameError}
+                    rpcClient={rpcClient}
+                    onRenameClick={handleRenameClick}
+                    onRenameCancel={handleRenameCancel}
+                    onRenameSave={handleRenameSave}
+                    onEditingNameChange={setEditingName}
+                    onScopeChange={handleScopeChange}
+                    onLayoutChange={handleLayoutChange}
+                    onForgetClick={setForgetDeviceId}
+                  />
                 );
               })}
             </div>
