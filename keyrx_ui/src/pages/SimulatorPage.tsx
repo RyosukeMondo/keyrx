@@ -3,6 +3,9 @@ import { KeyboardVisualizer } from '../components/KeyboardVisualizer';
 import { KeyMapping } from '../components/KeyButton';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { useProfiles } from '../hooks/useProfiles';
+import { useGetProfileConfig } from '../hooks/useProfileConfig';
+import { useWasm } from '../hooks/useWasm';
 
 interface SimulatorEvent {
   timestamp: string;
@@ -50,6 +53,19 @@ export const SimulatorPage: React.FC = () => {
   const [holdTimers, setHoldTimers] = useState<Map<string, number>>(new Map());
   const autoPauseTimerRef = useRef<NodeJS.Timeout>();
   const lastActivityRef = useRef<number>(Date.now());
+
+  // Profile selection
+  const [selectedProfile, setSelectedProfile] = useState<string>('');
+  const { data: profiles, isLoading: isLoadingProfiles } = useProfiles();
+  const { data: profileConfig, isLoading: isLoadingConfig } = useGetProfileConfig(selectedProfile);
+  const { isWasmReady, isLoading: isLoadingWasm } = useWasm();
+
+  // Set the first profile as selected when profiles load
+  useEffect(() => {
+    if (profiles && profiles.length > 0 && !selectedProfile) {
+      setSelectedProfile(profiles[0].name);
+    }
+  }, [profiles, selectedProfile]);
 
   // Mock key mappings for demonstration
   const keyMappings = new Map<string, KeyMapping>([
@@ -294,6 +310,76 @@ export const SimulatorPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Profile Selector */}
+      <Card>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <label
+            htmlFor="profile-selector"
+            className="text-sm font-medium text-slate-300 shrink-0"
+          >
+            Select Profile:
+          </label>
+          <div className="flex-1">
+            <select
+              id="profile-selector"
+              value={selectedProfile}
+              onChange={(e) => setSelectedProfile(e.target.value)}
+              disabled={isLoadingProfiles || !profiles || profiles.length === 0}
+              className="w-full sm:w-auto min-w-[200px] px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Select profile for simulation"
+            >
+              {isLoadingProfiles ? (
+                <option>Loading profiles...</option>
+              ) : profiles && profiles.length > 0 ? (
+                profiles.map((profile) => (
+                  <option key={profile.name} value={profile.name}>
+                    {profile.name}
+                    {profile.isActive ? ' [Active]' : ''}
+                  </option>
+                ))
+              ) : (
+                <option>No profiles available</option>
+              )}
+            </select>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            {isLoadingConfig && (
+              <span className="flex items-center gap-1">
+                <svg
+                  className="animate-spin h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Loading config...
+              </span>
+            )}
+            {!isLoadingConfig && profileConfig && (
+              <span className="text-green-400">✓ Config loaded</span>
+            )}
+            {!isWasmReady && !isLoadingWasm && (
+              <span className="text-yellow-400">
+                ⚠ WASM not available (run build:wasm)
+              </span>
+            )}
+          </div>
+        </div>
+      </Card>
 
       {isPaused && (
         <div
