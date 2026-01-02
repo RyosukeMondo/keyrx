@@ -213,7 +213,7 @@
   - _Requirements: R3, R4_
   - _Prompt: Implement the task for spec keyrx-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer with expertise in integration testing and async testing | Task: Write integration tests for ProfileManager covering create, activate (success and failure), delete operations following requirements R3 and R4. Use tempfile crate for isolated test directories, mock compiler and daemon control | Restrictions: Must use async test runtime (tokio::test), ensure test isolation (separate temp dirs), test both success and failure paths, clean up resources, use assert macros for clear failures | Success: All tests pass, profile creation verified, activation flow tested (compile + persist + reload), rollback tested (compilation error), deletion tested, no test pollution (isolated temp dirs), >85% code coverage | Instructions: After completing the task, run spec-workflow-guide to get the workflow guide, then update tasks.md to mark this task as in-progress [-], log the implementation with log-implementation tool including detailed artifacts (test files, integration scenarios covered), and mark as complete [x] when done_
 
-- [-] 21. Write E2E tests for visual config editor in keyrx_ui/tests/e2e/config-editor.spec.ts
+- [x] 21. Write E2E tests for visual config editor in keyrx_ui/tests/e2e/config-editor.spec.ts
   - File: keyrx_ui/tests/e2e/config-editor.spec.ts
   - Test drag-drop flow (drag key from palette to keyboard)
   - Test device scope toggle (global ↔ device-specific)
