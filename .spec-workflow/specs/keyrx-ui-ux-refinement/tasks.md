@@ -191,7 +191,7 @@
   - _Requirements: R1, R2, R3, R4_
   - _Prompt: Implement the task for spec keyrx-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React Developer with expertise in React Query and cache management | Task: Extend queryKeys object with new keys (deviceLayout, profileConfig, activeProfile) and update invalidation patterns for profile activation following requirements R1-R4. Extend existing queryKeys structure in src/lib/queryClient.ts | Restrictions: Must follow existing naming conventions (camelCase factory functions), ensure type safety (TypeScript), document invalidation dependencies (comments), do not duplicate keys, maintain backward compatibility | Success: New query keys are properly namespaced, invalidation patterns are documented, no key conflicts, TypeScript types are inferred correctly, cache coordination works across pages | Instructions: After completing the task, run spec-workflow-guide to get the workflow guide, then update tasks.md to mark this task as in-progress [-], log the implementation with log-implementation tool including detailed artifacts (functions for query keys, integrations), and mark as complete [x] when done_
 
-- [ ] 19. Write unit tests for useAutoSave hook in keyrx_ui/tests/hooks/useAutoSave.test.tsx
+- [x] 19. Write unit tests for useAutoSave hook in keyrx_ui/tests/hooks/useAutoSave.test.tsx
   - File: keyrx_ui/tests/hooks/useAutoSave.test.tsx
   - Test debouncing behavior (multiple calls → single save)
   - Test retry logic (failed save retries with backoff)
