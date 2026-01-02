@@ -139,7 +139,7 @@
   - _Requirements: R5 (Visual Configuration Editor with Drag-and-Drop)_
   - _Prompt: Implement the task for spec keyrx-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React UI Developer with expertise in form controls and component composition | Task: Create DeviceScopeToggle component with segmented control (Global/Device-Specific) and device selector dropdown following requirement R5. Use existing UI patterns for consistent styling | Restrictions: Must follow existing component patterns, use controlled component pattern (value/onChange props), ensure accessibility (radio group semantics), maintain responsive design, keep component under 200 lines | Success: Component renders segmented control correctly, device dropdown shows when device-specific selected, value/onChange props work correctly, component is accessible with ARIA labels, responsive design works on mobile | Instructions: After completing the task, run spec-workflow-guide to get the workflow guide, then update tasks.md to mark this task as in-progress [-], log the implementation with log-implementation tool including detailed artifacts (components, props, exports), and mark as complete [x] when done_
 
-- [ ] 14. Create LayerSelector component in keyrx_ui/src/components/LayerSelector.tsx
+- [x] 14. Create LayerSelector component in keyrx_ui/src/components/LayerSelector.tsx
   - File: keyrx_ui/src/components/LayerSelector.tsx
   - Create dropdown to select layer (base, vim, gaming, etc.)
   - Load layers from profile config
