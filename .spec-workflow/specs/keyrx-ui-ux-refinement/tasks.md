@@ -44,7 +44,7 @@
 
 ## Frontend Shared Utilities
 
-- [ ] 5. Create useAutoSave hook in keyrx_ui/src/hooks/useAutoSave.ts
+- [x] 5. Create useAutoSave hook in keyrx_ui/src/hooks/useAutoSave.ts
   - File: keyrx_ui/src/hooks/useAutoSave.ts
   - Implement generic debounced auto-save hook with loading/error states
   - Add retry logic for failed saves (3 attempts with exponential backoff)
