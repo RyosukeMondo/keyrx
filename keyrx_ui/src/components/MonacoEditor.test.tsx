@@ -1,9 +1,35 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, act } from '@testing-library/react';
 import { renderWithProviders } from '../../tests/testUtils';
-import { getMockWasmContext, setMockWasmReady } from '../../tests/WasmProviderWrapper';
 import { MonacoEditor } from './MonacoEditor';
 import type { ValidationError } from '../hooks/useWasm';
+
+// Create shared mock context value that can be accessed by both the mock and tests
+const mockWasmContextValue = {
+  isWasmReady: true,
+  isLoading: false,
+  error: null as Error | null,
+  validateConfig: vi.fn().mockResolvedValue([]),
+  runSimulation: vi.fn().mockResolvedValue(null),
+};
+
+// Helper function to set WASM ready state for tests
+function setMockWasmReady(ready: boolean) {
+  mockWasmContextValue.isWasmReady = ready;
+  if (!ready) {
+    mockWasmContextValue.error = new Error('WASM not available');
+  } else {
+    mockWasmContextValue.error = null;
+  }
+}
+
+// Mock the WasmContext module to provide test context
+vi.mock('../contexts/WasmContext', () => {
+  return {
+    useWasmContext: () => mockWasmContextValue,
+    WasmProvider: ({ children }: { children: React.ReactNode }) => children,
+  };
+});
 
 // Mock the Monaco Editor component
 vi.mock('@monaco-editor/react', () => ({
@@ -58,17 +84,13 @@ vi.mock('@monaco-editor/react', () => ({
 }));
 
 describe('MonacoEditor', () => {
-  let mockWasmContext: ReturnType<typeof getMockWasmContext>;
-
   beforeEach(() => {
-    // Get mock WASM context for test assertions
-    mockWasmContext = getMockWasmContext();
     // Reset WASM state to ready by default
     setMockWasmReady(true);
     // Reset mocks before each test
-    mockWasmContext.validateConfig.mockClear();
-    mockWasmContext.validateConfig.mockResolvedValue([]);
-    mockWasmContext.runSimulation.mockClear();
+    mockWasmContextValue.validateConfig.mockClear();
+    mockWasmContextValue.validateConfig.mockResolvedValue([]);
+    mockWasmContextValue.runSimulation.mockClear();
   });
 
   afterEach(() => {
@@ -121,12 +143,12 @@ describe('MonacoEditor', () => {
       });
 
       await waitFor(() => {
-        expect(mockWasmContext.validateConfig).toHaveBeenCalledWith(testValue);
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith(testValue);
       });
     });
 
     it('shows success status when no errors', async () => {
-      mockWasmContext.validateConfig.mockResolvedValue([]);
+      mockWasmContextValue.validateConfig.mockResolvedValue([]);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="let x = 42;" />);
@@ -142,7 +164,7 @@ describe('MonacoEditor', () => {
         { line: 1, column: 1, length: 3, message: 'Syntax error' },
         { line: 2, column: 5, length: 4, message: 'Unexpected token' },
       ];
-      mockWasmContext.validateConfig.mockResolvedValue(errors);
+      mockWasmContextValue.validateConfig.mockResolvedValue(errors);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="invalid code" />);
@@ -157,7 +179,7 @@ describe('MonacoEditor', () => {
       const errors: ValidationError[] = [
         { line: 1, column: 1, length: 3, message: 'Syntax error' },
       ];
-      mockWasmContext.validateConfig.mockResolvedValue(errors);
+      mockWasmContextValue.validateConfig.mockResolvedValue(errors);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="invalid" />);
@@ -172,7 +194,7 @@ describe('MonacoEditor', () => {
       const errors: ValidationError[] = [
         { line: 1, column: 1, length: 3, message: 'Syntax error' },
       ];
-      mockWasmContext.validateConfig.mockResolvedValue(errors);
+      mockWasmContextValue.validateConfig.mockResolvedValue(errors);
       const onValidate = vi.fn();
 
       await act(async () => {
@@ -198,7 +220,7 @@ describe('MonacoEditor', () => {
       });
 
       // Clear mocks after initial validation
-      mockWasmContext.validateConfig.mockClear();
+      mockWasmContextValue.validateConfig.mockClear();
 
       // Simulate editor onChange (not value prop change)
       // The MonacoEditor's handleEditorChange function should debounce
@@ -216,15 +238,14 @@ describe('MonacoEditor', () => {
         renderWithProviders(<MonacoEditor value="test" />);
       });
 
-      // When WASM is not ready, validation doesn't run on mount
-      // Status stays at "Ready" because the useEffect doesn't call runValidation
+      // When WASM is not ready, component shows warning status
       await waitFor(() => {
-        expect(screen.getByText('Ready')).toBeInTheDocument();
+        expect(screen.getByText('⚠ WASM unavailable')).toBeInTheDocument();
       });
     });
 
     it('handles validation errors gracefully', async () => {
-      mockWasmContext.validateConfig.mockRejectedValue(new Error('Validation failed'));
+      mockWasmContextValue.validateConfig.mockRejectedValue(new Error('Validation failed'));
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="test" />);
@@ -241,7 +262,7 @@ describe('MonacoEditor', () => {
       const errors: ValidationError[] = [
         { line: 1, column: 1, length: 3, message: 'Error 1' },
       ];
-      mockWasmContext.validateConfig.mockResolvedValue(errors);
+      mockWasmContextValue.validateConfig.mockResolvedValue(errors);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="invalid" />);
@@ -253,14 +274,14 @@ describe('MonacoEditor', () => {
     });
 
     it('hides F8 hint when no errors', async () => {
-      mockWasmContext.validateConfig.mockResolvedValue([]);
+      mockWasmContextValue.validateConfig.mockResolvedValue([]);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="valid" />);
       });
 
       await waitFor(() => {
-        expect(mockWasmContext.validateConfig).toHaveBeenCalled();
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalled();
       });
 
       expect(screen.queryByText('Press F8 to navigate to next error')).not.toBeInTheDocument();
@@ -304,21 +325,23 @@ describe('MonacoEditor', () => {
 
       // Initial validation completes
       await waitFor(() => {
-        expect(mockWasmContext.validateConfig).toHaveBeenCalledWith('initial');
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith('initial');
       });
     });
   });
 
   describe('Status display', () => {
-    it('shows Ready status initially', async () => {
-      // WASM not ready to avoid validation
-      setMockWasmReady(false);
+    it('shows Ready status initially when WASM is ready', async () => {
+      // WASM is ready by default
+      setMockWasmReady(true);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="" />);
       });
 
-      expect(screen.getByText('Ready')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('✓ Ready')).toBeInTheDocument();
+      });
     });
 
     it('shows Validating... status during validation', async () => {
@@ -326,7 +349,7 @@ describe('MonacoEditor', () => {
       const validationPromise = new Promise<ValidationError[]>((resolve) => {
         resolveValidation = resolve;
       });
-      mockWasmContext.validateConfig.mockReturnValue(validationPromise);
+      mockWasmContextValue.validateConfig.mockReturnValue(validationPromise);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="test" />);
@@ -343,7 +366,7 @@ describe('MonacoEditor', () => {
     });
 
     it('applies green color to success status', async () => {
-      mockWasmContext.validateConfig.mockResolvedValue([]);
+      mockWasmContextValue.validateConfig.mockResolvedValue([]);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="test" />);
@@ -359,7 +382,7 @@ describe('MonacoEditor', () => {
       const errors: ValidationError[] = [
         { line: 1, column: 1, length: 3, message: 'Error' },
       ];
-      mockWasmContext.validateConfig.mockResolvedValue(errors);
+      mockWasmContextValue.validateConfig.mockResolvedValue(errors);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="invalid" />);
@@ -380,11 +403,11 @@ describe('MonacoEditor', () => {
 
       // Wait for initial validation
       await waitFor(() => {
-        expect(mockWasmContext.validateConfig).toHaveBeenCalled();
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalled();
       });
 
       // Clear mock
-      mockWasmContext.validateConfig.mockClear();
+      mockWasmContextValue.validateConfig.mockClear();
 
       // Unmount
       await act(async () => {
@@ -392,7 +415,7 @@ describe('MonacoEditor', () => {
       });
 
       // Validation should not be called after unmount
-      expect(mockWasmContext.validateConfig).not.toHaveBeenCalled();
+      expect(mockWasmContextValue.validateConfig).not.toHaveBeenCalled();
     });
   });
 
@@ -453,7 +476,7 @@ describe('MonacoEditor', () => {
 
       // Initial validation happens
       await waitFor(() => {
-        expect(mockWasmContext.validateConfig).toHaveBeenCalledWith('initial');
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith('initial');
       });
     });
 
@@ -461,14 +484,14 @@ describe('MonacoEditor', () => {
       const errors: ValidationError[] = [
         { line: 5, column: 10, length: 5, message: 'Test error' },
       ];
-      mockWasmContext.validateConfig.mockResolvedValue(errors);
+      mockWasmContextValue.validateConfig.mockResolvedValue(errors);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="code with error" />);
       });
 
       await waitFor(() => {
-        expect(mockWasmContext.validateConfig).toHaveBeenCalled();
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalled();
       });
 
       // Error markers are set via monaco.editor.setModelMarkers
@@ -479,7 +502,7 @@ describe('MonacoEditor', () => {
       const errors: ValidationError[] = [
         { line: 1, column: 1, length: 3, message: 'Syntax error on line 1' },
       ];
-      mockWasmContext.validateConfig.mockResolvedValue(errors);
+      mockWasmContextValue.validateConfig.mockResolvedValue(errors);
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="invalid" />);
@@ -507,7 +530,7 @@ describe('MonacoEditor', () => {
       });
 
       await waitFor(() => {
-        expect(mockWasmContext.validateConfig).toHaveBeenCalledWith('let x = 42;');
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith('let x = 42;');
       });
     });
 
@@ -520,9 +543,9 @@ describe('MonacoEditor', () => {
       });
 
       // When WASM is not ready, validation doesn't run on mount
-      // Component gracefully degrades by not running validation
+      // Component gracefully degrades by showing warning status
       await waitFor(() => {
-        expect(screen.getByText('Ready')).toBeInTheDocument();
+        expect(screen.getByText('⚠ WASM unavailable')).toBeInTheDocument();
       });
 
       // The component doesn't crash and renders normally
@@ -535,7 +558,7 @@ describe('MonacoEditor', () => {
       const errors: ValidationError[] = [
         { line: 1, column: 1, length: 3, message: 'Error' },
       ];
-      mockWasmContext.validateConfig.mockResolvedValue(errors);
+      mockWasmContextValue.validateConfig.mockResolvedValue(errors);
 
       await act(async () => {
         renderWithProviders(
@@ -553,7 +576,7 @@ describe('MonacoEditor', () => {
 
       // Should validate
       await waitFor(() => {
-        expect(mockWasmContext.validateConfig).toHaveBeenCalled();
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalled();
         expect(onValidate).toHaveBeenCalledWith(errors);
       });
 
