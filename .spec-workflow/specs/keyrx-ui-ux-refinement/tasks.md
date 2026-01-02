@@ -77,7 +77,7 @@
 
 ## Frontend Page Updates
 
-- [ ] 8. Add auto-save to DevicesPage in keyrx_ui/src/pages/DevicesPage.tsx
+- [x] 8. Add auto-save to DevicesPage in keyrx_ui/src/pages/DevicesPage.tsx
   - File: keyrx_ui/src/pages/DevicesPage.tsx
   - Replace layout dropdown with auto-save version using useAutoSave hook
   - Add visual feedback (saving spinner, checkmark on success, error icon on failure)
