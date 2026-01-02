@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-01-03T00:13:23+09:00",
+  "summary": {
+    "total_tests": 758,
+    "passed_tests": 521,
+    "failed_tests": 168,
+    "pass_rate": 68.73,
+    "target_pass_rate": 95.0,
+    "meets_requirement": false
+  },
+  "error_categories": {
+    "context_errors": 331,
+    "websocket_errors": 425,
+    "async_errors": 657,
+    "dom_errors": 29
+  },
+  "recommendations": {
+    "context_errors": "Fix by wrapping tests with renderWithProviders() from tests/testUtils.tsx",
+    "websocket_errors": "Mock WebSocket in test setup or skip WebSocket-dependent tests",
+    "async_errors": "Use waitFor() and proper async handling from @testing-library/react",
+    "dom_errors": "Mock DOM APIs like scrollIntoView in test setup (src/test/setup.ts)"
+  }
+}
