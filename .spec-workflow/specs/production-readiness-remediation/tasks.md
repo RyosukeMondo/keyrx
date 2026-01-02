@@ -129,7 +129,7 @@
   - _Result: **Critical components verified**: (1) MonacoEditor.tsx: 85.91% line, 90.32% branch ✓ - exceeds 90% branch coverage requirement for this critical component. Uncovered lines are edge cases (F8 keybinding:287,306-307, cleanup handlers:271). (2) useAutoSave.ts: 100% line, 90.62% branch ✓ - exceeds requirement. Uncovered branches are error logging edge cases (85,99-101). **Blocked**: ProfilesPage and ConfigPage coverage cannot be measured due to test failures (WebSocket/integration errors). These two components require fixing integration test infrastructure first (see tasks 9,11). **Status**: 2/4 critical components verified at ≥90% coverage. Remaining 2 blocked by test infrastructure issues, not coverage gaps._
   - _Prompt: Role: Senior QA Engineer with expertise in risk-based testing and critical path analysis | Task: Analyze coverage reports from task 11 for critical UI components (MonacoEditor, useAutoSave, ProfilesPage, ConfigPage) and ensure ≥90% coverage, adding tests if needed, following requirement 3.3 | Restrictions: Focus on user-critical paths only (not utility functions), must verify branch coverage not just line coverage, new tests must be meaningful not just coverage fillers | Success: Critical path components achieve ≥90% coverage, coverage report highlights critical paths separately, any gaps in critical paths are filled with meaningful tests_
 
-- [-] 13. Add tests for uncovered lines
+- [ ] 13. Add tests for uncovered lines
   - Review uncovered lines identified in task 11
   - Write targeted tests for specific uncovered branches/lines
   - Focus on error handling and edge cases typically missed
@@ -139,7 +139,7 @@
   - _Status: BLOCKED - Cannot identify uncovered lines without full coverage report. Task 11 analysis shows this is blocked by test infrastructure failures (203 failing tests due to WebSocket/integration errors). Must fix WebSocket mocking infrastructure (separate task) before this task can proceed. Current verifiable coverage: MonacoEditor (90.32% branch), useAutoSave (90.62% branch)._
   - _Prompt: Role: QA Engineer specializing in edge case testing and coverage gap filling | Task: Write targeted tests for uncovered lines identified in task 11 coverage report, focusing on error handling and edge cases, following requirement 3.4 | Restrictions: Tests must be meaningful not just execute lines, focus on behavior verification not implementation, do not test trivial getters/setters | Success: Coverage gaps filled with meaningful tests, overall coverage ≥80% achieved, new tests verify actual behavior not just execute code, coverage report shows improvement_
 
-- [-] 14. Final coverage verification ≥80%
+- [ ] 14. Final coverage verification ≥80%
   - Run coverage analysis after adding tests from task 13
   - Verify overall coverage meets ≥80% line and branch thresholds
   - Generate final coverage report for documentation
@@ -246,7 +246,7 @@
 
 ## Phase 7: Final Production Readiness Verification
 
-- [ ] 24. Run complete quality gate verification
+- [-] 24. Run complete quality gate verification
   - Execute all verification steps: frontend tests, backend tests, coverage, accessibility, doc tests
   - Generate comprehensive production readiness report
   - Verify all quality gates pass (≥95% test pass rate, ≥80% coverage, zero a11y violations, 100% doc test success)
