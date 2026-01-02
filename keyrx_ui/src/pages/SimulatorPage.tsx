@@ -58,7 +58,9 @@ export const SimulatorPage: React.FC = () => {
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const { data: profiles, isLoading: isLoadingProfiles } = useProfiles();
   const { data: profileConfig, isLoading: isLoadingConfig } = useGetProfileConfig(selectedProfile);
-  const { isWasmReady, isLoading: isLoadingWasm } = useWasm();
+  const { isWasmReady, isLoading: isLoadingWasm, validateConfig } = useWasm();
+  const [configLoadError, setConfigLoadError] = useState<string | null>(null);
+  const [isUsingProfileConfig, setIsUsingProfileConfig] = useState(false);
 
   // Set the first profile as selected when profiles load
   useEffect(() => {
@@ -66,6 +68,39 @@ export const SimulatorPage: React.FC = () => {
       setSelectedProfile(profiles[0].name);
     }
   }, [profiles, selectedProfile]);
+
+  // Validate and load profile config when it changes
+  useEffect(() => {
+    async function loadProfileConfig() {
+      if (!profileConfig || !isWasmReady) {
+        setIsUsingProfileConfig(false);
+        setConfigLoadError(null);
+        return;
+      }
+
+      try {
+        // Validate the config
+        const errors = await validateConfig(profileConfig.source);
+        if (errors.length > 0) {
+          const errorMsg = errors.map((e) => `Line ${e.line}: ${e.message}`).join('; ');
+          setConfigLoadError(errorMsg);
+          setIsUsingProfileConfig(false);
+          console.error('Profile config validation failed:', errorMsg);
+        } else {
+          setConfigLoadError(null);
+          setIsUsingProfileConfig(true);
+          console.info(`Profile "${profileConfig.name}" loaded successfully`);
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        setConfigLoadError(errorMsg);
+        setIsUsingProfileConfig(false);
+        console.error('Failed to load profile config:', err);
+      }
+    }
+
+    loadProfileConfig();
+  }, [profileConfig, isWasmReady, validateConfig]);
 
   // Mock key mappings for demonstration
   const keyMappings = new Map<string, KeyMapping>([
@@ -369,8 +404,11 @@ export const SimulatorPage: React.FC = () => {
                 Loading config...
               </span>
             )}
-            {!isLoadingConfig && profileConfig && (
-              <span className="text-green-400">✓ Config loaded</span>
+            {!isLoadingConfig && isUsingProfileConfig && (
+              <span className="text-green-400">✓ Profile config active</span>
+            )}
+            {!isLoadingConfig && profileConfig && !isUsingProfileConfig && !configLoadError && (
+              <span className="text-yellow-400">⚠ Using mock data (WASM not ready)</span>
             )}
             {!isWasmReady && !isLoadingWasm && (
               <span className="text-yellow-400">
@@ -380,6 +418,23 @@ export const SimulatorPage: React.FC = () => {
           </div>
         </div>
       </Card>
+
+      {/* Config Load Error */}
+      {configLoadError && (
+        <div
+          className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded-md"
+          role="alert"
+        >
+          <p className="font-medium">Configuration Error</p>
+          <p className="text-sm mt-1">
+            Failed to load profile configuration: {configLoadError}
+          </p>
+          <p className="text-xs mt-2 text-red-300">
+            The simulator is using mock key mappings. Fix the configuration to use
+            real profile logic.
+          </p>
+        </div>
+      )}
 
       {isPaused && (
         <div
