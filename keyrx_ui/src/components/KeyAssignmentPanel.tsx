@@ -35,6 +35,11 @@ const DraggableKeyItem: React.FC<DraggableKeyItemProps> = ({ keyItem }) => {
     data: keyItem,
   });
 
+  // Build comprehensive aria-label with keyboard instructions
+  const ariaLabel = isDragging
+    ? `Dragging ${keyItem.label}. Use arrow keys to select target key, Space to drop, Escape to cancel.`
+    : `${keyItem.label} key. ${keyItem.description || ''}. Press Space to grab and drag.`;
+
   return (
     <button
       ref={setNodeRef}
@@ -45,14 +50,22 @@ const DraggableKeyItem: React.FC<DraggableKeyItemProps> = ({ keyItem }) => {
         'bg-slate-700 border-slate-600 text-slate-100',
         'hover:bg-slate-600 hover:border-slate-500',
         'focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2',
+        'min-h-[44px] min-w-[44px]', // Touch-friendly minimum size
         'cursor-grab active:cursor-grabbing',
         isDragging && 'opacity-50 cursor-grabbing'
       )}
-      aria-label={`Drag ${keyItem.label} key`}
+      aria-label={ariaLabel}
+      aria-grabbed={isDragging}
+      aria-describedby={keyItem.description ? `${keyItem.id}-desc` : undefined}
       title={keyItem.description}
       type="button"
     >
       {keyItem.label}
+      {keyItem.description && (
+        <span id={`${keyItem.id}-desc`} className="sr-only">
+          {keyItem.description}
+        </span>
+      )}
     </button>
   );
 };
@@ -233,7 +246,10 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
     <div className={cn('flex flex-col h-full bg-slate-800 border border-slate-700 rounded-md', className)} role="complementary" aria-label="Key assignment palette">
       {/* Header */}
       <div className="p-4 border-b border-slate-700">
-        <h2 className="text-lg font-semibold text-slate-100 mb-3">Key Palette</h2>
+        <h2 className="text-lg font-semibold text-slate-100 mb-2">Key Palette</h2>
+        <p className="text-xs text-slate-400 mb-3" id="key-palette-instructions">
+          Use mouse to drag or keyboard: Tab to focus a key, Space to grab, Arrow keys to navigate, Space to drop
+        </p>
 
         {/* Search input */}
         <Input
@@ -273,22 +289,24 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {selectedCategory === 'all' ? (
           // Show all categories when "all" is selected
-          Object.entries(groupedKeys).map(([category, keys]) => {
-            if (keys.length === 0) return null;
-            const categoryLabel = categories.find(c => c.value === category)?.label || category;
-            return (
-              <div key={category} id={`panel-${category}`} role="tabpanel">
-                <h3 className="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wide">
-                  {categoryLabel}
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {keys.map(key => (
-                    <DraggableKeyItem key={key.id} keyItem={key} />
-                  ))}
+          <div id="panel-all" role="tabpanel">
+            {Object.entries(groupedKeys).map(([category, keys]) => {
+              if (keys.length === 0) return null;
+              const categoryLabel = categories.find(c => c.value === category)?.label || category;
+              return (
+                <div key={category} className="mb-4">
+                  <h3 className="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+                    {categoryLabel}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {keys.map(key => (
+                      <DraggableKeyItem key={key.id} keyItem={key} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         ) : (
           // Show only selected category
           <div id={`panel-${selectedCategory}`} role="tabpanel">

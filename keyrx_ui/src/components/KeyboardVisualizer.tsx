@@ -63,8 +63,25 @@ const DroppableKeyWrapper: React.FC<DroppableKeyWrapperProps> = ({
     }
   };
 
+  // Build comprehensive aria-label for drop zone
+  const mappingDescription = mapping
+    ? `Currently mapped to ${mapping.tapAction || 'custom action'}`
+    : 'No mapping assigned';
+
+  const ariaLabel = disabled
+    ? `${label} key. ${mappingDescription}. Not configurable.`
+    : `${label} key. ${mappingDescription}. Drop zone for key assignment. ${isOver ? 'Drop here to assign' : ''}`;
+
   return (
-    <div ref={setNodeRef} className="relative">
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'relative',
+        isOver && !disabled && 'ring-2 ring-primary-500 ring-offset-2 ring-offset-slate-800'
+      )}
+      aria-label={ariaLabel}
+      aria-dropeffect={disabled ? 'none' : isOver ? 'move' : 'none'}
+    >
       <KeyButton
         keyCode={keyCode}
         label={label}
@@ -72,7 +89,6 @@ const DroppableKeyWrapper: React.FC<DroppableKeyWrapperProps> = ({
         onClick={handleClick}
         isPressed={isPressed}
         className={cn(
-          isOver && !disabled && 'ring-2 ring-primary-500 ring-offset-2 ring-offset-slate-800',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
       />

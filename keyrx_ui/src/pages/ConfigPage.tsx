@@ -1,6 +1,15 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { DndContext, DragEndEvent, DragOverlay } from '@dnd-kit/core';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+} from '@dnd-kit/core';
 import { Card } from '@/components/Card';
 import { KeyboardVisualizer } from '@/components/KeyboardVisualizer';
 import { KeyAssignmentPanel, AssignableKey } from '@/components/KeyAssignmentPanel';
@@ -50,6 +59,20 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   const [popupState, setPopupState] = useState<{ open: boolean; keyCode: string | null }>({ open: false, keyCode: null });
   const [activeDragKey, setActiveDragKey] = useState<AssignableKey | null>(null);
   const [connectionTimeout, setConnectionTimeout] = useState(false);
+  const [dragAnnouncement, setDragAnnouncement] = useState<string>('');
+
+  // Configure drag-and-drop sensors with keyboard support
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before starting drag
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      // Space to activate, arrow keys to move, Space to drop, Escape to cancel
+      coordinateGetter: undefined, // Use default coordinate getter
+    })
+  );
 
   // Transform real devices from API to DeviceOption format
   const availableDevices: DeviceOption[] = useMemo(() => {
@@ -155,16 +178,22 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   }, []);
 
   // Handle drag start
-  const handleDragStart = useCallback((event: any) => {
-    setActiveDragKey(event.active.data.current as AssignableKey);
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const key = event.active.data.current as AssignableKey;
+    setActiveDragKey(key);
+    // Set screen reader announcement
+    setDragAnnouncement(`Grabbed ${key.label} key. Use arrow keys to select target key, Space to drop, Escape to cancel.`);
   }, []);
 
   // Handle drag end
   const handleDragEnd = useCallback((event: DragEndEvent) => {
-    setActiveDragKey(null);
-
     const { active, over } = event;
-    if (!over) return;
+
+    if (!over) {
+      setDragAnnouncement('Drag cancelled. Key returned to palette.');
+      setActiveDragKey(null);
+      return;
+    }
 
     // Extract keyCode from drop zone ID (format: "drop-KEYCODE")
     const dropZoneId = over.id as string;
@@ -172,7 +201,10 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
       const keyCode = dropZoneId.slice(5);
       const droppedKey = active.data.current as AssignableKey;
       handleKeyDrop(keyCode, droppedKey);
+      setDragAnnouncement(`${droppedKey.label} assigned to ${keyCode} key.`);
     }
+
+    setActiveDragKey(null);
   }, [handleKeyDrop]);
 
   // Handle popup save
@@ -239,7 +271,17 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   }
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      {/* Screen reader announcements for drag operations */}
+      <div
+        role="status"
+        aria-live="assertive"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {dragAnnouncement}
+      </div>
+
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
         {/* Profile Header with profile selector and active badge */}
         <ProfileHeader
