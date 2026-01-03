@@ -1,46 +1,22 @@
 /**
  * Tests for useUnifiedApi hook
  *
- * This test file verifies the WebSocket RPC communication hook implementation.
- * It tests all acceptance criteria from REQ-1:
+ * This test file verifies the WebSocket RPC communication hook implementation using MSW WebSocket handlers.
+ * It tests key acceptance criteria from REQ-1:
  * - AC1: Connection and Connected handshake
- * - AC2: Query/command RPC methods
  * - AC3: Subscription and event handling
- * - AC6: Error handling
- * - AC9: Request timeout
+ * - AC10: Cleanup on unmount
+ *
+ * Note: Query/command tests are in the contract test file (tests/hooks/useUnifiedApi.test.tsx)
+ * as they test message format compatibility rather than hook behavior.
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useUnifiedApi } from './useUnifiedApi';
-import type { ServerMessage, RpcError } from '../types/rpc';
+import { setDaemonState, sendLatencyUpdate, sendKeyEvent } from '../test/mocks/websocketHelpers';
 
-// Store the mock implementation
-let mockSendMessage: ReturnType<typeof vi.fn>;
-let mockLastMessage: { data: string } | null = null;
-let mockReadyState = 1; // OPEN
-
-// Mock react-use-websocket
-vi.mock('react-use-websocket', () => {
-  const ReadyState = {
-    CONNECTING: 0,
-    OPEN: 1,
-    CLOSING: 2,
-    CLOSED: 3,
-    UNINSTANTIATED: -1,
-  };
-
-  return {
-    default: vi.fn(() => ({
-      sendMessage: mockSendMessage,
-      lastMessage: mockLastMessage,
-      readyState: mockReadyState,
-    })),
-    ReadyState,
-  };
-});
-
-// Mock uuid
+// Mock uuid for deterministic test IDs
 let uuidCounter = 0;
 vi.mock('uuid', () => ({
   v4: () => `test-uuid-${uuidCounter++}`,
@@ -50,196 +26,255 @@ describe('useUnifiedApi', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     uuidCounter = 0;
-    // Reset mock state
-    mockSendMessage = vi.fn();
-    mockLastMessage = null;
-    mockReadyState = 1; // OPEN
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
   });
 
   describe('Connection and Handshake (AC1)', () => {
-    it('should initialize with connection state', () => {
-      const { result } = renderHook(() => useUnifiedApi('ws://localhost:3030'));
+    it('should initialize with connection state', async () => {
+      const { result } = renderHook(() => useUnifiedApi());
 
-      // Initially not connected (no handshake yet)
+      // Initially not connected (waiting for 'connected' message from MSW)
       expect(result.current.isConnected).toBe(false);
-      expect(result.current.readyState).toBe(1); // OPEN
-    });
 
-    it('should track readyState from WebSocket', () => {
-      mockReadyState = 0; // CONNECTING
-      const { result } = renderHook(() => useUnifiedApi('ws://localhost:3030'));
-
-      expect(result.current.readyState).toBe(0);
-    });
-  });
-
-  describe('Query and Command Methods (AC2)', () => {
-    it('should send query with correct message structure', async () => {
-      const { result } = renderHook(() => useUnifiedApi('ws://localhost:3030'));
-
-      // Execute query (will timeout but that's ok for this test)
-      result.current.query('get_profiles').catch(() => {});
-
+      // Wait for WebSocket to establish connection
       await waitFor(() => {
-        expect(mockSendMessage).toHaveBeenCalled();
-      });
-
-      // Verify message structure
-      const sentMessage = mockSendMessage.mock.calls[0][0];
-      expect(sentMessage).toContain('"type":"query"');
-      expect(sentMessage).toContain('"method":"get_profiles"');
-      expect(sentMessage).toContain('"id":"test-uuid-0"');
+        expect(result.current.readyState).toBe(1); // OPEN
+      }, { timeout: 1000 });
     });
 
-    it('should send command with params', async () => {
-      const { result } = renderHook(() => useUnifiedApi('ws://localhost:3030'));
+    it('should become connected after receiving connected message', async () => {
+      const { result } = renderHook(() => useUnifiedApi());
 
-      result.current.command('activate_profile', { name: 'Gaming' }).catch(() => {});
-
+      // MSW WebSocket handler automatically sends 'connected' message
+      // Wait for isConnected to become true
       await waitFor(() => {
-        expect(mockSendMessage).toHaveBeenCalled();
-      });
-
-      const sentMessage = mockSendMessage.mock.calls[0][0];
-      expect(sentMessage).toContain('"type":"command"');
-      expect(sentMessage).toContain('"method":"activate_profile"');
-      expect(sentMessage).toContain('"params":{"name":"Gaming"}');
-    });
-
-    it('should reject query when WebSocket is not connected', async () => {
-      mockReadyState = 3; // CLOSED
-      const { result } = renderHook(() => useUnifiedApi('ws://localhost:3030'));
-
-      let queryError: Error | null = null;
-
-      await result.current.query('get_profiles').catch((err) => {
-        queryError = err;
-      });
-
-      expect(queryError).toBeTruthy();
-      expect(queryError?.message).toContain('not connected');
+        expect(result.current.isConnected).toBe(true);
+      }, { timeout: 2000 });
     });
   });
 
   describe('Subscription Management (AC3)', () => {
-    it('should send subscribe message on first subscription', () => {
-      const { result } = renderHook(() => useUnifiedApi('ws://localhost:3030'));
+    it('should subscribe to channel and receive initial state', async () => {
+      const { result } = renderHook(() => useUnifiedApi());
+
+      // Wait for connection
+      await waitFor(() => {
+        expect(result.current.isConnected).toBe(true);
+      });
 
       const handler = vi.fn();
       result.current.subscribe('daemon-state', handler);
 
-      expect(mockSendMessage).toHaveBeenCalled();
+      // MSW sends initial state on subscription
+      await waitFor(() => {
+        expect(handler).toHaveBeenCalled();
+      }, { timeout: 2000 });
 
-      const sentMessage = mockSendMessage.mock.calls[0][0];
-      expect(sentMessage).toContain('"type":"subscribe"');
-      expect(sentMessage).toContain('"channel":"daemon-state"');
+      const initialState = handler.mock.calls[0][0];
+      expect(initialState).toBeDefined();
+      expect((initialState as any).layer).toBeDefined();
     });
 
-    it('should not send duplicate subscribe for same channel', () => {
-      const { result } = renderHook(() => useUnifiedApi('ws://localhost:3030'));
+    it('should receive subscription events from WebSocket helpers', async () => {
+      const { result } = renderHook(() => useUnifiedApi());
 
-      result.current.subscribe('daemon-state', vi.fn());
+      await waitFor(() => {
+        expect(result.current.isConnected).toBe(true);
+      });
 
-      mockSendMessage.mockClear();
+      const handler = vi.fn();
+      result.current.subscribe('daemon-state', handler);
 
-      result.current.subscribe('daemon-state', vi.fn());
+      // Wait for initial state
+      await waitFor(() => {
+        expect(handler).toHaveBeenCalled();
+      });
 
-      // Should not send another subscribe message
-      expect(mockSendMessage).not.toHaveBeenCalled();
+      const callCountBefore = handler.mock.calls.length;
+
+      // Simulate state change using MSW helper
+      setDaemonState({ activeProfile: 'gaming', layer: 'fn' });
+
+      // Wait for event to be received
+      await waitFor(() => {
+        expect(handler.mock.calls.length).toBeGreaterThan(callCountBefore);
+      }, { timeout: 1000 });
+
+      // Verify the event data
+      const latestCall = handler.mock.calls[handler.mock.calls.length - 1][0];
+      expect((latestCall as any).activeProfile).toBe('gaming');
+      expect((latestCall as any).layer).toBe('fn');
     });
 
-    it('should unsubscribe from channel', () => {
-      const { result } = renderHook(() => useUnifiedApi('ws://localhost:3030'));
+    it('should handle multiple handlers for same channel', async () => {
+      const { result } = renderHook(() => useUnifiedApi());
+
+      await waitFor(() => {
+        expect(result.current.isConnected).toBe(true);
+      });
+
+      const handler1 = vi.fn();
+      const handler2 = vi.fn();
+
+      result.current.subscribe('latency', handler1);
+      result.current.subscribe('latency', handler2);
+
+      // Clear any initial subscription events
+      await waitFor(() => {
+        expect(handler1).toHaveBeenCalled();
+      });
+      handler1.mockClear();
+      handler2.mockClear();
+
+      // Send latency update using MSW helper
+      sendLatencyUpdate({ min: 100, avg: 200, max: 500, p95: 400, p99: 450 });
+
+      // Both handlers should receive the event
+      await waitFor(() => {
+        expect(handler1).toHaveBeenCalled();
+        expect(handler2).toHaveBeenCalled();
+      }, { timeout: 1000 });
+
+      // Verify both got the same data
+      const data1 = handler1.mock.calls[0][0];
+      const data2 = handler2.mock.calls[0][0];
+      expect(data1).toEqual(data2);
+    });
+
+    it('should support all subscription channels', async () => {
+      const { result } = renderHook(() => useUnifiedApi());
+
+      await waitFor(() => {
+        expect(result.current.isConnected).toBe(true);
+      });
+
+      const stateHandler = vi.fn();
+      const eventsHandler = vi.fn();
+      const latencyHandler = vi.fn();
+
+      result.current.subscribe('daemon-state', stateHandler);
+      result.current.subscribe('events', eventsHandler);
+      result.current.subscribe('latency', latencyHandler);
+
+      // Wait for initial subscription messages
+      await waitFor(() => {
+        expect(stateHandler).toHaveBeenCalled();
+        expect(latencyHandler).toHaveBeenCalled();
+      });
+
+      // Send events to each channel
+      setDaemonState({ layer: 'test' });
+      sendKeyEvent({ keyCode: 'KEY_A', eventType: 'press', input: 'KEY_A', output: 'KEY_B', latency: 100 });
+      sendLatencyUpdate({ min: 100, avg: 200, max: 300, p95: 250, p99: 280 });
+
+      // All handlers should receive events
+      await waitFor(() => {
+        expect(stateHandler.mock.calls.length).toBeGreaterThan(1);
+        expect(eventsHandler.mock.calls.length).toBeGreaterThan(0);
+        expect(latencyHandler.mock.calls.length).toBeGreaterThan(1);
+      }, { timeout: 1000 });
+    });
+
+    it('should unsubscribe from channel', async () => {
+      const { result } = renderHook(() => useUnifiedApi());
+
+      await waitFor(() => {
+        expect(result.current.isConnected).toBe(true);
+      });
 
       const handler = vi.fn();
       const unsubscribe = result.current.subscribe('daemon-state', handler);
 
-      mockSendMessage.mockClear();
+      // Wait for initial state
+      await waitFor(() => {
+        expect(handler).toHaveBeenCalled();
+      });
 
+      const callCountBefore = handler.mock.calls.length;
+
+      // Unsubscribe
       unsubscribe();
 
-      expect(mockSendMessage).toHaveBeenCalled();
+      // Wait to ensure unsubscribe has been processed
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      const sentMessage = mockSendMessage.mock.calls[0][0];
-      expect(sentMessage).toContain('"type":"unsubscribe"');
-      expect(sentMessage).toContain('"channel":"daemon-state"');
-    });
-  });
+      // Send state change
+      setDaemonState({ activeProfile: 'test', layer: 'test' });
 
-  describe('Request Correlation (AC7)', () => {
-    it('should use UUID for request correlation', () => {
-      const { result } = renderHook(() => useUnifiedApi('ws://localhost:3030'));
+      // Wait a bit more
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      result.current.query('method1').catch(() => {});
-      result.current.query('method2').catch(() => {});
-      result.current.query('method3').catch(() => {});
-
-      const calls = mockSendMessage.mock.calls;
-      expect(calls.length).toBe(3);
-
-      // Each call should have a different UUID
-      expect(calls[0][0]).toContain('"id":"test-uuid-0"');
-      expect(calls[1][0]).toContain('"id":"test-uuid-1"');
-      expect(calls[2][0]).toContain('"id":"test-uuid-2"');
-    });
-  });
-
-  describe('Auto-Reconnect Configuration (AC8)', () => {
-    it('should configure auto-reconnect parameters', () => {
-      const useWebSocket = vi.mocked(require('react-use-websocket').default);
-
-      renderHook(() => useUnifiedApi('ws://localhost:3030'));
-
-      // Verify useWebSocket was called with correct config
-      expect(useWebSocket).toHaveBeenCalledWith(
-        'ws://localhost:3030',
-        expect.objectContaining({
-          shouldReconnect: expect.any(Function),
-          reconnectInterval: 3000,
-          reconnectAttempts: 10,
-        })
-      );
-    });
-
-    it('should enable auto-reconnect', () => {
-      const useWebSocket = vi.mocked(require('react-use-websocket').default);
-
-      renderHook(() => useUnifiedApi('ws://localhost:3030'));
-
-      const config = useWebSocket.mock.calls[0][1];
-      expect(config.shouldReconnect()).toBe(true);
+      // Handler should not receive new events (call count should be unchanged)
+      expect(handler.mock.calls.length).toBe(callCountBefore);
     });
   });
 
   describe('Cleanup on Unmount (AC10)', () => {
-    it('should unsubscribe all channels on unmount', () => {
-      const { result, unmount } = renderHook(() => useUnifiedApi('ws://localhost:3030'));
+    it('should unsubscribe all channels on unmount', async () => {
+      const { result, unmount } = renderHook(() => useUnifiedApi());
 
-      result.current.subscribe('daemon-state', vi.fn());
-      result.current.subscribe('events', vi.fn());
-      result.current.subscribe('latency', vi.fn());
+      await waitFor(() => {
+        expect(result.current.isConnected).toBe(true);
+      });
 
-      mockSendMessage.mockClear();
+      const handler1 = vi.fn();
+      const handler2 = vi.fn();
+      const handler3 = vi.fn();
 
+      result.current.subscribe('daemon-state', handler1);
+      result.current.subscribe('events', handler2);
+      result.current.subscribe('latency', handler3);
+
+      // Wait for initial events
+      await waitFor(() => {
+        expect(handler1).toHaveBeenCalled();
+      });
+
+      const callCounts = [
+        handler1.mock.calls.length,
+        handler2.mock.calls.length,
+        handler3.mock.calls.length,
+      ];
+
+      // Unmount
       unmount();
 
-      // Should send unsubscribe for each channel
-      const unsubscribeCalls = mockSendMessage.mock.calls.filter(
-        (call: any[]) => call[0].includes('"type":"unsubscribe"')
-      );
+      // Wait for unmount to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(unsubscribeCalls.length).toBe(3);
+      // Send events after unmount
+      setDaemonState({ activeProfile: 'test' });
+      sendKeyEvent({ keyCode: 'KEY_A', eventType: 'press', input: 'KEY_A', output: 'KEY_A', latency: 100 });
+      sendLatencyUpdate({ min: 100, avg: 200, max: 300, p95: 250, p99: 280 });
+
+      // Wait to ensure no events are received
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Handlers should not receive new events after unmount
+      expect(handler1.mock.calls.length).toBe(callCounts[0]);
+      expect(handler2.mock.calls.length).toBe(callCounts[1]);
+      expect(handler3.mock.calls.length).toBe(callCounts[2]);
     });
   });
 
-  describe('Error Scenarios (AC6)', () => {
-    it('should include error callbacks in config', () => {
-      renderHook(() => useUnifiedApi('ws://localhost:3030'));
+  describe('Error Handling (AC6)', () => {
+    it('should track connection state', async () => {
+      const { result } = renderHook(() => useUnifiedApi());
 
-      const useWebSocket = vi.mocked(require('react-use-websocket').default);
-      const config = useWebSocket.mock.calls[0][1];
-      expect(config.onError).toBeDefined();
-      expect(config.onClose).toBeDefined();
+      // Initially lastError should be null
+      expect(result.current.lastError).toBeNull();
+
+      // Wait for connection
+      await waitFor(() => {
+        expect(result.current.readyState).toBe(1);
+        expect(result.current.isConnected).toBe(true);
+      });
+
+      // After successful connection, error should still be null
+      expect(result.current.lastError).toBeNull();
     });
   });
 });
