@@ -7,11 +7,7 @@ module.exports = {
       jsx: true,
     },
   },
-  extends: [
-    'eslint:recommended',
-    'plugin:@typescript-eslint/recommended',
-    'plugin:react-hooks/recommended',
-  ],
+  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'plugin:react-hooks/recommended', 'plugin:storybook/recommended'],
   plugins: ['@typescript-eslint', 'react-hooks'],
   rules: {
     'no-console': ['error', { allow: ['warn', 'error'] }],

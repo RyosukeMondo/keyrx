@@ -31,3 +31,6 @@ dist-ssr
 playwright-report/
 test-results/
 .lighthouseci/
+
+*storybook.log
+storybook-static
