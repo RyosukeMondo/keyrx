@@ -63,8 +63,8 @@
 
 ### 2.1. Create Base Vitest Configuration
 
-- [ ] 2.1.1. Create base Vitest config
-  - Files: `keyrx_ui/vitest.config.ts` (modify existing)
+- [x] 2.1.1. Create base Vitest config
+  - Files: `keyrx_ui/vitest.config.base.ts` (NEW), `keyrx_ui/vite.config.ts` (updated to use vitest/config)
   - Extract shared test configuration from vite.config.ts
   - Define base test settings (globals, environment, setupFiles, coverage)
   - Export config for reuse by unit and integration configs
