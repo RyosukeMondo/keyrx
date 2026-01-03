@@ -26,26 +26,38 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
         Some(file) => {
             let mime = mime_guess::from_path(path).first_or_octet_stream();
 
-            Response::builder()
-                .status(StatusCode::OK)
-                .header(header::CONTENT_TYPE, mime.as_ref())
-                .body(Body::from(file.contents()))
-                .unwrap()
+            // SAFETY: Response::builder cannot fail with valid StatusCode::OK and valid CONTENT_TYPE header
+            #[allow(clippy::unwrap_used)]
+            {
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .header(header::CONTENT_TYPE, mime.as_ref())
+                    .body(Body::from(file.contents()))
+                    .unwrap()
+            }
         }
         None => {
             // If file not found, serve index.html for client-side routing
             // This handles React Router routes like /devices, /profiles, etc.
             if let Some(index) = UI_DIR.get_file("index.html") {
-                Response::builder()
-                    .status(StatusCode::OK)
-                    .header(header::CONTENT_TYPE, "text/html")
-                    .body(Body::from(index.contents()))
-                    .unwrap()
+                // SAFETY: Response::builder cannot fail with valid StatusCode::OK and valid CONTENT_TYPE header
+                #[allow(clippy::unwrap_used)]
+                {
+                    Response::builder()
+                        .status(StatusCode::OK)
+                        .header(header::CONTENT_TYPE, "text/html")
+                        .body(Body::from(index.contents()))
+                        .unwrap()
+                }
             } else {
-                Response::builder()
-                    .status(StatusCode::NOT_FOUND)
-                    .body(Body::from("404 Not Found"))
-                    .unwrap()
+                // SAFETY: Response::builder cannot fail with valid StatusCode::NOT_FOUND and no custom headers
+                #[allow(clippy::unwrap_used)]
+                {
+                    Response::builder()
+                        .status(StatusCode::NOT_FOUND)
+                        .body(Body::from("404 Not Found"))
+                        .unwrap()
+                }
             }
         }
     }

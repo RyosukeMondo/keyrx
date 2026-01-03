@@ -113,6 +113,8 @@ fn start_conditional_block(
     state: &Arc<Mutex<ParserState>>,
     condition: Condition,
 ) -> Result<(), Box<EvalAltResult>> {
+    // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
+    #[allow(clippy::unwrap_used)]
     let mut state = state.lock().unwrap();
     if state.current_device.is_none() {
         return Err("Conditional blocks must be called inside a device() block".into());
@@ -126,6 +128,8 @@ fn start_conditional_block(
 
 /// End a conditional block - pop the stack and create the Conditional mapping
 fn end_conditional_block(state: &Arc<Mutex<ParserState>>) -> Result<(), Box<EvalAltResult>> {
+    // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
+    #[allow(clippy::unwrap_used)]
     let mut state = state.lock().unwrap();
 
     let (condition, mappings) = state

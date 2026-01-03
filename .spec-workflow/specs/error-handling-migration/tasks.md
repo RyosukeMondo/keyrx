@@ -120,7 +120,7 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Real-time Systems Developer with expertise in WebSocket protocols and error handling | Task: Add error handling to WebSocket implementation in ws.rs and ws_rpc.rs following requirements 5.1-5.5. Replace unwrap() in message parsing with proper error handling. Log errors instead of panicking. Send error responses to clients for invalid requests. Target: eliminate 20-30 unwraps. | Restrictions: Do not disconnect clients on recoverable errors, ensure WebSocket protocol compliance, maintain real-time performance | Success: WebSocket implementation handles errors gracefully, errors logged with context, clients receive error messages. Edit tasks.md [-] → [x], log with artifacts (error handling logic, logging calls, unwraps eliminated)_
 
-- [ ] 13. Update clippy lints configuration
+- [x] 13. Update clippy lints configuration
   - Files: Cargo.toml (workspace section)
   - Change unwrap_used from "warn" to "deny" in workspace.lints.clippy
   - Change expect_used from "warn" to "deny"

@@ -1,5 +1,8 @@
 //! Integration tests for `keyrx config` CLI command.
 
+#![allow(deprecated)] // Allow deprecated Command::cargo_bin in tests
+#![allow(clippy::needless_borrows_for_generic_args)] // Allow array borrows in tests for clarity
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;

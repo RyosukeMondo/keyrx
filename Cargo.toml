@@ -103,9 +103,9 @@ panic = "abort"       # Reduce binary size by aborting on panic
 
 # Workspace-wide lints for code quality
 [workspace.lints.clippy]
-# Unwrap handling - start with warn, upgrade to deny later
-unwrap_used = "warn"        # Prefer proper error handling over unwrap()
-expect_used = "warn"        # Prefer Result propagation over expect()
+# Unwrap handling - enforced at deny level after error-handling-migration
+unwrap_used = "deny"        # Prefer proper error handling over unwrap()
+expect_used = "deny"        # Prefer Result propagation over expect()
 
 # Panic prevention
 panic = "warn"              # Avoid panics in production code

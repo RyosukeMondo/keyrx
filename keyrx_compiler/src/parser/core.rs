@@ -69,7 +69,11 @@ impl Parser {
 
     pub fn parse_script(&mut self, path: &Path) -> Result<ConfigRoot, ParseError> {
         // Update the source file path for import resolution
-        *self.source_file.lock().unwrap() = path.to_path_buf();
+        // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
+        #[allow(clippy::unwrap_used)]
+        {
+            *self.source_file.lock().unwrap() = path.to_path_buf();
+        }
 
         let script = std::fs::read_to_string(path).map_err(|_e| ParseError::ImportNotFound {
             path: path.to_path_buf(),
@@ -119,6 +123,8 @@ impl Parser {
         source_path: &Path,
         source_bytes: &[u8],
     ) -> Result<ConfigRoot, ParseError> {
+        // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
+        #[allow(clippy::unwrap_used)]
         let state = self.state.lock().unwrap();
         if state.current_device.is_some() {
             return Err(ParseError::SyntaxError {
@@ -140,10 +146,14 @@ impl Parser {
         let compilation_timestamp = if std::env::var("KEYRX_DETERMINISTIC_BUILD").is_ok() {
             0
         } else {
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs()
+            // SAFETY: SystemTime is always after UNIX_EPOCH on modern systems (post-1970)
+            #[allow(clippy::unwrap_used)]
+            {
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+            }
         };
 
         let metadata = Metadata {

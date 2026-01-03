@@ -82,6 +82,8 @@ pub fn handle_hash(file: &Path, verify: bool) -> Result<(), HashError> {
     }
 
     // Extract embedded hash from bytes 8-40 (32 bytes)
+    // SAFETY: Slice bounds checked at line 77: file size >= 48 bytes guarantees [8..40] is valid
+    #[allow(clippy::expect_used)]
     let embedded_hash: [u8; 32] = bytes[8..40]
         .try_into()
         .expect("Hash slice is exactly 32 bytes");

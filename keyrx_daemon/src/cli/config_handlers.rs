@@ -79,7 +79,11 @@ pub fn handle_get_key(
             layer,
             mapping,
         };
-        println!("{}", serde_json::to_string(&output).unwrap());
+        // SAFETY: serde_json::to_string cannot fail on simple struct with derived Serialize
+        #[allow(clippy::unwrap_used)]
+        {
+            println!("{}", serde_json::to_string(&output).unwrap());
+        }
     } else if let Some(m) = mapping {
         println!("{}", m);
     } else {
@@ -119,7 +123,11 @@ pub fn handle_validate(
                     profile: profile_name,
                     errors: vec![],
                 };
-                println!("{}", serde_json::to_string(&output).unwrap());
+                // SAFETY: serde_json::to_string cannot fail on simple struct with derived Serialize
+                #[allow(clippy::unwrap_used)]
+                {
+                    println!("{}", serde_json::to_string(&output).unwrap());
+                }
             } else {
                 println!("✓ Profile '{}' is valid", profile_name);
             }
@@ -133,7 +141,11 @@ pub fn handle_validate(
                     profile: profile_name,
                     errors: vec![error_msg],
                 };
-                println!("{}", serde_json::to_string(&output).unwrap());
+                // SAFETY: serde_json::to_string cannot fail on simple struct with derived Serialize
+                #[allow(clippy::unwrap_used)]
+                {
+                    println!("{}", serde_json::to_string(&output).unwrap());
+                }
             } else {
                 println!("✗ Profile '{}' validation failed:", profile_name);
                 println!("  {}", e);
@@ -167,7 +179,21 @@ pub fn handle_show(
         }
     };
 
-    let content = std::fs::read_to_string(&profile_meta.rhai_path).unwrap();
+    let content = match std::fs::read_to_string(&profile_meta.rhai_path) {
+        Ok(content) => content,
+        Err(e) => {
+            output_error(
+                &format!(
+                    "Failed to read profile file '{}': {}",
+                    profile_meta.rhai_path.display(),
+                    e
+                ),
+                1,
+                json,
+            );
+            return Err(1);
+        }
+    };
     let device_id = extract_device_id(&content).unwrap_or_else(|| "*".to_string());
     let layers = extract_layer_list(&content);
     let mapping_count = count_mappings(&content);
@@ -179,7 +205,11 @@ pub fn handle_show(
             layers,
             mapping_count,
         };
-        println!("{}", serde_json::to_string(&output).unwrap());
+        // SAFETY: serde_json::to_string cannot fail on simple struct with derived Serialize
+        #[allow(clippy::unwrap_used)]
+        {
+            println!("{}", serde_json::to_string(&output).unwrap());
+        }
     } else {
         println!("Profile: {}", profile_name);
         println!("Device ID: {}", device_id);
@@ -239,7 +269,11 @@ pub fn handle_diff(
             profile2,
             differences,
         };
-        println!("{}", serde_json::to_string(&output).unwrap());
+        // SAFETY: serde_json::to_string cannot fail on simple struct with derived Serialize
+        #[allow(clippy::unwrap_used)]
+        {
+            println!("{}", serde_json::to_string(&output).unwrap());
+        }
     } else if differences.is_empty() {
         println!("No differences between '{}' and '{}'", profile1, profile2);
     } else {

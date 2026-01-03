@@ -29,6 +29,8 @@ pub fn register_import_function(
         "load",
         move |import_path: ImmutableString| -> Result<(), Box<EvalAltResult>> {
             // Lock the source file path to get the current file's directory
+            // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
+            #[allow(clippy::unwrap_used)]
             let source_path = import_source.lock().unwrap();
             let current_dir = source_path.parent().ok_or_else(|| {
                 Box::new(EvalAltResult::ErrorRuntime(

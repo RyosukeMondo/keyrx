@@ -13,6 +13,8 @@ pub fn register_map_function(engine: &mut Engine, state: Arc<Mutex<ParserState>>
     engine.register_fn(
         "map",
         move |from: &str, to: &str| -> Result<(), Box<EvalAltResult>> {
+            // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
+            #[allow(clippy::unwrap_used)]
             let mut state = state_clone.lock().unwrap();
             let from_key =
                 parse_physical_key(from).map_err(|e| format!("Invalid 'from' key: {}", e))?;
@@ -64,6 +66,8 @@ pub fn register_map_function(engine: &mut Engine, state: Arc<Mutex<ParserState>>
     engine.register_fn(
         "map",
         move |from: &str, to: ModifiedKey| -> Result<(), Box<EvalAltResult>> {
+            // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
+            #[allow(clippy::unwrap_used)]
             let mut state = state_clone.lock().unwrap();
             let from_key =
                 parse_physical_key(from).map_err(|e| format!("Invalid 'from' key: {}", e))?;

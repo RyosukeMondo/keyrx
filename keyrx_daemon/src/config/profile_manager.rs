@@ -627,10 +627,14 @@ layer("lower", #{
     // Test-only methods (available for integration tests)
     #[doc(hidden)]
     pub fn set_active_for_testing(&mut self, name: String) {
-        *self
-            .active_profile
-            .write()
-            .expect("Test helper: RwLock poisoned") = Some(name);
+        // SAFETY: Test-only helper method - RwLock cannot be poisoned in test context
+        #[allow(clippy::expect_used)]
+        {
+            *self
+                .active_profile
+                .write()
+                .expect("Test helper: RwLock poisoned") = Some(name);
+        }
     }
 
     #[doc(hidden)]

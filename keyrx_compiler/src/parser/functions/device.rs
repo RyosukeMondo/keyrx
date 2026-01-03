@@ -9,6 +9,8 @@ pub fn register_device_function(engine: &mut Engine, state: Arc<Mutex<ParserStat
     engine.register_fn(
         "device_start",
         move |pattern: &str| -> Result<(), Box<EvalAltResult>> {
+            // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
+            #[allow(clippy::unwrap_used)]
             let mut state = state_clone_start.lock().unwrap();
 
             if let Some(device) = state.current_device.take() {
@@ -28,6 +30,8 @@ pub fn register_device_function(engine: &mut Engine, state: Arc<Mutex<ParserStat
 
     let state_clone_end = Arc::clone(&state);
     engine.register_fn("device_end", move || -> Result<(), Box<EvalAltResult>> {
+        // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
+        #[allow(clippy::unwrap_used)]
         let mut state = state_clone_end.lock().unwrap();
 
         if let Some(device) = state.current_device.take() {

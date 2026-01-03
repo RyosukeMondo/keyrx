@@ -229,6 +229,8 @@ impl RhaiGenerator {
                 return Err(GeneratorError::LayerNotFound(layer.to_string()));
             }
 
+            // SAFETY: Layer existence verified at line 228: contains_key check guarantees get_mut succeeds
+            #[allow(clippy::unwrap_used)]
             let layer_lines = self.layers.get_mut(layer).unwrap();
             layer_lines.retain(|line| !Self::is_mapping_for_key(line, key));
             layer_lines.push(mapping_line);
@@ -249,6 +251,8 @@ impl RhaiGenerator {
                 return Err(GeneratorError::LayerNotFound(layer.to_string()));
             }
 
+            // SAFETY: Layer existence verified at line 250: contains_key check guarantees get_mut succeeds
+            #[allow(clippy::unwrap_used)]
             let layer_lines = self.layers.get_mut(layer).unwrap();
             layer_lines.retain(|line| !Self::is_mapping_for_key(line, key));
         }
@@ -288,6 +292,8 @@ impl RhaiGenerator {
         }
 
         // Move the layer
+        // SAFETY: Layer existence verified at line 286: contains_key check guarantees remove succeeds
+        #[allow(clippy::unwrap_used)]
         let layer_lines = self.layers.remove(layer_id).unwrap();
         self.layers.insert(new_id.to_string(), layer_lines);
 

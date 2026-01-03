@@ -222,6 +222,8 @@ fn handle_delete(
         std::process::exit(1);
     }
 
+    // SAFETY: layout is guaranteed to be Some() here because we exit above if it's None
+    #[allow(clippy::unwrap_used)]
     let layout = layout.unwrap();
 
     // Check if it's a builtin layout

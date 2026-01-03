@@ -3,6 +3,8 @@
 //! These tests verify the complete RPC API implementation using real WebSocket
 //! connections to ensure all acceptance criteria are met.
 
+#![allow(clippy::needless_borrow)] // Allow needless borrows in tests for clarity
+
 use futures_util::{SinkExt, StreamExt};
 use keyrx_daemon::web::rpc_types::{ServerMessage, METHOD_NOT_FOUND, PARSE_ERROR};
 use serde_json::json;

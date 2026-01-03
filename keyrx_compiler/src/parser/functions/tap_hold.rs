@@ -14,6 +14,8 @@ pub fn register_tap_hold_function(engine: &mut Engine, state: Arc<Mutex<ParserSt
               hold: &str,
               threshold_ms: i64|
               -> Result<(), Box<EvalAltResult>> {
+            // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
+            #[allow(clippy::unwrap_used)]
             let mut state = state_clone.lock().unwrap();
             let from_key = parse_physical_key(key).map_err(|e| format!("Invalid key: {}", e))?;
 
