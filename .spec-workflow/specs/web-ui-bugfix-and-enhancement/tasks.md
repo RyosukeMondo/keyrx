@@ -186,7 +186,7 @@
 
 ### Task 17: Write integration tests for drag-and-drop flow
 
-- [ ] 17. Write integration tests for drag-and-drop user flow
+- [-] 17. Write integration tests for drag-and-drop user flow
   - File: `keyrx_ui/tests/integration/ConfigPage.integration.test.tsx` (NEW)
   - Purpose: Test complete drag-and-drop workflow from palette to keyboard to API save
   - _Leverage: `@testing-library/react`, `msw` for API mocking, existing integration test patterns_
