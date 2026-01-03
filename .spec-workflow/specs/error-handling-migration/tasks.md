@@ -169,7 +169,7 @@
   - _Requirements: 7.1, 7.2, 7.3_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer with expertise in Rust testing and error handling verification | Task: Update all affected unit tests to handle Result return types following requirements 7.1-7.3. Change assertions from direct values to unwrapped Results. Add new tests for error scenarios. Verify error messages are correct. Ensure coverage stays ≥80%. | Restrictions: Do not reduce test coverage, test both success and error paths, maintain test independence | Success: All tests pass with updated signatures, error scenarios tested, coverage ≥80%. Edit tasks.md [-] → [x], log with artifacts (test files updated, new error tests added, coverage metrics)_
 
-- [ ] 18. Integration testing for error propagation
+- [x] 18. Integration testing for error propagation
   - Files: keyrx_daemon/tests/ (add new integration tests)
   - Write integration tests that verify errors propagate correctly through full stack
   - Test CLI → Service → Platform error flow
