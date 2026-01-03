@@ -45,11 +45,17 @@ impl TestApp {
     /// }
     /// ```
     pub async fn new() -> Self {
-        // Create isolated config directory
-        let config_dir = TempDir::new().expect("Failed to create temp directory");
+        // Create isolated config directory with proper structure
+        // We need HOME/.config/keyrx structure because device API uses get_config_dir()
+        let temp_home = TempDir::new().expect("Failed to create temp directory");
+        let config_path = temp_home.path().join(".config").join("keyrx");
+        std::fs::create_dir_all(&config_path).expect("Failed to create config directory");
+
+        // Set HOME environment variable so get_config_dir() works correctly
+        std::env::set_var("HOME", temp_home.path());
 
         // Create services with isolated config directory
-        let config_path = config_dir.path().to_path_buf();
+        let config_dir = temp_home;
         let profile_manager = Arc::new(
             keyrx_daemon::config::ProfileManager::new(config_path.clone())
                 .expect("Failed to create ProfileManager"),
@@ -101,9 +107,9 @@ impl TestApp {
         }
     }
 
-    /// Returns the path to the isolated config directory.
+    /// Returns the path to the isolated config directory (HOME/.config/keyrx).
     pub fn config_path(&self) -> PathBuf {
-        self.config_dir.path().to_path_buf()
+        self.config_dir.path().join(".config").join("keyrx")
     }
 
     /// Sends a GET request to the specified path.
@@ -139,6 +145,7 @@ impl TestApp {
     /// let response = app.post("/api/profiles", &body).await;
     /// assert_eq!(response.status(), 201);
     /// ```
+    #[allow(dead_code)]
     pub async fn post<T: serde::Serialize>(&self, path: &str, body: &T) -> reqwest::Response {
         let url = format!("{}{}", self.base_url, path);
         self.client
@@ -163,6 +170,7 @@ impl TestApp {
     /// let response = app.patch("/api/devices/ABC123", &body).await;
     /// assert_eq!(response.status(), 200);
     /// ```
+    #[allow(dead_code)]
     pub async fn patch<T: serde::Serialize>(&self, path: &str, body: &T) -> reqwest::Response {
         let url = format!("{}{}", self.base_url, path);
         self.client
@@ -171,6 +179,31 @@ impl TestApp {
             .send()
             .await
             .expect("Failed to send PATCH request")
+    }
+
+    /// Sends a PUT request with JSON body to the specified path.
+    ///
+    /// # Arguments
+    /// * `path` - URL path (e.g., "/api/devices/ABC123/layout")
+    /// * `body` - JSON-serializable body
+    ///
+    /// # Example
+    /// ```no_run
+    /// use serde_json::json;
+    ///
+    /// let body = json!({"layout": "ansi"});
+    /// let response = app.put("/api/devices/ABC123/layout", &body).await;
+    /// assert_eq!(response.status(), 200);
+    /// ```
+    #[allow(dead_code)]
+    pub async fn put<T: serde::Serialize>(&self, path: &str, body: &T) -> reqwest::Response {
+        let url = format!("{}{}", self.base_url, path);
+        self.client
+            .put(&url)
+            .json(body)
+            .send()
+            .await
+            .expect("Failed to send PUT request")
     }
 
     /// Sends a DELETE request to the specified path.
