@@ -3,19 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from './Card';
 import { Button } from './Button';
 import { LoadingSkeleton } from './LoadingSkeleton';
-
-interface Device {
-  id: string;
-  name: string;
-  identifier: string;
-  scope: 'global' | 'device-specific';
-  layout: string;
-  active: boolean;
-}
+import { ErrorState } from './ErrorState';
+import { useDevices } from '../hooks/useDevices';
+import type { DeviceEntry } from '../types';
 
 interface DeviceListCardProps {
-  devices?: Device[];
-  loading?: boolean;
   className?: string;
 }
 
@@ -30,17 +22,39 @@ interface DeviceListCardProps {
  * - Active status indicator
  * - Manage Devices button to navigate to devices page
  *
+ * Fetches device data automatically using useDevices hook.
+ * Shows loading skeleton while fetching, error state with retry on failure.
+ *
  * Used on: HomePage (dashboard)
  * Design: From design.md Layout 1 - Connected Devices section
  */
 export const DeviceListCard: React.FC<DeviceListCardProps> = ({
-  devices = [],
-  loading = false,
   className = '',
 }) => {
   const navigate = useNavigate();
+  const { data: devices = [], isLoading, error, refetch } = useDevices();
 
-  if (loading) {
+  // Error state with retry
+  if (error) {
+    return (
+      <Card className={className}>
+        <div className="flex flex-col gap-md">
+          <h2 className="text-lg font-semibold text-slate-100">
+            Connected Devices
+          </h2>
+          <ErrorState
+            title="Failed to load devices"
+            message={error instanceof Error ? error.message : 'An error occurred while fetching devices'}
+            onRetry={() => refetch()}
+            retryLabel="Retry"
+          />
+        </div>
+      </Card>
+    );
+  }
+
+  // Loading state
+  if (isLoading) {
     return (
       <Card className={className}>
         <div className="flex flex-col gap-md">
@@ -57,6 +71,7 @@ export const DeviceListCard: React.FC<DeviceListCardProps> = ({
     );
   }
 
+  // Loaded state
   return (
     <Card className={className}>
       <div className="flex flex-col gap-md">
@@ -107,16 +122,16 @@ export const DeviceListCard: React.FC<DeviceListCardProps> = ({
                         )}
                       </div>
                       <span className="text-xs font-mono text-slate-500">
-                        {device.identifier}
+                        {device.serial || device.path}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-sm flex flex-wrap items-center gap-md text-xs text-slate-400">
-                  <span>Scope: {device.scope === 'global' ? 'Global' : 'Device-Specific'}</span>
+                  <span>Scope: {device.scope === 'global' ? 'Global' : device.scope === 'device-specific' ? 'Device-Specific' : 'Not Set'}</span>
                   <span>•</span>
-                  <span>Layout: {device.layout}</span>
+                  <span>Layout: {device.layout || 'Not Set'}</span>
                 </div>
               </div>
             ))}

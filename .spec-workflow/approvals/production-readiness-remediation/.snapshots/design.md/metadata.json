@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/production-readiness-remediation/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-01-02T14:52:56.308Z",
       "trigger": "initial",
+      "approvalId": "approval_1767365576292_1k5xh1jsf",
+      "approvalTitle": "Design Document - Production Readiness Remediation"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-01-03T07:32:07.271Z",
+      "trigger": "approved",
       "approvalId": "approval_1767365576292_1k5xh1jsf",
       "approvalTitle": "Design Document - Production Readiness Remediation"
     }

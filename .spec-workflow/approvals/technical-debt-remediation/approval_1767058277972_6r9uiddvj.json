@@ -3,8 +3,10 @@
   "title": "Design Document - Technical Debt Remediation",
   "filePath": ".spec-workflow/specs/technical-debt-remediation/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2025-12-30T01:31:17.972Z",
   "category": "spec",
-  "categoryName": "technical-debt-remediation"
+  "categoryName": "technical-debt-remediation",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2026-01-03T07:41:03.116Z"
 }

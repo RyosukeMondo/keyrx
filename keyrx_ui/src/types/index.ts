@@ -4,11 +4,11 @@
 export interface DeviceEntry {
   id: string;
   name: string;
-  vendorId: string;
-  productId: string;
-  scope: DeviceScope;
-  layoutPreset: LayoutPreset;
-  isConnected: boolean;
+  path: string;
+  serial: string | null;
+  active: boolean;
+  scope: string | null; // "global" | "device-specific"
+  layout: string | null;
 }
 
 export type DeviceScope = 'global' | 'profile';

@@ -3,8 +3,10 @@
   "title": "Design Document - Production Readiness Remediation",
   "filePath": ".spec-workflow/specs/production-readiness-remediation/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-01-02T14:52:56.292Z",
   "category": "spec",
-  "categoryName": "production-readiness-remediation"
+  "categoryName": "production-readiness-remediation",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2026-01-03T07:32:07.272Z"
 }

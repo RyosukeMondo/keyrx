@@ -3,8 +3,10 @@
   "title": "Macro Recorder - Tasks",
   "filePath": ".spec-workflow/specs/macro-recorder/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2025-12-29T15:28:38.042Z",
   "category": "spec",
-  "categoryName": "macro-recorder"
+  "categoryName": "macro-recorder",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2026-01-03T07:41:05.232Z"
 }

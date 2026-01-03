@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1767426069143_n0sjsxy26",
+  "approvalId": "approval_1767022115032_bukn2g6b8",
+  "approvalTitle": "Profile Management - Design",
+  "version": 2,
+  "timestamp": "2026-01-03T07:41:09.143Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Design Document\n\n## Architecture\n\n```\nUI Profile List → REST API → Daemon Profile Manager → Config Loader\n                                  ↓\n                          ~/.config/keyrx/profiles/\n                              ├── work.krx\n                              ├── gaming.krx\n                              └── coding.krx\n```\n\n## Components\n\n### 1. Profile Manager (Rust - keyrx_daemon/src/profile_manager.rs)\n- CRUD operations for profiles\n- Load profile and apply to daemon\n\n### 2. REST API Endpoints (keyrx_daemon/src/web/api.rs)\n```\nGET    /api/profiles          - List all profiles\nPOST   /api/profiles          - Create new profile\nPUT    /api/profiles/:id      - Update profile\nDELETE /api/profiles/:id      - Delete profile\nPOST   /api/profiles/:id/activate - Activate profile\n```\n\n### 3. ProfilesPage (keyrx_ui/src/pages/ProfilesPage.tsx)\n\n**UI Layout:**\n```\n+---------------------------------------------------------------+\n| Profiles                                   [+ New Profile]    |\n+---------------------------------------------------------------+\n| [●] work                              Last modified: 2d ago   |\n|     Quick access for work shortcuts              [Activate]  |\n|     [Rename] [Duplicate] [Export] [Delete]                   |\n+---------------------------------------------------------------+\n| [ ] gaming                            Last modified: 5d ago   |\n|     Optimized for FPS games                      [Activate]  |\n|     [Rename] [Duplicate] [Export] [Delete]                   |\n+---------------------------------------------------------------+\n| [ ] coding                            Last modified: 1w ago   |\n|     VSCode and terminal shortcuts                [Activate]  |\n|     [Rename] [Duplicate] [Export] [Delete]                   |\n+---------------------------------------------------------------+\n```\n\n### 4. ProfileCard (keyrx_ui/src/components/ProfileCard.tsx)\n- Display profile info with action buttons\n- Hover to show actions\n\n### 5. ProfileDialog (keyrx_ui/src/components/ProfileDialog.tsx)\n- Create/rename profile modal\n- Name and description inputs\n\n## Data Models\n\n```typescript\ninterface Profile {\n  id: string;\n  name: string;\n  description: string;\n  created_at: number;\n  modified_at: number;\n  is_default: boolean;\n  is_active: boolean;\n  config_path: string;  // Path to .krx file\n}\n\ninterface ProfileMetadata {\n  name: string;\n  description: string;\n  created_at: number;\n  modified_at: number;\n}\n```\n\n## Dependencies\n\n- No new UI dependencies (use existing React)\n\n## Sources\n\n- [Designing profile pages for better UX](https://medium.com/design-bootcamp/designing-profile-account-and-setting-pages-for-better-ux-345ef4ca1490)\n",
+  "fileStats": {
+    "size": 2732,
+    "lines": 87,
+    "lastModified": "2025-12-29T15:24:56.141Z"
+  },
+  "comments": []
+}

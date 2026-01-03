@@ -107,7 +107,7 @@
 
 ### Task 10: Create KeyMappingDialog component
 
-- [ ] 10. Create KeyMappingDialog modal for key configuration
+- [x] 10. Create KeyMappingDialog modal for key configuration
   - File: `keyrx_ui/src/components/config/KeyMappingDialog.tsx` (NEW)
   - Purpose: Modal dialog for configuring individual key mappings (simple, tap-hold, macro, layer-switch)
   - _Leverage: `Modal` component, `Dropdown`, `Input` components, `Button`_

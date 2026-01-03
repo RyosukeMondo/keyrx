@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/realtime-daemon-dashboard/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2025-12-29T15:28:32.434Z",
       "trigger": "initial",
+      "approvalId": "approval_1767022112405_ixceydnr6",
+      "approvalTitle": "Real-Time Daemon Dashboard - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-01-03T07:44:40.642Z",
+      "trigger": "approved",
       "approvalId": "approval_1767022112405_ixceydnr6",
       "approvalTitle": "Real-Time Daemon Dashboard - Tasks"
     }

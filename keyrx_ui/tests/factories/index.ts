@@ -166,11 +166,11 @@ export function createDevice(overrides?: Partial<DeviceEntry>): DeviceEntry {
     name:
       overrides?.name ??
       `${faker.company.name()} ${faker.commerce.productName()} Keyboard`,
-    vendorId: overrides?.vendorId ?? faker.string.hexadecimal({ length: 4, prefix: '0x' }),
-    productId: overrides?.productId ?? faker.string.hexadecimal({ length: 4, prefix: '0x' }),
-    scope: overrides?.scope ?? faker.helpers.arrayElement(DEVICE_SCOPES),
-    layoutPreset: overrides?.layoutPreset ?? faker.helpers.arrayElement(LAYOUT_PRESETS),
-    isConnected: overrides?.isConnected ?? faker.datatype.boolean(),
+    path: overrides?.path ?? `/dev/input/event${faker.number.int({ min: 0, max: 20 })}`,
+    serial: overrides?.serial ?? faker.string.alphanumeric(8).toUpperCase(),
+    active: overrides?.active ?? true,
+    scope: overrides?.scope ?? faker.helpers.arrayElement(['global', 'device-specific', null]),
+    layout: overrides?.layout ?? faker.helpers.arrayElement(['ANSI_104', 'ISO_105', 'JIS_109', null]),
   };
 }
 

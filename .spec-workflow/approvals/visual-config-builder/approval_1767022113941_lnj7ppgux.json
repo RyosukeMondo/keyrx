@@ -3,8 +3,10 @@
   "title": "Visual Configuration Builder - Tasks",
   "filePath": ".spec-workflow/specs/visual-config-builder/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2025-12-29T15:28:33.941Z",
   "category": "spec",
-  "categoryName": "visual-config-builder"
+  "categoryName": "visual-config-builder",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2026-01-03T07:41:56.423Z"
 }

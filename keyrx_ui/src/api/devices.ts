@@ -17,11 +17,16 @@ interface DeviceResponse {
   success: boolean;
 }
 
+interface DevicesListResponse {
+  devices: DeviceEntry[];
+}
+
 /**
  * Fetch all connected devices
  */
 export async function fetchDevices(): Promise<DeviceEntry[]> {
-  return apiClient.get<DeviceEntry[]>('/api/devices');
+  const response = await apiClient.get<DevicesListResponse>('/api/devices');
+  return response.devices;
 }
 
 /**

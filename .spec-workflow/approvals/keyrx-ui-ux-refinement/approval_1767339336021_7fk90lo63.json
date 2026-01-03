@@ -3,8 +3,10 @@
   "title": "KeyRX UI/UX Refinement - Requirements",
   "filePath": ".spec-workflow/specs/keyrx-ui-ux-refinement/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-01-02T07:35:36.022Z",
   "category": "spec",
-  "categoryName": "keyrx-ui-ux-refinement"
+  "categoryName": "keyrx-ui-ux-refinement",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2026-01-03T07:32:10.085Z"
 }

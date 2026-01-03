@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/visual-config-builder/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2025-12-29T15:28:33.974Z",
       "trigger": "initial",
+      "approvalId": "approval_1767022113941_lnj7ppgux",
+      "approvalTitle": "Visual Configuration Builder - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-01-03T07:41:55.928Z",
+      "trigger": "approved",
       "approvalId": "approval_1767022113941_lnj7ppgux",
       "approvalTitle": "Visual Configuration Builder - Tasks"
     }

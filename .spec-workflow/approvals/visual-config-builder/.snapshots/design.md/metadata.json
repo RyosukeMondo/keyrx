@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/visual-config-builder/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2025-12-29T15:28:33.142Z",
       "trigger": "initial",
+      "approvalId": "approval_1767022113108_txpp1dnms",
+      "approvalTitle": "Visual Configuration Builder - Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-01-03T07:41:58.529Z",
+      "trigger": "approved",
       "approvalId": "approval_1767022113108_txpp1dnms",
       "approvalTitle": "Visual Configuration Builder - Design"
     }

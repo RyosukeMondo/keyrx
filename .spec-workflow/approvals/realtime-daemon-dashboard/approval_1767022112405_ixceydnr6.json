@@ -3,8 +3,10 @@
   "title": "Real-Time Daemon Dashboard - Tasks",
   "filePath": ".spec-workflow/specs/realtime-daemon-dashboard/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2025-12-29T15:28:32.405Z",
   "category": "spec",
-  "categoryName": "realtime-daemon-dashboard"
+  "categoryName": "realtime-daemon-dashboard",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2026-01-03T07:44:40.643Z"
 }
