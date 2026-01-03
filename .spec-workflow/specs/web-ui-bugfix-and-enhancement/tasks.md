@@ -74,7 +74,7 @@
 
 ### Task 7: Install @dnd-kit dependencies
 
-- [ ] 7. Install @dnd-kit dependencies for drag-and-drop
+- [x] 7. Install @dnd-kit dependencies for drag-and-drop
   - Files: `keyrx_ui/package.json` (modify)
   - Purpose: Add keyboard-accessible drag-and-drop library
   - _Leverage: None (new dependency)_
