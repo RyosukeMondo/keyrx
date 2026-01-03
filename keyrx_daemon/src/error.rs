@@ -308,6 +308,14 @@ pub enum CliError {
     },
 }
 
+impl From<serde_json::Error> for CliError {
+    fn from(err: serde_json::Error) -> Self {
+        CliError::OutputError {
+            reason: err.to_string(),
+        }
+    }
+}
+
 /// Top-level daemon error type.
 ///
 /// This is the main error type for the daemon, encompassing all possible

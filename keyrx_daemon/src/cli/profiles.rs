@@ -7,6 +7,7 @@
 use crate::cli::common::output_error;
 use crate::cli::logging;
 use crate::config::profile_manager::{ProfileError, ProfileTemplate};
+use crate::error::{CliError, DaemonResult};
 use crate::services::ProfileService;
 use clap::{Args, Subcommand};
 use serde::Serialize;
@@ -135,7 +136,7 @@ fn parse_template(s: &str) -> Result<ProfileTemplate, String> {
 }
 
 /// Execute the profiles command.
-pub async fn execute(args: ProfilesArgs, service: &ProfileService) -> Result<(), i32> {
+pub async fn execute(args: ProfilesArgs, service: &ProfileService) -> DaemonResult<()> {
     match args.command {
         ProfilesCommands::List => handle_list(service, args.json).await,
         ProfilesCommands::Create { name, template } => {
@@ -158,14 +159,14 @@ pub async fn execute(args: ProfilesArgs, service: &ProfileService) -> Result<(),
 }
 
 /// Handle the `list` subcommand.
-async fn handle_list(service: &ProfileService, json: bool) -> Result<(), i32> {
-    let profiles = match service.list_profiles().await {
-        Ok(p) => p,
-        Err(e) => {
-            output_error(&format!("Failed to list profiles: {}", e), 3001, json);
-            return Err(1);
-        }
-    };
+async fn handle_list(service: &ProfileService, json: bool) -> DaemonResult<()> {
+    let profiles = service
+        .list_profiles()
+        .await
+        .map_err(|e| CliError::CommandFailed {
+            command: "list".to_string(),
+            reason: format!("Failed to list profiles: {}", e),
+        })?;
     let active = service.get_active_profile().await;
 
     if json {
@@ -232,7 +233,7 @@ async fn handle_create(
     name: &str,
     template: ProfileTemplate,
     json: bool,
-) -> Result<(), i32> {
+) -> DaemonResult<()> {
     logging::log_command_start("profiles create", name);
 
     match service.create_profile(name, template).await {
@@ -265,12 +266,20 @@ async fn handle_create(
         Err(ProfileError::InvalidName(msg)) => {
             logging::log_command_error("profiles create", &format!("Invalid name: {}", msg));
             output_error(&format!("Invalid name: {}", msg), 1006, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(ProfileError::ProfileLimitExceeded) => {
             logging::log_command_error("profiles create", "Profile limit exceeded (max 100)");
             output_error("Profile limit exceeded (max 100)", 1014, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(ProfileError::AlreadyExists(name)) => {
             logging::log_command_error(
@@ -278,7 +287,11 @@ async fn handle_create(
                 &format!("Profile '{}' already exists", name),
             );
             output_error(&format!("Profile '{}' already exists", name), 1015, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(e) => {
             logging::log_command_error(
@@ -286,13 +299,17 @@ async fn handle_create(
                 &format!("Failed to create profile: {}", e),
             );
             output_error(&format!("Failed to create profile: {}", e), 3001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
     }
 }
 
 /// Handle the `activate` subcommand.
-async fn handle_activate(service: &ProfileService, name: &str, json: bool) -> Result<(), i32> {
+async fn handle_activate(service: &ProfileService, name: &str, json: bool) -> DaemonResult<()> {
     logging::log_command_start("profiles activate", name);
 
     match service.activate_profile(name).await {
@@ -318,7 +335,10 @@ async fn handle_activate(service: &ProfileService, name: &str, json: bool) -> Re
                     reload_time_ms: result.reload_time_ms,
                     error: result.error,
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&output).map_err(CliError::from)?
+                );
             } else if result.success {
                 println!("✓ Profile '{}' activated", name);
                 println!("  Compile time: {}ms", result.compile_time_ms);
@@ -329,17 +349,27 @@ async fn handle_activate(service: &ProfileService, name: &str, json: bool) -> Re
                 );
             } else {
                 eprintln!("✗ Activation failed");
-                if let Some(error) = result.error {
+                if let Some(ref error) = result.error {
                     eprintln!("  Error: {}", error);
                 }
                 eprintln!("  Compile time: {}ms", result.compile_time_ms);
-                return Err(1);
+                return Err(CliError::CommandFailed {
+                    command: "activate".to_string(),
+                    reason: result
+                        .error
+                        .unwrap_or_else(|| "Unknown activation error".to_string()),
+                }
+                .into());
             }
 
             if result.success {
                 Ok(())
             } else {
-                Err(1)
+                Err(CliError::CommandFailed {
+                    command: "profiles".to_string(),
+                    reason: "Command failed".to_string(),
+                }
+                .into())
             }
         }
         Err(ProfileError::NotFound(name)) => {
@@ -348,12 +378,20 @@ async fn handle_activate(service: &ProfileService, name: &str, json: bool) -> Re
                 &format!("Profile '{}' not found", name),
             );
             output_error(&format!("Profile '{}' not found", name), 1001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(ProfileError::Compilation(e)) => {
             logging::log_command_error("profiles activate", &format!("Compilation error: {}", e));
             output_error(&format!("Compilation error: {}", e), 2004, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(e) => {
             logging::log_command_error(
@@ -361,7 +399,11 @@ async fn handle_activate(service: &ProfileService, name: &str, json: bool) -> Re
                 &format!("Failed to activate profile: {}", e),
             );
             output_error(&format!("Failed to activate profile: {}", e), 2001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
     }
 }
@@ -372,7 +414,7 @@ async fn handle_delete(
     name: &str,
     confirm: bool,
     json: bool,
-) -> Result<(), i32> {
+) -> DaemonResult<()> {
     // Confirmation prompt if not using --confirm flag
     if !confirm && !json {
         use std::io::{self, Write};
@@ -400,7 +442,10 @@ async fn handle_delete(
                     success: true,
                     message: format!("Profile '{}' deleted", name),
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&output).map_err(CliError::from)?
+                );
             } else {
                 println!("✓ Profile '{}' deleted", name);
             }
@@ -409,7 +454,11 @@ async fn handle_delete(
         Err(ProfileError::NotFound(name)) => {
             logging::log_command_error("profiles delete", &format!("Profile '{}' not found", name));
             output_error(&format!("Profile '{}' not found", name), 1001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(e) => {
             logging::log_command_error(
@@ -417,7 +466,11 @@ async fn handle_delete(
                 &format!("Failed to delete profile: {}", e),
             );
             output_error(&format!("Failed to delete profile: {}", e), 3001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
     }
 }
@@ -428,7 +481,7 @@ async fn handle_duplicate(
     src: &str,
     dest: &str,
     json: bool,
-) -> Result<(), i32> {
+) -> DaemonResult<()> {
     match service.duplicate_profile(src, dest).await {
         Ok(profile) => {
             if json {
@@ -438,7 +491,10 @@ async fn handle_duplicate(
                     rhai_path: format!("~/.config/keyrx/profiles/{}.rhai", profile.name),
                     layer_count: profile.layer_count,
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&output).map_err(CliError::from)?
+                );
             } else {
                 println!("✓ Profile '{}' duplicated to '{}'", src, dest);
                 println!("  Layers: {}", profile.layer_count);
@@ -447,23 +503,43 @@ async fn handle_duplicate(
         }
         Err(ProfileError::NotFound(name)) => {
             output_error(&format!("Profile '{}' not found", name), 1001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(ProfileError::InvalidName(msg)) => {
             output_error(&format!("Invalid name: {}", msg), 1006, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(ProfileError::ProfileLimitExceeded) => {
             output_error("Profile limit exceeded (max 100)", 1014, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(ProfileError::AlreadyExists(name)) => {
             output_error(&format!("Profile '{}' already exists", name), 1015, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(e) => {
             output_error(&format!("Failed to duplicate profile: {}", e), 3001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
     }
 }
@@ -474,7 +550,7 @@ async fn handle_export(
     name: &str,
     output: &Path,
     json: bool,
-) -> Result<(), i32> {
+) -> DaemonResult<()> {
     match service.export_profile(name, output).await {
         Ok(()) => {
             if json {
@@ -482,7 +558,10 @@ async fn handle_export(
                     success: true,
                     message: format!("Profile '{}' exported to {}", name, output.display()),
                 };
-                println!("{}", serde_json::to_string_pretty(&output_msg).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&output_msg).map_err(CliError::from)?
+                );
             } else {
                 println!("✓ Profile '{}' exported to {}", name, output.display());
             }
@@ -490,11 +569,19 @@ async fn handle_export(
         }
         Err(ProfileError::NotFound(name)) => {
             output_error(&format!("Profile '{}' not found", name), 1001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(e) => {
             output_error(&format!("Failed to export profile: {}", e), 3001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
     }
 }
@@ -505,7 +592,7 @@ async fn handle_import(
     input: &Path,
     name: &str,
     json: bool,
-) -> Result<(), i32> {
+) -> DaemonResult<()> {
     match service.import_profile(input, name).await {
         Ok(profile) => {
             if json {
@@ -515,7 +602,10 @@ async fn handle_import(
                     rhai_path: format!("~/.config/keyrx/profiles/{}.rhai", profile.name),
                     layer_count: profile.layer_count,
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&output).map_err(CliError::from)?
+                );
             } else {
                 println!("✓ Profile '{}' imported from {}", name, input.display());
                 println!("  Layers: {}", profile.layer_count);
@@ -524,19 +614,35 @@ async fn handle_import(
         }
         Err(ProfileError::InvalidName(msg)) => {
             output_error(&format!("Invalid name: {}", msg), 1006, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(ProfileError::ProfileLimitExceeded) => {
             output_error("Profile limit exceeded (max 100)", 1014, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(ProfileError::AlreadyExists(name)) => {
             output_error(&format!("Profile '{}' already exists", name), 1015, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(e) => {
             output_error(&format!("Failed to import profile: {}", e), 3001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
     }
 }
@@ -580,15 +686,15 @@ mod tests {
     #[test]
     fn test_parse_template() {
         assert!(matches!(
-            parse_template("blank").unwrap(),
+            parse_template("blank").expect("blank template should parse"),
             ProfileTemplate::Blank
         ));
         assert!(matches!(
-            parse_template("qmk-layers").unwrap(),
+            parse_template("qmk-layers").expect("qmk-layers template should parse"),
             ProfileTemplate::QmkLayers
         ));
         assert!(matches!(
-            parse_template("qmk").unwrap(),
+            parse_template("qmk").expect("qmk template should parse"),
             ProfileTemplate::QmkLayers
         ));
         assert!(parse_template("invalid").is_err());

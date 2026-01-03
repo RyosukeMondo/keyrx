@@ -155,12 +155,10 @@ fn main() {
 
     let result = match cli.command {
         Commands::Run { config, debug } => handle_run(&config, debug),
-        Commands::Devices(args) => {
-            match keyrx_daemon::cli::devices::execute(args, None) {
-                Ok(()) => Ok(()),
-                Err(code) => Err((code, String::new())), // Error already printed by execute
-            }
-        }
+        Commands::Devices(args) => match keyrx_daemon::cli::devices::execute(args, None) {
+            Ok(()) => Ok(()),
+            Err(err) => Err((exit_codes::CONFIG_ERROR, err.to_string())),
+        },
         Commands::Profiles(args) => handle_profiles_command(args),
         Commands::Config(args) => match keyrx_daemon::cli::config::execute(args, None) {
             Ok(()) => Ok(()),
@@ -251,7 +249,7 @@ fn handle_profiles_command(
     rt.block_on(async {
         match keyrx_daemon::cli::profiles::execute(args, &service).await {
             Ok(()) => Ok(()),
-            Err(code) => Err((code, String::new())), // Error already printed by execute
+            Err(err) => Err((exit_codes::CONFIG_ERROR, err.to_string())),
         }
     })
 }

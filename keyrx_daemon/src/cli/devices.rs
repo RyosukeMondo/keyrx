@@ -7,6 +7,7 @@ use crate::cli::logging;
 use crate::config::device_registry::{
     DeviceEntry, DeviceRegistry, DeviceScope, DeviceValidationError,
 };
+use crate::error::{CliError, DaemonResult};
 use clap::{Args, Subcommand};
 use serde::Serialize;
 use std::path::PathBuf;
@@ -93,7 +94,7 @@ fn parse_scope(s: &str) -> Result<DeviceScope, String> {
 }
 
 /// Execute the devices command.
-pub fn execute(args: DevicesArgs, registry_path: Option<PathBuf>) -> Result<(), i32> {
+pub fn execute(args: DevicesArgs, registry_path: Option<PathBuf>) -> DaemonResult<()> {
     // Determine registry path (default: ~/.config/keyrx/devices.json)
     let registry_path = registry_path.unwrap_or_else(|| {
         let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
@@ -111,7 +112,11 @@ pub fn execute(args: DevicesArgs, registry_path: Option<PathBuf>) -> Result<(), 
                 1001,
                 args.json,
             );
-            return Err(1);
+            return Err(CliError::CommandFailed {
+                command: "devices".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into());
         }
     };
 
@@ -134,14 +139,17 @@ pub fn execute(args: DevicesArgs, registry_path: Option<PathBuf>) -> Result<(), 
 }
 
 /// Handle the `list` subcommand.
-fn handle_list(registry: &DeviceRegistry, json: bool) -> Result<(), i32> {
+fn handle_list(registry: &DeviceRegistry, json: bool) -> DaemonResult<()> {
     let devices = registry.list();
 
     if json {
         let output = DeviceListOutput {
             devices: devices.into_iter().cloned().collect(),
         };
-        println!("{}", serde_json::to_string_pretty(&output).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&output).map_err(CliError::from)?
+        );
     } else {
         if devices.is_empty() {
             println!("No devices registered.");
@@ -185,7 +193,7 @@ fn handle_rename(
     device_id: &str,
     new_name: &str,
     json: bool,
-) -> Result<(), i32> {
+) -> DaemonResult<()> {
     logging::log_command_start("devices rename", &format!("{} -> {}", device_id, new_name));
 
     match registry.rename(device_id, new_name) {
@@ -200,7 +208,11 @@ fn handle_rename(
                     3001,
                     json,
                 );
-                return Err(1);
+                return Err(CliError::CommandFailed {
+                    command: "devices".to_string(),
+                    reason: "Command failed".to_string(),
+                }
+                .into());
             }
 
             logging::log_device_operation("rename", device_id);
@@ -211,7 +223,10 @@ fn handle_rename(
                     success: true,
                     message: format!("Device '{}' renamed to '{}'", device_id, new_name),
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&output).map_err(CliError::from)?
+                );
             } else {
                 println!("✓ Device '{}' renamed to '{}'", device_id, new_name);
             }
@@ -227,12 +242,20 @@ fn handle_rename(
                 1001,
                 json,
             );
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "devices".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(DeviceValidationError::InvalidName(msg)) => {
             logging::log_command_error("devices rename", &format!("Invalid name: {}", msg));
             output_error(&format!("Invalid name: {}", msg), 1006, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "devices".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(e) => {
             logging::log_command_error(
@@ -240,7 +263,11 @@ fn handle_rename(
                 &format!("Failed to rename device: {}", e),
             );
             output_error(&format!("Failed to rename device: {}", e), 3001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "devices".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
     }
 }
@@ -251,7 +278,7 @@ fn handle_set_scope(
     device_id: &str,
     scope: DeviceScope,
     json: bool,
-) -> Result<(), i32> {
+) -> DaemonResult<()> {
     match registry.set_scope(device_id, scope) {
         Ok(()) => {
             if let Err(e) = registry.save() {
@@ -260,7 +287,11 @@ fn handle_set_scope(
                     3001,
                     json,
                 );
-                return Err(1);
+                return Err(CliError::CommandFailed {
+                    command: "devices".to_string(),
+                    reason: "Command failed".to_string(),
+                }
+                .into());
             }
 
             let scope_str = match scope {
@@ -273,7 +304,10 @@ fn handle_set_scope(
                     success: true,
                     message: format!("Device '{}' scope set to {}", device_id, scope_str),
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&output).map_err(CliError::from)?
+                );
             } else {
                 println!("✓ Device '{}' scope set to {}", device_id, scope_str);
             }
@@ -285,17 +319,25 @@ fn handle_set_scope(
                 1001,
                 json,
             );
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "devices".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(e) => {
             output_error(&format!("Failed to set scope: {}", e), 3001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "devices".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
     }
 }
 
 /// Handle the `forget` subcommand.
-fn handle_forget(registry: &mut DeviceRegistry, device_id: &str, json: bool) -> Result<(), i32> {
+fn handle_forget(registry: &mut DeviceRegistry, device_id: &str, json: bool) -> DaemonResult<()> {
     match registry.forget(device_id) {
         Ok(device) => {
             if let Err(e) = registry.save() {
@@ -304,7 +346,11 @@ fn handle_forget(registry: &mut DeviceRegistry, device_id: &str, json: bool) -> 
                     3001,
                     json,
                 );
-                return Err(1);
+                return Err(CliError::CommandFailed {
+                    command: "devices".to_string(),
+                    reason: "Command failed".to_string(),
+                }
+                .into());
             }
 
             if json {
@@ -312,7 +358,10 @@ fn handle_forget(registry: &mut DeviceRegistry, device_id: &str, json: bool) -> 
                     success: true,
                     message: format!("Device '{}' forgotten", device.name),
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&output).map_err(CliError::from)?
+                );
             } else {
                 println!("✓ Device '{}' forgotten", device.name);
             }
@@ -324,11 +373,19 @@ fn handle_forget(registry: &mut DeviceRegistry, device_id: &str, json: bool) -> 
                 1001,
                 json,
             );
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "devices".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(e) => {
             output_error(&format!("Failed to forget device: {}", e), 3001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "devices".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
     }
 }
@@ -339,7 +396,7 @@ fn handle_set_layout(
     device_id: &str,
     layout: &str,
     json: bool,
-) -> Result<(), i32> {
+) -> DaemonResult<()> {
     match registry.set_layout(device_id, layout) {
         Ok(()) => {
             if let Err(e) = registry.save() {
@@ -348,7 +405,11 @@ fn handle_set_layout(
                     3001,
                     json,
                 );
-                return Err(1);
+                return Err(CliError::CommandFailed {
+                    command: "devices".to_string(),
+                    reason: "Command failed".to_string(),
+                }
+                .into());
             }
 
             if json {
@@ -356,7 +417,10 @@ fn handle_set_layout(
                     success: true,
                     message: format!("Device '{}' layout set to '{}'", device_id, layout),
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&output).map_err(CliError::from)?
+                );
             } else {
                 println!("✓ Device '{}' layout set to '{}'", device_id, layout);
             }
@@ -368,11 +432,19 @@ fn handle_set_layout(
                 1001,
                 json,
             );
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "devices".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
         Err(e) => {
             output_error(&format!("Failed to set layout: {}", e), 3001, json);
-            Err(1)
+            Err(CliError::CommandFailed {
+                command: "devices".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
         }
     }
 }
@@ -385,7 +457,11 @@ fn output_error(message: &str, code: u32, json: bool) {
             error: message.to_string(),
             code,
         };
-        eprintln!("{}", serde_json::to_string_pretty(&output).unwrap());
+        // SAFETY: ErrorOutput is a simple structure that should always serialize successfully
+        match serde_json::to_string_pretty(&output) {
+            Ok(json_str) => eprintln!("{}", json_str),
+            Err(e) => eprintln!("Error: {} (failed to serialize: {})", message, e),
+        }
     } else {
         eprintln!("Error: {}", message);
     }
@@ -408,12 +484,18 @@ mod tests {
 
     #[test]
     fn test_parse_scope() {
-        assert_eq!(parse_scope("device").unwrap(), DeviceScope::DeviceSpecific);
         assert_eq!(
-            parse_scope("device-specific").unwrap(),
+            parse_scope("device").expect("device scope should parse"),
             DeviceScope::DeviceSpecific
         );
-        assert_eq!(parse_scope("global").unwrap(), DeviceScope::Global);
+        assert_eq!(
+            parse_scope("device-specific").expect("device-specific scope should parse"),
+            DeviceScope::DeviceSpecific
+        );
+        assert_eq!(
+            parse_scope("global").expect("global scope should parse"),
+            DeviceScope::Global
+        );
         assert!(parse_scope("invalid").is_err());
     }
 

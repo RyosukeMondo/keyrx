@@ -325,7 +325,10 @@ fn handle_set_key(
             profile: profile_name,
             compile_time_ms: Some(compile_time),
         };
-        println!("{}", serde_json::to_string(&output).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string(&output).map_err(CliError::from)?
+        );
     } else {
         println!(
             "✓ Set {} -> {} in layer '{}' of profile '{}'",
@@ -400,7 +403,10 @@ fn handle_set_tap_hold(
             profile: profile_name,
             compile_time_ms: Some(compile_time),
         };
-        println!("{}", serde_json::to_string(&output).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string(&output).map_err(CliError::from)?
+        );
     } else {
         println!(
             "✓ Set {} -> tap:{} hold:{} ({}ms) in layer '{}' of profile '{}'",
@@ -475,7 +481,10 @@ fn handle_set_macro(
             profile: profile_name,
             compile_time_ms: Some(compile_time),
         };
-        println!("{}", serde_json::to_string(&output).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string(&output).map_err(CliError::from)?
+        );
     } else {
         println!(
             "✓ Set {} -> macro in layer '{}' of profile '{}'",
@@ -518,7 +527,10 @@ fn handle_get_key(
             layer,
             mapping,
         };
-        println!("{}", serde_json::to_string(&output).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string(&output).map_err(CliError::from)?
+        );
     } else if let Some(m) = mapping {
         println!("{}", m);
     } else {
@@ -581,7 +593,10 @@ fn handle_delete_key(
             "profile": profile_name,
             "compile_time_ms": compile_time,
         });
-        println!("{}", serde_json::to_string(&output).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string(&output).map_err(CliError::from)?
+        );
     } else {
         println!(
             "✓ Deleted mapping for {} in layer '{}' of profile '{}'",
@@ -624,7 +639,10 @@ fn handle_validate(
                     profile: profile_name,
                     errors: vec![],
                 };
-                println!("{}", serde_json::to_string(&output).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string(&output).map_err(CliError::from)?
+                );
             } else {
                 println!("✓ Profile '{}' is valid", profile_name);
             }
@@ -640,7 +658,10 @@ fn handle_validate(
                     profile: profile_name.clone(),
                     errors: vec![error_msg.clone()],
                 };
-                println!("{}", serde_json::to_string(&output).unwrap());
+                println!(
+                    "{}",
+                    serde_json::to_string(&output).map_err(CliError::from)?
+                );
             } else {
                 println!("✗ Profile '{}' validation failed:", profile_name);
                 println!("  {}", e);
@@ -682,7 +703,10 @@ fn handle_show(manager: &ProfileManager, profile: Option<String>, json: bool) ->
             layers,
             mapping_count,
         };
-        println!("{}", serde_json::to_string(&output).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string(&output).map_err(CliError::from)?
+        );
     } else {
         println!("Profile: {}", profile_name);
         println!("Device ID: {}", device_id);
@@ -735,7 +759,10 @@ fn handle_diff(
             profile2,
             differences,
         };
-        println!("{}", serde_json::to_string(&output).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string(&output).map_err(CliError::from)?
+        );
     } else if differences.is_empty() {
         println!("No differences between '{}' and '{}'", profile1, profile2);
     } else {

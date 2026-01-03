@@ -195,14 +195,15 @@ mod tests {
     use tempfile::TempDir;
 
     fn create_test_environment() -> (TempDir, PathBuf) {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temp directory for test");
         let config_dir = temp_dir.path().to_path_buf();
         let profiles_dir = config_dir.join("profiles");
-        std::fs::create_dir_all(&profiles_dir).unwrap();
+        std::fs::create_dir_all(&profiles_dir)
+            .expect("Failed to create profiles directory for test");
 
         // Create a test KRX file
         let krx_path = profiles_dir.join("default.krx");
-        std::fs::write(&krx_path, b"test krx data").unwrap();
+        std::fs::write(&krx_path, b"test krx data").expect("Failed to write test KRX file");
 
         (temp_dir, config_dir)
     }
@@ -214,7 +215,9 @@ mod tests {
 
         let result = resolve_krx_path(Some("default"));
         assert!(result.is_ok());
-        assert!(result.unwrap().ends_with("default.krx"));
+        assert!(result
+            .expect("resolve_krx_path should succeed")
+            .ends_with("default.krx"));
     }
 
     #[test]
@@ -228,10 +231,10 @@ mod tests {
 
     #[test]
     fn test_get_config_dir_from_env() {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new().expect("Failed to create temp directory for test");
         std::env::set_var("KEYRX_CONFIG_DIR", temp_dir.path());
 
-        let result = get_config_dir().unwrap();
+        let result = get_config_dir().expect("get_config_dir should succeed");
         assert_eq!(result, temp_dir.path());
     }
 
