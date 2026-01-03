@@ -153,10 +153,13 @@ pub async fn create_profile(
     // Parse template
     let template = match params.template.as_str() {
         "blank" => ProfileTemplate::Blank,
-        "qmk" => ProfileTemplate::QmkLayers,
+        "simple_remap" => ProfileTemplate::SimpleRemap,
+        "capslock_escape" => ProfileTemplate::CapslockEscape,
+        "vim_navigation" => ProfileTemplate::VimNavigation,
+        "gaming" => ProfileTemplate::Gaming,
         _ => {
             return Err(RpcError::invalid_params(format!(
-                "Invalid template: {}. Must be 'blank' or 'qmk'",
+                "Invalid template: {}. Valid templates: blank, simple_remap, capslock_escape, vim_navigation, gaming",
                 params.template
             )))
         }

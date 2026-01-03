@@ -42,10 +42,16 @@ pub struct ProfileMetadata {
 /// Template for creating new profiles.
 #[derive(Debug, Clone, Copy)]
 pub enum ProfileTemplate {
-    /// Empty configuration with just base layer
+    /// Empty configuration with minimal valid syntax
     Blank,
-    /// QMK-style layer system example
-    QmkLayers,
+    /// Simple A→B key remapping example
+    SimpleRemap,
+    /// CapsLock→Escape mapping
+    CapslockEscape,
+    /// Vim navigation with HJKL layer
+    VimNavigation,
+    /// Gaming-optimized profile
+    Gaming,
 }
 
 /// Result of profile activation.
@@ -230,8 +236,11 @@ impl ProfileManager {
 
         // Generate template content
         let content = match template {
-            ProfileTemplate::Blank => Self::generate_blank_template(),
-            ProfileTemplate::QmkLayers => Self::generate_qmk_template(),
+            ProfileTemplate::Blank => Self::load_template("blank"),
+            ProfileTemplate::SimpleRemap => Self::load_template("simple_remap"),
+            ProfileTemplate::CapslockEscape => Self::load_template("capslock_escape"),
+            ProfileTemplate::VimNavigation => Self::load_template("vim_navigation"),
+            ProfileTemplate::Gaming => Self::load_template("gaming"),
         };
 
         fs::write(&rhai_path, content)?;
@@ -242,33 +251,16 @@ impl ProfileManager {
         Ok(metadata)
     }
 
-    /// Generate blank template.
-    fn generate_blank_template() -> String {
-        r#"// KeyRx2 Configuration
-// Base layer - passthrough by default
-layer("base", #{
-    // Add your key mappings here
-});
-"#
-        .to_string()
-    }
-
-    /// Generate QMK-style template.
-    fn generate_qmk_template() -> String {
-        r#"// KeyRx2 Configuration - QMK-style layers
-// Base layer
-layer("base", #{
-    // Example: Space as layer toggle
-    "KEY_SPACE": tap_hold("KEY_SPACE", layer_toggle("lower"), 200),
-});
-
-// Lower layer - symbols and numbers
-layer("lower", #{
-    "KEY_A": simple("KEY_1"),
-    "KEY_S": simple("KEY_2"),
-    "KEY_D": simple("KEY_3"),
-});
-"#
+    /// Load template from embedded files.
+    fn load_template(name: &str) -> String {
+        match name {
+            "blank" => include_str!("../../templates/blank.rhai"),
+            "simple_remap" => include_str!("../../templates/simple_remap.rhai"),
+            "capslock_escape" => include_str!("../../templates/capslock_escape.rhai"),
+            "vim_navigation" => include_str!("../../templates/vim_navigation.rhai"),
+            "gaming" => include_str!("../../templates/gaming.rhai"),
+            _ => include_str!("../../templates/blank.rhai"),
+        }
         .to_string()
     }
 
@@ -646,13 +638,8 @@ layer("lower", #{
     }
 
     #[doc(hidden)]
-    pub fn generate_blank_template_for_testing() -> String {
-        Self::generate_blank_template()
-    }
-
-    #[doc(hidden)]
-    pub fn generate_qmk_template_for_testing() -> String {
-        Self::generate_qmk_template()
+    pub fn load_template_for_testing(name: &str) -> String {
+        Self::load_template(name)
     }
 
     #[doc(hidden)]

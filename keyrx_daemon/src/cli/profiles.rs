@@ -127,9 +127,12 @@ struct SuccessOutput {
 fn parse_template(s: &str) -> Result<ProfileTemplate, String> {
     match s.to_lowercase().as_str() {
         "blank" => Ok(ProfileTemplate::Blank),
-        "qmk-layers" | "qmk" => Ok(ProfileTemplate::QmkLayers),
+        "simple_remap" | "simple-remap" => Ok(ProfileTemplate::SimpleRemap),
+        "capslock_escape" | "capslock-escape" => Ok(ProfileTemplate::CapslockEscape),
+        "vim_navigation" | "vim-navigation" => Ok(ProfileTemplate::VimNavigation),
+        "gaming" => Ok(ProfileTemplate::Gaming),
         _ => Err(format!(
-            "Invalid template '{}'. Use 'blank' or 'qmk-layers'.",
+            "Invalid template '{}'. Valid templates: blank, simple_remap, capslock_escape, vim_navigation, gaming",
             s
         )),
     }
@@ -690,12 +693,20 @@ mod tests {
             ProfileTemplate::Blank
         ));
         assert!(matches!(
-            parse_template("qmk-layers").expect("qmk-layers template should parse"),
-            ProfileTemplate::QmkLayers
+            parse_template("simple_remap").expect("simple_remap template should parse"),
+            ProfileTemplate::SimpleRemap
         ));
         assert!(matches!(
-            parse_template("qmk").expect("qmk template should parse"),
-            ProfileTemplate::QmkLayers
+            parse_template("capslock_escape").expect("capslock_escape template should parse"),
+            ProfileTemplate::CapslockEscape
+        ));
+        assert!(matches!(
+            parse_template("vim_navigation").expect("vim_navigation template should parse"),
+            ProfileTemplate::VimNavigation
+        ));
+        assert!(matches!(
+            parse_template("gaming").expect("gaming template should parse"),
+            ProfileTemplate::Gaming
         ));
         assert!(parse_template("invalid").is_err());
     }

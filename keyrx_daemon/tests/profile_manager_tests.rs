@@ -23,15 +23,16 @@ fn test_create_blank_profile() {
 }
 
 #[test]
-fn test_create_qmk_profile() {
+fn test_create_simple_remap_profile() {
     let (_temp, mut manager) = setup_test_manager();
 
-    let result = manager.create("qmk-test", ProfileTemplate::QmkLayers);
+    let result = manager.create("simple-remap-test", ProfileTemplate::SimpleRemap);
     assert!(result.is_ok());
 
     let metadata = result.unwrap();
-    assert_eq!(metadata.name, "qmk-test");
-    assert!(metadata.layer_count > 1);
+    assert_eq!(metadata.name, "simple-remap-test");
+    // Simple remap template uses device_start/device_end, not layers
+    assert!(metadata.layer_count >= 1);
 }
 
 #[test]
@@ -70,7 +71,7 @@ fn test_list_profiles() {
 
     manager.create("profile1", ProfileTemplate::Blank).unwrap();
     manager
-        .create("profile2", ProfileTemplate::QmkLayers)
+        .create("profile2", ProfileTemplate::SimpleRemap)
         .unwrap();
 
     let profiles = manager.list();
@@ -412,15 +413,16 @@ fn test_rescan_after_delete() {
 
 #[test]
 fn test_templates_generate_valid_content() {
-    let blank = ProfileManager::generate_blank_template_for_testing();
-    assert!(blank.contains("layer("));
-    assert!(blank.contains("base"));
+    let blank = ProfileManager::load_template_for_testing("blank");
+    assert!(blank.contains("device_start"));
 
-    let qmk = ProfileManager::generate_qmk_template_for_testing();
-    assert!(qmk.contains("layer("));
-    assert!(qmk.contains("base"));
-    assert!(qmk.contains("lower"));
-    assert!(qmk.contains("tap_hold"));
+    let simple_remap = ProfileManager::load_template_for_testing("simple_remap");
+    assert!(simple_remap.contains("device_start"));
+    assert!(simple_remap.contains("simple"));
+
+    let vim_nav = ProfileManager::load_template_for_testing("vim_navigation");
+    assert!(vim_nav.contains("device_start"));
+    assert!(vim_nav.contains("tap_hold"));
 }
 
 #[test]
@@ -536,7 +538,7 @@ fn test_list_returns_all_profiles() {
 
     manager.create("profile1", ProfileTemplate::Blank).unwrap();
     manager
-        .create("profile2", ProfileTemplate::QmkLayers)
+        .create("profile2", ProfileTemplate::SimpleRemap)
         .unwrap();
     manager.create("profile3", ProfileTemplate::Blank).unwrap();
 
@@ -564,7 +566,7 @@ fn test_duplicate_preserves_content() {
     let (_temp, mut manager) = setup_test_manager();
 
     manager
-        .create("original", ProfileTemplate::QmkLayers)
+        .create("original", ProfileTemplate::VimNavigation)
         .unwrap();
 
     let original = manager.get("original").unwrap();

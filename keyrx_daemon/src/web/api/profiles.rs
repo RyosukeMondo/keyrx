@@ -101,7 +101,7 @@ async fn list_profiles() -> Result<Json<ProfilesListResponse>, DaemonError> {
 #[derive(Deserialize)]
 struct CreateProfileRequest {
     name: String,
-    template: String, // "blank" or "qmk-layers"
+    template: String, // "blank", "simple_remap", "capslock_escape", "vim_navigation", "gaming"
 }
 
 async fn create_profile(
@@ -111,10 +111,13 @@ async fn create_profile(
 
     let template = match payload.template.as_str() {
         "blank" => ProfileTemplate::Blank,
-        "qmk-layers" => ProfileTemplate::QmkLayers,
+        "simple_remap" => ProfileTemplate::SimpleRemap,
+        "capslock_escape" => ProfileTemplate::CapslockEscape,
+        "vim_navigation" => ProfileTemplate::VimNavigation,
+        "gaming" => ProfileTemplate::Gaming,
         _ => {
             return Err(WebError::InvalidRequest {
-                reason: "Invalid template".to_string(),
+                reason: format!("Invalid template: '{}'. Valid templates: blank, simple_remap, capslock_escape, vim_navigation, gaming", payload.template),
             }
             .into())
         }
