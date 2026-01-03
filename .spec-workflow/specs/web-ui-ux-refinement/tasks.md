@@ -32,7 +32,7 @@
 
 ### Phase 0.2: Profile Template Creation and Validation
 
-- [ ] 0.2.1. Create valid profile templates
+- [x] 0.2.1. Create valid profile templates
   - Files: `keyrx_daemon/templates/blank.rhai`, `keyrx_daemon/templates/simple_remap.rhai`, `keyrx_daemon/templates/capslock_escape.rhai`, `keyrx_daemon/templates/vim_navigation.rhai`, `keyrx_daemon/templates/gaming.rhai`
   - Implement blank template with minimal valid syntax
   - Implement simple_remap with A→B examples
