@@ -205,7 +205,7 @@
   - _Requirements: Requirement 6 (Update E2E Test Configuration)_
   - _Prompt: Implement the task for spec frontend-test-infrastructure, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Playwright Configuration Specialist | Task: Configure Playwright webServer in keyrx_ui/playwright.config.ts to automatically start dev server for E2E tests | Restrictions: Must start server automatically, shut down cleanly after tests, reuse server in local dev but not CI | _Leverage: Playwright webServer configuration, Vite dev server | _Requirements: Requirement 6 (Update E2E Test Configuration) - Auto-start test server | Success: Playwright starts server before tests, tests run against localhost:5173, server shuts down after | Instructions: 1. Mark [-]. 2. Update playwright.config.ts. 3. Log (taskId="5.1.1"). 4. Mark [x]._
 
-- [ ] 5.1.2. Configure Playwright test sharding
+- [x] 5.1.2. Configure Playwright test sharding
   - Files: `keyrx_ui/playwright.config.ts`
   - Configure projects for different browsers (chromium, firefox)
   - Enable sharding for parallel execution in CI
