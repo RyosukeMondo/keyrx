@@ -216,6 +216,7 @@ impl TestApp {
     /// let response = app.delete("/api/profiles/test-profile").await;
     /// assert_eq!(response.status(), 204);
     /// ```
+    #[allow(dead_code)]
     pub async fn delete(&self, path: &str) -> reqwest::Response {
         let url = format!("{}{}", self.base_url, path);
         self.client

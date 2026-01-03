@@ -43,7 +43,7 @@
   - _Requirements: 0.B (Profile Template Validation Testing), Requirement 4 (Validate Profiles Before Activation)_
   - _Prompt: Implement the task for spec web-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rhai DSL Developer with keyrx configuration expertise | Task: Create 5 valid profile templates using correct device_start/device_end syntax, ensuring all templates compile successfully | Restrictions: MUST use device_start/device_end syntax (NOT layer() function), templates must compile with keyrx_compiler, follow examples from examples/ directory | _Leverage: examples/01-simple-remap.rhai for syntax patterns, examples/02-capslock-escape.rhai for CapsLock remapping | _Requirements: Requirement 0.B (Profile Template Validation Testing), Requirement 4 (Validate Profiles Before Activation) | Success: All 5 templates use correct syntax, all compile successfully, templates provide useful starting points for users | Instructions: 1. Mark [-]. 2. Create templates. 3. Log (taskId="0.2.1", filesCreated=[...templates]). 4. Mark [x]._
 
-- [ ] 0.2.2. Implement template compilation validation tests
+- [x] 0.2.2. Implement template compilation validation tests
   - Files: `keyrx_daemon/tests/integration/template_validation_test.rs`
   - Test: All templates in keyrx_daemon/templates/ compile successfully
   - Test: Invalid template with layer() function is rejected
