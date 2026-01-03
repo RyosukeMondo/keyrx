@@ -193,7 +193,7 @@ describe('KeyMappingDialog', () => {
       await waitFor(() => {
         expect(mockOnSave).toHaveBeenCalledWith({
           keyCode: 'CapsLock',
-          type: 'tap-hold',
+          type: 'tap_hold',
           tapHold: {
             tap: 'VK_ESCAPE',
             hold: 'MD_CTRL',
@@ -312,7 +312,7 @@ describe('KeyMappingDialog', () => {
       await waitFor(() => {
         expect(mockOnSave).toHaveBeenCalledWith({
           keyCode: 'CapsLock',
-          type: 'layer-switch',
+          type: 'layer_switch',
           layer: 'nav',
         });
       });
@@ -336,7 +336,7 @@ describe('KeyMappingDialog', () => {
     it('should populate form from currentMapping for tap-hold type', () => {
       const currentMapping: KeyMapping = {
         keyCode: 'CapsLock',
-        type: 'tap-hold',
+        type: 'tap_hold',
         tapHold: {
           tap: 'VK_ESCAPE',
           hold: 'MD_CTRL',
@@ -369,7 +369,7 @@ describe('KeyMappingDialog', () => {
     it('should populate form from currentMapping for layer-switch type', () => {
       const currentMapping: KeyMapping = {
         keyCode: 'CapsLock',
-        type: 'layer-switch',
+        type: 'layer_switch',
         layer: 'nav',
       };
 

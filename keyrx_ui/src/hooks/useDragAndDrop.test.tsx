@@ -223,7 +223,7 @@ describe('useDragAndDrop', () => {
 
       expect(mockSetKeyMapping).toHaveBeenCalledWith('Default', 'KC_CAPS', {
         keyCode: 'KC_CAPS',
-        type: 'layer-switch',
+        type: 'layer_switch',
         layer: 'nav',
       });
     });
