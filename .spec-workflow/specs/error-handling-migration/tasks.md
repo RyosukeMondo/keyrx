@@ -90,7 +90,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Configuration Management Specialist with expertise in validation and error handling | Task: Migrate configuration loading functions in profile_manager.rs, layout_manager.rs, config_loader.rs to return Result<T, ConfigError> following requirements 4.1-4.5. Replace unwrap() with ? and add context. Implement validation error aggregation to show all errors at once. Target: eliminate 30-40 unwraps. | Restrictions: Do not break existing configuration file format, maintain backward compatibility, ensure error messages show line numbers for parse errors | Success: Config functions return Result, unwraps eliminated, validation shows all errors not just first. Edit tasks.md [-] → [x], log with artifacts (function signatures, validation aggregation logic, unwraps eliminated)_
 
-- [ ] 10. Migrate platform layer error handling
+- [x] 10. Migrate platform layer error handling
   - Files: keyrx_daemon/src/platform/linux/mod.rs, keyrx_daemon/src/platform/linux/input_capture.rs, keyrx_daemon/src/platform/linux/output_injection.rs, keyrx_daemon/src/platform/mod.rs
   - Update Platform trait methods to return Result<T, PlatformError>
   - Migrate Linux implementation to use PlatformError

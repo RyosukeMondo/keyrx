@@ -156,11 +156,13 @@ where
 
                 // Broadcast key event to WebSocket clients if broadcaster is available
                 if let Some(broadcaster) = event_broadcaster {
+                    let timestamp = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_micros() as u64)
+                        .unwrap_or(0); // Fall back to 0 if system time is before UNIX_EPOCH (extremely rare)
+
                     let event_data = KeyEventData {
-                        timestamp: std::time::SystemTime::now()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .unwrap_or_default()
-                            .as_micros() as u64,
+                        timestamp,
                         key_code: format!("{:?}", event.keycode()),
                         event_type: match event.event_type() {
                             keyrx_core::runtime::KeyEventType::Press => "press".to_string(),
