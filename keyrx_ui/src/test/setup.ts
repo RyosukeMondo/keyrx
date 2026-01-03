@@ -1,19 +1,10 @@
-import { expect, afterEach, beforeAll, afterAll, vi } from 'vitest';
+import { expect, afterEach, beforeAll, afterAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 import * as axeMatchers from 'vitest-axe/matchers';
 import { server } from './mocks/server';
 import { resetMockData } from './mocks/handlers';
-
-// Mock react-use-websocket's assertIsWebSocket to skip instanceof check
-// This allows jest-websocket-mock's WebSocket to pass the check
-vi.mock('react-use-websocket/src/lib/util', async () => {
-  const actual = await vi.importActual<typeof import('react-use-websocket/src/lib/util')>('react-use-websocket/src/lib/util');
-  return {
-    ...actual,
-    assertIsWebSocket: vi.fn(), // No-op: skip instanceof check
-  };
-});
+import { resetWebSocketState } from './mocks/websocketHandlers';
 
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
@@ -48,41 +39,57 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
-// WebSocket mocking is now handled by jest-websocket-mock
-// Tests should use setupMockWebSocket() from tests/helpers/websocket.ts
-// Make global.WebSocket writable so jest-websocket-mock can replace it
-Object.defineProperty(global, 'WebSocket', {
-  writable: true,
-  configurable: true,
-  value: global.WebSocket,
-});
-
-// MSW server setup
+/**
+ * MSW server lifecycle hooks
+ *
+ * The MSW server handles both HTTP REST API mocking and WebSocket RPC mocking.
+ * WebSocket connections to ws://localhost:3030/ws are automatically intercepted
+ * and handled by the MSW WebSocket handlers configured in server.ts.
+ *
+ * No manual WebSocket setup is required in individual tests - all WebSocket
+ * connections are automatically mocked by MSW.
+ */
 beforeAll(() =>
   server.listen({
-    // Allow WebSocket connections to use our mock instead of MSW interception
     onUnhandledRequest(request) {
-      // Bypass WebSocket upgrade requests - let our mock handle them
-      if (request.url.startsWith('ws:') || request.url.startsWith('wss:')) {
-        return;
+      // Log warning for unhandled HTTP requests (not WebSocket)
+      if (!request.url.startsWith('ws:') && !request.url.startsWith('wss:')) {
+        console.error(`[MSW] Unhandled ${request.method} request to ${request.url}`);
+        throw new Error(
+          `Unhandled ${request.method} request to ${request.url}. ` +
+            `Add a handler for this endpoint in src/test/mocks/handlers.ts`
+        );
       }
-
-      // Error on other unhandled HTTP requests
-      console.error(`[MSW] Unhandled ${request.method} request to ${request.url}`);
-      throw new Error(
-        `Unhandled ${request.method} request to ${request.url}. ` +
-          `Add a handler for this endpoint in src/test/mocks/handlers.ts`
-      );
     },
   })
 );
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
 
-// Cleanup after each test
+/**
+ * Reset handlers between tests to prevent test pollution
+ */
+afterEach(() => {
+  server.resetHandlers();
+});
+
+/**
+ * Close MSW server after all tests complete
+ */
+afterAll(() => {
+  server.close();
+});
+
+/**
+ * Cleanup after each test
+ *
+ * This ensures test isolation by:
+ * 1. Cleaning up React components
+ * 2. Resetting HTTP mock data
+ * 3. Resetting WebSocket state (connections, subscriptions, daemon state)
+ */
 afterEach(() => {
   cleanup();
-  // Reset MSW mock data to prevent test pollution
+  // Reset HTTP mock data to prevent test pollution
   resetMockData();
-  // Note: WebSocket cleanup is handled by individual tests using cleanupMockWebSocket()
+  // Reset WebSocket state (connections, subscriptions, daemon state)
+  resetWebSocketState();
 });

@@ -37,7 +37,7 @@
   - _Requirements: Requirement 1 (Refactor WebSocket Mocking with MSW)_
   - _Prompt: Implement the task for spec frontend-test-infrastructure, first run spec-workflow-guide to get the workflow guide then implement the task: Role: MSW Configuration Specialist | Task: Update MSW server in keyrx_ui/src/test/mocks/server.ts to include WebSocket handlers alongside existing HTTP handlers | Restrictions: Do not break existing HTTP mocking, ensure WebSocket and HTTP handlers coexist, verify server starts correctly in test setup | _Leverage: setupServer() from msw/node, createWebSocketHandlers() from task 1.1.1 | _Requirements: Requirement 1 (Refactor WebSocket Mocking with MSW) - Automatic WebSocket mocking via MSW | Success: Server includes both HTTP and WebSocket handlers, tests run without manual WebSocket setup, no breaking changes to existing tests | Instructions: 1. Mark [-]. 2. Update server.ts. 3. Log (taskId="1.1.3", summary, filesModified, integrations). 4. Mark [x]._
 
-- [ ] 1.1.4. Update test setup to use MSW WebSocket handlers
+- [-] 1.1.4. Update test setup to use MSW WebSocket handlers
   - Files: `keyrx_ui/src/test/setup.ts`
   - Remove jest-websocket-mock setup code
   - Ensure MSW server starts with WebSocket handlers
