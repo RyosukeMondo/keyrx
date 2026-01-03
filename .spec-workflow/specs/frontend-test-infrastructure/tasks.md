@@ -28,7 +28,7 @@
   - _Requirements: Requirement 5 (Create MSW Test Utilities)_
   - _Prompt: Implement the task for spec frontend-test-infrastructure, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript Test Utility Developer | Task: Create WebSocket test helper functions in keyrx_ui/src/test/mocks/websocketHelpers.ts, providing convenient APIs for simulating daemon events in tests | Restrictions: Must use broadcastEvent() from websocketHandlers.ts, ensure type safety for event payloads, add JSDoc documentation with examples | _Leverage: broadcastEvent() function, TypeScript interfaces for type safety | _Requirements: Requirement 5 (Create MSW Test Utilities) - Pre-configured handlers for common scenarios | Success: Helper functions are easy to use, well-documented with examples, type-safe, work reliably in tests | Instructions: 1. Mark [-]. 2. Implement helpers. 3. Log (taskId="1.1.2", artifacts with functions and usage examples). 4. Mark [x]._
 
-- [-] 1.1.3. Update MSW server to include WebSocket handlers
+- [x] 1.1.3. Update MSW server to include WebSocket handlers
   - Files: `keyrx_ui/src/test/mocks/server.ts`
   - Import `createWebSocketHandlers()` from websocketHandlers.ts
   - Add WebSocket handlers to MSW server setup
