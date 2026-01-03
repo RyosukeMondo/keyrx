@@ -30,7 +30,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: 'http://localhost:9867',
+    baseURL: 'http://localhost:5173',
 
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -84,10 +84,10 @@ export default defineConfig({
     },
   ],
 
-  /* Run daemon server before starting the tests */
+  /* Run Vite dev server before starting the tests */
   webServer: {
-    command: 'cd .. && cargo run -p keyrx_daemon -- --headless --test-mode --port 9867',
-    url: 'http://localhost:9867',
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
   },

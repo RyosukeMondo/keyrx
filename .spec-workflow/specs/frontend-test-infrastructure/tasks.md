@@ -180,7 +180,7 @@
   - _Requirements: Requirement 4 (Fix Component Integration Tests)_
   - _Prompt: Implement the task for spec frontend-test-infrastructure, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration Test Specialist | Task: Fix ConfigPage integration test using MSW WebSocket handlers and renderWithProviders with router support | Restrictions: Use renderWithProviders with wrapWithRouter: true, test full page workflow, verify WebSocket state sync | _Leverage: MSW WebSocket handlers, renderWithProviders({ wrapWithRouter: true }), WebSocket helpers | _Requirements: Requirement 4 (Fix Component Integration Tests) - Full page with WebSocket | Success: Integration test covers full workflow, WebSocket syncs state, page renders correctly | Instructions: 1. Mark [-]. 2. Fix integration test. 3. Log (taskId="4.2.1"). 4. Mark [x]._
 
-- [ ] 4.2.2. Fix useUnifiedApi hook test
+- [x] 4.2.2. Fix useUnifiedApi hook test
   - Files: `keyrx_ui/src/hooks/__tests__/useUnifiedApi.test.ts`
   - Replace manual WebSocket mock with MSW handlers
   - Use `renderHook()` from @testing-library/react with QueryClientProvider wrapper
@@ -194,7 +194,7 @@
 
 ### 5.1. Update Playwright Configuration
 
-- [ ] 5.1.1. Configure Playwright webServer
+- [x] 5.1.1. Configure Playwright webServer
   - Files: `keyrx_ui/playwright.config.ts`
   - Add webServer configuration to start dev server automatically
   - Set webServer.command to `npm run dev`
