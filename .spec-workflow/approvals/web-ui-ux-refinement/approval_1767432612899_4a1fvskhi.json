@@ -3,8 +3,10 @@
   "title": "Web UI/UX Refinement - Requirements Document",
   "filePath": ".spec-workflow/specs/web-ui-ux-refinement/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-01-03T09:30:12.899Z",
   "category": "spec",
-  "categoryName": "web-ui-ux-refinement"
+  "categoryName": "web-ui-ux-refinement",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2026-01-03T18:08:40.684Z"
 }

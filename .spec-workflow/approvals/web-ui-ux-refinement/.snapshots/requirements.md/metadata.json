@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/web-ui-ux-refinement/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-01-03T09:30:12.948Z",
       "trigger": "initial",
+      "approvalId": "approval_1767432612899_4a1fvskhi",
+      "approvalTitle": "Web UI/UX Refinement - Requirements Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-01-03T18:08:40.683Z",
+      "trigger": "approved",
       "approvalId": "approval_1767432612899_4a1fvskhi",
       "approvalTitle": "Web UI/UX Refinement - Requirements Document"
     }

@@ -1,34 +1,45 @@
 /**
  * Integration tests for ConfigPage
- * Tests key configuration flow with API mocking via MSW
+ * Tests key configuration flow with API mocking via MSW and WebSocket helpers
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders } from '../../tests/testUtils';
+import { renderWithProviders, setDaemonState } from '../../tests/testUtils';
 import userEvent from '@testing-library/user-event';
 import { ConfigPage } from './ConfigPage';
 import { useConfigStore } from '../stores/configStore';
 
-// Mock react-router-dom
-vi.mock('react-router-dom', () => ({
-  useNavigate: () => vi.fn(),
-  useParams: () => ({ profile: 'default' }),
-  useSearchParams: () => [new URLSearchParams(), vi.fn()],
-}));
-
 describe('ConfigPage - Integration Tests', () => {
-  beforeEach(() => {
+  // Helper to render ConfigPage with router context
+  // Provide profile name as prop to avoid routing complexity in tests
+  const renderConfigPage = (profile = 'default') => {
+    return renderWithProviders(<ConfigPage profileName={profile} />, {
+      wrapWithRouter: true,
+      routerInitialEntries: ['/config'],
+    });
+  };
+
+  beforeEach(async () => {
     // Reset store state before each test
     const store = useConfigStore.getState();
     store.config = null;
     store.loading = false;
     store.error = null;
+
+    // Set up WebSocket daemon state for tests
+    setDaemonState({
+      activeProfile: 'default',
+      layer: 'base',
+      modifiers: [],
+      locks: [],
+      connected: true,
+    });
   });
 
   describe('Layer selector flow', () => {
     it('displays layer selector with available layers', async () => {
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -43,7 +54,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('switches between layers', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         const layerSelector = screen.queryByRole('combobox', {
@@ -73,7 +84,7 @@ describe('ConfigPage - Integration Tests', () => {
   describe('Layout preset selector flow', () => {
     it('changes keyboard layout preset', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -93,7 +104,7 @@ describe('ConfigPage - Integration Tests', () => {
     });
 
     it('displays all available layout options', async () => {
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -115,7 +126,7 @@ describe('ConfigPage - Integration Tests', () => {
   describe('Key click and configuration flow', () => {
     it('opens KeyConfigDialog when key is clicked', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -138,7 +149,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('displays current key mapping in tooltip on hover', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -166,7 +177,7 @@ describe('ConfigPage - Integration Tests', () => {
   describe('Simple remap configuration', () => {
     it('configures simple key remap', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -210,7 +221,7 @@ describe('ConfigPage - Integration Tests', () => {
   describe('Tap-Hold configuration', () => {
     it('configures tap-hold action', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -264,7 +275,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('validates threshold value', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -307,7 +318,7 @@ describe('ConfigPage - Integration Tests', () => {
   describe('Layer switch configuration', () => {
     it('configures layer switch action', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -350,7 +361,7 @@ describe('ConfigPage - Integration Tests', () => {
   describe('Macro configuration', () => {
     it('configures macro with multiple steps', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -406,7 +417,7 @@ describe('ConfigPage - Integration Tests', () => {
   describe('Configuration preview', () => {
     it('shows preview of key mapping in dialog', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -432,7 +443,7 @@ describe('ConfigPage - Integration Tests', () => {
   describe('Cancel and close flows', () => {
     it('cancels configuration on Cancel button', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -468,7 +479,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('closes dialog on Escape key', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -500,7 +511,7 @@ describe('ConfigPage - Integration Tests', () => {
       const store = useConfigStore.getState();
       store.loading = true;
 
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       expect(screen.getByRole('status', { name: /Loading/i })).toBeInTheDocument();
     });
@@ -509,7 +520,7 @@ describe('ConfigPage - Integration Tests', () => {
       const store = useConfigStore.getState();
       store.error = 'Failed to load configuration';
 
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       expect(
         screen.getByText(/Failed to load configuration/i)
@@ -519,7 +530,7 @@ describe('ConfigPage - Integration Tests', () => {
 
   describe('Device Integration (Requirement 8)', () => {
     it('DeviceScopeToggle receives real devices from API', async () => {
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       // Wait for the page to load
       await waitFor(() => {
@@ -536,7 +547,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('displays real device list when device-specific mode selected', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -566,7 +577,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('switches between global and device-specific scope', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -597,7 +608,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('device selector only visible in device-specific mode', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -620,7 +631,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('shows appropriate help text for each scope', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -649,7 +660,7 @@ describe('ConfigPage - Integration Tests', () => {
   describe('Drag-and-Drop Integration (Requirement 4)', () => {
     it('completes full drag-and-drop workflow: palette → keyboard → save', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       // Wait for page to load
       await waitFor(() => {
@@ -681,7 +692,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('displays mapped keys on keyboard after drag-and-drop', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -702,7 +713,7 @@ describe('ConfigPage - Integration Tests', () => {
     });
 
     it('highlights drop zones on drag-over', async () => {
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -719,7 +730,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('handles API save after successful drop', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -735,7 +746,7 @@ describe('ConfigPage - Integration Tests', () => {
     });
 
     it('shows error state and rolls back on API failure', async () => {
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -752,7 +763,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('updates displayed mappings when layer changes', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -786,7 +797,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('supports keyboard-only drag-and-drop (WCAG 2.2 AA)', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -811,7 +822,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('shows visual feedback during drag operation', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -832,7 +843,7 @@ describe('ConfigPage - Integration Tests', () => {
     });
 
     it('preserves mappings across page navigation', async () => {
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -849,7 +860,7 @@ describe('ConfigPage - Integration Tests', () => {
 
     it('handles multiple rapid drag-and-drop operations', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
@@ -865,7 +876,7 @@ describe('ConfigPage - Integration Tests', () => {
     });
 
     it('displays different key types in palette (VK, MD, LK, Layers)', async () => {
-      renderWithProviders(<ConfigPage />);
+      renderConfigPage();
 
       await waitFor(() => {
         expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();

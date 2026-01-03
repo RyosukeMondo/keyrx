@@ -180,6 +180,7 @@ function handleUnsubscribe(
  * Handle query message (read-only RPC)
  */
 function handleQuery(id: string, method: RpcMethod, params: unknown, client: any): void {
+  console.debug(`[MSW WebSocket] Received query: ${method}`, params);
   let result: unknown;
 
   switch (method) {
@@ -203,6 +204,32 @@ function handleQuery(id: string, method: RpcMethod, params: unknown, client: any
       break;
     case 'get_events':
       result = { events: [] };
+      break;
+    case 'get_profile_config':
+      const profileName = (params as { name: string })?.name;
+      const profile = mockProfiles.find((p) => p.name === profileName);
+      if (profile) {
+        result = {
+          layers: [
+            {
+              id: 'base',
+              name: 'Base Layer',
+              mappings: {},
+            },
+          ],
+        };
+      } else {
+        const errorResponse: ServerMessage = {
+          type: 'response',
+          id,
+          error: {
+            code: -32602,
+            message: `Profile not found: ${profileName}`,
+          },
+        };
+        client.send(JSON.stringify(errorResponse));
+        return;
+      }
       break;
     default:
       // Send error for unsupported methods
@@ -394,7 +421,7 @@ export function resetWebSocketState(): void {
  */
 export function createWebSocketHandlers() {
   return [
-    ws.link('ws://localhost:3030/ws').addEventListener('connection', ({ client }) => {
+    ws.link('ws://localhost:9867/ws').addEventListener('connection', ({ client }) => {
       const connectionId = generateConnectionId();
       console.debug(`[MSW WebSocket] Connection opened: ${connectionId}`);
 
@@ -414,8 +441,10 @@ export function createWebSocketHandlers() {
 
       // Handle incoming messages
       client.addEventListener('message', (event: MessageEvent) => {
+        console.debug('[MSW WebSocket] Received message:', event.data);
         try {
           const message: ClientMessage = JSON.parse(event.data);
+          console.debug('[MSW WebSocket] Parsed message:', message);
 
           switch (message.type) {
             case 'subscribe':

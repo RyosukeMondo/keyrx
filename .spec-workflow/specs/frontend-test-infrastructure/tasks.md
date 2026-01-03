@@ -169,7 +169,7 @@
 
 ### 4.2. Fix Page Integration Tests
 
-- [ ] 4.2.1. Fix ConfigPage integration test
+- [-] 4.2.1. Fix ConfigPage integration test
   - Files: `keyrx_ui/src/pages/__integration__/ConfigPage.integration.test.tsx`
   - Replace manual WebSocket mock with MSW handlers
   - Use `renderWithProviders(<ConfigPage />, { wrapWithRouter: true })` (Router required for useParams)
