@@ -164,51 +164,54 @@ export function renderWithProviders(
   return render(element, renderOptions);
 }
 
+// =============================================================================
+// WebSocket Testing Helpers (MSW-based)
+// =============================================================================
+
 /**
  * WebSocket Testing Helpers
  *
- * These utilities use jest-websocket-mock (compatible with Vitest) for robust WebSocket testing.
- * The library automatically integrates with React Testing Library's act() function.
+ * These utilities use MSW (Mock Service Worker) v2 for robust WebSocket testing.
+ * MSW automatically intercepts WebSocket connections and provides type-safe message handling.
  *
  * Basic Usage Pattern:
  * ```typescript
- * beforeEach(async () => {
- *   await setupMockWebSocket();
- * });
- *
- * afterEach(() => {
- *   cleanupMockWebSocket();
- * });
+ * import { renderWithProviders, setDaemonState, sendLatencyUpdate, waitForWebSocketConnection } from '../tests/testUtils';
  *
  * test('handles WebSocket messages', async () => {
- *   renderWithProviders(<MyComponent />);
+ *   const { getByText } = renderWithProviders(<MyComponent />);
  *
- *   // Simulate connection handshake
- *   await simulateConnected();
+ *   // Wait for WebSocket connection (optional, MSW connects automatically)
+ *   await waitForWebSocketConnection();
  *
- *   // Send daemon state update
- *   sendDaemonStateUpdate({ running: true });
+ *   // Simulate daemon state update
+ *   setDaemonState({ activeProfile: 'gaming', layer: 'fn' });
  *
  *   // Assert component updated
- *   expect(screen.getByText('Running')).toBeInTheDocument();
- *
- *   // Assert client sent messages
- *   await waitForMessage({ type: 'subscribe', channel: 'daemon-state' });
+ *   await waitFor(() => {
+ *     expect(getByText('gaming')).toBeInTheDocument();
+ *   });
  * });
  * ```
+ *
+ * Available WebSocket Helpers:
+ * - `setDaemonState(state)` - Simulate daemon state changes (profile, layer, modifiers)
+ * - `sendLatencyUpdate(stats)` - Simulate latency metric broadcasts
+ * - `sendKeyEvent(event)` - Simulate key press/release events
+ * - `sendServerMessage(channel, data)` - Low-level: send custom messages
+ * - `waitForWebSocketConnection()` - Wait for connection (usually not needed)
+ * - `simulateDisconnect()` - Simulate WebSocket disconnect (TODO: not yet implemented)
+ *
+ * See `keyrx_ui/src/test/mocks/websocketHelpers.ts` for detailed documentation and examples.
  */
 export {
-  setupMockWebSocket,
-  getMockWebSocket,
-  cleanupMockWebSocket,
-  sendServerMessage,
-  simulateConnected,
-  sendDaemonStateUpdate,
+  setDaemonState,
   sendLatencyUpdate,
-  waitForMessage,
-  assertReceivedMessages,
-  WS_URL,
-} from './helpers/websocket';
+  sendKeyEvent,
+  sendServerMessage,
+  waitForWebSocketConnection,
+  simulateDisconnect,
+} from '../src/test/mocks/websocketHelpers';
 
 /**
  * Re-export testing utilities for convenience

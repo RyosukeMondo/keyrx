@@ -49,7 +49,7 @@
 
 ### 1.2. Update Test Utilities
 
-- [ ] 1.2.1. Extend renderWithProviders with WebSocket support
+- [x] 1.2.1. Extend renderWithProviders with WebSocket support
   - Files: `keyrx_ui/tests/testUtils.tsx`
   - Re-export WebSocket helper functions from websocketHelpers.ts
   - Add `waitForWebSocketConnection()` utility
