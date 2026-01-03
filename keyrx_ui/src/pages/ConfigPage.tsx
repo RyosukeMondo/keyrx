@@ -22,13 +22,19 @@ import { MonacoEditor } from '@/components/MonacoEditor';
 import { ProfileHeader } from '@/components/config/ProfileHeader';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useGetProfileConfig, useSetProfileConfig } from '@/hooks/useProfileConfig';
-import { useWasm, ValidationError } from '@/hooks/useWasm';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
 import { useDevices } from '@/hooks/useDevices';
 import { useProfiles } from '@/hooks/useProfiles';
 
 interface ConfigPageProps {
   profileName?: string;
+}
+
+interface ValidationError {
+  line: number;
+  column: number;
+  length: number;
+  message: string;
 }
 
 export const ConfigPage: React.FC<ConfigPageProps> = ({
@@ -42,7 +48,6 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   const api = useUnifiedApi();
   const { data: profileConfig, isLoading: isLoadingConfig, error: configError } = useGetProfileConfig(profileName);
   const { mutateAsync: setProfileConfig } = useSetProfileConfig();
-  const { validateConfig, isWasmReady } = useWasm();
 
   // Fetch real devices and profiles
   const { data: devicesData, isLoading: isLoadingDevices } = useDevices();
@@ -128,11 +133,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   // Auto-save configuration
   const { isSaving, error: saveError, lastSavedAt } = useAutoSave(configCode, {
     saveFn: async (code) => {
-      // Validate before saving
-      const errors = await validateConfig(code);
-      if (errors.length > 0) {
-        throw new Error(`Validation failed: ${errors[0].message}`);
-      }
+      // Save configuration (validation will be handled by backend in future task)
       await setProfileConfig({ name: profileName, source: code });
     },
     debounceMs: 500,
@@ -372,14 +373,6 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
                   ✗ {saveError.message}
                 </div>
               )}
-            </div>
-          </div>
-        )}
-
-        {!isWasmReady && (
-          <div className="bg-yellow-900/50 border border-yellow-700 rounded-md p-4">
-            <div className="text-sm md:text-base text-yellow-300">
-              ⚠️ WASM module not loaded. Validation disabled. Run <code>npm run build:wasm</code> to enable.
             </div>
           </div>
         )}
