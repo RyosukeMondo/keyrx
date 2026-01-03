@@ -1,7 +1,9 @@
 import React from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
-import { Check } from 'lucide-react';
+import { Tooltip } from './Tooltip';
+import { Check, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useProfileValidation } from '../hooks/useProfileValidation';
 
 export interface ProfileCardProps {
   name: string;
@@ -34,6 +36,14 @@ export const ProfileCard = React.memo<ProfileCardProps>(
     onEdit,
     onDelete,
   }) => {
+    // Fetch validation status for this profile
+    const { data: validationResult, isLoading: isValidating } = useProfileValidation(name);
+
+    // Determine if profile is valid
+    const isValid = validationResult?.valid ?? true; // Default to valid if not yet loaded
+    const validationErrors = validationResult?.errors ?? [];
+    const firstError = validationErrors[0];
+
     return (
       <Card
         variant="default"
@@ -67,6 +77,32 @@ export const ProfileCard = React.memo<ProfileCardProps>(
           </p>
         )}
 
+        {/* Validation Status Badge */}
+        {!isValidating && (
+          <div className="mb-3">
+            {isValid ? (
+              <div className="inline-flex items-center gap-1 bg-green-900/30 text-green-400 border border-green-700 px-2 py-1 rounded text-xs font-medium">
+                <CheckCircle2 size={14} aria-hidden="true" />
+                <span>Valid</span>
+              </div>
+            ) : (
+              <Tooltip
+                content={
+                  firstError
+                    ? `Line ${firstError.line}: ${firstError.message}`
+                    : 'Invalid configuration'
+                }
+                position="top"
+              >
+                <div className="inline-flex items-center gap-1 bg-yellow-900/30 text-yellow-400 border border-yellow-700 px-2 py-1 rounded text-xs font-medium cursor-help">
+                  <AlertTriangle size={14} aria-hidden="true" />
+                  <span>Invalid Configuration</span>
+                </div>
+              </Tooltip>
+            )}
+          </div>
+        )}
+
         {/* Last Modified */}
         {lastModified && (
           <p className="text-xs text-slate-500 mb-4">
@@ -81,7 +117,12 @@ export const ProfileCard = React.memo<ProfileCardProps>(
               variant="primary"
               size="sm"
               onClick={onActivate}
-              aria-label={`Activate profile ${name}`}
+              disabled={!isValid}
+              aria-label={
+                !isValid
+                  ? `Cannot activate invalid profile ${name}`
+                  : `Activate profile ${name}`
+              }
             >
               Activate
             </Button>

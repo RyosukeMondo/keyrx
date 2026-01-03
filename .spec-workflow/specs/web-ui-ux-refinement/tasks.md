@@ -213,7 +213,7 @@
   - _Requirements: Requirement 4 (Validate Profiles Before Activation and Fix Template)_
   - _Prompt: Implement the task for spec web-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React Hook Developer with caching expertise | Task: Create useProfileValidation hook in keyrx_ui/src/hooks/useProfileValidation.ts for profile validation status | Restrictions: Must cache results to avoid excessive validation requests, handle loading states, follow React Query patterns | _Leverage: React Query for caching, useUnifiedApi() for API base URL | _Requirements: Requirement 4 (Validate Profiles Before Activation and Fix Template) | Success: Hook fetches validation status, caches results efficiently, integrates with ProfileCard component | Instructions: 1. Mark [-]. 2. Implement hook. 3. Log (taskId="4.3", filesCreated, artifacts with functions). 4. Mark [x]._
 
-- [ ] 4.4. Add validation badge to ProfileCard
+- [x] 4.4. Add validation badge to ProfileCard
   - Files: `keyrx_ui/src/components/ProfileCard.tsx`
   - Use useProfileValidation() hook to fetch validation status
   - Display "✓ Valid" badge for valid profiles
