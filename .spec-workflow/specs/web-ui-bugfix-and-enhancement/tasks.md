@@ -85,7 +85,7 @@
 
 ### Task 8: Create TypeScript types for key mappings
 
-- [ ] 8. Create TypeScript types for key mappings and drag-and-drop
+- [x] 8. Create TypeScript types for key mappings and drag-and-drop
   - File: `keyrx_ui/src/types/config.ts` (NEW)
   - Purpose: Define TypeScript interfaces for KeyMapping, AssignableKey, Layer types
   - _Leverage: None (new file, but follow existing type patterns)_
