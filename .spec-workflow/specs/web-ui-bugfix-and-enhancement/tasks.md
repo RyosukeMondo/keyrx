@@ -197,7 +197,7 @@
 
 ### Task 18: Write end-to-end tests with Playwright
 
-- [ ] 18. Write E2E tests for complete configuration workflow
+- [x] 18. Write E2E tests for complete configuration workflow
   - File: `keyrx_ui/e2e/configuration-workflow.spec.ts` (NEW)
   - Purpose: Test complete user journey from creating profile to drag-and-drop config to activation
   - _Leverage: `@playwright/test`, existing E2E test setup_
