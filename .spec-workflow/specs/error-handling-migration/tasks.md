@@ -20,7 +20,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Library Developer with expertise in error type design and thiserror | Task: Create CoreError enum in keyrx_core/src/error.rs with InvalidState, Validation, and Config variants following requirements 2.1-2.5. Use thiserror derive macros for automatic trait implementations. Define CoreResult<T> type alias. | Restrictions: Must not break existing keyrx_core API, maintain no_std compatibility where possible, keep error types lightweight | Success: CoreError compiles, implements Error trait, all variants have clear error messages, exported from lib.rs. Edit tasks.md [-] → [x], log implementation with artifacts (error enum definition, exported types)_
 
-- [ ] 3. Define DaemonError hierarchy
+- [x] 3. Define DaemonError hierarchy
   - Files: keyrx_daemon/src/error.rs (modify existing)
   - Extend existing DaemonError enum with error variants
   - Add ConfigError, PlatformError, WebError, CliError variants with #[from] conversions
