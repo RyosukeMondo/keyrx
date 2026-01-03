@@ -187,6 +187,23 @@ pub fn execute(args: ConfigArgs, config_dir: Option<PathBuf>) -> DaemonResult<()
             path
         });
 
+    // Save json flag for error handling
+    let json = args.json;
+
+    // Execute command and handle errors
+    let result = execute_inner(args, config_dir);
+
+    // Format errors based on JSON flag before returning
+    if let Err(e) = &result {
+        use crate::cli::common::output_error;
+        output_error(&e.to_string(), 1, json);
+    }
+
+    result
+}
+
+/// Inner execute function that returns errors for formatting.
+fn execute_inner(args: ConfigArgs, config_dir: PathBuf) -> DaemonResult<()> {
     // Initialize ProfileManager
     let mut manager =
         ProfileManager::new(config_dir.clone()).map_err(|e| CliError::CommandFailed {

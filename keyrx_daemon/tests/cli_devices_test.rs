@@ -76,7 +76,7 @@ fn test_devices_rename_not_found_json() {
         .failure()
         .code(1)
         .get_output()
-        .stderr
+        .stdout
         .clone();
 
     let json: Value = serde_json::from_slice(&output).unwrap();

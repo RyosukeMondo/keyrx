@@ -3,6 +3,7 @@
 //! This module implements the `keyrx devices` command and all its subcommands
 //! for managing device metadata, including renaming, scope settings, and layout assignment.
 
+use crate::cli::common::output_error;
 use crate::cli::logging;
 use crate::config::device_registry::{
     DeviceEntry, DeviceRegistry, DeviceScope, DeviceValidationError,
@@ -76,14 +77,6 @@ struct SuccessOutput {
     message: String,
 }
 
-/// JSON output structure for errors.
-#[derive(Serialize)]
-struct ErrorOutput {
-    success: bool,
-    error: String,
-    code: u32,
-}
-
 /// Parse scope string to DeviceScope enum.
 fn parse_scope(s: &str) -> Result<DeviceScope, String> {
     match s.to_lowercase().as_str() {
@@ -95,6 +88,28 @@ fn parse_scope(s: &str) -> Result<DeviceScope, String> {
 
 /// Execute the devices command.
 pub fn execute(args: DevicesArgs, registry_path: Option<PathBuf>) -> DaemonResult<()> {
+    // Save json flag for error handling
+    let json = args.json;
+
+    // Execute command and handle errors
+    let result = execute_inner(args, registry_path);
+
+    // Format errors based on JSON flag before returning (if not already formatted)
+    // Note: Individual handlers may have already called output_error, but we ensure
+    // consistent output here for any errors that bubble up
+    if let Err(e) = &result {
+        // Check if error message is just "Command failed" (already handled by handler)
+        // In that case, output_error was already called, so don't duplicate
+        if !e.to_string().contains("Command failed") {
+            output_error(&e.to_string(), 1, json);
+        }
+    }
+
+    result
+}
+
+/// Inner execute function that returns errors for formatting.
+fn execute_inner(args: DevicesArgs, registry_path: Option<PathBuf>) -> DaemonResult<()> {
     // Determine registry path (default: ~/.config/keyrx/devices.json)
     let registry_path = registry_path.unwrap_or_else(|| {
         let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
@@ -446,24 +461,6 @@ fn handle_set_layout(
             }
             .into())
         }
-    }
-}
-
-/// Output an error message.
-fn output_error(message: &str, code: u32, json: bool) {
-    if json {
-        let output = ErrorOutput {
-            success: false,
-            error: message.to_string(),
-            code,
-        };
-        // SAFETY: ErrorOutput is a simple structure that should always serialize successfully
-        match serde_json::to_string_pretty(&output) {
-            Ok(json_str) => eprintln!("{}", json_str),
-            Err(e) => eprintln!("Error: {} (failed to serialize: {})", message, e),
-        }
-    } else {
-        eprintln!("Error: {}", message);
     }
 }
 

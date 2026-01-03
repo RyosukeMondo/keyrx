@@ -159,7 +159,7 @@
   - _Requirements: All requirements (comprehensive documentation)_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer with expertise in Rust and developer documentation | Task: Create comprehensive error handling guide in docs/ERROR_HANDLING_GUIDE.md covering all requirements. Document error type hierarchy (CoreError, DaemonError, ConfigError, PlatformError). Provide before/after examples for common patterns. Include troubleshooting guide. Update existing UNWRAP_HANDLING_STRATEGY.md with migration completion notes. | Restrictions: Keep documentation concise and practical, include code examples, ensure examples compile | Success: ERROR_HANDLING_GUIDE.md created with comprehensive coverage, examples are correct, UNWRAP_HANDLING_STRATEGY.md updated. Edit tasks.md [-] → [x], log with artifacts (documentation files created/updated, example count)_
 
-- [ ] 17. Update unit tests for Result types
+- [-] 17. Update unit tests for Result types
   - Files: All test files affected by function signature changes
   - Update test assertions to handle Result types
   - Add tests for error scenarios and error messages
