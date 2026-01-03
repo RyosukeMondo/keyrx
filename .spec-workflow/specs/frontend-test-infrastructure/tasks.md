@@ -248,7 +248,7 @@
   - _Requirements: Non-functional requirement (Maintainability - Documentation)_
   - _Prompt: Implement the task for spec frontend-test-infrastructure, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Documentation Writer | Task: Create integration testing guide in keyrx_ui/docs/testing/integration-testing-guide.md covering full page testing and WebSocket state | Restrictions: Include examples from ConfigPage integration test, explain router setup, document async patterns with waitFor(), provide multi-component interaction examples | _Leverage: ConfigPage.integration.test.tsx and other Phase 4.2 tests | _Requirements: Maintainability requirement - Integration test documentation | Success: Guide covers integration testing comprehensively, examples are realistic, developers understand when to write integration tests | Instructions: 1. Mark [-]. 2. Create guide. 3. Log (taskId="6.1.2"). 4. Mark [x]._
 
-- [ ] 6.1.3. Update root README with test commands
+- [x] 6.1.3. Update root README with test commands
   - Files: `keyrx_ui/README.md`
   - Add "Testing" section explaining test categories
   - Document npm test scripts (test, test:unit, test:integration, test:e2e, test:all)

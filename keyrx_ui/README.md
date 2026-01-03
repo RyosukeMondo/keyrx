@@ -261,24 +261,109 @@ keyrx_ui/
 
 ### Testing
 
-The project uses Vitest for unit tests and Playwright for E2E tests.
+The project uses a multi-layered testing approach with separate test categories optimized for different purposes:
 
-**Run unit tests:**
+#### Test Categories
+
+**Unit Tests** (Fast, <5 seconds)
+- Isolated component and function tests
+- MSW-based WebSocket mocking
+- Use for testing individual components in isolation
+- Run by default with `npm test`
+
+**Integration Tests** (Medium, <30 seconds)
+- Multi-component interactions
+- Full page testing with routing
+- WebSocket state management
+- Use for testing component interactions and data flow
+
+**E2E Tests** (Slow, <3 minutes)
+- Full application workflows
+- Real browser automation with Playwright
+- Use for critical user journeys
+
+**Accessibility Tests**
+- WCAG 2.2 Level AA compliance
+- Automated axe-core scanning
+- Run before every commit
+
+#### Quick Start
+
+**Run unit tests (default):**
 ```bash
 npm test
 ```
 
-**Run E2E tests:**
+**Run all test categories:**
 ```bash
-npm run test:e2e
+npm run test:all
 ```
 
-**Run accessibility tests:**
+**Run with coverage:**
 ```bash
-npm run test:a11y
+npm run test:coverage
 ```
 
-All tests must pass before merging. Coverage threshold is 80% for new code.
+#### Test Commands Reference
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `npm test` | Run unit tests | Before every commit (fast feedback) |
+| `npm run test:watch` | Watch mode for unit tests | During development |
+| `npm run test:unit` | Explicit unit tests | Same as `npm test` |
+| `npm run test:integration` | Run integration tests | Before pushing changes |
+| `npm run test:integration:watch` | Watch mode for integration | Integration test development |
+| `npm run test:e2e` | Run E2E tests | Before releasing |
+| `npm run test:e2e:ui` | E2E tests with Playwright UI | Debugging E2E failures |
+| `npm run test:a11y` | Run accessibility tests | Before committing UI changes |
+| `npm run test:coverage` | Generate coverage report | Check coverage thresholds |
+| `npm run test:all` | Run all test categories | Final verification before merge |
+
+#### Test Infrastructure
+
+The project uses MSW (Mock Service Worker) for WebSocket mocking in tests:
+
+- **No fake timers**: Tests use real async operations with `waitFor()`
+- **Automatic connection**: MSW WebSocket handlers connect automatically
+- **State isolation**: WebSocket state resets between tests
+- **Type-safe helpers**: `setDaemonState()`, `sendLatencyUpdate()`, `sendKeyEvent()`
+
+**Example unit test:**
+```typescript
+import { render, screen, waitFor } from '@testing-library/react';
+import { setDaemonState } from '@/test/mocks/websocketHelpers';
+import { ActiveProfileCard } from './ActiveProfileCard';
+
+test('displays active profile from WebSocket', async () => {
+  render(<ActiveProfileCard />);
+
+  setDaemonState({ activeProfile: 'gaming' });
+
+  await waitFor(() => {
+    expect(screen.getByText('gaming')).toBeInTheDocument();
+  });
+});
+```
+
+#### Coverage Requirements
+
+- Overall: ≥80% line and branch coverage
+- Critical components: ≥90% coverage
+- New code: Must include tests before merge
+
+Coverage reports are generated in `coverage/` directory:
+```bash
+npm run test:coverage
+open coverage/index.html  # View HTML report
+```
+
+#### Detailed Guides
+
+For comprehensive testing documentation, see:
+- [Unit Testing Guide](./docs/testing/unit-testing-guide.md) - Unit test patterns and MSW WebSocket usage
+- [Integration Testing Guide](./docs/testing/integration-testing-guide.md) - Full page testing and multi-component interactions
+
+All tests must pass before merging. See `.github/workflows/ci.yml` for CI enforcement.
 
 ## Technology Stack
 
