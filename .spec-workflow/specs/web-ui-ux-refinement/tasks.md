@@ -4,7 +4,7 @@
 
 ### Phase 0.1: Backend API Integration Tests
 
-- [-] 0.1.1. Create test infrastructure helpers
+- [x] 0.1.1. Create test infrastructure helpers
   - Files: `keyrx_daemon/tests/integration/helpers.rs`
   - Create `TestApp` struct with isolated config directory using `tempfile`
   - Implement helper methods for HTTP requests (GET, POST, PATCH, DELETE)
