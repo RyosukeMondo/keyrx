@@ -118,7 +118,7 @@
 
 ### Requirement 1: Remove WASM from ConfigPage
 
-- [ ] 1.1. Remove useWasm() hook from ConfigPage
+- [x] 1.1. Remove useWasm() hook from ConfigPage
   - Files: `keyrx_ui/src/pages/ConfigPage.tsx`
   - Remove `const { validateConfig, isWasmReady } = useWasm();` (line 45)
   - Remove WASM warning display (lines 379-385)
