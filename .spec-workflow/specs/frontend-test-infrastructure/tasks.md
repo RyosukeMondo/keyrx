@@ -228,7 +228,7 @@
 
 ### 6.1. Create Testing Documentation
 
-- [ ] 6.1.1. Create unit testing guide
+- [x] 6.1.1. Create unit testing guide
   - Files: `keyrx_ui/docs/testing/unit-testing-guide.md`
   - Document how to write unit tests with MSW WebSocket mocking
   - Provide examples of using renderWithProviders
