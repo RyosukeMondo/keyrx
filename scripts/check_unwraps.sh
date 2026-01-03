@@ -1,6 +1,16 @@
 #!/bin/bash
-# Check for new unwrap() calls in production code
-# Part of unwrap-remediation spec (Task 16)
+# DEPRECATED: This script is deprecated as of error-handling-migration Task 15
+#
+# Unwrap policy is now enforced by Clippy lints (unwrap_used = "deny") in Cargo.toml.
+# Use `cargo clippy --workspace` instead of this script.
+#
+# This script remains for reference but is no longer part of the verification pipeline.
+# See .spec-workflow/specs/error-handling-migration/ for details.
+
+echo "WARNING: check_unwraps.sh is DEPRECATED"
+echo "Unwrap policy is now enforced by Clippy lints: unwrap_used = 'deny'"
+echo "Run 'cargo clippy --workspace' for unwrap/expect checking"
+echo ""
 
 set -e
 

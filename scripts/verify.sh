@@ -15,7 +15,7 @@ SKIP_COVERAGE=false
 
 # Check results tracking
 declare -A CHECK_RESULTS
-CHECK_ORDER=("build" "clippy" "fmt" "test" "coverage" "ui_test" "e2e" "unwraps")
+CHECK_ORDER=("build" "clippy" "fmt" "test" "coverage" "ui_test" "e2e")
 
 # Usage information
 usage() {
@@ -52,7 +52,9 @@ CHECKS PERFORMED (in order):
     5. Coverage      - cargo llvm-cov (80% minimum overall, 90% keyrx_core)
     6. UI Tests      - npm test --coverage (80% minimum)
     7. E2E Tests     - npm run test:e2e (Playwright)
-    8. Unwraps       - scripts/check_unwraps.sh (prevent regressions)
+
+NOTE: Unwrap checking is now enforced by Clippy lints (unwrap_used = "deny").
+      The check_unwraps.sh script is deprecated (see error-handling-migration spec).
 
 OUTPUT MARKERS:
     === accomplished === - All checks passed
@@ -261,19 +263,12 @@ check_e2e() {
     fi
 }
 
-# Run unwrap check
+# DEPRECATED: Unwrap check removed (Task 15: error-handling-migration)
+# Unwrap policy is now enforced by Clippy lints (unwrap_used = "deny")
+# This function is kept as a no-op for compatibility
 check_unwraps() {
-    log_info "Running unwrap check..."
-
-    if "$SCRIPT_DIR/check_unwraps.sh" 2>&1; then
-        CHECK_RESULTS["unwraps"]="PASS"
-        log_info "Unwrap check: PASS"
-        return 0
-    else
-        CHECK_RESULTS["unwraps"]="FAIL"
-        log_error "Unwrap check: FAIL - too many unwrap() calls in production code"
-        return 1
-    fi
+    log_info "Unwrap check: SKIPPED (deprecated - enforced by clippy lints)"
+    return 0
 }
 
 # Print summary table with colored output
@@ -415,9 +410,6 @@ main() {
     separator
 
     check_e2e || exit_code=1
-    separator
-
-    check_unwraps || exit_code=1
     separator
 
     # Print summary

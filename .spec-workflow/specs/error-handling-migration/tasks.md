@@ -138,7 +138,7 @@
   - _Requirements: 6.4_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Code Quality Engineer with expertise in Rust safety and documentation | Task: Audit remaining unwraps using cargo clippy, add #[allow(clippy::unwrap_used)] with SAFETY comments explaining why each unwrap is safe following requirement 6.4. Document cases: mutex poisoning is unrecoverable, static regexes known valid, array indices within bounds by construction. | Restrictions: Only add #[allow] for truly safe unwraps, provide clear justification in SAFETY comment, prefer Result propagation when possible | Success: All remaining unwraps have SAFETY comments, clippy passes with allow attributes, documentation explains each case. Edit tasks.md [-] → [x], log with artifacts (SAFETY comments added, justifications)_
 
-- [ ] 15. Deprecate manual unwrap counting script
+- [x] 15. Deprecate manual unwrap counting script
   - Files: scripts/check_unwraps.sh, scripts/verify.sh, .git/hooks/pre-commit
   - Remove check_unwraps.sh from verify.sh checks
   - Update pre-commit hook to rely on clippy lints instead
