@@ -50,7 +50,7 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Systems Programmer with expertise in platform abstraction and error handling | Task: Create PlatformError enum in keyrx_daemon/src/platform/error.rs with DeviceAccess, InjectionFailed, Unsupported, InitializationFailed variants following requirements 5.1-5.5. Include device names, reasons, and user-friendly suggestions. | Restrictions: Error messages must work on both Linux and Windows, avoid platform-specific assumptions in error types, keep error types platform-agnostic | Success: PlatformError compiles, errors include helpful suggestions, works on all platforms. Edit tasks.md [-] → [x], log with artifacts (error enum, suggestion text)_
 
-- [ ] 6. Create CLI error formatting utilities
+- [-] 6. Create CLI error formatting utilities
   - Files: keyrx_daemon/src/cli/error.rs (create new), keyrx_daemon/src/cli/mod.rs (modify)
   - Implement format_cli_error(error: &DaemonError, json: bool) -> String
   - Add format_json_error() for structured JSON output
