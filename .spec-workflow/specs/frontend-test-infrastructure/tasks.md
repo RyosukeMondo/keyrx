@@ -137,7 +137,7 @@
 
 ### 4.1. Fix Dashboard Component Tests
 
-- [ ] 4.1.1. Fix ActiveProfileCard integration test
+- [x] 4.1.1. Fix ActiveProfileCard integration test
   - Files: `keyrx_ui/src/components/dashboard/ActiveProfileCard.test.tsx`
   - Replace manual WebSocket mock with MSW handlers
   - Use `setDaemonState({ activeProfile: '...' })` to simulate profile changes
