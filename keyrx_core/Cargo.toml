@@ -20,6 +20,7 @@ serde = { workspace = true }
 bitvec = { workspace = true }
 hashbrown = { workspace = true }
 log = { workspace = true }
+thiserror = { workspace = true }
 
 # WASM-specific dependencies
 wasm-bindgen = { workspace = true, optional = true }

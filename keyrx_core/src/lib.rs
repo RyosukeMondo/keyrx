@@ -9,6 +9,7 @@ extern crate alloc;
 
 pub mod config;
 pub mod dfa;
+pub mod error;
 pub mod runtime;
 pub mod simulator;
 pub mod state;
@@ -22,6 +23,9 @@ pub use config::{
     BaseKeyMapping, Condition, ConditionItem, ConfigRoot, DeviceConfig, DeviceIdentifier, KeyCode,
     KeyMapping, Metadata, Version,
 };
+
+// Re-export error types
+pub use error::{CoreError, CoreResult};
 
 #[cfg(test)]
 mod tests {

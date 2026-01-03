@@ -9,7 +9,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Build Engineer with expertise in workspace dependency management | Task: Add anyhow and thiserror dependencies to workspace Cargo.toml following requirements 1.1-1.4, leveraging existing dependency patterns. anyhow for application code (keyrx_daemon), thiserror for library code (keyrx_core, keyrx_compiler) | Restrictions: Do not break existing builds, maintain version compatibility, ensure no circular dependencies | Success: cargo build succeeds, dependencies resolve correctly, all crates compile with new dependencies available. After implementation, edit tasks.md to mark this task as complete [x], then use log-implementation tool to record implementation details with artifacts (include dependency versions and locations)_
 
-- [ ] 2. Define CoreError types in keyrx_core
+- [x] 2. Define CoreError types in keyrx_core
   - Files: keyrx_core/src/error.rs (create new), keyrx_core/src/lib.rs (modify)
   - Create error.rs with CoreError enum using thiserror
   - Define error variants: InvalidState, Validation, Config
