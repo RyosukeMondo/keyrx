@@ -147,7 +147,7 @@
 
 ### Requirement 3: Persist DevicesPage Layout and Scope
 
-- [ ] 3.1. Implement backend device configuration endpoint
+- [x] 3.1. Implement backend device configuration endpoint
   - Files: `keyrx_daemon/src/web/api/devices.rs`
   - Implement `PATCH /api/devices/:serial` endpoint
   - Accept `{ layout: Option<String>, scope: Option<Scope> }` request body
