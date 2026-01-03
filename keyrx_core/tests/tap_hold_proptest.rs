@@ -7,6 +7,8 @@
 //!
 //! Per task requirements: Run 10K+ cases to verify no determinism violations.
 
+#![cfg(not(target_arch = "wasm32"))]
+
 use keyrx_core::config::{DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping};
 use keyrx_core::runtime::{
     check_tap_hold_timeouts, process_event, DeviceState, KeyEvent, KeyLookup,

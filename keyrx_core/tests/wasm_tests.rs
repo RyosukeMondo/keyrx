@@ -117,7 +117,9 @@ fn test_load_config_too_large() {
     wasm_init();
 
     // Create a config larger than 1MB
-    let large_config = "device(\"*\") { ".to_string() + &"map(\"A\", \"B\"); ".repeat(50000) + " }";
+    let mut large_config = "device(\"*\") { ".to_string();
+    large_config.push_str(&"map(\"A\", \"B\"); ".repeat(50000));
+    large_config.push_str(" }");
 
     let result = load_config(&large_config);
     assert!(result.is_err(), "Config larger than 1MB should fail");

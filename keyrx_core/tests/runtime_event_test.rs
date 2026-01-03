@@ -7,6 +7,8 @@
 //! - Tap-hold behavior (tap, hold, permissive hold)
 //! - Property-based tests for invariants
 
+#![cfg(not(target_arch = "wasm32"))]
+
 extern crate alloc;
 use alloc::string::String;
 use alloc::vec;

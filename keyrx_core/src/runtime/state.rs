@@ -725,6 +725,7 @@ mod tests {
     //
     // These tests verify state management invariants using proptest to generate
     // random test cases, ensuring correctness across a wide range of inputs.
+    #[cfg(not(target_arch = "wasm32"))]
     mod proptests {
         use super::*;
         use proptest::prelude::*;

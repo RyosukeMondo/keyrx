@@ -27,6 +27,7 @@ wasm-bindgen = { workspace = true, optional = true }
 serde-wasm-bindgen = { workspace = true, optional = true }
 console_error_panic_hook = { workspace = true, optional = true }
 once_cell = { workspace = true, optional = true }
+web-sys = { workspace = true, optional = true }
 
 # Compiler dependencies (for WASM load_config functionality)
 rhai = { workspace = true, optional = true }
@@ -35,16 +36,19 @@ serde_json = { workspace = true, optional = true }
 
 # WASM random number generation (for transitive dependencies like ahash)
 # wasm_js feature is required for WASM targets
-getrandom = { version = "0.3", features = ["wasm_js"], optional = true }
+# Note: Not optional because ahash depends on it transitively
+getrandom = { version = "0.3", features = ["wasm_js"] }
 
 [features]
 default = []
-wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_cell", "rhai", "sha2", "serde_json", "getrandom"]
+wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_cell", "web-sys", "rhai", "sha2", "serde_json"]
 
 [dev-dependencies]
+wasm-bindgen-test = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 proptest = { workspace = true }
 criterion = { workspace = true }
-wasm-bindgen-test = { workspace = true }
 
 [[bench]]
 name = "core_bench"

@@ -54,7 +54,7 @@
 
 ### Phase 0.3: WASM FFI Boundary Tests
 
-- [ ] 0.3.1. Implement WASM validation FFI tests
+- [x] 0.3.1. Implement WASM validation FFI tests
   - Files: `keyrx_core/tests/wasm_ffi/validation_test.rs`
   - Test: validate_config() accepts valid Rhai syntax
   - Test: validate_config() rejects invalid syntax with structured errors
