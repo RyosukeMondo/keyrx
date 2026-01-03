@@ -82,7 +82,7 @@
   - _Requirements: Requirement 2 (Separate Test Categories with Vitest Config)_
   - _Prompt: Implement the task for spec frontend-test-infrastructure, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Vitest Configuration Engineer | Task: Create unit test configuration in keyrx_ui/vitest.unit.config.ts, separating fast unit tests from slower integration tests | Restrictions: Must exclude integration, a11y, e2e, and performance tests, use short timeouts for fast feedback, import base config via mergeConfig() | _Leverage: Base vitest.config.ts from task 2.1.1, Vitest mergeConfig() API | _Requirements: Requirement 2 (Separate Test Categories with Vitest Config) - Fast unit test execution | Success: Unit tests run in <5 seconds, integration tests excluded, timeout failures caught quickly | Instructions: 1. Mark [-]. 2. Create vitest.unit.config.ts. 3. Log (taskId="2.1.2"). 4. Mark [x]._
 
-- [ ] 2.1.3. Create integration test configuration
+- [x] 2.1.3. Create integration test configuration
   - Files: `keyrx_ui/vitest.integration.config.ts`
   - Import and merge base vitest.config.ts
   - Include integration, a11y test files (src/**/__integration__/*.test.{ts,tsx}, tests/integration/**, tests/a11y/**)
