@@ -96,7 +96,7 @@
 
 ### Task 9: Create DragKeyPalette component
 
-- [ ] 9. Create DragKeyPalette component with draggable keys
+- [x] 9. Create DragKeyPalette component with draggable keys
   - File: `keyrx_ui/src/components/config/DragKeyPalette.tsx` (NEW)
   - Purpose: Display palette of draggable virtual keys, modifiers, locks, layers
   - _Leverage: `@dnd-kit/core` (useDraggable hook), `Button` component for styling_
