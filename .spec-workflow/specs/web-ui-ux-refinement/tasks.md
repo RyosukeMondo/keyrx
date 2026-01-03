@@ -96,7 +96,7 @@
 
 ### Phase 0.5: E2E User Flow Tests
 
-- [ ] 0.5.1. Implement profile creation E2E test
+- [x] 0.5.1. Implement profile creation E2E test
   - Files: `keyrx_ui/e2e/profile-flow.spec.ts`
   - Test: Create profile → Verify template syntax → Activate → Verify [Active] badge
   - Test: Create profile with invalid syntax → Verify warning badge → [Activate] disabled
