@@ -70,7 +70,7 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Web API Developer with expertise in REST error handling and axum framework | Task: Implement IntoResponse trait for DaemonError in keyrx_daemon/src/web/error.rs, mapping error types to HTTP status codes and JSON responses following requirements 5.1-5.5. ConfigError → 400 Bad Request, Platform/IO → 500 Internal Server Error. | Restrictions: Do not expose internal error details to clients, use appropriate HTTP status codes, ensure JSON error format is consistent | Success: IntoResponse implementation compiles, correct status codes returned, error messages are client-safe. Edit tasks.md [-] → [x], log with artifacts (trait implementation, status code mappings)_
 
-- [-] 8. Migrate CLI handlers to Result types
+- [x] 8. Migrate CLI handlers to Result types
   - Files: keyrx_daemon/src/cli/config.rs, keyrx_daemon/src/cli/profiles.rs, keyrx_daemon/src/cli/devices.rs, keyrx_daemon/src/cli/simulate.rs
   - Change handler function signatures from () to Result<(), DaemonError>
   - Replace unwrap() calls with ? operator
