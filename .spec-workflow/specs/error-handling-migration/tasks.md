@@ -110,7 +110,7 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Web API Developer with expertise in axum and REST error handling | Task: Migrate web API handlers in profiles.rs, devices.rs, config.rs, metrics.rs to return Result<Json<T>, DaemonError> following requirements 5.1-5.5. Replace unwrap() with ?. Leverage IntoResponse implementation from task 7 for automatic error conversion to HTTP responses. Target: eliminate 30-40 unwraps. | Restrictions: Maintain existing API response formats for success cases, ensure proper HTTP status codes, do not expose internal errors to clients | Success: All handlers return Result, unwraps eliminated, HTTP error responses are correct. Edit tasks.md [-] → [x], log with artifacts (handler signatures, HTTP status codes, unwraps eliminated)_
 
-- [ ] 12. Add error handling to WebSocket implementation
+- [x] 12. Add error handling to WebSocket implementation
   - Files: keyrx_daemon/src/web/ws.rs, keyrx_daemon/src/web/ws_rpc.rs
   - Add error handling for WebSocket message parsing
   - Log errors instead of panicking in WebSocket event loop
