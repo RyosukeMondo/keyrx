@@ -151,7 +151,7 @@
 
 ### Task 14: Add keyboard accessibility to drag-and-drop
 
-- [-] 14. Add keyboard accessibility for drag-and-drop (WCAG 2.2 Level AA)
+- [x] 14. Add keyboard accessibility for drag-and-drop (WCAG 2.2 Level AA)
   - Files: `keyrx_ui/src/components/config/DragKeyPalette.tsx`, `KeyboardVisualizer.tsx` (modify)
   - Purpose: Ensure drag-and-drop works with keyboard (Space to grab, arrows to move, Space to drop)
   - _Leverage: `@dnd-kit/core` keyboard sensor, existing accessibility utilities_
