@@ -238,7 +238,7 @@
   - _Requirements: Non-functional requirement (Maintainability - Documentation)_
   - _Prompt: Implement the task for spec frontend-test-infrastructure, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Documentation Writer | Task: Create comprehensive unit testing guide in keyrx_ui/docs/testing/unit-testing-guide.md with MSW WebSocket examples | Restrictions: Include real code examples from tests, explain renderWithProviders usage, document WebSocket helpers, provide decision tree for unit vs integration tests | _Leverage: Migrated tests from Phase 3 and 4 for real examples | _Requirements: Maintainability requirement - Documentation for all public APIs | Success: Developers can write tests following guide, examples are copy-paste ready, decision tree helps choose test type | Instructions: 1. Mark [-]. 2. Create guide. 3. Log (taskId="6.1.1"). 4. Mark [x]._
 
-- [ ] 6.1.2. Create integration testing guide
+- [x] 6.1.2. Create integration testing guide
   - Files: `keyrx_ui/docs/testing/integration-testing-guide.md`
   - Document integration test patterns with MSW
   - Show full page testing with renderWithProviders({ wrapWithRouter: true })
