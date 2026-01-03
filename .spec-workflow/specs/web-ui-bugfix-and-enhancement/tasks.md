@@ -48,7 +48,7 @@
 
 ### Task 5: Add active profile display to MetricsPage
 
-- [ ] 5. Add active profile display to MetricsPage
+- [x] 5. Add active profile display to MetricsPage
   - File: `keyrx_ui/src/pages/MetricsPage.tsx`
   - Purpose: Display currently active profile name and .rhai file in header
   - _Leverage: `useProfiles` hook, `Link` from react-router-dom_

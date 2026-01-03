@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   LineChart,
   Line,
@@ -10,9 +11,10 @@ import {
 } from 'recharts';
 import { FixedSizeList as List } from 'react-window';
 import { Card } from '../components/Card';
-import { Activity, Clock, Cpu, Zap } from 'lucide-react';
+import { Activity, Clock, Cpu, Zap, FileCode } from 'lucide-react';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { useMetricsStore } from '../stores/metricsStore';
+import { useActiveProfile } from '../hooks/useProfiles';
 
 interface LatencyDataPoint {
   timestamp: number;
@@ -48,6 +50,9 @@ export const MetricsPage: React.FC = () => {
     subscribeToEvents,
     unsubscribeFromEvents,
   } = useMetricsStore();
+
+  // Get the active profile data
+  const activeProfile = useActiveProfile();
 
   // Track latency history for the chart (last 60 data points)
   const [latencyHistory, setLatencyHistory] = useState<LatencyDataPoint[]>([]);
@@ -257,13 +262,52 @@ export const MetricsPage: React.FC = () => {
       <Card padding="md">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-500/10 rounded-lg">
-            <Activity className="w-5 h-5 text-blue-500" />
+            <Activity className="w-5 h-5 text-blue-500" aria-hidden="true" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="text-sm text-slate-400">Active Profile</p>
-            <p className="text-lg font-semibold text-slate-100">
-              {storeState?.activeProfile || 'No Active Profile'}
-            </p>
+            {activeProfile ? (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Link
+                    to={`/config?profile=${encodeURIComponent(activeProfile.name)}`}
+                    className="text-lg font-semibold text-blue-400 hover:text-blue-300 transition-colors underline"
+                    aria-label={`Edit ${activeProfile.name} configuration`}
+                  >
+                    {activeProfile.name}
+                  </Link>
+                  <FileCode className="w-4 h-4 text-slate-400" aria-hidden="true" />
+                  <span className="text-sm text-slate-400 font-mono">
+                    {activeProfile.name}.rhai
+                  </span>
+                </div>
+                {activeProfile.modifiedAt && (
+                  <p className="text-xs text-slate-500">
+                    Last modified: {new Date(activeProfile.modifiedAt).toLocaleString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <p className="text-lg font-semibold text-slate-400">
+                  {connected ? 'No active profile' : 'Daemon offline'}
+                </p>
+                {connected && (
+                  <Link
+                    to="/profiles"
+                    className="inline-block text-sm text-blue-400 hover:text-blue-300 transition-colors underline"
+                  >
+                    Activate a profile
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </Card>
