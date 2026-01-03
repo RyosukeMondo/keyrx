@@ -162,7 +162,7 @@
 
 ### Task 15: Integrate real device list in ConfigPage
 
-- [ ] 15. Integrate real device list in ConfigPage DeviceScopeToggle
+- [x] 15. Integrate real device list in ConfigPage DeviceScopeToggle
   - File: `keyrx_ui/src/pages/ConfigPage.tsx` (minor modification from Task 13)
   - Purpose: Ensure DeviceScopeToggle receives real devices from API, not mock data
   - _Leverage: `useDevices` hook, existing `DeviceScopeToggle` component_
