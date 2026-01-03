@@ -110,7 +110,7 @@
 
 ### 3.1. Migrate WebSocket Unit Tests
 
-- [ ] 3.1.1. Migrate websocket.test.ts to use MSW
+- [x] 3.1.1. Migrate websocket.test.ts to use MSW
   - Files: `keyrx_ui/src/api/websocket.test.ts`
   - Remove MockWebSocket class definition
   - Remove `vi.useFakeTimers()` and `vi.useRealTimers()` (not needed with MSW)
