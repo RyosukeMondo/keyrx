@@ -63,7 +63,7 @@
   - _Requirements: 0.D (WASM FFI Boundary Testing)_
   - _Prompt: Implement the task for spec web-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust WASM Developer with wasm-bindgen expertise | Task: Implement WASM FFI validation tests in keyrx_core/tests/wasm_ffi/validation_test.rs, ensuring validate_config function works correctly across FFI boundary | Restrictions: Must use wasm-bindgen-test for browser testing, verify error format matches TypeScript expectations, ensure no undefined values cross boundary | _Leverage: wasm-bindgen-test for WASM testing, keyrx_core validation logic | _Requirements: Requirement 0.D (WASM FFI Boundary Testing) | Success: WASM tests run in browser, validation works across FFI, error structure is correct | Instructions: 1. Mark [-]. 2. Implement WASM tests. 3. Log (taskId="0.3.1"). 4. Mark [x]._
 
-- [ ] 0.3.2. Implement TypeScript type verification for WASM
+- [x] 0.3.2. Implement TypeScript type verification for WASM
   - Files: `keyrx_ui/src/wasm/__tests__/ffi-types.test.ts`
   - Test: validate_config TypeScript signature matches WASM implementation
   - Test: ValidationResult interface matches WASM return type
