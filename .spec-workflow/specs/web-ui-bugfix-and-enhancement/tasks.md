@@ -26,7 +26,7 @@
 
 ### Task 3: Fix ProfilesPage activation state persistence
 
-- [-] 3. Fix ProfilesPage activation state persistence
+- [x] 3. Fix ProfilesPage activation state persistence
   - File: `keyrx_ui/src/pages/ProfilesPage.tsx` (lines 113-132)
   - Purpose: Fix disappearing [Active] badge after profile activation
   - _Leverage: `useQueryClient` from `@tanstack/react-query`, existing `activateProfileMutation` hook_
