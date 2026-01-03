@@ -12,8 +12,8 @@
   - _Requirements: 0.A (Backend API Contract Testing)_
   - _Prompt: Implement the task for spec web-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer specializing in integration testing and async Rust | Task: Create comprehensive test infrastructure helpers in keyrx_daemon/tests/integration/helpers.rs, implementing TestApp struct with isolated config directory and HTTP request helpers | Restrictions: Must use tempfile for test isolation, do not share state between tests, ensure tests can run in parallel | _Leverage: axum-test crate for HTTP testing, tempfile crate for isolated directories | _Requirements: Requirement 0.A (Backend API Contract Testing) | Success: TestApp provides clean test fixtures, HTTP helpers work correctly, tests are isolated and can run in parallel | Instructions: 1. Edit tasks.md to mark this task [-] as in-progress. 2. Implement the code. 3. Use log-implementation tool to record: taskId="0.1.1", summary (1-2 sentences), filesModified, filesCreated, statistics (linesAdded, linesRemoved), and REQUIRED artifacts field with apiEndpoints, components, functions, classes, and integrations as described in the log-implementation tool documentation. 4. Edit tasks.md to mark this task [x] as completed._
 
-- [-] 0.1.2. Implement device persistence integration tests
-  - Files: `keyrx_daemon/tests/integration/api_devices_test.rs`
+- [x] 0.1.2. Implement device persistence integration tests
+  - Files: `keyrx_daemon/tests/api_devices_test.rs`
   - Test: Device layout save persists to `~/.config/keyrx/devices/{serial}.json`
   - Test: Device scope save persists to filesystem
   - Test: Device config loads correctly on daemon restart
