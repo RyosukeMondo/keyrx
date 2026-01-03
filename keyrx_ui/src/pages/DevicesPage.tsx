@@ -6,8 +6,7 @@ import { Dropdown } from '../components/Dropdown';
 import { Modal } from '../components/Modal';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { useAutoSave } from '../hooks/useAutoSave';
-import { useUnifiedApi } from '../hooks/useUnifiedApi';
-import { RpcClient } from '../api/rpc';
+import { useUpdateDevice } from '../hooks/useUpdateDevice';
 import { getErrorMessage } from '../utils/errorUtils';
 
 interface Device {
@@ -45,13 +44,10 @@ interface DeviceCardProps {
   isEditing: boolean;
   editingName: string;
   nameError: string;
-  rpcClient: RpcClient;
   onRenameClick: (device: Device) => void;
   onRenameCancel: () => void;
   onRenameSave: (deviceId: string) => void;
   onEditingNameChange: (value: string) => void;
-  onScopeChange: (deviceId: string, scope: 'global' | 'device-specific') => void;
-  onLayoutChange: (deviceId: string, layout: string) => void;
   onForgetClick: (deviceId: string) => void;
 }
 
@@ -60,41 +56,87 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
   isEditing,
   editingName,
   nameError,
-  rpcClient,
   onRenameClick,
   onRenameCancel,
   onRenameSave,
   onEditingNameChange,
-  onScopeChange,
-  onLayoutChange,
   onForgetClick,
 }) => {
-  // Local layout state for auto-save
+  // Local state for auto-save
   const [localLayout, setLocalLayout] = useState(device.layout);
+  const [localScope, setLocalScope] = useState(device.scope);
+
+  // Device update mutation hook
+  const { mutate: updateDevice, isPending: isUpdating, error: updateError } = useUpdateDevice();
+
+  // Track last saved timestamp for feedback
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   // Auto-save hook for layout changes
-  const { isSaving, error: saveError, lastSavedAt } = useAutoSave(
+  const { isSaving: isSavingLayout, error: layoutSaveError } = useAutoSave(
     localLayout,
     {
       saveFn: async (layout: string) => {
-        if (!device.serial) {
-          throw new Error('Device serial is required');
-        }
-        await rpcClient.setDeviceLayout(device.serial, layout);
+        await new Promise<void>((resolve, reject) => {
+          updateDevice(
+            { id: device.id, layout },
+            {
+              onSuccess: () => {
+                setLastSavedAt(new Date());
+                resolve();
+              },
+              onError: (error) => reject(error),
+            }
+          );
+        });
       },
       debounceMs: 500,
-      enabled: !!device.serial, // Only enable if device has a serial
+      enabled: true,
     }
   );
 
-  // Update local layout when device layout changes externally
+  // Auto-save hook for scope changes
+  const { isSaving: isSavingScope, error: scopeSaveError } = useAutoSave(
+    localScope,
+    {
+      saveFn: async (scope: string) => {
+        await new Promise<void>((resolve, reject) => {
+          updateDevice(
+            { id: device.id, scope: scope as 'global' | 'device-specific' },
+            {
+              onSuccess: () => {
+                setLastSavedAt(new Date());
+                resolve();
+              },
+              onError: (error) => reject(error),
+            }
+          );
+        });
+      },
+      debounceMs: 500,
+      enabled: true,
+    }
+  );
+
+  // Combine saving and error states
+  const isSaving = isSavingLayout || isSavingScope || isUpdating;
+  const saveError = layoutSaveError || scopeSaveError || updateError;
+
+  // Update local state when device changes externally
   React.useEffect(() => {
     setLocalLayout(device.layout);
   }, [device.layout]);
 
-  const handleLocalLayoutChange = (newLayout: string) => {
+  React.useEffect(() => {
+    setLocalScope(device.scope);
+  }, [device.scope]);
+
+  const handleLayoutChange = (newLayout: string) => {
     setLocalLayout(newLayout);
-    onLayoutChange(device.id, newLayout);
+  };
+
+  const handleScopeChange = (newScope: 'global' | 'device-specific') => {
+    setLocalScope(newScope);
   };
 
   return (
@@ -193,67 +235,10 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
           </div>
         </div>
 
-        {/* Scope selector */}
+        {/* Scope selector with save feedback */}
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-slate-300">Scope</label>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-            <button
-              onClick={() => onScopeChange(device.id, 'global')}
-              className={`flex items-center gap-2 rounded-md border px-4 py-3 sm:py-2 text-sm transition-colors min-h-[44px] sm:min-h-0 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 ${
-                device.scope === 'global'
-                  ? 'border-primary-500 bg-primary-500/10 text-primary-500'
-                  : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-300'
-              }`}
-              aria-label="Set scope to global"
-              role="radio"
-              aria-checked={device.scope === 'global'}
-            >
-              <span
-                className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
-                  device.scope === 'global'
-                    ? 'border-primary-500 bg-primary-500'
-                    : 'border-slate-500'
-                }`}
-                aria-hidden="true"
-              >
-                {device.scope === 'global' && (
-                  <span className="block h-full w-full rounded-full bg-white" />
-                )}
-              </span>
-              Global
-            </button>
-            <button
-              onClick={() => onScopeChange(device.id, 'device-specific')}
-              className={`flex items-center gap-2 rounded-md border px-4 py-3 sm:py-2 text-sm transition-colors min-h-[44px] sm:min-h-0 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 ${
-                device.scope === 'device-specific'
-                  ? 'border-primary-500 bg-primary-500/10 text-primary-500'
-                  : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-300'
-              }`}
-              aria-label="Set scope to device-specific"
-              role="radio"
-              aria-checked={device.scope === 'device-specific'}
-            >
-              <span
-                className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
-                  device.scope === 'device-specific'
-                    ? 'border-primary-500 bg-primary-500'
-                    : 'border-slate-500'
-                }`}
-                aria-hidden="true"
-              >
-                {device.scope === 'device-specific' && (
-                  <span className="block h-full w-full rounded-full bg-white" />
-                )}
-              </span>
-              Device-Specific
-            </button>
-          </div>
-        </div>
-
-        {/* Layout selector with auto-save feedback */}
-        <div className="flex flex-col gap-sm">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-slate-300">Layout</label>
+            <label className="text-sm font-medium text-slate-300">Scope</label>
             <div className="flex items-center gap-2">
               {isSaving && (
                 <span className="text-xs text-slate-400 flex items-center gap-1">
@@ -267,16 +252,73 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
                 </span>
               )}
               {saveError && (
-                <span className="text-xs text-red-500 flex items-center gap-1" title={saveError.message}>
+                <span className="text-xs text-red-500 flex items-center gap-1" title={saveError instanceof Error ? saveError.message : String(saveError)}>
                   ✗ Error
                 </span>
               )}
             </div>
           </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+            <button
+              onClick={() => handleScopeChange('global')}
+              className={`flex items-center gap-2 rounded-md border px-4 py-3 sm:py-2 text-sm transition-colors min-h-[44px] sm:min-h-0 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 ${
+                localScope === 'global'
+                  ? 'border-primary-500 bg-primary-500/10 text-primary-500'
+                  : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+              }`}
+              aria-label="Set scope to global"
+              role="radio"
+              aria-checked={localScope === 'global'}
+            >
+              <span
+                className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
+                  localScope === 'global'
+                    ? 'border-primary-500 bg-primary-500'
+                    : 'border-slate-500'
+                }`}
+                aria-hidden="true"
+              >
+                {localScope === 'global' && (
+                  <span className="block h-full w-full rounded-full bg-white" />
+                )}
+              </span>
+              Global
+            </button>
+            <button
+              onClick={() => handleScopeChange('device-specific')}
+              className={`flex items-center gap-2 rounded-md border px-4 py-3 sm:py-2 text-sm transition-colors min-h-[44px] sm:min-h-0 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 ${
+                localScope === 'device-specific'
+                  ? 'border-primary-500 bg-primary-500/10 text-primary-500'
+                  : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+              }`}
+              aria-label="Set scope to device-specific"
+              role="radio"
+              aria-checked={localScope === 'device-specific'}
+            >
+              <span
+                className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
+                  localScope === 'device-specific'
+                    ? 'border-primary-500 bg-primary-500'
+                    : 'border-slate-500'
+                }`}
+                aria-hidden="true"
+              >
+                {localScope === 'device-specific' && (
+                  <span className="block h-full w-full rounded-full bg-white" />
+                )}
+              </span>
+              Device-Specific
+            </button>
+          </div>
+        </div>
+
+        {/* Layout selector */}
+        <div className="flex flex-col gap-sm">
+          <label className="text-sm font-medium text-slate-300">Layout</label>
           <Dropdown
             options={LAYOUT_OPTIONS}
             value={localLayout}
-            onChange={handleLocalLayoutChange}
+            onChange={handleLayoutChange}
             aria-label="Select keyboard layout"
           />
         </div>
@@ -322,10 +364,6 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   const [loading, setLoading] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  // RPC client for API calls
-  const api = useUnifiedApi();
-  const rpcClient = new RpcClient(api);
 
   // Fetch devices from API on mount
   React.useEffect(() => {
@@ -405,18 +443,6 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     setNameError('');
   };
 
-  const handleScopeChange = (deviceId: string, newScope: 'global' | 'device-specific') => {
-    setDevices((prev) =>
-      prev.map((d) => (d.id === deviceId ? { ...d, scope: newScope } : d))
-    );
-  };
-
-  const handleLayoutChange = (deviceId: string, newLayout: string) => {
-    // Update local state immediately
-    setDevices((prev) =>
-      prev.map((d) => (d.id === deviceId ? { ...d, layout: newLayout } : d))
-    );
-  };
 
   const handleForgetDevice = () => {
     if (forgetDeviceId) {
@@ -499,13 +525,10 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                     isEditing={isEditing}
                     editingName={editingName}
                     nameError={nameError}
-                    rpcClient={rpcClient}
                     onRenameClick={handleRenameClick}
                     onRenameCancel={handleRenameCancel}
                     onRenameSave={handleRenameSave}
                     onEditingNameChange={setEditingName}
-                    onScopeChange={handleScopeChange}
-                    onLayoutChange={handleLayoutChange}
                     onForgetClick={setForgetDeviceId}
                   />
                 );

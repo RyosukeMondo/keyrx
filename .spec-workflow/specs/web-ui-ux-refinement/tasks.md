@@ -174,7 +174,7 @@
   - _Requirements: Requirement 3 (Persist DevicesPage Layout and Scope Selection)_
   - _Prompt: Implement the task for spec web-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React Hook Developer with mutation expertise | Task: Create useUpdateDevice hook in keyrx_ui/src/hooks/useUpdateDevice.ts for device configuration updates | Restrictions: Must invalidate queries on success, handle errors gracefully, follow React Query patterns | _Leverage: React Query for mutations, useUnifiedApi() for base URL, existing mutation hooks as patterns | _Requirements: Requirement 3 (Persist DevicesPage Layout and Scope Selection) | Success: Hook calls API correctly, query invalidation works, optimistic updates optional but beneficial | Instructions: 1. Mark [-]. 2. Implement hook. 3. Log (taskId="3.3", filesCreated, artifacts with functions). 4. Mark [x]._
 
-- [ ] 3.4. Integrate device persistence in DevicesPage
+- [x] 3.4. Integrate device persistence in DevicesPage
   - Files: `keyrx_ui/src/pages/DevicesPage.tsx`
   - Update layout change handler to use useUpdateDevice()
   - Update scope change handler to use useUpdateDevice()

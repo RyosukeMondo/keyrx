@@ -150,7 +150,7 @@ export function createActivationResult(
 // Device Factories
 // =============================================================================
 
-const DEVICE_SCOPES: DeviceScope[] = ['global', 'profile'];
+const DEVICE_SCOPES: DeviceScope[] = ['global', 'device-specific'];
 const LAYOUT_PRESETS: LayoutPreset[] = ['ANSI_104', 'ISO_105', 'JIS_109', 'HHKB', 'NUMPAD'];
 
 /**

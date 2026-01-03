@@ -11,7 +11,7 @@ export interface DeviceEntry {
   layout: string | null;
 }
 
-export type DeviceScope = 'global' | 'profile';
+export type DeviceScope = 'global' | 'device-specific';
 
 export type LayoutPreset = 'ANSI_104' | 'ISO_105' | 'JIS_109' | 'HHKB' | 'NUMPAD';
 
