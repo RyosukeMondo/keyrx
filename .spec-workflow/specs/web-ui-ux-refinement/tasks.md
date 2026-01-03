@@ -127,7 +127,7 @@
   - _Requirements: Requirement 1 (Remove WASM from Configuration Editor)_
   - _Prompt: Implement the task for spec web-ui-ux-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React Developer with component refactoring expertise | Task: Remove all WASM-related code from ConfigPage.tsx (line 45, 132-135, 379-385), eliminating WASM validation in configuration editor | Restrictions: Do not break existing visual editor functionality, preserve drag-and-drop features, ensure no console errors | _Leverage: Existing ConfigPage structure, MonacoEditor component | _Requirements: Requirement 1 (Remove WASM from Configuration Editor) | Success: ConfigPage loads without WASM errors, visual editor still works, console shows zero WASM-related warnings | Instructions: 1. Mark [-]. 2. Remove WASM code. 3. Log (taskId="1.1", filesModified). 4. Mark [x]._
 
-- [ ] 1.2. Create useValidateConfig hook with backend API
+- [-] 1.2. Create useValidateConfig hook with backend API
   - Files: `keyrx_ui/src/hooks/useValidateConfig.ts`
   - Implement hook using React Query mutation
   - Call POST `/api/profiles/validate` endpoint

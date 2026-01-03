@@ -61,3 +61,28 @@ export async function duplicateProfile(
     { newName }
   );
 }
+
+/**
+ * Validation error structure
+ */
+export interface ValidationError {
+  line: number;
+  column: number;
+  length: number;
+  message: string;
+}
+
+/**
+ * Validation result
+ */
+export interface ValidationResult {
+  valid: boolean;
+  errors: ValidationError[];
+}
+
+/**
+ * Validate profile configuration
+ */
+export async function validateConfig(config: string): Promise<ValidationResult> {
+  return apiClient.post<ValidationResult>('/api/profiles/validate', { config });
+}

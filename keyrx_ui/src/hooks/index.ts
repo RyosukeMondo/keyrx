@@ -20,6 +20,9 @@ export {
   useDeleteProfile,
 } from './useProfiles';
 
+// Profile validation hooks
+export { useValidateConfig } from './useValidateConfig';
+
 // Config hooks
 export {
   useConfig,
