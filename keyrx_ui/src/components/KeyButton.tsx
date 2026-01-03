@@ -1,15 +1,7 @@
 import React, { useMemo } from 'react';
 import { Tooltip } from './Tooltip';
 import { cn } from '../utils/cn';
-
-export interface KeyMapping {
-  type: 'simple' | 'tap_hold' | 'macro' | 'layer_switch';
-  tapAction?: string;
-  holdAction?: string;
-  threshold?: number;
-  macroSteps?: Array<{ type: string; key?: string; delay?: number }>;
-  targetLayer?: string;
-}
+import type { KeyMapping } from '@/types';
 
 interface KeyButtonProps {
   keyCode: string;

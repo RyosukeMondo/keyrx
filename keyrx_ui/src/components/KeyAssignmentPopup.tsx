@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { cn } from '@/utils/cn';
 import { Input } from './Input';
-import type { KeyMapping } from './KeyButton';
+import type { KeyMapping } from '@/types';
 import type { AssignableKey } from './KeyAssignmentPanel';
 
 type AssignmentType = 'key' | 'modifier' | 'lock' | 'layer' | 'macro' | 'tap-hold';

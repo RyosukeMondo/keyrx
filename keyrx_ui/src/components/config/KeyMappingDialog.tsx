@@ -24,7 +24,7 @@ export interface KeyMappingDialogProps {
 /**
  * Modal dialog for configuring individual key mappings.
  *
- * Provides a form interface for creating simple, tap-hold, macro, or layer-switch
+ * Provides a form interface for creating simple, tap_hold, macro, or layer_switch
  * key mappings. Validates input and emits the completed KeyMapping object.
  *
  * @example
@@ -60,13 +60,13 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
 
         if (currentMapping.type === 'simple' && currentMapping.simple) {
           setSimpleAction(currentMapping.simple);
-        } else if (currentMapping.type === 'tap-hold' && currentMapping.tapHold) {
+        } else if (currentMapping.type === 'tap_hold' && currentMapping.tapHold) {
           setTapAction(currentMapping.tapHold.tap);
           setHoldAction(currentMapping.tapHold.hold);
           setTimeout(currentMapping.tapHold.timeoutMs.toString());
         } else if (currentMapping.type === 'macro' && currentMapping.macro) {
           setMacroSequence(currentMapping.macro.join(', '));
-        } else if (currentMapping.type === 'layer-switch' && currentMapping.layer) {
+        } else if (currentMapping.type === 'layer_switch' && currentMapping.layer) {
           setLayerName(currentMapping.layer);
         }
       } else if (open && !currentMapping) {
@@ -93,7 +93,7 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
         if (!simpleAction.trim()) {
           newErrors.simpleAction = 'Simple action is required';
         }
-      } else if (mappingType === 'tap-hold') {
+      } else if (mappingType === 'tap_hold') {
         if (!tapAction.trim()) {
           newErrors.tapAction = 'Tap action is required';
         }
@@ -108,7 +108,7 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
         if (!macroSequence.trim()) {
           newErrors.macroSequence = 'Macro sequence is required';
         }
-      } else if (mappingType === 'layer-switch') {
+      } else if (mappingType === 'layer_switch') {
         if (!layerName.trim()) {
           newErrors.layerName = 'Layer name is required';
         }
@@ -136,7 +136,7 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
         // Add type-specific fields
         if (mappingType === 'simple') {
           mapping.simple = simpleAction.trim();
-        } else if (mappingType === 'tap-hold') {
+        } else if (mappingType === 'tap_hold') {
           mapping.tapHold = {
             tap: tapAction.trim(),
             hold: holdAction.trim(),
@@ -147,7 +147,7 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
             .split(',')
             .map((k) => k.trim())
             .filter((k) => k.length > 0);
-        } else if (mappingType === 'layer-switch') {
+        } else if (mappingType === 'layer_switch') {
           mapping.layer = layerName.trim();
         }
 
@@ -174,9 +174,9 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
     // Mapping type options for dropdown
     const mappingTypeOptions = [
       { value: 'simple', label: 'Simple Mapping' },
-      { value: 'tap-hold', label: 'Tap-Hold (Dual Function)' },
+      { value: 'tap_hold', label: 'Tap-Hold (Dual Function)' },
       { value: 'macro', label: 'Macro Sequence' },
-      { value: 'layer-switch', label: 'Layer Switch' },
+      { value: 'layer_switch', label: 'Layer Switch' },
     ];
 
     return (
@@ -229,7 +229,7 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
           )}
 
           {/* Tap-Hold Mapping Form */}
-          {mappingType === 'tap-hold' && (
+          {mappingType === 'tap_hold' && (
             <>
               <Input
                 type="text"
@@ -306,7 +306,7 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
           )}
 
           {/* Layer Switch Mapping Form */}
-          {mappingType === 'layer-switch' && (
+          {mappingType === 'layer_switch' && (
             <Input
               type="text"
               value={layerName}

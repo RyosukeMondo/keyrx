@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { KeyboardVisualizer } from '../components/KeyboardVisualizer';
-import { KeyMapping } from '../components/KeyButton';
+import type { KeyMapping } from '@/types';
 import { StateIndicatorPanel } from '../components/StateIndicatorPanel';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';

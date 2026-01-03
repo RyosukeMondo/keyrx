@@ -153,7 +153,7 @@ export function useDragAndDrop({
           // Layer switch mapping
           mapping = {
             keyCode,
-            type: 'layer-switch',
+            type: 'layer_switch',
             layer: droppedKey.id.replace('layer_', ''),
           };
           break;

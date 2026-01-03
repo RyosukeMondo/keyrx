@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { DndContext, DragEndEvent, DragOverlay } from '@dnd-kit/core';
 import { Card } from '@/components/Card';
 import { KeyboardVisualizer } from '@/components/KeyboardVisualizer';
@@ -7,13 +7,16 @@ import { KeyAssignmentPanel, AssignableKey } from '@/components/KeyAssignmentPan
 import { KeyAssignmentPopup } from '@/components/KeyAssignmentPopup';
 import { DeviceScopeToggle, MappingScope, DeviceOption } from '@/components/DeviceScopeToggle';
 import { LayerSelector, Layer } from '@/components/LayerSelector';
-import { KeyMapping } from '@/components/KeyButton';
+import type { KeyMapping } from '@/types';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { MonacoEditor } from '@/components/MonacoEditor';
+import { ProfileHeader } from '@/components/config/ProfileHeader';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useGetProfileConfig, useSetProfileConfig } from '@/hooks/useProfileConfig';
 import { useWasm, ValidationError } from '@/hooks/useWasm';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
+import { useDevices } from '@/hooks/useDevices';
+import { useProfiles } from '@/hooks/useProfiles';
 
 interface ConfigPageProps {
   profileName?: string;
@@ -23,6 +26,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   profileName: propProfileName,
 }) => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const profileNameFromQuery = searchParams.get('profile');
   const profileName = propProfileName || profileNameFromQuery || 'Default';
 
@@ -30,6 +34,10 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   const { data: profileConfig, isLoading: isLoadingConfig, error: configError } = useGetProfileConfig(profileName);
   const { mutateAsync: setProfileConfig } = useSetProfileConfig();
   const { validateConfig, isWasmReady } = useWasm();
+
+  // Fetch real devices and profiles
+  const { data: devicesData, isLoading: isLoadingDevices } = useDevices();
+  const { data: profilesData, isLoading: isLoadingProfiles } = useProfiles();
 
   const [activeTab, setActiveTab] = useState<'visual' | 'code'>('visual');
   const [configCode, setConfigCode] = useState<string>('');
@@ -43,11 +51,31 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   const [activeDragKey, setActiveDragKey] = useState<AssignableKey | null>(null);
   const [connectionTimeout, setConnectionTimeout] = useState(false);
 
-  // Mock devices for demo - would come from API
-  const availableDevices: DeviceOption[] = useMemo(() => [
-    { serial: 'KB001', name: 'Microsoft Ergonomic Keyboard' },
-    { serial: 'KB002', name: 'Logitech MX Keys' },
-  ], []);
+  // Transform real devices from API to DeviceOption format
+  const availableDevices: DeviceOption[] = useMemo(() => {
+    if (!devicesData) return [];
+    return devicesData.map(device => ({
+      serial: device.serial || device.id,
+      name: device.name,
+    }));
+  }, [devicesData]);
+
+  // Derive profile information from loaded data
+  const currentProfile = useMemo(() => {
+    return profilesData?.find(p => p.name === profileName);
+  }, [profilesData, profileName]);
+
+  const availableProfileNames = useMemo(() => {
+    return profilesData?.map(p => p.name) || [];
+  }, [profilesData]);
+
+  const isProfileActive = currentProfile?.isActive || false;
+  const lastModified = currentProfile?.modifiedAt ? new Date(currentProfile.modifiedAt) : undefined;
+
+  // Handle profile change from ProfileHeader dropdown
+  const handleProfileChange = useCallback((newProfileName: string) => {
+    navigate(`/config?profile=${newProfileName}`);
+  }, [navigate]);
 
   // Mock layers - would come from profile config parsing
   const availableLayers: Layer[] = useMemo(() => [
@@ -179,7 +207,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   }
 
   // Show loading state
-  if (!api.isConnected || isLoadingConfig) {
+  if (!api.isConnected || isLoadingConfig || isLoadingDevices || isLoadingProfiles) {
     return (
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
         <div className="text-center text-slate-400 py-4">
@@ -213,19 +241,23 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
-        {/* Header with Breadcrumb */}
+        {/* Profile Header with profile selector and active badge */}
+        <ProfileHeader
+          profileName={profileName}
+          isActive={isProfileActive}
+          lastModified={lastModified}
+          onProfileChange={handleProfileChange}
+          availableProfiles={availableProfileNames}
+        />
+
+        {/* Breadcrumb and Save Status */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <div className="text-sm text-slate-400">
-              <span className="hover:text-primary-400 cursor-pointer">Profiles</span>
-              <span className="mx-2">→</span>
-              <span className="text-slate-300">{profileName}</span>
-              <span className="mx-2">→</span>
-              <span className="text-slate-300">Configuration</span>
-            </div>
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-slate-100">
-              Visual Configuration Editor
-            </h1>
+          <div className="text-sm text-slate-400">
+            <span className="hover:text-primary-400 cursor-pointer" onClick={() => navigate('/profiles')}>
+              Profiles
+            </span>
+            <span className="mx-2">→</span>
+            <span className="text-slate-300">Configuration</span>
           </div>
 
           {/* Save Status Indicator */}

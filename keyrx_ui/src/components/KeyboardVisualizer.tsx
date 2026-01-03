@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { KeyButton, KeyMapping } from './KeyButton';
+import { KeyButton } from './KeyButton';
+import type { KeyMapping } from '@/types';
 import { parseKLEJson } from '../utils/kle-parser';
 import { cn } from '../utils/cn';
 import { useArrowNavigation } from '../utils/keyboard';

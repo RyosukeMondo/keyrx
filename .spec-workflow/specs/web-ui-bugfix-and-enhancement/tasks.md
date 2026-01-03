@@ -140,7 +140,7 @@
 
 ### Task 13: Integrate drag-and-drop in ConfigPage
 
-- [ ] 13. Integrate drag-and-drop UI in ConfigPage
+- [-] 13. Integrate drag-and-drop UI in ConfigPage
   - File: `keyrx_ui/src/pages/ConfigPage.tsx` (MAJOR MODIFICATION)
   - Purpose: Add drag-and-drop layer to ConfigPage with DndContext wrapper
   - _Leverage: `DndContext` from @dnd-kit/core, all new components (DragKeyPalette, KeyMappingDialog, ProfileHeader), modified KeyboardVisualizer, useDragAndDrop hook_

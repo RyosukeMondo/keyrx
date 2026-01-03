@@ -24,7 +24,7 @@
  * // Tap-hold mapping: CapsLock → Tap:Escape, Hold:Control
  * const tapHoldMapping: KeyMapping = {
  *   keyCode: 'CapsLock',
- *   type: 'tap-hold',
+ *   type: 'tap_hold',
  *   tapHold: {
  *     tap: 'VK_ESCAPE',
  *     hold: 'MD_CTRL',
@@ -37,7 +37,7 @@ export interface KeyMapping {
   keyCode: string;
 
   /** Type of key mapping */
-  type: 'simple' | 'tap-hold' | 'macro' | 'layer-switch';
+  type: 'simple' | 'tap_hold' | 'macro' | 'layer_switch';
 
   /**
    * Simple key mapping - maps to a single virtual key.
@@ -52,7 +52,7 @@ export interface KeyMapping {
    *
    * Tap action fires if key is released before timeout.
    * Hold action fires if key is held longer than timeout.
-   * Used when type === 'tap-hold'
+   * Used when type === 'tap_hold'
    */
   tapHold?: {
     /** Action to perform on tap (quick press) */
@@ -75,7 +75,7 @@ export interface KeyMapping {
    * Layer name for layer switch.
    *
    * Example: "nav" switches to navigation layer
-   * Used when type === 'layer-switch'
+   * Used when type === 'layer_switch'
    */
   layer?: string;
 }
