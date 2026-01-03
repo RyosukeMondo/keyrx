@@ -100,7 +100,7 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Systems Programmer with expertise in Linux input/output APIs and error recovery | Task: Migrate Platform trait and Linux implementation to return Result<T, PlatformError> following requirements 5.1-5.5. Update trait methods and impl blocks. Add error recovery for non-critical failures. Ensure daemon event loop doesn't panic. Target: eliminate 40-50 unwraps. | Restrictions: Maintain platform abstraction, do not break trait interface for Windows implementation, ensure errors are logged but don't crash daemon | Success: Platform trait uses Result types, Linux implementation uses PlatformError, event loop handles errors gracefully. Edit tasks.md [-] → [x], log with artifacts (trait changes, impl changes, error recovery logic, unwraps eliminated)_
 
-- [ ] 11. Migrate web handlers to Result types
+- [x] 11. Migrate web handlers to Result types
   - Files: keyrx_daemon/src/web/api/profiles.rs, keyrx_daemon/src/web/api/devices.rs, keyrx_daemon/src/web/api/config.rs, keyrx_daemon/src/web/api/metrics.rs
   - Change handler signatures to return Result<Json<T>, DaemonError>
   - Replace unwrap() with ? operator
