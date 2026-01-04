@@ -56,6 +56,9 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   const { data: devicesData, isLoading: isLoadingDevices } = useDevices();
   const { data: profilesData, isLoading: isLoadingProfiles } = useProfiles();
 
+  // Don't treat config as "loading" if WebSocket isn't connected yet (query is disabled)
+  const actuallyLoadingConfig = isLoadingConfig && api.isConnected;
+
   const [activeTab, setActiveTab] = useState<'visual' | 'code'>('visual');
   const [configCode, setConfigCode] = useState<string>('');
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
@@ -268,7 +271,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   }
 
   // Show loading state (only for config/devices/profiles, not WebSocket connection)
-  if (isLoadingConfig || isLoadingDevices || isLoadingProfiles) {
+  if (actuallyLoadingConfig || isLoadingDevices || isLoadingProfiles) {
     return (
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
         <div className="text-center text-slate-400 py-4">
