@@ -267,12 +267,12 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
     );
   }
 
-  // Show loading state
-  if (!api.isConnected || isLoadingConfig || isLoadingDevices || isLoadingProfiles) {
+  // Show loading state (only for config/devices/profiles, not WebSocket connection)
+  if (isLoadingConfig || isLoadingDevices || isLoadingProfiles) {
     return (
       <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
         <div className="text-center text-slate-400 py-4">
-          {!api.isConnected ? '⏳ Connecting to daemon...' : '⏳ Loading configuration...'}
+          ⏳ Loading configuration...
         </div>
 
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
