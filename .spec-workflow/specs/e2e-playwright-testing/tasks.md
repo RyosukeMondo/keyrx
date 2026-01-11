@@ -87,7 +87,7 @@
   - _Requirements: 1.4, 1.7, 1.8, 3.3_
   - _Prompt: Implement the task for spec e2e-playwright-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: E2E Test Developer | Task: Create Playwright tests for ConfigPage: test Monaco editor renders, test loading existing config, test editing and saving config (edit → save → reload → verify saved), test validation error display. Monaco requires special handling - wait for editor to initialize. | Restrictions: Monaco editor needs time to load, use appropriate waits, don't test editor internals (just that it works) | Success: Config editing flow works end-to-end, save persists correctly. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 10. Create MetricsPage E2E tests
+- [x] 10. Create MetricsPage E2E tests
   - File: keyrx_ui/tests/e2e/pages/metrics.spec.ts
   - Test metrics dashboard loads
   - Test latency stats display
