@@ -49,7 +49,7 @@
   - _Requirements: 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec api-contract-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer with API documentation experience | Task: Create comprehensive documentation for the contract testing system including local usage, adding new endpoints, and troubleshooting | Restrictions: Follow existing documentation style, include code examples, keep concise | Success: Documentation covers all use cases, examples work correctly, troubleshooting helps resolve common issues. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 6. Add validation for additional endpoints
+- [x] 6. Add validation for additional endpoints
   - File: keyrx_ui/scripts/validate-api-contracts.ts
   - Add validation for: GET /api/status, PATCH /api/devices/:id
   - Ensure all documented endpoints are covered
