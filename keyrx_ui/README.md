@@ -4,12 +4,463 @@ Web-based configuration interface for KeyRx keyboard remapper. Built with React,
 
 ## Features
 
+- **Bidirectional Rhai Sync**: Visual editor and code editor stay in sync in real-time
+- **Device-Aware Configuration**: Configure global and device-specific mappings with multi-device selection
 - **Visual Configuration Editor**: QMK-style drag-and-drop interface for keyboard remapping
 - **Real-time Simulator**: Test key mappings with WASM-powered simulation
-- **Profile Management**: Create, edit, and activate profiles
+- **Profile Management**: Create, edit, and activate profiles with auto-generation
 - **Device Management**: Monitor connected devices and configure device-specific mappings
 - **Metrics Dashboard**: View keystroke statistics and latency metrics
 - **Accessibility**: WCAG 2.2 Level AA compliant with full keyboard navigation support
+
+## Architecture Overview
+
+### Rhai-Driven Configuration
+
+KeyRx UI is designed with the Rhai script as the **Single Source of Truth (SSOT)** for all configuration. The architecture ensures:
+
+- **Bidirectional Sync**: Changes in the visual editor immediately update the Rhai script, and vice versa
+- **Device-Aware**: Device scope (global vs device-specific) is determined by Rhai `device()` blocks, not UI toggles
+- **Zero Configuration Drift**: Visual editor always reflects exactly what the Rhai script defines
+- **Graceful Degradation**: If parsing fails, the visual editor shows the last valid state with error messages
+
+### Key Components
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Visual Editor │────>│ RhaiSyncEngine   │────>│   Code Editor   │
+│  (KeyMapping[]) │<────│  (Orchestrator)  │<────│  (Rhai Script)  │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                              │     │
+                    ┌─────────┘     └─────────┐
+                    ▼                         ▼
+            ┌──────────────┐         ┌──────────────┐
+            │ RhaiParser   │         │ RhaiCodeGen  │
+            │ (parse AST)  │         │ (generate)   │
+            └──────────────┘         └──────────────┘
+                                            │
+                                            ▼
+                                    ┌──────────────┐
+                                    │RhaiFormatter │
+                                    │  (format)    │
+                                    └──────────────┘
+```
+
+## Rhai Utilities
+
+### RhaiParser
+
+Parses Rhai scripts into structured AST for the visual editor.
+
+**Location**: `src/utils/rhaiParser.ts`
+
+**Key Functions**:
+
+```typescript
+import {
+  parseRhaiScript,
+  extractDevicePatterns,
+  hasGlobalMappings,
+  getMappingsForDevice,
+  validateAST
+} from '@/utils/rhaiParser';
+
+// Parse Rhai script into AST
+const result = parseRhaiScript(rhaiCode);
+if (result.success) {
+  const ast = result.ast;
+  console.log('Global mappings:', ast.globalMappings);
+  console.log('Device blocks:', ast.deviceBlocks);
+} else {
+  console.error('Parse error:', result.error);
+  console.error('Line:', result.error.line);
+  console.error('Suggestion:', result.error.suggestion);
+}
+
+// Extract device patterns from AST
+const devices = extractDevicePatterns(ast);
+// Returns: ['SERIAL_123', 'SERIAL_456']
+
+// Check if AST has global mappings
+const hasGlobal = hasGlobalMappings(ast);
+
+// Get mappings for specific device
+const mappings = getMappingsForDevice(ast, 'SERIAL_123');
+
+// Validate AST structure
+const errors = validateAST(ast);
+if (errors.length > 0) {
+  console.error('Validation errors:', errors);
+}
+```
+
+**AST Structure**:
+
+```typescript
+interface RhaiAST {
+  globalMappings: KeyMapping[];
+  deviceBlocks: DeviceBlock[];
+  comments: string[];
+}
+
+interface DeviceBlock {
+  pattern: string;  // Device serial number or pattern
+  mappings: KeyMapping[];
+  layers?: LayerBlock[];
+}
+
+interface ParseError {
+  line: number;
+  column: number;
+  message: string;
+  suggestion: string;
+}
+```
+
+**Supported Mapping Types**:
+
+- **Simple**: `map(Key::A, Key::B);`
+- **Tap-Hold**: `map(Key::CapsLock, tap_hold(Key::Escape, Key::LCtrl, 200));`
+- **Macro**: `map(Key::F13, macro([Key::H, Key::E, Key::L, Key::L, Key::O]));`
+- **Layer Switch**: `map(Key::Space, layer_switch("nav"));`
+
+**Error Handling**:
+
+Parse errors include line numbers and actionable suggestions:
+
+```typescript
+{
+  line: 42,
+  column: 15,
+  message: "Expected ';' after map() call",
+  suggestion: "Add semicolon at end of line"
+}
+```
+
+### RhaiCodeGen
+
+Generates clean, formatted Rhai code from visual editor state.
+
+**Location**: `src/utils/rhaiCodeGen.ts`
+
+**Key Functions**:
+
+```typescript
+import {
+  generateRhaiScript,
+  generateDeviceBlock,
+  generateMapping,
+  generateComment
+} from '@/utils/rhaiCodeGen';
+
+// Generate complete Rhai script
+const mappings: KeyMapping[] = [
+  { keyCode: 'A', type: 'simple', simple: 'VK_B' }
+];
+const rhaiCode = generateRhaiScript({
+  globalMappings: mappings,
+  deviceBlocks: [],
+  comments: []
+});
+
+// Generate device-specific block
+const deviceBlock = generateDeviceBlock({
+  pattern: 'SERIAL_123',
+  mappings: [
+    { keyCode: 'CapsLock', type: 'simple', simple: 'VK_ESCAPE' }
+  ]
+});
+// Output:
+// device("SERIAL_123") {
+//     map(Key::CapsLock, Key::Escape);
+// }
+
+// Generate individual mapping
+const mapping = generateMapping({
+  keyCode: 'CapsLock',
+  type: 'tap_hold',
+  tapHold: {
+    tap: 'VK_ESCAPE',
+    hold: 'MD_CTRL',
+    timeoutMs: 200
+  }
+});
+// Output: map(Key::CapsLock, tap_hold(Key::Escape, Key::LCtrl, 200));
+```
+
+**Code Generation Rules**:
+
+1. **Indentation**: 4 spaces per level
+2. **Grouping**: Device-specific mappings grouped in single `device()` block
+3. **Comments**: Preserved from original Rhai (where possible)
+4. **Formatting**: Consistent spacing, aligned brackets
+
+**Performance**: <50ms for 1,000 mappings
+
+### RhaiFormatter
+
+Formats Rhai code with consistent style and indentation.
+
+**Location**: `src/utils/rhaiFormatter.ts`
+
+**Key Functions**:
+
+```typescript
+import {
+  formatRhaiScript,
+  applyDefaultFormatOptions
+} from '@/utils/rhaiFormatter';
+
+// Format with default options
+const formatted = formatRhaiScript(rhaiCode);
+
+// Format with custom options
+const customFormatted = formatRhaiScript(rhaiCode, {
+  indentSize: 2,          // Spaces per indent level (default: 4)
+  maxLineLength: 100,     // Max line length (default: 80)
+  preserveComments: true, // Keep comments (default: true)
+  alignBrackets: true     // Align closing brackets (default: true)
+});
+
+// Apply default formatting options
+const options = applyDefaultFormatOptions({ indentSize: 2 });
+```
+
+**Formatting Rules**:
+
+- **Indentation**: 4 spaces (configurable)
+- **Line Length**: Max 80 characters (configurable)
+- **Comments**: Preserved at original positions
+- **Brackets**: Aligned and consistently spaced
+- **Blank Lines**: Removed excess, added between blocks
+
+**Performance**: <50ms for 1,000 lines
+
+### RhaiSyncEngine
+
+Orchestrates bidirectional sync between visual and code editors.
+
+**Location**: `src/components/RhaiSyncEngine.tsx`
+
+**Usage**:
+
+```typescript
+import { useRhaiSyncEngine } from '@/components/RhaiSyncEngine';
+
+function ConfigPage() {
+  const {
+    // State
+    syncState,        // 'idle' | 'parsing' | 'generating' | 'syncing' | 'error'
+    parseError,       // ParseError | null
+    currentAST,       // RhaiAST | null
+    currentCode,      // string
+    visualMappings,   // KeyMapping[]
+
+    // Actions
+    onVisualChange,   // (mappings: KeyMapping[]) => void
+    onCodeChange,     // (code: string) => void
+    forceSync,        // () => void
+    clearError,       // () => void
+
+    // Getters
+    getDevicePatterns,    // () => string[]
+    hasGlobalMappings,    // () => boolean
+    getMappingsForDevice  // (pattern: string) => KeyMapping[]
+  } = useRhaiSyncEngine({
+    initialCode: rhaiScript,
+    debounceMs: 500,
+    onSyncComplete: (ast) => console.log('Sync complete', ast),
+    onError: (error) => console.error('Sync error', error)
+  });
+
+  return (
+    <div>
+      {/* Visual Editor */}
+      <KeyboardVisualizer
+        mappings={visualMappings}
+        onMappingChange={onVisualChange}
+      />
+
+      {/* Code Editor */}
+      <MonacoEditor
+        value={currentCode}
+        onChange={onCodeChange}
+      />
+
+      {/* Sync Status */}
+      {syncState === 'parsing' && <Spinner>Parsing...</Spinner>}
+      {syncState === 'generating' && <Spinner>Generating...</Spinner>}
+      {parseError && (
+        <ErrorBanner>
+          Line {parseError.line}: {parseError.message}
+          <br />
+          Suggestion: {parseError.suggestion}
+        </ErrorBanner>
+      )}
+    </div>
+  );
+}
+```
+
+**State Machine**:
+
+```
+idle ──(code change)──> parsing ──(success)──> syncing ──> idle
+  │                         │
+  │                      (error)
+  │                         │
+  └─────────────────────> error ──(clear)──> idle
+
+idle ──(visual change)──> generating ──> syncing ──> idle
+```
+
+**Debouncing**: Code editor changes are debounced (default: 500ms) to prevent excessive parsing.
+
+**Persistence**: Sync state is persisted to localStorage for recovery after page refresh.
+
+**Error Handling**: Parse errors display the last valid state in the visual editor with a warning banner.
+
+## Component Documentation
+
+### DeviceSelector
+
+Multi-device selector with global and device-specific checkboxes.
+
+**Location**: `src/components/DeviceSelector.tsx`
+
+**Usage**:
+
+```typescript
+import { DeviceSelector } from '@/components/DeviceSelector';
+
+function ConfigPage() {
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
+  const [showGlobal, setShowGlobal] = useState(true);
+
+  return (
+    <DeviceSelector
+      devices={connectedDevices}
+      selectedDevices={selectedDevices}
+      showGlobal={showGlobal}
+      onSelectionChange={(devices, global) => {
+        setSelectedDevices(devices);
+        setShowGlobal(global);
+      }}
+      disconnectedDevices={['SERIAL_DISCONNECTED']}
+    />
+  );
+}
+```
+
+**Props**:
+
+- `devices: Device[]` - List of connected devices
+- `selectedDevices: string[]` - Selected device serials
+- `showGlobal: boolean` - Whether global is selected
+- `onSelectionChange: (devices: string[], global: boolean) => void` - Callback for changes
+- `disconnectedDevices?: string[]` - Devices from Rhai that are disconnected (shows badge)
+
+**Features**:
+
+- **Multi-device checkboxes**: Select multiple devices to configure simultaneously
+- **Global checkbox**: Independent global configuration option
+- **Connection status badges**: Green for connected, gray for disconnected
+- **WCAG 2.2 compliant**: Keyboard navigation, ARIA labels, screen reader support
+- **No scope toggle**: Scope determined by Rhai script, not UI
+
+**Accessibility**:
+
+- `Tab`: Navigate between checkboxes
+- `Space`: Toggle checkbox
+- `Enter`: Toggle checkbox
+- Screen readers announce device names, connection status, and selection state
+
+### DevicesPage
+
+Manages device metadata (name, layout) and global layout settings.
+
+**Location**: `src/pages/DevicesPage.tsx`
+
+**Features**:
+
+- **Global Settings Card**: Set default keyboard layout (ANSI 104, ISO 105, JIS 109, HHKB, NUMPAD)
+- **Device List**: Display all detected devices with connection status
+- **Device Editing**: Rename devices and override global layout
+- **Auto-save**: Changes persist automatically to daemon
+- **No scope UI**: Scope field completely removed
+
+**Global Layout API**:
+
+- `GET /api/settings/global-layout` - Get current global layout
+- `PUT /api/settings/global-layout` - Set global layout (persists to daemon)
+
+**Device Inheritance**:
+
+- New devices inherit the global layout by default
+- Device-specific layout overrides the global setting
+- Changing global layout does not affect existing device overrides
+
+### ProfilesPage
+
+Manages profiles with Rhai file path display and auto-generation.
+
+**Location**: `src/pages/ProfilesPage.tsx`
+
+**Features**:
+
+- **Rhai File Path Display**: Each profile card shows the Rhai script path
+- **Path Tooltip**: Hover to see full absolute path
+- **Click to Edit**: Click path to navigate to Config page
+- **Auto-Generate Default**: First-time users get a "default" profile automatically
+- **Profile CRUD**: Create, edit, activate, delete profiles
+
+**Auto-Generation**:
+
+When the profile list is empty on first load:
+
+1. System creates "default" profile with "blank" template
+2. Profile is activated automatically
+3. Notification shown: "Default profile created. Click 'Edit' to customize."
+4. Error handling with retry button if daemon is offline
+
+### ConfigPage
+
+Device-aware configuration with bidirectional Rhai sync.
+
+**Location**: `src/pages/ConfigPage.tsx`
+
+**Features**:
+
+- **Bidirectional Sync**: Visual editor ↔ Rhai script in real-time
+- **Multi-Device Display**: Show global and multiple device keyboards side-by-side
+- **Rhai-Driven Detection**: Device selector auto-populated from Rhai `device()` blocks
+- **Parse Error Display**: Shows line numbers, error messages, and suggestions
+- **Tab Switching**: Preserves sync state when switching between visual and code tabs
+- **Device Filtering**: Mappings filtered by selected devices
+
+**User Workflows**:
+
+**Workflow 1: Load → Edit Visual → Switch to Code → Save**
+
+1. Load profile: Rhai parsed, visual editor populated
+2. Edit in visual: Mappings updated, Rhai regenerated immediately
+3. Switch to code tab: See generated Rhai script
+4. Save: Persists to daemon
+
+**Workflow 2: Multi-Device Configuration**
+
+1. Select "Global" and "Device A" in device selector
+2. Both keyboards display side-by-side
+3. Add mapping to "Device A" keyboard
+4. Rhai script generates `device("SERIAL_A") { ... }` block
+5. Save: Device-specific configuration persists
+
+**Workflow 3: Rhai-Driven Device Detection**
+
+1. Load profile with `device("SERIAL_123") { ... }` blocks
+2. Device selector auto-populated with "SERIAL_123"
+3. If device not connected, shows "disconnected" badge
+4. User can still edit mappings for disconnected device
 
 ## Drag-and-Drop Configuration
 
@@ -19,10 +470,11 @@ The visual configuration editor provides an intuitive interface for creating key
 
 1. **Navigate to Configuration Page**: Click "Config" in the navigation menu
 2. **Select Profile**: Choose a profile from the dropdown in the header
-3. **Select Layer**: Choose which layer to edit (base, nav, num, fn)
-4. **Drag Keys**: Drag keys from the palette on the left onto the keyboard visualizer
-5. **Configure Mapping**: Click a mapped key to open the configuration dialog
-6. **Save**: Changes are auto-saved to the daemon
+3. **Select Devices**: Check "Global" or specific devices in the device selector
+4. **Select Layer**: Choose which layer to edit (base, nav, num, fn)
+5. **Drag Keys**: Drag keys from the palette on the left onto the keyboard visualizer
+6. **Configure Mapping**: Click a mapped key to open the configuration dialog
+7. **Save**: Changes auto-save to the daemon and generate Rhai script
 
 ### Keyboard Accessibility
 
@@ -196,6 +648,45 @@ function ConfigPage() {
 
 ### Troubleshooting
 
+#### Visual editor not syncing with code
+
+- **Check sync state**: Look for "Parsing..." or "Generating..." indicators
+- **Parse error**: Check for error banner with line number and suggestion
+- **Fix**: Correct syntax error in code editor, or use "Force Sync" button
+- **Debounce delay**: Wait 500ms after typing in code editor for sync to trigger
+
+#### Device selector not showing devices from Rhai
+
+- **Check Rhai syntax**: Ensure `device("SERIAL")` blocks are correctly formatted
+- **Verify parsing**: Switch to code editor tab and check for parse errors
+- **Disconnected devices**: Devices in Rhai that aren't connected show gray badge
+- **Fix**: Correct `device()` block syntax or wait for device to connect
+
+#### Types out of sync error in CI
+
+- **Cause**: Rust structs modified but TypeScript types not regenerated
+- **Fix**: Run `scripts/check-types.sh --fix` and commit generated.ts
+- **Prevention**: Pre-commit hook should catch this locally
+
+#### API validation errors
+
+- **Check browser console**: Zod validation errors logged with endpoint and details
+- **Unexpected fields**: Warnings about extra fields (not errors) - usually safe to ignore
+- **Type mismatch**: Update frontend to match new backend types (check generated.ts)
+
+#### Global layout not applying to new devices
+
+- **Verify save**: Check for success indicator after changing global layout
+- **Check daemon**: Ensure daemon is running and connected
+- **API call**: Look for PUT /api/settings/global-layout in DevTools Network tab
+- **Persistence**: Setting stored in daemon's settings.json file
+
+#### Auto-generate default profile failed
+
+- **Daemon offline**: Check if daemon is running (connection indicator in UI)
+- **Retry**: Click the "Retry" button in error notification
+- **Manual creation**: Create profile manually from Profiles page if auto-generate fails
+
 #### Drag-and-drop not working
 
 - **Check browser compatibility**: @dnd-kit requires a modern browser with Pointer Events support
@@ -245,18 +736,59 @@ npm install
 keyrx_ui/
 ├── src/
 │   ├── api/              # API client functions
+│   │   ├── schemas.ts    # Zod validation schemas
+│   │   └── contracts.test.ts  # API contract tests
 │   ├── components/       # Reusable UI components
-│   │   └── config/       # Configuration editor components
+│   │   ├── config/       # Configuration editor components
+│   │   ├── DeviceSelector.tsx  # Multi-device selector
+│   │   └── RhaiSyncEngine.tsx  # Bidirectional sync orchestrator
 │   ├── contexts/         # React contexts (API, theme)
 │   ├── hooks/            # Custom React hooks
+│   │   ├── useDevices.ts       # Device management
+│   │   ├── useProfiles.ts      # Profile management
+│   │   └── useProfileConfig.ts # Configuration management
 │   ├── pages/            # Top-level page components
+│   │   ├── ConfigPage.tsx      # Configuration editor
+│   │   ├── DevicesPage.tsx     # Device management
+│   │   └── ProfilesPage.tsx    # Profile management
 │   ├── services/         # Business logic services
+│   │   └── ConfigStorage.ts    # Storage abstraction
 │   ├── types/            # TypeScript type definitions
+│   │   └── generated.ts  # Auto-generated from Rust (typeshare)
 │   ├── utils/            # Utility functions
+│   │   ├── rhaiParser.ts       # Rhai parsing (AST generation)
+│   │   ├── rhaiCodeGen.ts      # Rhai code generation
+│   │   ├── rhaiFormatter.ts    # Rhai code formatting
+│   │   ├── timeFormatting.ts   # Time utilities
+│   │   └── keyCodeMapping.ts   # Key code translation
 │   └── App.tsx           # Root component
 ├── tests/                # Test utilities
+│   └── testUtils.tsx     # Shared test infrastructure
 ├── e2e/                  # Playwright E2E tests
 └── public/               # Static assets
+```
+
+### Testing Approach
+
+**Philosophy**: All utilities have comprehensive unit tests with ≥90% coverage. Components have integration tests validating user workflows.
+
+**Key Test Files**:
+
+- `src/utils/rhaiParser.test.ts` - 39 tests for Rhai parsing (100% coverage)
+- `src/utils/rhaiCodeGen.test.ts` - 35 tests for code generation (97.6% line coverage)
+- `src/utils/rhaiFormatter.test.ts` - 43 tests for formatting (100% statement coverage)
+- `src/components/RhaiSyncEngine.test.tsx` - 22 tests for sync engine (all state transitions)
+- `src/components/DeviceSelector.test.tsx` - 41 tests for device selector (100% coverage)
+- `src/pages/DevicesPage.test.tsx` - 41 tests for devices page (100% pass rate)
+- `src/pages/ProfilesPage.test.tsx` - 36 tests for profiles page (100% pass rate)
+- `src/pages/ConfigPage.test.tsx` - 28 tests for config page integration
+
+**Round-Trip Testing**: Parser and code generator are tested together to ensure:
+```typescript
+const original = generateRhaiScript(ast1);
+const parsed = parseRhaiScript(original);
+const regenerated = generateRhaiScript(parsed.ast);
+expect(regenerated).toEqual(original); // Round-trip consistency
 ```
 
 ### Testing
@@ -364,6 +896,128 @@ For comprehensive testing documentation, see:
 - [Integration Testing Guide](./docs/testing/integration-testing-guide.md) - Full page testing and multi-component interactions
 
 All tests must pass before merging. See `.github/workflows/ci.yml` for CI enforcement.
+
+## Type Safety Infrastructure
+
+### Rust-TypeScript Interface
+
+TypeScript types are **automatically generated** from Rust structs using [typeshare](https://github.com/1Password/typeshare).
+
+**How It Works**:
+
+1. Annotate Rust structs with `#[typeshare]` in `keyrx_daemon`
+2. Run `cargo typeshare` to generate `src/types/generated.ts`
+3. Frontend imports types from `generated.ts`
+4. CI/CD verifies types are in sync
+
+**Example**:
+
+```rust
+// Rust (keyrx_daemon/src/web/handlers/devices.rs)
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[typeshare]
+pub struct DeviceEntry {
+    pub serial: String,
+    pub name: String,
+    pub layout: LayoutPreset,
+}
+```
+
+```typescript
+// Generated TypeScript (src/types/generated.ts)
+export interface DeviceEntry {
+  serial: string;
+  name: string;
+  layout: LayoutPreset;
+}
+```
+
+### Runtime Validation
+
+All API responses are validated at runtime using [Zod](https://zod.dev/).
+
+**Location**: `src/api/schemas.ts`
+
+**Example**:
+
+```typescript
+import { z } from 'zod';
+import { validateApiResponse } from '@/api/schemas';
+
+const DeviceEntrySchema = z.object({
+  serial: z.string(),
+  name: z.string(),
+  layout: z.enum(['ANSI_104', 'ISO_105', 'JIS_109', 'HHKB', 'NUMPAD'])
+});
+
+// Validate API response
+const response = await fetch('/api/devices');
+const data = await response.json();
+const validated = validateApiResponse(DeviceEntrySchema, data, '/api/devices');
+// Throws descriptive error if validation fails
+```
+
+**Error Handling**:
+
+- **Validation failures**: Throw error with endpoint name and detailed message
+- **Unexpected fields**: Log as warning (not error) to allow backward compatibility
+- **Type mismatches**: Clear error messages with expected vs actual types
+
+### Contract Tests
+
+API contracts are tested on both frontend and backend.
+
+**Frontend**: `src/api/contracts.test.ts` (40 tests)
+- Validates all REST endpoints with Zod schemas
+- Validates WebSocket RPC messages
+- 100% endpoint coverage
+
+**Backend**: `keyrx_daemon/tests/api_contracts_test.rs` (25 tests)
+- Tests request/response structures
+- Validates request validation rules
+- Tests error responses (HTTP 400 for invalid input)
+
+### Pre-Commit Type Check
+
+A pre-commit hook ensures TypeScript types stay in sync with Rust structs.
+
+**Script**: `scripts/check-types.sh`
+
+**How It Works**:
+
+1. Regenerates TypeScript types from Rust
+2. Checks for differences in `generated.ts`
+3. Fails commit if types are out of sync
+4. Provides clear error with diff
+
+**Fix out-of-sync types**:
+
+```bash
+# Regenerate and commit
+scripts/check-types.sh --fix
+git add keyrx_ui/src/types/generated.ts
+git commit
+```
+
+### CI/CD Type Check
+
+GitHub Actions verifies type consistency on every push.
+
+**Workflow**: `.github/workflows/ci.yml` (type-check job)
+
+**Checks**:
+
+- Regenerates TypeScript types from Rust
+- Runs `git diff` to detect changes
+- Fails if types are out of sync
+- Runs TypeScript compilation (`npm run type-check`)
+
+**If types are out of sync**, CI fails with:
+```
+Error: TypeScript types are out of sync with Rust structs
+Diff:
++ layout: LayoutPreset;  // Added in Rust
+```
 
 ## Technology Stack
 
