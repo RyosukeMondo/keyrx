@@ -11,7 +11,9 @@ import { useGetProfileConfig, useSetProfileConfig } from '@/hooks/useProfileConf
 import { useProfiles, useCreateProfile } from '@/hooks/useProfiles';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
 import { useDevices } from '@/hooks/useDevices';
+import { useRhaiSyncEngine } from '@/components/RhaiSyncEngine';
 import type { KeyMapping } from '@/types';
+import type { KeyMapping as RhaiKeyMapping } from '@/utils/rhaiParser';
 
 interface ConfigPageProps {
   profileName?: string;
@@ -30,7 +32,18 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
 
   const api = useUnifiedApi();
   const [activeTab, setActiveTab] = useState<'visual' | 'code'>('visual');
-  const [configCode, setConfigCode] = useState<string>('// Loading...');
+
+  // Initialize RhaiSyncEngine for bidirectional sync
+  const syncEngine = useRhaiSyncEngine({
+    storageKey: `profile-${selectedProfileName}`,
+    debounceMs: 500,
+    onStateChange: (state) => {
+      console.debug('Sync state changed:', state);
+    },
+    onError: (error, direction) => {
+      console.error('Sync error:', { error, direction });
+    },
+  });
 
   // Fetch available profiles
   const { data: profiles, isLoading: isLoadingProfiles } = useProfiles();
@@ -40,8 +53,8 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   const [selectedPaletteKey, setSelectedPaletteKey] = useState<PaletteKey | null>(null);
   const [selectedPhysicalKey, setSelectedPhysicalKey] = useState<string | null>(null);
   const [keyMappings, setKeyMappings] = useState<Map<string, KeyMapping>>(new Map());
-  const [scope, setScope] = useState<'global' | 'device-specific'>('global');
-  const [selectedDevice, setSelectedDevice] = useState<string>('');
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
+  const [globalSelected, setGlobalSelected] = useState<boolean>(true);
   const [activeLayer, setActiveLayer] = useState<string>('base');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -69,13 +82,14 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   const configExists = !isLoading && !error && profileConfig?.source;
   const configMissing = !isLoading && !error && profileExists && !profileConfig?.source;
 
-  // Update config code when data loads
+  // Update sync engine when profile config loads
   useEffect(() => {
     if (profileConfig?.source) {
-      setConfigCode(profileConfig.source);
+      // Initialize sync engine with loaded config
+      syncEngine.onCodeChange(profileConfig.source);
     } else if (configMissing) {
       // Default config template when config file doesn't exist
-      setConfigCode(`// Configuration for profile: ${selectedProfileName}
+      const defaultTemplate = `// Configuration for profile: ${selectedProfileName}
 // This is a new configuration file
 
 // Example: Simple key remapping
@@ -85,9 +99,51 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
 // tap_hold("CapsLock", "Escape", "LCtrl", 200);
 
 // Add your key mappings here...
-`);
+`;
+      syncEngine.onCodeChange(defaultTemplate);
     }
   }, [profileConfig, configMissing, selectedProfileName]);
+
+  // Sync visual editor state from parsed AST when transitioning to visual tab or when code changes
+  useEffect(() => {
+    // Only sync when on visual tab and state is idle (parsing complete)
+    if (activeTab !== 'visual' || syncEngine.state !== 'idle') return;
+
+    const ast = syncEngine.getAST();
+    if (!ast) return;
+
+    // Convert RhaiAST to visual editor KeyMapping format
+    const newMappings = new Map<string, KeyMapping>();
+
+    // Add global mappings
+    ast.globalMappings.forEach((m) => {
+      const visualMapping: KeyMapping = {
+        type: m.type,
+      };
+
+      if (m.type === 'simple' && m.targetKey) {
+        visualMapping.tapAction = m.targetKey;
+      } else if (m.type === 'tap_hold' && m.tapHold) {
+        visualMapping.tapAction = m.tapHold.tapAction;
+        visualMapping.holdAction = m.tapHold.holdAction;
+        visualMapping.threshold = m.tapHold.thresholdMs;
+      } else if (m.type === 'macro' && m.macro) {
+        visualMapping.macroSteps = m.macro.keys.map((key) => ({
+          type: 'press' as const,
+          key,
+        }));
+      } else if (m.type === 'layer_switch' && m.layerSwitch) {
+        visualMapping.targetLayer = m.layerSwitch.layerId;
+      }
+
+      newMappings.set(m.sourceKey, visualMapping);
+    });
+
+    // TODO: Handle device-specific mappings
+    // For now, just use global mappings
+
+    setKeyMappings(newMappings);
+  }, [activeTab, syncEngine.state]);
 
   // Handle profile selection change
   const handleProfileChange = (newProfileName: string) => {
@@ -106,7 +162,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
 
   const handleSaveConfig = async () => {
     try {
-      await setProfileConfig({ name: selectedProfileName, source: configCode });
+      await setProfileConfig({ name: selectedProfileName, source: syncEngine.getCode() });
     } catch (err) {
       console.error('Failed to save config:', err);
     }
@@ -124,7 +180,44 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       const newMappings = new Map(keyMappings);
       newMappings.set(selectedPhysicalKey, mapping);
       setKeyMappings(newMappings);
-      // TODO: Auto-save to backend
+
+      // Convert visual editor state to RhaiAST and trigger sync
+      const rhaiMappings: RhaiKeyMapping[] = Array.from(newMappings.entries()).map(([key, m]) => {
+        const baseMapping: RhaiKeyMapping = {
+          type: m.type,
+          sourceKey: key,
+          line: 0,
+        };
+
+        if (m.type === 'simple' && m.tapAction) {
+          baseMapping.targetKey = m.tapAction;
+        } else if (m.type === 'tap_hold' && m.tapAction && m.holdAction) {
+          baseMapping.tapHold = {
+            tapAction: m.tapAction,
+            holdAction: m.holdAction,
+            thresholdMs: m.threshold || 200,
+          };
+        } else if (m.type === 'macro' && m.macroSteps) {
+          baseMapping.macro = {
+            keys: m.macroSteps.filter(s => s.key).map(s => s.key!),
+            delayMs: m.macroSteps.find(s => s.delayMs)?.delayMs,
+          };
+        } else if (m.type === 'layer_switch' && m.targetLayer) {
+          baseMapping.layerSwitch = {
+            layerId: m.targetLayer,
+          };
+        }
+
+        return baseMapping;
+      });
+
+      // Update sync engine with new AST
+      syncEngine.onVisualChange({
+        imports: [],
+        globalMappings: rhaiMappings,
+        deviceBlocks: [],
+        comments: [],
+      });
     }
   };
 
@@ -277,10 +370,12 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
           {/* Device Selector (compact at top) */}
           <DeviceSelector
             devices={devices}
-            scope={scope}
-            selectedDevice={selectedDevice}
-            onScopeChange={setScope}
-            onDeviceChange={setSelectedDevice}
+            selectedDevices={selectedDevices}
+            globalSelected={globalSelected}
+            onSelectionChange={(deviceIds, global) => {
+              setSelectedDevices(deviceIds);
+              setGlobalSelected(global);
+            }}
           />
 
           {/* KEYBOARD ON TOP - Beautiful Layout */}
@@ -351,14 +446,67 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
           )}
         </>
       ) : (
-        <Card variant="default" padding="lg">
-          <SimpleCodeEditor
-            value={configCode}
-            onChange={(value) => setConfigCode(value)}
-            height="600px"
-            language="javascript"
-          />
-        </Card>
+        <div className="flex flex-col gap-4">
+          {/* Sync status indicator */}
+          {syncEngine.state !== 'idle' && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border border-slate-600 rounded-md">
+              {syncEngine.state === 'parsing' && (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400"></div>
+                  <span className="text-sm text-slate-300">Parsing Rhai script...</span>
+                </>
+              )}
+              {syncEngine.state === 'generating' && (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400"></div>
+                  <span className="text-sm text-slate-300">Generating code...</span>
+                </>
+              )}
+              {syncEngine.state === 'syncing' && (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400"></div>
+                  <span className="text-sm text-slate-300">Syncing...</span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Parse error display */}
+          {syncEngine.error && (
+            <div className="p-4 bg-red-900/20 border border-red-500 rounded-md">
+              <div className="flex items-start gap-3">
+                <span className="text-red-400 text-xl">⚠️</span>
+                <div className="flex-1">
+                  <h4 className="text-red-400 font-semibold mb-1">Parse Error</h4>
+                  <p className="text-sm text-red-300 mb-2">
+                    Line {syncEngine.error.line}, Column {syncEngine.error.column}: {syncEngine.error.message}
+                  </p>
+                  {syncEngine.error.suggestion && (
+                    <p className="text-sm text-slate-300 italic">
+                      💡 {syncEngine.error.suggestion}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => syncEngine.clearError()}
+                  className="text-slate-400 hover:text-slate-300 transition-colors"
+                  aria-label="Clear error"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
+          <Card variant="default" padding="lg">
+            <SimpleCodeEditor
+              value={syncEngine.getCode()}
+              onChange={(value) => syncEngine.onCodeChange(value)}
+              height="600px"
+              language="javascript"
+            />
+          </Card>
+        </div>
       )}
     </div>
   );

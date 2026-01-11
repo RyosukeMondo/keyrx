@@ -81,8 +81,11 @@ export function resetSeed(): void {
  *   const activeProfile = createProfile({ isActive: true });
  */
 export function createProfile(overrides?: Partial<ProfileMetadata>): ProfileMetadata {
+  const name = overrides?.name ?? faker.word.adjective() + '-' + faker.word.noun();
   return {
-    name: overrides?.name ?? faker.word.adjective() + '-' + faker.word.noun(),
+    name,
+    rhaiPath: overrides?.rhaiPath ?? `/home/user/.config/keyrx/profiles/${name}.rhai`,
+    krxPath: overrides?.krxPath ?? `/home/user/.config/keyrx/profiles/${name}.krx`,
     createdAt: overrides?.createdAt ?? faker.date.past().toISOString(),
     modifiedAt: overrides?.modifiedAt ?? faker.date.recent().toISOString(),
     deviceCount: overrides?.deviceCount ?? faker.number.int({ min: 1, max: 5 }),
