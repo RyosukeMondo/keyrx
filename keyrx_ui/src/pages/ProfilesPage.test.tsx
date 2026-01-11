@@ -1,13 +1,27 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '../../tests/testUtils';
 import userEvent from '@testing-library/user-event';
 import { ProfilesPage } from './ProfilesPage';
+import { http, HttpResponse } from 'msw';
+import { server } from '../test/mocks/server';
+import { resetMockData } from '../test/mocks/handlers';
 
 // Helper to render ProfilesPage with Router
 const renderProfilesPage = () => renderWithProviders(<ProfilesPage />, { wrapWithRouter: true });
 
 describe('ProfilesPage', () => {
+  beforeEach(() => {
+    resetMockData();
+    vi.clearAllMocks();
+    // Clear localStorage to prevent test pollution
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('renders page title', async () => {
     renderProfilesPage();
 
@@ -366,5 +380,523 @@ describe('ProfilesPage', () => {
     expect(
       screen.getByRole('button', { name: /Delete profile gaming/i })
     ).toBeInTheDocument();
+  });
+
+  // =============================================================================
+  // Rhai Path Display Tests (Requirements 3.1-3.4)
+  // =============================================================================
+
+  describe('Rhai Path Display', () => {
+    it('displays Rhai file path on profile cards', async () => {
+      renderProfilesPage();
+
+      await waitFor(() => {
+        expect(screen.getByText('default')).toBeInTheDocument();
+      });
+
+      // Check that Rhai path is displayed
+      const rhaiPath = screen.getByText(/default\.rhai/);
+      expect(rhaiPath).toBeInTheDocument();
+    });
+
+    it('shows tooltip with full path on hover', async () => {
+      const user = userEvent.setup();
+      renderProfilesPage();
+
+      await waitFor(() => {
+        expect(screen.getByText('default')).toBeInTheDocument();
+      });
+
+      // Find the path button for default profile specifically
+      const pathButton = screen.getByLabelText(/Open configuration file.*default\.rhai/);
+      expect(pathButton).toBeInTheDocument();
+
+      // The tooltip should be accessible via the button's aria-label
+      expect(pathButton).toHaveAttribute('aria-label', expect.stringContaining('.config/keyrx/profiles/default.rhai'));
+    });
+
+    it('navigates to config page when path is clicked', async () => {
+      const user = userEvent.setup();
+      renderProfilesPage();
+
+      await waitFor(() => {
+        expect(screen.getByText('default')).toBeInTheDocument();
+      });
+
+      // Click the path button
+      const pathButton = screen.getByLabelText(/Open configuration file.*default\.rhai/);
+      await user.click(pathButton);
+
+      // Click handler executed without error
+      expect(pathButton).toBeInTheDocument();
+    });
+
+    it('shows file exists indicator for valid profiles', async () => {
+      renderProfilesPage();
+
+      await waitFor(() => {
+        expect(screen.getByText('default')).toBeInTheDocument();
+      });
+
+      // Should NOT show "File not found" indicator
+      const fileNotFoundIcon = screen.queryByLabelText('File not found');
+      expect(fileNotFoundIcon).not.toBeInTheDocument();
+    });
+  });
+
+  // =============================================================================
+  // Auto-Generate Default Profile Tests (Requirements 4.1-4.5)
+  // =============================================================================
+
+  describe('Auto-Generate Default Profile', () => {
+    it('auto-generates default profile when list is empty', async () => {
+      // Track profile creation
+      let profileCreated = false;
+      let profileActivated = false;
+
+      // Mock empty profile list initially
+      let profileCount = 0;
+      server.use(
+        http.get('/api/profiles', () => {
+          if (profileCount === 0) {
+            return HttpResponse.json({ profiles: [] });
+          }
+          // After creation, return the created profile
+          return HttpResponse.json({
+            profiles: [{
+              name: 'default',
+              rhaiPath: '/home/user/.config/keyrx/profiles/default.rhai',
+              krxPath: '/home/user/.config/keyrx/profiles/default.krx',
+              isActive: true,
+              createdAt: new Date().toISOString(),
+              modifiedAt: new Date().toISOString(),
+              layerCount: 1,
+              deviceCount: 0,
+              keyCount: 0,
+            }]
+          });
+        }),
+        http.post('/api/profiles', async ({ request }) => {
+          const body = await request.json() as { name: string; template: string };
+          expect(body.name).toBe('default');
+          expect(body.template).toBe('blank');
+          profileCreated = true;
+          profileCount++;
+
+          return HttpResponse.json({
+            name: 'default',
+            rhaiPath: '/home/user/.config/keyrx/profiles/default.rhai',
+            krxPath: '/home/user/.config/keyrx/profiles/default.krx',
+            isActive: false,
+            createdAt: new Date().toISOString(),
+            modifiedAt: new Date().toISOString(),
+            layerCount: 1,
+            deviceCount: 0,
+            keyCount: 0,
+          });
+        }),
+        http.post('/api/profiles/:name/activate', ({ params }) => {
+          expect(params.name).toBe('default');
+          profileActivated = true;
+
+          return HttpResponse.json({
+            success: true,
+            compile_time_ms: 42,
+            reload_time_ms: 10,
+          });
+        })
+      );
+
+      renderProfilesPage();
+
+      // Wait for auto-generation to complete
+      await waitFor(() => {
+        expect(profileCreated).toBe(true);
+      }, { timeout: 5000 });
+
+      await waitFor(() => {
+        expect(profileActivated).toBe(true);
+      }, { timeout: 5000 });
+
+      // Should show success notification
+      await waitFor(() => {
+        expect(screen.getByText(/Default profile created/)).toBeInTheDocument();
+      }, { timeout: 5000 });
+    });
+
+    it('creates default profile with blank template', async () => {
+      let templateUsed = '';
+
+      server.use(
+        http.get('/api/profiles', () => {
+          return HttpResponse.json({ profiles: [] });
+        }),
+        http.post('/api/profiles', async ({ request }) => {
+          const body = await request.json() as { name: string; template: string };
+          templateUsed = body.template;
+
+          return HttpResponse.json({
+            name: body.name,
+            rhaiPath: `/home/user/.config/keyrx/profiles/${body.name}.rhai`,
+            krxPath: `/home/user/.config/keyrx/profiles/${body.name}.krx`,
+            isActive: false,
+            createdAt: new Date().toISOString(),
+            modifiedAt: new Date().toISOString(),
+            layerCount: 1,
+            deviceCount: 0,
+            keyCount: 0,
+          });
+        }),
+        http.post('/api/profiles/:name/activate', () => {
+          return HttpResponse.json({
+            success: true,
+            compile_time_ms: 42,
+            reload_time_ms: 10,
+          });
+        })
+      );
+
+      renderProfilesPage();
+
+      await waitFor(() => {
+        expect(templateUsed).toBe('blank');
+      }, { timeout: 5000 });
+    });
+
+    it('activates profile automatically after creation', async () => {
+      let activateCalled = false;
+
+      server.use(
+        http.get('/api/profiles', () => {
+          return HttpResponse.json({ profiles: [] });
+        }),
+        http.post('/api/profiles', async ({ request }) => {
+          const body = await request.json() as { name: string; template: string };
+          return HttpResponse.json({
+            name: body.name,
+            rhaiPath: `/home/user/.config/keyrx/profiles/${body.name}.rhai`,
+            krxPath: `/home/user/.config/keyrx/profiles/${body.name}.krx`,
+            isActive: false,
+            createdAt: new Date().toISOString(),
+            modifiedAt: new Date().toISOString(),
+            layerCount: 1,
+            deviceCount: 0,
+            keyCount: 0,
+          });
+        }),
+        http.post('/api/profiles/:name/activate', ({ params }) => {
+          expect(params.name).toBe('default');
+          activateCalled = true;
+
+          return HttpResponse.json({
+            success: true,
+            compile_time_ms: 42,
+            reload_time_ms: 10,
+          });
+        })
+      );
+
+      renderProfilesPage();
+
+      await waitFor(() => {
+        expect(activateCalled).toBe(true);
+      }, { timeout: 5000 });
+    });
+
+    it('shows success notification with auto-dismiss', async () => {
+      vi.useFakeTimers();
+
+      server.use(
+        http.get('/api/profiles', () => {
+          return HttpResponse.json({ profiles: [] });
+        }),
+        http.post('/api/profiles', async ({ request }) => {
+          const body = await request.json() as { name: string; template: string };
+          return HttpResponse.json({
+            name: body.name,
+            rhaiPath: `/home/user/.config/keyrx/profiles/${body.name}.rhai`,
+            krxPath: `/home/user/.config/keyrx/profiles/${body.name}.krx`,
+            isActive: false,
+            createdAt: new Date().toISOString(),
+            modifiedAt: new Date().toISOString(),
+            layerCount: 1,
+            deviceCount: 0,
+            keyCount: 0,
+          });
+        }),
+        http.post('/api/profiles/:name/activate', () => {
+          return HttpResponse.json({
+            success: true,
+            compile_time_ms: 42,
+            reload_time_ms: 10,
+          });
+        })
+      );
+
+      renderProfilesPage();
+
+      // Wait for success notification to appear
+      await waitFor(() => {
+        expect(screen.getByText(/Default profile created/)).toBeInTheDocument();
+      }, { timeout: 5000 });
+
+      // Fast-forward 5 seconds to trigger auto-dismiss
+      vi.advanceTimersByTime(5000);
+
+      // Notification should be dismissed
+      await waitFor(() => {
+        expect(screen.queryByText(/Default profile created/)).not.toBeInTheDocument();
+      });
+
+      vi.useRealTimers();
+    });
+
+    it('does not auto-generate if profiles already exist', async () => {
+      let createCalled = false;
+
+      server.use(
+        http.post('/api/profiles', () => {
+          createCalled = true;
+          return HttpResponse.json({}, { status: 500 });
+        })
+      );
+
+      renderProfilesPage();
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(screen.getByText('default')).toBeInTheDocument();
+      });
+
+      // Wait to ensure auto-generate doesn't trigger
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Should NOT have called create API
+      expect(createCalled).toBe(false);
+    });
+
+    it('shows error notification when daemon is offline', async () => {
+      server.use(
+        http.get('/api/profiles', () => {
+          return HttpResponse.json({ profiles: [] });
+        }),
+        http.post('/api/profiles', () => {
+          return HttpResponse.error();
+        })
+      );
+
+      renderProfilesPage();
+
+      // Wait for error notification
+      await waitFor(() => {
+        expect(screen.getByText(/Unable to connect to daemon/)).toBeInTheDocument();
+      }, { timeout: 5000 });
+    });
+
+    it('shows error notification on creation failure', async () => {
+      server.use(
+        http.get('/api/profiles', () => {
+          return HttpResponse.json({ profiles: [] });
+        }),
+        http.post('/api/profiles', () => {
+          return HttpResponse.json(
+            { error: 'Disk full', errorCode: 'DISK_FULL' },
+            { status: 500 }
+          );
+        })
+      );
+
+      renderProfilesPage();
+
+      // Wait for error notification
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to create default profile/)).toBeInTheDocument();
+      }, { timeout: 5000 });
+    });
+
+    it('shows retry button on error', async () => {
+      server.use(
+        http.get('/api/profiles', () => {
+          return HttpResponse.json({ profiles: [] });
+        }),
+        http.post('/api/profiles', () => {
+          return HttpResponse.error();
+        })
+      );
+
+      renderProfilesPage();
+
+      // Wait for error notification with retry button
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
+      }, { timeout: 5000 });
+    });
+
+    it('retries auto-generation when retry button is clicked', async () => {
+      const user = userEvent.setup();
+      let attemptCount = 0;
+
+      server.use(
+        http.get('/api/profiles', () => {
+          return HttpResponse.json({ profiles: [] });
+        }),
+        http.post('/api/profiles', () => {
+          attemptCount++;
+          if (attemptCount === 1) {
+            return HttpResponse.error();
+          }
+          return HttpResponse.json({
+            name: 'default',
+            rhaiPath: '/home/user/.config/keyrx/profiles/default.rhai',
+            krxPath: '/home/user/.config/keyrx/profiles/default.krx',
+            isActive: false,
+            createdAt: new Date().toISOString(),
+            modifiedAt: new Date().toISOString(),
+            layerCount: 1,
+            deviceCount: 0,
+            keyCount: 0,
+          });
+        }),
+        http.post('/api/profiles/:name/activate', () => {
+          return HttpResponse.json({
+            success: true,
+            compile_time_ms: 42,
+            reload_time_ms: 10,
+          });
+        })
+      );
+
+      renderProfilesPage();
+
+      // Wait for error and retry button
+      const retryButton = await waitFor(() => {
+        return screen.getByRole('button', { name: /Retry creating default profile/i });
+      }, { timeout: 5000 });
+
+      // Click retry
+      await user.click(retryButton);
+
+      // Should show success notification after retry
+      await waitFor(() => {
+        expect(screen.getByText(/Default profile created/)).toBeInTheDocument();
+      }, { timeout: 5000 });
+
+      expect(attemptCount).toBe(2);
+    });
+
+    it('can dismiss error notification', async () => {
+      const user = userEvent.setup();
+
+      server.use(
+        http.get('/api/profiles', () => {
+          return HttpResponse.json({ profiles: [] });
+        }),
+        http.post('/api/profiles', () => {
+          return HttpResponse.error();
+        })
+      );
+
+      renderProfilesPage();
+
+      // Wait for error notification
+      await waitFor(() => {
+        expect(screen.getByText(/Unable to connect to daemon/)).toBeInTheDocument();
+      }, { timeout: 5000 });
+
+      // Click dismiss button (×)
+      const dismissButton = screen.getByRole('button', { name: /Dismiss error/i });
+      await user.click(dismissButton);
+
+      // Error should be dismissed
+      await waitFor(() => {
+        expect(screen.queryByText(/Unable to connect to daemon/)).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  // =============================================================================
+  // Error Handling and Edge Cases
+  // =============================================================================
+
+  describe('Error Handling', () => {
+    it('shows error message when profile fetch fails', async () => {
+      server.use(
+        http.get('/api/profiles', () => {
+          return HttpResponse.json(
+            { error: 'Database error' },
+            { status: 500 }
+          );
+        })
+      );
+
+      renderProfilesPage();
+
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to load profiles/i)).toBeInTheDocument();
+      });
+    });
+
+    it('shows activation error with compilation details', async () => {
+      const user = userEvent.setup();
+
+      server.use(
+        http.post('/api/profiles/:name/activate', () => {
+          return HttpResponse.json({
+            success: true,
+            errors: [
+              'Line 5: Unexpected token',
+              'Line 10: Missing semicolon',
+            ],
+          });
+        })
+      );
+
+      renderProfilesPage();
+
+      await waitFor(() => {
+        expect(screen.getByText('gaming')).toBeInTheDocument();
+      });
+
+      const activateButton = screen.getByRole('button', { name: /Activate profile gaming/i });
+      await user.click(activateButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Compilation failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/Line 5: Unexpected token/)).toBeInTheDocument();
+      });
+    });
+
+    it('can dismiss activation error', async () => {
+      const user = userEvent.setup();
+
+      server.use(
+        http.post('/api/profiles/:name/activate', () => {
+          return HttpResponse.json({
+            success: true,
+            errors: ['Compilation error'],
+          });
+        })
+      );
+
+      renderProfilesPage();
+
+      await waitFor(() => {
+        expect(screen.getByText('gaming')).toBeInTheDocument();
+      });
+
+      const activateButton = screen.getByRole('button', { name: /Activate profile gaming/i });
+      await user.click(activateButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Compilation failed/i)).toBeInTheDocument();
+      });
+
+      const dismissButton = screen.getByRole('button', { name: /Dismiss error/i });
+      await user.click(dismissButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Compilation failed/i)).not.toBeInTheDocument();
+      });
+    });
   });
 });

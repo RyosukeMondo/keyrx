@@ -234,6 +234,25 @@ export const handlers = [
     return HttpResponse.json({ success: true });
   }),
 
+  // Profile validation endpoint
+  http.post('/api/profiles/:name/validate', ({ params }) => {
+    const { name } = params;
+    const profile = mockProfiles.find((p) => p.name === name);
+
+    if (!profile) {
+      return HttpResponse.json(
+        { error: 'Profile not found', errorCode: 'PROFILE_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    // Mock validation - always return valid for test profiles
+    return HttpResponse.json({
+      valid: true,
+      errors: [],
+    });
+  }),
+
   // Config endpoints
   http.get('/api/config/:profile', ({ params }) => {
     const { profile } = params;
