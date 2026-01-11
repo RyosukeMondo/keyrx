@@ -106,7 +106,7 @@
   - _Requirements: 1.6, 1.7, 1.8_
   - _Prompt: Implement the task for spec e2e-playwright-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: E2E Test Developer | Task: Create Playwright tests for SimulatorPage: test page loads without errors, test key input field works, test simulate button triggers API call, test output displays results. | Restrictions: Simulator results depend on config, test structure not specific outputs, handle API errors gracefully | Success: Simulator UI works, API integration functions. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 12. Create API endpoint tests
+- [x] 12. Create API endpoint tests
   - File: keyrx_ui/tests/e2e/api/endpoints.spec.ts
   - Test all documented API endpoints
   - Verify response status and structure

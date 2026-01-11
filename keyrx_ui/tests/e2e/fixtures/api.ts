@@ -5,7 +5,7 @@
  * All responses are validated against Zod schemas for type safety.
  */
 
-import { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext } from '@playwright/test';
 import { validateApiResponse } from '../../../src/api/schemas';
 import * as Schemas from '../../../src/api/schemas';
 import type {
@@ -24,7 +24,13 @@ import type {
  * Uses Playwright's APIRequestContext for HTTP requests
  */
 export class ApiHelpers {
-  constructor(private request: APIRequestContext, private baseUrl: string) {}
+  private request: APIRequestContext;
+  private baseUrl: string;
+
+  constructor(request: APIRequestContext, baseUrl: string) {
+    this.request = request;
+    this.baseUrl = baseUrl;
+  }
 
   /**
    * GET /api/status - Fetch daemon status

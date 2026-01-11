@@ -30,13 +30,15 @@ export async function fetchDevices(): Promise<DeviceEntry[]> {
   const validated = validateApiResponse(DeviceListResponseSchema, response, 'GET /api/devices');
 
   // Map validated response to DeviceEntry format
+  // The REST API returns DeviceRpcInfo format (id, name, path, serial, active, scope?, layout?)
   return validated.devices.map((device) => ({
     id: device.id,
     name: device.name,
-    path: '', // REST API doesn't provide path, use empty string
+    path: device.path,
     serial: device.serial || null,
-    active: true, // Devices returned by REST API are assumed active
-    scope: device.scope === 'DeviceSpecific' ? 'device-specific' : 'global',
+    active: device.active,
+    scope: device.scope === 'DeviceSpecific' ? 'device-specific' :
+           device.scope === 'Global' ? 'global' : 'global', // Default to global if unset
     layout: device.layout || null,
   }));
 }

@@ -445,3 +445,101 @@ jobs:
         run: |
           echo "Virtual E2E tests failed. See uploaded logs for details."
           exit 1
+
+  api-contract-tests:
+    name: API Contract Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [type-check, build-and-verify]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: keyrx_ui/package-lock.json
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-contract-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build daemon
+        run: cargo build --release -p keyrx_daemon
+
+      - name: Build compiler
+        run: cargo build --release -p keyrx_compiler
+
+      - name: Install frontend dependencies
+        working-directory: keyrx_ui
+        run: npm ci
+
+      - name: Setup test profile
+        run: |
+          mkdir -p ~/.config/keyrx/profiles
+          cat > ~/.config/keyrx/profiles/Test.rhai << 'EOF'
+          // Minimal test profile for CI
+          device_start("*");
+          device_end();
+          EOF
+          ./target/release/keyrx_compiler compile ~/.config/keyrx/profiles/Test.rhai -o ~/.config/keyrx/profiles/Test.krx
+          echo "Test profile created and compiled"
+
+      - name: Start daemon
+        run: |
+          # Start daemon in background (will fail to grab keyboards, but web API still works)
+          ./target/release/keyrx_daemon run --config ~/.config/keyrx/profiles/Test.krx &
+          DAEMON_PID=$!
+          echo "DAEMON_PID=$DAEMON_PID" >> $GITHUB_ENV
+
+          # Wait for daemon to be ready
+          echo "Waiting for daemon to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:9867/api/status > /dev/null 2>&1; then
+              echo "Daemon is ready (attempt $i)"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Daemon failed to start within 30 seconds"
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Run contract validation
+        id: contract-validation
+        working-directory: keyrx_ui
+        run: |
+          npm run validate:contracts 2>&1 | tee contract-validation.log
+          echo "Contract validation completed"
+
+      - name: Stop daemon
+        if: always()
+        run: |
+          if [ -n "$DAEMON_PID" ]; then
+            kill $DAEMON_PID 2>/dev/null || true
+          fi
+          pkill -f keyrx_daemon || true
+
+      - name: Upload contract validation results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: contract-validation-results
+          path: |
+            keyrx_ui/contract-validation.log
+          retention-days: 7

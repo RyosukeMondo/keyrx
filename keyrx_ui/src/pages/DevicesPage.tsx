@@ -70,8 +70,14 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
   onEditingNameChange,
   onForgetClick,
 }) => {
-  // Local state for auto-save
+  // Local state for layout - tracks user's current selection
   const [localLayout, setLocalLayout] = useState(device.layout);
+
+  // Track the server value to detect user changes vs external updates
+  const serverLayoutRef = React.useRef(device.layout);
+
+  // Track whether user has made a change that needs saving
+  const [hasUserChanges, setHasUserChanges] = useState(false);
 
   // Device update mutation hook
   const { mutate: updateDevice, isPending: isUpdating, error: updateError } = useUpdateDevice();
@@ -79,26 +85,31 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
   // Track last saved timestamp for feedback
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
-  // Auto-save hook for layout changes
+  // Save function - only called when user makes changes
+  const saveLayout = React.useCallback(async (layout: string) => {
+    await new Promise<void>((resolve, reject) => {
+      updateDevice(
+        { id: device.id, layout },
+        {
+          onSuccess: () => {
+            serverLayoutRef.current = layout; // Update server value after successful save
+            setLastSavedAt(new Date());
+            setHasUserChanges(false);
+            resolve();
+          },
+          onError: (error) => reject(error),
+        }
+      );
+    });
+  }, [device.id, updateDevice]);
+
+  // Auto-save hook - only enabled when user has made changes
   const { isSaving: isSavingLayout, error: layoutSaveError } = useAutoSave(
     localLayout,
     {
-      saveFn: async (layout: string) => {
-        await new Promise<void>((resolve, reject) => {
-          updateDevice(
-            { id: device.id, layout },
-            {
-              onSuccess: () => {
-                setLastSavedAt(new Date());
-                resolve();
-              },
-              onError: (error) => reject(error),
-            }
-          );
-        });
-      },
+      saveFn: saveLayout,
       debounceMs: 500,
-      enabled: true,
+      enabled: hasUserChanges, // Only save when user changed the value
     }
   );
 
@@ -106,13 +117,22 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
   const isSaving = isSavingLayout || isUpdating;
   const saveError = layoutSaveError || updateError;
 
-  // Update local state when device changes externally
+  // Update local state when device changes externally (e.g., from server refresh)
   React.useEffect(() => {
-    setLocalLayout(device.layout);
+    // Only update if server value changed (external update, not our save)
+    if (device.layout !== serverLayoutRef.current) {
+      serverLayoutRef.current = device.layout;
+      setLocalLayout(device.layout);
+      setHasUserChanges(false); // External update, no user changes
+    }
   }, [device.layout]);
 
   const handleLayoutChange = (newLayout: string) => {
     setLocalLayout(newLayout);
+    // Mark as user change only if different from server value
+    if (newLayout !== serverLayoutRef.current) {
+      setHasUserChanges(true);
+    }
   };
 
   return (

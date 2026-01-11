@@ -1,0 +1,2 @@
+function r(r,t="An error occurred"){if(null==r)return t;if(r instanceof Error)return r.message;if("object"==typeof r&&null!==r&&"message"in r){const t=r.message;if("string"==typeof t)return t;if("object"==typeof t&&null!==t)return JSON.stringify(t)}if("string"==typeof r)return r;if("object"==typeof r)try{return JSON.stringify(r)}catch{return t}return String(r)}export{r as g};
+//# sourceMappingURL=errorUtils-C0i9WI_e.js.map

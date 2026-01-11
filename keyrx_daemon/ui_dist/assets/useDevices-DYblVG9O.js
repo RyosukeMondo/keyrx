@@ -1,0 +1,2 @@
+import{k as e}from"./vendor-DchKSmaM.js";import{q as i}from"./index-DNY7ggn3.js";import{a}from"./client-DsuQMGGi.js";import{v as s,D as c}from"./schemas-DRbUxdzV.js";async function o(){const e=await a.get("/api/devices");return s(c,e,"GET /api/devices").devices.map(e=>({id:e.id,name:e.name,path:e.path,serial:e.serial||null,active:e.active,scope:"DeviceSpecific"===e.scope?"device-specific":(e.scope,"global"),layout:e.layout||null}))}function t(){return e({queryKey:i.devices,queryFn:o})}export{t as u};
+//# sourceMappingURL=useDevices-DYblVG9O.js.map
