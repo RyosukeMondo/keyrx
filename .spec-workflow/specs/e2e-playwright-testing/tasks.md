@@ -30,7 +30,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
   - _Prompt: Implement the task for spec e2e-playwright-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Performance Test Engineer | Task: Create NetworkMonitor class that attaches to Playwright page, tracks all API requests by endpoint, counts duplicates, and provides assertions like assertNoExcessiveRequests(endpoint, maxCount) and assertNoDuplicateRequests(). | Restrictions: Only track requests to /api/* endpoints, ignore static assets, use Map for efficient counting | Success: Can detect rapid PATCH requests bug pattern, provides clear assertion messages. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 4. Create API test helpers
+- [x] 4. Create API test helpers
   - File: keyrx_ui/tests/e2e/fixtures/api.ts
   - Reusable API request functions
   - Type-safe response handling
