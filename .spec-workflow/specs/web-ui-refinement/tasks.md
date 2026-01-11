@@ -324,14 +324,16 @@
   - _Completed: 2026-01-11_
   - _Artifacts: SettingsService (persistent storage in settings.json), RPC handlers (get_global_layout, set_global_layout), integrated into AppState, 11 unit tests passing, layout validation (ANSI_104, ISO_105, JIS_109, HHKB, NUMPAD), atomic file writes, backward compatible_
 
-- [ ] 29. Write backend API tests
-  - File: keyrx_daemon/tests/api/devices_test.rs, keyrx_daemon/tests/api/settings_test.rs
+- [x] 29. Write backend API tests
+  - File: keyrx_daemon/tests/api_devices_test.rs, keyrx_daemon/tests/api_settings_test.rs
   - Test device API without scope
   - Test global layout API
   - Test device layout inheritance
   - Purpose: Ensure backend changes work
-  - _Leverage: keyrx_daemon/tests/helpers/testUtils.rs_
+  - _Leverage: keyrx_daemon/tests/common/test_app.rs_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 2.5_
+  - _Completed: 2026-01-11_
+  - _Artifacts: keyrx_daemon/tests/api_devices_test.rs (16 tests: 7 original + 9 new for scope removal and device inheritance), keyrx_daemon/tests/api_settings_test.rs (12 tests for global layout API), test coverage for scope field removal (registry does not contain scope, PATCH ignores scope, backward compatibility with old registry files), test coverage for global layout API (set/get/persist/clear/validate/atomic writes), test coverage for device layout inheritance (new devices inherit global, device-specific overrides, global change preserves overrides, multiple devices with different overrides), all 28 tests passing (100% pass rate), used TestApp fixture with isolated config directories for parallel test execution_
   - _Prompt: Implement the task for spec web-ui-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer specializing in Rust API testing | Task: Create backend API tests following requirements 1.1-1.4, 2.1-2.5. Test device API changes (PATCH without scope succeeds, scope field ignored if sent, DeviceEntry has no scope, existing registry files load correctly). Test global layout API (PUT with valid layout saves, GET returns saved layout, PUT with invalid layout returns 400). Test device layout inheritance (new device inherits global layout, device-specific override takes precedence, global layout change doesn't affect existing overrides). Use test utilities from keyrx_daemon/tests/helpers/testUtils.rs | Restrictions: Must test both success and error scenarios, must verify persistence (restart daemon between tests), must validate migration from old registry format, achieve 80% coverage for new code | Success: Device API tests pass without scope field, global layout API fully tested (GET/PUT, validation, persistence), device inheritance tested (global default, device override, precedence), migration from old registry verified, error scenarios covered, 80% code coverage achieved. After completing, set this task to in-progress [-] in tasks.md, then run mcp__spec-workflow__log-implementation tool to record artifacts (test files, test scenarios, coverage), then mark task complete [x] in tasks.md_
 
 ## Phase 8: Documentation and Final Integration
