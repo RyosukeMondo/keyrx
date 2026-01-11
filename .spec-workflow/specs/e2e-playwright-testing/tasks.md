@@ -39,7 +39,7 @@
   - _Requirements: 2.1-2.11_
   - _Prompt: Implement the task for spec e2e-playwright-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: API Test Developer | Task: Create typed API helper functions using Playwright's APIRequestContext for all endpoints: getStatus(), getDevices(), getProfiles(), createProfile(), activateProfile(), etc. Use Zod schemas from src/api/schemas.ts for response validation. | Restrictions: Validate all responses against schemas, throw clear errors on validation failure, use consistent error handling | Success: All API endpoints have helper functions, responses are type-checked. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 5. Create global setup/teardown
+- [x] 5. Create global setup/teardown
   - File: keyrx_ui/tests/e2e/global-setup.ts, keyrx_ui/tests/e2e/global-teardown.ts
   - Start daemon before all tests
   - Stop daemon after all tests
