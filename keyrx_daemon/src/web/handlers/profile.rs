@@ -6,6 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use typeshare::typeshare;
 
 use crate::config::ProfileTemplate;
 use crate::services::ProfileService;
@@ -55,23 +56,50 @@ struct RenameProfileParams {
     new_name: String,
 }
 
-/// Profile information returned by RPC methods
-#[derive(Debug, Serialize)]
-struct ProfileRpcInfo {
+/// Parameters for get_profile_config query
+#[derive(Debug, Deserialize)]
+struct GetProfileConfigParams {
     name: String,
-    layer_count: usize,
-    active: bool,
-    modified_at_secs: u64,
+}
+
+/// Parameters for set_profile_config command
+#[derive(Debug, Deserialize)]
+struct SetProfileConfigParams {
+    name: String,
+    source: String,
+}
+
+/// Profile information returned by RPC methods
+#[typeshare]
+#[derive(Debug, Serialize)]
+pub struct ProfileRpcInfo {
+    pub name: String,
+    #[typeshare(serialized_as = "number")]
+    pub layer_count: usize,
+    pub active: bool,
+    #[typeshare(serialized_as = "number")]
+    pub modified_at_secs: u64,
 }
 
 /// Activation result returned by activate_profile
+#[typeshare]
 #[derive(Debug, Serialize)]
-struct ActivationRpcResult {
-    success: bool,
-    compile_time_ms: u64,
-    reload_time_ms: u64,
+pub struct ActivationRpcResult {
+    pub success: bool,
+    #[typeshare(serialized_as = "number")]
+    pub compile_time_ms: u64,
+    #[typeshare(serialized_as = "number")]
+    pub reload_time_ms: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    error: Option<String>,
+    pub error: Option<String>,
+}
+
+/// Profile configuration returned by get_profile_config
+#[typeshare]
+#[derive(Debug, Serialize)]
+pub struct ProfileConfigRpc {
+    pub name: String,
+    pub source: String,
 }
 
 /// Validate profile name to prevent path traversal attacks
@@ -327,6 +355,85 @@ pub async fn rename_profile(
 
     serde_json::to_value(rpc_info)
         .map_err(|e| RpcError::internal_error(format!("Serialization failed: {}", e)))
+}
+
+/// Get profile configuration source code
+pub async fn get_profile_config(
+    profile_service: &ProfileService,
+    params: Value,
+) -> Result<Value, RpcError> {
+    let params: GetProfileConfigParams = serde_json::from_value(params)
+        .map_err(|e| RpcError::invalid_params(format!("Invalid parameters: {}", e)))?;
+
+    log::debug!("RPC: get_profile_config name={}", params.name);
+
+    // Validate profile name
+    validate_profile_name(&params.name)?;
+
+    // Call profile service
+    let source = profile_service
+        .get_profile_config(&params.name)
+        .await
+        .map_err(|e| {
+            RpcError::new(
+                INTERNAL_ERROR,
+                format!("Failed to get profile config: {}", e),
+            )
+        })?;
+
+    // Convert to RPC format
+    let rpc_config = ProfileConfigRpc {
+        name: params.name,
+        source,
+    };
+
+    serde_json::to_value(rpc_config)
+        .map_err(|e| RpcError::internal_error(format!("Serialization failed: {}", e)))
+}
+
+/// Set profile configuration source code
+pub async fn set_profile_config(
+    profile_service: &ProfileService,
+    params: Value,
+) -> Result<Value, RpcError> {
+    let params: SetProfileConfigParams = serde_json::from_value(params)
+        .map_err(|e| RpcError::invalid_params(format!("Invalid parameters: {}", e)))?;
+
+    log::info!(
+        "RPC: set_profile_config name={} source_length={}",
+        params.name,
+        params.source.len()
+    );
+
+    // Validate profile name
+    validate_profile_name(&params.name)?;
+
+    // Enforce 1MB size limit
+    const MAX_CONFIG_SIZE: usize = 1024 * 1024; // 1MB
+    if params.source.len() > MAX_CONFIG_SIZE {
+        return Err(RpcError::invalid_params(format!(
+            "Configuration too large: {} bytes (max {} bytes)",
+            params.source.len(),
+            MAX_CONFIG_SIZE
+        )));
+    }
+
+    // Call profile service
+    profile_service
+        .set_profile_config(&params.name, &params.source)
+        .await
+        .map_err(|e| {
+            RpcError::new(
+                INTERNAL_ERROR,
+                format!("Failed to set profile config: {}", e),
+            )
+        })?;
+
+    // Return success
+    Ok(serde_json::json!({
+        "success": true,
+        "name": params.name
+    }))
 }
 
 #[cfg(test)]

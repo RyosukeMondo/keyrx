@@ -6,6 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use typeshare::typeshare;
 
 use crate::config::simulation_engine::{BuiltinScenario, SimulatedEvent};
 use crate::macro_recorder::MacroRecorder;
@@ -58,24 +59,34 @@ struct ResetSimulatorParams {
 }
 
 /// Latency statistics returned by get_latency
+#[typeshare]
 #[derive(Debug, Serialize)]
-struct LatencyRpcStats {
-    min_us: u64,
-    avg_us: u64,
-    max_us: u64,
-    p50_us: u64,
-    p95_us: u64,
-    p99_us: u64,
-    count: usize,
+pub struct LatencyRpcStats {
+    #[typeshare(serialized_as = "number")]
+    pub min_us: u64,
+    #[typeshare(serialized_as = "number")]
+    pub avg_us: u64,
+    #[typeshare(serialized_as = "number")]
+    pub max_us: u64,
+    #[typeshare(serialized_as = "number")]
+    pub p50_us: u64,
+    #[typeshare(serialized_as = "number")]
+    pub p95_us: u64,
+    #[typeshare(serialized_as = "number")]
+    pub p99_us: u64,
+    #[typeshare(serialized_as = "number")]
+    pub count: usize,
 }
 
 /// Event in event log
+#[typeshare]
 #[derive(Debug, Serialize)]
-struct EventRpcEntry {
-    timestamp: u64,
-    key_code: u16,
-    event_type: String,
-    device_id: String,
+pub struct EventRpcEntry {
+    #[typeshare(serialized_as = "number")]
+    pub timestamp: u64,
+    pub key_code: u16,
+    pub event_type: String,
+    pub device_id: String,
 }
 
 /// Simulation result

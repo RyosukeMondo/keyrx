@@ -115,6 +115,71 @@ cargo test --bin keyrx_daemon
 
 Integration tests verify platform-specific functionality in `tests/integration/`.
 
+## Type Generation
+
+This crate uses [typeshare](https://github.com/1Password/typeshare) to automatically generate TypeScript type definitions from Rust structs for the frontend.
+
+### Generating TypeScript Types
+
+To regenerate TypeScript types after modifying API structs:
+
+```bash
+cd keyrx_daemon
+typeshare --lang=typescript --output-file=../keyrx_ui/src/types/generated.ts src/
+```
+
+This will scan all Rust source files in `src/` for structs and enums annotated with `#[typeshare]` and generate corresponding TypeScript definitions in `keyrx_ui/src/types/generated.ts`.
+
+### Adding New API Types
+
+When adding new API request/response types:
+
+1. Add the `#[typeshare]` attribute to the struct/enum:
+   ```rust
+   use typeshare::typeshare;
+
+   #[typeshare]
+   #[derive(Serialize, Deserialize)]
+   pub struct MyApiResponse {
+       pub field: String,
+   }
+   ```
+
+2. For `u64` and `usize` fields, add serialization hints:
+   ```rust
+   #[typeshare]
+   #[derive(Serialize, Deserialize)]
+   pub struct MyStats {
+       #[typeshare(serialized_as = "number")]
+       pub timestamp: u64,
+       #[typeshare(serialized_as = "number")]
+       pub count: usize,
+   }
+   ```
+
+3. Regenerate types:
+   ```bash
+   cd keyrx_daemon
+   typeshare --lang=typescript --output-file=../keyrx_ui/src/types/generated.ts src/
+   ```
+
+4. Verify TypeScript compilation:
+   ```bash
+   cd ../keyrx_ui
+   npm run type-check
+   ```
+
+### Configuration
+
+Type generation is configured in `Cargo.toml`:
+
+```toml
+[package.metadata.typeshare]
+output_directory = "../keyrx_ui/src/types"
+```
+
+This ensures consistency between Rust and TypeScript types, preventing API contract drift.
+
 ## Security Considerations
 
 The daemon requires elevated privileges to intercept keyboard events:

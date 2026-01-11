@@ -7,8 +7,10 @@ use crate::error::RegistryError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use typeshare::typeshare;
 
 /// Device scope determines whether configuration applies globally or per-device
+#[typeshare]
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeviceScope {
     /// Configuration applies only to this specific device
@@ -18,6 +20,7 @@ pub enum DeviceScope {
 }
 
 /// Device metadata entry
+#[typeshare]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DeviceEntry {
     /// Unique device identifier (max 256 chars)
@@ -31,6 +34,7 @@ pub struct DeviceEntry {
     /// Associated layout name (max 32 chars)
     pub layout: Option<String>,
     /// Last seen timestamp (Unix seconds)
+    #[typeshare(serialized_as = "number")]
     pub last_seen: u64,
 }
 

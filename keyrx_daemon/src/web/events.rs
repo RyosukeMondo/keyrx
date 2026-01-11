@@ -4,8 +4,10 @@
 //! to connected WebSocket clients for real-time monitoring.
 
 use serde::{Deserialize, Serialize};
+use typeshare::typeshare;
 
 /// Events broadcast from the daemon to WebSocket clients.
+#[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum DaemonEvent {
@@ -23,6 +25,7 @@ pub enum DaemonEvent {
 }
 
 /// Current daemon state snapshot.
+#[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DaemonState {
     /// Active modifier IDs (e.g., ["MD_00", "MD_01"]).
@@ -40,9 +43,11 @@ pub struct DaemonState {
 }
 
 /// Individual key event data.
+#[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeyEventData {
     /// Timestamp in microseconds since UNIX epoch.
+    #[typeshare(serialized_as = "number")]
     pub timestamp: u64,
 
     /// Key code (e.g., "KEY_A").
@@ -60,27 +65,35 @@ pub struct KeyEventData {
     pub output: String,
 
     /// Processing latency in microseconds.
+    #[typeshare(serialized_as = "number")]
     pub latency: u64,
 }
 
 /// Latency statistics.
+#[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LatencyStats {
     /// Minimum latency in microseconds.
+    #[typeshare(serialized_as = "number")]
     pub min: u64,
 
     /// Average latency in microseconds.
+    #[typeshare(serialized_as = "number")]
     pub avg: u64,
 
     /// Maximum latency in microseconds.
+    #[typeshare(serialized_as = "number")]
     pub max: u64,
 
     /// 95th percentile latency in microseconds.
+    #[typeshare(serialized_as = "number")]
     pub p95: u64,
 
     /// 99th percentile latency in microseconds.
+    #[typeshare(serialized_as = "number")]
     pub p99: u64,
 
     /// Timestamp of this stats snapshot (microseconds since UNIX epoch).
+    #[typeshare(serialized_as = "number")]
     pub timestamp: u64,
 }
