@@ -77,7 +77,7 @@
   - _Requirements: 1.3, 1.7, 1.8, 3.1, 3.2_
   - _Prompt: Implement the task for spec e2e-playwright-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: E2E Test Developer | Task: Create Playwright tests for ProfilesPage: test profile list loads, test create new profile (modal → name → create → appears in list), test activate profile (click activate → profile becomes active), test delete profile. | Restrictions: Clean up test profiles after tests, use unique names for test profiles, verify UI updates after API calls | Success: Full profile CRUD flow tested end-to-end. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 9. Create ConfigPage E2E tests
+- [x] 9. Create ConfigPage E2E tests
   - File: keyrx_ui/tests/e2e/pages/config.spec.ts
   - Test Monaco editor loads
   - Test save config flow
