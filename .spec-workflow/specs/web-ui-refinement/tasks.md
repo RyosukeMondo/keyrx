@@ -220,7 +220,7 @@
 
 ## Phase 5: Profiles Page Modifications
 
-- [ ] 20. Add Rhai file path display to ProfilesPage
+- [x] 20. Add Rhai file path display to ProfilesPage
   - File: keyrx_ui/src/pages/ProfilesPage.tsx, keyrx_ui/src/components/ProfileCard.tsx
   - Display Rhai file path in profile cards
   - Add tooltip with full path
@@ -228,7 +228,8 @@
   - Purpose: Show Rhai script location
   - _Leverage: keyrx_ui/src/hooks/useProfiles.ts_
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
-  - _Prompt: Implement the task for spec web-ui-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend React Developer specializing in UI components | Task: Modify ProfilesPage and ProfileCard following requirements 3.1-3.4. Display Rhai file path on profile cards (show relative path like "~/.config/keyrx/profiles/gaming.rhai"). Add tooltip on hover showing full absolute path. Make path clickable to navigate to ConfigPage for that profile. Display error badge if Rhai file doesn't exist. Update ProfileCard component to receive rhaiPath prop and fileExists boolean. Leverage useProfiles hook | Restrictions: Must truncate long paths gracefully (ellipsis in middle), ensure tooltip is accessible (keyboard users can trigger), error badge must be visually distinct, maintain existing profile card functionality | Success: Rhai path displayed on each card, tooltip shows full path on hover and keyboard focus, path is clickable and navigates to config page, error badge shown for missing files, long paths truncated cleanly, accessibility maintained (ARIA labels, keyboard nav). After completing, set this task to in-progress [-] in tasks.md, then run mcp__spec-workflow__log-implementation tool to record artifacts (path display, tooltip, navigation), then mark task complete [x] in tasks.md_
+  - _Completed: 2026-01-11_
+  - _Artifacts: ProfileCard.tsx (onPathClick prop for navigation), ProfilesPage.tsx (useNavigate, handleNavigateToConfig), ProfileCard.test.tsx (tests for onPathClick and fallback to onEdit), ProfilesPage.test.tsx (wrapWithRouter for all tests)_
 
 - [ ] 21. Implement auto-generate default profile
   - File: keyrx_ui/src/pages/ProfilesPage.tsx
