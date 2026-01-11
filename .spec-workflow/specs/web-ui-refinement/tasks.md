@@ -169,7 +169,7 @@
   - _Completed: 2026-01-11_
   - _Artifacts: DeviceSelector.tsx (multi-device checkboxes, global option, connection status badges, WCAG 2.2 compliant, no scope toggle)_
 
-- [ ] 16. Write unit tests for modified DeviceSelector
+- [-] 16. Write unit tests for modified DeviceSelector
   - File: keyrx_ui/src/components/DeviceSelector.test.tsx
   - Test multi-device selection
   - Test global checkbox
