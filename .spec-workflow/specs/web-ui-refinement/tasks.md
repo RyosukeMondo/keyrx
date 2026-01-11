@@ -255,7 +255,7 @@
 
 ## Phase 6: Config Page Integration
 
-- [ ] 23. Integrate RhaiSyncEngine into ConfigPage
+- [x] 23. Integrate RhaiSyncEngine into ConfigPage
   - File: keyrx_ui/src/pages/ConfigPage.tsx
   - Add RhaiSyncEngine component
   - Connect visual and code editors
@@ -263,6 +263,8 @@
   - Purpose: Enable bidirectional sync
   - _Leverage: keyrx_ui/src/components/RhaiSyncEngine.tsx, keyrx_ui/src/components/MonacoEditor.tsx, keyrx_ui/src/components/KeyboardVisualizer.tsx_
   - _Requirements: 6.1, 6.2, 6.3, 6.6, 6.7_
+  - _Completed: 2026-01-11_
+  - _Artifacts: RhaiSyncEngine hook integrated into ConfigPage, bidirectional sync (visual ↔ code), sync status indicators (parsing/generating/syncing), parse error display with line numbers and suggestions, tab switching with state preservation, localStorage persistence, conversion functions between KeyMapping and RhaiAST formats_
   - _Prompt: Implement the task for spec web-ui-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend React Developer specializing in component integration | Task: Modify ConfigPage following requirements 6.1-6.3, 6.6-6.7. Integrate RhaiSyncEngine component. Connect visual editor state (KeyMapping[]) to sync engine via onVisualChange callback. Connect Monaco code editor content to sync engine via onCodeChange callback. Display sync status (parsing/generating/syncing/error) with loading indicators. Display parse errors with line numbers and suggestions. Handle tab switching (preserve sync state when switching between visual and code tabs). Leverage RhaiSyncEngine, MonacoEditor, KeyboardVisualizer | Restrictions: Must maintain sync state across tab switches, must not trigger sync on initial load, must handle parse errors gracefully (show last valid state), must preserve unsaved changes, must debounce code editor changes | Success: RhaiSyncEngine integrated and functional, visual editor changes update code immediately, code editor changes update visual within 500ms, sync status displayed clearly, parse errors shown with details, tab switching preserves state, unsaved changes preserved, no infinite sync loops. After completing, set this task to in-progress [-] in tasks.md, then run mcp__spec-workflow__log-implementation tool to record artifacts (sync integration, state management, error display), then mark task complete [x] in tasks.md_
 
 - [ ] 24. Add multi-device support to ConfigPage
