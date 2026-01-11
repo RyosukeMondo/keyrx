@@ -314,15 +314,15 @@
   - _Completed: 2026-01-11_
   - _Artifacts: Removed DeviceScope enum from public API (now private legacy field), removed set_scope method from DeviceRegistry, removed scope from DeviceInfo/DeviceRpcInfo, removed set_scope_device RPC handler, removed SetScope CLI command, removed scope from REST API endpoints, added DeviceEntry::new() constructor, updated all tests and benchmarks, backward compatibility maintained (old registry files deserialize correctly with scope field ignored)_
 
-- [ ] 28. Add global layout settings API
-  - File: keyrx_daemon/src/web/handlers/settings.rs
-  - Create PUT /api/settings/global-layout endpoint
-  - Create GET endpoint for current layout
-  - Store in daemon configuration
+- [x] 28. Add global layout settings API
+  - File: keyrx_daemon/src/web/handlers/settings.rs, keyrx_daemon/src/services/settings_service.rs
+  - Create RPC endpoints for global layout settings
+  - Store in daemon configuration (settings.json)
   - Purpose: Support global layout from UI
   - _Leverage: keyrx_daemon/src/web/handlers/mod.rs_
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
-  - _Prompt: Implement the task for spec web-ui-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend Rust Developer specializing in configuration management | Task: Create settings API handler following requirements 2.1-2.5. Implement PUT /api/settings/global-layout endpoint (accepts layout: LayoutPreset in request body, saves to daemon config). Implement GET /api/settings/global-layout endpoint (returns current global layout). Store global layout in daemon configuration file (~/.config/keyrx/daemon.toml). Apply global layout to newly detected devices (when no device-specific override exists). Create new file keyrx_daemon/src/web/handlers/settings.rs with handler functions. Register routes in mod.rs | Restrictions: Must persist across daemon restarts, must not override existing device-specific layouts, must validate layout enum (ANSI_104, ISO_105, JIS_109, HHKB, NUMPAD), must return clear error if invalid layout | Success: PUT endpoint saves global layout to config, GET endpoint returns current global layout, global layout persists across restarts, new devices inherit global layout by default, device-specific overrides still work, validation rejects invalid layouts, API tests passing. After completing, set this task to in-progress [-] in tasks.md, then run mcp__spec-workflow__log-implementation tool to record artifacts (API endpoints, config persistence, device application), then mark task complete [x] in tasks.md_
+  - _Completed: 2026-01-11_
+  - _Artifacts: SettingsService (persistent storage in settings.json), RPC handlers (get_global_layout, set_global_layout), integrated into AppState, 11 unit tests passing, layout validation (ANSI_104, ISO_105, JIS_109, HHKB, NUMPAD), atomic file writes, backward compatible_
 
 - [ ] 29. Write backend API tests
   - File: keyrx_daemon/tests/api/devices_test.rs, keyrx_daemon/tests/api/settings_test.rs
