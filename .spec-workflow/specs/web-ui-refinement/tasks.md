@@ -303,7 +303,7 @@
 
 ## Phase 7: Backend API Updates
 
-- [ ] 27. Update device API to remove scope
+- [x] 27. Update device API to remove scope
   - File: keyrx_daemon/src/web/handlers/devices.rs
   - Remove scope field from PATCH endpoint
   - Update DeviceEntry struct
@@ -311,7 +311,8 @@
   - Purpose: Align backend with Rhai-driven scope
   - _Leverage: keyrx_daemon/src/web/handlers/devices.rs_
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
-  - _Prompt: Implement the task for spec web-ui-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend Rust Developer specializing in REST API | Task: Modify device API following requirements 1.1-1.4. Remove scope field from PATCH /api/devices/:id endpoint request body. Remove scope field from DeviceEntry struct in keyrx_daemon/src/web/handlers/devices.rs. Update device registry JSON serialization to exclude scope. Ensure existing device registry files migrate gracefully (ignore scope field if present, don't error). Preserve all other device fields (id, name, serial, layout) | Restrictions: Must maintain backward compatibility with existing registry files (ignore unknown fields), must not break existing device CRUD operations, must update API documentation, must preserve device identification and layout functionality | Success: PATCH endpoint no longer accepts scope field, DeviceEntry struct excludes scope, device registry serializes without scope, existing registry files load correctly (ignoring old scope field), device CRUD operations work normally (name, layout, forget), API tests updated and passing. After completing, set this task to in-progress [-] in tasks.md, then run mcp__spec-workflow__log-implementation tool to record artifacts (API changes, struct modifications, migration handling), then mark task complete [x] in tasks.md_
+  - _Completed: 2026-01-11_
+  - _Artifacts: Removed DeviceScope enum from public API (now private legacy field), removed set_scope method from DeviceRegistry, removed scope from DeviceInfo/DeviceRpcInfo, removed set_scope_device RPC handler, removed SetScope CLI command, removed scope from REST API endpoints, added DeviceEntry::new() constructor, updated all tests and benchmarks, backward compatibility maintained (old registry files deserialize correctly with scope field ignored)_
 
 - [ ] 28. Add global layout settings API
   - File: keyrx_daemon/src/web/handlers/settings.rs
