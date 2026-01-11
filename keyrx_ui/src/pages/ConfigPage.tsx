@@ -12,6 +12,7 @@ import { useProfiles, useCreateProfile } from '@/hooks/useProfiles';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
 import { useDevices } from '@/hooks/useDevices';
 import { useRhaiSyncEngine } from '@/components/RhaiSyncEngine';
+import { extractDevicePatterns, hasGlobalMappings } from '@/utils/rhaiParser';
 import type { KeyMapping } from '@/types';
 import type { KeyMapping as RhaiKeyMapping } from '@/utils/rhaiParser';
 
@@ -68,6 +69,9 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   // Fetch devices
   const { data: devicesData } = useDevices();
 
+  // Merged device list: connected devices + devices from Rhai (even if disconnected)
+  const [mergedDevices, setMergedDevices] = useState<Device[]>([]);
+
   // Auto-select first profile if "Default" doesn't exist and profiles are loaded
   useEffect(() => {
     if (profiles && profiles.length > 0 && !profiles.some(p => p.name === selectedProfileName)) {
@@ -103,6 +107,103 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       syncEngine.onCodeChange(defaultTemplate);
     }
   }, [profileConfig, configMissing, selectedProfileName]);
+
+  // Rhai-driven device detection: Extract devices from parsed Rhai and merge with connected devices
+  useEffect(() => {
+    const ast = syncEngine.getAST();
+    if (!ast) {
+      // No AST yet, just use connected devices
+      setMergedDevices(
+        devicesData?.map((d) => ({
+          id: d.id,
+          name: d.name,
+          serial: d.serial || undefined,
+          connected: true,
+        })) || []
+      );
+      return;
+    }
+
+    // Extract device patterns from Rhai script
+    const devicePatternsInRhai = extractDevicePatterns(ast);
+
+    // Create a map of connected devices by serial/name/id
+    const connectedDeviceMap = new Map<string, NonNullable<typeof devicesData>[number]>();
+    devicesData?.forEach((device) => {
+      if (device.serial) connectedDeviceMap.set(device.serial, device);
+      connectedDeviceMap.set(device.name, device);
+      connectedDeviceMap.set(device.id, device);
+    });
+
+    // Build merged device list
+    const merged: Device[] = [];
+    const addedPatterns = new Set<string>();
+
+    // Add devices from Rhai (may be disconnected)
+    devicePatternsInRhai.forEach((pattern) => {
+      if (addedPatterns.has(pattern)) return;
+      addedPatterns.add(pattern);
+
+      // Try to find matching connected device
+      const connectedDevice = connectedDeviceMap.get(pattern);
+      if (connectedDevice) {
+        // Device is both in Rhai and connected
+        merged.push({
+          id: connectedDevice.id,
+          name: connectedDevice.name,
+          serial: connectedDevice.serial || undefined,
+          connected: true,
+        });
+      } else {
+        // Device in Rhai but not connected (disconnected device)
+        merged.push({
+          id: `disconnected-${pattern}`,
+          name: pattern, // Use pattern as name for disconnected devices
+          serial: pattern,
+          connected: false,
+        });
+      }
+    });
+
+    // Add connected devices not in Rhai
+    devicesData?.forEach((device) => {
+      const isInRhai =
+        devicePatternsInRhai.includes(device.serial || '') ||
+        devicePatternsInRhai.includes(device.name) ||
+        devicePatternsInRhai.includes(device.id);
+
+      if (!isInRhai) {
+        merged.push({
+          id: device.id,
+          name: device.name,
+          serial: device.serial || undefined,
+          connected: true,
+        });
+      }
+    });
+
+    setMergedDevices(merged);
+
+    // Auto-populate device selector based on Rhai content
+    // If Rhai has global mappings, select global
+    if (hasGlobalMappings(ast)) {
+      setGlobalSelected(true);
+    }
+
+    // If Rhai has device blocks, auto-select those devices
+    if (devicePatternsInRhai.length > 0) {
+      const devicesToSelect = merged
+        .filter((device) => {
+          const pattern = device.serial || device.name;
+          return devicePatternsInRhai.includes(pattern);
+        })
+        .map((device) => device.id);
+
+      if (devicesToSelect.length > 0) {
+        setSelectedDevices(devicesToSelect);
+      }
+    }
+  }, [syncEngine.state, devicesData]); // Re-run when sync state changes (parsing complete) or devices change
 
   // Sync visual editor state from parsed AST when transitioning to visual tab or when code changes
   useEffect(() => {
@@ -263,14 +364,8 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     }
   };
 
-  // Transform devices for DeviceSelector
-  const devices: Device[] = devicesData
-    ? devicesData.map((d) => ({
-        id: d.id,
-        name: d.name,
-        serial: d.serial || undefined,
-      }))
-    : [];
+  // Use merged device list (connected + disconnected from Rhai)
+  const devices: Device[] = mergedDevices;
 
   // Get all available keys for modal (will be passed from KeyPalette component data)
   // For now, use a simplified list
