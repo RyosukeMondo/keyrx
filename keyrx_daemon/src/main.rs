@@ -363,6 +363,9 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     ));
     let config_service =
         std::sync::Arc::new(keyrx_daemon::services::ConfigService::new(profile_manager));
+    let settings_service = std::sync::Arc::new(keyrx_daemon::services::SettingsService::new(
+        config_dir.clone(),
+    ));
 
     let subscription_manager =
         std::sync::Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
@@ -372,6 +375,7 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
         profile_service,
         device_service,
         config_service,
+        settings_service,
         subscription_manager,
     ));
 
@@ -526,6 +530,9 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     ));
     let config_service =
         std::sync::Arc::new(keyrx_daemon::services::ConfigService::new(profile_manager));
+    let settings_service = std::sync::Arc::new(keyrx_daemon::services::SettingsService::new(
+        config_dir.clone(),
+    ));
 
     let subscription_manager =
         std::sync::Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
@@ -535,6 +542,7 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
         profile_service,
         device_service,
         config_service,
+        settings_service,
         subscription_manager,
     ));
 

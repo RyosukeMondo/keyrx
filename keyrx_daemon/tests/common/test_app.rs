@@ -63,6 +63,9 @@ impl TestApp {
         let profile_service = Arc::new(ProfileService::new(profile_manager.clone()));
         let device_service = Arc::new(DeviceService::new(config_path.clone()));
         let config_service = Arc::new(ConfigService::new(profile_manager));
+        let settings_service = Arc::new(keyrx_daemon::services::SettingsService::new(
+            config_path.clone(),
+        ));
         let macro_recorder = Arc::new(MacroRecorder::new());
         let subscription_manager =
             Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
@@ -73,6 +76,7 @@ impl TestApp {
             profile_service,
             device_service,
             config_service,
+            settings_service,
             subscription_manager,
         ));
 

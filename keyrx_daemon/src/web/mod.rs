@@ -20,7 +20,7 @@ use tower_http::cors::{Any, CorsLayer};
 pub use events::DaemonEvent;
 
 use crate::macro_recorder::MacroRecorder;
-use crate::services::{ConfigService, DeviceService, ProfileService};
+use crate::services::{ConfigService, DeviceService, ProfileService, SettingsService};
 use crate::web::subscriptions::SubscriptionManager;
 
 /// Application state shared across all web handlers
@@ -38,6 +38,8 @@ pub struct AppState {
     pub device_service: Arc<DeviceService>,
     /// Config service for configuration management operations
     pub config_service: Arc<ConfigService>,
+    /// Settings service for daemon settings operations
+    pub settings_service: Arc<SettingsService>,
     /// Subscription manager for WebSocket pub/sub
     pub subscription_manager: Arc<SubscriptionManager>,
 }
@@ -49,6 +51,7 @@ impl AppState {
         profile_service: Arc<ProfileService>,
         device_service: Arc<DeviceService>,
         config_service: Arc<ConfigService>,
+        settings_service: Arc<SettingsService>,
         subscription_manager: Arc<SubscriptionManager>,
     ) -> Self {
         Self {
@@ -56,6 +59,7 @@ impl AppState {
             profile_service,
             device_service,
             config_service,
+            settings_service,
             subscription_manager,
         }
     }

@@ -182,7 +182,7 @@ async fn handle_query(
     params: Value,
     state: &AppState,
 ) -> ServerMessage {
-    use crate::web::handlers::{config, device, metrics, profile};
+    use crate::web::handlers::{config, device, metrics, profile, settings};
 
     log::debug!("Handling query: {} with params: {}", method, params);
 
@@ -194,6 +194,7 @@ async fn handle_query(
         "get_layers" => config::get_layers(&state.config_service, params).await,
         "get_latency" => metrics::get_latency(&state.macro_recorder, params).await,
         "get_events" => metrics::get_events(&state.macro_recorder, params).await,
+        "get_global_layout" => settings::get_global_layout(&state.settings_service, params).await,
         _ => Err(RpcError::method_not_found(&method)),
     };
 
@@ -218,7 +219,7 @@ async fn handle_command(
     params: Value,
     state: &AppState,
 ) -> ServerMessage {
-    use crate::web::handlers::{config, device, metrics, profile};
+    use crate::web::handlers::{config, device, metrics, profile, settings};
 
     log::debug!("Handling command: {} with params: {}", method, params);
 
@@ -234,6 +235,7 @@ async fn handle_command(
         "update_config" => config::update_config(&state.config_service, params).await,
         "set_key_mapping" => config::set_key_mapping(&state.config_service, params).await,
         "delete_key_mapping" => config::delete_key_mapping(&state.config_service, params).await,
+        "set_global_layout" => settings::set_global_layout(&state.settings_service, params).await,
         "clear_events" => metrics::clear_events(&state.macro_recorder, params).await,
         "simulate" => metrics::simulate(&state.macro_recorder, params).await,
         "reset_simulator" => metrics::reset_simulator(&state.macro_recorder, params).await,
@@ -326,14 +328,16 @@ mod tests {
             }
         };
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
-        let device_service = Arc::new(crate::services::DeviceService::new(config_dir));
+        let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
         let config_service = Arc::new(ConfigService::new(profile_manager));
+        let settings_service = Arc::new(crate::services::SettingsService::new(config_dir));
         let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
         let state = Arc::new(AppState::new(
             Arc::new(MacroRecorder::new()),
             profile_service,
             device_service,
             config_service,
+            settings_service,
             subscription_manager,
         ));
         let router = create_router(state);

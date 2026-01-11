@@ -68,14 +68,16 @@ mod tests {
         let config_dir = PathBuf::from("/tmp/keyrx-test");
         let profile_manager = Arc::new(ProfileManager::new(config_dir.clone()).unwrap());
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
-        let device_service = Arc::new(crate::services::DeviceService::new(config_dir));
+        let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
         let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
+        let settings_service = Arc::new(crate::services::SettingsService::new(config_dir));
         let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
         let state = Arc::new(AppState::new(
             Arc::new(MacroRecorder::new()),
             profile_service,
             device_service,
             config_service,
+            settings_service,
             subscription_manager,
         ));
         let router = create_router(state);
@@ -90,14 +92,16 @@ mod tests {
         let config_dir = PathBuf::from("/tmp/keyrx-test");
         let profile_manager = Arc::new(ProfileManager::new(config_dir.clone()).unwrap());
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
-        let device_service = Arc::new(crate::services::DeviceService::new(config_dir));
+        let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
         let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
+        let settings_service = Arc::new(crate::services::SettingsService::new(config_dir));
         let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
         let state = Arc::new(AppState::new(
             mock_recorder.clone(),
             profile_service,
             device_service,
             config_service,
+            settings_service,
             subscription_manager,
         ));
 

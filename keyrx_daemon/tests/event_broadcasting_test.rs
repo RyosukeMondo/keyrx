@@ -36,6 +36,9 @@ async fn start_test_server() -> (u16, tokio::task::JoinHandle<()>) {
     let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
     let device_service = Arc::new(DeviceService::new(config_dir.clone()));
     let config_service = Arc::new(ConfigService::new(profile_manager));
+    let settings_service = Arc::new(keyrx_daemon::services::SettingsService::new(
+        config_dir.clone(),
+    ));
     let subscription_manager = Arc::new(SubscriptionManager::new());
 
     let state = Arc::new(AppState::new(
@@ -43,6 +46,7 @@ async fn start_test_server() -> (u16, tokio::task::JoinHandle<()>) {
         profile_service,
         device_service,
         config_service,
+        settings_service,
         subscription_manager,
     ));
 
