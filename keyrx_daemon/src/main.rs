@@ -336,11 +336,12 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     // Create AppState with dependencies for web API
     let macro_recorder = std::sync::Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());
 
-    // Determine config directory from config path parent
-    let config_dir = config_path
-        .parent()
-        .unwrap_or_else(|| std::path::Path::new("."))
-        .to_path_buf();
+    // Determine config directory (always use standard location for profile management)
+    let config_dir = {
+        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        path.push("keyrx");
+        path
+    };
 
     // Initialize ProfileManager and ProfileService
     let profile_manager = match keyrx_daemon::config::ProfileManager::new(config_dir.clone()) {
@@ -498,11 +499,12 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     // Start web server in background
     let macro_recorder = std::sync::Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());
 
-    // Determine config directory from config path parent
-    let config_dir = config_path
-        .parent()
-        .unwrap_or_else(|| std::path::Path::new("."))
-        .to_path_buf();
+    // Determine config directory (always use standard location for profile management)
+    let config_dir = {
+        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        path.push("keyrx");
+        path
+    };
 
     // Initialize ProfileManager and ProfileService
     let profile_manager = match keyrx_daemon::config::ProfileManager::new(config_dir.clone()) {
