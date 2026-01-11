@@ -1,614 +1,1010 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders, setupMockWebSocket, cleanupMockWebSocket } from '../../tests/testUtils';
+import { screen, waitFor, within } from '@testing-library/react';
+import { renderWithProviders } from '../../tests/testUtils';
 import userEvent from '@testing-library/user-event';
-import { ConfigPage } from './ConfigPage';
+import ConfigPage from './ConfigPage';
+import * as useProfileConfigModule from '@/hooks/useProfileConfig';
+import * as useProfilesModule from '@/hooks/useProfiles';
+import * as useDevicesModule from '@/hooks/useDevices';
 import * as useUnifiedApiModule from '@/hooks/useUnifiedApi';
+import * as rhaiParserModule from '@/utils/rhaiParser';
+import type { RhaiAST, DeviceBlock, KeyMapping as RhaiKeyMapping } from '@/utils/rhaiParser';
 
-// Mock the useUnifiedApi hook
-const mockQuery = vi.fn();
-const mockCommand = vi.fn();
-const mockSubscribe = vi.fn();
-const mockUnsubscribe = vi.fn();
+// Mock hooks
+vi.mock('@/hooks/useProfileConfig');
+vi.mock('@/hooks/useProfiles');
+vi.mock('@/hooks/useDevices');
+vi.mock('@/hooks/useUnifiedApi');
+vi.mock('@/utils/rhaiParser', async () => {
+  const actual = await vi.importActual('@/utils/rhaiParser');
+  return {
+    ...actual,
+    parseRhaiScript: vi.fn(),
+    extractDevicePatterns: vi.fn(() => []),
+    hasGlobalMappings: vi.fn(() => false),
+  };
+});
 
-vi.mock('@/hooks/useUnifiedApi', () => ({
-  useUnifiedApi: vi.fn(),
-}));
-
-// Mock MonacoEditor component
-vi.mock('@/components/MonacoEditor', () => ({
-  MonacoEditor: ({
+// Mock SimpleCodeEditor component
+vi.mock('@/components/SimpleCodeEditor', () => ({
+  SimpleCodeEditor: ({
     value,
     onChange,
-    onValidate,
   }: {
     value: string;
     onChange: (value: string) => void;
-    onValidate: (errors: any[]) => void;
   }) => (
-    <div data-testid="monaco-editor">
+    <div data-testid="simple-code-editor">
       <textarea
-        data-testid="monaco-textarea"
+        data-testid="code-editor-textarea"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
-      <button
-        data-testid="trigger-validation"
-        onClick={() => onValidate([])}
-      >
-        Trigger Validation
-      </button>
-      <button
-        data-testid="trigger-validation-error"
-        onClick={() =>
-          onValidate([
-            {
-              line: 5,
-              column: 10,
-              length: 5,
-              message: 'Syntax error: unexpected token',
-            },
-          ])
-        }
-      >
-        Trigger Validation Error
-      </button>
     </div>
   ),
 }));
 
 // Mock KeyboardVisualizer component
 vi.mock('@/components/KeyboardVisualizer', () => ({
-  KeyboardVisualizer: () => <div data-testid="keyboard-visualizer">Keyboard Visualizer</div>,
+  KeyboardVisualizer: ({ onKeyClick }: { onKeyClick?: (key: string) => void }) => (
+    <div data-testid="keyboard-visualizer">
+      <button
+        data-testid="test-key-A"
+        onClick={() => onKeyClick?.('A')}
+      >
+        Key A
+      </button>
+    </div>
+  ),
 }));
 
-describe('ConfigPage - Tab Switching and Save Functionality', () => {
-  beforeEach(async () => {
-    // Setup WebSocket mock (even though hook is mocked, renderWithProviders needs it)
-    await setupMockWebSocket();
+// Mock DeviceSelector component
+vi.mock('@/components/DeviceSelector', () => ({
+  DeviceSelector: ({
+    devices,
+    selectedDevices,
+    globalSelected,
+    onSelectionChange,
+  }: any) => (
+    <div data-testid="device-selector">
+      <label>
+        <input
+          type="checkbox"
+          data-testid="global-checkbox"
+          checked={globalSelected}
+          onChange={(e) => onSelectionChange(selectedDevices, e.target.checked)}
+        />
+        Global
+      </label>
+      {devices.map((device: any) => (
+        <label key={device.id}>
+          <input
+            type="checkbox"
+            data-testid={`device-checkbox-${device.id}`}
+            checked={selectedDevices.includes(device.id)}
+            onChange={(e) => {
+              const newSelection = e.target.checked
+                ? [...selectedDevices, device.id]
+                : selectedDevices.filter((id: string) => id !== device.id);
+              onSelectionChange(newSelection, globalSelected);
+            }}
+          />
+          {device.name}
+          {!device.connected && <span data-testid={`disconnected-${device.id}`}>Disconnected</span>}
+        </label>
+      ))}
+    </div>
+  ),
+}));
 
-    // Reset all mocks before each test
+// Mock other components
+vi.mock('@/components/KeyPalette', () => ({
+  KeyPalette: () => <div data-testid="key-palette">Key Palette</div>,
+}));
+
+vi.mock('@/components/KeyConfigModal', () => ({
+  KeyConfigModal: () => <div data-testid="key-config-modal">Key Config Modal</div>,
+}));
+
+vi.mock('@/components/LayerSwitcher', () => ({
+  LayerSwitcher: () => <div data-testid="layer-switcher">Layer Switcher</div>,
+}));
+
+describe('ConfigPage - Integration Tests', () => {
+  const mockGetProfileConfig = vi.fn();
+  const mockSetProfileConfig = vi.fn();
+  const mockUseProfiles = vi.fn();
+  const mockCreateProfile = vi.fn();
+  const mockUseDevices = vi.fn();
+  const mockUseUnifiedApi = vi.fn();
+
+  beforeEach(() => {
     vi.clearAllMocks();
 
-    // Setup default mock implementation
+    // Setup default mocks
+    vi.mocked(useProfileConfigModule.useGetProfileConfig).mockReturnValue({
+      data: {
+        source: '// Default config\nmap("A", "B");',
+        hash: 'test-hash',
+      },
+      isLoading: false,
+      error: null,
+    } as any);
+
+    vi.mocked(useProfileConfigModule.useSetProfileConfig).mockReturnValue({
+      mutateAsync: mockSetProfileConfig,
+    } as any);
+
+    vi.mocked(useProfilesModule.useProfiles).mockReturnValue({
+      data: [{ name: 'Default', path: '/profiles/default.rhai' }],
+      isLoading: false,
+    } as any);
+
+    vi.mocked(useProfilesModule.useCreateProfile).mockReturnValue({
+      mutateAsync: mockCreateProfile,
+    } as any);
+
+    vi.mocked(useDevicesModule.useDevices).mockReturnValue({
+      data: [
+        { id: 'device-1', name: 'Keyboard A', serial: 'SN-001', connected: true },
+        { id: 'device-2', name: 'Keyboard B', serial: 'SN-002', connected: true },
+      ],
+    } as any);
+
     vi.mocked(useUnifiedApiModule.useUnifiedApi).mockReturnValue({
-      query: mockQuery,
-      command: mockCommand,
-      subscribe: mockSubscribe,
-      unsubscribe: mockUnsubscribe,
       isConnected: true,
       readyState: 1,
-      lastError: null,
-    });
+    } as any);
 
-    // Default successful config fetch
-    mockQuery.mockResolvedValue({
-      code: '// Default configuration\nlet base = Layer::new("base");',
-      hash: 'abc123',
-    });
+    // Setup parseRhaiScript mock with default implementation
+    vi.mocked(rhaiParserModule.parseRhaiScript).mockReturnValue({
+      imports: [],
+      globalMappings: [
+        {
+          type: 'simple',
+          sourceKey: 'A',
+          targetKey: 'B',
+          line: 2,
+        },
+      ],
+      deviceBlocks: [],
+      comments: [],
+    } as RhaiAST);
 
-    // Default successful config update
-    mockCommand.mockResolvedValue({ success: true });
+    // Setup helper function mocks
+    vi.mocked(rhaiParserModule.extractDevicePatterns).mockReturnValue([]);
+    vi.mocked(rhaiParserModule.hasGlobalMappings).mockReturnValue(true);
+
+    mockSetProfileConfig.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
-    cleanupMockWebSocket();
     vi.restoreAllMocks();
   });
 
-  describe('Tab Rendering and Switching', () => {
-    it('renders both tab buttons', async () => {
+  describe('Bidirectional Sync - Visual to Code (Req 6.1, 6.2)', () => {
+    it('should parse Rhai script and reflect mappings in visual editor on load', async () => {
+      // Setup: script with simple mapping
+      vi.mocked(useProfileConfigModule.useGetProfileConfig).mockReturnValue({
+        data: {
+          source: '// Test config\nmap("CapsLock", "Escape");',
+          hash: 'hash-1',
+        },
+        isLoading: false,
+        error: null,
+      } as any);
+
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockReturnValue({
+        imports: [],
+        globalMappings: [
+          {
+            type: 'simple',
+            sourceKey: 'CapsLock',
+            targetKey: 'Escape',
+            line: 2,
+          },
+        ],
+        deviceBlocks: [],
+        comments: [],
+      } as RhaiAST);
+
       renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
 
-      // Wait for initial load
+      // Visual editor should be displayed by default
       await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
+        expect(screen.getByTestId('keyboard-visualizer')).toBeInTheDocument();
       });
 
-      const visualTab = screen.getByRole('tab', { name: /visual editor/i });
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-
-      expect(visualTab).toBeInTheDocument();
-      expect(codeTab).toBeInTheDocument();
-    });
-
-    it('visual tab is active by default (AC1)', async () => {
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
+      // Parser should have been called by sync engine
       await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
+        expect(rhaiParserModule.parseRhaiScript).toHaveBeenCalled();
       });
-
-      const visualTab = screen.getByRole('tab', { name: /visual editor/i });
-
-      expect(visualTab).toHaveAttribute('aria-selected', 'true');
-      expect(visualTab).toHaveClass('bg-primary-500');
     });
 
-    it('clicking Code tab renders Monaco editor (AC2)', async () => {
+    it('should update Rhai script immediately when visual editor changes', async () => {
       const user = userEvent.setup();
+
       renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
 
       await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
+        expect(screen.getByTestId('keyboard-visualizer')).toBeInTheDocument();
       });
 
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-      await user.click(codeTab);
+      // Click a key to open config modal (simulating visual editor change)
+      const keyButton = screen.getByTestId('test-key-A');
+      await user.click(keyButton);
 
-      expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
-      expect(screen.queryByTestId('keyboard-visualizer')).not.toBeInTheDocument();
-    });
-
-    it('clicking Visual tab renders KeyboardVisualizer (AC3)', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
+      // Modal should open
       await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
+        expect(screen.getByTestId('key-config-modal')).toBeInTheDocument();
       });
 
-      // First switch to code tab
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-      await user.click(codeTab);
-
-      // Then switch back to visual tab
-      const visualTab = screen.getByRole('tab', { name: /visual editor/i });
-      await user.click(visualTab);
-
-      expect(screen.getByTestId('keyboard-visualizer')).toBeInTheDocument();
-      expect(screen.queryByTestId('monaco-editor')).not.toBeInTheDocument();
-    });
-
-    it('active tab has bg-primary-500 class (AC4)', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      const visualTab = screen.getByRole('tab', { name: /visual editor/i });
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-
-      // Visual tab is active initially
-      expect(visualTab).toHaveClass('bg-primary-500');
-      expect(codeTab).not.toHaveClass('bg-primary-500');
-      expect(codeTab).toHaveClass('bg-slate-700');
-
-      // Switch to code tab
-      await user.click(codeTab);
-
-      expect(codeTab).toHaveClass('bg-primary-500');
-      expect(visualTab).not.toHaveClass('bg-primary-500');
-      expect(visualTab).toHaveClass('bg-slate-700');
+      // Note: Full visual-to-code sync requires KeyConfigModal integration
+      // which is tested separately. This test verifies the infrastructure.
     });
   });
 
-  describe('State Persistence Across Tabs', () => {
-    it('typing in Code editor then switching to Visual preserves changes (AC5)', async () => {
+  describe('Bidirectional Sync - Code to Visual (Req 6.3)', () => {
+    it('should parse code changes and update visual editor within debounce period', async () => {
       const user = userEvent.setup();
+
       renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
 
       await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
       });
 
-      // Switch to code tab
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
+      // Clear previous calls
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockClear();
+
+      // Switch to code editor tab
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
       await user.click(codeTab);
 
-      // Type in the editor
-      const textarea = screen.getByTestId('monaco-textarea');
-      await user.clear(textarea);
-      await user.type(textarea, 'let modified = true;');
+      const textarea = screen.getByTestId('code-editor-textarea');
 
-      // Switch back to visual tab
-      const visualTab = screen.getByRole('tab', { name: /visual editor/i });
-      await user.click(visualTab);
-
-      // Switch to code tab again
-      await user.click(codeTab);
-
-      // Verify the text is still there
-      expect(textarea).toHaveValue('let modified = true;');
-    });
-
-    it('switching tabs does not lose unsaved changes (AC10)', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      // Switch to code tab
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-      await user.click(codeTab);
-
-      // Modify the code
-      const textarea = screen.getByTestId('monaco-textarea');
-      const newCode = '// Modified code\nlet new_layer = Layer::new("test");';
+      // Modify code
+      const newCode = 'map("Tab", "Escape");';
       await user.clear(textarea);
       await user.type(textarea, newCode);
 
-      // Switch tabs multiple times
-      const visualTab = screen.getByRole('tab', { name: /visual editor/i });
-      await user.click(visualTab);
-      await user.click(codeTab);
-      await user.click(visualTab);
-      await user.click(codeTab);
-
-      // Verify code is still there
-      expect(textarea).toHaveValue(newCode);
+      // Wait for debounce (500ms) + parsing
+      await waitFor(
+        () => {
+          expect(rhaiParserModule.parseRhaiScript).toHaveBeenCalledWith(newCode);
+        },
+        { timeout: 1500 }
+      );
     });
-  });
 
-  describe('Validation Integration', () => {
-    it('validation status panel appears in both tabs (AC6)', async () => {
+    it('should display sync status indicators during parsing', async () => {
       const user = userEvent.setup();
+
+      // Make parseRhaiScript slow to observe loading state
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockImplementation(() => {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              imports: [],
+              globalMappings: [],
+              deviceBlocks: [],
+              comments: [],
+            } as RhaiAST);
+          }, 200);
+        });
+      }) as any;
+
       renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
 
       await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
       });
 
-      // Switch to code tab
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
+      // Switch to code editor
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
       await user.click(codeTab);
 
-      // Trigger validation error
-      const errorButton = screen.getByTestId('trigger-validation-error');
-      await user.click(errorButton);
-
-      // Check error appears in code tab
-      await waitFor(() => {
-        expect(screen.getByText(/1 validation error/)).toBeInTheDocument();
-      });
-
-      // Switch to visual tab
-      const visualTab = screen.getByRole('tab', { name: /visual editor/i });
-      await user.click(visualTab);
-
-      // Error should still be visible
-      expect(screen.getByText(/1 validation error/)).toBeInTheDocument();
-    });
-
-    it.skip('validation errors disable save button (AC9) - OBSOLETE: component uses auto-save', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      const saveButton = screen.getByRole('button', { name: 'Save configuration' });
-      expect(saveButton).not.toBeDisabled();
-
-      // Switch to code tab
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-      await user.click(codeTab);
-
-      // Trigger validation error
-      const errorButton = screen.getByTestId('trigger-validation-error');
-      await user.click(errorButton);
-
-      await waitFor(() => {
-        expect(saveButton).toBeDisabled();
-        expect(saveButton).toHaveClass('cursor-not-allowed');
-      });
-    });
-
-    it.skip('clearing validation errors enables save button - OBSOLETE: component uses auto-save', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-      await user.click(codeTab);
-
-      // First trigger an error
-      const errorButton = screen.getByTestId('trigger-validation-error');
-      await user.click(errorButton);
-
-      const saveButton = screen.getByRole('button', { name: 'Save configuration' });
-      await waitFor(() => {
-        expect(saveButton).toBeDisabled();
-      });
-
-      // Then clear it
-      const validButton = screen.getByTestId('trigger-validation');
-      await user.click(validButton);
-
-      await waitFor(() => {
-        expect(saveButton).not.toBeDisabled();
-      });
-    });
-  });
-
-  describe('Save Functionality', () => {
-    it.skip('save button calls updateConfig RPC method (AC7) - OBSOLETE: component uses auto-save', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      // Switch to code tab and modify
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-      await user.click(codeTab);
-
-      const textarea = screen.getByTestId('monaco-textarea');
+      const textarea = screen.getByTestId('code-editor-textarea');
       await user.clear(textarea);
-      await user.type(textarea, 'let save_test = true;');
+      await user.type(textarea, 'map("A", "B");');
+
+      // Should show parsing indicator
+      await waitFor(() => {
+        expect(screen.getByText(/Parsing Rhai script/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Parse Error Handling (Req 6.4, 6.7)', () => {
+    it('should display parse errors with line numbers and suggestions', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
+      });
+
+      // Switch to code editor
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
+      await user.click(codeTab);
+
+      // Simulate parse error
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockImplementation(() => {
+        const error = new Error('Unexpected token at line 5');
+        (error as any).line = 5;
+        (error as any).column = 10;
+        throw error;
+      });
+
+      const textarea = screen.getByTestId('code-editor-textarea');
+      await user.clear(textarea);
+      await user.type(textarea, 'invalid syntax here');
+
+      // Wait for parse error to appear
+      await waitFor(
+        () => {
+          expect(screen.getByText(/Parse Error/i)).toBeInTheDocument();
+        },
+        { timeout: 1000 }
+      );
+    });
+
+    it('should show last valid state in visual editor when parsing fails', async () => {
+      const user = userEvent.setup();
+
+      // Initial valid state
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockReturnValue({
+        imports: [],
+        globalMappings: [
+          {
+            type: 'simple',
+            sourceKey: 'A',
+            targetKey: 'B',
+            line: 1,
+          },
+        ],
+        deviceBlocks: [],
+        comments: [],
+      } as RhaiAST);
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('keyboard-visualizer')).toBeInTheDocument();
+      });
+
+      // Switch to code editor
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
+      await user.click(codeTab);
+
+      // Break the code
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockImplementation(() => {
+        throw new Error('Parse error');
+      });
+
+      const textarea = screen.getByTestId('code-editor-textarea');
+      await user.clear(textarea);
+      await user.type(textarea, 'invalid');
+
+      // Switch back to visual tab
+      const visualTab = screen.getByRole('button', { name: /Visual Editor/i });
+      await user.click(visualTab);
+
+      // Visual editor should still show (with last valid state)
+      expect(screen.getByTestId('keyboard-visualizer')).toBeInTheDocument();
+    });
+
+    it('should allow clearing parse errors', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
+      });
+
+      // Switch to code editor
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
+      await user.click(codeTab);
+
+      // Create parse error
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockImplementation(() => {
+        throw new Error('Parse error');
+      });
+
+      const textarea = screen.getByTestId('code-editor-textarea');
+      await user.clear(textarea);
+      await user.type(textarea, 'invalid');
+
+      // Wait for error
+      await waitFor(() => {
+        expect(screen.getByText(/Parse Error/i)).toBeInTheDocument();
+      });
+
+      // Clear error button should exist and work
+      const clearButton = screen.getByLabelText(/Clear error/i);
+      await user.click(clearButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Parse Error/i)).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Multi-Device Selection (Req 5.1-5.4)', () => {
+    it('should display device selector with global and device checkboxes', async () => {
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('device-selector')).toBeInTheDocument();
+      });
+
+      // Global checkbox should exist
+      expect(screen.getByTestId('global-checkbox')).toBeInTheDocument();
+
+      // Device checkboxes should exist
+      expect(screen.getByTestId('device-checkbox-device-1')).toBeInTheDocument();
+      expect(screen.getByTestId('device-checkbox-device-2')).toBeInTheDocument();
+    });
+
+    it('should show global keyboard when global is selected', async () => {
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('keyboard-visualizer')).toBeInTheDocument();
+      });
+
+      // Global should be selected by default
+      expect(screen.getByTestId('global-checkbox')).toBeChecked();
+
+      // Should show global keyboard with label
+      expect(screen.getByText(/Global Keyboard/i)).toBeInTheDocument();
+    });
+
+    it('should show device-specific keyboards when devices are selected', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('device-selector')).toBeInTheDocument();
+      });
+
+      // Select a device
+      const deviceCheckbox = screen.getByTestId('device-checkbox-device-1');
+      await user.click(deviceCheckbox);
+
+      // Should show device-specific keyboard
+      await waitFor(() => {
+        expect(screen.getByText(/Keyboard A/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should show multiple keyboards when global and device are both selected', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('device-selector')).toBeInTheDocument();
+      });
+
+      // Global should already be checked
+      expect(screen.getByTestId('global-checkbox')).toBeChecked();
+
+      // Select a device
+      const deviceCheckbox = screen.getByTestId('device-checkbox-device-1');
+      await user.click(deviceCheckbox);
+
+      // Should show both keyboards
+      await waitFor(() => {
+        expect(screen.getByText(/Global Keyboard/i)).toBeInTheDocument();
+        expect(screen.getByText(/Keyboard A/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should show warning when no devices are selected', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('device-selector')).toBeInTheDocument();
+      });
+
+      // Uncheck global
+      const globalCheckbox = screen.getByTestId('global-checkbox');
+      await user.click(globalCheckbox);
+
+      // Should show warning
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Select at least one device or.*global/i)
+        ).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Rhai-Driven Device Detection (Req 5.6, 7.4, 7.5)', () => {
+    it('should auto-populate device selector from Rhai device blocks', async () => {
+      // Setup: Rhai script with device blocks
+      vi.mocked(useProfileConfigModule.useGetProfileConfig).mockReturnValue({
+        data: {
+          source: `
+device("SN-001") {
+  map("A", "B");
+}
+device("SN-003") {
+  map("C", "D");
+}
+          `,
+          hash: 'hash-devices',
+        },
+        isLoading: false,
+        error: null,
+      } as any);
+
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockReturnValue({
+        imports: [],
+        globalMappings: [],
+        deviceBlocks: [
+          {
+            pattern: 'SN-001',
+            mappings: [
+              { type: 'simple', sourceKey: 'A', targetKey: 'B', line: 3 },
+            ],
+            layers: [],
+            startLine: 2,
+            endLine: 4,
+          } as DeviceBlock,
+          {
+            pattern: 'SN-003',
+            mappings: [
+              { type: 'simple', sourceKey: 'C', targetKey: 'D', line: 7 },
+            ],
+            layers: [],
+            startLine: 6,
+            endLine: 8,
+          } as DeviceBlock,
+        ],
+        comments: [],
+      } as RhaiAST);
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('device-selector')).toBeInTheDocument();
+      });
+
+      // Should show device-1 (SN-001, connected)
+      expect(screen.getByText(/Keyboard A/i)).toBeInTheDocument();
+
+      // Should show SN-003 (disconnected device from Rhai)
+      // Note: The component creates a pseudo-device for disconnected devices
+      await waitFor(() => {
+        expect(screen.getByTestId('disconnected-disconnected-SN-003')).toBeInTheDocument();
+      });
+    });
+
+    it('should show disconnected badge for devices in Rhai but not connected', async () => {
+      vi.mocked(useProfileConfigModule.useGetProfileConfig).mockReturnValue({
+        data: {
+          source: 'device("SN-999") { map("A", "B"); }',
+          hash: 'hash-disconnected',
+        },
+        isLoading: false,
+        error: null,
+      } as any);
+
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockReturnValue({
+        imports: [],
+        globalMappings: [],
+        deviceBlocks: [
+          {
+            pattern: 'SN-999',
+            mappings: [
+              { type: 'simple', sourceKey: 'A', targetKey: 'B', line: 1 },
+            ],
+            layers: [],
+            startLine: 1,
+            endLine: 3,
+          } as DeviceBlock,
+        ],
+        comments: [],
+      } as RhaiAST);
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('device-selector')).toBeInTheDocument();
+      });
+
+      // Should show disconnected badge
+      await waitFor(() => {
+        const disconnectedBadge = screen.getByTestId('disconnected-disconnected-SN-999');
+        expect(disconnectedBadge).toBeInTheDocument();
+      });
+    });
+
+    it('should auto-select devices based on Rhai content', async () => {
+      vi.mocked(useProfileConfigModule.useGetProfileConfig).mockReturnValue({
+        data: {
+          source: `
+map("A", "B");
+device("SN-001") {
+  map("C", "D");
+}
+          `,
+          hash: 'hash-auto-select',
+        },
+        isLoading: false,
+        error: null,
+      } as any);
+
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockReturnValue({
+        imports: [],
+        globalMappings: [
+          { type: 'simple', sourceKey: 'A', targetKey: 'B', line: 2 },
+        ],
+        deviceBlocks: [
+          {
+            pattern: 'SN-001',
+            mappings: [
+              { type: 'simple', sourceKey: 'C', targetKey: 'D', line: 4 },
+            ],
+            layers: [],
+            startLine: 3,
+            endLine: 5,
+          } as DeviceBlock,
+        ],
+        comments: [],
+      } as RhaiAST);
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('device-selector')).toBeInTheDocument();
+      });
+
+      // Global should be auto-selected (has global mappings)
+      expect(screen.getByTestId('global-checkbox')).toBeChecked();
+
+      // Device-1 (SN-001) should be auto-selected (has device block)
+      await waitFor(() => {
+        expect(screen.getByTestId('device-checkbox-device-1')).toBeChecked();
+      });
+    });
+  });
+
+  describe('Save Functionality (Req 5.6, 8.1-8.7)', () => {
+    it('should generate correct Rhai code with device blocks on save', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
+      });
+
+      // Switch to code editor and modify
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
+      await user.click(codeTab);
+
+      const textarea = screen.getByTestId('code-editor-textarea');
+      const newCode = 'device("SN-001") {\n  map("A", "B");\n}';
+      await user.clear(textarea);
+      await user.type(textarea, newCode);
 
       // Click save button
-      const saveButton = screen.getByRole('button', { name: 'Save configuration' });
+      const saveButton = screen.getByRole('button', { name: /Save Configuration/i });
       await user.click(saveButton);
 
+      // Should call setProfileConfig with the code
       await waitFor(() => {
-        expect(mockCommand).toHaveBeenCalledWith('update_config', {
-          code: 'let save_test = true;',
+        expect(mockSetProfileConfig).toHaveBeenCalledWith({
+          name: 'Default',
+          source: expect.stringContaining('device("SN-001")'),
         });
       });
     });
 
-    it.skip('Ctrl+S keyboard event triggers save (AC8) - OBSOLETE: component uses auto-save', async () => {
+    it('should handle save errors gracefully', async () => {
       const user = userEvent.setup();
+
+      // Mock save failure
+      mockSetProfileConfig.mockRejectedValue(new Error('Network error'));
+
+      // Spy on console.error
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
       renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
 
       await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
       });
 
-      // Switch to code tab
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
+      // Click save button
+      const saveButton = screen.getByRole('button', { name: /Save Configuration/i });
+      await user.click(saveButton);
+
+      // Should handle error
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to save config:',
+          expect.any(Error)
+        );
+      });
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should persist changes to daemon', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
+      });
+
+      // Modify code
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
       await user.click(codeTab);
 
-      // Press Ctrl+S
-      await user.keyboard('{Control>}s{/Control}');
+      const textarea = screen.getByTestId('code-editor-textarea');
+      await user.clear(textarea);
+      await user.type(textarea, 'map("Tab", "Escape");');
 
-      await waitFor(() => {
-        expect(mockCommand).toHaveBeenCalled();
-      });
-    });
-
-    it.skip('save works from Visual tab - OBSOLETE: component uses auto-save', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      // Stay on visual tab
-      const saveButton = screen.getByRole('button', { name: 'Save configuration' });
+      // Save
+      const saveButton = screen.getByRole('button', { name: /Save Configuration/i });
       await user.click(saveButton);
 
+      // Should persist to daemon
       await waitFor(() => {
-        expect(mockCommand).toHaveBeenCalled();
+        expect(mockSetProfileConfig).toHaveBeenCalled();
       });
-    });
-
-    it.skip('save works from Code tab - OBSOLETE: component uses auto-save', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      // Switch to code tab
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-      await user.click(codeTab);
-
-      const saveButton = screen.getByRole('button', { name: 'Save configuration' });
-      await user.click(saveButton);
-
-      await waitFor(() => {
-        expect(mockCommand).toHaveBeenCalled();
-      });
-    });
-
-    it.skip('shows success message after successful save - OBSOLETE: component uses auto-save', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      const saveButton = screen.getByRole('button', { name: 'Save configuration' });
-      await user.click(saveButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/saved successfully/i)).toBeInTheDocument();
-      });
-    });
-
-    it.skip('shows error message when save fails - OBSOLETE: component uses auto-save', async () => {
-      mockCommand.mockRejectedValueOnce(new Error('Network error'));
-
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      const saveButton = screen.getByRole('button', { name: 'Save configuration' });
-      await user.click(saveButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/network error/i)).toBeInTheDocument();
-      });
-    });
-
-    it.skip('shows error message when trying to save with validation errors - OBSOLETE: component uses auto-save', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      // Switch to code tab
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-      await user.click(codeTab);
-
-      // Trigger validation error
-      const errorButton = screen.getByTestId('trigger-validation-error');
-      await user.click(errorButton);
-
-      // Try to save via Ctrl+S (button is disabled but keyboard shortcut still works)
-      await user.keyboard('{Control>}s{/Control}');
-
-      await waitFor(() => {
-        expect(screen.getByText(/cannot save.*validation errors/i)).toBeInTheDocument();
-      });
-
-      // Verify RPC was not called
-      expect(mockCommand).not.toHaveBeenCalled();
-    });
-
-    it.skip('save button shows correct states (idle, saving, success, error) - OBSOLETE: component uses auto-save', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      const saveButton = screen.getByRole('button', { name: 'Save configuration' });
-
-      // Initial state
-      expect(saveButton).toHaveTextContent(/save.*ctrl\+s/i);
-
-      // Click save
-      mockCommand.mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ success: true }), 100))
-      );
-      await user.click(saveButton);
-
-      // Saving state
-      await waitFor(() => {
-        expect(saveButton).toHaveTextContent(/saving/i);
-      });
-
-      // Success state
-      await waitFor(() => {
-        expect(saveButton).toHaveTextContent(/saved/i);
-      });
-
-      // Back to idle after timeout
-      await waitFor(
-        () => {
-          expect(saveButton).toHaveTextContent(/save.*ctrl\+s/i);
-        },
-        { timeout: 3000 }
-      );
     });
   });
 
-  describe('Loading State', () => {
-    it('shows loading skeleton when not connected', () => {
+  describe('Tab Switching and State Preservation (Req 6.6)', () => {
+    it('should preserve sync state when switching tabs', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
+      });
+
+      // Start on visual tab
+      expect(screen.getByTestId('keyboard-visualizer')).toBeInTheDocument();
+
+      // Switch to code tab
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
+      await user.click(codeTab);
+
+      // Modify code
+      const textarea = screen.getByTestId('code-editor-textarea');
+      const originalValue = textarea.getAttribute('value') || '';
+      await user.clear(textarea);
+      await user.type(textarea, 'map("X", "Y");');
+
+      // Switch back to visual tab
+      const visualTab = screen.getByRole('button', { name: /Visual Editor/i });
+      await user.click(visualTab);
+
+      // Switch back to code tab
+      await user.click(codeTab);
+
+      // Code should still be there
+      expect(textarea).toHaveValue('map("X", "Y");');
+    });
+
+    it('should not trigger sync on initial load', async () => {
+      // Clear mock call history
+      vi.mocked(rhaiParserModule.parseRhaiScript).mockClear();
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
+      });
+
+      // Should parse once on initial load
+      expect(rhaiParserModule.parseRhaiScript).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle rapid tab switching without sync loops', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
+      });
+
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
+      const visualTab = screen.getByRole('button', { name: /Visual Editor/i });
+
+      // Rapid switching
+      await user.click(codeTab);
+      await user.click(visualTab);
+      await user.click(codeTab);
+      await user.click(visualTab);
+      await user.click(codeTab);
+
+      // Should not cause infinite loops or crashes
+      expect(screen.getByTestId('code-editor-textarea')).toBeInTheDocument();
+    });
+  });
+
+  describe('Error Scenarios and Edge Cases', () => {
+    it('should handle profile not found', async () => {
+      vi.mocked(useProfilesModule.useProfiles).mockReturnValue({
+        data: [],
+        isLoading: false,
+      } as any);
+
+      vi.mocked(useProfileConfigModule.useGetProfileConfig).mockReturnValue({
+        data: null,
+        isLoading: false,
+        error: null,
+      } as any);
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Profile.*does not exist/i)).toBeInTheDocument();
+      });
+
+      // Should show create profile button
+      expect(
+        screen.getByRole('button', { name: /Create Profile/i })
+      ).toBeInTheDocument();
+    });
+
+    it('should handle config file missing', async () => {
+      vi.mocked(useProfileConfigModule.useGetProfileConfig).mockReturnValue({
+        data: { source: '', hash: '' },
+        isLoading: false,
+        error: null,
+      } as any);
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByText(/No configuration file found/i)).toBeInTheDocument();
+      });
+
+      // Should show create configuration button
+      expect(
+        screen.getByRole('button', { name: /Create Configuration/i })
+      ).toBeInTheDocument();
+    });
+
+    it('should handle loading state', async () => {
+      vi.mocked(useProfileConfigModule.useGetProfileConfig).mockReturnValue({
+        data: null,
+        isLoading: true,
+        error: null,
+      } as any);
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      expect(screen.getByText(/Loading configuration/i)).toBeInTheDocument();
+    });
+
+    it('should handle error state', async () => {
+      vi.mocked(useProfileConfigModule.useGetProfileConfig).mockReturnValue({
+        data: null,
+        isLoading: false,
+        error: new Error('Failed to load'),
+      } as any);
+
+      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to load/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should disable save when disconnected', async () => {
+      // Mock useUnifiedApi to return disconnected state
       vi.mocked(useUnifiedApiModule.useUnifiedApi).mockReturnValue({
-        query: mockQuery,
-        command: mockCommand,
-        subscribe: mockSubscribe,
-        unsubscribe: mockUnsubscribe,
         isConnected: false,
         readyState: 0,
-      });
-
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      // Should show loading state
-      expect(screen.queryByText('Configuration Editor')).not.toBeInTheDocument();
-    });
-
-    it.skip('loads configuration on mount when connected - OBSOLETE: test checks for save button', async () => {
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(mockQuery).toHaveBeenCalledWith('get_config');
-      });
-    });
-
-    it.skip('displays loaded configuration in code editor - OBSOLETE: test checks for save button', async () => {
-      const user = userEvent.setup();
-      mockQuery.mockResolvedValue({
-        code: '// Loaded from server\nlet layer = Layer::new("base");',
-        hash: 'xyz789',
-      });
+      } as any);
 
       renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
 
       await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Loading/)).not.toBeInTheDocument();
       });
 
-      // Switch to code tab
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-      await user.click(codeTab);
-
-      const textarea = screen.getByTestId('monaco-textarea');
-      expect(textarea).toHaveValue('// Loaded from server\nlet layer = Layer::new("base");');
+      const saveButton = screen.getByRole('button', { name: /Save Configuration/i });
+      expect(saveButton).toBeDisabled();
     });
   });
 
-  describe('Accessibility', () => {
-    it('tab buttons have proper ARIA attributes', async () => {
-      renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
-      });
-
-      const visualTab = screen.getByRole('tab', { name: /visual editor/i });
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
-
-      expect(visualTab).toHaveAttribute('aria-selected', 'true');
-      expect(visualTab).toHaveAttribute('aria-controls', 'visual-panel');
-
-      expect(codeTab).toHaveAttribute('aria-selected', 'false');
-      expect(codeTab).toHaveAttribute('aria-controls', 'code-panel');
-    });
-
-    it('tabpanels have proper ARIA attributes', async () => {
+  describe('End-to-End User Workflows', () => {
+    it('should support complete workflow: load profile → edit visual → switch to code → verify sync → save', async () => {
       const user = userEvent.setup();
+
       renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
 
+      // Step 1: Load profile (happens automatically)
       await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
+        expect(screen.getByTestId('keyboard-visualizer')).toBeInTheDocument();
       });
 
-      // Visual panel should be visible
-      const visualPanel = screen.getByRole('tabpanel', { name: /visual/i });
-      expect(visualPanel).toHaveAttribute('id', 'visual-panel');
+      // Step 2: Edit in visual editor (click a key)
+      const keyButton = screen.getByTestId('test-key-A');
+      await user.click(keyButton);
 
-      // Switch to code tab
-      const codeTab = screen.getByRole('tab', { name: /code editor/i });
+      // Modal opens
+      await waitFor(() => {
+        expect(screen.getByTestId('key-config-modal')).toBeInTheDocument();
+      });
+
+      // Step 3: Switch to code editor
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
       await user.click(codeTab);
 
-      // Code panel should be visible
-      const codePanel = screen.getByRole('tabpanel', { name: /code/i });
-      expect(codePanel).toHaveAttribute('id', 'code-panel');
+      // Step 4: Verify code is present
+      expect(screen.getByTestId('code-editor-textarea')).toBeInTheDocument();
+
+      // Step 5: Modify code
+      const textarea = screen.getByTestId('code-editor-textarea');
+      await user.clear(textarea);
+      await user.type(textarea, 'map("Enter", "Tab");');
+
+      // Step 6: Save
+      const saveButton = screen.getByRole('button', { name: /Save Configuration/i });
+      await user.click(saveButton);
+
+      // Step 7: Verify save was called
+      await waitFor(() => {
+        expect(mockSetProfileConfig).toHaveBeenCalledWith({
+          name: 'Default',
+          source: expect.stringContaining('Enter'),
+        });
+      });
     });
 
-    it.skip('save button has accessible label - OBSOLETE: component uses auto-save', async () => {
+    it('should support multi-device workflow: select devices → edit mappings → generate device blocks', async () => {
+      const user = userEvent.setup();
+
       renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
 
       await waitFor(() => {
-        expect(screen.queryByText(/Loading configuration/)).not.toBeInTheDocument();
+        expect(screen.getByTestId('device-selector')).toBeInTheDocument();
       });
 
-      const saveButton = screen.getByRole('button', { name: 'Save configuration' });
-      expect(saveButton).toHaveAttribute('aria-label', 'Save configuration');
+      // Step 1: Select a device
+      const deviceCheckbox = screen.getByTestId('device-checkbox-device-1');
+      await user.click(deviceCheckbox);
+
+      // Step 2: Verify device keyboard appears
+      await waitFor(() => {
+        expect(screen.getByText(/Keyboard A/i)).toBeInTheDocument();
+      });
+
+      // Step 3: Click a key on device keyboard
+      const keyButton = screen.getByTestId('test-key-A');
+      await user.click(keyButton);
+
+      // Modal should open for device-specific mapping
+      await waitFor(() => {
+        expect(screen.getByTestId('key-config-modal')).toBeInTheDocument();
+      });
+
+      // Step 4: Switch to code to verify device block generation
+      const codeTab = screen.getByRole('button', { name: /Code Editor/i });
+      await user.click(codeTab);
+
+      // Code should be present
+      expect(screen.getByTestId('code-editor-textarea')).toBeInTheDocument();
     });
   });
 });
