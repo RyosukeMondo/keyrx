@@ -12,7 +12,7 @@
   - _Requirements: 9.1, 9.4, 9.7_
   - _Prompt: Implement the task for spec web-ui-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend Rust Developer specializing in type systems and build tooling | Task: Add typeshare crate to keyrx_daemon following requirements 9.1, 9.4, 9.7. Add typeshare = "1.0" to Cargo.toml dependencies. Configure output directory in Cargo.toml metadata section. Annotate all public API structs and enums with #[typeshare] attribute (DeviceEntry, ProfileMetadata, LayoutPreset, KeyMapping, LatencyStats, RpcRequest, RpcResponse). Run cargo typeshare to generate keyrx_ui/src/types/generated.ts. Verify generated TypeScript compiles with npm run type-check. Document generation command in keyrx_daemon/README.md | Restrictions: Do not modify existing struct definitions beyond adding #[typeshare] attribute, must generate valid TypeScript that compiles without errors, must not break existing functionality | Success: typeshare dependency added to Cargo.toml, all API structs annotated with #[typeshare], generated.ts file created with valid TypeScript types, types compile successfully, generation command documented in README. After completing, set this task to in-progress [-] in tasks.md, then run mcp__spec-workflow__log-implementation tool to record artifacts (structs annotated, generated types file, build configuration), then mark task complete [x] in tasks.md_
 
-- [ ] 2. Add Zod validation to frontend
+- [x] 2. Add Zod validation to frontend
   - File: keyrx_ui/package.json, keyrx_ui/src/api/schemas.ts
   - Install zod dependency
   - Create Zod schemas matching all API response types
