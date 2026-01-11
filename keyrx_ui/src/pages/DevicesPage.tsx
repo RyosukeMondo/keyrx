@@ -22,6 +22,16 @@ interface Device {
   lastSeen?: string;
 }
 
+interface ApiDevice {
+  id: string;
+  name: string;
+  path: string;
+  scope?: 'global' | 'device-specific';
+  layout?: string;
+  active: boolean;
+  serial?: string;
+}
+
 interface DevicesPageProps {
   className?: string;
 }
@@ -351,6 +361,7 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
  * DevicesPage Component
  *
  * Device management interface with:
+ * - Global settings card with default layout selector
  * - Device list showing all connected keyboards
  * - Inline rename functionality (click Rename → input → Enter saves)
  * - Scope toggle (Global / Device-Specific)
@@ -358,27 +369,35 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
  * - Forget device with confirmation dialog
  *
  * Layout: From design.md Layout 2
- * Requirements: Req 5 (Device Management User Flows)
+ * Requirements: Req 5 (Device Management User Flows), Req 2 (Global Layout Selection)
  */
 export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   const [loading, setLoading] = useState(true);
   const [devices, setDevices] = useState<Device[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch devices from API on mount
+  // Global layout state
+  const [globalLayout, setGlobalLayout] = useState<string>('ANSI_104');
+  const [isSavingGlobalLayout, setIsSavingGlobalLayout] = useState(false);
+  const [globalLayoutError, setGlobalLayoutError] = useState<string | null>(null);
+  const [globalLayoutSavedAt, setGlobalLayoutSavedAt] = useState<Date | null>(null);
+
+  // Fetch devices and global layout from API on mount
   React.useEffect(() => {
-    const fetchDevices = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch('/api/devices');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch devices: ${response.statusText}`);
+
+        // Fetch devices
+        const devicesResponse = await fetch('/api/devices');
+        if (!devicesResponse.ok) {
+          throw new Error(`Failed to fetch devices: ${devicesResponse.statusText}`);
         }
-        const data = await response.json();
+        const devicesData = await devicesResponse.json();
 
         // Transform API response to UI format
-        const transformedDevices: Device[] = (data.devices || []).map((device: any) => ({
+        const transformedDevices: Device[] = (devicesData.devices || []).map((device: ApiDevice) => ({
           id: device.id,
           name: device.name,
           identifier: device.path,
@@ -392,15 +411,27 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
         }));
 
         setDevices(transformedDevices);
+
+        // Fetch global layout (if endpoint exists)
+        try {
+          const layoutResponse = await fetch('/api/settings/global-layout');
+          if (layoutResponse.ok) {
+            const layoutData = await layoutResponse.json();
+            setGlobalLayout(layoutData.layout || 'ANSI_104');
+          }
+        } catch (layoutErr) {
+          // Endpoint may not exist yet, use default
+          // Silent fail - this is expected if backend hasn't implemented the endpoint yet
+        }
       } catch (err) {
-        console.error('Failed to fetch devices:', err);
-        setError(getErrorMessage(err, 'Failed to fetch devices'));
+        console.error('Failed to fetch data:', err);
+        setError(getErrorMessage(err, 'Failed to fetch data'));
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDevices();
+    fetchData();
   }, []);
 
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
@@ -443,6 +474,38 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     setNameError('');
   };
 
+
+  const handleGlobalLayoutChange = async (newLayout: string) => {
+    setGlobalLayout(newLayout);
+    setIsSavingGlobalLayout(true);
+    setGlobalLayoutError(null);
+
+    try {
+      const response = await fetch('/api/settings/global-layout', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ layout: newLayout }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save global layout: ${response.statusText}`);
+      }
+
+      setGlobalLayoutSavedAt(new Date());
+
+      // Auto-clear success indicator after 3 seconds
+      setTimeout(() => {
+        setGlobalLayoutSavedAt(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Failed to save global layout:', err);
+      setGlobalLayoutError(getErrorMessage(err, 'Failed to save global layout'));
+    } finally {
+      setIsSavingGlobalLayout(false);
+    }
+  };
 
   const handleForgetDevice = () => {
     if (forgetDeviceId) {
@@ -500,6 +563,52 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
           <p className="text-sm text-red-400">{error}</p>
         </div>
       )}
+
+      {/* Global Settings Card */}
+      <Card variant="elevated" className="bg-slate-800">
+        <div className="flex flex-col gap-md">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-100">Global Settings</h2>
+            {isSavingGlobalLayout && (
+              <span className="text-xs text-slate-400 flex items-center gap-1">
+                <span className="animate-spin h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full" />
+                Saving...
+              </span>
+            )}
+            {!isSavingGlobalLayout && globalLayoutSavedAt && (
+              <span className="text-xs text-green-500 flex items-center gap-1">
+                ✓ Saved
+              </span>
+            )}
+            {globalLayoutError && (
+              <span className="text-xs text-red-500 flex items-center gap-1" title={globalLayoutError}>
+                ✗ Error
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-sm">
+            <label className="text-sm font-medium text-slate-300">
+              Default Keyboard Layout
+            </label>
+            <p className="text-xs text-slate-400">
+              New devices will inherit this layout by default. You can override it for specific devices below.
+            </p>
+            <Dropdown
+              options={LAYOUT_OPTIONS}
+              value={globalLayout}
+              onChange={handleGlobalLayoutChange}
+              aria-label="Select default keyboard layout"
+            />
+          </div>
+
+          {globalLayoutError && (
+            <div className="bg-red-900/20 border border-red-700 rounded-lg p-3">
+              <p className="text-xs text-red-400">{globalLayoutError}</p>
+            </div>
+          )}
+        </div>
+      </Card>
 
       <Card>
         <div className="flex flex-col gap-md">
