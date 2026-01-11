@@ -64,15 +64,16 @@
   - _Completed: 2026-01-11_
   - _Artifacts: scripts/check-types.sh (type check script with --fix option), .git/hooks/pre-commit (updated with type checking), merge commit handling, clear error messages_
 
-- [ ] 7. Add CI/CD type consistency check
-  - File: .github/workflows/type-check.yml
+- [x] 7. Add CI/CD type consistency check
+  - File: .github/workflows/ci.yml (integrated into main CI workflow)
   - Create GitHub Actions workflow for type checking
   - Run on all pushes and pull requests
   - Fail CI if types out of sync
   - Purpose: Enforce type consistency in CI/CD pipeline
   - _Leverage: .github/workflows/ci.yml_
   - _Requirements: 9.7, 9.8_
-  - _Prompt: Implement the task for spec web-ui-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer specializing in CI/CD and GitHub Actions | Task: Create CI/CD type check workflow following requirements 9.7, 9.8. Create .github/workflows/type-check.yml that installs Rust toolchain, installs typeshare-cli (cargo install typeshare-cli), regenerates TypeScript types (cargo typeshare), checks for differences (git diff --exit-code keyrx_ui/src/types/generated.ts), fails with clear error if types differ showing diff, runs TypeScript compilation check (npm run type-check). Trigger on push and pull_request events. Add as job to main .github/workflows/ci.yml for integration. Cache cargo and npm dependencies for speed | Restrictions: Must fail build on type mismatch, must display helpful error with diff, must run on all branches, must integrate with existing CI workflow, must cache dependencies | Success: .github/workflows/type-check.yml created, runs on push and PR events, regenerates types correctly, detects type mismatches and fails build, displays clear error with diff, TypeScript compilation verified, integrated with main CI workflow, dependencies cached. After completing, set this task to in-progress [-] in tasks.md, then run mcp__spec-workflow__log-implementation tool to record artifacts (workflow file, CI integration, caching setup), then mark task complete [x] in tasks.md_
+  - _Completed: 2026-01-11_
+  - _Artifacts: type-check job in ci.yml (installs typeshare-cli, regenerates types, checks diff, runs TypeScript compilation), serde_json::Value mapped to TypeScript 'any' using #[typeshare(serialized_as = "any")], cargo binary caching, clear error messages with diff output_
 
 ## Phase 1: Foundation - Rhai Parser and Code Generator
 
