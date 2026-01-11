@@ -21,7 +21,7 @@
   - _Requirements: 5.2_
   - _Prompt: Implement the task for spec e2e-playwright-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test Infrastructure Engineer | Task: Create daemon fixture that starts keyrx_daemon as subprocess, waits for it to be ready (poll /api/status), creates a test profile, and provides cleanup. Export as Playwright fixture. | Restrictions: Handle daemon startup failures gracefully, ensure cleanup runs even on test failure, use configurable paths for daemon binary | Success: Fixture can start/stop daemon, tests can depend on daemon being ready. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 3. Create network monitor fixture
+- [x] 3. Create network monitor fixture
   - File: keyrx_ui/tests/e2e/fixtures/network-monitor.ts
   - Track all API requests during test
   - Detect duplicate/rapid requests
