@@ -125,7 +125,7 @@
   - _Requirements: 3.5_
   - _Prompt: Implement the task for spec e2e-playwright-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: E2E Test Developer | Task: Create navigation tests: test clicking each sidebar link navigates to correct page, test browser back/forward works, test deep links work (e.g., /profiles/Default/config). Test mobile viewport for bottom nav. | Restrictions: Use viewport switching for mobile tests, verify URL changes, verify page content loads | Success: All navigation paths work correctly. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 14. Create network efficiency tests
+- [x] 14. Create network efficiency tests
   - File: keyrx_ui/tests/e2e/network/request-efficiency.spec.ts
   - Test no excessive requests per page
   - Test no duplicate requests
