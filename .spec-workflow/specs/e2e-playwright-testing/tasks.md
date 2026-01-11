@@ -144,7 +144,7 @@
   - _Requirements: 5.1_
   - _Prompt: Implement the task for spec e2e-playwright-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer | Task: Add npm scripts to package.json: "test:e2e:full": "playwright test --config=playwright.e2e.config.ts", "test:e2e:ci": "playwright test --config=playwright.e2e.config.ts --reporter=html,json". | Restrictions: Follow existing script naming conventions, ensure CI script outputs artifacts | Success: npm run test:e2e:full and test:e2e:ci work correctly. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 16. Add CI workflow job for E2E tests
+- [x] 16. Add CI workflow job for E2E tests
   - File: .github/workflows/ci.yml
   - Add e2e-playwright-tests job
   - Install Playwright browsers

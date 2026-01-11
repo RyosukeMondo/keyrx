@@ -330,6 +330,101 @@ jobs:
             keyrx_ui/a11y-output.log
           retention-days: 30
 
+  e2e-playwright-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build-and-verify
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: keyrx_ui/package-lock.json
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-e2e-playwright-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build daemon
+        run: cargo build --release -p keyrx_daemon
+
+      - name: Build compiler
+        run: cargo build --release -p keyrx_compiler
+
+      - name: Install frontend dependencies
+        working-directory: keyrx_ui
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: keyrx_ui
+        run: npx playwright install chromium --with-deps
+
+      - name: Setup test environment
+        run: |
+          mkdir -p ~/.config/keyrx/profiles
+          # Create minimal test profile
+          cat > ~/.config/keyrx/profiles/E2E.rhai << 'EOF'
+          // Minimal E2E test profile
+          device_start("*");
+          device_end();
+          EOF
+          ./target/release/keyrx_compiler compile ~/.config/keyrx/profiles/E2E.rhai -o ~/.config/keyrx/profiles/E2E.krx
+          echo "E2E test profile created"
+
+      - name: Run E2E tests
+        id: e2e-tests
+        working-directory: keyrx_ui
+        run: npm run test:e2e:ci
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: keyrx_ui/playwright-report/
+          retention-days: 30
+
+      - name: Upload Playwright test results (JSON)
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-test-results
+          path: keyrx_ui/test-results/
+          retention-days: 30
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-screenshots
+          path: keyrx_ui/test-results/**/*.png
+          retention-days: 7
+
+      - name: Upload videos on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-videos
+          path: keyrx_ui/test-results/**/*.webm
+          retention-days: 7
+
   test-docs:
     name: Test Documentation Accuracy
     runs-on: ubuntu-latest
