@@ -112,11 +112,8 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     const ast = syncEngine.getAST();
     if (!ast) return;
 
-    // Convert RhaiAST to visual editor KeyMapping format
-    const newMappings = new Map<string, KeyMapping>();
-
-    // Add global mappings
-    ast.globalMappings.forEach((m) => {
+    // Helper to convert RhaiKeyMapping to visual KeyMapping
+    const convertToVisualMapping = (m: RhaiKeyMapping): KeyMapping => {
       const visualMapping: KeyMapping = {
         type: m.type,
       };
@@ -136,14 +133,43 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
         visualMapping.targetLayer = m.layerSwitch.layerId;
       }
 
-      newMappings.set(m.sourceKey, visualMapping);
-    });
+      return visualMapping;
+    };
 
-    // TODO: Handle device-specific mappings
-    // For now, just use global mappings
+    // Convert RhaiAST to visual editor KeyMapping format
+    const newMappings = new Map<string, KeyMapping>();
+
+    // Add global mappings if global is selected
+    if (globalSelected) {
+      ast.globalMappings.forEach((m) => {
+        newMappings.set(m.sourceKey, convertToVisualMapping(m));
+      });
+    }
+
+    // Add device-specific mappings for selected devices
+    if (selectedDevices.length > 0 && devicesData) {
+      ast.deviceBlocks.forEach((block) => {
+        // Check if this device block matches any selected device
+        const matchesSelectedDevice = devicesData.some((device) => {
+          const isSelected = selectedDevices.includes(device.id);
+          const matchesPattern =
+            block.pattern === device.serial ||
+            block.pattern === device.name ||
+            block.pattern === device.id;
+          return isSelected && matchesPattern;
+        });
+
+        if (matchesSelectedDevice) {
+          block.mappings.forEach((m) => {
+            // Device-specific mappings override global mappings
+            newMappings.set(m.sourceKey, convertToVisualMapping(m));
+          });
+        }
+      });
+    }
 
     setKeyMappings(newMappings);
-  }, [activeTab, syncEngine.state]);
+  }, [activeTab, syncEngine.state, globalSelected, selectedDevices, devicesData]);
 
   // Handle profile selection change
   const handleProfileChange = (newProfileName: string) => {
@@ -182,40 +208,56 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       setKeyMappings(newMappings);
 
       // Convert visual editor state to RhaiAST and trigger sync
-      const rhaiMappings: RhaiKeyMapping[] = Array.from(newMappings.entries()).map(([key, m]) => {
-        const baseMapping: RhaiKeyMapping = {
-          type: m.type,
-          sourceKey: key,
-          line: 0,
+      const convertToRhaiMappings = (mappings: Map<string, KeyMapping>): RhaiKeyMapping[] => {
+        return Array.from(mappings.entries()).map(([key, m]) => {
+          const baseMapping: RhaiKeyMapping = {
+            type: m.type,
+            sourceKey: key,
+            line: 0,
+          };
+
+          if (m.type === 'simple' && m.tapAction) {
+            baseMapping.targetKey = m.tapAction;
+          } else if (m.type === 'tap_hold' && m.tapAction && m.holdAction) {
+            baseMapping.tapHold = {
+              tapAction: m.tapAction,
+              holdAction: m.holdAction,
+              thresholdMs: m.threshold || 200,
+            };
+          } else if (m.type === 'macro' && m.macroSteps) {
+            baseMapping.macro = {
+              keys: m.macroSteps.filter(s => s.key).map(s => s.key!),
+              delayMs: m.macroSteps.find(s => s.delayMs)?.delayMs,
+            };
+          } else if (m.type === 'layer_switch' && m.targetLayer) {
+            baseMapping.layerSwitch = {
+              layerId: m.targetLayer,
+            };
+          }
+
+          return baseMapping;
+        });
+      };
+
+      // Build device blocks based on current selection
+      const deviceBlocks = selectedDevices.map((deviceId, index) => {
+        const device = devices.find((d) => d.id === deviceId);
+        if (!device) return null;
+
+        return {
+          pattern: device.serial || device.name,
+          mappings: convertToRhaiMappings(newMappings),
+          layers: [],
+          startLine: 0,
+          endLine: 0,
         };
-
-        if (m.type === 'simple' && m.tapAction) {
-          baseMapping.targetKey = m.tapAction;
-        } else if (m.type === 'tap_hold' && m.tapAction && m.holdAction) {
-          baseMapping.tapHold = {
-            tapAction: m.tapAction,
-            holdAction: m.holdAction,
-            thresholdMs: m.threshold || 200,
-          };
-        } else if (m.type === 'macro' && m.macroSteps) {
-          baseMapping.macro = {
-            keys: m.macroSteps.filter(s => s.key).map(s => s.key!),
-            delayMs: m.macroSteps.find(s => s.delayMs)?.delayMs,
-          };
-        } else if (m.type === 'layer_switch' && m.targetLayer) {
-          baseMapping.layerSwitch = {
-            layerId: m.targetLayer,
-          };
-        }
-
-        return baseMapping;
-      });
+      }).filter((block): block is NonNullable<typeof block> => block !== null);
 
       // Update sync engine with new AST
       syncEngine.onVisualChange({
         imports: [],
-        globalMappings: rhaiMappings,
-        deviceBlocks: [],
+        globalMappings: globalSelected ? convertToRhaiMappings(newMappings) : [],
+        deviceBlocks,
         comments: [],
       });
     }
@@ -378,21 +420,64 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
             }}
           />
 
-          {/* KEYBOARD ON TOP - Beautiful Layout */}
-          <Card className="bg-gradient-to-br from-slate-800 to-slate-900">
-            <h3 className="text-xl font-bold text-primary-400 mb-4">Keyboard Layout</h3>
-            <div className="flex justify-center p-4">
-              <KeyboardVisualizer
-                layout="ANSI_104"
-                keyMappings={keyMappings}
-                onKeyClick={handlePhysicalKeyClick}
-                simulatorMode={false}
-              />
-            </div>
-            <p className="text-center text-sm text-slate-400 mt-4">
-              Click any key to configure its mapping
-            </p>
-          </Card>
+          {/* KEYBOARD DISPLAY - Shows Global and/or Device-Specific Keyboards */}
+          {globalSelected && (
+            <Card className="bg-gradient-to-br from-slate-800 to-slate-900">
+              <h3 className="text-xl font-bold text-primary-400 mb-4">
+                Global Keyboard (All Devices)
+              </h3>
+              <div className="flex justify-center p-4">
+                <KeyboardVisualizer
+                  layout="ANSI_104"
+                  keyMappings={keyMappings}
+                  onKeyClick={handlePhysicalKeyClick}
+                  simulatorMode={false}
+                />
+              </div>
+              <p className="text-center text-sm text-slate-400 mt-4">
+                Click any key to configure global mappings
+              </p>
+            </Card>
+          )}
+
+          {/* Device-Specific Keyboards */}
+          {selectedDevices.length > 0 && devices
+            .filter((d) => selectedDevices.includes(d.id))
+            .map((device) => (
+              <Card key={device.id} className="bg-gradient-to-br from-slate-800 to-slate-900">
+                <h3 className="text-xl font-bold text-primary-400 mb-4">
+                  {device.name}
+                  {device.serial && (
+                    <span className="ml-2 text-sm text-slate-400 font-normal">
+                      ({device.serial})
+                    </span>
+                  )}
+                </h3>
+                <div className="flex justify-center p-4">
+                  <KeyboardVisualizer
+                    layout="ANSI_104"
+                    keyMappings={keyMappings}
+                    onKeyClick={handlePhysicalKeyClick}
+                    simulatorMode={false}
+                  />
+                </div>
+                <p className="text-center text-sm text-slate-400 mt-4">
+                  Click any key to configure device-specific mappings for {device.name}
+                </p>
+              </Card>
+            ))}
+
+          {/* Warning if no selection */}
+          {!globalSelected && selectedDevices.length === 0 && (
+            <Card className="bg-yellow-900/20 border border-yellow-700/50">
+              <div className="text-center py-8">
+                <p className="text-yellow-200 text-lg mb-2">⚠️ No devices selected</p>
+                <p className="text-yellow-300 text-sm">
+                  Select at least one device or "Global" to configure key mappings
+                </p>
+              </div>
+            </Card>
+          )}
 
           {/* Layer Switcher */}
           <LayerSwitcher
