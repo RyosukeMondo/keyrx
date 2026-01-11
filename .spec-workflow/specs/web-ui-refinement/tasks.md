@@ -183,7 +183,7 @@
 
 ## Phase 4: Devices Page Modifications
 
-- [ ] 17. Add global layout selector to DevicesPage
+- [x] 17. Add global layout selector to DevicesPage
   - File: keyrx_ui/src/pages/DevicesPage.tsx
   - Add "Global Settings" card at top
   - Implement global layout selector dropdown
@@ -191,6 +191,8 @@
   - Purpose: Set default keyboard layout
   - _Leverage: keyrx_ui/src/hooks/useDevices.ts_
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+  - _Completed: 2026-01-11_
+  - _Artifacts: Global Settings card with layout dropdown, PUT /api/settings/global-layout integration, save feedback (spinner/success/error), GET endpoint for current layout, graceful error handling, ApiDevice interface for type safety_
   - _Prompt: Implement the task for spec web-ui-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend React Developer specializing in settings management | Task: Modify DevicesPage following requirements 2.1-2.5. Add "Global Settings" card at top of page. Implement layout selector dropdown with options: ANSI 104, ISO 105, JIS 109, HHKB, NUMPAD. Save global layout to daemon via new API endpoint PUT /api/settings/global-layout. Apply global layout as default for newly detected devices. Display current global layout prominently. Show save feedback (saving spinner, success checkmark, error). Leverage useDevices hook | Restrictions: Must not affect existing device-specific layout overrides, save must persist across daemon restarts, provide clear visual feedback on save, handle API errors gracefully | Success: Global Settings card displays at top, layout selector functional with all options, save persists to daemon, new devices inherit global layout, existing device overrides preserved, save feedback clear (spinner/success/error), error handling works. After completing, set this task to in-progress [-] in tasks.md, then run mcp__spec-workflow__log-implementation tool to record artifacts (Global Settings card, API integration, save feedback), then mark task complete [x] in tasks.md_
 
 - [ ] 18. Remove scope-related UI from DevicesPage
