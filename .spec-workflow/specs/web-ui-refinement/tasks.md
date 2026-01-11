@@ -53,7 +53,7 @@
   - _Completed: 2026-01-11_
   - _Artifacts: keyrx_ui/src/api/contracts.test.ts (40 tests), keyrx_daemon/tests/api_contracts_test.rs (25 tests), 100% endpoint coverage_
 
-- [ ] 6. Add pre-commit hook for type consistency
+- [x] 6. Add pre-commit hook for type consistency
   - File: .git/hooks/pre-commit, scripts/check-types.sh
   - Create pre-commit hook to regenerate TypeScript types
   - Fail commit if types changed without being staged
@@ -61,7 +61,8 @@
   - Purpose: Prevent committing code with out-of-sync types
   - _Leverage: None_
   - _Requirements: 9.1, 9.4, 9.7_
-  - _Prompt: Implement the task for spec web-ui-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer specializing in Git hooks and build automation | Task: Create pre-commit hook for type consistency following requirements 9.1, 9.4, 9.7. Create .git/hooks/pre-commit script that runs cargo typeshare to regenerate keyrx_ui/src/types/generated.ts, checks if file changed using git diff, fails commit with error message if types changed but not staged, provides instructions to review and stage changes. Create scripts/check-types.sh for manual type checking. Make both scripts executable (chmod +x). Handle merge commits gracefully (skip type check on merge) | Restrictions: Must not auto-commit generated types (require manual review), must provide clear error messages with instructions, must be executable, must handle merge commits, must not break existing pre-commit hooks | Success: .git/hooks/pre-commit created and executable, regenerates types on commit attempt, fails if types out of sync with clear error, provides review instructions, scripts/check-types.sh created for manual checking, merge commits handled correctly, existing hooks preserved. After completing, set this task to in-progress [-] in tasks.md, then run mcp__spec-workflow__log-implementation tool to record artifacts (hook scripts, check script, Git integration), then mark task complete [x] in tasks.md_
+  - _Completed: 2026-01-11_
+  - _Artifacts: scripts/check-types.sh (type check script with --fix option), .git/hooks/pre-commit (updated with type checking), merge commit handling, clear error messages_
 
 - [ ] 7. Add CI/CD type consistency check
   - File: .github/workflows/type-check.yml
