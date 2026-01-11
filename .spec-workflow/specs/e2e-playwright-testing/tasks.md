@@ -48,7 +48,7 @@
   - _Requirements: 5.2_
   - _Prompt: Implement the task for spec e2e-playwright-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test Infrastructure Engineer | Task: Create global-setup.ts that starts daemon and waits for ready, global-teardown.ts that stops daemon. Store daemon PID in file for teardown access. | Restrictions: Must handle CI environment (daemon binary in different location), timeout after 30s if daemon doesn't start, cleanup on any failure | Success: Daemon starts before tests, stops after tests, CI works correctly. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 6. Create HomePage E2E tests
+- [x] 6. Create HomePage E2E tests
   - File: keyrx_ui/tests/e2e/pages/home.spec.ts
   - Test page load, content, no errors
   - Test dashboard cards render
