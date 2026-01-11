@@ -115,7 +115,7 @@
   - _Requirements: 2.1-2.11_
   - _Prompt: Implement the task for spec e2e-playwright-testing, first run spec-workflow-guide to get the workflow guide then implement the task: Role: API Test Developer | Task: Create comprehensive API tests using Playwright's request fixture: test GET /api/status, GET /api/devices, GET /api/profiles, POST /api/profiles, DELETE /api/profiles/:name, PATCH /api/devices/:id, GET /api/metrics/latency, GET /api/layouts. Validate responses against Zod schemas. | Restrictions: Use API helpers from fixtures/api.ts, clean up created test data, test both success and error cases | Success: All API endpoints tested, contracts validated, errors produce clear failures. After implementing, set this task to in-progress [-] in tasks.md, use log-implementation tool to record details, then mark as complete [x]_
 
-- [ ] 13. Create navigation flow tests
+- [x] 13. Create navigation flow tests
   - File: keyrx_ui/tests/e2e/flows/navigation.spec.ts
   - Test all navigation links work
   - Test sidebar navigation
