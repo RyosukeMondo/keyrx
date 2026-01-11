@@ -99,7 +99,7 @@
   - _Completed: 2026-01-11_
   - _Artifacts: rhaiCodeGen.ts (code generator with all mapping types), rhaiCodeGen.test.ts (35 tests, 97.6% line coverage, 92.3% function coverage), round-trip compatibility verified, performance validated (<50ms for 1,000 mappings)_
 
-- [ ] 10. Create RhaiFormatter utility module
+- [x] 10. Create RhaiFormatter utility module
   - File: keyrx_ui/src/utils/rhaiFormatter.ts
   - Implement Rhai code formatting and indentation
   - Support configurable formatting options
@@ -107,7 +107,8 @@
   - Purpose: Ensure consistent Rhai code style
   - _Leverage: keyrx_ui/src/utils/rhaiCodeGen.ts_
   - _Requirements: 8.6, 8.7_
-  - _Prompt: Implement the task for spec web-ui-refinement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend TypeScript Developer specializing in code formatting | Task: Create Rhai formatter following requirements 8.6, 8.7. Implement functions: formatRhaiScript(script: string, options?: FormatOptions): string, indentBlock(lines: string[], level: number): string[], preserveComments(original: string, formatted: string): string. Define FormatOptions interface with indentSize (default 4), maxLineLength (default 100), blankLinesBetweenDevices (default 1). Preserve all inline and block comments in original positions. Leverage code generation utilities from keyrx_ui/src/utils/rhaiCodeGen.ts | Restrictions: Must preserve all comments in original positions, maintain semantic equivalence after formatting, formatting must complete within 50ms for 1,000 line scripts, do not reorder statements | Success: Formatting functions implemented, formats scripts with consistent indentation, preserves all comments, respects line length limits, passes unit tests for various input styles, integrates with code generator. After completing, set this task to in-progress [-] in tasks.md, then run mcp__spec-workflow__log-implementation tool to record artifacts (formatter functions, comment preservation logic), then mark task complete [x] in tasks.md_
+  - _Completed: 2026-01-11_
+  - _Artifacts: rhaiFormatter.ts (formatRhaiScript, indentBlock, preserveComments, isLineTooLong, applyDefaultFormatOptions), rhaiFormatter.test.ts (43 tests, 100% statement coverage, 87.5% branch coverage), performance validated (<50ms for 1,000 lines), leverages rhaiParser and rhaiCodeGen for parse-format-generate cycle_
 
 - [ ] 11. Write unit tests for RhaiParser
   - File: keyrx_ui/src/utils/rhaiParser.test.ts
