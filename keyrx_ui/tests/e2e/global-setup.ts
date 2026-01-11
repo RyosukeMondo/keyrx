@@ -10,9 +10,14 @@
  */
 
 import { spawn, ChildProcess } from 'child_process';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { writeFile } from 'fs/promises';
 import { setTimeout as sleep } from 'timers/promises';
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Daemon configuration (must match daemon fixture)
 const DAEMON_PORT = 9867;

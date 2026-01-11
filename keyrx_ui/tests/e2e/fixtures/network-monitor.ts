@@ -30,7 +30,7 @@
  * ```
  */
 
-import { Page, Request } from '@playwright/test';
+import type { Page, Request } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 /**

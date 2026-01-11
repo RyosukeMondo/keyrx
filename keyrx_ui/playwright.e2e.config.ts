@@ -32,8 +32,8 @@ export default defineConfig({
   ],
 
   /* Global setup/teardown for daemon lifecycle */
-  globalSetup: require.resolve('./tests/e2e/global-setup.ts'),
-  globalTeardown: require.resolve('./tests/e2e/global-teardown.ts'),
+  globalSetup: './tests/e2e/global-setup.ts',
+  globalTeardown: './tests/e2e/global-teardown.ts',
 
   /* Shared settings for all the projects below */
   use: {

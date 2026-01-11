@@ -18,9 +18,14 @@
 
 import { test as base, expect } from '@playwright/test';
 import { spawn, ChildProcess } from 'child_process';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { setTimeout as sleep } from 'timers/promises';
 import { writeFile, unlink } from 'fs/promises';
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Daemon configuration for E2E tests
 export const DAEMON_PORT = 9867; // Standard keyrx_daemon port
