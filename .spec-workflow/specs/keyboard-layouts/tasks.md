@@ -99,7 +99,7 @@
   - _Requirements: 1, 2, 3, 4_
   - _Prompt: Implement the task for spec keyboard-layouts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React TypeScript Developer | Task: Update KeyboardVisualizerProps layout type union to include ANSI_87, ISO_105, ISO_88, JIS_109, COMPACT_60, COMPACT_65, COMPACT_75, COMPACT_96, HHKB, NUMPAD. Import all new layout JSON files and add to layoutData object. Remove placeholder comments. | Restrictions: Do not change rendering logic, maintain backward compatibility with ANSI_104, preserve existing props interface | Success: TypeScript compiles without errors, all layouts render correctly, no placeholders remain. After implementation, mark task [ ] as [-] in tasks.md, then use log-implementation tool to record details, then mark [-] as [x]._
 
-- [ ] 12. Add layout validation tests
+- [-] 12. Add layout validation tests
   - File: keyrx_ui/src/data/layouts/__tests__/layouts.test.ts
   - Create tests validating each layout JSON against schema
   - Verify key counts match expected values for each layout
