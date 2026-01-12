@@ -45,7 +45,7 @@
   - _Requirements: 3.1_
   - _Prompt: Implement the task for spec keyboard-layouts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Developer specializing in compact keyboard layouts | Task: Create COMPACT_60.json with only alphanumeric rows plus modifiers, no F-row (y=0 row), no nav/arrow cluster, right Shift extends to 2.75u | Restrictions: Maintain standard 60% proportions, use consistent key sizing, approximately 61 keys | Success: JSON validates, renders compact layout without gaps, ~61 keys. After implementation, mark task [ ] as [-] in tasks.md, then use log-implementation tool to record details, then mark [-] as [x]._
 
-- [ ] 6. Create 65% compact layout JSON
+- [-] 6. Create 65% compact layout JSON
   - File: keyrx_ui/src/data/layouts/COMPACT_65.json
   - Create 65% keyboard layout with ~68 keys
   - Includes arrow keys and minimal navigation column
