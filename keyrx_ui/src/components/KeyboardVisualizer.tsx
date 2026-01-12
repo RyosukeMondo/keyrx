@@ -9,9 +9,19 @@ import type { AssignableKey } from './KeyAssignmentPanel';
 
 // Import layout data
 import ANSI_104 from '../data/layouts/ANSI_104.json';
+import ANSI_87 from '../data/layouts/ANSI_87.json';
+import ISO_105 from '../data/layouts/ISO_105.json';
+import ISO_88 from '../data/layouts/ISO_88.json';
+import JIS_109 from '../data/layouts/JIS_109.json';
+import COMPACT_60 from '../data/layouts/COMPACT_60.json';
+import COMPACT_65 from '../data/layouts/COMPACT_65.json';
+import COMPACT_75 from '../data/layouts/COMPACT_75.json';
+import COMPACT_96 from '../data/layouts/COMPACT_96.json';
+import HHKB from '../data/layouts/HHKB.json';
+import NUMPAD from '../data/layouts/NUMPAD.json';
 
 interface KeyboardVisualizerProps {
-  layout: 'ANSI_104' | 'ISO_105' | 'JIS_109' | 'HHKB' | 'NUMPAD';
+  layout: 'ANSI_104' | 'ANSI_87' | 'ISO_105' | 'ISO_88' | 'JIS_109' | 'COMPACT_60' | 'COMPACT_65' | 'COMPACT_75' | 'COMPACT_96' | 'HHKB' | 'NUMPAD';
   keyMappings: Map<string, KeyMapping>;
   onKeyClick: (keyCode: string) => void;
   onKeyDrop?: (keyCode: string, droppedKey: AssignableKey) => void;
@@ -22,11 +32,16 @@ interface KeyboardVisualizerProps {
 
 const layoutData = {
   ANSI_104,
-  // TODO: Add other layouts when needed
-  ISO_105: ANSI_104, // Placeholder
-  JIS_109: ANSI_104, // Placeholder
-  HHKB: ANSI_104, // Placeholder
-  NUMPAD: ANSI_104, // Placeholder
+  ANSI_87,
+  ISO_105,
+  ISO_88,
+  JIS_109,
+  COMPACT_60,
+  COMPACT_65,
+  COMPACT_75,
+  COMPACT_96,
+  HHKB,
+  NUMPAD,
 };
 
 interface DroppableKeyWrapperProps {
@@ -142,6 +157,7 @@ export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
       ref={containerRef}
       className={cn('keyboard-grid', className)}
       role="group"
+      data-testid="keyboard-visualizer"
       aria-label={`${layout} keyboard layout${simulatorMode ? ' (simulator mode)' : ''}. Use arrow keys to navigate between keys, Enter to select.`}
       style={{
         display: 'grid',

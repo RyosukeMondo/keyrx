@@ -90,7 +90,7 @@
   - _Requirements: 4.3_
   - _Prompt: Implement the task for spec keyboard-layouts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Developer | Task: Create NUMPAD.json with standard 17-key numpad: Num Lock, divide, multiply, minus in top row, 7-8-9 plus, 4-5-6, 1-2-3 Enter, 0 (2u) and dot | Restrictions: Standalone layout, 17 keys exactly, standard numpad proportions | Success: JSON validates, renders standalone numpad, 17 keys. After implementation, mark task [ ] as [-] in tasks.md, then use log-implementation tool to record details, then mark [-] as [x]._
 
-- [ ] 11. Update KeyboardVisualizer layout type union
+- [-] 11. Update KeyboardVisualizer layout type union
   - File: keyrx_ui/src/components/KeyboardVisualizer.tsx
   - Expand layout type to include all new layouts
   - Update layoutData object with imports for all layouts
