@@ -81,7 +81,7 @@
   - _Requirements: 4.1_
   - _Prompt: Implement the task for spec keyboard-layouts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Developer with knowledge of HHKB layout | Task: Create HHKB.json with HHKB-specific features: split backspace (Backspace + backslash), Control in Caps Lock position, Fn key replacing right Ctrl, blank modifiers in bottom corners | Restrictions: Maintain HHKB proportions, 60 keys total, use standard QMK keycodes | Success: JSON validates, HHKB-specific layout renders correctly, 60 keys. After implementation, mark task [ ] as [-] in tasks.md, then use log-implementation tool to record details, then mark [-] as [x]._
 
-- [-] 10. Create Numpad layout JSON
+- [x] 10. Create Numpad layout JSON
   - File: keyrx_ui/src/data/layouts/NUMPAD.json
   - Create standalone numpad layout with 17 keys
   - Standard numpad with Num Lock, operators, and Enter
