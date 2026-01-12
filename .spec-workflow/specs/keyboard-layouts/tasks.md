@@ -63,7 +63,7 @@
   - _Requirements: 3.3_
   - _Prompt: Implement the task for spec keyboard-layouts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Developer specializing in compact keyboard layouts | Task: Create COMPACT_75.json adding compressed F-row to 65% base, F-keys in tight row with minimal gaps, Delete/Home/End in rightmost column | Restrictions: No numpad, maintain compact proportions, approximately 84 keys | Success: JSON validates, F-row visible, compact navigation, ~84 keys. After implementation, mark task [ ] as [-] in tasks.md, then use log-implementation tool to record details, then mark [-] as [x]._
 
-- [ ] 8. Create 96% compact layout JSON
+- [x] 8. Create 96% compact layout JSON
   - File: keyrx_ui/src/data/layouts/COMPACT_96.json
   - Create 96% keyboard layout with ~96 keys
   - Full functionality in compact form factor (no gaps between sections)
