@@ -72,7 +72,7 @@
   - _Requirements: 4.2_
   - _Prompt: Implement the task for spec keyboard-layouts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Developer specializing in compact keyboard layouts | Task: Create COMPACT_96.json with all sections from full-size but no gaps between F-row and alphanumeric, no gap before nav cluster, compressed numpad adjacent to main section | Restrictions: Maintain all key functions from full-size, approximately 96 keys, no spacing gaps | Success: JSON validates, no visual gaps, numpad present, ~96 keys. After implementation, mark task [ ] as [-] in tasks.md, then use log-implementation tool to record details, then mark [-] as [x]._
 
-- [ ] 9. Create HHKB layout JSON
+- [-] 9. Create HHKB layout JSON
   - File: keyrx_ui/src/data/layouts/HHKB.json
   - Create Happy Hacking Keyboard layout with 60 keys
   - Split backspace, Fn replacing Ctrl, Unix-optimized layout
