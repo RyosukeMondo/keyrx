@@ -69,6 +69,27 @@ export async function activateProfile(
 }
 
 /**
+ * Update profile metadata (name, description)
+ */
+export async function updateProfile(
+  originalName: string,
+  updates: { name?: string; description?: string }
+): Promise<ProfileResponse> {
+  const response = await apiClient.put<any>(`/api/profiles/${originalName}`, updates);
+  // Validate the response
+  if (response && typeof response === 'object') {
+    console.debug(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'debug',
+      service: 'API Validation',
+      event: 'update_profile_success',
+      context: { originalName, updates },
+    }));
+  }
+  return { success: true };
+}
+
+/**
  * Delete a profile
  */
 export async function deleteProfile(name: string): Promise<ProfileResponse> {

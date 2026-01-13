@@ -11,6 +11,7 @@ import {
   useCreateProfile,
   useActivateProfile,
   useDeleteProfile,
+  useUpdateProfile,
 } from '../hooks/useProfiles';
 import { getErrorMessage } from '../utils/errorUtils';
 
@@ -49,6 +50,7 @@ export const ProfilesPage: React.FC = () => {
   const createProfileMutation = useCreateProfile();
   const activateProfileMutation = useActivateProfile();
   const deleteProfileMutation = useDeleteProfile();
+  const updateProfileMutation = useUpdateProfile();
 
   // Transform API data to component format
   const profiles: Profile[] = useMemo(() => {
@@ -73,7 +75,6 @@ export const ProfilesPage: React.FC = () => {
   }, [profilesData]);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
 
@@ -199,25 +200,35 @@ export const ProfilesPage: React.FC = () => {
     navigate(`/profiles/${profileName}/config`);
   };
 
-  const handleEditProfile = (profile: Profile) => {
-    setSelectedProfile(profile);
-    setNewProfileName(profile.name);
-    setNewProfileDescription(profile.description || '');
-    setEditModalOpen(true);
+  const handleUpdateProfileName = async (originalName: string, newName: string) => {
+    if (!newName.trim()) return;
+    if (newName === originalName) return;
+
+    // Validate name
+    if (profiles.some((p) => p.name === newName && p.name !== originalName)) {
+      console.error('Profile name already exists');
+      return;
+    }
+
+    try {
+      await updateProfileMutation.mutateAsync({
+        originalName,
+        updates: { name: newName },
+      });
+    } catch (err) {
+      console.error('Failed to update profile name:', err);
+    }
   };
 
-  const handleSaveEdit = async () => {
-    if (!selectedProfile || !validateProfileName(newProfileName)) return;
-
-    // TODO: Implement profile rename/update API
-    // For now, just close the modal
-    console.warn('Profile editing not yet implemented in API');
-
-    setEditModalOpen(false);
-    setSelectedProfile(null);
-    setNewProfileName('');
-    setNewProfileDescription('');
-    setNameError('');
+  const handleUpdateProfileDescription = async (profileName: string, newDescription: string) => {
+    try {
+      await updateProfileMutation.mutateAsync({
+        originalName: profileName,
+        updates: { description: newDescription },
+      });
+    } catch (err) {
+      console.error('Failed to update profile description:', err);
+    }
   };
 
   const handleDeleteProfile = (profile: Profile) => {
@@ -243,14 +254,6 @@ export const ProfilesPage: React.FC = () => {
     setNewProfileName('');
     setNewProfileDescription('');
     setSelectedTemplate('blank');
-    setNameError('');
-  };
-
-  const handleCancelEdit = () => {
-    setEditModalOpen(false);
-    setSelectedProfile(null);
-    setNewProfileName('');
-    setNewProfileDescription('');
     setNameError('');
   };
 
@@ -388,9 +391,10 @@ export const ProfilesPage: React.FC = () => {
             rhaiPath={profile.rhaiPath}
             fileExists={profile.fileExists}
             onActivate={() => handleActivateProfile(profile.id)}
-            onEdit={() => handleEditProfile(profile)}
             onDelete={() => handleDeleteProfile(profile)}
             onPathClick={() => handleNavigateToConfig(profile.name)}
+            onUpdateName={(newName) => handleUpdateProfileName(profile.name, newName)}
+            onUpdateDescription={(newDesc) => handleUpdateProfileDescription(profile.name, newDesc)}
           />
         ))}
       </div>
@@ -462,54 +466,6 @@ export const ProfilesPage: React.FC = () => {
               aria-label="Save new profile"
             >
               Create
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Edit Profile Modal */}
-      <Modal
-        open={editModalOpen}
-        onClose={handleCancelEdit}
-        title="Edit Profile"
-      >
-        <div className="flex flex-col gap-md">
-          <Input
-            type="text"
-            value={newProfileName}
-            onChange={(value) => {
-              setNewProfileName(value);
-              if (nameError) validateProfileName(value);
-            }}
-            aria-label="Profile name"
-            placeholder="Profile name"
-            error={nameError}
-            maxLength={50}
-          />
-          <Input
-            type="text"
-            value={newProfileDescription}
-            onChange={(value) => setNewProfileDescription(value)}
-            aria-label="Profile description"
-            placeholder="Description (optional)"
-            maxLength={200}
-          />
-          <div className="flex gap-2 justify-end mt-2">
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={handleCancelEdit}
-              aria-label="Cancel editing profile"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              onClick={handleSaveEdit}
-              aria-label="Save profile changes"
-            >
-              Save
             </Button>
           </div>
         </div>

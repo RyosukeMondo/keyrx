@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
 import { Tooltip } from './Tooltip';
+import { InlineEdit } from './InlineEdit';
 import { Check, AlertTriangle, CheckCircle2, FileCode } from 'lucide-react';
 import { useProfileValidation } from '../hooks/useProfileValidation';
 import { truncatePath } from '../utils/pathUtils';
@@ -14,18 +15,19 @@ export interface ProfileCardProps {
   rhaiPath?: string;
   fileExists?: boolean;
   onActivate: () => void;
-  onEdit: () => void;
   onDelete: () => void;
   onPathClick?: () => void;
+  onUpdateName?: (newName: string) => void;
+  onUpdateDescription?: (newDescription: string) => void;
 }
 
 /**
  * ProfileCard Component
  *
  * Displays a single profile in a card format with:
- * - Profile name and optional description
+ * - Inline-editable profile name and description (click to edit)
  * - Active state indicator (green checkmark + "ACTIVE" badge)
- * - Action buttons: Activate, Edit, Delete
+ * - Action buttons: Activate, Delete
  * - Last modified timestamp
  *
  * Used in ProfilesPage grid layout
@@ -39,9 +41,10 @@ export const ProfileCard = React.memo<ProfileCardProps>(
     rhaiPath,
     fileExists = true,
     onActivate,
-    onEdit,
     onDelete,
     onPathClick,
+    onUpdateName,
+    onUpdateDescription,
   }) => {
     // Fetch validation status for this profile
     const { data: validationResult, isLoading: isValidating } = useProfileValidation(name);
@@ -69,7 +72,7 @@ export const ProfileCard = React.memo<ProfileCardProps>(
           </div>
         )}
 
-        {/* Profile Name */}
+        {/* Profile Name - Inline Editable */}
         <div className="flex items-start gap-2 mb-2">
           {isActive && (
             <Check
@@ -78,22 +81,39 @@ export const ProfileCard = React.memo<ProfileCardProps>(
               aria-label="Active profile indicator"
             />
           )}
-          <h3 className="text-lg font-semibold text-slate-100">{name}</h3>
+          <div className="flex-1">
+            <InlineEdit
+              value={name}
+              onSave={onUpdateName || (() => {})}
+              className="text-lg font-semibold text-slate-100"
+              placeholder="Profile name"
+              maxLength={50}
+              disabled={!onUpdateName}
+              ariaLabel={`Edit profile name: ${name}`}
+            />
+          </div>
         </div>
 
-        {/* Description */}
-        {description && (
-          <p className="text-sm text-slate-400 mb-3 line-clamp-2">
-            {description}
-          </p>
-        )}
+        {/* Description - Inline Editable */}
+        <div className="mb-3">
+          <InlineEdit
+            value={description || ''}
+            onSave={onUpdateDescription || (() => {})}
+            className="text-sm text-slate-400 line-clamp-2"
+            placeholder="Add a description (click to edit)"
+            maxLength={200}
+            multiline={true}
+            disabled={!onUpdateDescription}
+            ariaLabel={`Edit profile description: ${name}`}
+          />
+        </div>
 
         {/* Rhai File Path */}
         {rhaiPath && (
           <div className="mb-3">
             <Tooltip content={rhaiPath} position="top">
               <button
-                onClick={onPathClick || onEdit}
+                onClick={onPathClick}
                 className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-400 transition-colors group max-w-full"
                 aria-label={`Open configuration file: ${rhaiPath}`}
               >
@@ -165,14 +185,6 @@ export const ProfileCard = React.memo<ProfileCardProps>(
               Activate
             </Button>
           )}
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onEdit}
-            aria-label={`Edit profile ${name}`}
-          >
-            Edit
-          </Button>
           <Button
             variant="danger"
             size="sm"

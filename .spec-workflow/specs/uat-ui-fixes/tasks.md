@@ -74,7 +74,7 @@ Fix UI issues identified during User Acceptance Testing for Dashboard, Devices, 
 
 ## Task 3: Profiles Page - Improve UX and Active Indicator
 
-- [ ] 3.1 Add inline editing for profile name and description
+- [-] 3.1 Add inline editing for profile name and description
   - File: `src/components/ProfileCard.tsx`
   - Show name and description prominently at top of card
   - Click on name/description to edit inline (contenteditable or input toggle)

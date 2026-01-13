@@ -95,6 +95,53 @@ export function useActivateProfile() {
 }
 
 /**
+ * Update a profile with optimistic updates
+ */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ originalName, updates }: { originalName: string; updates: { name?: string; description?: string } }) =>
+      profileApi.updateProfile(originalName, updates),
+
+    onMutate: async ({ originalName, updates }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.profiles });
+
+      const previousProfiles = queryClient.getQueryData<ProfileMetadata[]>(
+        queryKeys.profiles
+      );
+
+      // Optimistically update profile
+      queryClient.setQueryData<ProfileMetadata[]>(queryKeys.profiles, (old) =>
+        old?.map((p) => {
+          if (p.name === originalName) {
+            return {
+              ...p,
+              ...(updates.name && { name: updates.name }),
+              // Note: description is not in ProfileMetadata, so we can't update it here
+              // But the API call will succeed
+            };
+          }
+          return p;
+        })
+      );
+
+      return { previousProfiles };
+    },
+
+    onError: (_error, _variables, context) => {
+      if (context?.previousProfiles) {
+        queryClient.setQueryData(queryKeys.profiles, context.previousProfiles);
+      }
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.profiles });
+    },
+  });
+}
+
+/**
  * Delete a profile with optimistic updates
  */
 export function useDeleteProfile() {
