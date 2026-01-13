@@ -69,7 +69,7 @@ Comprehensive overhaul of test infrastructure: fix failing tests, improve test p
   - _Requirements: Edit button test passes reliably_
   - _Prompt: Implement the task for spec test-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React Testing Specialist | Task: Fix ProfilesPage test at line 383. Change getByRole to findByRole for Edit button. Add explicit waitFor on profile card render. Add data-testid="edit-profile-{name}" to Edit button component. | Restrictions: Don't add arbitrary delays, use proper async utilities | Success: Test passes consistently on 10 consecutive runs | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
 
-- [-] 2.2 Fix RhaiSyncEngine unhandled errors
+- [x] 2.2 Fix RhaiSyncEngine unhandled errors
   - File: `keyrx_ui/src/components/RhaiSyncEngine.tsx`, related tests
   - Issue: Uncaught exceptions in timeout callbacks after test completion
   - Solution: Clear timeouts in cleanup, add error boundaries
