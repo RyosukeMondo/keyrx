@@ -30,7 +30,7 @@ Fix UI issues identified during User Acceptance Testing for Dashboard, Devices, 
 
 ## Task 2: Devices Page - Replace Delete with Enable/Disable Toggle
 
-- [ ] 2.1 Add enabled/disabled state to device management
+- [x] 2.1 Add enabled/disabled state to device management
   - File: `src/types/index.ts`, `src/api/devices.ts`, `src/hooks/useDevices.ts`
   - Add `enabled: boolean` field to DeviceEntry (default: true)
   - Add `setDeviceEnabled(id, enabled)` API function
