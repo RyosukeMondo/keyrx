@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   Home,
   Smartphone,
@@ -66,10 +66,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onClose,
   className = '',
 }) => {
+  const location = useLocation();
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape' && onClose) {
       onClose();
     }
+  };
+
+  // Custom active state check for Config route
+  // Config should be active for both /config and /profiles/:name/config
+  const isConfigActive = (path: string): boolean => {
+    if (path === '/config') {
+      return location.pathname === '/config' || location.pathname.startsWith('/profiles/') && location.pathname.endsWith('/config');
+    }
+    return false;
   };
 
   return (
@@ -88,41 +99,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <ul className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
+            // For Config route, use custom active state check
+            const customIsActive = item.to === '/config' ? isConfigActive(item.to) : undefined;
+
             return (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
                   onClick={onClose}
                   aria-label={item.ariaLabel}
-                  className={({ isActive }) =>
-                    `
+                  className={({ isActive }) => {
+                    // Override isActive for Config route
+                    const actuallyActive = customIsActive !== undefined ? customIsActive : isActive;
+                    return `
                     flex items-center gap-3 px-4 py-3 rounded-md
                     text-sm font-medium
                     transition-all duration-150
                     focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2
                     ${
-                      isActive
+                      actuallyActive
                         ? 'bg-primary-600 text-white shadow-md'
                         : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                     }
-                  `
-                  }
+                  `;
+                  }}
                 >
-                  {({ isActive }) => (
-                    <>
-                      <Icon
-                        className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`}
-                        aria-hidden="true"
-                      />
-                      <span>{item.label}</span>
-                      {isActive && (
-                        <span
-                          className="ml-auto w-1 h-6 bg-white rounded-full"
+                  {({ isActive }) => {
+                    // Override isActive for Config route
+                    const actuallyActive = customIsActive !== undefined ? customIsActive : isActive;
+                    return (
+                      <>
+                        <Icon
+                          className={`w-5 h-5 ${actuallyActive ? 'text-white' : 'text-slate-400'}`}
                           aria-hidden="true"
                         />
-                      )}
-                    </>
-                  )}
+                        <span>{item.label}</span>
+                        {actuallyActive && (
+                          <span
+                            className="ml-auto w-1 h-6 bg-white rounded-full"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </>
+                    );
+                  }}
                 </NavLink>
               </li>
             );

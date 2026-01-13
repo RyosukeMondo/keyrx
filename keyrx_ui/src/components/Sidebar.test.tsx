@@ -206,4 +206,37 @@ describe('Sidebar', () => {
     expect(sidebar).toHaveClass('duration-300');
     expect(sidebar).toHaveClass('ease-in-out');
   });
+
+  it('highlights Config when on /config route', () => {
+    renderWithRouter(<Sidebar />, { route: '/config' });
+
+    const configLink = screen.getByLabelText('Navigate to Configuration page');
+    expect(configLink).toHaveClass('bg-primary-600');
+    expect(configLink).toHaveClass('text-white');
+  });
+
+  it('highlights Config when on /profiles/:name/config route', () => {
+    renderWithRouter(<Sidebar />, { route: '/profiles/default/config' });
+
+    const configLink = screen.getByLabelText('Navigate to Configuration page');
+    expect(configLink).toHaveClass('bg-primary-600');
+    expect(configLink).toHaveClass('text-white');
+    expect(configLink.querySelector('.bg-white.rounded-full')).toBeInTheDocument();
+  });
+
+  it('highlights Config when on /profiles/:name/config route with different profile names', () => {
+    renderWithRouter(<Sidebar />, { route: '/profiles/gaming/config' });
+
+    const configLink = screen.getByLabelText('Navigate to Configuration page');
+    expect(configLink).toHaveClass('bg-primary-600');
+    expect(configLink).toHaveClass('text-white');
+  });
+
+  it('does not highlight Config when on /profiles route (without /config)', () => {
+    renderWithRouter(<Sidebar />, { route: '/profiles' });
+
+    const configLink = screen.getByLabelText('Navigate to Configuration page');
+    expect(configLink).not.toHaveClass('bg-primary-600');
+    expect(configLink).toHaveClass('text-slate-300');
+  });
 });
