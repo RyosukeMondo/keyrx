@@ -35,7 +35,7 @@ Sources:
   - _Requirements: VIA-style categorization with comprehensive key coverage_
   - _Prompt: Implement the task for spec sophisticated-key-palette, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React Component Architect | Task: Redesign KeyPalette with 7 VIA-style categories. Create category data structure with icons. Implement tab-based category navigation. Each category has subcategories (Basic -> Letters, Numbers, Punctuation, Navigation). | Restrictions: Maintain existing key IDs, ensure all current keys are categorized | Success: All 200+ keys organized into 7 categories with subcategories | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
 
-- [ ] 1.2 Create comprehensive key definitions file
+- [-] 1.2 Create comprehensive key definitions file
   - File: `keyrx_ui/src/data/keyDefinitions.ts` (create)
   - Define all keys with: id, label, category, subcategory, description, aliases
   - Include QMK-compatible key names (KC_A, KC_ENTER, etc.)
