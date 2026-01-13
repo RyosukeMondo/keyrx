@@ -134,7 +134,7 @@ Fix UI issues identified during User Acceptance Testing for Dashboard, Devices, 
   - _Requirements: No RPC errors when saving config_
   - _Prompt: Implement the task for spec uat-ui-fixes: Role: Full-stack Debug Specialist | Task: Debug RPC error. Check useSetProfileConfig mutation payload structure. Server expects { content: object } but receiving wrong format. Trace from API call through WebSocket. Fix payload serialization. | Restrictions: Don't change server API contract, fix client-side only | Success: Saving configuration works without RPC error | After completion: Use log-implementation tool, mark [x] complete_
 
-- [ ] 5.2 Add test to prevent RPC format regression
+- [x] 5.2 Add test to prevent RPC format regression
   - File: `src/__tests__/useProfileConfig.test.ts` (create)
   - Test that setProfileConfig sends correct payload format
   - Mock WebSocket/fetch and verify request body structure
