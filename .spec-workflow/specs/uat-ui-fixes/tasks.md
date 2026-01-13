@@ -110,7 +110,7 @@ Fix UI issues identified during User Acceptance Testing for Dashboard, Devices, 
 
 ## Task 4: Config Page - Fix Navigation Menu Sync
 
-- [ ] 4.1 Sync sidebar menu when navigating via file path link
+- [x] 4.1 Sync sidebar menu when navigating via file path link
   - File: `src/App.tsx`, `src/pages/ConfigPage.tsx`
   - When clicking profile file path on ProfilesPage to navigate to ConfigPage
   - Update sidebar navigation to highlight "Config" menu item
