@@ -118,19 +118,78 @@ fi
 WASM_FILE="$OUTPUT_DIR/keyrx_core_bg.wasm"
 WASM_SIZE=$(stat -c%s "$WASM_FILE" 2>/dev/null || stat -f%z "$WASM_FILE" 2>/dev/null || echo "unknown")
 
-if [[ "$WASM_SIZE" != "unknown" ]]; then
-    WASM_SIZE_KB=$((WASM_SIZE / 1024))
-    WASM_SIZE_MB=$((WASM_SIZE_KB / 1024))
-
-    log_info "WASM file size: ${WASM_SIZE_KB} KB (${WASM_SIZE_MB}.$(( (WASM_SIZE_KB % 1024) * 100 / 1024 )) MB)"
-
-    # Check if WASM size is under 1MB (as per requirements)
-    if [[ $WASM_SIZE_MB -ge 1 ]]; then
-        log_warn "WASM file size exceeds 1MB target"
-    fi
-else
-    log_warn "Could not determine WASM file size"
+if [[ "$WASM_SIZE" == "unknown" ]]; then
+    log_error "Could not determine WASM file size"
+    log_failed
+    exit 1
 fi
+
+WASM_SIZE_KB=$((WASM_SIZE / 1024))
+WASM_SIZE_MB=$((WASM_SIZE_KB / 1024))
+
+log_info "WASM file size: ${WASM_SIZE_KB} KB (${WASM_SIZE_MB}.$(( (WASM_SIZE_KB % 1024) * 100 / 1024 )) MB)"
+
+# Verify WASM size is reasonable (> 100KB)
+MIN_SIZE_KB=100
+if [[ $WASM_SIZE_KB -lt $MIN_SIZE_KB ]]; then
+    log_error "WASM file size too small: ${WASM_SIZE_KB} KB < ${MIN_SIZE_KB} KB"
+    log_error "Build may have failed or produced invalid output"
+    log_failed
+    exit 1
+fi
+
+# Check if WASM size is under 1MB (as per requirements)
+if [[ $WASM_SIZE_MB -ge 1 ]]; then
+    log_warn "WASM file size exceeds 1MB target"
+fi
+
+# Generate SHA256 hash of WASM file
+log_info "Generating WASM hash..."
+if command -v sha256sum >/dev/null 2>&1; then
+    WASM_HASH=$(sha256sum "$WASM_FILE" | awk '{print $1}')
+elif command -v shasum >/dev/null 2>&1; then
+    WASM_HASH=$(shasum -a 256 "$WASM_FILE" | awk '{print $1}')
+else
+    log_error "Neither sha256sum nor shasum found - cannot generate hash"
+    log_failed
+    exit 1
+fi
+
+log_info "WASM hash: $WASM_HASH"
+
+# Extract version from workspace Cargo.toml
+WORKSPACE_TOML="$PROJECT_ROOT/Cargo.toml"
+if [[ -f "$WORKSPACE_TOML" ]]; then
+    KEYRX_VERSION=$(grep -E '^version\s*=' "$WORKSPACE_TOML" | head -1 | sed -E 's/.*version\s*=\s*"([^"]+)".*/\1/')
+    log_info "keyrx_core version: $KEYRX_VERSION"
+else
+    log_warn "Could not find workspace Cargo.toml - version unknown"
+    KEYRX_VERSION="unknown"
+fi
+
+# Write manifest file for version tracking
+MANIFEST_FILE="$OUTPUT_DIR/wasm-manifest.json"
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+log_info "Writing WASM manifest to $MANIFEST_FILE..."
+cat > "$MANIFEST_FILE" <<EOF
+{
+  "version": "$KEYRX_VERSION",
+  "hash": "$WASM_HASH",
+  "size": $WASM_SIZE,
+  "size_kb": $WASM_SIZE_KB,
+  "timestamp": "$TIMESTAMP",
+  "file": "keyrx_core_bg.wasm"
+}
+EOF
+
+if [[ ! -f "$MANIFEST_FILE" ]]; then
+    log_error "Failed to write manifest file"
+    log_failed
+    exit 1
+fi
+
+log_info "WASM manifest created successfully"
 
 separator
 log_info "Build time: ${BUILD_TIME} seconds"
@@ -143,6 +202,9 @@ if [[ "$JSON_MODE" == "true" ]]; then
         "build_time_seconds" "$BUILD_TIME" \
         "wasm_size_bytes" "$WASM_SIZE" \
         "wasm_size_kb" "$WASM_SIZE_KB" \
+        "wasm_hash" "$WASM_HASH" \
+        "version" "$KEYRX_VERSION" \
+        "manifest_file" "$MANIFEST_FILE" \
         "output_dir" "$OUTPUT_DIR"
 fi
 
