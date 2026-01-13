@@ -53,6 +53,9 @@
     "test:related": "vitest related --config vitest.unit.config.ts",
     "test:failed": "vitest --config vitest.unit.config.ts --reporter=verbose --bail=1",
     "test:watch:smart": "vitest --config vitest.unit.config.ts --changed",
+    "test:quarantine": "RUN_QUARANTINE=true vitest run --config vitest.unit.config.ts",
+    "test:quarantine:watch": "RUN_QUARANTINE=true vitest --config vitest.unit.config.ts",
+    "test:quarantine:status": "node -r esbuild-register tests/quarantine-manager.ts",
     "validate:contracts": "npx tsx scripts/validate-api-contracts.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

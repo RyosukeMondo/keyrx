@@ -1,10 +1,11 @@
-import { expect, afterEach, beforeAll, beforeEach, afterAll } from 'vitest';
+import { expect, afterEach, beforeAll, beforeEach, afterAll, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 import * as axeMatchers from 'vitest-axe/matchers';
 import { server } from './mocks/server';
 import { resetMockData } from './mocks/handlers';
 import { setupMockWebSocket, cleanupMockWebSocket } from '../../tests/helpers/websocket';
+import { getQuarantinedTestPatterns } from '../../tests/quarantine-manager';
 
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
@@ -72,15 +73,46 @@ beforeAll(() =>
 );
 
 /**
- * Setup WebSocket mock before each test
+ * Skip quarantined tests in normal mode (unless RUN_QUARANTINE=true)
  *
- * This ensures all tests have a properly configured WebSocket mock,
- * preventing "assertIsWebSocket" errors from react-use-websocket.
- *
- * Tests can still override this by calling setupMockWebSocket() again
- * with custom configuration if needed.
+ * This checks if the current test is in the quarantine list and skips it.
+ * Quarantined tests can be run separately with: npm run test:quarantine
  */
-beforeEach(async () => {
+beforeEach(async (context) => {
+  // Only skip quarantined tests if not in quarantine mode
+  if (process.env.RUN_QUARANTINE !== 'true') {
+    const quarantinedTests = getQuarantinedTestPatterns();
+
+    // Build full test path from context
+    // Vitest provides: context.task.name, context.task.suite?.name, context.task.file?.name
+    if (context.task && context.task.file) {
+      // Extract relative file path from full path
+      const fullPath = context.task.file.name;
+      const relativePath = fullPath.replace(process.cwd() + '/', '');
+
+      // Build full test path: "file > suite > test"
+      const suites: string[] = [];
+      let current = context.task.suite;
+      while (current && current.name) {
+        suites.unshift(current.name);
+        current = current.suite;
+      }
+
+      const fullTestPath = [relativePath, ...suites, context.task.name]
+        .filter(Boolean)
+        .join(' > ');
+
+      // Check if this test is quarantined
+      if (quarantinedTests.some(pattern => fullTestPath.includes(pattern) || pattern.includes(fullTestPath))) {
+        // Skip with informative message
+        console.log(`⏭️  Skipping quarantined test: ${fullTestPath}`);
+        context.skip();
+        return;
+      }
+    }
+  }
+
+  // Setup WebSocket mock for all tests
   await setupMockWebSocket();
 });
 

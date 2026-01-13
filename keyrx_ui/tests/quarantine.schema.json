@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Test Quarantine Configuration",
+  "description": "Schema for managing flaky test quarantine",
+  "type": "object",
+  "required": ["version", "lastUpdated", "quarantine", "resolved", "metadata"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of this file's purpose"
+    },
+    "quarantine": {
+      "type": "array",
+      "description": "List of tests currently in quarantine",
+      "items": {
+        "type": "object",
+        "required": ["testPath", "reason", "quarantinedAt", "issueUrl"],
+        "properties": {
+          "testPath": {
+            "type": "string",
+            "description": "Full test path (file path + describe + test name)",
+            "examples": ["src/pages/ConfigPage.test.tsx > ConfigPage > should handle WebSocket reconnection"]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this test is flaky",
+            "examples": ["Race condition in WebSocket mock", "Timing-dependent assertion"]
+          },
+          "quarantinedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the test was quarantined"
+          },
+          "issueUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "GitHub issue tracking the fix",
+            "examples": ["https://github.com/user/repo/issues/123"]
+          },
+          "failureRate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Percentage of runs that fail (0.0 to 1.0)"
+          },
+          "lastFailure": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent failure timestamp"
+          },
+          "assignee": {
+            "type": "string",
+            "description": "Person assigned to fix the flaky test"
+          }
+        }
+      }
+    },
+    "resolved": {
+      "type": "array",
+      "description": "Previously quarantined tests that have been fixed",
+      "items": {
+        "type": "object",
+        "required": ["testPath", "resolvedAt"],
+        "properties": {
+          "testPath": {
+            "type": "string",
+            "description": "Full test path"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the test was fixed and removed from quarantine"
+          },
+          "resolution": {
+            "type": "string",
+            "description": "How the flakiness was resolved"
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Configuration for quarantine management",
+      "required": ["maxQuarantineSize", "alertThreshold", "autoRemoveAfterDays"],
+      "properties": {
+        "maxQuarantineSize": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of tests allowed in quarantine"
+        },
+        "alertThreshold": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Trigger alert when quarantine size exceeds this"
+        },
+        "autoRemoveAfterDays": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Auto-remove tests from quarantine after this many days if not fixed"
+        }
+      }
+    }
+  }
+}

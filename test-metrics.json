@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-01-13T20:05:11Z",
+  "tests": {
+    "total": 1417,
+    "passed": 1299,
+    "failed": 118,
+    "pending": 0,
+    "passRate": 91.67,
+    "flakyCount": 0
+  },
+  "duration": {
+    "total": 337394,
+    "unit": "milliseconds"
+  },
+  "coverage": {
+    "lines": 2.32,
+    "branches": 31.06,
+    "functions": 3.49,
+    "statements": 2.32
+  },
+  "success": false
+}

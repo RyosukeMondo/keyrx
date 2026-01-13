@@ -1,0 +1,13 @@
+{
+  "$schema": "./quarantine.schema.json",
+  "version": "1.0.0",
+  "lastUpdated": "2026-01-14T00:00:00.000Z",
+  "description": "Quarantine list for flaky tests that fail intermittently. Tests listed here are excluded from main test runs but run separately to track progress.",
+  "quarantine": [],
+  "resolved": [],
+  "metadata": {
+    "maxQuarantineSize": 10,
+    "alertThreshold": 5,
+    "autoRemoveAfterDays": 30
+  }
+}

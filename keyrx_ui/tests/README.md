@@ -674,6 +674,298 @@ npm test -- --run     # Non-watch mode
 
 ---
 
+## Flaky Test Quarantine System
+
+### Overview
+
+The **test quarantine system** identifies and isolates flaky tests (tests that fail intermittently) to prevent them from blocking CI while fixes are developed. Quarantined tests run separately and are tracked for resolution.
+
+**Key principles**:
+- 🚫 **Don't block CI**: Flaky tests shouldn't prevent valid code from merging
+- 📊 **Track explicitly**: Every quarantined test has a GitHub issue and owner
+- ⏱️ **Time-boxed**: Tests auto-remove after 30 days if not fixed
+- 📉 **Minimize size**: Quarantine should shrink over time, not grow
+
+### What Makes a Test Flaky?
+
+A test is flaky if it:
+- ✅ Passes on retry but fails initially
+- 🎲 Has inconsistent results (passes/fails randomly)
+- ⏰ Depends on timing or race conditions
+- 🌐 Relies on external state not properly isolated
+
+**Common causes**:
+- Race conditions in async code
+- Timing assumptions (`setTimeout` without proper `waitFor`)
+- Improper cleanup between tests
+- Shared state pollution
+- Network/WebSocket timing issues
+
+### Quarantine Configuration
+
+**File**: `tests/quarantine.json`
+
+```json
+{
+  "version": "1.0.0",
+  "quarantine": [
+    {
+      "testPath": "src/pages/ConfigPage.test.tsx > ConfigPage > should handle reconnection",
+      "reason": "WebSocket mock timing race condition",
+      "quarantinedAt": "2026-01-14T00:00:00.000Z",
+      "issueUrl": "https://github.com/user/repo/issues/123",
+      "failureRate": 0.15,
+      "assignee": "developer-name"
+    }
+  ],
+  "resolved": [],
+  "metadata": {
+    "maxQuarantineSize": 10,
+    "alertThreshold": 5,
+    "autoRemoveAfterDays": 30
+  }
+}
+```
+
+**Fields explained**:
+- `testPath`: Full test path (file > describe > test name)
+- `reason`: Why the test is flaky (helps with fix prioritization)
+- `quarantinedAt`: When it was quarantined (ISO 8601)
+- `issueUrl`: GitHub issue tracking the fix
+- `failureRate`: Percentage of runs that fail (0.0 to 1.0)
+- `assignee`: Person responsible for fixing the test
+
+### Commands
+
+**Run quarantined tests separately**:
+```bash
+npm run test:quarantine         # Run once
+npm run test:quarantine:watch   # Watch mode
+```
+
+**Check quarantine status**:
+```bash
+npm run test:quarantine:status
+```
+
+**Detect new flaky tests**:
+```bash
+# Run tests with JSON output, then analyze for flaky patterns
+npm test -- --reporter=json --outputFile=test-results.json
+../scripts/detect-flaky-tests.sh test-results.json
+```
+
+### Adding a Test to Quarantine
+
+**Step 1**: Identify the flaky test
+```bash
+# Test passes on retry = flaky
+npm test -- --retry=2
+# Check for tests that fail initially but pass on retry
+```
+
+**Step 2**: Create a GitHub issue
+- Title: "Flaky test: [test name]"
+- Description: Failure pattern, logs, suspected cause
+- Label: `flaky-test`, `test-infrastructure`
+
+**Step 3**: Add to `tests/quarantine.json`
+```json
+{
+  "testPath": "src/pages/ProfilesPage.test.tsx > ProfilesPage > Edit button renders",
+  "reason": "Async rendering race condition in Edit button",
+  "quarantinedAt": "2026-01-14T12:00:00.000Z",
+  "issueUrl": "https://github.com/user/repo/issues/456",
+  "failureRate": 0.20,
+  "assignee": "john-doe"
+}
+```
+
+**Step 4**: Verify quarantine works
+```bash
+npm test                       # Should skip the test
+npm run test:quarantine        # Should run only quarantined tests
+```
+
+### Removing a Test from Quarantine
+
+**When the test is fixed**:
+
+1. **Verify the fix**: Run the test 10 times to ensure stability
+   ```bash
+   for i in {1..10}; do npm test -- ProfilesPage.test.tsx || break; done
+   ```
+
+2. **Move to resolved array** in `tests/quarantine.json`:
+   ```json
+   {
+     "resolved": [
+       {
+         "testPath": "src/pages/ProfilesPage.test.tsx > ProfilesPage > Edit button renders",
+         "resolvedAt": "2026-01-15T10:00:00.000Z",
+         "resolution": "Fixed async timing with findByRole query"
+       }
+     ]
+   }
+   ```
+
+3. **Close the GitHub issue** with reference to the fix PR
+
+4. **Verify in CI**: Ensure test passes consistently in CI environment
+
+### Quarantine Health Monitoring
+
+**Thresholds** (configured in `metadata`):
+- `alertThreshold: 5` - Warn when quarantine size exceeds 5 tests
+- `maxQuarantineSize: 10` - Critical alert at 10 tests
+- `autoRemoveAfterDays: 30` - Auto-remove stale tests after 30 days
+
+**Health status**:
+```bash
+npm run test:quarantine:status
+```
+
+**Example output**:
+```
+=== Test Quarantine Status ===
+
+Total in quarantine: 3
+Alert threshold: 5
+Maximum allowed: 10
+
+ℹ️  3 test(s) currently in quarantine
+
+Quarantined tests:
+
+1. src/pages/ConfigPage.test.tsx > ConfigPage > should handle reconnection
+   Reason: WebSocket mock timing race condition
+   Quarantined: 1/10/2026
+   Issue: https://github.com/user/repo/issues/123
+   Failure rate: 15.0%
+   Assignee: alice
+
+2. src/api/rpc.test.ts > RPC Client > retry logic
+   Reason: Mock timing in retry sequence
+   Quarantined: 1/12/2026
+   Issue: https://github.com/user/repo/issues/124
+   Failure rate: 25.0%
+   Assignee: bob
+
+✓ 5 test(s) previously resolved
+
+==============================
+```
+
+**CI Integration**:
+The quarantine system integrates with CI to:
+- ✅ Skip quarantined tests in main test runs
+- 🔍 Run quarantined tests separately (non-blocking)
+- ⚠️ Alert if quarantine size exceeds threshold
+- 📊 Report quarantine health in CI artifacts
+
+### Best Practices
+
+**✅ Do**:
+- Add tests to quarantine immediately when flakiness is detected
+- Always create a GitHub issue with details and assign an owner
+- Investigate root cause before quarantining (don't quarantine unnecessarily)
+- Set realistic `assignee` and track progress
+- Run quarantined tests regularly to check if they can be unquarantined
+- Keep quarantine size small (< 5 tests ideal)
+
+**❌ Don't**:
+- Use quarantine as a "ignore forever" list
+- Add tests without GitHub issues
+- Leave tests in quarantine > 30 days without action
+- Quarantine tests due to actual bugs (fix the bug, don't quarantine)
+- Let quarantine size grow beyond threshold
+
+### Quarantine vs. Test Skipping
+
+| Aspect | Quarantine | `test.skip()` |
+|--------|-----------|---------------|
+| Purpose | Isolate flaky tests | Temporarily disable broken tests |
+| Duration | Tracked, time-boxed | Indefinite, forgotten |
+| Tracking | GitHub issue required | No tracking |
+| Visibility | Reported in CI | Hidden |
+| CI runs | Separate non-blocking | Never runs |
+| When to use | Intermittent failures | Code WIP, broken functionality |
+
+**Recommendation**: Use quarantine for flaky tests, use `test.skip()` for intentionally disabled tests during development.
+
+### Troubleshooting
+
+**"Test still runs even though it's quarantined"**
+- Check `testPath` matches exactly (file > suite > test)
+- Verify `tests/quarantine.json` is valid JSON
+- Ensure `RUN_QUARANTINE` env var is not set
+
+**"Quarantined tests aren't running with test:quarantine"**
+- Verify `RUN_QUARANTINE=true` is set
+- Check quarantine.json has valid entries
+- Look for syntax errors in quarantine.json
+
+**"Quarantine health check fails"**
+- Review quarantine size vs. thresholds
+- Prioritize fixing tests to reduce size
+- Consider adjusting thresholds if justified
+
+### Flaky Test Detection Script
+
+**Location**: `scripts/detect-flaky-tests.sh`
+
+**What it does**: Analyzes Vitest JSON output to identify tests that passed on retry, suggesting candidates for quarantine.
+
+**Usage**:
+```bash
+# Run tests with JSON reporter
+cd keyrx_ui
+npm test -- --reporter=json --outputFile=test-results.json
+
+# Detect flaky tests
+../scripts/detect-flaky-tests.sh test-results.json
+```
+
+**Example output**:
+```
+=== Flaky Test Detection ===
+
+⚠️  Flaky test #1:
+   Test: should handle WebSocket reconnection
+   File: src/pages/ConfigPage.test.tsx
+   Retries needed: 1
+   Duration: 1523ms
+
+Found 1 flaky test(s)
+
+Recommendation:
+  1. Add these tests to keyrx_ui/tests/quarantine.json
+  2. Create GitHub issues to track fixes
+  3. Run quarantined tests separately: npm run test:quarantine
+```
+
+### Technical Implementation
+
+**Architecture**:
+1. `tests/quarantine-manager.ts` - Core quarantine logic (load, validate, query)
+2. `vitest-plugins/quarantine-plugin.ts` - Vitest plugin integration
+3. `src/test/setup.ts` - Test setup hook to skip quarantined tests
+4. `scripts/detect-flaky-tests.sh` - Automated flaky test detection
+
+**How it works**:
+1. Test setup reads `quarantine.json` before each test
+2. Compares current test path against quarantine list
+3. Calls `context.skip()` if test is quarantined (unless `RUN_QUARANTINE=true`)
+4. Vitest plugin prints quarantine health status
+5. Quarantined tests run separately with `test:quarantine` script
+
+**Integration points**:
+- `vitest.config.base.ts` - Loads quarantine plugin
+- `package.json` - Defines quarantine commands
+- CI workflow - Runs quarantined tests as separate job
+
+---
+
 ## References
 
 - [Vitest Documentation](https://vitest.dev/)

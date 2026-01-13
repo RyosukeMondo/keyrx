@@ -274,13 +274,14 @@ Comprehensive overhaul of test infrastructure: fix failing tests, improve test p
   - _Requirements: Test metrics collected per CI run_
   - _Prompt: Implement the task for spec test-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Metrics Developer | Task: Create test-metrics.sh: Parse Vitest JSON output, extract passCount, failCount, duration, coverage. Generate metrics.json with timestamp. Add to CI artifacts. Include flaky test detection (tests that pass on retry). | Restrictions: Simple JSON format, no external services | Success: Metrics JSON available in CI artifacts | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
 
-- [ ] 9.2 Add flaky test detection and quarantine
+- [x] 9.2 Add flaky test detection and quarantine
   - File: `keyrx_ui/tests/quarantine.json` (create), test config
   - Track tests that fail intermittently
   - Add quarantine list for known flaky tests
   - Run quarantined tests separately, don't block CI
   - Alert when quarantine grows
   - Purpose: Separate flaky tests from real failures
+  - Solution: Created comprehensive quarantine system with quarantine.json config, quarantine-manager.ts for tracking, Vitest plugin integration, test setup hooks, flaky test detection script, and full documentation
   - _Leverage: Vitest test retry data_
   - _Requirements: Flaky tests identified and managed_
   - _Prompt: Implement the task for spec test-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test Reliability Engineer | Task: Create quarantine system: quarantine.json lists flaky test names. Vitest config excludes quarantined tests from main run. Add separate "test:quarantine" script. Add script to detect new flaky tests (passed on retry). | Restrictions: Quarantine should shrink over time, not grow | Success: Flaky tests don't block CI, are tracked separately | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_

@@ -5,6 +5,7 @@ import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import path from 'path';
 import os from 'os';
+import { quarantinePlugin } from './vitest-plugins/quarantine-plugin';
 
 /**
  * Base Vitest configuration for shared test settings.
@@ -19,6 +20,10 @@ export const baseConfig: UserConfig = {
     wasm(),
     topLevelAwait(),
     react(),
+    quarantinePlugin({
+      runQuarantined: process.env.RUN_QUARANTINE === 'true',
+      printStatus: true,
+    }),
   ],
   resolve: {
     alias: {
