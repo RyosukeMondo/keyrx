@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
+import {
+  MousePointerClick,
+  Timer,
+  ListOrdered,
+  Layers,
+  Keyboard,
+  ArrowRight
+} from 'lucide-react';
 import type { KeyMapping } from '@/types';
 import type { PaletteKey } from './KeyPalette';
 
@@ -18,6 +26,38 @@ interface KeyConfigModalProps {
 }
 
 type MappingType = 'simple' | 'tap_hold' | 'macro' | 'layer_switch';
+
+const MAPPING_TYPE_CONFIG = {
+  simple: {
+    icon: MousePointerClick,
+    label: 'Simple',
+    description: 'Map to a single key',
+  },
+  tap_hold: {
+    icon: Timer,
+    label: 'Tap/Hold',
+    description: 'Different actions for tap vs hold',
+  },
+  macro: {
+    icon: ListOrdered,
+    label: 'Macro',
+    description: 'Execute a sequence of keys',
+  },
+  layer_switch: {
+    icon: Layers,
+    label: 'Layer',
+    description: 'Switch to another layer',
+  },
+} as const;
+
+const QUICK_ASSIGN_KEYS = [
+  { id: 'Escape', label: 'Esc', icon: '⎋' },
+  { id: 'Enter', label: 'Enter', icon: '↵' },
+  { id: 'Backspace', label: 'Backspace', icon: '⌫' },
+  { id: 'Delete', label: 'Delete', icon: '⌦' },
+  { id: 'Space', label: 'Space', icon: '␣' },
+  { id: 'Tab', label: 'Tab', icon: '⇥' },
+] as const;
 
 export function KeyConfigModal({
   isOpen,
@@ -47,28 +87,103 @@ export function KeyConfigModal({
     onClose();
   };
 
+  const handleQuickAssign = (keyId: string) => {
+    setMappingType('simple');
+    setTapAction(keyId);
+  };
+
+  const getPreviewText = (): string => {
+    switch (mappingType) {
+      case 'simple':
+        return tapAction
+          ? `Press ${physicalKey} → Output ${tapAction}`
+          : 'Select a target key to map to';
+      case 'tap_hold':
+        if (!tapAction && !holdAction) {
+          return 'Configure tap and hold actions';
+        }
+        return `Quick tap: ${physicalKey} → ${tapAction || '?'}\nHold ${threshold}ms: ${physicalKey} → ${holdAction || '?'}`;
+      case 'macro':
+        return 'Macro configuration coming soon. Use Code Editor for now.';
+      case 'layer_switch':
+        return targetLayer
+          ? `Press ${physicalKey} → Switch to ${targetLayer}`
+          : 'Select a target layer';
+      default:
+        return '';
+    }
+  };
+
   return (
-    <Modal open={isOpen} onClose={onClose} title={`Configure: ${physicalKey}`}>
+    <Modal open={isOpen} onClose={onClose} title="Configure Key Mapping">
       <div className="space-y-6">
-        {/* Mapping Type Selector */}
+        {/* Key Info Header */}
+        <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary-500/20 p-2 rounded">
+              <Keyboard className="w-6 h-6 text-primary-400" />
+            </div>
+            <div>
+              <div className="text-xs text-slate-400 uppercase tracking-wide">
+                Physical Key
+              </div>
+              <div className="text-2xl font-bold text-slate-100">
+                {physicalKey}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Assign Section */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            Mapping Type
+            Quick Assign (Common Keys)
           </label>
-          <div className="grid grid-cols-2 gap-2">
-            {(['simple', 'tap_hold', 'macro', 'layer_switch'] as MappingType[]).map((type) => (
+          <div className="grid grid-cols-3 gap-2">
+            {QUICK_ASSIGN_KEYS.map((key) => (
               <button
-                key={type}
-                onClick={() => setMappingType(type)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  mappingType === type
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
+                key={key.id}
+                onClick={() => handleQuickAssign(key.id)}
+                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                title={`Quick assign to ${key.label}`}
               >
-                {type === 'tap_hold' ? 'Tap/Hold' : type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')}
+                <span className="text-lg">{key.icon}</span>
+                <span>{key.label}</span>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Mapping Type Selector with Icons */}
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-3">
+            Mapping Type
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {(Object.keys(MAPPING_TYPE_CONFIG) as MappingType[]).map((type) => {
+              const config = MAPPING_TYPE_CONFIG[type];
+              const Icon = config.icon;
+              return (
+                <button
+                  key={type}
+                  onClick={() => setMappingType(type)}
+                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-all flex flex-col items-start gap-2 ${
+                    mappingType === type
+                      ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/50'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                  title={config.description}
+                >
+                  <Icon className="w-5 h-5" />
+                  <div className="text-left">
+                    <div className="font-semibold">{config.label}</div>
+                    <div className={`text-xs ${mappingType === type ? 'text-primary-100' : 'text-slate-400'}`}>
+                      {config.description}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -182,6 +297,19 @@ export function KeyConfigModal({
             </p>
           </div>
         )}
+
+        {/* Preview Panel */}
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <ArrowRight className="w-4 h-4 text-primary-400" />
+            <label className="text-sm font-medium text-slate-300">
+              Preview
+            </label>
+          </div>
+          <div className="bg-slate-900 rounded-md p-3 font-mono text-sm text-slate-300 whitespace-pre-wrap min-h-[60px] flex items-center">
+            {getPreviewText()}
+          </div>
+        </div>
 
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">

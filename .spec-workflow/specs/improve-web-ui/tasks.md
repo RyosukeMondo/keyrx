@@ -92,7 +92,7 @@ General UI/UX improvements for the KeyRX Web UI excluding key palette (separate 
 
 ## Task 6: Improve Key Config Modal
 
-- [ ] 6.1 Enhance key configuration modal/popup UX
+- [x] 6.1 Enhance key configuration modal/popup UX
   - File: `keyrx_ui/src/components/KeyConfigModal.tsx`
   - Show current key info prominently at top
   - Clearer mapping type selector (Simple, Tap/Hold, Macro, Layer)
