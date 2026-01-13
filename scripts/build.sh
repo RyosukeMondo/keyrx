@@ -113,7 +113,7 @@ build_wasm() {
     local wasm_start
     wasm_start=$(date +%s)
 
-    if "$SCRIPT_DIR/build_wasm.sh"; then
+    if "$SCRIPT_DIR/lib/build-wasm.sh"; then
         local wasm_end
         wasm_end=$(date +%s)
         local wasm_time=$((wasm_end - wasm_start))
@@ -131,7 +131,7 @@ build_ui() {
     local ui_start
     ui_start=$(date +%s)
 
-    if "$SCRIPT_DIR/build_ui.sh"; then
+    if "$SCRIPT_DIR/lib/build-ui.sh"; then
         local ui_end
         ui_end=$(date +%s)
         local ui_time=$((ui_end - ui_start))

@@ -60,7 +60,7 @@ Fix UI issues identified during User Acceptance Testing for Dashboard, Devices, 
   - _Requirements: Disabled devices not shown in config page_
   - _Prompt: Implement the task for spec uat-ui-fixes: Role: React Developer | Task: Filter out devices where enabled===false from ConfigPage mergedDevices list and DeviceSelector dropdown. Add filter before mapping. | Restrictions: Keep Rhai-defined disconnected devices, only filter user-disabled devices | Success: Disabled devices don't appear in config page device selector | After completion: Use log-implementation tool, mark [x] complete_
 
-- [ ] 2.4 Add unit tests for device enable/disable
+- [-] 2.4 Add unit tests for device enable/disable
   - File: `src/__tests__/DevicesPage.test.tsx` (create or extend)
   - Test toggle functionality
   - Test disabled device visual state

@@ -84,6 +84,7 @@ export function DashboardPage() {
     <div className="flex flex-col gap-4 p-4 md:p-6">
       {/* Connection Status Banner */}
       <div
+        data-testid="connection-banner"
         className={`px-4 py-2 rounded text-sm md:text-base font-medium text-center ${
           client.isConnected
             ? 'bg-green-600 text-white'

@@ -22,11 +22,11 @@ set -euo pipefail
 
 # Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/common.sh
-source "$SCRIPT_DIR/lib/common.sh"
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
-# Store the project root directory
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Store the project root directory (go up two levels: lib/ -> scripts/ -> project root)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Parse command line arguments
 parse_common_flags "$@"
@@ -73,7 +73,7 @@ fi
 log_info "Step 1/4: Building WASM module..."
 separator
 
-if "$SCRIPT_DIR/build_wasm.sh" "$@"; then
+if "$SCRIPT_DIR/build-wasm.sh" "$@"; then
     log_info "WASM build completed successfully"
 else
     log_error "WASM build failed"

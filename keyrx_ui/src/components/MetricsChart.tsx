@@ -69,7 +69,7 @@ export function MetricsChart({ data }: MetricsChartProps) {
   };
 
   return (
-    <div className="rounded-lg bg-slate-800 p-4">
+    <div className="rounded-lg bg-slate-800 p-4" data-testid="metrics-chart">
       <h3 className="mb-4 text-lg font-semibold text-slate-200">Latency Metrics</h3>
       {data.length === 0 ? (
         <div className="flex h-[300px] items-center justify-center">

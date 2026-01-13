@@ -1,5 +1,9 @@
 # AI Agent Development Guide
 
+## Active Specs
+
+- **uat-ui-fixes**: Dashboard virtual/physical indicator, device enable/disable toggle, profile inline edit + active indicator, config RPC fix, 256-layer display, key dropdown population. See `.spec-workflow/specs/uat-ui-fixes/tasks.md`
+
 ## Windows Testing on Linux (Vagrant VM)
 
 **Testing Windows code on Linux is fully supported via Vagrant.**

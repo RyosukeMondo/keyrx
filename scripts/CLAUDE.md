@@ -1,472 +1,306 @@
-# Scripts Documentation
+# Scripts Documentation (MECE Reorganization)
 
 ## Introduction
 
-This directory contains automation scripts for building, testing, verifying, and launching the keyrx workspace. All scripts follow consistent patterns for logging, error handling, and output formatting to enable both human-readable and machine-parseable (JSON) operation.
+This directory contains automation scripts for building, testing, verifying, and launching the keyrx workspace. Scripts have been reorganized following MECE (Mutually Exclusive, Collectively Exhaustive) and SRP (Single Responsibility Principle) principles.
 
 **Design Principles:**
+- **MECE**: Each script has a single, non-overlapping responsibility
+- **SRP**: One command = one purpose
 - **Consistent Interface**: All scripts support common flags (`--error`, `--json`, `--quiet`, `--log-file`)
 - **Predictable Output**: Standardized status markers and log formats
 - **Fail Fast**: Scripts abort on first error with clear error messages
-- **Machine-Parseable**: JSON mode for CI/CD integration and AI agent consumption
-- **Comprehensive Logging**: All operations logged to timestamped files in `scripts/logs/`
 
-## Script Reference Table
+## Script Reference Table (MECE)
 
-| Script | Purpose | Common Flags | Script-Specific Flags | Exit Codes |
-|--------|---------|--------------|----------------------|------------|
-| `build.sh` | Build workspace in debug or release mode, with optional watch mode | `--error`, `--json`, `--quiet`, `--log-file` | `--release`, `--watch` | 0=success, 1=build failed, 2=missing tool |
-| `verify.sh` | Run comprehensive quality checks (build, clippy, fmt, tests, coverage) | `--error`, `--json`, `--quiet`, `--log-file` | `--skip-coverage` | 0=all passed, 1=check failed, 2=missing tool |
-| `test.sh` | Execute tests with flexible filtering (unit, integration, fuzz, bench) | `--error`, `--json`, `--quiet`, `--log-file` | `--unit`, `--integration`, `--fuzz DURATION`, `--bench` | 0=tests passed, 1=tests failed, 2=missing tool |
-| `test_docs.sh` | Verify documentation accuracy by compiling all example files | N/A | N/A | 0=all examples compile, 1=compilation failed |
-| `launch.sh` | Build and launch the keyrx daemon with configuration options | `--error`, `--json`, `--quiet`, `--log-file` | `--headless`, `--debug`, `--config PATH`, `--release` | 0=launched, 1=launch failed, 2=missing tool |
-| `setup_hooks.sh` | Install Git pre-commit hooks for automated quality gates | N/A | N/A | 0=installed, 1=not a git repo |
+| Category | Script | Purpose | Replaces |
+|----------|--------|---------|----------|
+| **BUILD** | `build.sh` | Full build sequence (WASM → UI → Daemon) | - |
+| **TEST** | `test.sh` | Run tests (unit, integration, fuzz, bench) | - |
+| **VERIFY** | `verify.sh` | Quality gates (build, clippy, fmt, tests, coverage) | `validate_quality.sh` |
+| **RUN** | `launch.sh` | Start daemon (production mode) | - |
+| **RUN** | `dev.sh` | Development server with HMR | `dev_ui.sh` |
+| **SETUP** | `setup.sh` | Environment setup (unified) | `setup_*.sh` (5 scripts) |
+| **UAT** | `uat.sh` | User acceptance testing (with full build) | `UAT.sh`, `uat_*.sh`, `verify_uat.sh` (5 scripts) |
+| **DEPLOY** | `install.sh` | System installation | - |
+
+### Utility Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `check-types.sh` | TypeScript/Rust type sync verification |
+| `fix_doc_tests.sh` | Fix and run documentation tests |
+| `test_docs.sh` | Verify documentation examples compile |
+| `windows_test_vm.sh` | Run tests in Windows VM |
+| `deploy_windows.sh` | Windows deployment |
+| `validate_performance.sh` | Run performance benchmarks |
+| `verify_file_sizes.sh` | Check file size limits (uses tokei) |
+| `audit_test_failures.sh` | Categorize test failures |
+
+### Library Scripts (Internal)
+
+| Script | Purpose |
+|--------|---------|
+| `lib/common.sh` | Shared utilities (logging, JSON, arg parsing) |
+| `lib/build-wasm.sh` | WASM compilation (called by build.sh) |
+| `lib/build-ui.sh` | UI compilation (called by build.sh) |
+
+## Quick Reference
+
+```bash
+# Development workflow
+./scripts/build.sh           # Build everything
+./scripts/test.sh            # Run tests
+./scripts/verify.sh          # Quality checks
+./scripts/dev.sh             # Start dev server with HMR
+./scripts/uat.sh             # Full UAT (builds UI first!)
+
+# Setup
+./scripts/setup.sh           # Full environment setup
+./scripts/setup.sh --check   # Check setup status
+./scripts/setup.sh --linux   # Linux-only setup
+
+# UAT modes
+./scripts/uat.sh             # Full UAT with UI build
+./scripts/uat.sh --rebuild   # Force clean rebuild
+./scripts/uat.sh --verify    # Verify running daemon
+./scripts/uat.sh --stop      # Stop daemon
+```
+
+## Common Flags (All Scripts)
+
+| Flag | Description | Effect |
+|------|-------------|--------|
+| `--error` | Show only errors | Suppresses info and warnings |
+| `--json` | Output in JSON format | Structured JSON to stdout |
+| `--quiet` | Suppress non-error output | Only shows errors |
+| `--log-file PATH` | Custom log file path | Overrides default log location |
 
 ## Output Format Specification
 
 ### Status Markers
 
-All scripts output standardized status markers to indicate completion status:
-
 ```
-=== accomplished ===  # Operation completed successfully (green)
+=== accomplished ===  # Operation succeeded (green)
 === failed ===        # Operation failed (red)
-=== warning ===       # Operation completed with warnings (yellow)
-```
-
-These markers are always prefixed with timestamps: `[YYYY-MM-DD HH:MM:SS]`
-
-**Example:**
-```
-[2025-12-21 10:30:45] === accomplished ===
+=== warning ===       # Completed with warnings (yellow)
 ```
 
 ### Log Format
 
-All log messages follow this format:
 ```
 [YYYY-MM-DD HH:MM:SS] [LEVEL] message
 ```
 
-**Log Levels:**
-- `[INFO]` - Informational messages (blue)
-- `[ERROR]` - Error messages (red, stderr)
-- `[WARN]` - Warning messages (yellow, stderr)
-- `[DEBUG]` - Debug messages (no color)
+Levels: `[INFO]` (blue), `[ERROR]` (red), `[WARN]` (yellow), `[DEBUG]` (no color)
 
-**Examples:**
-```
-[2025-12-21 10:30:40] [INFO] Building in release mode...
-[2025-12-21 10:30:42] [ERROR] Build failed
-[2025-12-21 10:30:43] [WARN] Coverage below threshold
-```
+### Exit Codes
 
-### JSON Output Schema
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | Failure |
+| 2 | Missing required tool |
 
-When using `--json` flag, scripts output structured JSON to stdout. All JSON output is printed after the operation completes.
+## Detailed Script Reference
 
-#### build.sh JSON Schema
-```json
-{
-  "status": "success|failed",
-  "build_type": "debug|release",
-  "mode": "standard|watch",
-  "exit_code": "0|1|2"
-}
-```
+### build.sh - Full Build
 
-**Error variant:**
-```json
-{
-  "status": "failed",
-  "error": "error description",
-  "exit_code": "2"
-}
-```
-
-#### verify.sh JSON Schema
-```json
-{
-  "status": "success|failed",
-  "checks": {
-    "build": "PASS|FAIL",
-    "clippy": "PASS|FAIL",
-    "fmt": "PASS|FAIL",
-    "test": "PASS|FAIL",
-    "coverage": "PASS (XX.XX%)|FAIL (XX.XX% < 80%)|SKIP"
-  },
-  "failed_checks": ["check1", "check2"],
-  "exit_code": "0|1"
-}
-```
-
-#### test.sh JSON Schema
-```json
-{
-  "status": "success|failed",
-  "mode": "all|unit|integration|fuzz|bench",
-  "tests_passed": "N",
-  "tests_failed": "N",
-  "exit_code": "0|1"
-}
-```
-
-#### launch.sh JSON Schema
-```json
-{
-  "status": "success|failed",
-  "pid": "12345",
-  "port": "8080",
-  "build_type": "debug|release",
-  "headless": "true|false",
-  "debug": "true|false",
-  "exit_code": "0|1"
-}
-```
-
-**Error variant:**
-```json
-{
-  "status": "failed",
-  "error": "build failed|daemon startup failed",
-  "build_type": "debug|release",
-  "exit_code": "1"
-}
-```
-
-### Log Files
-
-All scripts automatically create timestamped log files in `scripts/logs/`:
-- Format: `{script_name}_{epoch_timestamp}.log`
-- Example: `build_1734784800.log`
-- Contains all output (info, warnings, errors, status markers)
-- Never committed to git (ignored by `.gitignore`)
-
-You can specify a custom log file path using `--log-file PATH`.
-
-## Flag Reference
-
-### Common Flags (Supported by All Scripts)
-
-| Flag | Description | Effect |
-|------|-------------|--------|
-| `--error` | Show only errors | Suppresses info and warnings, only shows errors |
-| `--json` | Output in JSON format | Outputs structured JSON to stdout, implies `--quiet` |
-| `--quiet` | Suppress non-error output | Suppresses info messages, shows only errors |
-| `--log-file PATH` | Custom log file path | Overrides default timestamped log file location |
-
-### Script-Specific Flags
-
-#### build.sh
-| Flag | Description |
-|------|-------------|
-| `--release` | Build in release mode (optimized, slower build) |
-| `--watch` | Watch mode - rebuild on file changes (requires cargo-watch) |
-
-#### verify.sh
-| Flag | Description |
-|------|-------------|
-| `--skip-coverage` | Skip coverage check (useful for faster iteration) |
-
-#### test.sh
-| Flag | Description |
-|------|-------------|
-| `--unit` | Run only unit tests (lib tests) |
-| `--integration` | Run only integration tests (tests/ directory) |
-| `--fuzz DURATION` | Run fuzz tests for DURATION seconds (requires cargo-fuzz) |
-| `--bench` | Run benchmarks (requires nightly toolchain) |
-
-#### launch.sh
-| Flag | Description |
-|------|-------------|
-| `--headless` | Suppress browser launch (headless mode) |
-| `--debug` | Enable debug logging (log-level: debug) |
-| `--config PATH` | Specify custom configuration file path |
-| `--release` | Build and run release binary (optimized) |
-
-## Example Commands
-
-### build.sh Examples
+Orchestrates the complete build sequence: WASM → UI → Daemon.
 
 ```bash
-# Debug build (default)
-./scripts/build.sh
-
-# Release build (optimized)
-./scripts/build.sh --release
-
-# Watch mode - auto-rebuild on file changes
-./scripts/build.sh --watch
-
-# Watch mode with release build
-./scripts/build.sh --watch --release
-
-# JSON output for CI/CD integration
-./scripts/build.sh --json
-
-# Quiet build (only show errors)
-./scripts/build.sh --quiet
-
-# Build with custom log file
-./scripts/build.sh --log-file /tmp/my-build.log
+./scripts/build.sh                    # Debug build
+./scripts/build.sh --release          # Release build (optimized)
+./scripts/build.sh --watch            # Watch mode (auto-rebuild)
+./scripts/build.sh --json             # JSON output for CI
 ```
 
-### verify.sh Examples
+**Build Sequence:**
+1. Build WASM module (keyrx_core → WebAssembly)
+2. Build UI (React + embedded WASM)
+3. Build Daemon (with embedded UI)
+
+### test.sh - Test Execution
+
+Run tests with flexible filtering.
 
 ```bash
-# Full verification (build, clippy, fmt, tests, coverage)
-./scripts/verify.sh
-
-# Fast verification (skip coverage check)
-./scripts/verify.sh --skip-coverage
-
-# JSON output for CI/CD
-./scripts/verify.sh --json
-
-# Quiet verification (used by pre-commit hook)
-./scripts/verify.sh --quiet
-
-# Show only errors
-./scripts/verify.sh --error
+./scripts/test.sh                     # All tests
+./scripts/test.sh --unit              # Unit tests only
+./scripts/test.sh --integration       # Integration tests only
+./scripts/test.sh --fuzz 60           # Fuzz tests for 60 seconds
+./scripts/test.sh --bench             # Benchmarks (requires nightly)
 ```
 
-### test.sh Examples
+### verify.sh - Quality Gates
+
+Comprehensive quality verification.
 
 ```bash
-# Run all tests (default)
-./scripts/test.sh
-
-# Run only unit tests
-./scripts/test.sh --unit
-
-# Run only integration tests
-./scripts/test.sh --integration
-
-# Run fuzz tests for 60 seconds
-./scripts/test.sh --fuzz 60
-
-# Run benchmarks (requires nightly)
-./scripts/test.sh --bench
-
-# JSON output with test counts
-./scripts/test.sh --json
-
-# Quiet test run
-./scripts/test.sh --quiet
+./scripts/verify.sh                   # Full verification
+./scripts/verify.sh --skip-coverage   # Skip coverage (faster)
+./scripts/verify.sh --json            # JSON output
 ```
 
-### launch.sh Examples
+**Checks Performed:**
+1. Build - `cargo build --workspace`
+2. Clippy - `cargo clippy -- -D warnings`
+3. Format - `cargo fmt --check`
+4. Tests - `cargo test --workspace`
+5. Coverage - `cargo llvm-cov` (80% minimum)
+6. UI Tests - `npm test --coverage`
+7. E2E Tests - Playwright
+
+### launch.sh - Production Daemon
+
+Build and launch the daemon.
 
 ```bash
-# Launch daemon (debug build, info logging)
-./scripts/launch.sh
-
-# Launch with release build
-./scripts/launch.sh --release
-
-# Launch with debug logging
-./scripts/launch.sh --debug
-
-# Launch without opening browser
-./scripts/launch.sh --headless
-
-# Launch with custom config
-./scripts/launch.sh --config custom.toml
-
-# Launch and get PID/port in JSON
-./scripts/launch.sh --json
-
-# Combined flags
-./scripts/launch.sh --release --debug --headless
+./scripts/launch.sh                   # Launch (debug build)
+./scripts/launch.sh --release         # Launch (release build)
+./scripts/launch.sh --debug           # Debug logging
+./scripts/launch.sh --headless        # No browser
+./scripts/launch.sh --config PATH     # Custom config
 ```
 
-### setup_hooks.sh Examples
+### dev.sh - Development Server
+
+Start development environment with hot module replacement.
 
 ```bash
-# Install pre-commit hook (run once per clone)
-./scripts/setup_hooks.sh
-
-# Re-run to update hook (idempotent)
-./scripts/setup_hooks.sh
+./scripts/dev.sh                      # Start dev server + daemon
+./scripts/dev.sh --no-daemon          # Dev server only (daemon already running)
+./scripts/dev.sh --no-browser         # Don't open browser
 ```
 
-### test_docs.sh Examples
+**Development URLs:**
+- UI Dev Server: http://localhost:5173
+- Daemon API: http://localhost:9867
+
+### setup.sh - Environment Setup (Unified)
+
+Consolidates all setup operations.
 
 ```bash
-# Test all example .rhai files compile correctly
-./scripts/test_docs.sh
-
-# This script:
-# 1. Builds the keyrx_compiler in release mode
-# 2. Compiles every .rhai file in examples/ directory
-# 3. Extracts code blocks from docs/user-guide/dsl-manual.md
-# 4. Verifies documentation accuracy
-# Exit code 0 = all examples compile, 1 = compilation failed
+./scripts/setup.sh                    # Full setup
+./scripts/setup.sh --check            # Check status only
+./scripts/setup.sh --dev-tools        # Dev tools only
+./scripts/setup.sh --linux            # Linux environment only
+./scripts/setup.sh --hooks            # Git hooks only
+./scripts/setup.sh --desktop          # Desktop integration only
+./scripts/setup.sh --windows-vm       # Windows VM setup only
 ```
 
-## Failure Scenarios
+**Components:**
+1. Dev Tools - cargo-watch, cargo-llvm-cov, wasm-pack
+2. Linux - User groups, udev rules, uinput module
+3. Git Hooks - Pre-commit verification
+4. Desktop - .desktop file, application icons
+5. Windows VM - Vagrant + libvirt
 
-### build.sh Failures
+### uat.sh - User Acceptance Testing (Unified)
 
-| Scenario | Output | Exit Code | Solution |
-|----------|--------|-----------|----------|
-| Cargo not installed | `[ERROR] Required tool 'cargo' not found` | 2 | Install Rust: https://rustup.rs |
-| Compilation error | Build output with errors, `=== failed ===` | 1 | Fix compilation errors in source code |
-| cargo-watch missing (--watch) | `[ERROR] Required tool 'cargo-watch' not found` | 2 | `cargo install cargo-watch` |
+Complete UAT workflow that **always builds the UI**.
 
-### verify.sh Failures
+```bash
+./scripts/uat.sh                      # Full UAT (build + start)
+./scripts/uat.sh --rebuild            # Force clean rebuild
+./scripts/uat.sh --verify             # Verify running daemon
+./scripts/uat.sh --stop               # Stop daemon
+./scripts/uat.sh --headless           # No browser
+./scripts/uat.sh --release            # Release build
+./scripts/uat.sh --debug              # Debug logging
+```
 
-| Scenario | Output | Exit Code | Solution |
-|----------|--------|-----------|----------|
-| Build fails | `Build check: FAIL`, aborts | 1 | Run `./scripts/build.sh` to see details |
-| Clippy warnings | `Clippy check: FAIL`, aborts | 1 | Run `cargo clippy --workspace` and fix warnings |
-| Format issues | `Format check: FAIL - run 'cargo fmt' to fix` | 1 | Run `cargo fmt` to auto-format code |
-| Test failures | `Test check: FAIL`, aborts | 1 | Run `cargo test --workspace` to see failing tests |
-| Coverage < 80% | `Coverage check: FAIL (XX.XX% < 80% minimum)` | 1 | Add tests to increase coverage |
-| cargo-tarpaulin missing | `[ERROR] Required tool 'cargo-tarpaulin' not found` | 2 | `cargo install cargo-tarpaulin` |
+**UAT Sequence:**
+1. Check prerequisites (groups, udev, modules)
+2. Compile user_layout.rhai → .krx
+3. Build WASM module
+4. Build Web UI (Vite production build)
+5. Build daemon with embedded UI
+6. Stop existing daemon
+7. Start daemon with system tray
+8. Open browser (unless --headless)
 
-### test.sh Failures
+### install.sh - System Installation
 
-| Scenario | Output | Exit Code | Solution |
-|----------|--------|-----------|----------|
-| Cargo not installed | `[ERROR] Required tool 'cargo' not found` | 2 | Install Rust: https://rustup.rs |
-| Test failures | `Tests failed: N passed, M failed`, `=== failed ===` | 1 | Fix failing tests |
-| cargo-fuzz missing (--fuzz) | `[ERROR] cargo-fuzz not found` | 1 | `cargo install cargo-fuzz` |
-| Nightly missing (--bench) | `[ERROR] Nightly Rust toolchain not found` | 1 | `rustup install nightly` |
-| Fuzz directory missing | `[ERROR] Fuzz directory not found: keyrx_core/fuzz` | 1 | `cd keyrx_core && cargo fuzz init` |
+Install KeyRX daemon to system.
 
-### launch.sh Failures
-
-| Scenario | Output | Exit Code | Solution |
-|----------|--------|-----------|----------|
-| Build fails | `[ERROR] Build failed`, `=== failed ===` | 1 | Fix build errors (run `./scripts/build.sh`) |
-| Daemon startup fails | `[ERROR] Daemon failed to start` | 1 | Check daemon output in error message |
-| Binary not found | `[ERROR] Daemon binary not found at: target/.../keyrx_daemon` | 1 | Ensure build completed successfully |
-| Config file missing | `[ERROR] Config file not found: PATH` | 1 | Provide valid config file path |
-
-### setup_hooks.sh Failures
-
-| Scenario | Output | Exit Code | Solution |
-|----------|--------|-----------|----------|
-| Not a git repo | `Error: Not a git repository` | 1 | Run from within a git repository |
+```bash
+./scripts/install.sh                  # Install to ~/.local/bin
+```
 
 ## Troubleshooting
 
-### Q: Build fails with "cargo not found"
-**A:** Install Rust toolchain from https://rustup.rs, then run `cargo --version` to verify.
+### UAT shows old UI
 
-### Q: verify.sh takes too long during development
-**A:** Use `./scripts/verify.sh --skip-coverage` to skip the coverage check (fastest), or run individual checks:
-- Build only: `./scripts/build.sh`
-- Linting only: `cargo clippy --workspace`
-- Format only: `cargo fmt --check` (or `cargo fmt` to auto-fix)
-- Tests only: `./scripts/test.sh`
-
-### Q: Pre-commit hook blocks my commit
-**A:** The hook runs `verify.sh --quiet` to ensure code quality. Options:
-1. Fix the issues (recommended): Run `./scripts/verify.sh` to see details
-2. Bypass the hook (not recommended): `git commit --no-verify`
-
-### Q: How do I parse JSON output in CI/CD?
-**A:** Use `jq` for JSON parsing:
-```bash
-# Example: Extract exit code from build
-./scripts/build.sh --json | jq -r '.exit_code'
-
-# Example: Check if verification passed
-if ./scripts/verify.sh --json | jq -e '.status == "success"'; then
-  echo "Verification passed"
-fi
-
-# Example: Get failed checks
-./scripts/verify.sh --json | jq -r '.failed_checks[]'
-```
-
-### Q: Watch mode doesn't rebuild on file changes
-**A:** Ensure cargo-watch is installed: `cargo install cargo-watch`
-
-### Q: Coverage check fails with "cargo-tarpaulin not found"
-**A:** Install tarpaulin: `cargo install cargo-tarpaulin`
-
-### Q: Benchmark tests fail with "nightly toolchain not found"
-**A:** Install nightly: `rustup install nightly`
-
-### Q: Where are log files stored?
-**A:** All log files are in `scripts/logs/` with format `{script}_{epoch}.log`. These are automatically ignored by git.
-
-### Q: How do I run scripts from any directory?
-**A:** Scripts use relative paths and auto-detect their location. However, they should be run from the project root:
-```bash
-# From project root (recommended)
-./scripts/build.sh
-
-# From scripts/ directory (works but not recommended)
-cd scripts
-./build.sh
-```
-
-### Q: Can I run multiple scripts in parallel?
-**A:** Yes, scripts are independent. However, note:
-- `verify.sh` runs `build.sh` internally, so don't run them simultaneously
-- Multiple `launch.sh` instances will conflict (daemon uses same ports)
-- Multiple `test.sh` instances may interfere with each other
-
-### Q: How do I customize logging behavior?
-**A:** Use flag combinations:
-- Minimal output: `--quiet` (only errors)
-- Errors only: `--error` (no info/warnings)
-- Custom log location: `--log-file /path/to/log`
-- No terminal output: `--json` (structured output only)
-
-### Q: JSON output contains ANSI color codes
-**A:** JSON mode automatically suppresses color codes. If you see them, ensure you're using `--json` flag correctly and capturing only stdout (not stderr).
-
-### Q: How do I debug a failing script?
-**A:** Remove `--quiet` flag and check the log file:
-```bash
-# Run without quiet mode
-./scripts/build.sh
-
-# Check the most recent log file
-ls -lt scripts/logs/ | head -n 2
-cat scripts/logs/build_*.log
-```
-
-## Integration with Makefile
-
-Scripts are wrapped by the root Makefile for convenient access:
+This was the original problem. Use the new unified `uat.sh` which **always builds the UI**:
 
 ```bash
-make build    # Calls scripts/build.sh
-make verify   # Calls scripts/verify.sh
-make test     # Calls scripts/test.sh
-make launch   # Calls scripts/launch.sh
-make setup    # Installs tools and runs scripts/setup_hooks.sh
+./scripts/uat.sh                      # Builds UI before starting daemon
+./scripts/uat.sh --rebuild            # Force clean rebuild if needed
 ```
 
-See root `Makefile` for all available targets.
+### Pre-commit hook blocks commit
+
+```bash
+./scripts/verify.sh                   # See detailed errors
+cargo fmt                             # Auto-fix formatting
+cargo clippy --fix                    # Auto-fix clippy warnings
+```
+
+### Setup issues
+
+```bash
+./scripts/setup.sh --check            # Check current status
+./scripts/setup.sh --linux            # Fix Linux setup only
+```
+
+### Build failures
+
+```bash
+./scripts/build.sh                    # See build errors
+cargo build --workspace 2>&1          # Direct cargo output
+```
+
+## Migration Guide
+
+If you were using the old scripts:
+
+| Old Script | New Command |
+|------------|-------------|
+| `UAT.sh` | `./scripts/uat.sh` |
+| `uat_linux.sh` | `./scripts/uat.sh` |
+| `uat_rebuild.sh` | `./scripts/uat.sh --rebuild` |
+| `verify_uat.sh` | `./scripts/uat.sh --verify` |
+| `dev_ui.sh` | `./scripts/dev.sh` |
+| `setup_dev_environment.sh` | `./scripts/setup.sh --dev-tools` |
+| `setup_linux.sh` | `./scripts/setup.sh --linux` |
+| `setup_hooks.sh` | `./scripts/setup.sh --hooks` |
+| `setup_desktop_integration.sh` | `./scripts/setup.sh --desktop` |
+| `setup_keyrx_windows_vm.sh` | `./scripts/setup.sh --windows-vm` |
+| `validate_quality.sh` | `./scripts/verify.sh` |
+| `build_wasm.sh` | `./scripts/lib/build-wasm.sh` (internal) |
+| `build_ui.sh` | `./scripts/lib/build-ui.sh` (internal) |
 
 ## For AI Agents
 
-**Key Discovery Points:**
+**Key Points:**
 1. All scripts support `--json` for machine-parseable output
 2. Exit codes: 0=success, 1=failure, 2=missing tool
-3. Status markers (`=== accomplished ===`, `=== failed ===`) indicate completion status
-4. Log files automatically created in `scripts/logs/` with epoch timestamps
-5. Pre-commit hook runs `verify.sh --quiet` before every commit
-6. Use `--skip-coverage` during development for faster iteration
-7. JSON schemas documented above for parsing script output
-8. All scripts fail fast - abort on first error with clear messaging
+3. Status markers (`=== accomplished ===`, `=== failed ===`)
+4. Log files in `scripts/logs/` with epoch timestamps
+5. **Use `uat.sh` for UAT** - it builds the UI unlike the old UAT.sh
 
-**Recommended AI Workflow:**
-1. Start: `./scripts/verify.sh --json` to check current state
-2. Build: `./scripts/build.sh --quiet` during development
-3. Test: `./scripts/test.sh --json` to get test results
-4. Verify: `./scripts/verify.sh --skip-coverage` for fast quality check
-5. Commit: Git hooks automatically run verification
-6. Parse JSON output with `jq` for decision-making
+**Recommended Workflow:**
+```bash
+./scripts/setup.sh --check            # 1. Verify environment
+./scripts/verify.sh --skip-coverage   # 2. Quick quality check
+./scripts/uat.sh                      # 3. Full UAT with fresh UI
+./scripts/uat.sh --verify             # 4. Verify daemon is working
+```
 
 **Error Handling:**
-- Always check exit codes (0=success, non-zero=failure)
-- Parse JSON output for detailed status
-- Read log files in `scripts/logs/` for full debugging context
+- Always check exit codes
+- Parse JSON output with `jq` for decision-making
+- Read log files in `scripts/logs/` for debugging

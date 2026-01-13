@@ -10,6 +10,8 @@ interface CardProps {
   role?: string;
   'aria-label'?: string;
   'aria-labelledby'?: string;
+  'data-testid'?: string;
+  'data-profile'?: string;
 }
 
 export const Card = React.memo<CardProps>(
@@ -23,6 +25,8 @@ export const Card = React.memo<CardProps>(
     role = 'region',
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
+    'data-testid': dataTestId,
+    'data-profile': dataProfile,
   }) => {
     const baseClasses =
       'bg-slate-800 border border-slate-700 rounded-md overflow-hidden';
@@ -44,6 +48,8 @@ export const Card = React.memo<CardProps>(
         role={role}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
+        data-testid={dataTestId}
+        data-profile={dataProfile}
       >
         {header && (
           <div className="border-b border-slate-700 px-md py-sm bg-slate-700/50">

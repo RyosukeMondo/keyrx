@@ -59,6 +59,7 @@ export const ProfileCard = React.memo<ProfileCardProps>(
         variant="default"
         padding="md"
         className={`relative ${isActive ? 'border-green-500 border-2' : ''}`}
+        data-profile={name}
       >
         {/* Active Badge */}
         {isActive && (

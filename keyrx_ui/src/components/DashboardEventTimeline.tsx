@@ -50,6 +50,7 @@ function EventRow({ event, style }: EventRowProps) {
     <div
       style={style}
       className="relative flex items-center gap-4 px-4 py-2 border-b border-slate-700 hover:bg-slate-800 transition-colors"
+      data-event-item
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
@@ -83,7 +84,7 @@ function EventRow({ event, style }: EventRowProps) {
 
       {/* Tooltip with full details */}
       {showTooltip && (
-        <div className="absolute left-0 top-full z-50 mt-1 p-3 bg-slate-900 border border-slate-700 rounded shadow-lg text-xs font-mono whitespace-nowrap">
+        <div className="absolute left-0 top-full z-50 mt-1 p-3 bg-slate-900 border border-slate-700 rounded shadow-lg text-xs font-mono whitespace-nowrap" data-testid="event-tooltip">
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             <span className="text-slate-500">Timestamp:</span>
             <span className="text-slate-200">{event.timestamp}μs</span>
@@ -129,7 +130,7 @@ export function DashboardEventTimeline({
   onClear,
 }: DashboardEventTimelineProps) {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" data-testid="event-timeline">
       {/* Header with controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4 border-b border-slate-700 bg-slate-900">
         <h2 className="text-lg font-semibold text-slate-200">Event Timeline</h2>
@@ -153,19 +154,21 @@ export function DashboardEventTimeline({
 
       {/* Event list or empty state */}
       {events.length === 0 ? (
-        <div className="flex items-center justify-center h-96 text-slate-500">
+        <div className="flex items-center justify-center h-96 text-slate-500" data-testid="event-list">
           No events yet. Start typing to see events appear.
         </div>
       ) : (
-        <FixedSizeList
-          height={400}
-          itemCount={events.length}
-          itemSize={50}
-          width="100%"
-          className="bg-slate-950"
-        >
-          {({ index, style }) => <EventRow event={events[index]} style={style} />}
-        </FixedSizeList>
+        <div data-testid="event-list">
+          <FixedSizeList
+            height={400}
+            itemCount={events.length}
+            itemSize={50}
+            width="100%"
+            className="bg-slate-950"
+          >
+            {({ index, style }) => <EventRow event={events[index]} style={style} />}
+          </FixedSizeList>
+        </div>
       )}
     </div>
   );

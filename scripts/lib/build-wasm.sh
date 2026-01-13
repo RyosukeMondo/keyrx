@@ -20,8 +20,8 @@ set -euo pipefail
 
 # Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/common.sh
-source "$SCRIPT_DIR/lib/common.sh"
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
 # Store the project root directory (current directory) BEFORE any other operations
 PROJECT_ROOT="$(pwd)"

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { LoadingSpinner } from './components/LoadingSpinner';
+import { LayoutPreviewProvider } from './contexts/LayoutPreviewContext';
 
 // Lazy load all page components for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -15,7 +16,8 @@ const SimulatorPage = lazy(() => import('./pages/SimulatorPage'));
 function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
+      <LayoutPreviewProvider>
+        <BrowserRouter>
         <Layout>
           <Suspense
             fallback={
@@ -37,7 +39,8 @@ function App() {
             </Routes>
           </Suspense>
         </Layout>
-      </BrowserRouter>
+        </BrowserRouter>
+      </LayoutPreviewProvider>
     </ErrorBoundary>
   );
 }

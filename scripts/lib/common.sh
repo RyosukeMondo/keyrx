@@ -155,12 +155,16 @@ setup_log_file() {
     local epoch
     epoch=$(get_epoch_timestamp)
 
-    # Ensure logs directory exists
-    local log_dir="scripts/logs"
+    # Get absolute path to scripts/logs directory
+    # COMMON_SH_DIR is set when this file is sourced
+    local script_base="${COMMON_SH_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+    local log_dir="${script_base}/../logs"
+
+    # Ensure logs directory exists (use absolute path)
     mkdir -p "$log_dir"
 
-    # Set global LOG_FILE variable
-    LOG_FILE="${log_dir}/${prefix}_${epoch}.log"
+    # Set global LOG_FILE variable with absolute path
+    LOG_FILE="$(cd "$log_dir" && pwd)/${prefix}_${epoch}.log"
 
     log_info "Log file: $LOG_FILE"
 }

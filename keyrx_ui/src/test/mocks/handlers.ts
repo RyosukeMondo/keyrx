@@ -28,6 +28,7 @@ const mockDevices: DeviceEntry[] = [
     productId: 0x5678,
     active: true,
     layout: 'ANSI_104',
+    enabled: true,
   },
   {
     id: 'device-2',
@@ -37,6 +38,7 @@ const mockDevices: DeviceEntry[] = [
     productId: 0x5679,
     active: true,
     layout: 'ANSI_104',
+    enabled: true,
   },
 ];
 
@@ -102,7 +104,7 @@ export const handlers = [
 
   http.patch('/api/devices/:id', async ({ request, params }) => {
     const { id } = params;
-    const body = (await request.json()) as { name?: string; layout?: string };
+    const body = (await request.json()) as { name?: string; layout?: string; enabled?: boolean };
 
     const device = mockDevices.find((d) => d.id === id);
     if (!device) {
@@ -118,7 +120,26 @@ export const handlers = [
     if (body.layout !== undefined) {
       device.layout = body.layout;
     }
+    if (body.enabled !== undefined) {
+      device.enabled = body.enabled;
+    }
 
+    return HttpResponse.json({ success: true });
+  }),
+
+  http.put('/api/devices/:id/enabled', async ({ request, params }) => {
+    const { id } = params;
+    const body = (await request.json()) as { enabled: boolean };
+
+    const device = mockDevices.find((d) => d.id === id);
+    if (!device) {
+      return HttpResponse.json(
+        { error: 'Device not found', errorCode: 'DEVICE_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    device.enabled = body.enabled;
     return HttpResponse.json({ success: true });
   }),
 

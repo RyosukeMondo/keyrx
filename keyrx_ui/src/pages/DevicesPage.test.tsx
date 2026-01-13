@@ -802,6 +802,319 @@ describe('DevicesPage - Integration Tests', () => {
   });
 
   // ========================================================================
+  // Enable/Disable Device Toggle Tests (Task 2.4)
+  // ========================================================================
+  describe('Device Enable/Disable Toggle', () => {
+    it('displays toggle switch for each device', async () => {
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Devices')).toBeInTheDocument();
+      });
+
+      // Wait for devices to load
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      });
+
+      // Find all toggle switches (role="switch")
+      const toggles = screen.getAllByRole('switch');
+      expect(toggles.length).toBeGreaterThanOrEqual(2);
+
+      // Verify toggle labels
+      expect(screen.getByLabelText(/Disable Test Keyboard 1/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Disable Test Keyboard 2/)).toBeInTheDocument();
+    });
+
+    it('toggle switch is checked when device is enabled', async () => {
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      });
+
+      const toggle1 = screen.getByLabelText(/Disable Test Keyboard 1/) as HTMLInputElement;
+      expect(toggle1).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('clicking toggle changes device enabled state', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      });
+
+      const toggle = screen.getByLabelText('Disable Test Keyboard 1');
+      expect(toggle).toHaveAttribute('aria-checked', 'true');
+
+      await user.click(toggle);
+
+      // Toggle should update to unchecked (disabled)
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
+      });
+
+      // Verify localStorage was updated
+      const storedStates = localStorage.getItem('keyrx:device:enabled');
+      expect(storedStates).toBeTruthy();
+      const states = JSON.parse(storedStates!);
+      expect(states['device-1']).toBe(false);
+    });
+
+    it('disabled devices have reduced opacity styling', async () => {
+      const user = userEvent.setup();
+
+      server.use(
+        http.get('/api/devices', () => {
+          return HttpResponse.json({
+            devices: [
+              {
+                id: 'device-1',
+                name: 'Test Keyboard 1',
+                path: '/dev/input/event0',
+                active: true,
+                layout: 'ANSI_104',
+                enabled: false, // Disabled device
+              },
+              {
+                id: 'device-2',
+                name: 'Test Keyboard 2',
+                path: '/dev/input/event1',
+                active: true,
+                layout: 'ANSI_104',
+                enabled: true,
+              },
+            ],
+          });
+        })
+      );
+
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      });
+
+      // Find device cards by test-id
+      const deviceCards = screen.getAllByTestId('device-card');
+      expect(deviceCards.length).toBe(2);
+
+      // First device (disabled) should have opacity-50 class
+      expect(deviceCards[0]).toHaveClass('opacity-50');
+
+      // Second device (enabled) should NOT have opacity-50 class
+      expect(deviceCards[1]).not.toHaveClass('opacity-50');
+    });
+
+    it('disabled devices show "Disabled" badge', async () => {
+      server.use(
+        http.get('/api/devices', () => {
+          return HttpResponse.json({
+            devices: [
+              {
+                id: 'device-1',
+                name: 'Test Keyboard 1',
+                path: '/dev/input/event0',
+                active: true,
+                layout: 'ANSI_104',
+                enabled: false, // Disabled device
+              },
+              {
+                id: 'device-2',
+                name: 'Test Keyboard 2',
+                path: '/dev/input/event1',
+                active: true,
+                layout: 'ANSI_104',
+                enabled: true,
+              },
+            ],
+          });
+        })
+      );
+
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      });
+
+      // First device should show "Disabled" badge
+      expect(screen.getByText('Disabled')).toBeInTheDocument();
+
+      // Only one disabled badge should exist
+      expect(screen.getAllByText('Disabled')).toHaveLength(1);
+    });
+
+    it('toggling device updates UI immediately (optimistic update)', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      });
+
+      // Wait for toggle to be present
+      const toggle = await screen.findByLabelText('Disable Test Keyboard 1');
+
+      // Initially checked (enabled)
+      expect(toggle).toHaveAttribute('aria-checked', 'true');
+
+      await user.click(toggle);
+
+      // Should update immediately to unchecked (disabled)
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
+      });
+    });
+
+    it('toggle switch label changes based on enabled state', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      });
+
+      // Wait for toggle and verify label
+      const toggle = await screen.findByLabelText('Disable Test Keyboard 1');
+      await user.click(toggle);
+
+      // After disabling - label should say "Enable"
+      await waitFor(() => {
+        expect(screen.getByLabelText('Enable Test Keyboard 1')).toBeInTheDocument();
+      });
+    });
+
+    it('toggle persists state across component re-renders', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      });
+
+      const toggle = await screen.findByLabelText('Disable Test Keyboard 1');
+      await user.click(toggle);
+
+      // Toggle should be disabled
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
+      });
+
+      // State should persist in localStorage
+      const storedStates = localStorage.getItem('keyrx:device:enabled');
+      expect(storedStates).toBeTruthy();
+      const states = JSON.parse(storedStates!);
+      expect(states['device-1']).toBe(false);
+    });
+
+    it('disabled devices persist across page refresh', async () => {
+      const user = userEvent.setup();
+
+      server.use(
+        http.get('/api/devices', () => {
+          return HttpResponse.json({
+            devices: [
+              {
+                id: 'device-1',
+                name: 'Test Keyboard 1',
+                path: '/dev/input/event0',
+                active: true,
+                layout: 'ANSI_104',
+                enabled: false, // Persisted as disabled
+              },
+              {
+                id: 'device-2',
+                name: 'Test Keyboard 2',
+                path: '/dev/input/event1',
+                active: true,
+                layout: 'ANSI_104',
+                enabled: true,
+              },
+            ],
+          });
+        })
+      );
+
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      });
+
+      // Verify disabled state persists
+      const toggle1 = screen.getByLabelText(/Enable Test Keyboard 1/);
+      expect(toggle1).toHaveAttribute('aria-checked', 'false');
+
+      const toggle2 = screen.getByLabelText(/Disable Test Keyboard 2/);
+      expect(toggle2).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('forget button still works for disabled devices', async () => {
+      const user = userEvent.setup();
+
+      server.use(
+        http.get('/api/devices', () => {
+          return HttpResponse.json({
+            devices: [
+              {
+                id: 'device-1',
+                name: 'Test Keyboard 1',
+                path: '/dev/input/event0',
+                active: true,
+                layout: 'ANSI_104',
+                enabled: false, // Disabled device
+              },
+            ],
+          });
+        })
+      );
+
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(1 connected\)/)).toBeInTheDocument();
+      });
+
+      // Should be able to forget disabled device
+      const forgetButton = screen.getByLabelText(/Permanently forget Test Keyboard 1/);
+      expect(forgetButton).toBeInTheDocument();
+      await user.click(forgetButton);
+
+      // Confirmation modal should appear
+      expect(screen.getByRole('dialog', { name: 'Forget Device' })).toBeInTheDocument();
+    });
+
+    it('toggle is keyboard accessible', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      });
+
+      const toggle = await screen.findByLabelText('Disable Test Keyboard 1');
+
+      // Focus the toggle
+      toggle.focus();
+      expect(toggle).toHaveFocus();
+
+      // Press Space to toggle
+      await user.keyboard(' ');
+
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
+      });
+    });
+  });
+
+  // ========================================================================
   // Integration Workflow Tests
   // ========================================================================
   describe('End-to-End Workflows', () => {
