@@ -51,7 +51,7 @@ Fix UI issues identified during User Acceptance Testing for Dashboard, Devices, 
   - _Requirements: Toggle switch UI, grayed out disabled devices_
   - _Prompt: Implement the task for spec uat-ui-fixes: Role: React UI Developer | Task: Replace delete button (✕) with toggle switch in DeviceRow. When disabled: row has opacity:0.5, gray overlay, "(Disabled)" badge. Toggle triggers setDeviceEnabled. Remove forget confirmation modal. | Restrictions: Maintain existing device info display, ensure keyboard accessible toggle | Success: Toggle works, disabled devices visually distinct, no delete functionality | After completion: Use log-implementation tool, mark [x] complete_
 
-- [ ] 2.3 Filter disabled devices from Config page
+- [x] 2.3 Filter disabled devices from Config page
   - File: `src/pages/ConfigPage.tsx`, `src/components/DeviceSelector.tsx`
   - Don't show disabled devices in DeviceSelector dropdown
   - Don't include disabled devices in merged device list
