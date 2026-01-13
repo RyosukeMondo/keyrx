@@ -39,7 +39,7 @@ Fix WASM build issues, enhance build scripts for verification, and ensure WASM m
 
 ## Task 2: Fix WASM Loading in UI
 
-- [ ] 2.1 Update useWasm hook for reliable loading
+- [-] 2.1 Update useWasm hook for reliable loading
   - File: `keyrx_ui/src/hooks/useWasm.ts`
   - Fix import path to WASM module
   - Add proper async initialization
