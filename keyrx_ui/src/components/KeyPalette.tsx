@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Star, Clock } from 'lucide-react';
 import { Card } from './Card';
 import { KEY_DEFINITIONS, KeyDefinition } from '../data/keyDefinitions';
 
@@ -328,12 +328,113 @@ const SPECIAL_KEYS: PaletteKey[] = [
   { id: 'LK_09', label: 'LK_09', category: 'special', description: 'Custom Lock 9' },
 ];
 
+/**
+ * LocalStorage keys for persistence
+ */
+const STORAGE_KEY_RECENT = 'keyrx_recent_keys';
+const STORAGE_KEY_FAVORITES = 'keyrx_favorite_keys';
+const MAX_RECENT_KEYS = 10;
+
+/**
+ * Load array from localStorage with error handling
+ */
+function loadFromStorage(key: string): string[] {
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+  } catch (err) {
+    console.warn(`Failed to load ${key} from localStorage:`, err);
+  }
+  return [];
+}
+
+/**
+ * Save array to localStorage with error handling
+ */
+function saveToStorage(key: string, data: string[]): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (err) {
+    console.error(`Failed to save ${key} to localStorage:`, err);
+  }
+}
+
+/**
+ * Find a key definition by ID
+ */
+function findKeyById(keyId: string): PaletteKey | null {
+  // Search in KEY_DEFINITIONS first
+  const keyDef = KEY_DEFINITIONS.find(k => k.id === keyId);
+  if (keyDef) {
+    return {
+      id: keyDef.id,
+      label: keyDef.label,
+      category: keyDef.category,
+      subcategory: keyDef.subcategory,
+      description: keyDef.description,
+    };
+  }
+
+  // Fallback: search in static key arrays
+  const allKeys = [...BASIC_KEYS, ...MODIFIER_KEYS, ...MEDIA_KEYS, ...MACRO_KEYS, ...LAYER_KEYS, ...SPECIAL_KEYS];
+  return allKeys.find(k => k.id === keyId) || null;
+}
+
 export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
   const [activeCategory, setActiveCategory] = React.useState<PaletteKey['category']>('basic');
   const [activeSubcategory, setActiveSubcategory] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedSearchIndex, setSelectedSearchIndex] = React.useState(0);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Recent and Favorite keys state
+  const [recentKeyIds, setRecentKeyIds] = React.useState<string[]>(() => loadFromStorage(STORAGE_KEY_RECENT));
+  const [favoriteKeyIds, setFavoriteKeyIds] = React.useState<string[]>(() => loadFromStorage(STORAGE_KEY_FAVORITES));
+
+  // Add key to recent list (max 10, most recent first)
+  const addToRecent = React.useCallback((keyId: string) => {
+    setRecentKeyIds(prev => {
+      const filtered = prev.filter(id => id !== keyId);
+      const updated = [keyId, ...filtered].slice(0, MAX_RECENT_KEYS);
+      saveToStorage(STORAGE_KEY_RECENT, updated);
+      return updated;
+    });
+  }, []);
+
+  // Toggle favorite status
+  const toggleFavorite = React.useCallback((keyId: string) => {
+    setFavoriteKeyIds(prev => {
+      const isFavorite = prev.includes(keyId);
+      const updated = isFavorite
+        ? prev.filter(id => id !== keyId)
+        : [...prev, keyId];
+      saveToStorage(STORAGE_KEY_FAVORITES, updated);
+      return updated;
+    });
+  }, []);
+
+  // Check if key is favorite
+  const isFavorite = React.useCallback((keyId: string) => {
+    return favoriteKeyIds.includes(keyId);
+  }, [favoriteKeyIds]);
+
+  // Handle key selection with recent tracking
+  const handleKeySelect = React.useCallback((key: PaletteKey) => {
+    addToRecent(key.id);
+    onKeySelect(key);
+  }, [addToRecent, onKeySelect]);
+
+  // Get recent and favorite key objects
+  const recentKeys = React.useMemo(() => {
+    return recentKeyIds.map(id => findKeyById(id)).filter((k): k is PaletteKey => k !== null);
+  }, [recentKeyIds]);
+
+  const favoriteKeys = React.useMemo(() => {
+    return favoriteKeyIds.map(id => findKeyById(id)).filter((k): k is PaletteKey => k !== null);
+  }, [favoriteKeyIds]);
 
   const categories = [
     { id: 'basic' as const, label: 'Basic', keys: BASIC_KEYS, icon: '⌨️' },
@@ -388,7 +489,7 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
         e.preventDefault();
         if (searchResults[selectedSearchIndex]) {
           const match = searchResults[selectedSearchIndex];
-          onKeySelect({
+          handleKeySelect({
             id: match.key.id,
             label: match.key.label,
             category: match.key.category,
@@ -406,9 +507,104 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
     }
   };
 
+  // Render a key item with star button
+  const renderKeyItem = (key: PaletteKey, onClick: () => void, showStar: boolean = true) => {
+    const favorite = isFavorite(key.id);
+
+    return (
+      <div key={key.id} className="relative group">
+        <button
+          onClick={onClick}
+          className={`
+            w-full relative flex flex-col items-center justify-center
+            min-h-[50px] px-2 py-2
+            rounded border transition-all
+            hover:brightness-110 hover:-translate-y-0.5 hover:shadow-lg
+            ${
+              selectedKey?.id === key.id
+                ? 'border-primary-500 bg-primary-500/20 shadow-lg shadow-primary-500/50'
+                : 'border-slate-600 bg-slate-700 hover:border-slate-500'
+            }
+            ${key.category === 'modifiers' ? 'border-cyan-500/50' : ''}
+            ${key.category === 'special' ? 'border-purple-500/50' : ''}
+            ${key.category === 'layers' ? 'border-yellow-500/50' : ''}
+            ${key.category === 'macro' ? 'border-green-500/50' : ''}
+            ${key.category === 'media' ? 'border-pink-500/50' : ''}
+          `}
+          title={key.description || key.id}
+        >
+          {/* Key label (main) */}
+          <div className="text-sm font-bold text-white font-mono">
+            {key.label}
+          </div>
+          {/* Key ID (small, below) */}
+          {key.id !== key.label && (
+            <div className="text-[9px] text-slate-400 mt-0.5 font-mono">
+              {key.id}
+            </div>
+          )}
+        </button>
+        {/* Star button */}
+        {showStar && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite(key.id);
+            }}
+            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            title={favorite ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Star
+              className={`w-3 h-3 ${
+                favorite
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'text-slate-400 hover:text-yellow-400'
+              }`}
+            />
+          </button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Card className="h-full flex flex-col">
       <h3 className="text-lg font-semibold text-slate-100 mb-4">Key Palette</h3>
+
+      {/* Favorites Section */}
+      {favoriteKeys.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+            <h4 className="text-sm font-semibold text-slate-300">Favorites</h4>
+          </div>
+          <div className="grid grid-cols-8 gap-2 p-3 bg-slate-800/50 rounded-lg">
+            {favoriteKeys.map(key => renderKeyItem(key, () => handleKeySelect(key), true))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Keys Section */}
+      {recentKeys.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-4 h-4 text-slate-400" />
+            <h4 className="text-sm font-semibold text-slate-300">Recent</h4>
+          </div>
+          <div className="grid grid-cols-8 gap-2 p-3 bg-slate-800/50 rounded-lg">
+            {recentKeys.map(key => renderKeyItem(key, () => handleKeySelect(key), true))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state when no favorites or recent */}
+      {favoriteKeys.length === 0 && recentKeys.length === 0 && !searchQuery && (
+        <div className="mb-4 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+          <p className="text-xs text-slate-500 text-center">
+            Star keys to add favorites. Recent keys will appear automatically.
+          </p>
+        </div>
+      )}
 
       {/* Search Input */}
       <div className="relative mb-4">
@@ -510,7 +706,7 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
                   <button
                     key={`search-${result.key.id}`}
                     onClick={() => {
-                      onKeySelect({
+                      handleKeySelect({
                         id: result.key.id,
                         label: result.key.label,
                         category: result.key.category,
@@ -590,40 +786,7 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
           </div>
         ) : (
           <div className="grid grid-cols-8 gap-2 p-4 bg-slate-800/50 rounded-lg">
-            {activeKeys.map(key => (
-              <button
-                key={`${key.id}-${key.category}`}
-                onClick={() => onKeySelect(key)}
-                className={`
-                  relative flex flex-col items-center justify-center
-                  min-h-[50px] px-2 py-2
-                  rounded border transition-all
-                  hover:brightness-110 hover:-translate-y-0.5 hover:shadow-lg
-                  ${
-                    selectedKey?.id === key.id
-                      ? 'border-primary-500 bg-primary-500/20 shadow-lg shadow-primary-500/50'
-                      : 'border-slate-600 bg-slate-700 hover:border-slate-500'
-                  }
-                  ${key.category === 'modifiers' ? 'border-cyan-500/50' : ''}
-                  ${key.category === 'special' ? 'border-purple-500/50' : ''}
-                  ${key.category === 'layers' ? 'border-yellow-500/50' : ''}
-                  ${key.category === 'macro' ? 'border-green-500/50' : ''}
-                  ${key.category === 'media' ? 'border-pink-500/50' : ''}
-                `}
-                title={key.description || key.id}
-              >
-                {/* Key label (main) */}
-                <div className="text-sm font-bold text-white font-mono">
-                  {key.label}
-                </div>
-                {/* Key ID (small, below) */}
-                {key.id !== key.label && (
-                  <div className="text-[9px] text-slate-400 mt-0.5 font-mono">
-                    {key.id}
-                  </div>
-                )}
-              </button>
-            ))}
+            {activeKeys.map(key => renderKeyItem(key, () => handleKeySelect(key), true))}
           </div>
         )}
       </div>

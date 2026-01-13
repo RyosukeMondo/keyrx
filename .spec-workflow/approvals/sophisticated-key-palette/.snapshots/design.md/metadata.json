@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/sophisticated-key-palette/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-01-13T16:45:09.911Z",
+      "trigger": "initial",
+      "approvalId": "approval_1768322709885_wgw8ht33x",
+      "approvalTitle": "Design Document - Sophisticated Key Palette"
+    }
+  ]
+}
