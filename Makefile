@@ -25,6 +25,9 @@ verify: ## Run all quality checks (clippy, fmt, tests, coverage)
 test: ## Run all tests
 	@scripts/test.sh
 
+test-fast: ## Run tests with nextest (faster, parallel execution)
+	@scripts/test.sh --nextest
+
 launch: ## Launch the keyrx_daemon
 	@scripts/launch.sh
 
@@ -49,6 +52,7 @@ setup-quick: ## Quick setup (no sudo, Cargo tools only)
 	@command -v cargo-watch >/dev/null 2>&1 || cargo install cargo-watch
 	@command -v cargo-llvm-cov >/dev/null 2>&1 || cargo install cargo-llvm-cov
 	@command -v cargo-fuzz >/dev/null 2>&1 || cargo install cargo-fuzz
+	@command -v cargo-nextest >/dev/null 2>&1 || cargo install cargo-nextest --locked
 	@command -v wasm-pack >/dev/null 2>&1 || cargo install wasm-pack
 	@echo "Installing git hooks..."
 	@scripts/setup_hooks.sh

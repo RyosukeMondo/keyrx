@@ -48,7 +48,7 @@ CHECKS PERFORMED (in order):
     1. Build         - cargo build --workspace
     2. Clippy        - cargo clippy --workspace -- -D warnings
     3. Format        - cargo fmt --check
-    4. Tests         - cargo test --workspace --lib --bins --tests
+    4. Tests         - cargo nextest run (or cargo test if nextest unavailable)
     5. Coverage      - cargo llvm-cov (80% minimum overall, 90% keyrx_core)
     6. UI Tests      - npm test --coverage (80% minimum)
     7. E2E Tests     - npm run test:e2e (Playwright)
@@ -141,14 +141,29 @@ check_test() {
     # Skip doctests due to workspace dependency bug (rustdoc can't resolve keyrx_core versions)
     # Run: lib tests (unit), binary tests, integration tests
     # Doctests can be run separately with: cargo test --workspace --doc
-    if cargo test --workspace --lib --bins --tests 2>&1; then
-        CHECK_RESULTS["test"]="PASS"
-        log_info "Test check: PASS"
-        return 0
+
+    # Use nextest if available for faster, parallel execution
+    if cargo nextest --version >/dev/null 2>&1; then
+        log_info "Using cargo-nextest for faster test execution"
+        if cargo nextest run --workspace --profile ci 2>&1; then
+            CHECK_RESULTS["test"]="PASS"
+            log_info "Test check: PASS"
+            return 0
+        else
+            CHECK_RESULTS["test"]="FAIL"
+            log_error "Test check: FAIL"
+            return 1
+        fi
     else
-        CHECK_RESULTS["test"]="FAIL"
-        log_error "Test check: FAIL"
-        return 1
+        if cargo test --workspace --lib --bins --tests 2>&1; then
+            CHECK_RESULTS["test"]="PASS"
+            log_info "Test check: PASS"
+            return 0
+        else
+            CHECK_RESULTS["test"]="FAIL"
+            log_error "Test check: FAIL"
+            return 1
+        fi
     fi
 }
 

@@ -21,6 +21,7 @@ INTEGRATION_MODE=false
 FUZZ_DURATION=""
 BENCH_MODE=false
 COVERAGE_MODE=false
+USE_NEXTEST=false
 
 # Usage information
 usage() {
@@ -35,6 +36,7 @@ OPTIONS:
     --fuzz DURATION     Run fuzz tests for DURATION seconds (requires cargo-fuzz)
     --bench             Run benchmarks (requires nightly toolchain)
     --coverage          Run tests with coverage analysis (requires cargo-tarpaulin)
+    --nextest           Use cargo-nextest for faster test execution (recommended)
     --error             Show only errors
     --json              Output results in JSON format
     --quiet             Suppress non-error output
@@ -45,6 +47,8 @@ EXAMPLES:
     $(basename "$0")                    # Run all tests
     $(basename "$0") --unit             # Unit tests only
     $(basename "$0") --integration      # Integration tests only
+    $(basename "$0") --nextest          # Use nextest for faster execution
+    $(basename "$0") --nextest --unit   # Fast unit tests with nextest
     $(basename "$0") --fuzz 60          # Fuzz for 60 seconds
     $(basename "$0") --bench            # Run benchmarks
     $(basename "$0") --coverage         # Run with coverage analysis
@@ -95,6 +99,10 @@ while [[ $# -gt 0 ]]; do
             COVERAGE_MODE=true
             shift
             ;;
+        --nextest)
+            USE_NEXTEST=true
+            shift
+            ;;
         *)
             log_error "Unknown option: $1"
             echo ""
@@ -143,6 +151,16 @@ elif [[ "$COVERAGE_MODE" == "true" ]]; then
     TEST_MODE="coverage"
 else
     require_tool "cargo" "Install Rust from https://rustup.rs"
+
+    # Check if nextest should be used
+    if [[ "$USE_NEXTEST" == "true" ]]; then
+        if ! cargo nextest --version >/dev/null 2>&1; then
+            log_error "cargo-nextest not found"
+            log_error "Install with: cargo install cargo-nextest"
+            exit 2
+        fi
+        TEST_MODE="nextest"
+    fi
 fi
 
 # Main execution
@@ -155,7 +173,12 @@ EXIT_CODE=0
 
 if [[ "$UNIT_MODE" == "true" ]]; then
     log_info "Running unit tests..."
-    TEST_COMMAND="cargo test --lib --workspace"
+
+    if [[ "$USE_NEXTEST" == "true" ]]; then
+        TEST_COMMAND="cargo nextest run --lib --workspace"
+    else
+        TEST_COMMAND="cargo test --lib --workspace"
+    fi
 
     if [[ "$QUIET_MODE" == "true" ]] || [[ "$HAS_TTY" == "false" ]]; then
         TEST_OUTPUT=$($TEST_COMMAND 2>&1)
@@ -170,7 +193,13 @@ if [[ "$UNIT_MODE" == "true" ]]; then
 
 elif [[ "$INTEGRATION_MODE" == "true" ]]; then
     log_info "Running integration tests..."
-    TEST_COMMAND="cargo test --test '*' --workspace"
+
+    if [[ "$USE_NEXTEST" == "true" ]]; then
+        # Nextest filters integration tests with --test flag
+        TEST_COMMAND="cargo nextest run --workspace --tests"
+    else
+        TEST_COMMAND="cargo test --test '*' --workspace"
+    fi
 
     if [[ "$QUIET_MODE" == "true" ]] || [[ "$HAS_TTY" == "false" ]]; then
         TEST_OUTPUT=$($TEST_COMMAND 2>&1)
@@ -276,7 +305,12 @@ elif [[ "$COVERAGE_MODE" == "true" ]]; then
 else
     # Run all tests (default)
     log_info "Running all tests..."
-    TEST_COMMAND="cargo test --workspace"
+
+    if [[ "$USE_NEXTEST" == "true" ]]; then
+        TEST_COMMAND="cargo nextest run --workspace"
+    else
+        TEST_COMMAND="cargo test --workspace"
+    fi
 
     if [[ "$QUIET_MODE" == "true" ]] || [[ "$HAS_TTY" == "false" ]]; then
         TEST_OUTPUT=$($TEST_COMMAND 2>&1)
@@ -292,17 +326,33 @@ fi
 
 # Parse test results from output
 if [[ "$TEST_MODE" != "fuzz" ]] && [[ "$TEST_MODE" != "bench" ]] && [[ "$TEST_MODE" != "coverage" ]]; then
-    # Extract passed/failed counts from cargo test output
-    # Format: "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
-    if echo "$TEST_OUTPUT" | grep -q "test result:"; then
-        PASSED_LINE=$(echo "$TEST_OUTPUT" | grep "test result:" | tail -n 1)
+    if [[ "$TEST_MODE" == "nextest" ]]; then
+        # Parse nextest output
+        # Format: "Summary [ 10.517s] 674 tests run: 674 passed, 11 skipped"
+        if echo "$TEST_OUTPUT" | grep -q "Summary"; then
+            SUMMARY_LINE=$(echo "$TEST_OUTPUT" | grep "Summary" | tail -n 1)
 
-        if echo "$PASSED_LINE" | grep -q "passed"; then
-            TESTS_PASSED=$(echo "$PASSED_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
+            if echo "$SUMMARY_LINE" | grep -q "passed"; then
+                TESTS_PASSED=$(echo "$SUMMARY_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
+            fi
+
+            if echo "$SUMMARY_LINE" | grep -q "failed"; then
+                TESTS_FAILED=$(echo "$SUMMARY_LINE" | sed -n 's/.*\([0-9]\+\) failed.*/\1/p')
+            fi
         fi
+    else
+        # Extract passed/failed counts from cargo test output
+        # Format: "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+        if echo "$TEST_OUTPUT" | grep -q "test result:"; then
+            PASSED_LINE=$(echo "$TEST_OUTPUT" | grep "test result:" | tail -n 1)
 
-        if echo "$PASSED_LINE" | grep -q "failed"; then
-            TESTS_FAILED=$(echo "$PASSED_LINE" | sed -n 's/.*\([0-9]\+\) failed.*/\1/p')
+            if echo "$PASSED_LINE" | grep -q "passed"; then
+                TESTS_PASSED=$(echo "$PASSED_LINE" | sed -n 's/.*\([0-9]\+\) passed.*/\1/p')
+            fi
+
+            if echo "$PASSED_LINE" | grep -q "failed"; then
+                TESTS_FAILED=$(echo "$PASSED_LINE" | sed -n 's/.*\([0-9]\+\) failed.*/\1/p')
+            fi
         fi
     fi
 fi

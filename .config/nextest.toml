@@ -1,0 +1,60 @@
+# Nextest configuration for optimized test execution
+# https://nexte.st/book/configuration.html
+
+[profile.default]
+# Run tests in parallel (75% of available CPUs for optimal performance)
+# This leaves 25% for system overhead and prevents resource contention
+test-threads = "num-cpus"
+
+# Retry failed tests once to catch flaky tests
+retries = { backoff = "fixed", count = 1, delay = "1s" }
+
+# Timeout settings
+slow-timeout = { period = "60s", terminate-after = 2 }
+leak-timeout = "100ms"
+
+# Test output configuration
+status-level = "pass"
+final-status-level = "fail"
+failure-output = "immediate-final"
+success-output = "never"
+
+# Archive test failures for debugging
+# Note: archiving is done via CLI flags, not config
+
+[profile.ci]
+# CI-optimized profile with stricter settings
+retries = 0  # No retries in CI, fail fast
+slow-timeout = { period = "30s", terminate-after = 1 }
+failure-output = "immediate"
+success-output = "never"
+
+# Use all available CPUs in CI
+test-threads = "num-cpus"
+
+[profile.fast]
+# Fast profile for local development
+# Skip slow tests by default
+filter = 'not test(slow)'
+retries = 0
+test-threads = "num-cpus"
+
+[profile.slow]
+# Profile for running slow tests only
+filter = 'test(slow)'
+retries = 0
+test-threads = 1  # Run slow tests sequentially
+
+# Mark slow tests explicitly
+[[profile.default.overrides]]
+filter = 'test(timeout)'
+slow-timeout = { period = "120s" }
+
+[[profile.default.overrides]]
+filter = 'test(prop_)'
+slow-timeout = { period = "30s" }
+
+# Sequential execution for tests that can't run in parallel
+[[profile.default.overrides]]
+filter = 'test(unix_socket) or test(event_broadcasting) or test(rpc_api)'
+threads-required = 1

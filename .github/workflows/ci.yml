@@ -123,6 +123,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
@@ -135,6 +136,17 @@ jobs:
           key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
+
+      - name: Install cargo-nextest (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          if ! cargo nextest --version &> /dev/null; then
+            echo "Installing cargo-nextest..."
+            cargo install cargo-nextest --locked
+          else
+            echo "cargo-nextest already installed (from cache)"
+            cargo nextest --version
+          fi
 
       - name: Install wasm-pack (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
