@@ -107,7 +107,7 @@ General UI/UX improvements for the KeyRX Web UI excluding key palette (separate 
 
 ## Task 7: Add Visual Feedback Improvements
 
-- [ ] 7.1 Add hover states and tooltips to keyboard visualizer
+- [x] 7.1 Add hover states and tooltips to keyboard visualizer
   - File: `keyrx_ui/src/components/KeyboardVisualizer.tsx`, `KeyButton.tsx`
   - Hover: Show tooltip with key info and current mapping
   - Click feedback: Brief highlight animation
