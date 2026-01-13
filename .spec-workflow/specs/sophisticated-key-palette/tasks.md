@@ -104,7 +104,7 @@ Sources:
   - _Requirements: Rich visual display with icons and tooltips_
   - _Prompt: Implement the task for spec sophisticated-key-palette, first run spec-workflow-guide to get the workflow guide then implement the task: Role: UI Component Developer | Task: Create KeyPaletteItem component with icon slot, label, sublabel, and tooltip. Add Lucide icons per category. Color-code borders/backgrounds by category. Show description on hover. | Restrictions: Keep items compact (44px min touch target), use existing icon library | Success: Keys display with icons, colors, and informative tooltips | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
 
-- [ ] 4.2 Add grid/list view toggle
+- [x] 4.2 Add grid/list view toggle
   - File: `keyrx_ui/src/components/KeyPalette.tsx`
   - Grid view: Compact 4-column layout (current)
   - List view: Single column with full descriptions
