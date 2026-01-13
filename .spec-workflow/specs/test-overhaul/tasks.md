@@ -83,7 +83,7 @@ Comprehensive overhaul of test infrastructure: fix failing tests, improve test p
 
 ## Task 3: Improve Test Productivity
 
-- [ ] 3.1 Reduce unit test timeout and add slow test warnings
+- [x] 3.1 Reduce unit test timeout and add slow test warnings
   - File: `keyrx_ui/vitest.unit.config.ts`
   - Reduce timeout from 5000ms to 3000ms
   - Add slowTestThreshold: 1000ms (warn if test > 1s)

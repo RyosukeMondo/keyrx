@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { baseConfig } from './vitest.config.base';
+import { SlowTestReporter } from './vitest-slow-test-reporter';
 
 // Unit test configuration - fast, focused tests for individual components and functions.
 //
@@ -14,8 +15,9 @@ import { baseConfig } from './vitest.config.base';
 //   - Performance tests (tests/performance/**)
 //
 // Timeouts:
-//   - Test timeout: 5000ms (fast feedback)
-//   - Hook timeout: 3000ms
+//   - Test timeout: 3000ms (fast feedback, reduced from 5000ms)
+//   - Hook timeout: 2000ms (reduced from 3000ms)
+//   - Slow test threshold: 1000ms (warns if test exceeds this)
 export default mergeConfig(
   baseConfig,
   defineConfig({
@@ -38,8 +40,13 @@ export default mergeConfig(
         // Performance tests
         'tests/performance/**',
       ],
-      testTimeout: 5000,
-      hookTimeout: 3000,
+      testTimeout: 3000,
+      hookTimeout: 2000,
+      slowTestThreshold: 1000,
+      reporters: [
+        'default',
+        new SlowTestReporter(1000),
+      ],
     },
   })
 );
