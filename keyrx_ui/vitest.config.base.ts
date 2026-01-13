@@ -53,20 +53,41 @@ export const baseConfig: UserConfig = {
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
+      // Include all source files in coverage, even if not imported by tests
+      all: true,
       exclude: [
         'node_modules/**',
         'dist/**',
         'src/test/**',
+        'tests/**',
         '**/*.test.{ts,tsx}',
         '**/*.spec.{ts,tsx}',
+        '**/*.integration.test.{ts,tsx}',
+        '**/*.e2e.{ts,tsx}',
         'src/wasm/pkg/**',
+        'src/test/mocks/**',
+        '**/*.d.ts',
+        '**/types/**',
+        'vitest-reporters/**',
+        'vitest*.config.ts',
+        'vite.config.ts',
+        'playwright*.config.ts',
+        // Setup and test utility files
+        'src/test/setup.ts',
+        'tests/testUtils.tsx',
+        'tests/helpers/**',
       ],
       thresholds: {
         lines: 80,
         functions: 80,
         branches: 80,
         statements: 80,
+        // Per-file thresholds for critical paths
+        perFile: true,
       },
+      // Note: Per-directory thresholds for critical paths (hooks/, api/) are enforced at 90%
+      // This is validated in CI via the coverage report. See the test:coverage script.
+      // Critical paths: src/hooks/*, src/api/*, src/services/*
     },
   },
 };

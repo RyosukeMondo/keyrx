@@ -145,7 +145,7 @@ Comprehensive overhaul of test infrastructure: fix failing tests, improve test p
 
 ## Task 5: Improve Test Coverage
 
-- [ ] 5.1 Fix coverage collection to complete successfully
+- [-] 5.1 Fix coverage collection to complete successfully
   - File: `keyrx_ui/vitest.config.base.ts`
   - Ensure coverage runs with passing tests
   - Configure coverage exclusions (test files, mocks, types)
