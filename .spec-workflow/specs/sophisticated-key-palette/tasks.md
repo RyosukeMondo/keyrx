@@ -20,7 +20,7 @@ Sources:
 
 ## Task 1: Redesign Key Palette Categories
 
-- [-] 1.1 Implement VIA-style category structure
+- [x] 1.1 Implement VIA-style category structure
   - File: `keyrx_ui/src/components/KeyPalette.tsx`
   - Categories: Basic, Modifiers, Media, Macro, Layers, Special, Any
   - Basic: Letters A-Z, Numbers 0-9, Punctuation, Navigation
