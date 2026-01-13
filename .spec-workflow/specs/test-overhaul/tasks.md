@@ -182,13 +182,14 @@ Comprehensive overhaul of test infrastructure: fix failing tests, improve test p
 
 ## Task 6: Backend Test Improvements
 
-- [ ] 6.1 Add Rust test coverage with tarpaulin
+- [x] 6.1 Add Rust test coverage with tarpaulin
   - File: `scripts/test.sh`, `.github/workflows/ci.yml`
   - Install cargo-tarpaulin in CI
   - Add `--coverage` flag to test.sh
   - Set 80% threshold for keyrx_core, keyrx_compiler
   - Generate HTML and lcov reports
   - Purpose: Backend coverage visibility
+  - Solution: Added --coverage flag to test.sh with tarpaulin integration. Coverage analysis targets keyrx_core and keyrx_compiler only (excludes daemon). Generates HTML and LCOV reports. Current baseline: 67.87% coverage. CI job added with tarpaulin installation and coverage artifact upload.
   - _Leverage: cargo-tarpaulin documentation_
   - _Requirements: Backend coverage measured and reported_
   - _Prompt: Implement the task for spec test-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust CI Engineer | Task: Add tarpaulin to CI: Install via cargo install. Run with --out Html,Lcov. Add coverage threshold check (80% keyrx_core). Upload coverage artifact. Add --coverage flag to test.sh. | Restrictions: Don't block CI on daemon coverage (platform-specific) | Success: Backend coverage visible in CI artifacts | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
