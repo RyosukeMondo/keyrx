@@ -122,7 +122,7 @@ General UI/UX improvements for the KeyRX Web UI excluding key palette (separate 
 
 ## Task 8: Unit Tests for Layout Changes
 
-- [ ] 8.1 Add tests for new layout components
+- [x] 8.1 Add tests for new layout components
   - File: `keyrx_ui/src/__tests__/ConfigPage.layout.test.tsx` (create)
   - Test dual-pane layout renders correctly
   - Test responsive breakpoint behavior
