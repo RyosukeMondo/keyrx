@@ -112,14 +112,16 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   useEffect(() => {
     const ast = syncEngine.getAST();
     if (!ast) {
-      // No AST yet, just use connected devices
+      // No AST yet, just use connected devices (filter out disabled devices)
       setMergedDevices(
-        devicesData?.map((d) => ({
-          id: d.id,
-          name: d.name,
-          serial: d.serial || undefined,
-          connected: true,
-        })) || []
+        devicesData
+          ?.filter((d) => d.enabled !== false) // Exclude disabled devices
+          .map((d) => ({
+            id: d.id,
+            name: d.name,
+            serial: d.serial || undefined,
+            connected: true,
+          })) || []
       );
       return;
     }
@@ -127,13 +129,15 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     // Extract device patterns from Rhai script
     const devicePatternsInRhai = extractDevicePatterns(ast);
 
-    // Create a map of connected devices by serial/name/id
+    // Create a map of connected devices by serial/name/id (filter out disabled devices)
     const connectedDeviceMap = new Map<string, NonNullable<typeof devicesData>[number]>();
-    devicesData?.forEach((device) => {
-      if (device.serial) connectedDeviceMap.set(device.serial, device);
-      connectedDeviceMap.set(device.name, device);
-      connectedDeviceMap.set(device.id, device);
-    });
+    devicesData
+      ?.filter((device) => device.enabled !== false) // Exclude disabled devices
+      .forEach((device) => {
+        if (device.serial) connectedDeviceMap.set(device.serial, device);
+        connectedDeviceMap.set(device.name, device);
+        connectedDeviceMap.set(device.id, device);
+      });
 
     // Build merged device list
     const merged: Device[] = [];
@@ -165,22 +169,24 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       }
     });
 
-    // Add connected devices not in Rhai
-    devicesData?.forEach((device) => {
-      const isInRhai =
-        devicePatternsInRhai.includes(device.serial || '') ||
-        devicePatternsInRhai.includes(device.name) ||
-        devicePatternsInRhai.includes(device.id);
+    // Add connected devices not in Rhai (filter out disabled devices)
+    devicesData
+      ?.filter((device) => device.enabled !== false) // Exclude disabled devices
+      .forEach((device) => {
+        const isInRhai =
+          devicePatternsInRhai.includes(device.serial || '') ||
+          devicePatternsInRhai.includes(device.name) ||
+          devicePatternsInRhai.includes(device.id);
 
-      if (!isInRhai) {
-        merged.push({
-          id: device.id,
-          name: device.name,
-          serial: device.serial || undefined,
-          connected: true,
-        });
-      }
-    });
+        if (!isInRhai) {
+          merged.push({
+            id: device.id,
+            name: device.name,
+            serial: device.serial || undefined,
+            connected: true,
+          });
+        }
+      });
 
     setMergedDevices(merged);
 
@@ -478,9 +484,10 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-700">
+      <div className="flex gap-2 border-b border-slate-700" data-testid="editor-tabs">
         <button
           onClick={() => setActiveTab('visual')}
+          data-testid="tab-visual"
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'visual'
               ? 'text-primary-400 border-b-2 border-primary-400'
@@ -491,6 +498,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('code')}
+          data-testid="tab-code"
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'code'
               ? 'text-primary-400 border-b-2 border-primary-400'
@@ -678,13 +686,15 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
             </div>
           )}
 
-          <Card variant="default" padding="lg">
-            <SimpleCodeEditor
-              value={syncEngine.getCode()}
-              onChange={(value) => syncEngine.onCodeChange(value)}
-              height="600px"
-              language="javascript"
-            />
+          <Card variant="default" padding="lg" data-testid="code-editor-card">
+            <div data-testid="code-editor">
+              <SimpleCodeEditor
+                value={syncEngine.getCode()}
+                onChange={(value) => syncEngine.onCodeChange(value)}
+                height="600px"
+                language="javascript"
+              />
+            </div>
           </Card>
         </div>
       )}
