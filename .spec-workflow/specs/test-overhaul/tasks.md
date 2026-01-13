@@ -249,7 +249,7 @@ Comprehensive overhaul of test infrastructure: fix failing tests, improve test p
   - _Requirements: CI completes in ≤30 minutes_
   - _Prompt: Implement the task for spec test-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: GitHub Actions Optimizer | Task: Optimize ci.yml: Add matrix strategy for frontend tests (3 shards). Run accessibility tests in parallel with unit tests. Add concurrency limits. Merge coverage from shards. Target 30min total. | Restrictions: Keep quality gates, don't skip tests | Success: CI completes in ≤30 minutes | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
 
-- [ ] 8.2 Add test result caching
+- [-] 8.2 Add test result caching
   - File: `.github/workflows/ci.yml`
   - Cache Vitest results for unchanged files
   - Cache Playwright browser binaries

@@ -130,8 +130,9 @@ jobs:
             ~/.cargo/git
             ~/.cargo/bin
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
             ${{ runner.os }}-cargo-
 
       - name: Cache npm
@@ -299,6 +300,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
+      - name: Cache Vitest
+        uses: actions/cache@v3
+        with:
+          path: |
+            keyrx_ui/node_modules/.vitest
+            keyrx_ui/.vitest
+          key: ${{ runner.os }}-vitest-${{ hashFiles('keyrx_ui/package-lock.json') }}-${{ hashFiles('keyrx_ui/vitest*.config.ts') }}-${{ hashFiles('keyrx_ui/src/**/*.{ts,tsx}') }}
+          restore-keys: |
+            ${{ runner.os }}-vitest-${{ hashFiles('keyrx_ui/package-lock.json') }}-${{ hashFiles('keyrx_ui/vitest*.config.ts') }}-
+            ${{ runner.os }}-vitest-${{ hashFiles('keyrx_ui/package-lock.json') }}-
+            ${{ runner.os }}-vitest-
+
       - name: Install dependencies
         working-directory: keyrx_ui
         run: npm ci
@@ -342,6 +355,17 @@ jobs:
           key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
+
+      - name: Cache Vitest
+        uses: actions/cache@v3
+        with:
+          path: |
+            keyrx_ui/node_modules/.vitest
+            keyrx_ui/.vitest
+          key: ${{ runner.os }}-vitest-a11y-${{ hashFiles('keyrx_ui/package-lock.json') }}-${{ hashFiles('keyrx_ui/vitest*.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-vitest-a11y-${{ hashFiles('keyrx_ui/package-lock.json') }}-
+            ${{ runner.os }}-vitest-a11y-
 
       - name: Install dependencies
         working-directory: keyrx_ui
@@ -396,6 +420,17 @@ jobs:
           key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
+
+      - name: Cache Vitest
+        uses: actions/cache@v3
+        with:
+          path: |
+            keyrx_ui/node_modules/.vitest
+            keyrx_ui/.vitest
+          key: ${{ runner.os }}-vitest-coverage-${{ hashFiles('keyrx_ui/package-lock.json') }}-${{ hashFiles('keyrx_ui/vitest*.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-vitest-coverage-${{ hashFiles('keyrx_ui/package-lock.json') }}-
+            ${{ runner.os }}-vitest-coverage-
 
       - name: Install dependencies
         working-directory: keyrx_ui
@@ -503,8 +538,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-e2e-playwright-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-e2e-playwright-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
+            ${{ runner.os }}-cargo-e2e-playwright-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-e2e-playwright-
             ${{ runner.os }}-cargo-
 
       - name: Build daemon
@@ -517,9 +554,24 @@ jobs:
         working-directory: keyrx_ui
         run: npm ci
 
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('keyrx_ui/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: keyrx_ui
         run: npx playwright install chromium --with-deps
+
+      - name: Install Playwright dependencies (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: keyrx_ui
+        run: npx playwright install-deps chromium
 
       - name: Setup test environment
         run: |
@@ -591,7 +643,11 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-test-docs-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-test-docs-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-test-docs-
+            ${{ runner.os }}-cargo-
 
       - name: Build Compiler
         run: cargo build --release -p keyrx_compiler
@@ -646,7 +702,11 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-e2e-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-e2e-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-e2e-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-e2e-
+            ${{ runner.os }}-cargo-
 
       - name: Setup uinput permissions
         run: |
@@ -714,8 +774,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-contract-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-contract-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
+            ${{ runner.os }}-cargo-contract-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-contract-
             ${{ runner.os }}-cargo-
 
       - name: Build daemon
