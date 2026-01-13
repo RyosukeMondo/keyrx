@@ -63,7 +63,7 @@ Sources:
   - _Requirements: Fuzzy search across all key metadata_
   - _Prompt: Implement the task for spec sophisticated-key-palette, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Search UX Developer | Task: Implement fuzzy search using simple scoring algorithm. Search across id, label, description, aliases. Highlight matches with <mark> tags. Show result count. Add keyboard navigation (arrow keys, enter to select). | Restrictions: No external fuzzy library, keep bundle small | Success: Typing "ctrl" shows all control-related keys with highlights | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
 
-- [-] 2.2 Add recent/favorite keys section
+- [x] 2.2 Add recent/favorite keys section
   - File: `keyrx_ui/src/components/KeyPalette.tsx`
   - "Recent" section: Last 10 used keys (persisted to localStorage)
   - "Favorites" section: User-pinned keys (star button)
