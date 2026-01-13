@@ -93,7 +93,7 @@ Sources:
 
 ## Task 4: Enhance Visual Key Display
 
-- [ ] 4.1 Add key icons and visual hierarchy
+- [x] 4.1 Add key icons and visual hierarchy
   - File: `keyrx_ui/src/components/KeyPalette.tsx`, new `KeyPaletteItem.tsx`
   - Key items show: icon (optional), label, secondary label (alias)
   - Category-specific icons: keyboard for basic, layers icon for layers
