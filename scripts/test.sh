@@ -20,6 +20,7 @@ UNIT_MODE=false
 INTEGRATION_MODE=false
 FUZZ_DURATION=""
 BENCH_MODE=false
+COVERAGE_MODE=false
 
 # Usage information
 usage() {
@@ -33,6 +34,7 @@ OPTIONS:
     --integration       Run only integration tests (tests/ directory)
     --fuzz DURATION     Run fuzz tests for DURATION seconds (requires cargo-fuzz)
     --bench             Run benchmarks (requires nightly toolchain)
+    --coverage          Run tests with coverage analysis (requires cargo-tarpaulin)
     --error             Show only errors
     --json              Output results in JSON format
     --quiet             Suppress non-error output
@@ -45,6 +47,7 @@ EXAMPLES:
     $(basename "$0") --integration      # Integration tests only
     $(basename "$0") --fuzz 60          # Fuzz for 60 seconds
     $(basename "$0") --bench            # Run benchmarks
+    $(basename "$0") --coverage         # Run with coverage analysis
     $(basename "$0") --json             # JSON output
 
 EXIT CODES:
@@ -88,6 +91,10 @@ while [[ $# -gt 0 ]]; do
             BENCH_MODE=true
             shift
             ;;
+        --coverage)
+            COVERAGE_MODE=true
+            shift
+            ;;
         *)
             log_error "Unknown option: $1"
             echo ""
@@ -126,6 +133,14 @@ elif [[ "$BENCH_MODE" == "true" ]]; then
         exit 1
     fi
     TEST_MODE="bench"
+elif [[ "$COVERAGE_MODE" == "true" ]]; then
+    require_tool "cargo" "Install Rust from https://rustup.rs"
+    if ! cargo tarpaulin --version >/dev/null 2>&1; then
+        log_error "cargo-tarpaulin not found"
+        log_error "Install with: cargo install cargo-tarpaulin"
+        exit 2
+    fi
+    TEST_MODE="coverage"
 else
     require_tool "cargo" "Install Rust from https://rustup.rs"
 fi
@@ -213,6 +228,51 @@ elif [[ "$BENCH_MODE" == "true" ]]; then
         echo "$TEST_OUTPUT" >> "$LOG_FILE"
     fi
 
+elif [[ "$COVERAGE_MODE" == "true" ]]; then
+    log_info "Running tests with coverage analysis..."
+
+    # Run tarpaulin with HTML and lcov output
+    # Test keyrx_core and keyrx_compiler only (80% threshold)
+    # Exclude daemon due to platform-specific code that can't be tested in all CI environments
+    TEST_COMMAND="cargo tarpaulin -p keyrx_core -p keyrx_compiler --out Html --out Lcov --output-dir coverage --line --ignore-tests --timeout 300"
+
+    log_info "Analyzing coverage for keyrx_core and keyrx_compiler..."
+    log_info "Coverage threshold: 80%"
+
+    if [[ "$QUIET_MODE" == "true" ]] || [[ "$HAS_TTY" == "false" ]]; then
+        TEST_OUTPUT=$(cargo tarpaulin -p keyrx_core -p keyrx_compiler --out Html --out Lcov --output-dir coverage --line --ignore-tests --timeout 300 2>&1)
+    else
+        TEST_OUTPUT=$(cargo tarpaulin -p keyrx_core -p keyrx_compiler --out Html --out Lcov --output-dir coverage --line --ignore-tests --timeout 300 2>&1 | tee /dev/tty)
+    fi
+    EXIT_CODE=$?
+
+    if [[ -n "$LOG_FILE" ]]; then
+        echo "$TEST_OUTPUT" >> "$LOG_FILE"
+    fi
+
+    # Parse coverage percentage from output
+    if [[ $EXIT_CODE -eq 0 ]]; then
+        # Extract overall coverage percentage (last occurrence)
+        COVERAGE_PCT=$(echo "$TEST_OUTPUT" | grep -oP '\d+\.\d+%' | tail -1 | sed 's/%//')
+
+        if [[ -n "$COVERAGE_PCT" ]]; then
+            log_info "Overall coverage: ${COVERAGE_PCT}%"
+
+            # Check if coverage meets 80% threshold
+            if (( $(echo "$COVERAGE_PCT < 80.0" | bc -l) )); then
+                log_error "Coverage ${COVERAGE_PCT}% is below 80% threshold"
+                log_info "Note: Current baseline is ~68%. Additional tests needed to reach 80%."
+                EXIT_CODE=1
+            else
+                log_info "Coverage ${COVERAGE_PCT}% meets 80% threshold ✓"
+            fi
+        fi
+
+        log_info "Coverage reports generated in coverage/ directory"
+        log_info "  - HTML report: coverage/index.html"
+        log_info "  - LCOV report: coverage/lcov.info"
+    fi
+
 else
     # Run all tests (default)
     log_info "Running all tests..."
@@ -231,7 +291,7 @@ else
 fi
 
 # Parse test results from output
-if [[ "$TEST_MODE" != "fuzz" ]] && [[ "$TEST_MODE" != "bench" ]]; then
+if [[ "$TEST_MODE" != "fuzz" ]] && [[ "$TEST_MODE" != "bench" ]] && [[ "$TEST_MODE" != "coverage" ]]; then
     # Extract passed/failed counts from cargo test output
     # Format: "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
     if echo "$TEST_OUTPUT" | grep -q "test result:"; then
@@ -255,6 +315,8 @@ if [[ $EXIT_CODE -eq 0 ]]; then
         log_info "Fuzz testing completed (${FUZZ_DURATION}s)"
     elif [[ "$TEST_MODE" == "bench" ]]; then
         log_info "Benchmarks completed"
+    elif [[ "$TEST_MODE" == "coverage" ]]; then
+        log_info "Coverage analysis completed"
     else
         log_info "Tests completed: $TESTS_PASSED passed, $TESTS_FAILED failed"
     fi
@@ -274,6 +336,8 @@ else
         log_error "Fuzz testing failed"
     elif [[ "$TEST_MODE" == "bench" ]]; then
         log_error "Benchmarks failed"
+    elif [[ "$TEST_MODE" == "coverage" ]]; then
+        log_error "Coverage analysis failed or coverage below threshold"
     else
         log_error "Tests failed: $TESTS_PASSED passed, $TESTS_FAILED failed"
     fi

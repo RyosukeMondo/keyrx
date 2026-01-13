@@ -182,6 +182,34 @@ jobs:
           chmod +x scripts/fix_doc_tests.sh
           scripts/fix_doc_tests.sh
 
+      - name: Install cargo-tarpaulin (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          if ! cargo tarpaulin --version &> /dev/null; then
+            echo "Installing cargo-tarpaulin..."
+            cargo install cargo-tarpaulin
+          else
+            echo "cargo-tarpaulin already installed (from cache)"
+            cargo tarpaulin --version
+          fi
+
+      - name: Run Backend Coverage Analysis (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        continue-on-error: false
+        id: backend-coverage
+        run: |
+          chmod +x scripts/test.sh
+          scripts/test.sh --coverage 2>&1 | tee backend-coverage-output.log
+
+          # Coverage results are checked in the script (80% threshold for keyrx_core/keyrx_compiler)
+          # The script will exit non-zero if coverage is below threshold
+          if [ $? -eq 0 ]; then
+            echo "✅ Quality gate PASSED: Backend coverage ≥80%"
+          else
+            echo "❌ Quality gate FAILED: Backend coverage below 80%"
+            exit 1
+          fi
+
       - name: Install Frontend Dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         working-directory: keyrx_ui
@@ -299,6 +327,14 @@ jobs:
           echo "Backend Quality Gates:"
           echo "  ✅ Backend Build & Tests (verify.sh)"
           echo "  ✅ Backend Doc Tests (fix_doc_tests.sh)"
+
+          # Backend coverage status
+          if [ "${{ steps.backend-coverage.outcome }}" == "success" ]; then
+            echo "  ✅ Backend Coverage (≥80% for keyrx_core/keyrx_compiler)"
+          else
+            echo "  ❌ Backend Coverage (target: ≥80%)"
+          fi
+
           echo ""
           echo "Frontend Quality Gates:"
 
@@ -351,6 +387,7 @@ jobs:
             keyrx_ui/test-output.log
             keyrx_ui/coverage-output.log
             keyrx_ui/a11y-output.log
+            backend-coverage-output.log
             coverage-trend.json
             .coverage-baseline.json
           retention-days: 30
