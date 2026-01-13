@@ -167,12 +167,13 @@ Comprehensive overhaul of test infrastructure: fix failing tests, improve test p
   - _Requirements: Critical paths at ≥80% coverage_
   - _Prompt: Implement the task for spec test-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Coverage Engineer | Task: After coverage report: 1) Identify files < 80%, 2) Prioritize hooks/ and api/, 3) Write tests for uncovered branches, 4) Focus on error paths and edge cases. Target ≥80% per critical file. | Restrictions: Quality tests, not coverage-padding | Success: All hooks/ and api/ files ≥80% coverage | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
 
-- [ ] 5.3 Add coverage trend tracking
+- [x] 5.3 Add coverage trend tracking
   - File: `scripts/coverage-trend.sh` (create), CI workflow
   - Store coverage percentages per run
   - Compare with previous run, fail if regression > 2%
   - Generate coverage badge for README
   - Purpose: Prevent coverage regression
+  - Solution: Created coverage-trend.sh script that parses Vitest JSON output, compares with baseline, fails CI on >2% regression. Integrated into CI workflow to update baseline on main branch and check regression on PRs. Generates shields.io badge URLs.
   - _Leverage: Vitest JSON coverage output, CI artifacts_
   - _Requirements: Coverage trend visible and protected_
   - _Prompt: Implement the task for spec test-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CI Metrics Developer | Task: Create coverage-trend.sh: Extract coverage from JSON, compare with stored baseline, fail if lines coverage drops > 2%. Add to CI as quality gate. Generate shields.io badge URL. | Restrictions: Store baseline in repo, not external service | Success: Coverage regression detected in CI | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
