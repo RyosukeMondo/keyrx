@@ -40,7 +40,7 @@ Fix UI issues identified during User Acceptance Testing for Dashboard, Devices, 
   - _Requirements: Devices can be disabled without deletion, persist across refresh_
   - _Prompt: Implement the task for spec uat-ui-fixes: Role: Full-stack Developer | Task: Add enabled boolean field to DeviceEntry. Create setDeviceEnabled API call (PUT /api/devices/{id}/enabled). Add useSetDeviceEnabled hook with optimistic updates. If backend doesn't support, use localStorage fallback. | Restrictions: Maintain backward compatibility, handle offline gracefully | Success: Device enabled state persists across page refresh | After completion: Use log-implementation tool, mark [x] complete_
 
-- [ ] 2.2 Replace delete button with enable/disable toggle
+- [x] 2.2 Replace delete button with enable/disable toggle
   - File: `src/pages/DevicesPage.tsx`
   - Replace ✕ delete button with toggle switch
   - Disabled devices appear grayed out with reduced opacity
