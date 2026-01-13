@@ -108,7 +108,7 @@ Fix WASM build issues, enhance build scripts for verification, and ensure WASM m
 
 ## Task 5: Integrate WASM Check into UAT
 
-- [ ] 5.1 Add WASM verification step to uat.sh
+- [x] 5.1 Add WASM verification step to uat.sh
   - File: `scripts/uat.sh`
   - After WASM build step: run verification
   - If verification fails: show clear error, abort UAT

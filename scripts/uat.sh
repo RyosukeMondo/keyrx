@@ -29,6 +29,7 @@ STOP_ONLY=false
 HEADLESS=false
 RELEASE=false
 DEBUG_MODE=false
+SKIP_WASM=false
 DAEMON_PID=""
 DAEMON_NAME="keyrx_daemon"
 
@@ -54,6 +55,7 @@ OPTIONS:
     --headless      Don't open browser automatically
     --release       Build in release mode
     --debug         Enable debug logging
+    --skip-wasm     Skip WASM build and verification (for quick UAT)
     --error         Show only errors
     --json          Output results in JSON format
     --quiet         Suppress non-error output
@@ -72,10 +74,12 @@ BUILD SEQUENCE:
     1. Check prerequisites (groups, udev, modules)
     2. Compile user_layout.rhai to .krx
     3. Build WASM module
-    4. Build Web UI (Vite production build)
-    5. Build daemon with embedded UI
-    6. Start daemon with system tray
-    7. Open browser (unless --headless)
+    4. Verify WASM (hash, version matching)
+    5. Build Web UI (Vite production build)
+    6. Build daemon with embedded UI
+    7. Stop existing daemon
+    8. Start daemon with system tray
+    9. Open browser (unless --headless)
 
 EXIT CODES:
     0 - UAT completed successfully
@@ -120,6 +124,10 @@ parse_args() {
                 ;;
             --debug)
                 DEBUG_MODE=true
+                shift
+                ;;
+            --skip-wasm)
+                SKIP_WASM=true
                 shift
                 ;;
             -h|--help)
@@ -237,6 +245,11 @@ compile_layout() {
 
 # Build WASM module
 build_wasm() {
+    if [[ "$SKIP_WASM" == "true" ]]; then
+        log_info "Skipping WASM build (--skip-wasm flag)"
+        return 0
+    fi
+
     log_info "Building WASM module..."
 
     if [[ -f "$SCRIPT_DIR/lib/build-wasm.sh" ]]; then
@@ -255,6 +268,49 @@ build_wasm() {
     fi
 
     log_info "WASM build completed"
+    return 0
+}
+
+# Verify WASM module
+verify_wasm() {
+    if [[ "$SKIP_WASM" == "true" ]]; then
+        log_info "Skipping WASM verification (--skip-wasm flag)"
+        return 0
+    fi
+
+    log_info "Verifying WASM module..."
+
+    # Get hash before verification
+    local manifest_file="$PROJECT_ROOT/keyrx_ui/src/wasm/pkg/wasm-manifest.json"
+    local hash_before=""
+    if [[ -f "$manifest_file" ]]; then
+        hash_before=$(jq -r '.hash' "$manifest_file" 2>/dev/null || echo "")
+    fi
+
+    # Run verification script
+    if [[ -f "$SCRIPT_DIR/verify-wasm.sh" ]]; then
+        if ! "$SCRIPT_DIR/verify-wasm.sh" --quiet; then
+            log_error "WASM verification failed"
+            log_error "This likely means the WASM module is corrupted or has version mismatches"
+            log_error "Try running: npm run rebuild:wasm"
+            return 1
+        fi
+    else
+        log_warn "WASM verification script not found - skipping verification"
+        return 0
+    fi
+
+    # Check if hash changed (informational only)
+    if [[ -f "$manifest_file" ]]; then
+        local hash_after
+        hash_after=$(jq -r '.hash' "$manifest_file" 2>/dev/null || echo "")
+
+        if [[ -n "$hash_before" ]] && [[ -n "$hash_after" ]] && [[ "$hash_before" != "$hash_after" ]]; then
+            log_info "WASM hash changed: $hash_before -> $hash_after"
+        fi
+    fi
+
+    log_info "WASM verification passed"
     return 0
 }
 
@@ -475,7 +531,7 @@ verify_daemon() {
 # Full UAT sequence
 run_full_uat() {
     local step=1
-    local total_steps=7
+    local total_steps=8
 
     log_info "Starting full UAT sequence"
     separator
@@ -507,7 +563,17 @@ run_full_uat() {
     ((step++))
     separator
 
-    # Step 4: Build UI
+    # Step 4: Verify WASM
+    log_info "Step $step/$total_steps: Verifying WASM"
+    if ! verify_wasm; then
+        log_error "WASM verification failed - aborting UAT"
+        log_failed
+        return 1
+    fi
+    ((step++))
+    separator
+
+    # Step 5: Build UI
     log_info "Step $step/$total_steps: Building Web UI"
     if ! build_ui; then
         log_failed
@@ -516,7 +582,7 @@ run_full_uat() {
     ((step++))
     separator
 
-    # Step 5: Build daemon
+    # Step 6: Build daemon
     log_info "Step $step/$total_steps: Building daemon"
     if ! build_daemon; then
         log_failed
@@ -525,13 +591,13 @@ run_full_uat() {
     ((step++))
     separator
 
-    # Step 6: Stop existing daemon
+    # Step 7: Stop existing daemon
     log_info "Step $step/$total_steps: Stopping existing daemon"
     stop_daemon || true
     ((step++))
     separator
 
-    # Step 7: Start daemon
+    # Step 8: Start daemon
     log_info "Step $step/$total_steps: Starting daemon"
     if ! start_daemon; then
         log_failed
