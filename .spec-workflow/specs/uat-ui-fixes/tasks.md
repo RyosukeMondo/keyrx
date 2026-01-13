@@ -147,7 +147,7 @@ Fix UI issues identified during User Acceptance Testing for Dashboard, Devices, 
 
 ## Task 6: Layers Section - Show All 255 Modifiers
 
-- [ ] 6.1 Update LayerSwitcher to show all MD_00 to MD_FF layers
+- [x] 6.1 Update LayerSwitcher to show all MD_00 to MD_FF layers
   - File: `src/components/LayerSwitcher.tsx`
   - Change from hardcoded 6 layers to full 256 (0x00-0xFF)
   - Use vertical scrollable layout
