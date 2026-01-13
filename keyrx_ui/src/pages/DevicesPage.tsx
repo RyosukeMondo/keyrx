@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { Dropdown } from '../components/Dropdown';
+import { LayoutDropdown } from '../components/LayoutDropdown';
 import { Modal } from '../components/Modal';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { useUpdateDevice } from '../hooks/useUpdateDevice';
+import { useDevices, useSetDeviceEnabled, useForgetDevice } from '../hooks/useDevices';
 import { getErrorMessage } from '../utils/errorUtils';
+import { LAYOUT_OPTIONS } from '../contexts/LayoutPreviewContext';
+import type { DeviceEntry } from '../types';
 
 interface Device {
   id: string;
@@ -15,6 +18,7 @@ interface Device {
   identifier: string;
   layout: string;
   active: boolean;
+  enabled: boolean;
   vendorId?: string;
   productId?: string;
   serial?: string;
@@ -34,20 +38,13 @@ interface DevicesPageProps {
   className?: string;
 }
 
-const LAYOUT_OPTIONS = [
-  { value: 'ANSI_104', label: 'ANSI 104' },
-  { value: 'ISO_105', label: 'ISO 105' },
-  { value: 'JIS_109', label: 'JIS 109' },
-  { value: 'HHKB', label: 'HHKB' },
-  { value: 'NUMPAD', label: 'Numpad' },
-];
 
 /**
- * DeviceCard Component
+ * DeviceRow Component
  *
- * Individual device card with auto-save for layout changes.
+ * Compact single-row device display with inline layout selector and enable/disable toggle.
  */
-interface DeviceCardProps {
+interface DeviceRowProps {
   device: Device;
   isEditing: boolean;
   editingName: string;
@@ -56,10 +53,11 @@ interface DeviceCardProps {
   onRenameCancel: () => void;
   onRenameSave: (deviceId: string) => void;
   onEditingNameChange: (value: string) => void;
+  onToggleEnabled: (deviceId: string, enabled: boolean) => void;
   onForgetClick: (deviceId: string) => void;
 }
 
-const DeviceCard: React.FC<DeviceCardProps> = ({
+const DeviceRow: React.FC<DeviceRowProps> = ({
   device,
   isEditing,
   editingName,
@@ -68,31 +66,22 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
   onRenameCancel,
   onRenameSave,
   onEditingNameChange,
+  onToggleEnabled,
   onForgetClick,
 }) => {
-  // Local state for layout - tracks user's current selection
   const [localLayout, setLocalLayout] = useState(device.layout);
-
-  // Track the server value to detect user changes vs external updates
   const serverLayoutRef = React.useRef(device.layout);
-
-  // Track whether user has made a change that needs saving
   const [hasUserChanges, setHasUserChanges] = useState(false);
-
-  // Device update mutation hook
   const { mutate: updateDevice, isPending: isUpdating, error: updateError } = useUpdateDevice();
-
-  // Track last saved timestamp for feedback
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
-  // Save function - only called when user makes changes
   const saveLayout = React.useCallback(async (layout: string) => {
     await new Promise<void>((resolve, reject) => {
       updateDevice(
         { id: device.id, layout },
         {
           onSuccess: () => {
-            serverLayoutRef.current = layout; // Update server value after successful save
+            serverLayoutRef.current = layout;
             setLastSavedAt(new Date());
             setHasUserChanges(false);
             resolve();
@@ -103,186 +92,155 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
     });
   }, [device.id, updateDevice]);
 
-  // Auto-save hook - only enabled when user has made changes
   const { isSaving: isSavingLayout, error: layoutSaveError } = useAutoSave(
     localLayout,
-    {
-      saveFn: saveLayout,
-      debounceMs: 500,
-      enabled: hasUserChanges, // Only save when user changed the value
-    }
+    { saveFn: saveLayout, debounceMs: 500, enabled: hasUserChanges }
   );
 
-  // Combine saving and error states
   const isSaving = isSavingLayout || isUpdating;
   const saveError = layoutSaveError || updateError;
 
-  // Update local state when device changes externally (e.g., from server refresh)
   React.useEffect(() => {
-    // Only update if server value changed (external update, not our save)
     if (device.layout !== serverLayoutRef.current) {
       serverLayoutRef.current = device.layout;
       setLocalLayout(device.layout);
-      setHasUserChanges(false); // External update, no user changes
+      setHasUserChanges(false);
     }
   }, [device.layout]);
 
   const handleLayoutChange = (newLayout: string) => {
     setLocalLayout(newLayout);
-    // Mark as user change only if different from server value
     if (newLayout !== serverLayoutRef.current) {
       setHasUserChanges(true);
     }
   };
 
   return (
-    <Card key={device.id} variant="elevated" className="bg-slate-800" data-testid="device-card">
-      <div className="flex flex-col gap-md">
-        {/* Device header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-sm">
-            <span className="text-xl" role="img" aria-label="Keyboard">
-              🖮
-            </span>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-sm">
-                <span className="text-base font-medium text-slate-100">
-                  {device.name}
-                </span>
-                {device.active && (
-                  <span
-                    className="text-xs text-green-500"
-                    aria-label="Connected"
-                  >
-                    ✓ Connected
-                  </span>
-                )}
-              </div>
-              <span className="text-xs font-mono text-slate-500">
-                {device.identifier}
-              </span>
-            </div>
-          </div>
-        </div>
+    <div
+      className={`flex items-center gap-3 px-4 py-3 bg-slate-800 rounded-lg border border-slate-700 hover:border-slate-600 transition-all ${
+        !device.enabled ? 'opacity-50 bg-slate-900' : ''
+      }`}
+      data-testid="device-card"
+    >
+      {/* Status indicator */}
+      <div
+        className={`w-2 h-2 rounded-full flex-shrink-0 ${device.active ? 'bg-green-500' : 'bg-slate-500'}`}
+        title={device.active ? 'Connected' : 'Disconnected'}
+        aria-label={device.active ? 'Connected' : 'Disconnected'}
+      />
 
-        {/* Rename section */}
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-slate-300">Name</label>
-          <div className="flex flex-col sm:flex-row items-start gap-2">
-            {isEditing ? (
-              <>
-                <div className="flex-1 w-full">
-                  <div
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        onRenameSave(device.id);
-                      } else if (e.key === 'Escape') {
-                        onRenameCancel();
-                      }
-                    }}
-                  >
-                    <Input
-                      type="text"
-                      value={editingName}
-                      onChange={(value) => onEditingNameChange(value)}
-                      error={nameError}
-                      maxLength={64}
-                      aria-label="Device name"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => onRenameSave(device.id)}
-                    aria-label="Save device name"
-                    className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0"
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onRenameCancel}
-                    aria-label="Cancel rename"
-                    className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex-1 w-full rounded-md border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100">
-                  {device.name}
-                </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => onRenameClick(device)}
-                  aria-label={`Rename device ${device.name}`}
-                  className="w-full sm:w-auto min-h-[44px] sm:min-h-0"
-                >
-                  Rename
-                </Button>
-              </>
-            )}
+      {/* Device name */}
+      <div className="flex-1 min-w-0">
+        {isEditing ? (
+          <div
+            className="flex items-center gap-2"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onRenameSave(device.id);
+              else if (e.key === 'Escape') onRenameCancel();
+            }}
+          >
+            <Input
+              type="text"
+              value={editingName}
+              onChange={onEditingNameChange}
+              error={nameError}
+              maxLength={64}
+              aria-label="Device name"
+              className="!py-1 !text-sm"
+            />
+            <Button variant="primary" size="sm" onClick={() => onRenameSave(device.id)} aria-label="Save">
+              ✓
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onRenameCancel} aria-label="Cancel">
+              ✕
+            </Button>
           </div>
-        </div>
-
-        {/* Layout selector with save feedback */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-slate-300">Layout</label>
+        ) : (
+          <button
+            onClick={() => onRenameClick(device)}
+            className="text-left w-full group"
+            aria-label={`Rename ${device.name}`}
+          >
             <div className="flex items-center gap-2">
-              {isSaving && (
-                <span className="text-xs text-slate-400 flex items-center gap-1">
-                  <span className="animate-spin h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full" />
-                  Saving...
-                </span>
-              )}
-              {!isSaving && lastSavedAt && (
-                <span className="text-xs text-green-500 flex items-center gap-1">
-                  ✓ Saved
-                </span>
-              )}
-              {saveError && (
-                <span className="text-xs text-red-500 flex items-center gap-1" title={saveError instanceof Error ? saveError.message : String(saveError)}>
-                  ✗ Error
+              <span className="text-sm font-medium text-slate-100 group-hover:text-blue-400 transition-colors truncate block">
+                {device.name}
+              </span>
+              {!device.enabled && (
+                <span className="text-xs px-2 py-0.5 bg-slate-700 text-slate-400 rounded-full">
+                  Disabled
                 </span>
               )}
             </div>
-          </div>
-          <Dropdown
+            <span className="text-xs font-mono text-slate-500 truncate block">
+              {device.identifier}
+            </span>
+          </button>
+        )}
+      </div>
+
+      {/* Layout selector */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="relative">
+          <LayoutDropdown
             options={LAYOUT_OPTIONS}
             value={localLayout}
             onChange={handleLayoutChange}
-            aria-label="Select keyboard layout"
+            aria-label="Layout"
+            compact
           />
         </div>
-
-        {/* Device details */}
-        <div className="flex flex-wrap gap-md text-xs text-slate-400">
-          {device.serial && <span>Serial: {device.serial}</span>}
-          {device.vendorId && <span>• Vendor: {device.vendorId}</span>}
-          {device.productId && <span>• Product: {device.productId}</span>}
-          {device.lastSeen && <span>• Last seen: {device.lastSeen}</span>}
-        </div>
-
-        {/* Forget device button */}
-        <div className="flex justify-end border-t border-slate-700 pt-md">
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => onForgetClick(device.id)}
-            aria-label={`Forget device ${device.name}`}
-          >
-            Forget Device
-          </Button>
-        </div>
+        {isSaving && (
+          <span className="animate-spin h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full" />
+        )}
+        {!isSaving && lastSavedAt && (
+          <span className="text-green-500 text-xs">✓</span>
+        )}
+        {saveError && (
+          <span className="text-red-500 text-xs" title={saveError instanceof Error ? saveError.message : String(saveError)}>✗</span>
+        )}
       </div>
-    </Card>
+
+      {/* Enable/Disable toggle */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          onClick={() => onToggleEnabled(device.id, !device.enabled)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800 ${
+            device.enabled ? 'bg-blue-600' : 'bg-slate-600'
+          }`}
+          role="switch"
+          aria-checked={device.enabled}
+          aria-label={`${device.enabled ? 'Disable' : 'Enable'} ${device.name}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              device.enabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onForgetClick(device.id)}
+          aria-label={`Permanently forget ${device.name}`}
+          className="text-slate-400 hover:text-red-400"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            />
+          </svg>
+        </Button>
+      </div>
+    </div>
   );
 };
 
@@ -303,9 +261,26 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
  * not by a UI setting. See ConfigPage for device-aware editing.
  */
 export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
-  const [loading, setLoading] = useState(true);
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  // Fetch devices using React Query
+  const { data: deviceEntries = [], isLoading: loading, error: fetchError } = useDevices();
+  const { mutate: setDeviceEnabledMutation } = useSetDeviceEnabled();
+  const { mutate: forgetDeviceMutation } = useForgetDevice();
+
+  // Transform DeviceEntry to Device (UI format)
+  const devices: Device[] = deviceEntries.map((entry: DeviceEntry) => ({
+    id: entry.id,
+    name: entry.name,
+    identifier: entry.path,
+    layout: entry.layout || 'ANSI_104',
+    active: entry.active,
+    enabled: entry.enabled,
+    vendorId: entry.path.match(/VID_([0-9A-F]{4})/)?.[1],
+    productId: entry.path.match(/PID_([0-9A-F]{4})/)?.[1],
+    serial: entry.serial || undefined,
+    lastSeen: 'Just now',
+  }));
+
+  const error = fetchError ? getErrorMessage(fetchError, 'Failed to fetch devices') : null;
 
   // Global layout state
   const [globalLayout, setGlobalLayout] = useState<string>('ANSI_104');
@@ -313,55 +288,22 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   const [globalLayoutError, setGlobalLayoutError] = useState<string | null>(null);
   const [globalLayoutSavedAt, setGlobalLayoutSavedAt] = useState<Date | null>(null);
 
-  // Fetch devices and global layout from API on mount
+  // Fetch global layout on mount
   React.useEffect(() => {
-    const fetchData = async () => {
+    const fetchGlobalLayout = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch devices
-        const devicesResponse = await fetch('/api/devices');
-        if (!devicesResponse.ok) {
-          throw new Error(`Failed to fetch devices: ${devicesResponse.statusText}`);
+        const layoutResponse = await fetch('/api/settings/global-layout');
+        if (layoutResponse.ok) {
+          const layoutData = await layoutResponse.json();
+          setGlobalLayout(layoutData.layout || 'ANSI_104');
         }
-        const devicesData = await devicesResponse.json();
-
-        // Transform API response to UI format
-        const transformedDevices: Device[] = (devicesData.devices || []).map((device: ApiDevice) => ({
-          id: device.id,
-          name: device.name,
-          identifier: device.path,
-          layout: device.layout || 'ANSI_104',
-          active: device.active,
-          vendorId: device.path.match(/VID_([0-9A-F]{4})/)?.[1],
-          productId: device.path.match(/PID_([0-9A-F]{4})/)?.[1],
-          serial: device.serial,
-          lastSeen: 'Just now',
-        }));
-
-        setDevices(transformedDevices);
-
-        // Fetch global layout (if endpoint exists)
-        try {
-          const layoutResponse = await fetch('/api/settings/global-layout');
-          if (layoutResponse.ok) {
-            const layoutData = await layoutResponse.json();
-            setGlobalLayout(layoutData.layout || 'ANSI_104');
-          }
-        } catch (layoutErr) {
-          // Endpoint may not exist yet, use default
-          // Silent fail - this is expected if backend hasn't implemented the endpoint yet
-        }
-      } catch (err) {
-        console.error('Failed to fetch data:', err);
-        setError(getErrorMessage(err, 'Failed to fetch data'));
-      } finally {
-        setLoading(false);
+      } catch (layoutErr) {
+        // Endpoint may not exist yet, use default
+        // Silent fail - this is expected if backend hasn't implemented the endpoint yet
       }
     };
 
-    fetchData();
+    fetchGlobalLayout();
   }, []);
 
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
@@ -393,15 +335,20 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
       return;
     }
 
-    // Save the new name
-    setDevices((prev) =>
-      prev.map((d) => (d.id === deviceId ? { ...d, name: editingName } : d))
-    );
+    // TODO: Call API to rename device
+    // For now, just update local state
+    // setDevices((prev) =>
+    //   prev.map((d) => (d.id === deviceId ? { ...d, name: editingName } : d))
+    // );
 
     // Reset editing state
     setEditingDeviceId(null);
     setEditingName('');
     setNameError('');
+  };
+
+  const handleToggleEnabled = (deviceId: string, enabled: boolean) => {
+    setDeviceEnabledMutation({ id: deviceId, enabled });
   };
 
 
@@ -439,7 +386,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
 
   const handleForgetDevice = () => {
     if (forgetDeviceId) {
-      setDevices((prev) => prev.filter((d) => d.id !== forgetDeviceId));
+      forgetDeviceMutation(forgetDeviceId);
       setForgetDeviceId(null);
     }
   };
@@ -524,7 +471,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
             <p className="text-xs text-slate-400">
               New devices will inherit this layout by default. You can override it for specific devices below.
             </p>
-            <Dropdown
+            <LayoutDropdown
               options={LAYOUT_OPTIONS}
               value={globalLayout}
               onChange={handleGlobalLayoutChange}
@@ -553,25 +500,22 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-md">
-              {devices.map((device) => {
-                const isEditing = editingDeviceId === device.id;
-
-                return (
-                  <DeviceCard
-                    key={device.id}
-                    device={device}
-                    isEditing={isEditing}
-                    editingName={editingName}
-                    nameError={nameError}
-                    onRenameClick={handleRenameClick}
-                    onRenameCancel={handleRenameCancel}
-                    onRenameSave={handleRenameSave}
-                    onEditingNameChange={setEditingName}
-                    onForgetClick={setForgetDeviceId}
-                  />
-                );
-              })}
+            <div className="flex flex-col gap-2">
+              {devices.map((device) => (
+                <DeviceRow
+                  key={device.id}
+                  device={device}
+                  isEditing={editingDeviceId === device.id}
+                  editingName={editingName}
+                  nameError={nameError}
+                  onRenameClick={handleRenameClick}
+                  onRenameCancel={handleRenameCancel}
+                  onRenameSave={handleRenameSave}
+                  onEditingNameChange={setEditingName}
+                  onToggleEnabled={handleToggleEnabled}
+                  onForgetClick={setForgetDeviceId}
+                />
+              ))}
             </div>
           )}
         </div>
