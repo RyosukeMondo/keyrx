@@ -1,4 +1,5 @@
 import React from 'react';
+import { DndContext, DragOverlay, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { Search, X, Star, Clock, Check, AlertCircle, HelpCircle, Grid3x3, List } from 'lucide-react';
 import { Card } from './Card';
 import { KEY_DEFINITIONS, KeyDefinition } from '../data/keyDefinitions';
@@ -550,6 +551,9 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
   const [selectedSearchIndex, setSelectedSearchIndex] = React.useState(0);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
+  // Drag and drop state
+  const [activeDragKey, setActiveDragKey] = React.useState<PaletteKey | null>(null);
+
   // View mode state
   const [viewMode, setViewMode] = React.useState<ViewMode>(() => loadViewMode());
 
@@ -705,6 +709,20 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
     }
   };
 
+  // Handle drag start - set active drag key
+  const handleDragStart = React.useCallback((event: DragStartEvent) => {
+    const draggedKey = event.active.data.current as PaletteKey;
+    setActiveDragKey(draggedKey);
+  }, []);
+
+  // Handle drag end - clear active drag key
+  const handleDragEnd = React.useCallback((event: DragEndEvent) => {
+    setActiveDragKey(null);
+
+    // If dropped on a valid target, the target will handle the drop
+    // This is handled by the parent component (ConfigPage) via onKeySelect
+  }, []);
+
   // Render a key item with star button using KeyPaletteItem component
   const renderKeyItem = (key: PaletteKey, onClick: () => void, showStar: boolean = true) => {
     const favorite = isFavorite(key.id);
@@ -724,9 +742,10 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
   };
 
   return (
-    <Card className="h-full flex flex-col">
-      {/* Header with title and view toggle */}
-      <div className="flex items-center justify-between mb-4">
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <Card className="h-full flex flex-col">
+        {/* Header with title and view toggle */}
+        <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-slate-100">Key Palette</h3>
         <div className="flex gap-1">
           <button
@@ -1114,9 +1133,27 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
       <p className="text-xs text-slate-500 mt-4">
         {isSearching
           ? 'Use ↑↓ arrows to navigate, Enter to select, Esc to clear'
-          : 'Search for keys or browse by category. Click to select.'
+          : 'Search for keys or browse by category. Click or drag to select.'
         }
       </p>
     </Card>
+
+    {/* Drag Overlay - Shows preview of dragged key */}
+    <DragOverlay dropAnimation={null}>
+      {activeDragKey ? (
+        <div className="opacity-90 transform scale-110 shadow-2xl">
+          <KeyPaletteItem
+            keyItem={activeDragKey}
+            isSelected={false}
+            isFavorite={false}
+            showStar={false}
+            viewMode={viewMode}
+            onClick={() => {}}
+            onToggleFavorite={undefined}
+          />
+        </div>
+      ) : null}
+    </DragOverlay>
+  </DndContext>
   );
 }

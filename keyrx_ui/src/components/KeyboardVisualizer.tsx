@@ -72,11 +72,28 @@ const DroppableKeyWrapper: React.FC<DroppableKeyWrapperProps> = ({
     disabled,
   });
 
+  // Track drop success animation
+  const [showSuccessAnimation, setShowSuccessAnimation] = React.useState(false);
+  const prevMappingRef = React.useRef(mapping);
+
   const handleClick = () => {
     if (!disabled) {
       onClick();
     }
   };
+
+  // Trigger success animation when mapping changes (indicates successful drop)
+  React.useEffect(() => {
+    if (mapping && mapping !== prevMappingRef.current) {
+      setShowSuccessAnimation(true);
+      const timer = setTimeout(() => {
+        setShowSuccessAnimation(false);
+      }, 600); // Animation duration
+      prevMappingRef.current = mapping;
+      return () => clearTimeout(timer);
+    }
+    prevMappingRef.current = mapping;
+  }, [mapping]);
 
   // Build comprehensive aria-label for drop zone
   const mappingDescription = mapping
@@ -91,8 +108,13 @@ const DroppableKeyWrapper: React.FC<DroppableKeyWrapperProps> = ({
     <div
       ref={setNodeRef}
       className={cn(
-        'relative',
-        isOver && !disabled && 'ring-2 ring-primary-500 ring-offset-2 ring-offset-slate-800'
+        'relative transition-all duration-200',
+        // Valid drop zone - blue ring when hovering
+        isOver && !disabled && 'ring-2 ring-blue-400 ring-offset-2 ring-offset-slate-800 z-10',
+        // Invalid drop - red ring (disabled keys)
+        isOver && disabled && 'ring-2 ring-red-400 ring-offset-2 ring-offset-slate-800',
+        // Success animation - brief scale effect
+        showSuccessAnimation && 'animate-pulse'
       )}
       aria-label={ariaLabel}
       aria-dropeffect={disabled ? 'none' : isOver ? 'move' : 'none'}
@@ -104,9 +126,17 @@ const DroppableKeyWrapper: React.FC<DroppableKeyWrapperProps> = ({
         onClick={handleClick}
         isPressed={isPressed}
         className={cn(
-          disabled && 'opacity-50 cursor-not-allowed'
+          disabled && 'opacity-50 cursor-not-allowed',
+          // Add brightness effect on valid hover
+          isOver && !disabled && 'brightness-125',
+          // Dim invalid targets
+          isOver && disabled && 'opacity-30'
         )}
       />
+      {/* Success indicator overlay */}
+      {showSuccessAnimation && (
+        <div className="absolute inset-0 pointer-events-none bg-green-400/20 rounded-lg animate-ping" />
+      )}
     </div>
   );
 };

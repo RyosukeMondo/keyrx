@@ -119,7 +119,7 @@ Sources:
 
 ## Task 5: Implement Drag-and-Drop Enhancement
 
-- [ ] 5.1 Add drag preview and drop zone feedback
+- [-] 5.1 Add drag preview and drop zone feedback
   - File: `keyrx_ui/src/components/KeyPalette.tsx`, `KeyboardVisualizer.tsx`
   - Drag preview: Show key being dragged with semi-transparency
   - Drop zones: Highlight valid drop targets on keyboard

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useDraggable } from '@dnd-kit/core';
 import {
   Keyboard,
   Command,
@@ -137,6 +138,12 @@ export function KeyPaletteItem({
   const colors = getCategoryColors(keyItem.category);
   const icon = getCategoryIcon(keyItem.category);
 
+  // Setup draggable functionality
+  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({
+    id: `palette-${keyItem.id}`,
+    data: keyItem,
+  });
+
   // Build tooltip content
   const tooltipText = [
     keyItem.description || keyItem.label,
@@ -146,17 +153,30 @@ export function KeyPaletteItem({
     .filter(Boolean)
     .join('\n');
 
+  // Apply transform if dragging
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
+
   // Grid view: Compact vertical layout
   if (viewMode === 'grid') {
     return (
       <div className="relative group">
         <button
+          ref={setNodeRef}
           onClick={onClick}
+          style={style}
+          {...listeners}
+          {...attributes}
           className={`
             w-full relative flex flex-col items-center justify-center gap-1
             min-h-[44px] px-2 py-2
             rounded-lg border-2 transition-all duration-200
             hover:brightness-110 hover:-translate-y-0.5 hover:shadow-lg
+            cursor-grab active:cursor-grabbing
+            ${isDragging ? 'opacity-50' : 'opacity-100'}
             ${
               isSelected
                 ? 'border-primary-500 bg-primary-500/20 shadow-lg shadow-primary-500/50 scale-105'
@@ -165,6 +185,7 @@ export function KeyPaletteItem({
           `}
           title={tooltipText}
           aria-label={`Select key ${keyItem.label}`}
+          aria-grabbed={isDragging}
         >
           {/* Icon (category indicator) */}
           <div className={`${colors.icon} opacity-70`}>
@@ -212,12 +233,18 @@ export function KeyPaletteItem({
   return (
     <div className="relative group">
       <button
+        ref={setNodeRef}
         onClick={onClick}
+        style={style}
+        {...listeners}
+        {...attributes}
         className={`
           w-full relative flex items-center gap-3
           min-h-[56px] px-4 py-3
           rounded-lg border-2 transition-all duration-200
           hover:brightness-110 hover:shadow-lg
+          cursor-grab active:cursor-grabbing
+          ${isDragging ? 'opacity-50' : 'opacity-100'}
           ${
             isSelected
               ? 'border-primary-500 bg-primary-500/20 shadow-lg shadow-primary-500/50'
@@ -226,6 +253,7 @@ export function KeyPaletteItem({
         `}
         title={tooltipText}
         aria-label={`Select key ${keyItem.label}`}
+        aria-grabbed={isDragging}
       >
         {/* Icon (category indicator) */}
         <div className={`${colors.icon} opacity-70 flex-shrink-0`}>
