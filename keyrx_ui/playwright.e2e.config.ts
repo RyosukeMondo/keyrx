@@ -21,8 +21,8 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code */
   forbidOnly: !!process.env.CI,
 
-  /* Retry on CI only - 1 retry for flaky tests */
-  retries: process.env.CI ? 1 : 0,
+  /* Retry on CI only - 2 retries for flaky network tests */
+  retries: process.env.CI ? 2 : 0,
 
   /* Reporter to use */
   reporter: [
@@ -52,6 +52,20 @@ export default defineConfig({
     /* Extra context for API testing */
     extraHTTPHeaders: {
       'Accept': 'application/json',
+    },
+
+    /* Test isolation: Each test gets a fresh browser context */
+    /* This is enabled by default in Playwright but explicitly set here for clarity */
+    /* Context options can be overridden per test if needed */
+    contextOptions: {
+      /* Ignore HTTPS errors in dev environment */
+      ignoreHTTPSErrors: true,
+
+      /* Fresh viewport for each test */
+      viewport: { width: 1280, height: 720 },
+
+      /* Clear permissions for each test */
+      permissions: [],
     },
   },
 

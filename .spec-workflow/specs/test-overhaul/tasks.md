@@ -212,13 +212,14 @@ Comprehensive overhaul of test infrastructure: fix failing tests, improve test p
 
 ## Task 7: E2E Test Improvements
 
-- [ ] 7.1 Add E2E test retry and stability improvements
+- [x] 7.1 Add E2E test retry and stability improvements
   - File: `keyrx_ui/playwright.e2e.config.ts`
-  - Add retry: 2 for flaky network tests
-  - Add explicit waits for daemon readiness
-  - Add test isolation (fresh browser context per test)
-  - Add screenshot on every failure
+  - Add retry: 2 for flaky network tests ✓
+  - Add explicit waits for daemon readiness ✓
+  - Add test isolation (fresh browser context per test) ✓
+  - Add screenshot on every failure ✓
   - Purpose: More reliable E2E tests
+  - Solution: Increased retries to 2 on CI, added explicit context isolation settings, created helpers.ts with daemon health checks and test utilities, documented best practices in README.md
   - _Leverage: keyrx_ui/playwright.e2e.config.ts_
   - _Requirements: E2E tests are stable and debuggable_
   - _Prompt: Implement the task for spec test-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Playwright Expert | Task: Update playwright.e2e.config: Add retries: 2, fullyParallel: false, screenshot: 'only-on-failure', video: 'retain-on-failure'. Add beforeAll check for daemon health. Add trace: 'retain-on-failure'. | Restrictions: Keep sequential execution for state-dependent tests | Success: E2E tests pass reliably, failures are debuggable | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
