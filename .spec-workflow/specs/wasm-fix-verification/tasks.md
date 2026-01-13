@@ -51,7 +51,7 @@ Fix WASM build issues, enhance build scripts for verification, and ensure WASM m
   - _Requirements: WASM loads reliably with proper error handling_
   - _Prompt: Implement the task for spec wasm-fix-verification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/WASM Integration Developer | Task: Fix useWasm: 1) Update import path to built WASM module, 2) Use dynamic import with proper error catching, 3) Add loading/error/ready states, 4) Add retry logic (3 attempts, 1s delay), 5) Log detailed errors to console. | Restrictions: Keep hook interface backward compatible | Success: useWasm returns ready state when WASM loaded | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
 
-- [ ] 2.2 Add WASM status indicator to UI
+- [x] 2.2 Add WASM status indicator to UI
   - File: `keyrx_ui/src/pages/SimulatorPage.tsx`, `ConfigPage.tsx`
   - Show WASM status: "Loading...", "Ready", "Error: [message]"
   - Green badge when ready, yellow when loading, red when error
