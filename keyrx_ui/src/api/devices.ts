@@ -40,6 +40,7 @@ export async function fetchDevices(): Promise<DeviceEntry[]> {
     scope: device.scope === 'DeviceSpecific' ? 'device-specific' :
            device.scope === 'Global' ? 'global' : 'global', // Default to global if unset
     layout: device.layout || null,
+    isVirtual: device.name.toLowerCase().startsWith('keyrx'), // Virtual if name starts with "keyrx" (daemon's uinput device)
   }));
 }
 

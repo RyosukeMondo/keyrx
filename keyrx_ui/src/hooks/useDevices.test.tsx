@@ -37,9 +37,12 @@ describe('useDevices', () => {
       {
         id: 'device-1',
         name: 'Keyboard 1',
-        scope: 'global' as DeviceScope,
+        path: '/dev/input/event0',
+        serial: null,
+        active: true,
+        scope: 'global',
         layout: 'ANSI_104',
-        connected: true,
+        isVirtual: false,
       },
     ];
 
@@ -68,6 +71,43 @@ describe('useDevices', () => {
 
     expect(result.current.error).toBeTruthy();
   });
+
+  it('correctly identifies virtual devices', async () => {
+    const mockDevices: DeviceEntry[] = [
+      {
+        id: 'device-1',
+        name: 'keyrx Virtual Keyboard',
+        path: '/dev/input/event0',
+        serial: null,
+        active: true,
+        scope: 'global',
+        layout: 'ANSI_104',
+        isVirtual: true,
+      },
+      {
+        id: 'device-2',
+        name: 'Logitech G Pro',
+        path: '/dev/input/event1',
+        serial: '12345',
+        active: true,
+        scope: 'global',
+        layout: 'ANSI_104',
+        isVirtual: false,
+      },
+    ];
+
+    vi.mocked(deviceApi.fetchDevices).mockResolvedValue(mockDevices);
+
+    const { result } = renderHook(() => useDevices(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const devices = result.current.data;
+    expect(devices?.[0].isVirtual).toBe(true); // Virtual device (name starts with "keyrx")
+    expect(devices?.[1].isVirtual).toBe(false); // Physical device
+  });
 });
 
 describe('useRenameDevice', () => {
@@ -76,9 +116,12 @@ describe('useRenameDevice', () => {
       {
         id: 'device-1',
         name: 'Old Name',
-        scope: 'global' as DeviceScope,
+        path: '/dev/input/event0',
+        serial: null,
+        active: true,
+        scope: 'global',
         layout: 'ANSI_104',
-        connected: true,
+        isVirtual: false,
       },
     ];
 
@@ -110,9 +153,12 @@ describe('useRenameDevice', () => {
       {
         id: 'device-1',
         name: 'Original Name',
-        scope: 'global' as DeviceScope,
+        path: '/dev/input/event0',
+        serial: null,
+        active: true,
+        scope: 'global',
         layout: 'ANSI_104',
-        connected: true,
+        isVirtual: false,
       },
     ];
 
@@ -149,9 +195,12 @@ describe('useSetDeviceScope', () => {
       {
         id: 'device-1',
         name: 'Keyboard',
-        scope: 'global' as DeviceScope,
+        path: '/dev/input/event0',
+        serial: null,
+        active: true,
+        scope: 'global',
         layout: 'ANSI_104',
-        connected: true,
+        isVirtual: false,
       },
     ];
 
@@ -190,16 +239,22 @@ describe('useForgetDevice', () => {
       {
         id: 'device-1',
         name: 'Keyboard 1',
-        scope: 'global' as DeviceScope,
+        path: '/dev/input/event0',
+        serial: null,
+        active: true,
+        scope: 'global',
         layout: 'ANSI_104',
-        connected: true,
+        isVirtual: false,
       },
       {
         id: 'device-2',
         name: 'Keyboard 2',
-        scope: 'global' as DeviceScope,
+        path: '/dev/input/event1',
+        serial: null,
+        active: true,
+        scope: 'global',
         layout: 'ANSI_104',
-        connected: true,
+        isVirtual: false,
       },
     ];
 

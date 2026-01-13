@@ -9,6 +9,7 @@ export interface DeviceEntry {
   active: boolean;
   scope: string | null; // "global" | "device-specific"
   layout: string | null;
+  isVirtual: boolean; // true if device is daemon-created (uinput), false if physical hardware
 }
 
 export type DeviceScope = 'global' | 'device-specific';
