@@ -303,10 +303,10 @@ describe('Profile API Contracts', () => {
 
   describe('GET /api/profiles/:name/config response schema', () => {
     it('validates correct profile config response', () => {
-      // Response format matches Rust ProfileConfigResponse in profiles.rs
+      // Response format matches Rust ProfileConfigRpc in profile.rs
       const mockResponse = {
         name: 'default',
-        config: 'map("VK_A", "VK_B");', // Rhai source code
+        source: 'map("VK_A", "VK_B");', // Rhai source code
       };
 
       const validated = validateApiResponse(
@@ -316,13 +316,13 @@ describe('Profile API Contracts', () => {
       );
 
       expect(validated.name).toBe('default');
-      expect(validated.config).toContain('map');
+      expect(validated.source).toContain('map');
     });
 
-    it('rejects config with missing config field', () => {
+    it('rejects config with missing source field', () => {
       const invalidResponse = {
         name: 'default',
-        // Missing: config
+        // Missing: source
       };
 
       expect(() => {
