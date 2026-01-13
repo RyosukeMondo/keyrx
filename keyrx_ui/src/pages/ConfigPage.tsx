@@ -7,10 +7,12 @@ import { DeviceSelector, type Device } from '@/components/DeviceSelector';
 import { KeyConfigModal } from '@/components/KeyConfigModal';
 import { LayerSwitcher } from '@/components/LayerSwitcher';
 import { KeyboardVisualizer } from '@/components/KeyboardVisualizer';
+import { WasmStatusBadge } from '@/components/WasmStatusBadge';
 import { useGetProfileConfig, useSetProfileConfig } from '@/hooks/useProfileConfig';
 import { useProfiles, useCreateProfile } from '@/hooks/useProfiles';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
 import { useDevices } from '@/hooks/useDevices';
+import { useWasm } from '@/hooks/useWasm';
 import { useRhaiSyncEngine } from '@/components/RhaiSyncEngine';
 import { extractDevicePatterns, hasGlobalMappings } from '@/utils/rhaiParser';
 import type { KeyMapping } from '@/types';
@@ -81,6 +83,9 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
 
   // Fetch devices
   const { data: devicesData } = useDevices();
+
+  // WASM status
+  const { isWasmReady, isLoading: isLoadingWasm, error: wasmError } = useWasm();
 
   // Merged device list: connected devices + devices from Rhai (even if disconnected)
   const [mergedDevices, setMergedDevices] = useState<Device[]>([]);
@@ -453,6 +458,13 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
             <option value="JIS_109">JIS (109)</option>
           </select>
         </div>
+
+        {/* WASM Status Badge */}
+        <WasmStatusBadge
+          isLoading={isLoadingWasm}
+          isReady={isWasmReady}
+          error={wasmError}
+        />
 
         {/* Right: Sync Status and Save Button */}
         <div className="flex items-center gap-3">

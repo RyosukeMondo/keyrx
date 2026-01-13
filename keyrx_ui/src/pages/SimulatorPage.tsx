@@ -5,6 +5,7 @@ import { StateIndicatorPanel } from '../components/StateIndicatorPanel';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { MonacoEditor } from '../components/MonacoEditor';
+import { WasmStatusBadge } from '../components/WasmStatusBadge';
 import { WasmProvider } from '../contexts/WasmContext';
 import { useProfiles } from '../hooks/useProfiles';
 import { useGetProfileConfig } from '../hooks/useProfileConfig';
@@ -64,7 +65,7 @@ export const SimulatorPage: React.FC = () => {
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const { data: profiles, isLoading: isLoadingProfiles } = useProfiles();
   const { data: profileConfig, isLoading: isLoadingConfig } = useGetProfileConfig(selectedProfile);
-  const { isWasmReady, isLoading: isLoadingWasm, validateConfig, runSimulation } = useWasm();
+  const { isWasmReady, isLoading: isLoadingWasm, error, validateConfig, runSimulation } = useWasm();
   const [configLoadError, setConfigLoadError] = useState<string | null>(null);
   const [isUsingProfileConfig, setIsUsingProfileConfig] = useState(false);
   const [wasmState, setWasmState] = useState<DaemonState | null>(null);
@@ -442,10 +443,18 @@ export const SimulatorPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
-            Keyboard Simulator
-          </h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
+              Keyboard Simulator
+            </h1>
+            <WasmStatusBadge
+              isLoading={isLoadingWasm}
+              isReady={isWasmReady}
+              error={error}
+              className="shrink-0"
+            />
+          </div>
           <p className="text-sm md:text-base text-slate-400 mt-2">
             Test your configuration by clicking keys or typing. Changes are not
             saved to your keyboard.
