@@ -96,7 +96,7 @@ Fix UI issues identified during User Acceptance Testing for Dashboard, Devices, 
   - _Requirements: Unmistakable active indicator, exclusive activation_
   - _Prompt: Implement the task for spec uat-ui-fixes: Role: UI/UX Developer | Task: Enhance active profile indication: 4px left border in primary color, subtle background gradient, large "ACTIVE" badge at top. Hide Activate button on active profile. Ensure activation is mutex (API should handle). | Restrictions: Maintain accessibility contrast, work in both light/dark themes | Success: Active profile instantly recognizable, Activate button only on inactive profiles | After completion: Use log-implementation tool, mark [x] complete_
 
-- [-] 3.3 Add activation success notification
+- [x] 3.3 Add activation success notification
   - File: `src/pages/ProfilesPage.tsx`, add notification component if needed
   - Show toast/snackbar notification on successful activation
   - Message: "Profile '{name}' activated successfully!"
