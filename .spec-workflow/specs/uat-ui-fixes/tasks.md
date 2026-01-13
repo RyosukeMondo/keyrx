@@ -16,7 +16,7 @@ Fix UI issues identified during User Acceptance Testing for Dashboard, Devices, 
   - _Requirements: Dashboard shows clear indicator for virtual vs physical device_
   - _Prompt: Implement the task for spec uat-ui-fixes, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend TypeScript Developer | Task: Add isVirtual boolean field to DeviceEntry interface and implement detection in API layer. Virtual devices are those with name "keyrx" (the daemon's uinput device). Update fetchDevices to populate this field. | Restrictions: Do not modify backend API, derive from existing device name field, maintain backward compatibility | Success: DeviceEntry has isVirtual field, fetchDevices correctly identifies virtual device | After completion: Mark task [-] as in-progress in tasks.md before starting, use log-implementation tool to record artifacts, then mark [x] complete_
 
-- [-] 1.2 Add virtual device badge to Dashboard
+- [x] 1.2 Add virtual device badge to Dashboard
   - File: `src/pages/DashboardPage.tsx`, `src/components/StateIndicatorPanel.tsx`
   - Add visual indicator (icon/badge) showing "Virtual" or "Physical" for each device
   - Virtual: show computer/software icon with "Virtual" label
