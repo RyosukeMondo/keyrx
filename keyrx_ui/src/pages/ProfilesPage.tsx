@@ -83,6 +83,7 @@ export const ProfilesPage: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<'blank' | 'simple_remap' | 'capslock_escape' | 'vim_navigation' | 'gaming'>('blank');
   const [nameError, setNameError] = useState('');
   const [activationError, setActivationError] = useState<string | null>(null);
+  const [activationSuccess, setActivationSuccess] = useState<string | null>(null);
   const [autoGenerateNotification, setAutoGenerateNotification] = useState<string | null>(null);
   const [autoGenerateError, setAutoGenerateError] = useState<string | null>(null);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
@@ -176,8 +177,9 @@ export const ProfilesPage: React.FC = () => {
   };
 
   const handleActivateProfile = async (profileId: string) => {
-    // Clear any previous activation errors
+    // Clear any previous activation errors and success messages
     setActivationError(null);
+    setActivationSuccess(null);
 
     try {
       const result = await activateProfileMutation.mutateAsync(profileId);
@@ -187,6 +189,14 @@ export const ProfilesPage: React.FC = () => {
         const errorMessage = result.errors.join('\n');
         setActivationError(`Compilation failed:\n${errorMessage}`);
         console.error('Compilation errors:', result.errors);
+      } else {
+        // Show success notification
+        setActivationSuccess(`Profile '${profileId}' is now active!`);
+
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+          setActivationSuccess(null);
+        }, 5000);
       }
     } catch (err) {
       // Handle API errors
@@ -301,6 +311,27 @@ export const ProfilesPage: React.FC = () => {
               onClick={() => setActivationError(null)}
               className="text-red-400 hover:text-red-300 ml-4"
               aria-label="Dismiss error"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Activation Success Notification */}
+      {activationSuccess && (
+        <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+          <div className="flex items-start gap-3">
+            <CheckCircle size={20} className="text-green-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="flex-1">
+              <p className="text-sm text-green-300">
+                {activationSuccess}
+              </p>
+            </div>
+            <button
+              onClick={() => setActivationSuccess(null)}
+              className="text-green-400 hover:text-green-300 ml-2"
+              aria-label="Dismiss notification"
             >
               ×
             </button>

@@ -185,7 +185,7 @@ describe('ProfilesPage', () => {
     });
 
     // Initially, default should be active
-    const defaultCard = screen.getByText('default').closest('.border-green-500');
+    const defaultCard = screen.getByText('default').closest('.border-l-blue-500');
     expect(defaultCard).toBeInTheDocument();
 
     // Click Activate on gaming profile
@@ -194,8 +194,8 @@ describe('ProfilesPage', () => {
     });
     await user.click(activateButton);
 
-    // Verify gaming is now active (should have green border)
-    const gamingCard = screen.getByText('gaming').closest('.border-green-500');
+    // Verify gaming is now active (should have blue left border)
+    const gamingCard = screen.getByText('gaming').closest('.border-l-blue-500');
     expect(gamingCard).toBeInTheDocument();
 
     // Verify there's still only one ACTIVE badge
@@ -203,8 +203,13 @@ describe('ProfilesPage', () => {
     expect(activeCards).toHaveLength(1);
 
     // The ACTIVE badge should be in the gaming card
-    const gamingSection = screen.getByText('gaming').closest('.border-green-500');
+    const gamingSection = screen.getByText('gaming').closest('.border-l-blue-500');
     expect(within(gamingSection!).getByText('ACTIVE')).toBeInTheDocument();
+
+    // Verify success notification appears
+    await waitFor(() => {
+      expect(screen.getByText(/Profile 'gaming' is now active!/i)).toBeInTheDocument();
+    });
   });
 
   it('opens edit modal when Edit button is clicked', async () => {
