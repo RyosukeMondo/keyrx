@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: ['**']
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   type-check:
     name: Type Consistency Check
@@ -97,6 +101,7 @@ jobs:
     timeout-minutes: 45
     needs: type-check
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
 
@@ -222,118 +227,13 @@ jobs:
             exit 1
           fi
 
-      - name: Install Frontend Dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        working-directory: keyrx_ui
-        run: npm ci
+      # Note: Frontend tests moved to separate parallel jobs for better performance
 
-      - name: Run Frontend Tests (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        working-directory: keyrx_ui
-        continue-on-error: true
-        id: frontend-tests
-        run: |
-          npm test -- --run --reporter=verbose 2>&1 | tee test-output.log || true
-          # Parse test results and check ≥95% pass rate
-          TOTAL=$(grep -oP '\d+ passed' test-output.log | head -1 | grep -oP '\d+' || echo "0")
-          FAILED=$(grep -oP '\d+ failed' test-output.log | head -1 | grep -oP '\d+' || echo "0")
-          if [ "$TOTAL" -eq 0 ] && [ "$FAILED" -eq 0 ]; then
-            echo "Error: Could not parse test results"
-            exit 1
-          fi
-          TOTAL_TESTS=$((TOTAL + FAILED))
-          PASS_RATE=$(awk "BEGIN {printf \"%.2f\", ($TOTAL / $TOTAL_TESTS) * 100}")
-          echo "Frontend test pass rate: $PASS_RATE% ($TOTAL/$TOTAL_TESTS passed)"
-
-          # Quality gate: ≥95% pass rate required for production
-          # Currently at 75.9% - blocked by WebSocket mock infrastructure (task 9)
-          # This check is currently non-blocking (continue-on-error: true)
-          # TODO: Remove continue-on-error once WebSocket infrastructure is fixed
-          if (( $(echo "$PASS_RATE < 95.0" | bc -l) )); then
-            echo "⚠️  Quality gate WARNING: Frontend test pass rate ($PASS_RATE%) below 95% threshold"
-            echo "    Known issue: WebSocket mock infrastructure needs improvement"
-            echo "    Tracked in: production-readiness-remediation spec task 9"
-            echo "    Critical components verified: MonacoEditor (90%+ coverage), useAutoSave (100% coverage)"
-            exit 1
-          fi
-          echo "✅ Quality gate PASSED: Frontend tests at $PASS_RATE%"
-
-      - name: Run Frontend Coverage Analysis (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        working-directory: keyrx_ui
-        continue-on-error: true
-        id: frontend-coverage
-        run: |
-          npm run test:coverage -- --run 2>&1 | tee coverage-output.log || true
-
-          # Quality gate: ≥80% coverage required for production
-          # Check if coverage thresholds were met (configured in vite.config.ts at 80%)
-          if grep -q "ERROR: Coverage for" coverage-output.log; then
-            echo "⚠️  Quality gate WARNING: Coverage below 80% threshold"
-            echo "    Note: Coverage analysis may be incomplete due to test failures"
-            echo "    Critical components verified: MonacoEditor (85.91% line, 90.32% branch)"
-            echo "                                  useAutoSave (100% line, 90.62% branch)"
-            exit 1
-          fi
-
-          # Check if coverage analysis completed successfully
-          if grep -q "Coverage" coverage-output.log && ! grep -q "ERROR" coverage-output.log; then
-            echo "✅ Quality gate PASSED: Coverage ≥80%"
-          else
-            echo "⚠️  Quality gate WARNING: Coverage analysis incomplete"
-            exit 1
-          fi
-
-      - name: Track Coverage Trend (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        continue-on-error: true
-        id: coverage-trend
-        run: |
-          chmod +x scripts/coverage-trend.sh
-
-          # On main branch, update baseline after successful coverage
-          if [ "${{ github.ref }}" == "refs/heads/main" ] && [ "${{ steps.frontend-coverage.outcome }}" == "success" ]; then
-            echo "Main branch - updating coverage baseline"
-            scripts/coverage-trend.sh --update-baseline
-          else
-            # On PRs/branches, check for regression
-            echo "Checking for coverage regression..."
-            scripts/coverage-trend.sh --generate-badge --json | tee coverage-trend.json || true
-
-            # Display badge URL if generated
-            if [ -f coverage-trend.json ]; then
-              echo "Coverage trend results:"
-              cat coverage-trend.json
-            fi
-          fi
-
-      - name: Run Accessibility Audit (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        working-directory: keyrx_ui
-        run: |
-          npm run test:a11y -- --run 2>&1 | tee a11y-output.log
-
-          # Quality gate: Zero WCAG 2.2 Level AA violations (STRICT - blocks merge)
-          # This gate is enforced strictly as accessibility tests are fully passing
-          if grep -q " failed" a11y-output.log; then
-            echo "❌ Quality gate FAILED: WCAG 2.2 Level AA violations detected"
-            echo "    All accessibility tests must pass for production"
-            exit 1
-          fi
-
-          # Verify tests ran successfully
-          if grep -q " passed" a11y-output.log; then
-            echo "✅ Quality gate PASSED: Zero WCAG 2.2 Level AA violations"
-          else
-            echo "❌ Quality gate FAILED: Accessibility tests did not run correctly"
-            exit 1
-          fi
-
-      - name: Quality Gates Summary (Ubuntu)
+      - name: Backend Quality Summary (Ubuntu)
         if: matrix.os == 'ubuntu-latest' && always()
         run: |
           echo "=========================================="
-          echo "       QUALITY GATES SUMMARY"
+          echo "    BACKEND QUALITY GATES SUMMARY"
           echo "=========================================="
           echo ""
           echo "Backend Quality Gates:"
@@ -348,35 +248,8 @@ jobs:
           fi
 
           echo ""
-          echo "Frontend Quality Gates:"
-
-          # Frontend tests status
-          if [ "${{ steps.frontend-tests.outcome }}" == "success" ]; then
-            echo "  ✅ Frontend Tests (≥95% pass rate)"
-          else
-            echo "  ⚠️  Frontend Tests (current: 75.9%, target: ≥95%)"
-            echo "      Blocked by: WebSocket mock infrastructure"
-          fi
-
-          # Coverage status
-          if [ "${{ steps.frontend-coverage.outcome }}" == "success" ]; then
-            echo "  ✅ Code Coverage (≥80%)"
-          else
-            echo "  ⚠️  Code Coverage (target: ≥80%)"
-            echo "      Blocked by: Test failures preventing full analysis"
-          fi
-
-          # Accessibility is always strict
-          echo "  ✅ Accessibility (WCAG 2.2 Level AA - zero violations)"
-          echo ""
-          echo "=========================================="
-          echo "Production Readiness Status: CONDITIONAL"
-          echo "=========================================="
-          echo ""
-          echo "Backend: ✅ READY"
-          echo "Frontend: ⚠️  REQUIRES WebSocket infrastructure fixes"
-          echo ""
-          echo "See: .spec-workflow/specs/production-readiness-remediation/PRODUCTION_READINESS_REPORT.md"
+          echo "Note: Frontend quality gates run in parallel jobs"
+          echo "See: frontend-quality-summary job for results"
           echo "=========================================="
 
       - name: Run Verification (Windows)
@@ -387,28 +260,226 @@ jobs:
           cargo clippy --workspace -- -D warnings
           cargo test --workspace
 
-      - name: Upload Quality Gate Reports (Ubuntu)
+      - name: Upload Backend Quality Reports (Ubuntu)
         if: matrix.os == 'ubuntu-latest' && always()
         uses: actions/upload-artifact@v3
         with:
-          name: quality-gate-reports
+          name: backend-quality-reports
           path: |
             cobertura.xml
             coverage/
-            keyrx_ui/coverage/
-            keyrx_ui/test-output.log
-            keyrx_ui/coverage-output.log
-            keyrx_ui/a11y-output.log
             backend-coverage-output.log
+          retention-days: 30
+
+  frontend-tests:
+    name: Frontend Tests (Shard ${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build-and-verify
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: keyrx_ui/package-lock.json
+
+      - name: Cache npm
+        uses: actions/cache@v3
+        with:
+          path: keyrx_ui/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install dependencies
+        working-directory: keyrx_ui
+        run: npm ci
+
+      - name: Run test shard
+        working-directory: keyrx_ui
+        env:
+          SHARD_INDEX: ${{ matrix.shard }}
+          SHARD_COUNT: 3
+        run: |
+          npm run test:shard 2>&1 | tee test-shard-${{ matrix.shard }}.log
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-shard-${{ matrix.shard }}
+          path: keyrx_ui/test-shard-${{ matrix.shard }}.log
+          retention-days: 7
+
+  frontend-accessibility:
+    name: Accessibility Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build-and-verify
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: keyrx_ui/package-lock.json
+
+      - name: Cache npm
+        uses: actions/cache@v3
+        with:
+          path: keyrx_ui/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install dependencies
+        working-directory: keyrx_ui
+        run: npm ci
+
+      - name: Run Accessibility Audit
+        working-directory: keyrx_ui
+        run: |
+          npm run test:a11y -- --run 2>&1 | tee a11y-output.log
+
+          # Quality gate: Zero WCAG 2.2 Level AA violations (STRICT - blocks merge)
+          if grep -q " failed" a11y-output.log; then
+            echo "❌ Quality gate FAILED: WCAG 2.2 Level AA violations detected"
+            exit 1
+          fi
+
+          if grep -q " passed" a11y-output.log; then
+            echo "✅ Quality gate PASSED: Zero WCAG 2.2 Level AA violations"
+          else
+            echo "❌ Quality gate FAILED: Accessibility tests did not run correctly"
+            exit 1
+          fi
+
+      - name: Upload accessibility results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: accessibility-results
+          path: keyrx_ui/a11y-output.log
+          retention-days: 7
+
+  frontend-coverage:
+    name: Frontend Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build-and-verify
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: keyrx_ui/package-lock.json
+
+      - name: Cache npm
+        uses: actions/cache@v3
+        with:
+          path: keyrx_ui/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install dependencies
+        working-directory: keyrx_ui
+        run: npm ci
+
+      - name: Run coverage analysis
+        working-directory: keyrx_ui
+        continue-on-error: true
+        id: coverage
+        run: |
+          npm run test:coverage -- --run 2>&1 | tee coverage-output.log || true
+
+          # Quality gate: ≥80% coverage required for production
+          if grep -q "ERROR: Coverage for" coverage-output.log; then
+            echo "⚠️  Quality gate WARNING: Coverage below 80% threshold"
+            echo "    Note: Coverage analysis may be incomplete due to test failures"
+            exit 1
+          fi
+
+          if grep -q "Coverage" coverage-output.log && ! grep -q "ERROR" coverage-output.log; then
+            echo "✅ Quality gate PASSED: Coverage ≥80%"
+          else
+            echo "⚠️  Quality gate WARNING: Coverage analysis incomplete"
+            exit 1
+          fi
+
+      - name: Track coverage trend
+        continue-on-error: true
+        run: |
+          chmod +x scripts/coverage-trend.sh
+
+          if [ "${{ github.ref }}" == "refs/heads/main" ] && [ "${{ steps.coverage.outcome }}" == "success" ]; then
+            echo "Main branch - updating coverage baseline"
+            scripts/coverage-trend.sh --update-baseline
+          else
+            echo "Checking for coverage regression..."
+            scripts/coverage-trend.sh --generate-badge --json | tee coverage-trend.json || true
+            if [ -f coverage-trend.json ]; then
+              cat coverage-trend.json
+            fi
+          fi
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-coverage
+          path: |
+            keyrx_ui/coverage/
+            keyrx_ui/coverage-output.log
             coverage-trend.json
             .coverage-baseline.json
           retention-days: 30
+
+  frontend-quality-summary:
+    name: Frontend Quality Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [frontend-tests, frontend-accessibility, frontend-coverage]
+    if: always()
+
+    steps:
+      - name: Check results
+        run: |
+          echo "=========================================="
+          echo "  FRONTEND QUALITY GATES SUMMARY"
+          echo "=========================================="
+          echo ""
+          echo "Tests (3 shards): ${{ needs.frontend-tests.result }}"
+          echo "Accessibility: ${{ needs.frontend-accessibility.result }}"
+          echo "Coverage: ${{ needs.frontend-coverage.result }}"
+          echo ""
+          if [ "${{ needs.frontend-tests.result }}" != "success" ] || [ "${{ needs.frontend-accessibility.result }}" != "success" ]; then
+            echo "❌ Some quality gates failed"
+            exit 1
+          else
+            echo "✅ All critical quality gates passed"
+          fi
 
   e2e-playwright-tests:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: build-and-verify
+    needs: [build-and-verify, frontend-quality-summary]
 
     steps:
       - uses: actions/checkout@v4
