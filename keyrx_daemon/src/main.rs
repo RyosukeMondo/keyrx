@@ -37,8 +37,9 @@ enum Commands {
     /// the remapping rules from the .krx configuration file.
     Run {
         /// Path to the .krx configuration file compiled by keyrx_compiler.
+        /// If not specified, uses the active profile from %APPDATA%\keyrx.
         #[arg(short, long, value_name = "FILE")]
-        config: PathBuf,
+        config: Option<PathBuf>,
 
         /// Enable debug logging for verbose output.
         ///
@@ -154,7 +155,19 @@ fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Commands::Run { config, debug } => handle_run(&config, debug),
+        Commands::Run { config, debug } => {
+            // If no config specified, use active profile from %APPDATA%\keyrx
+            let config_path = match config {
+                Some(path) => path,
+                None => {
+                    let mut default_path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+                    default_path.push("keyrx");
+                    default_path.push("default.krx");
+                    default_path
+                }
+            };
+            handle_run(&config_path, debug)
+        }
         Commands::Devices(args) => match keyrx_daemon::cli::devices::execute(args, None) {
             Ok(()) => Ok(()),
             Err(err) => Err((exit_codes::CONFIG_ERROR, err.to_string())),
@@ -473,6 +486,14 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
 
     // Initialize logging
     init_logging(debug);
+
+    // Check if config file exists, warn if not
+    if !config_path.exists() {
+        log::warn!(
+            "Config file not found: {}. Running in pass-through mode.",
+            config_path.display()
+        );
+    }
 
     log::info!(
         "Starting keyrx daemon (Windows) with config: {}",

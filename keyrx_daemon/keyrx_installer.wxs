@@ -131,6 +131,7 @@
           Id="StartMenuDaemon"
           Name="KeyRx Daemon"
           Target="[BinFolder]keyrx_daemon.exe"
+          Arguments="run"
           WorkingDirectory="BinFolder"
           Icon="ProductIcon"
           IconIndex="0" />

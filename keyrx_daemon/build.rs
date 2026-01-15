@@ -1,11 +1,15 @@
 use std::path::PathBuf;
 
 fn main() {
-    // Windows: Embed manifest and icon for admin elevation
+    // Windows: Embed manifest and icon for admin elevation (release only)
     #[cfg(target_os = "windows")]
     {
+        // Only embed admin manifest for release builds
+        let profile = std::env::var("PROFILE").unwrap_or_default();
         let mut res = winres::WindowsResource::new();
-        res.set_manifest_file("keyrx_daemon.exe.manifest");
+        if profile == "release" {
+            res.set_manifest_file("keyrx_daemon.exe.manifest");
+        }
         // Embed icon if available
         let icon_path = PathBuf::from("assets/icon.ico");
         if icon_path.exists() {
