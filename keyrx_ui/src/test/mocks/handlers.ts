@@ -19,16 +19,20 @@ interface MockProfile {
 }
 
 // Mock data
-const mockDevices: DeviceEntry[] = [
+const initialDevices: DeviceEntry[] = [
   {
     id: 'device-1',
     name: 'Test Keyboard 1',
     path: '/dev/input/event0',
     vendorId: 0x1234,
     productId: 0x5678,
+    serial: null,
     active: true,
     layout: 'ANSI_104',
     enabled: true,
+    scope: 'Global',
+    lastSeen: Date.now(),
+    isVirtual: false,
   },
   {
     id: 'device-2',
@@ -36,11 +40,17 @@ const mockDevices: DeviceEntry[] = [
     path: '/dev/input/event1',
     vendorId: 0x1234,
     productId: 0x5679,
+    serial: null,
     active: true,
     layout: 'ANSI_104',
     enabled: true,
+    scope: 'Global',
+    lastSeen: Date.now(),
+    isVirtual: false,
   },
 ];
+
+let mockDevices: DeviceEntry[] = JSON.parse(JSON.stringify(initialDevices));
 
 const initialProfiles: MockProfile[] = [
   {
@@ -154,13 +164,30 @@ export const handlers = [
       );
     }
 
+    // Save the device before removing it
+    const deletedDevice = mockDevices[index];
     mockDevices.splice(index, 1);
-    return HttpResponse.json({ success: true });
+
+    // Return device in DeviceEntry format (with last_seen as snake_case)
+    // Remove null serial field to pass validation (optional means omit, not null)
+    const response: any = {
+      ...deletedDevice,
+      last_seen: deletedDevice.lastSeen || Date.now(),
+    };
+    if (response.serial === null) {
+      delete response.serial;
+    }
+    return HttpResponse.json(response);
   }),
 
   // Profile endpoints
   http.get('/api/profiles', () => {
     return HttpResponse.json({ profiles: mockProfiles });
+  }),
+
+  http.get('/api/profiles/active', () => {
+    const activeProfile = mockProfiles.find((p) => p.isActive);
+    return HttpResponse.json({ active_profile: activeProfile?.name ?? null });
   }),
 
   http.post('/api/profiles', async ({ request }) => {
@@ -355,6 +382,6 @@ export function resetMockData() {
   mockProfiles.length = 0;
   mockProfiles.push(...JSON.parse(JSON.stringify(initialProfiles)));
 
-  // Note: mockDevices is const so it doesn't get mutated
-  // If it ever needs resetting, add it here
+  mockDevices.length = 0;
+  mockDevices.push(...JSON.parse(JSON.stringify(initialDevices)));
 }
