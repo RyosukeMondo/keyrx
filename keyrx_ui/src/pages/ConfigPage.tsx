@@ -7,7 +7,7 @@ import { DeviceSelector, type Device } from '@/components/DeviceSelector';
 import { KeyConfigModal } from '@/components/KeyConfigModal';
 import { CurrentMappingsSummary } from '@/components/CurrentMappingsSummary';
 import { LayerSwitcher } from '@/components/LayerSwitcher';
-import { KeyboardVisualizer } from '@/components/KeyboardVisualizer';
+import { KeyboardVisualizer, type LayoutType } from '@/components/KeyboardVisualizer';
 import { useGetProfileConfig, useSetProfileConfig } from '@/hooks/useProfileConfig';
 import { useProfiles, useCreateProfile, useActiveProfileQuery } from '@/hooks/useProfiles';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
@@ -90,7 +90,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   const [activePane, setActivePane] = useState<'global' | 'device'>('global');
 
   // Keyboard layout selector
-  const [keyboardLayout, setKeyboardLayout] = useState<'ANSI_104' | 'ISO_105' | 'JIS_109'>('ANSI_104');
+  const [keyboardLayout, setKeyboardLayout] = useState<LayoutType>('ANSI_104');
 
   // Sync status tracking
   const [syncStatus, setSyncStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
@@ -558,13 +558,21 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
           <select
             id="layout-selector"
             value={keyboardLayout}
-            onChange={(e) => setKeyboardLayout(e.target.value as 'ANSI_104' | 'ISO_105' | 'JIS_109')}
+            onChange={(e) => setKeyboardLayout(e.target.value as LayoutType)}
             className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500"
             aria-label="Select keyboard layout"
           >
-            <option value="ANSI_104">ANSI (104)</option>
-            <option value="ISO_105">ISO (105)</option>
+            <option value="ANSI_104">ANSI Full (104)</option>
+            <option value="ANSI_87">ANSI TKL (87)</option>
+            <option value="ISO_105">ISO Full (105)</option>
+            <option value="ISO_88">ISO TKL (88)</option>
             <option value="JIS_109">JIS (109)</option>
+            <option value="COMPACT_60">60% Compact</option>
+            <option value="COMPACT_65">65% Compact</option>
+            <option value="COMPACT_75">75% Compact</option>
+            <option value="COMPACT_96">96% Compact</option>
+            <option value="HHKB">HHKB</option>
+            <option value="NUMPAD">Numpad</option>
           </select>
         </div>
 

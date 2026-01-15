@@ -70,11 +70,18 @@ export interface LatencyStats {
 export interface EventRecord {
   id: string;
   timestamp: string;
-  type: 'key_press' | 'key_release' | 'tap' | 'hold' | 'macro' | 'layer_switch';
+  type: 'key_press' | 'key_release' | 'press' | 'release' | 'tap' | 'hold' | 'macro' | 'layer_switch';
   keyCode: string;
   layer: string;
   latencyUs: number;
   action?: string;
+  // New fields for enhanced event info
+  input?: string;
+  output?: string;
+  deviceId?: string;
+  deviceName?: string;
+  mappingType?: string;
+  mappingTriggered?: boolean;
 }
 
 export interface DaemonState {
@@ -86,8 +93,23 @@ export interface DaemonState {
   activeProfile?: string | null;
 }
 
-// WebSocket Message Types
-export interface WSMessage {
-  type: 'event' | 'state' | 'latency' | 'error';
-  payload: EventRecord | DaemonState | LatencyStats | { message: string };
+// WebSocket Message Types - Discriminated union for proper type narrowing
+export type WSMessage =
+  | { type: 'event'; payload: KeyEventPayload }
+  | { type: 'state'; payload: DaemonState }
+  | { type: 'latency'; payload: LatencyStats }
+  | { type: 'error'; payload: { message: string } };
+
+// Raw key event payload from daemon (before transformation to EventRecord)
+export interface KeyEventPayload {
+  timestamp: number;
+  keyCode: string;
+  eventType: string;
+  input: string;
+  output: string;
+  latency: number;
+  deviceId?: string;
+  deviceName?: string;
+  mappingType?: string;
+  mappingTriggered?: boolean;
 }

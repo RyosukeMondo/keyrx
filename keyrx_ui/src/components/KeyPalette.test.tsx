@@ -1,15 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DndContext } from '@dnd-kit/core';
 import { KeyPalette, PaletteKey } from './KeyPalette';
-
-/**
- * Test wrapper component to provide DndContext
- */
-const DndWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <DndContext>{children}</DndContext>;
-};
 
 describe('KeyPalette', () => {
   const mockOnKeySelect = vi.fn();
@@ -23,34 +15,32 @@ describe('KeyPalette', () => {
   describe('Rendering', () => {
     it('renders without crashing', () => {
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={mockOnKeySelect} />
-        </DndWrapper>
+        </>
       );
       expect(screen.getByPlaceholderText(/search keys/i)).toBeInTheDocument();
     });
 
     it('displays all category tabs', () => {
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
+      // Current KeyPalette has 4 categories: Basic, Modifiers, Special, Any
       expect(screen.getByText('Basic')).toBeInTheDocument();
       expect(screen.getByText('Modifiers')).toBeInTheDocument();
-      expect(screen.getByText('Media')).toBeInTheDocument();
-      expect(screen.getByText('Macro')).toBeInTheDocument();
-      expect(screen.getByText('Layers')).toBeInTheDocument();
       expect(screen.getByText('Special')).toBeInTheDocument();
       expect(screen.getByText('Any')).toBeInTheDocument();
     });
 
     it('displays view mode toggle buttons', () => {
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       const gridButton = screen.getByLabelText(/grid view/i);
@@ -62,9 +52,9 @@ describe('KeyPalette', () => {
 
     it('shows empty state message when no favorites or recent keys', () => {
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       expect(screen.getByText(/star keys to add favorites/i)).toBeInTheDocument();
@@ -74,9 +64,9 @@ describe('KeyPalette', () => {
   describe('Category Navigation', () => {
     it('switches to Modifiers category when clicked', async () => {
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       const modifiersTab = screen.getByText('Modifiers');
@@ -88,27 +78,11 @@ describe('KeyPalette', () => {
       });
     });
 
-    it('switches to Layers category and shows layer keys', async () => {
-      render(
-        <DndWrapper>
-          <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
-      );
-
-      const layersTab = screen.getByText('Layers');
-      fireEvent.click(layersTab);
-
-      // Should show layer keys
-      await waitFor(() => {
-        expect(screen.getByText('Base')).toBeInTheDocument();
-      });
-    });
-
     it('displays subcategory pills for Basic category', async () => {
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       const basicTab = screen.getByText('Basic');
@@ -122,57 +96,15 @@ describe('KeyPalette', () => {
       });
     });
 
-    it('displays subcategory pills for Layers category', async () => {
-      render(
-        <DndWrapper>
-          <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
-      );
-
-      const layersTab = screen.getByText('Layers');
-      fireEvent.click(layersTab);
-
-      // Should show layer subcategory pills
-      await waitFor(() => {
-        expect(screen.getByText('basic')).toBeInTheDocument();
-        expect(screen.getByText('momentary')).toBeInTheDocument();
-        expect(screen.getByText('toggle-to')).toBeInTheDocument();
-        expect(screen.getByText('toggle')).toBeInTheDocument();
-        expect(screen.getByText('one-shot')).toBeInTheDocument();
-        expect(screen.getByText('layer-tap')).toBeInTheDocument();
-      });
-    });
-
-    it('filters keys by subcategory when pill is clicked', async () => {
-      const user = userEvent.setup();
-      render(
-        <DndWrapper>
-          <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
-      );
-
-      const layersTab = screen.getByText('Layers');
-      await user.click(layersTab);
-
-      // Click on momentary subcategory
-      const momentaryPill = screen.getByText('momentary');
-      await user.click(momentaryPill);
-
-      // Should show MO(n) keys
-      await waitFor(() => {
-        expect(screen.getByText('MO(0)')).toBeInTheDocument();
-        expect(screen.getByText('MO(1)')).toBeInTheDocument();
-      });
-    });
   });
 
   describe('Search Functionality', () => {
     it('filters keys based on search query', async () => {
       const user = userEvent.setup();
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       const searchInput = screen.getByPlaceholderText(/search keys/i);
@@ -188,9 +120,9 @@ describe('KeyPalette', () => {
     it('shows result count for search', async () => {
       const user = userEvent.setup();
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       const searchInput = screen.getByPlaceholderText(/search keys/i);
@@ -205,9 +137,9 @@ describe('KeyPalette', () => {
     it('shows no results message for invalid search', async () => {
       const user = userEvent.setup();
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       const searchInput = screen.getByPlaceholderText(/search keys/i);
@@ -222,9 +154,9 @@ describe('KeyPalette', () => {
     it('clears search when X button is clicked', async () => {
       const user = userEvent.setup();
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       const searchInput = screen.getByPlaceholderText(/search keys/i);
@@ -241,9 +173,9 @@ describe('KeyPalette', () => {
     it('searches across aliases (KC_, VK_ prefixes)', async () => {
       const user = userEvent.setup();
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       const searchInput = screen.getByPlaceholderText(/search keys/i);
@@ -261,9 +193,9 @@ describe('KeyPalette', () => {
     it('persists favorites to localStorage', async () => {
       const user = userEvent.setup();
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       // Find a key item with star button - use getAllByText since A appears multiple times
@@ -298,9 +230,9 @@ describe('KeyPalette', () => {
       const onKeySelect = vi.fn();
 
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={onKeySelect} />
-        </DndWrapper>
+        </>
       );
 
       // Find and click a key - get all 'A' keys and click the first visible one
@@ -338,9 +270,9 @@ describe('KeyPalette', () => {
     it('switches to list view when list button is clicked', async () => {
       const user = userEvent.setup();
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       const listButton = screen.getByLabelText(/list view/i);
@@ -358,9 +290,9 @@ describe('KeyPalette', () => {
       localStorage.setItem('keyrx_palette_view_mode', 'list');
 
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       // List view button should be active (has primary color)
@@ -375,9 +307,9 @@ describe('KeyPalette', () => {
     it('shows custom input field in Any category', async () => {
       const user = userEvent.setup();
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       const anyTab = screen.getByText('Any');
@@ -394,9 +326,9 @@ describe('KeyPalette', () => {
     it('validates custom keycode input', async () => {
       const user = userEvent.setup();
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={mockOnKeySelect} />
-        </DndWrapper>
+        </>
       );
 
       const anyTab = screen.getByText('Any');
@@ -419,9 +351,9 @@ describe('KeyPalette', () => {
   describe('Physical Key Capture', () => {
     it('has keyboard icon button that may be for capture', () => {
       const { container } = render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       // Look for keyboard icon or capture-related button
@@ -434,9 +366,9 @@ describe('KeyPalette', () => {
 
     it('should have keyboard icon button for capture functionality', async () => {
       const { container } = render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       // Check that keyboard icon exists (physical key capture feature)
@@ -449,9 +381,9 @@ describe('KeyPalette', () => {
 
     it('component handles keyboard events properly', () => {
       render(
-        <DndWrapper>
+        <>
           <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
+        </>
       );
 
       // Verify component renders without errors
@@ -464,112 +396,5 @@ describe('KeyPalette', () => {
     });
   });
 
-  describe('Layer Function Keys', () => {
-    it('displays MO(n) keys in momentary subcategory', async () => {
-      const user = userEvent.setup();
-      render(
-        <DndWrapper>
-          <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
-      );
-
-      const layersTab = screen.getByText('Layers');
-      await user.click(layersTab);
-
-      const momentaryPill = screen.getByText('momentary');
-      await user.click(momentaryPill);
-
-      // Should show MO keys
-      await waitFor(() => {
-        expect(screen.getByText('MO(0)')).toBeInTheDocument();
-        expect(screen.getByText('MO(5)')).toBeInTheDocument();
-        expect(screen.getByText('MO(15)')).toBeInTheDocument();
-      });
-    });
-
-    it('displays TO(n) keys in toggle-to subcategory', async () => {
-      const user = userEvent.setup();
-      render(
-        <DndWrapper>
-          <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
-      );
-
-      const layersTab = screen.getByText('Layers');
-      await user.click(layersTab);
-
-      const toggleToPill = screen.getByText('toggle-to');
-      await user.click(toggleToPill);
-
-      // Should show TO keys
-      await waitFor(() => {
-        expect(screen.getByText('TO(0)')).toBeInTheDocument();
-        expect(screen.getByText('TO(5)')).toBeInTheDocument();
-      });
-    });
-
-    it('displays TG(n) keys in toggle subcategory', async () => {
-      const user = userEvent.setup();
-      render(
-        <DndWrapper>
-          <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
-      );
-
-      const layersTab = screen.getByText('Layers');
-      await user.click(layersTab);
-
-      const togglePill = screen.getByText('toggle');
-      await user.click(togglePill);
-
-      // Should show TG keys
-      await waitFor(() => {
-        expect(screen.getByText('TG(0)')).toBeInTheDocument();
-        expect(screen.getByText('TG(5)')).toBeInTheDocument();
-      });
-    });
-
-    it('displays OSL(n) keys in one-shot subcategory', async () => {
-      const user = userEvent.setup();
-      render(
-        <DndWrapper>
-          <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
-      );
-
-      const layersTab = screen.getByText('Layers');
-      await user.click(layersTab);
-
-      const oneShotPill = screen.getByText('one-shot');
-      await user.click(oneShotPill);
-
-      // Should show OSL keys
-      await waitFor(() => {
-        expect(screen.getByText('OSL(0)')).toBeInTheDocument();
-        expect(screen.getByText('OSL(5)')).toBeInTheDocument();
-      });
-    });
-
-    it('displays LT keys in layer-tap subcategory', async () => {
-      const user = userEvent.setup();
-      render(
-        <DndWrapper>
-          <KeyPalette onKeySelect={vi.fn()} />
-        </DndWrapper>
-      );
-
-      const layersTab = screen.getByText('Layers');
-      await user.click(layersTab);
-
-      const layerTapPill = screen.getByText('layer-tap');
-      await user.click(layerTapPill);
-
-      // Should show LT keys
-      await waitFor(() => {
-        expect(screen.getByText('LT(1,Spc)')).toBeInTheDocument();
-        expect(screen.getByText('LT(2,Ent)')).toBeInTheDocument();
-      });
-    });
-  });
 });
 

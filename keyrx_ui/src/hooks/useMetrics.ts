@@ -7,7 +7,29 @@ import type {
   EventRecord,
   DaemonState,
   WSMessage,
+  KeyEventPayload,
 } from '../types';
+
+/**
+ * Transform daemon's KeyEventPayload to frontend's EventRecord
+ */
+function transformKeyEvent(payload: KeyEventPayload): EventRecord {
+  return {
+    id: `evt-${payload.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: new Date(payload.timestamp / 1000).toISOString(),
+    type: payload.eventType === 'press' ? 'press' : 'release',
+    keyCode: payload.keyCode.replace(/^KEY_/, ''),
+    layer: 'Base',
+    latencyUs: payload.latency,
+    action: payload.mappingTriggered ? payload.output : undefined,
+    input: payload.input,
+    output: payload.output,
+    deviceId: payload.deviceId,
+    deviceName: payload.deviceName,
+    mappingType: payload.mappingType,
+    mappingTriggered: payload.mappingTriggered,
+  };
+}
 
 /**
  * Fetch latency statistics with React Query caching
@@ -55,7 +77,8 @@ export function useWebSocketMetrics() {
 
         switch (message.type) {
           case 'event': {
-            const eventRecord = message.payload as EventRecord;
+            // Transform KeyEventPayload to EventRecord
+            const eventRecord = transformKeyEvent(message.payload);
 
             // Update event log cache
             queryClient.setQueryData<EventRecord[]>(
@@ -70,10 +93,8 @@ export function useWebSocketMetrics() {
           }
 
           case 'state': {
-            const state = message.payload as DaemonState;
-
-            // Update daemon state cache
-            queryClient.setQueryData(queryKeys.daemonState, state);
+            // Type is automatically narrowed to DaemonState
+            queryClient.setQueryData(queryKeys.daemonState, message.payload);
             break;
           }
 

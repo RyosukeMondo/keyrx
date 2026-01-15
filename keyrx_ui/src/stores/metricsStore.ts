@@ -79,7 +79,26 @@ export const useMetricsStore = create<MetricsStore>((set, get) => ({
 
         switch (message.type) {
           case 'event': {
-            const eventRecord = message.payload as EventRecord;
+            // Transform daemon's KeyEventPayload to frontend's EventRecord
+            // Type is automatically narrowed by discriminated union
+            const payload = message.payload;
+
+            const eventRecord: EventRecord = {
+              id: `evt-${payload.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+              timestamp: new Date(payload.timestamp / 1000).toISOString(), // Convert microseconds to ISO string
+              type: payload.eventType === 'press' ? 'press' : 'release',
+              keyCode: payload.keyCode.replace(/^KEY_/, ''), // Remove KEY_ prefix for display
+              layer: 'Base', // TODO: Get from daemon state
+              latencyUs: payload.latency,
+              action: payload.mappingTriggered ? payload.output : undefined,
+              input: payload.input,
+              output: payload.output,
+              deviceId: payload.deviceId,
+              deviceName: payload.deviceName,
+              mappingType: payload.mappingType,
+              mappingTriggered: payload.mappingTriggered,
+            };
+
             const { eventLog } = get();
             // Prepend new event (most recent first)
             const updatedLog = [eventRecord, ...eventLog];
@@ -92,14 +111,14 @@ export const useMetricsStore = create<MetricsStore>((set, get) => ({
           }
 
           case 'state': {
-            const state = message.payload as DaemonState;
-            set({ currentState: state });
+            // Type is automatically narrowed to DaemonState
+            set({ currentState: message.payload });
             break;
           }
 
           case 'latency': {
-            const stats = message.payload as LatencyStats;
-            set({ latencyStats: stats });
+            // Type is automatically narrowed to LatencyStats
+            set({ latencyStats: message.payload });
             break;
           }
 

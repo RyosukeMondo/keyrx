@@ -1,11 +1,15 @@
-import React, { useMemo, useRef } from 'react';
-import { useDroppable } from '@dnd-kit/core';
-import { KeyButton } from './KeyButton';
+/**
+ * Keyboard Visualizer Component
+ * Renders keyboard layouts using SVG for accurate key shapes
+ *
+ * Supports: ANSI, ISO (with L-shaped Enter), JIS, compact layouts
+ */
+
+import React, { useMemo } from 'react';
+import { SVGKeyboard } from './SVGKeyboard';
 import type { KeyMapping } from '@/types';
-import { parseKLEJson } from '../utils/kle-parser';
+import { parseKLEToSVG } from '../utils/kle-parser';
 import { cn } from '../utils/cn';
-import { useArrowNavigation } from '../utils/keyboard';
-import type { AssignableKey } from './KeyAssignmentPanel';
 
 // Import layout data
 import ANSI_104 from '../data/layouts/ANSI_104.json';
@@ -20,17 +24,29 @@ import COMPACT_96 from '../data/layouts/COMPACT_96.json';
 import HHKB from '../data/layouts/HHKB.json';
 import NUMPAD from '../data/layouts/NUMPAD.json';
 
+export type LayoutType =
+  | 'ANSI_104'
+  | 'ANSI_87'
+  | 'ISO_105'
+  | 'ISO_88'
+  | 'JIS_109'
+  | 'COMPACT_60'
+  | 'COMPACT_65'
+  | 'COMPACT_75'
+  | 'COMPACT_96'
+  | 'HHKB'
+  | 'NUMPAD';
+
 interface KeyboardVisualizerProps {
-  layout: 'ANSI_104' | 'ANSI_87' | 'ISO_105' | 'ISO_88' | 'JIS_109' | 'COMPACT_60' | 'COMPACT_65' | 'COMPACT_75' | 'COMPACT_96' | 'HHKB' | 'NUMPAD';
+  layout: LayoutType;
   keyMappings: Map<string, KeyMapping>;
   onKeyClick: (keyCode: string) => void;
-  onKeyDrop?: (keyCode: string, droppedKey: AssignableKey) => void;
   simulatorMode?: boolean;
   pressedKeys?: Set<string>;
   className?: string;
 }
 
-const layoutData = {
+const layoutData: Record<LayoutType, { name: string; keys: any[] }> = {
   ANSI_104,
   ANSI_87,
   ISO_105,
@@ -44,180 +60,39 @@ const layoutData = {
   NUMPAD,
 };
 
-interface DroppableKeyWrapperProps {
-  keyCode: string;
-  label: string;
-  mapping?: KeyMapping;
-  isPressed: boolean;
-  onClick: () => void;
-  onDrop?: (droppedKey: AssignableKey) => void;
-  disabled?: boolean;
-}
-
-/**
- * Wrapper component for individual keys that makes them droppable zones
- */
-const DroppableKeyWrapper: React.FC<DroppableKeyWrapperProps> = ({
-  keyCode,
-  label,
-  mapping,
-  isPressed,
-  onClick,
-  onDrop,
-  disabled = false,
-}) => {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `drop-${keyCode}`,
-    data: { keyCode },
-    disabled,
-  });
-
-  // Track drop success animation
-  const [showSuccessAnimation, setShowSuccessAnimation] = React.useState(false);
-  const prevMappingRef = React.useRef(mapping);
-
-  const handleClick = () => {
-    if (!disabled) {
-      onClick();
-    }
-  };
-
-  // Trigger success animation when mapping changes (indicates successful drop)
-  React.useEffect(() => {
-    if (mapping && mapping !== prevMappingRef.current) {
-      setShowSuccessAnimation(true);
-      const timer = setTimeout(() => {
-        setShowSuccessAnimation(false);
-      }, 600); // Animation duration
-      prevMappingRef.current = mapping;
-      return () => clearTimeout(timer);
-    }
-    prevMappingRef.current = mapping;
-  }, [mapping]);
-
-  // Build comprehensive aria-label for drop zone
-  const mappingDescription = mapping
-    ? `Currently mapped to ${mapping.tapAction || 'custom action'}`
-    : 'No mapping assigned';
-
-  const ariaLabel = disabled
-    ? `${label} key. ${mappingDescription}. Not configurable.`
-    : `${label} key. ${mappingDescription}. Drop zone for key assignment. ${isOver ? 'Drop here to assign' : ''}`;
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        'relative transition-all duration-200',
-        // Valid drop zone - blue ring when hovering
-        isOver && !disabled && 'ring-2 ring-blue-400 ring-offset-2 ring-offset-slate-800 z-10',
-        // Invalid drop - red ring (disabled keys)
-        isOver && disabled && 'ring-2 ring-red-400 ring-offset-2 ring-offset-slate-800',
-        // Success animation - brief scale effect
-        showSuccessAnimation && 'animate-pulse'
-      )}
-      aria-label={ariaLabel}
-      aria-dropeffect={disabled ? 'none' : isOver ? 'move' : 'none'}
-    >
-      <KeyButton
-        keyCode={keyCode}
-        label={label}
-        mapping={mapping}
-        onClick={handleClick}
-        isPressed={isPressed}
-        className={cn(
-          disabled && 'opacity-50 cursor-not-allowed',
-          // Add brightness effect on valid hover
-          isOver && !disabled && 'brightness-125',
-          // Dim invalid targets
-          isOver && disabled && 'opacity-30'
-        )}
-      />
-      {/* Success indicator overlay */}
-      {showSuccessAnimation && (
-        <div className="absolute inset-0 pointer-events-none bg-green-400/20 rounded-lg animate-ping" />
-      )}
-    </div>
-  );
-};
-
-DroppableKeyWrapper.displayName = 'DroppableKeyWrapper';
-
 export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
   layout,
   keyMappings,
   onKeyClick,
-  onKeyDrop,
   simulatorMode = false,
   pressedKeys = new Set(),
   className = '',
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const keyButtons = useMemo(() => {
+  // Parse layout data to SVG format
+  const svgKeys = useMemo(() => {
     const kleData = layoutData[layout];
-    return parseKLEJson(kleData);
+    return parseKLEToSVG(kleData);
   }, [layout]);
 
-  // Calculate grid dimensions
-  const maxRow = useMemo(
-    () => Math.max(...keyButtons.map((k) => k.gridRow)),
-    [keyButtons]
-  );
-  const maxCol = useMemo(
-    () =>
-      Math.max(...keyButtons.map((k) => k.gridColumn + k.gridColumnSpan - 1)),
-    [keyButtons]
-  );
-
-  // Enable arrow key navigation for keyboard keys
-  useArrowNavigation(containerRef, {
-    orientation: 'horizontal',
-    loop: true,
-  });
-
-  const handleKeyDrop = (keyCode: string) => (droppedKey: AssignableKey) => {
-    if (onKeyDrop) {
-      onKeyDrop(keyCode, droppedKey);
-    }
-  };
+  // Debug: log keys count
+  if (svgKeys.length === 0) {
+    console.warn('KeyboardVisualizer: No keys parsed from layout', layout);
+  }
 
   return (
     <div
-      ref={containerRef}
-      className={cn('keyboard-grid', className)}
-      role="group"
+      className={cn('keyboard-visualizer', className)}
       data-testid="keyboard-visualizer"
-      aria-label={`${layout} keyboard layout${simulatorMode ? ' (simulator mode)' : ''}. Use arrow keys to navigate between keys, Enter to select.`}
-      style={{
-        display: 'grid',
-        gridTemplateRows: `repeat(${maxRow}, 52px)`,
-        gridTemplateColumns: `repeat(${maxCol}, 52px)`,
-        gap: '2px',
-        padding: '16px',
-        backgroundColor: 'var(--color-bg-secondary)',
-        borderRadius: '12px',
-      }}
+      style={{ minHeight: '200px', minWidth: '400px' }}
     >
-      {keyButtons.map((key) => (
-        <div
-          key={key.keyCode}
-          style={{
-            gridRow: key.gridRow,
-            gridColumn: `${key.gridColumn} / span ${key.gridColumnSpan}`,
-          }}
-        >
-          <DroppableKeyWrapper
-            keyCode={key.keyCode}
-            label={key.label}
-            mapping={keyMappings.get(key.keyCode)}
-            onClick={() => onKeyClick(key.keyCode)}
-            onDrop={handleKeyDrop(key.keyCode)}
-            isPressed={pressedKeys.has(key.keyCode)}
-            disabled={simulatorMode}
-          />
-        </div>
-      ))}
+      <SVGKeyboard
+        keys={svgKeys}
+        keyMappings={keyMappings}
+        onKeyClick={onKeyClick}
+        simulatorMode={simulatorMode}
+        pressedKeys={pressedKeys}
+        layoutName={layoutData[layout].name}
+      />
     </div>
   );
 };

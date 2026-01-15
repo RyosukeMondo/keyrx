@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { useDraggable } from '@dnd-kit/core';
 import { cn } from '@/utils/cn';
 import { Input } from './Input';
 
@@ -22,40 +21,28 @@ export interface AssignableKey {
   description?: string;
 }
 
-interface DraggableKeyItemProps {
+interface KeyItemProps {
   keyItem: AssignableKey;
+  onClick?: () => void;
 }
 
 /**
- * Individual draggable key item within the palette
+ * Individual key item within the palette
  */
-const DraggableKeyItem: React.FC<DraggableKeyItemProps> = ({ keyItem }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: keyItem.id,
-    data: keyItem,
-  });
-
-  // Build comprehensive aria-label with keyboard instructions
-  const ariaLabel = isDragging
-    ? `Dragging ${keyItem.label}. Use arrow keys to select target key, Space to drop, Escape to cancel.`
-    : `${keyItem.label} key. ${keyItem.description || ''}. Press Space to grab and drag.`;
+const KeyItem: React.FC<KeyItemProps> = ({ keyItem, onClick }) => {
+  const ariaLabel = `${keyItem.label} key. ${keyItem.description || ''}. Click to select.`;
 
   return (
     <button
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
+      onClick={onClick}
       className={cn(
         'px-3 py-2 text-sm font-medium rounded border transition-all duration-150',
         'bg-slate-700 border-slate-600 text-slate-100',
         'hover:bg-slate-600 hover:border-slate-500',
         'focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2',
-        'min-h-[44px] min-w-[44px]', // Touch-friendly minimum size
-        'cursor-grab active:cursor-grabbing',
-        isDragging && 'opacity-50 cursor-grabbing'
+        'min-h-[44px] min-w-[44px]' // Touch-friendly minimum size
       )}
       aria-label={ariaLabel}
-      aria-grabbed={isDragging}
       aria-describedby={keyItem.description ? `${keyItem.id}-desc` : undefined}
       title={keyItem.description}
       type="button"
@@ -70,7 +57,7 @@ const DraggableKeyItem: React.FC<DraggableKeyItemProps> = ({ keyItem }) => {
   );
 };
 
-DraggableKeyItem.displayName = 'DraggableKeyItem';
+KeyItem.displayName = 'KeyItem';
 
 export interface KeyAssignmentPanelProps {
   /** CSS class name for styling */
@@ -294,7 +281,7 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
       <div className="p-4 border-b border-slate-700">
         <h2 className="text-lg font-semibold text-slate-100 mb-2">Key Palette</h2>
         <p className="text-xs text-slate-400 mb-3" id="key-palette-instructions">
-          Use mouse to drag or keyboard: Tab to focus a key, Space to grab, Arrow keys to navigate, Space to drop
+          Click a key to select it for assignment
         </p>
 
         {/* Search input */}
@@ -346,7 +333,7 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {keys.map(key => (
-                      <DraggableKeyItem key={key.id} keyItem={key} />
+                      <KeyItem key={key.id} keyItem={key} />
                     ))}
                   </div>
                 </div>
@@ -361,7 +348,7 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 {filteredKeys.map(key => (
-                  <DraggableKeyItem key={key.id} keyItem={key} />
+                  <KeyItem key={key.id} keyItem={key} />
                 ))}
               </div>
             )}

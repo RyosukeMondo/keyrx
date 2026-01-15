@@ -8,7 +8,28 @@
  * - Resource cleanup
  */
 
-import type { WSMessage, EventRecord, DaemonState, LatencyStats } from '../types';
+import type { WSMessage, EventRecord, DaemonState, LatencyStats, KeyEventPayload } from '../types';
+
+/**
+ * Transform daemon's KeyEventPayload to frontend's EventRecord
+ */
+function transformKeyEvent(payload: KeyEventPayload): EventRecord {
+  return {
+    id: `evt-${payload.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: new Date(payload.timestamp / 1000).toISOString(),
+    type: payload.eventType === 'press' ? 'press' : 'release',
+    keyCode: payload.keyCode.replace(/^KEY_/, ''),
+    layer: 'Base',
+    latencyUs: payload.latency,
+    action: payload.mappingTriggered ? payload.output : undefined,
+    input: payload.input,
+    output: payload.output,
+    deviceId: payload.deviceId,
+    deviceName: payload.deviceName,
+    mappingType: payload.mappingType,
+    mappingTriggered: payload.mappingTriggered,
+  };
+}
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -185,19 +206,20 @@ export class WebSocketManager {
       switch (message.type) {
         case 'event':
           if (this.callbacks.onEvent) {
-            this.callbacks.onEvent(message.payload as EventRecord);
+            // Transform KeyEventPayload to EventRecord
+            this.callbacks.onEvent(transformKeyEvent(message.payload));
           }
           break;
 
         case 'state':
           if (this.callbacks.onState) {
-            this.callbacks.onState(message.payload as DaemonState);
+            this.callbacks.onState(message.payload);
           }
           break;
 
         case 'latency':
           if (this.callbacks.onLatency) {
-            this.callbacks.onLatency(message.payload as LatencyStats);
+            this.callbacks.onLatency(message.payload);
           }
           break;
 
