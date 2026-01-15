@@ -48,6 +48,8 @@ serde-wasm-bindgen = "0.5"
 console_error_panic_hook = "0.1"
 once_cell = "1.19"
 web-sys = { version = "0.3", features = ["console", "Window", "Performance"] }
+# getrandom with js feature for WASM (needed by transitive deps like ahash via const-random)
+getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
 
 # CLI tools
 clap = { version = "4", features = ["derive"] }

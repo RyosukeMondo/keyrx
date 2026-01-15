@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/Card';
 import { SimpleCodeEditor } from '@/components/SimpleCodeEditor';
 import { KeyPalette, type PaletteKey } from '@/components/KeyPalette';
 import { DeviceSelector, type Device } from '@/components/DeviceSelector';
-import { KeyConfigModal } from '@/components/KeyConfigModal';
+import { KeyConfigPanel } from '@/components/KeyConfigPanel';
 import { CurrentMappingsSummary } from '@/components/CurrentMappingsSummary';
 import { LayerSwitcher } from '@/components/LayerSwitcher';
 import { KeyboardVisualizer, type LayoutType } from '@/components/KeyboardVisualizer';
+import { parseKLEToSVG } from '@/utils/kle-parser';
 import { useGetProfileConfig, useSetProfileConfig } from '@/hooks/useProfileConfig';
 import { useProfiles, useCreateProfile, useActiveProfileQuery } from '@/hooks/useProfiles';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
@@ -17,6 +18,33 @@ import { extractDevicePatterns, hasGlobalMappings } from '@/utils/rhaiParser';
 import { useConfigStore } from '@/stores/configStore';
 import type { KeyMapping } from '@/types';
 import type { KeyMapping as RhaiKeyMapping } from '@/utils/rhaiParser';
+
+// Import layout data
+import ANSI_104 from '@/data/layouts/ANSI_104.json';
+import ANSI_87 from '@/data/layouts/ANSI_87.json';
+import ISO_105 from '@/data/layouts/ISO_105.json';
+import ISO_88 from '@/data/layouts/ISO_88.json';
+import JIS_109 from '@/data/layouts/JIS_109.json';
+import COMPACT_60 from '@/data/layouts/COMPACT_60.json';
+import COMPACT_65 from '@/data/layouts/COMPACT_65.json';
+import COMPACT_75 from '@/data/layouts/COMPACT_75.json';
+import COMPACT_96 from '@/data/layouts/COMPACT_96.json';
+import HHKB from '@/data/layouts/HHKB.json';
+import NUMPAD from '@/data/layouts/NUMPAD.json';
+
+const layoutData: Record<LayoutType, { name: string; keys: any[] }> = {
+  ANSI_104,
+  ANSI_87,
+  ISO_105,
+  ISO_88,
+  JIS_109,
+  COMPACT_60,
+  COMPACT_65,
+  COMPACT_75,
+  COMPACT_96,
+  HHKB,
+  NUMPAD,
+};
 
 interface ConfigPageProps {
   profileName?: string;
@@ -75,7 +103,6 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   const configStore = useConfigStore();
   const [selectedPaletteKey, setSelectedPaletteKey] = useState<PaletteKey | null>(null);
   const [selectedPhysicalKey, setSelectedPhysicalKey] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Computed: Get current layer's mappings for display
   const keyMappings = configStore.getLayerMappings(configStore.activeLayer);
@@ -91,6 +118,12 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
 
   // Keyboard layout selector
   const [keyboardLayout, setKeyboardLayout] = useState<LayoutType>('ANSI_104');
+
+  // Parse layout data to SVG format for KeyConfigModal
+  const layoutKeys = useMemo(() => {
+    const kleData = layoutData[keyboardLayout];
+    return parseKLEToSVG(kleData);
+  }, [keyboardLayout]);
 
   // Sync status tracking
   const [syncStatus, setSyncStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
@@ -403,10 +436,9 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     }
   };
 
-  // Handle key click: open modal for configuration
+  // Handle key click: select key for inline configuration
   const handlePhysicalKeyClick = (keyCode: string) => {
     setSelectedPhysicalKey(keyCode);
-    setIsModalOpen(true);
   };
 
   // Handle clear mapping from summary - LAYER-AWARE
@@ -947,23 +979,17 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
           </div>
 
           {/* Current Mappings Summary - Shows active mappings with edit/delete */}
-          <CurrentMappingsSummary
-            keyMappings={keyMappings}
-            onEditMapping={handlePhysicalKeyClick}
+          {/* Inline Key Configuration Panel */}
+          <KeyConfigPanel
+            physicalKey={selectedPhysicalKey}
+            currentMapping={selectedPhysicalKey ? keyMappings.get(selectedPhysicalKey) : undefined}
+            onSave={handleSaveMapping}
             onClearMapping={handleClearMapping}
+            onEditMapping={handlePhysicalKeyClick}
+            activeLayer={activeLayer}
+            keyMappings={keyMappings}
+            layoutKeys={layoutKeys}
           />
-
-          {/* Configuration Modal - Now includes key selection palette */}
-          {isModalOpen && selectedPhysicalKey && (
-            <KeyConfigModal
-              isOpen={isModalOpen}
-              onClose={() => setIsModalOpen(false)}
-              physicalKey={selectedPhysicalKey}
-              currentMapping={keyMappings.get(selectedPhysicalKey)}
-              onSave={handleSaveMapping}
-              activeLayer={activeLayer}
-            />
-          )}
       </div>
 
       {/* Collapsible Code Panel */}

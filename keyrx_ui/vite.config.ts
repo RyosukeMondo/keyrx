@@ -72,7 +72,6 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: ['env'],  // Fix for wasm-pack "env" import issue
       output: {
         manualChunks: (id) => {
           // All node_modules in vendor chunk to avoid circular dependencies

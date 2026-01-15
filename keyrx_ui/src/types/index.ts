@@ -41,10 +41,12 @@ export interface ActivationResult {
 
 // Configuration Types
 export interface KeyMapping {
-  type: 'simple' | 'tap_hold' | 'macro' | 'layer_switch';
+  type: 'simple' | 'modifier' | 'lock' | 'tap_hold' | 'layer_active' | 'macro' | 'layer_switch';
   tapAction?: string;
   holdAction?: string;
   threshold?: number;
+  modifierKey?: string;
+  lockKey?: string;
   macroSteps?: MacroStep[];
   targetLayer?: string;
 }

@@ -28,6 +28,12 @@ interface EventLogEntry {
   keyCode: string;
   action?: string;
   latency: number;
+  input?: string;
+  output?: string;
+  deviceId?: string;
+  deviceName?: string;
+  mappingType?: string;
+  mappingTriggered?: boolean;
 }
 
 interface StateSnapshot {
@@ -89,6 +95,12 @@ export const MetricsPage: React.FC = () => {
       keyCode: event.keyCode,
       action: event.action,
       latency: event.latencyUs / 1000, // Convert microseconds to milliseconds
+      input: event.input,
+      output: event.output,
+      deviceId: event.deviceId,
+      deviceName: event.deviceName,
+      mappingType: event.mappingType,
+      mappingTriggered: event.mappingTriggered,
     }));
   }, [storeEventLog]);
 
@@ -162,18 +174,66 @@ export const MetricsPage: React.FC = () => {
       layer_switch: 'text-cyan-400',
     };
 
+    const typeSymbols = {
+      press: '↓',
+      release: '↑',
+      tap: '⇥',
+      hold: '⏎',
+      macro: '⌘',
+      layer_switch: '⇧',
+    };
+
+    // Check if input differs from output (remapping occurred)
+    const wasRemapped = event.input && event.output && event.input !== event.output;
+    const hasMappingTriggered = event.mappingTriggered || wasRemapped ||
+      ['tap', 'hold', 'macro', 'layer_switch'].includes(event.type);
+
+    // Format input/output for display
+    const formatKey = (key: string | undefined) => {
+      if (!key) return '–';
+      return key.replace(/^KEY_/, '').replace(/^VK_/, '');
+    };
+
+    // Get short device name
+    const shortDeviceName = event.deviceName
+      ? event.deviceName.length > 15
+        ? event.deviceName.slice(0, 12) + '…'
+        : event.deviceName
+      : event.deviceId?.slice(0, 8) || '–';
+
     return (
       <div
         style={style}
-        className="flex items-center gap-4 px-4 text-sm font-mono border-b border-slate-700 hover:bg-slate-700/50"
+        className="flex items-center gap-3 px-4 text-sm font-mono border-b border-slate-700 hover:bg-slate-700/50"
+        title={`Device: ${event.deviceName || event.deviceId || 'Unknown'}`}
       >
-        <span className="w-32 text-slate-400">{formatTime(event.timestamp)}</span>
-        <span className={`w-24 ${typeColors[event.type]}`}>{event.type}</span>
-        <span className="w-32 text-slate-200">{event.keyCode}</span>
-        {event.action && (
-          <span className="w-32 text-slate-300">→ {event.action}</span>
-        )}
-        <span className="w-20 text-slate-400">{formatLatency(event.latency)}</span>
+        <span className="w-20 text-slate-400 text-xs">{formatTime(event.timestamp)}</span>
+        <span className={`w-14 ${typeColors[event.type]}`} title={event.type}>
+          {typeSymbols[event.type]} {event.type.slice(0, 3)}
+        </span>
+        <span className="w-20 text-slate-200 truncate" title={event.input || event.keyCode}>
+          {formatKey(event.input || event.keyCode)}
+        </span>
+        {/* Mapping indicator */}
+        <span className={`w-6 text-center ${hasMappingTriggered ? 'text-green-400' : 'text-slate-600'}`}>
+          {hasMappingTriggered ? '→' : '–'}
+        </span>
+        {/* Output */}
+        <span className={`w-20 truncate ${wasRemapped ? 'text-blue-400' : 'text-slate-400'}`} title={event.output}>
+          {formatKey(event.output)}
+        </span>
+        {/* Mapping type */}
+        <span className="w-16 text-slate-500 text-xs truncate" title={event.mappingType || 'passthrough'}>
+          {event.mappingType || (wasRemapped ? 'remap' : '–')}
+        </span>
+        {/* Device */}
+        <span className="flex-1 text-slate-500 text-xs truncate" title={event.deviceName || event.deviceId}>
+          {shortDeviceName}
+        </span>
+        {/* Latency */}
+        <span className={`w-16 text-right ${event.latency > 1 ? 'text-yellow-400' : 'text-slate-400'}`}>
+          {formatLatency(event.latency)}
+        </span>
       </div>
     );
   };
@@ -297,14 +357,14 @@ export const MetricsPage: React.FC = () => {
             ) : (
               <div className="space-y-1">
                 <p className="text-lg font-semibold text-slate-400">
-                  {connected ? 'No active profile' : 'Daemon offline'}
+                  {connected ? 'None' : 'Daemon offline'}
                 </p>
                 {connected && (
                   <Link
                     to="/profiles"
                     className="inline-block text-sm text-blue-400 hover:text-blue-300 transition-colors underline"
                   >
-                    Activate a profile
+                    Go to Profiles to activate one
                   </Link>
                 )}
               </div>
@@ -439,12 +499,15 @@ export const MetricsPage: React.FC = () => {
         </div>
 
         {/* Table Header - hide some columns on mobile */}
-        <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-slate-800 border-b border-slate-700 text-sm font-semibold text-slate-300">
-          <span className="w-32">Timestamp</span>
-          <span className="w-24">Type</span>
-          <span className="w-32">Key Code</span>
-          <span className="w-32">Action</span>
-          <span className="w-20">Latency</span>
+        <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-800 border-b border-slate-700 text-sm font-semibold text-slate-300">
+          <span className="w-20">Time</span>
+          <span className="w-14">Type</span>
+          <span className="w-20">Input</span>
+          <span className="w-6 text-center" title="Mapping Triggered">→</span>
+          <span className="w-20">Output</span>
+          <span className="w-16">Map Type</span>
+          <span className="flex-1 truncate">Device</span>
+          <span className="w-16 text-right">Latency</span>
         </div>
 
         {/* Virtual Scrolling List */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { DndContext, DragOverlay, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+// Drag and drop removed - keys are now click-only for better UX clarity
 import { Search, X, Star, Clock, Check, AlertCircle, HelpCircle, Grid3x3, List, Keyboard } from 'lucide-react';
 import { Card } from './Card';
 import { KEY_DEFINITIONS, KeyDefinition } from '../data/keyDefinitions';
@@ -31,6 +31,8 @@ interface SearchMatch {
 interface KeyPaletteProps {
   onKeySelect: (key: PaletteKey) => void;
   selectedKey?: PaletteKey | null;
+  /** Compact mode for embedding in modals - reduced height, no header/recent/favorites */
+  compact?: boolean;
 }
 
 /**
@@ -268,16 +270,16 @@ const MODIFIER_KEYS: PaletteKey[] = [
   { id: 'RAlt', label: 'RAlt', category: 'modifiers', description: 'Right Alt' },
   { id: 'LMeta', label: 'LWin', category: 'modifiers', description: 'Left Windows/Super' },
   { id: 'RMeta', label: 'RWin', category: 'modifiers', description: 'Right Windows/Super' },
-  { id: 'MD_00', label: 'MD_00', category: 'modifiers', description: 'Custom Modifier 0' },
-  { id: 'MD_01', label: 'MD_01', category: 'modifiers', description: 'Custom Modifier 1' },
-  { id: 'MD_02', label: 'MD_02', category: 'modifiers', description: 'Custom Modifier 2' },
-  { id: 'MD_03', label: 'MD_03', category: 'modifiers', description: 'Custom Modifier 3' },
-  { id: 'MD_04', label: 'MD_04', category: 'modifiers', description: 'Custom Modifier 4' },
-  { id: 'MD_05', label: 'MD_05', category: 'modifiers', description: 'Custom Modifier 5' },
-  { id: 'MD_06', label: 'MD_06', category: 'modifiers', description: 'Custom Modifier 6' },
-  { id: 'MD_07', label: 'MD_07', category: 'modifiers', description: 'Custom Modifier 7' },
-  { id: 'MD_08', label: 'MD_08', category: 'modifiers', description: 'Custom Modifier 8' },
-  { id: 'MD_09', label: 'MD_09', category: 'modifiers', description: 'Custom Modifier 9' },
+  // Generate all 256 custom modifiers (MD_00 to MD_FF)
+  ...Array.from({ length: 256 }, (_, i) => {
+    const hexValue = i.toString(16).toUpperCase().padStart(2, '0');
+    return {
+      id: `MD_${hexValue}`,
+      label: `MD_${hexValue}`,
+      category: 'modifiers' as const,
+      description: `Custom Modifier ${hexValue} (0x${hexValue} / ${i})`,
+    };
+  }),
 ];
 
 const MEDIA_KEYS: PaletteKey[] = [
@@ -597,7 +599,7 @@ function validateCustomKeycode(input: string): ValidationResult {
   };
 }
 
-export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
+export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPaletteProps) {
   const [activeCategory, setActiveCategory] = React.useState<PaletteKey['category']>('basic');
   const [activeSubcategory, setActiveSubcategory] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -605,7 +607,7 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Drag and drop state
-  const [activeDragKey, setActiveDragKey] = React.useState<PaletteKey | null>(null);
+  // Drag functionality removed for better UX clarity
 
   // View mode state
   const [viewMode, setViewMode] = React.useState<ViewMode>(() => loadViewMode());
@@ -751,9 +753,6 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
   const categories = [
     { id: 'basic' as const, label: 'Basic', keys: BASIC_KEYS, icon: '⌨️' },
     { id: 'modifiers' as const, label: 'Modifiers', keys: MODIFIER_KEYS, icon: '⌥' },
-    { id: 'media' as const, label: 'Media', keys: MEDIA_KEYS, icon: '🎵' },
-    { id: 'macro' as const, label: 'Macro', keys: MACRO_KEYS, icon: '🔧' },
-    { id: 'layers' as const, label: 'Layers', keys: LAYER_KEYS, icon: '📚' },
     { id: 'special' as const, label: 'Special', keys: SPECIAL_KEYS, icon: '⭐' },
     { id: 'any' as const, label: 'Any', keys: [], icon: '✏️' },
   ];
@@ -821,19 +820,7 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
     }
   };
 
-  // Handle drag start - set active drag key
-  const handleDragStart = React.useCallback((event: DragStartEvent) => {
-    const draggedKey = event.active.data.current as PaletteKey;
-    setActiveDragKey(draggedKey);
-  }, []);
-
-  // Handle drag end - clear active drag key
-  const handleDragEnd = React.useCallback((event: DragEndEvent) => {
-    setActiveDragKey(null);
-
-    // If dropped on a valid target, the target will handle the drop
-    // This is handled by the parent component (ConfigPage) via onKeySelect
-  }, []);
+  // Drag handlers removed - using click-only interaction now
 
   // Render a key item with star button using KeyPaletteItem component
   const renderKeyItem = (key: PaletteKey, onClick: () => void, showStar: boolean = true) => {
@@ -854,55 +841,56 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
   };
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <Card className="h-full flex flex-col">
-        {/* Header with title, capture button, and view toggle */}
-        <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-slate-100">Key Palette</h3>
-        <div className="flex gap-2">
-          {/* Capture Key button */}
-          <button
-            onClick={startKeyCapture}
-            className="px-3 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
-            title="Press any physical key to select it"
-            aria-label="Capture physical key"
-          >
-            <Keyboard className="w-4 h-4" />
-            <span>Capture Key</span>
-          </button>
+      <Card className={`flex flex-col ${compact ? 'h-full p-2' : 'h-full'}`}>
+        {/* Header with title, capture button, and view toggle - hidden in compact mode */}
+        {!compact && (
+          <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-100">Key Palette</h3>
+          <div className="flex gap-2">
+            {/* Capture Key button */}
+            <button
+              onClick={startKeyCapture}
+              className="px-3 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+              title="Press any physical key to select it"
+              aria-label="Capture physical key"
+            >
+              <Keyboard className="w-4 h-4" />
+              <span>Capture Key</span>
+            </button>
 
-          {/* View toggle buttons */}
-          <div className="flex gap-1">
-            <button
-              onClick={toggleViewMode}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-slate-300'
-              }`}
-              title="Grid view"
-              aria-label="Grid view"
-            >
-              <Grid3x3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={toggleViewMode}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-slate-300'
-              }`}
-              title="List view"
-              aria-label="List view"
-            >
-              <List className="w-4 h-4" />
-            </button>
+            {/* View toggle buttons */}
+            <div className="flex gap-1">
+              <button
+                onClick={toggleViewMode}
+                className={`p-2 rounded-lg transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-slate-300'
+                }`}
+                title="Grid view"
+                aria-label="Grid view"
+              >
+                <Grid3x3 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={toggleViewMode}
+                className={`p-2 rounded-lg transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-slate-300'
+                }`}
+                title="List view"
+                aria-label="List view"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+        )}
 
-      {/* Favorites Section */}
-      {favoriteKeys.length > 0 && (
+      {/* Favorites Section - hidden in compact mode */}
+      {!compact && favoriteKeys.length > 0 && (
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
@@ -918,8 +906,8 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
         </div>
       )}
 
-      {/* Recent Keys Section */}
-      {recentKeys.length > 0 && (
+      {/* Recent Keys Section - hidden in compact mode */}
+      {!compact && recentKeys.length > 0 && (
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-4 h-4 text-slate-400" />
@@ -935,8 +923,8 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
         </div>
       )}
 
-      {/* Empty state when no favorites or recent */}
-      {favoriteKeys.length === 0 && recentKeys.length === 0 && !searchQuery && (
+      {/* Empty state when no favorites or recent - hidden in compact mode */}
+      {!compact && favoriteKeys.length === 0 && recentKeys.length === 0 && !searchQuery && (
         <div className="mb-4 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
           <p className="text-xs text-slate-500 text-center">
             Star keys to add favorites. Recent keys will appear automatically.
@@ -945,16 +933,18 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
       )}
 
       {/* Search Input */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className={`relative ${compact ? 'mb-2' : 'mb-4'}`}>
+        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 ${compact ? 'w-3 h-3' : 'w-4 h-4'}`} />
         <input
           ref={searchInputRef}
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleSearchKeyDown}
-          placeholder="Search keys (e.g., ctrl, enter, KC_A)..."
-          className="w-full pl-10 pr-10 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+          placeholder={compact ? "Search keys..." : "Search keys (e.g., ctrl, enter, KC_A)..."}
+          className={`w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${
+            compact ? 'pl-8 pr-8 py-1.5 text-xs' : 'pl-10 pr-10 py-2 text-sm'
+          }`}
         />
         {searchQuery && (
           <button
@@ -975,7 +965,7 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
 
       {/* Category Tabs */}
       {!isSearching && (
-        <div className="flex gap-1 mb-4 border-b border-slate-700 overflow-x-auto">
+        <div className={`flex gap-1 border-b border-slate-700 overflow-x-auto ${compact ? 'mb-2' : 'mb-4'}`}>
         {categories.map(cat => (
           <button
             key={cat.id}
@@ -983,21 +973,23 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
               setActiveCategory(cat.id);
               setActiveSubcategory(null);
             }}
-            className={`px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
+            className={`font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
+              compact ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'
+            } ${
               activeCategory === cat.id
                 ? 'text-primary-400 border-b-2 border-primary-400'
                 : 'text-slate-400 hover:text-slate-300'
             }`}
           >
-            <span>{cat.icon}</span>
+            {!compact && <span>{cat.icon}</span>}
             <span>{cat.label}</span>
           </button>
         ))}
         </div>
       )}
 
-      {/* Subcategory Pills (for Basic and Layers categories) */}
-      {!isSearching && subcategories.length > 0 && (
+      {/* Subcategory Pills (for Basic and Layers categories) - hidden in compact mode */}
+      {!compact && !isSearching && subcategories.length > 0 && (
         <div className="flex gap-2 mb-3 flex-wrap">
           <button
             onClick={() => setActiveSubcategory(null)}
@@ -1245,44 +1237,30 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
             <p>No keys in this category yet</p>
           </div>
         ) : (
-          <div className={`p-4 bg-slate-800/50 rounded-lg ${
+          <div className={`bg-slate-800/50 rounded-lg ${
+            compact ? 'p-2' : 'p-4'
+          } ${
             viewMode === 'grid'
-              ? 'grid grid-cols-8 gap-2'
+              ? compact ? 'grid grid-cols-12 gap-1' : 'grid grid-cols-8 gap-2'
               : 'flex flex-col gap-2'
           }`}>
-            {activeKeys.map(key => renderKeyItem(key, () => handleKeySelect(key), true))}
+            {activeKeys.map(key => renderKeyItem(key, () => handleKeySelect(key), !compact))}
           </div>
         )}
       </div>
 
-      {/* Hint */}
-      <p className="text-xs text-slate-500 mt-4">
-        {isSearching
-          ? 'Use ↑↓ arrows to navigate, Enter to select, Esc to clear'
-          : 'Search for keys or browse by category. Click or drag to select.'
-        }
-      </p>
-    </Card>
+      {/* Hint - hidden in compact mode */}
+      {!compact && (
+        <p className="text-xs text-slate-500 mt-4">
+          {isSearching
+            ? 'Use ↑↓ arrows to navigate, Enter to select, Esc to clear'
+            : 'Search for keys or browse by category. Click to select.'
+          }
+        </p>
+      )}
 
-    {/* Drag Overlay - Shows preview of dragged key */}
-    <DragOverlay dropAnimation={null}>
-      {activeDragKey ? (
-        <div className="opacity-90 transform scale-110 shadow-2xl">
-          <KeyPaletteItem
-            keyItem={activeDragKey}
-            isSelected={false}
-            isFavorite={false}
-            showStar={false}
-            viewMode={viewMode}
-            onClick={() => {}}
-            onToggleFavorite={undefined}
-          />
-        </div>
-      ) : null}
-    </DragOverlay>
-
-    {/* Key Capture Modal */}
-    {isCapturingKey && (
+      {/* Key Capture Modal */}
+      {isCapturingKey && (
       <div
         className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
         onClick={cancelKeyCapture}
@@ -1351,6 +1329,6 @@ export function KeyPalette({ onKeySelect, selectedKey }: KeyPaletteProps) {
         </div>
       </div>
     )}
-  </DndContext>
+    </Card>
   );
 }

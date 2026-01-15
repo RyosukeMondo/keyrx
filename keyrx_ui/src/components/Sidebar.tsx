@@ -7,12 +7,16 @@ import {
   Settings,
   BarChart3,
   Gamepad2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
   className?: string;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 interface NavItem {
@@ -65,6 +69,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen = true,
   onClose,
   className = '',
+  isCollapsed = false,
+  onToggleCollapse,
 }) => {
   const location = useLocation();
 
@@ -74,11 +80,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  // Custom active state check for Config route
+  // Custom active state check for Config and Profiles routes
   // Config should be active for both /config and /profiles/:name/config
-  const isConfigActive = (path: string): boolean => {
+  // Profiles should NOT be active when on /config page (fix dual-highlight bug)
+  const isRouteActive = (path: string): boolean => {
     if (path === '/config') {
-      return location.pathname === '/config' || location.pathname.startsWith('/profiles/') && location.pathname.endsWith('/config');
+      return location.pathname === '/config' || (location.pathname.startsWith('/profiles/') && location.pathname.endsWith('/config'));
+    }
+    if (path === '/profiles') {
+      // Profiles should NOT be active when on /config page
+      return location.pathname === '/profiles' || (location.pathname.startsWith('/profiles/') && !location.pathname.includes('/config'));
     }
     return false;
   };
@@ -99,8 +110,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <ul className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            // For Config route, use custom active state check
-            const customIsActive = item.to === '/config' ? isConfigActive(item.to) : undefined;
+            // For Config and Profiles routes, use custom active state check
+            const customIsActive = (item.to === '/config' || item.to === '/profiles') ? isRouteActive(item.to) : undefined;
 
             return (
               <li key={item.to}>
@@ -112,10 +123,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     // Override isActive for Config route
                     const actuallyActive = customIsActive !== undefined ? customIsActive : isActive;
                     return `
-                    flex items-center gap-3 px-4 py-3 rounded-md
+                    flex items-center gap-3 rounded-md
                     text-sm font-medium
                     transition-all duration-150
                     focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2
+                    ${isCollapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'}
                     ${
                       actuallyActive
                         ? 'bg-primary-600 text-white shadow-md'
@@ -123,6 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }
                   `;
                   }}
+                  title={isCollapsed ? item.label : undefined}
                 >
                   {({ isActive }) => {
                     // Override isActive for Config route
@@ -130,15 +143,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     return (
                       <>
                         <Icon
-                          className={`w-5 h-5 ${actuallyActive ? 'text-white' : 'text-slate-400'}`}
+                          className={`w-5 h-5 ${actuallyActive ? 'text-white' : 'text-slate-400'} ${isCollapsed ? 'mx-auto' : ''}`}
                           aria-hidden="true"
                         />
-                        <span>{item.label}</span>
-                        {actuallyActive && (
-                          <span
-                            className="ml-auto w-1 h-6 bg-white rounded-full"
-                            aria-hidden="true"
-                          />
+                        {!isCollapsed && (
+                          <>
+                            <span>{item.label}</span>
+                            {actuallyActive && (
+                              <span
+                                className="ml-auto w-1 h-6 bg-white rounded-full"
+                                aria-hidden="true"
+                              />
+                            )}
+                          </>
                         )}
                       </>
                     );
@@ -150,9 +167,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </ul>
       </nav>
 
-      {/* Footer section for version or other info */}
-      <div className="px-4 py-3 border-t border-slate-700">
-        <p className="text-xs text-slate-500 text-center">KeyRx v2.0.0</p>
+      {/* Footer with version and collapse button */}
+      <div className="px-3 py-3 border-t border-slate-700">
+        <div className="flex items-center justify-between gap-2">
+          {/* Version text - always show, even when collapsed */}
+          {!isCollapsed && (
+            <p className="text-xs text-slate-500 flex-1">KeyRx v2.0.0</p>
+          )}
+
+          {/* Toggle button */}
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className={`flex items-center justify-center px-2 py-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors ${isCollapsed ? 'w-full' : ''}`}
+              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isCollapsed ? (
+                <ChevronRight className="w-5 h-5" />
+              ) : (
+                <ChevronLeft className="w-5 h-5" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );

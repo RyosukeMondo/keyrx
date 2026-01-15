@@ -89,8 +89,9 @@ export const Tooltip: React.FC<TooltipProps> = ({
           id={tooltipId}
           role="tooltip"
           className={cn(
-            'absolute bg-slate-800 text-slate-100 text-sm px-3 py-2 rounded-md shadow-lg z-tooltip',
-            'transition-opacity duration-150',
+            'absolute bg-slate-900 text-white text-base px-4 py-3 rounded-lg shadow-2xl border-2 border-slate-700 z-tooltip',
+            'transition-opacity duration-150 font-medium',
+            'max-w-xs break-words',
             className
           )}
           style={{

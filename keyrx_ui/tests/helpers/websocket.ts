@@ -151,8 +151,9 @@ export function cleanupMockWebSocket(): void {
  */
 export function sendServerMessage(message: any): void {
   const server = getMockWebSocket();
-  // jsonProtocol: true handles JSON serialization automatically
-  server.send(message);
+  // Explicitly stringify objects to prevent "[object Object]" issues
+  const serialized = typeof message === 'string' ? message : JSON.stringify(message);
+  server.send(serialized);
 }
 
 /**

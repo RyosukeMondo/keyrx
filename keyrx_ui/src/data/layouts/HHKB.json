@@ -58,7 +58,7 @@
     {"code": "KC_DOT", "label": ".", "x": 10.25, "y": 3, "w": 1},
     {"code": "KC_SLSH", "label": "/", "x": 11.25, "y": 3, "w": 1},
     {"code": "KC_RSFT", "label": "Shift", "x": 12.25, "y": 3, "w": 1.75},
-    {"code": "MO(1)", "label": "Fn", "x": 14, "y": 3, "w": 1},
+    {"code": "KC_APP", "label": "Fn", "x": 14, "y": 3, "w": 1},
 
     {"code": "KC_LGUI", "label": "◇", "x": 1.5, "y": 4, "w": 1.5},
     {"code": "KC_LALT", "label": "Alt", "x": 3, "y": 4, "w": 1.5},

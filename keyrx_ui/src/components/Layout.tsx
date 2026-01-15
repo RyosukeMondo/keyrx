@@ -26,6 +26,7 @@ interface LayoutProps {
  */
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -33,6 +34,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const closeSidebar = () => {
     setIsSidebarOpen(false);
+  };
+
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
   return (
@@ -74,15 +79,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </header>
 
       {/* Desktop Sidebar (>= 768px) - Fixed left */}
-      <div className="hidden md:block fixed top-0 left-0 bottom-0 w-64 border-r border-slate-700 z-30">
+      <div className={`hidden md:block fixed top-0 left-0 bottom-0 border-r border-slate-700 z-30 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-64'}`}>
         {/* Brand header */}
-        <div className="h-16 flex flex-col justify-center px-6 bg-slate-800 border-b border-slate-700">
-          <span className="text-xl font-bold text-primary-500">KeyRx2</span>
-          <span className="text-xs text-slate-500" title={`Built: ${BUILD_TIME}`}>
-            v{VERSION} • {new Date(BUILD_TIME).toLocaleString()}
-          </span>
+        <div className="h-16 flex flex-col justify-center px-6 bg-slate-800 border-b border-slate-700 overflow-hidden">
+          {!isSidebarCollapsed && (
+            <>
+              <span className="text-xl font-bold text-primary-500">KeyRx2</span>
+              <span className="text-xs text-slate-500 whitespace-nowrap" title={`Built: ${BUILD_TIME}`}>
+                v{VERSION} • {new Date(BUILD_TIME).toLocaleString()}
+              </span>
+            </>
+          )}
         </div>
-        <Sidebar className="h-[calc(100vh-4rem)]" />
+        <Sidebar
+          className="h-[calc(100vh-4rem)]"
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapse}
+        />
       </div>
 
       {/* Mobile Sidebar Overlay (< 768px) */}
@@ -107,12 +120,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content Area */}
       <main
-        className="
+        className={`
           min-h-screen
           pt-16 md:pt-0
           pb-16 md:pb-0
-          md:ml-64
-        "
+          transition-all duration-300
+          ${isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}
+        `}
       >
         {children}
       </main>

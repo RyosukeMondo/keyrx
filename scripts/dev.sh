@@ -122,6 +122,24 @@ else
     exit 1
 fi
 
+# Check if WASM module exists (required for Simulator page)
+WASM_FILE="$UI_DIR/src/wasm/pkg/keyrx_core.js"
+if [ ! -f "$WASM_FILE" ]; then
+    echo ""
+    echo -e "${YELLOW}⚠${NC}  WASM module not found - Simulator page will not work"
+    echo -e "${YELLOW}→${NC} Building WASM module (this may take a minute)..."
+    cd "$UI_DIR"
+    if npm run build:wasm; then
+        echo -e "${GREEN}✓${NC} WASM module built successfully"
+    else
+        echo -e "${YELLOW}⚠${NC}  WASM build failed - Simulator will use mock mode"
+        echo -e "   Run 'npm run build:wasm' manually to fix"
+    fi
+    cd "$PROJECT_ROOT"
+else
+    echo -e "${GREEN}✓${NC} WASM module found"
+fi
+
 echo ""
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Starting Vite Dev Server${NC}"

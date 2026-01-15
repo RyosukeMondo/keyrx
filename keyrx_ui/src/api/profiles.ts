@@ -16,6 +16,15 @@ interface ProfileResponse {
 }
 
 /**
+ * Fetch active profile name
+ * Returns the currently active profile name or null if none
+ */
+export async function fetchActiveProfile(): Promise<string | null> {
+  const response = await apiClient.get<{ active_profile: string | null }>('/api/profiles/active');
+  return response.active_profile;
+}
+
+/**
  * Fetch all profiles
  */
 export async function fetchProfiles(): Promise<ProfileMetadata[]> {

@@ -42,6 +42,10 @@ async fn test_broadcast_channel_publishes_key_event() {
         input: "A".to_string(),
         output: "B".to_string(),
         latency: 2300,
+        device_id: Some("dev-001".to_string()),
+        device_name: Some("USB Keyboard".to_string()),
+        mapping_type: None,
+        mapping_triggered: false,
     });
 
     event_tx.send(key_event.clone()).unwrap();
@@ -164,6 +168,10 @@ async fn test_event_serialization_key_event() {
         input: "SPACE".to_string(),
         output: "ENTER".to_string(),
         latency: 3400,
+        device_id: Some("dev-002".to_string()),
+        device_name: Some("Gaming Keyboard".to_string()),
+        mapping_type: Some("simple".to_string()),
+        mapping_triggered: true,
     });
 
     let json = serde_json::to_string(&event).unwrap();
@@ -218,6 +226,10 @@ async fn test_high_frequency_batching() {
                 input: format!("IN_{}", i),
                 output: format!("OUT_{}", i),
                 latency: 1000 + i,
+                device_id: None,
+                device_name: None,
+                mapping_type: None,
+                mapping_triggered: false,
             }))
             .unwrap();
     }

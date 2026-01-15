@@ -67,19 +67,83 @@ export const KeyButton = React.memo<KeyButtonProps>(
       }
     }, [keyCode, mapping]);
 
-    // Get remap display text
+    /**
+   * Format a key label for display on keycap
+   * Handles: VK_ prefixes, with_* functions, long names
+   */
+  const formatKeyLabel = (key: string): string => {
+    if (!key) return '';
+
+    // Handle with_* helper functions: with_shift(VK_A) -> ⇧A
+    const withMatch = key.match(/^with_(\w+)\(["']?(\w+)["']?\)$/);
+    if (withMatch) {
+      const [, modifier, innerKey] = withMatch;
+      const modSymbols: Record<string, string> = {
+        shift: '⇧',
+        ctrl: '⌃',
+        alt: '⌥',
+        meta: '⌘',
+        gui: '⌘',
+      };
+      const modSymbol = modSymbols[modifier.toLowerCase()] || modifier.charAt(0).toUpperCase();
+      const cleanKey = innerKey.replace(/^VK_/, '');
+      return `${modSymbol}${cleanKey}`;
+    }
+
+    // Remove VK_ prefix for cleaner display
+    let clean = key.replace(/^VK_/, '');
+
+    // Shorten common keys
+    const shortNames: Record<string, string> = {
+      BACKSPACE: 'BS',
+      CAPSLOCK: 'Caps',
+      ESCAPE: 'Esc',
+      DELETE: 'Del',
+      INSERT: 'Ins',
+      PAGEUP: 'PgUp',
+      PAGEDOWN: 'PgDn',
+      LEFTSHIFT: 'LShft',
+      RIGHTSHIFT: 'RShft',
+      LEFTCONTROL: 'LCtrl',
+      RIGHTCONTROL: 'RCtrl',
+      LEFTALT: 'LAlt',
+      RIGHTALT: 'RAlt',
+      LEFTMETA: 'LMeta',
+      RIGHTMETA: 'RMeta',
+      NUMLOCK: 'Num',
+      SCROLLLOCK: 'Scrl',
+      PRINTSCREEN: 'PrtSc',
+    };
+
+    const upper = clean.toUpperCase();
+    if (shortNames[upper]) {
+      return shortNames[upper];
+    }
+
+    // Truncate if still too long (max 5 chars for display)
+    if (clean.length > 5) {
+      return clean.slice(0, 4) + '…';
+    }
+
+    return clean;
+  };
+
+  // Get remap display text
     const remapText = useMemo(() => {
       if (!mapping) return '';
 
       switch (mapping.type) {
         case 'simple':
-          return mapping.tapAction || '';
-        case 'tap_hold':
-          return `T:${mapping.tapAction} H:${mapping.holdAction}`;
+          return formatKeyLabel(mapping.tapAction || '');
+        case 'tap_hold': {
+          const tap = formatKeyLabel(mapping.tapAction || '');
+          const hold = formatKeyLabel(mapping.holdAction || '');
+          return `${tap}/${hold}`;
+        }
         case 'macro':
-          return 'MACRO';
+          return '⚡';
         case 'layer_switch':
-          return mapping.targetLayer || '';
+          return mapping.targetLayer?.replace(/^MD_/, 'L') || '';
         default:
           return '';
       }
@@ -129,11 +193,11 @@ export const KeyButton = React.memo<KeyButtonProps>(
           onClick={handleClick}
           aria-label={`Key ${keyCode}. Current mapping: ${tooltipContent}. Click to configure.`}
           className={cn(
-            'relative flex flex-col items-center justify-center',
+            'relative flex flex-col items-center justify-center overflow-hidden',
             'rounded border-2 transition-all duration-150',
             'hover:brightness-110 hover:-translate-y-0.5 hover:shadow-lg',
             'focus:outline focus:outline-2 focus:outline-primary-500',
-            'min-h-[50px]',
+            'min-h-[50px] w-full',
             style.border,
             style.bg,
             isPressed && 'bg-green-500 border-green-400',
@@ -152,9 +216,9 @@ export const KeyButton = React.memo<KeyButtonProps>(
             {label}
           </span>
 
-          {/* Remap label (bold, yellow) */}
+          {/* Remap label (bold, yellow) - truncated to fit keycap */}
           {hasMapping && (
-            <span className="text-[12px] text-yellow-300 font-bold font-mono mt-0.5">
+            <span className="text-[11px] text-yellow-300 font-bold font-mono mt-0.5 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-0.5">
               {remapText}
             </span>
           )}

@@ -79,11 +79,18 @@ export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
     console.warn('KeyboardVisualizer: No keys parsed from layout', layout);
   }
 
+  const layoutName = layoutData[layout].name;
+  const ariaLabel = simulatorMode
+    ? `${layout} - ${layoutName} keyboard layout in simulator mode. Keys show active state but cannot be configured.`
+    : `${layout} - ${layoutName} keyboard layout. Use arrow keys to navigate between keys, press Enter to select a key, or click on any key to configure it.`;
+
   return (
     <div
       className={cn('keyboard-visualizer', className)}
       data-testid="keyboard-visualizer"
-      style={{ minHeight: '200px', minWidth: '400px' }}
+      role="group"
+      aria-label={ariaLabel}
+      style={{ display: 'grid', minHeight: '200px', minWidth: '400px' }}
     >
       <SVGKeyboard
         keys={svgKeys}
@@ -91,7 +98,7 @@ export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
         onKeyClick={onKeyClick}
         simulatorMode={simulatorMode}
         pressedKeys={pressedKeys}
-        layoutName={layoutData[layout].name}
+        layoutName={layoutName}
       />
     </div>
   );

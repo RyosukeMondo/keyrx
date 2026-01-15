@@ -1,16 +1,8 @@
 /**
- * Shim for wasm-pack generated 'env' import.
- *
- * wasm-pack generates code that imports from 'env', which is a placeholder
- * that should be resolved by the bundler. This module provides the required
- * functions that WASM modules may need.
- *
- * See: https://github.com/rustwasm/wasm-pack/issues/835
+ * Stub module for WASM env imports
+ * This provides empty stubs for any runtime imports WASM might need.
+ * Required because wasm-bindgen sometimes generates code that imports from 'env'.
  */
 
-// Provide timing function for WASM modules
-export function now() {
-  return Date.now();
-}
-
-export default { now };
+// Export empty object - the WASM module will use this for any env imports
+export default {};

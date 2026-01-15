@@ -102,7 +102,12 @@ export function useWasm() {
             );
           });
 
-          console.info('[WASM] Module loaded, initializing...');
+          console.info('[WASM] Module loaded, initializing WASM binary...');
+          // For wasm-pack web target, must call default init() first to load WASM binary
+          if (module.default && typeof module.default === 'function') {
+            await module.default();
+            console.info('[WASM] Binary loaded, setting up panic hook...');
+          }
           // Initialize WASM with panic hook
           module.wasm_init();
 

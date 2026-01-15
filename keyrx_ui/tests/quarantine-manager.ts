@@ -204,7 +204,9 @@ export function printQuarantineStatus(): void {
   console.log('\n==============================\n');
 }
 
-// CLI usage
-if (require.main === module) {
+// CLI usage - this file can be run directly with: npx tsx tests/quarantine-manager.ts
+// Note: ESM modules can't use require.main === module, so we check process.argv
+const isDirectRun = import.meta.url === `file://${process.argv[1]}`;
+if (isDirectRun) {
   printQuarantineStatus();
 }

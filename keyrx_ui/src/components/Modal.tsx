@@ -14,9 +14,17 @@ export interface ModalProps {
   title: string;
   children: React.ReactNode;
   className?: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
-export const Modal = React.memo<ModalProps>(({ open, onClose, title, children, className = '' }) => {
+export const Modal = React.memo<ModalProps>(({ open, onClose, title, children, className = '', size = 'md' }) => {
+  const sizeClasses = {
+    sm: 'w-[50vw] max-w-md',
+    md: 'w-[70vw] max-w-2xl',
+    lg: 'w-[80vw] max-w-4xl',
+    xl: 'w-[90vw] max-w-6xl',
+    full: 'w-[95vw] max-w-7xl',
+  };
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
 
@@ -139,7 +147,7 @@ export const Modal = React.memo<ModalProps>(({ open, onClose, title, children, c
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
-            className={`relative bg-slate-800 rounded-lg shadow-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-hidden ${className}`}
+            className={`relative bg-slate-800 rounded-lg shadow-2xl border border-slate-700 ${sizeClasses[size]} h-[90vh] overflow-hidden ${className}`}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">

@@ -8,7 +8,7 @@ describe('KeyboardVisualizer Layout Integration', () => {
   const mockOnKeyClick = () => {};
 
   const layouts = [
-    { layout: 'ANSI_104' as const, expectedKeyCount: 87, description: 'ANSI 104 full-size layout' },
+    { layout: 'ANSI_104' as const, expectedKeyCount: 104, description: 'ANSI 104 full-size layout' },
     { layout: 'ANSI_87' as const, expectedKeyCount: 87, description: 'ANSI 87 TKL layout' },
     { layout: 'ISO_105' as const, expectedKeyCount: 105, description: 'ISO 105 full-size layout' },
     { layout: 'ISO_88' as const, expectedKeyCount: 88, description: 'ISO 88 TKL layout' },
@@ -127,7 +127,8 @@ describe('KeyboardVisualizer Layout Integration', () => {
       // Verify callback was invoked with a key code
       expect(clickedKeyCode).not.toBeNull();
       expect(typeof clickedKeyCode).toBe('string');
-      expect(clickedKeyCode).toMatch(/^KC_/); // QMK key code format
+      // Should be normalized to VK_ format for consistency with mappings
+      expect(clickedKeyCode).toMatch(/^VK_/);
     });
   });
 
@@ -142,9 +143,9 @@ describe('KeyboardVisualizer Layout Integration', () => {
         { wrapWithWasm: false }
       );
 
-      // Initially renders ANSI_104 (87 keys)
+      // Initially renders ANSI_104 (104 keys)
       let keyButtons = screen.getAllByRole('button');
-      expect(keyButtons).toHaveLength(87);
+      expect(keyButtons).toHaveLength(104);
 
       // Switch to NUMPAD (17 keys)
       rerender(

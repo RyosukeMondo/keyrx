@@ -27,7 +27,7 @@ interface Layout {
 
 describe('Keyboard Layout Data Validation', () => {
   const layouts = [
-    { data: ANSI_104, expectedName: 'ANSI 104', expectedKeyCount: 87 },
+    { data: ANSI_104, expectedName: 'ANSI 104', expectedKeyCount: 104 },
     { data: ANSI_87, expectedName: 'ANSI 87 (TKL)', expectedKeyCount: 87 },
     { data: ISO_105, expectedName: 'ISO 105', expectedKeyCount: 105 },
     { data: ISO_88, expectedName: 'ISO 88 (TKL)', expectedKeyCount: 88 },
@@ -109,13 +109,13 @@ describe('Keyboard Layout Data Validation', () => {
   });
 
   describe('Layout-specific validations', () => {
-    it('ANSI_104 should not have numpad keys', () => {
+    it('ANSI_104 should have numpad keys', () => {
       const ansiLayout = ANSI_104 as Layout;
       const hasNumpadKeys = ansiLayout.keys.some((key) =>
         ['KC_NLCK', 'KC_PSLS', 'KC_PAST', 'KC_PMNS', 'KC_PPLS', 'KC_PENT', 'KC_PDOT'].includes(key.code) ||
         /^KC_P[0-9]$/.test(key.code)
       );
-      expect(hasNumpadKeys, 'ANSI_104 should not contain numpad keys').toBe(false);
+      expect(hasNumpadKeys, 'ANSI_104 should contain numpad keys (full-size layout)').toBe(true);
     });
 
     it('ANSI_87 should not have numpad keys', () => {

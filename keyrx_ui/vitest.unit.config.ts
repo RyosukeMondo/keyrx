@@ -23,6 +23,8 @@ export default mergeConfig(
   defineConfig({
     test: {
       name: 'unit',
+      // setupMocks.ts must come first to mock WASM before any component imports
+      setupFiles: ['./src/test/setupMocks.ts', './src/test/setup.ts'],
       include: ['src/**/*.test.{ts,tsx}'],
       exclude: [
         'node_modules/**',

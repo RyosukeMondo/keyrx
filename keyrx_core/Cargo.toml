@@ -38,10 +38,12 @@ serde_json = { workspace = true, optional = true }
 # wasm_js feature is required for WASM targets
 # Note: Not optional because ahash depends on it transitively
 getrandom = { version = "0.3", features = ["wasm_js"] }
+# Also need getrandom 0.2.x with js feature for transitive deps (const-random-macro)
+getrandom_02 = { workspace = true, optional = true }
 
 [features]
 default = []
-wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_cell", "web-sys", "rhai", "sha2", "serde_json"]
+wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_cell", "web-sys", "rhai", "sha2", "serde_json", "getrandom_02"]
 
 [dev-dependencies]
 wasm-bindgen-test = { workspace = true }

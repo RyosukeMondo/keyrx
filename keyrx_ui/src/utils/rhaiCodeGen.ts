@@ -273,6 +273,26 @@ export function generateKeyMapping(
 }
 
 /**
+ * Ensure key has VK_ prefix
+ */
+function ensureVKPrefix(key: string): string {
+  // Skip if already has VK_ prefix
+  if (key.startsWith('VK_')) {
+    return key;
+  }
+  // Skip if it's a helper function (with_ctrl, etc.)
+  if (key.startsWith('with_')) {
+    return key;
+  }
+  // Skip if it's a layer modifier (MD_00, etc.)
+  if (key.startsWith('MD_') || key.startsWith('MMD_')) {
+    return key;
+  }
+  // Add VK_ prefix
+  return `VK_${key}`;
+}
+
+/**
  * Generate simple key mapping
  */
 function generateSimpleMapping(mapping: KeyMapping): string {
@@ -280,12 +300,15 @@ function generateSimpleMapping(mapping: KeyMapping): string {
     throw new Error(`Simple mapping missing targetKey at line ${mapping.line}`);
   }
 
+  const sourceKey = ensureVKPrefix(mapping.sourceKey);
+  const targetKey = mapping.targetKey;
+
   // Check if target is a helper function (with_ctrl, with_shift, etc.)
-  if (mapping.targetKey.startsWith('with_')) {
-    return `map("${mapping.sourceKey}", ${mapping.targetKey});`;
+  if (targetKey.startsWith('with_')) {
+    return `map("${sourceKey}", ${targetKey});`;
   }
 
-  return `map("${mapping.sourceKey}", "${mapping.targetKey}");`;
+  return `map("${sourceKey}", "${ensureVKPrefix(targetKey)}");`;
 }
 
 /**
@@ -296,8 +319,9 @@ function generateTapHoldMapping(mapping: KeyMapping): string {
     throw new Error(`Tap-hold mapping missing tapHold config at line ${mapping.line}`);
   }
 
+  const sourceKey = ensureVKPrefix(mapping.sourceKey);
   const { tapAction, holdAction, thresholdMs } = mapping.tapHold;
-  return `tap_hold("${mapping.sourceKey}", "${tapAction}", "${holdAction}", ${thresholdMs});`;
+  return `tap_hold("${sourceKey}", "${ensureVKPrefix(tapAction)}", "${ensureVKPrefix(holdAction)}", ${thresholdMs});`;
 }
 
 /**
@@ -308,14 +332,15 @@ function generateMacroMapping(mapping: KeyMapping): string {
     throw new Error(`Macro mapping missing macro config at line ${mapping.line}`);
   }
 
+  const sourceKey = ensureVKPrefix(mapping.sourceKey);
   const { keys, delayMs } = mapping.macro;
-  const keysStr = keys.map(k => `"${k}"`).join(', ');
+  const keysStr = keys.map(k => `"${ensureVKPrefix(k)}"`).join(', ');
 
   if (delayMs !== undefined) {
-    return `macro("${mapping.sourceKey}", [${keysStr}], ${delayMs});`;
+    return `macro("${sourceKey}", [${keysStr}], ${delayMs});`;
   }
 
-  return `macro("${mapping.sourceKey}", [${keysStr}]);`;
+  return `macro("${sourceKey}", [${keysStr}]);`;
 }
 
 /**
@@ -326,13 +351,14 @@ function generateLayerSwitchMapping(mapping: KeyMapping): string {
     throw new Error(`Layer switch mapping missing layerSwitch config at line ${mapping.line}`);
   }
 
+  const sourceKey = ensureVKPrefix(mapping.sourceKey);
   const { layerId, mode } = mapping.layerSwitch;
 
   if (mode) {
-    return `layer_switch("${mapping.sourceKey}", "${layerId}", "${mode}");`;
+    return `layer_switch("${sourceKey}", "${layerId}", "${mode}");`;
   }
 
-  return `layer_switch("${mapping.sourceKey}", "${layerId}");`;
+  return `layer_switch("${sourceKey}", "${layerId}");`;
 }
 
 /**

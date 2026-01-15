@@ -67,6 +67,25 @@ pub struct KeyEventData {
     /// Processing latency in microseconds.
     #[typeshare(serialized_as = "number")]
     pub latency: u64,
+
+    /// Device ID (unique identifier for the source device).
+    #[serde(rename = "deviceId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub device_id: Option<String>,
+
+    /// Device name (human-readable name).
+    #[serde(rename = "deviceName")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub device_name: Option<String>,
+
+    /// Mapping type applied (e.g., "simple", "tap_hold", "layer_switch").
+    #[serde(rename = "mappingType")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mapping_type: Option<String>,
+
+    /// Whether a mapping was triggered for this event.
+    #[serde(rename = "mappingTriggered")]
+    pub mapping_triggered: bool,
 }
 
 /// Latency statistics.

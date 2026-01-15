@@ -89,6 +89,10 @@ fn test_key_event_serialization_format() {
         input: "KEY_A".to_string(),
         output: "KEY_B".to_string(),
         latency: 150,
+        device_id: Some("dev-001".to_string()),
+        device_name: Some("USB Keyboard".to_string()),
+        mapping_type: None,
+        mapping_triggered: false,
     });
 
     let json = serde_json::to_string(&event).expect("Failed to serialize");
@@ -121,6 +125,10 @@ fn test_all_daemon_events_serialize() {
             input: "KEY_A".to_string(),
             output: "KEY_A".to_string(),
             latency: 0,
+            device_id: None,
+            device_name: None,
+            mapping_type: None,
+            mapping_triggered: false,
         }),
         DaemonEvent::Latency(LatencyStats {
             min: 0,

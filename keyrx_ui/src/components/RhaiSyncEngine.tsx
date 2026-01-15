@@ -231,23 +231,38 @@ export function useRhaiSyncEngine(options: RhaiSyncEngineOptions): RhaiSyncEngin
         return;
       }
 
-      const result = parseRhaiScript(code);
+      try {
+        const result = parseRhaiScript(code);
 
-      if (result.success && result.ast) {
-        // Success: update AST and last valid state
-        astRef.current = result.ast;
-        if (isMountedRef.current) {
-          setLastValidAST(result.ast);
-          setError(null);
-          updateState('idle');
-          setDirection('none');
+        if (result.success && result.ast) {
+          // Success: update AST and last valid state
+          astRef.current = result.ast;
+          if (isMountedRef.current) {
+            setLastValidAST(result.ast);
+            setError(null);
+            updateState('idle');
+            setDirection('none');
+          }
+        } else if (result.error) {
+          // Error: preserve last valid AST, show error
+          if (isMountedRef.current) {
+            setError(result.error);
+            updateState('error');
+            onError?.(result.error, 'code-to-visual');
+          }
         }
-      } else if (result.error) {
-        // Error: preserve last valid AST, show error
+      } catch (err) {
+        // Handle unexpected errors from parseRhaiScript
         if (isMountedRef.current) {
-          setError(result.error);
+          const error: ParseError = {
+            line: (err as any).line ?? 0,
+            column: (err as any).column ?? 0,
+            message: err instanceof Error ? err.message : 'Parse failed',
+            suggestion: 'Check your Rhai script syntax',
+          };
+          setError(error);
           updateState('error');
-          onError?.(result.error, 'code-to-visual');
+          onError?.(error, 'code-to-visual');
         }
       }
 

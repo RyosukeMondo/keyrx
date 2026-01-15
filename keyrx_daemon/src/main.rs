@@ -329,6 +329,7 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     // Create event broadcaster for real-time updates
     let event_broadcaster = keyrx_daemon::daemon::EventBroadcaster::new(event_tx_for_broadcaster);
     let running_for_broadcaster = daemon.running_flag();
+    let latency_recorder_for_broadcaster = daemon.latency_recorder();
 
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
@@ -390,10 +391,11 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
             }
         };
         rt.block_on(async {
-            // Start latency broadcast task
+            // Start latency broadcast task with real metrics collection
             tokio::spawn(keyrx_daemon::daemon::start_latency_broadcast_task(
                 event_broadcaster,
                 running_for_broadcaster,
+                Some(latency_recorder_for_broadcaster),
             ));
 
             let addr: std::net::SocketAddr = ([127, 0, 0, 1], 9867).into();
@@ -496,6 +498,7 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     // Create event broadcaster for real-time updates
     let event_broadcaster = keyrx_daemon::daemon::EventBroadcaster::new(event_tx_for_broadcaster);
     let running_for_broadcaster = daemon.running_flag();
+    let latency_recorder_for_broadcaster = daemon.latency_recorder();
 
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
@@ -556,10 +559,11 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
             }
         };
         rt.block_on(async {
-            // Start latency broadcast task
+            // Start latency broadcast task with real metrics collection
             tokio::spawn(keyrx_daemon::daemon::start_latency_broadcast_task(
                 event_broadcaster,
                 running_for_broadcaster,
+                Some(latency_recorder_for_broadcaster),
             ));
 
             let addr: std::net::SocketAddr = ([127, 0, 0, 1], 9867).into();

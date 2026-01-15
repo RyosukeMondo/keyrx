@@ -19,6 +19,8 @@ import { useWasm, type ValidationError, type SimulationResult } from '../hooks/u
 // Mock the WASM module import
 vi.mock('@/wasm/pkg/keyrx_core.js', () => {
   return {
+    // Default export is the init function for wasm-pack web target
+    default: vi.fn(() => Promise.resolve()),
     wasm_init: vi.fn(),
     load_config: vi.fn((code: string) => {
       if (code.includes('invalid')) {

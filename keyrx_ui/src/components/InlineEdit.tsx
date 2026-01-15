@@ -126,7 +126,7 @@ export const InlineEdit = React.memo<InlineEditProps>(
 
     return (
       <div
-        className={`relative group ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+        className={`relative group ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} pr-6`}
         onClick={handleClick}
         onMouseEnter={() => !disabled && setShowPencil(true)}
         onMouseLeave={() => setShowPencil(false)}
@@ -143,10 +143,12 @@ export const InlineEdit = React.memo<InlineEditProps>(
         <span className={`${className} ${showPlaceholder ? 'text-slate-500 italic' : ''}`}>
           {displayValue}
         </span>
-        {showPencil && !disabled && (
+        {!disabled && (
           <Pencil
             size={14}
-            className="inline-block ml-2 text-slate-400 opacity-70"
+            className={`absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 transition-opacity ${
+              showPencil ? 'opacity-70' : 'opacity-0'
+            }`}
             aria-hidden="true"
           />
         )}

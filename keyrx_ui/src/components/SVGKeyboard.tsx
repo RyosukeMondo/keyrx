@@ -41,6 +41,7 @@ interface KeySVGProps {
   mapping?: KeyMapping;
   isPressed: boolean;
   onClick: () => void;
+  simulatorMode?: boolean;
 }
 
 /**
@@ -209,7 +210,7 @@ function getMappingIconColor(type?: string): string {
 /**
  * Individual key SVG component
  */
-const KeySVG: React.FC<KeySVGProps> = React.memo(({ keyData, mapping, isPressed, onClick }) => {
+const KeySVG: React.FC<KeySVGProps> = React.memo(({ keyData, mapping, isPressed, onClick, simulatorMode = false }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
 
@@ -259,16 +260,19 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(({ keyData, mapping, isPressed,
   const strokeColor = isPressed ? '#4ade80' : style.stroke;
   const brightness = isHovered ? 1.15 : 1;
 
+  // Build className for simulator mode
+  const className = simulatorMode ? 'key-group opacity-50 cursor-not-allowed' : 'key-group';
+
   return (
     <g
-      className="key-group"
-      style={{ cursor: 'pointer' }}
+      className={className}
+      style={{ cursor: simulatorMode ? 'not-allowed' : 'pointer' }}
       onClick={handleClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => !simulatorMode && setIsHovered(true)}
+      onMouseLeave={() => !simulatorMode && setIsHovered(false)}
       role="button"
       tabIndex={0}
-      aria-label={`Key ${code}. ${tooltipContent}. Click to configure.`}
+      aria-label={`Key ${code}. ${tooltipContent}. ${simulatorMode ? 'Simulator mode active.' : 'Click to configure.'}`}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
     >
       {/* Native SVG tooltip */}
@@ -345,6 +349,57 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(({ keyData, mapping, isPressed,
 KeySVG.displayName = 'KeySVG';
 
 /**
+ * Normalize key code to VK_ format for mapping lookup
+ * Maps QMK-style KC_ codes to system VK_ codes based on DSL manual
+ *
+ * Handles:
+ * - KC_A -> VK_A (letters)
+ * - KC_0-9 -> VK_Num0-9 (top row numbers)
+ * - KC_P0-9 -> VK_Numpad0-9 (numpad digit keys)
+ * - KC_NLCK -> VK_NumLock, etc. (numpad special keys)
+ * - VK_A -> VK_A (already normalized)
+ */
+function normalizeKeyCode(code: string): string {
+  if (!code) return code;
+
+  // Already in VK_ format
+  if (code.startsWith('VK_')) return code;
+
+  // Handle top row number keys: KC_0-KC_9 -> VK_Num0-VK_Num9
+  if (code.match(/^KC_[0-9]$/)) {
+    const digit = code.charAt(code.length - 1);
+    return `VK_Num${digit}`;
+  }
+
+  // Handle numpad digit keys: KC_P0-KC_P9 -> VK_Numpad0-VK_Numpad9
+  if (code.match(/^KC_P[0-9]$/)) {
+    const digit = code.charAt(code.length - 1);
+    return `VK_Numpad${digit}`;
+  }
+
+  // Handle special numpad keys
+  const numpadMap: Record<string, string> = {
+    'KC_NLCK': 'VK_NumLock',
+    'KC_PSLS': 'VK_NumpadDivide',
+    'KC_PAST': 'VK_NumpadMultiply',
+    'KC_PMNS': 'VK_NumpadSubtract',
+    'KC_PPLS': 'VK_NumpadAdd',
+    'KC_PENT': 'VK_NumpadEnter',
+    'KC_PDOT': 'VK_NumpadDecimal',
+  };
+
+  if (numpadMap[code]) {
+    return numpadMap[code];
+  }
+
+  // Convert KC_ to VK_
+  if (code.startsWith('KC_')) return code.replace(/^KC_/, 'VK_');
+
+  // No prefix - add VK_
+  return `VK_${code}`;
+}
+
+/**
  * Main SVG Keyboard component
  */
 export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
@@ -386,15 +441,19 @@ export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
       aria-label={`${layoutName} keyboard layout${simulatorMode ? ' (simulator mode)' : ''}. Click keys to configure.`}
     >
       <g transform="translate(8, 8)">
-        {keys.map((key) => (
-          <KeySVG
-            key={key.code}
-            keyData={key}
-            mapping={keyMappings.get(key.code)}
-            isPressed={pressedKeys.has(key.code)}
-            onClick={() => !simulatorMode && onKeyClick(key.code)}
-          />
-        ))}
+        {keys.map((key) => {
+          const normalizedCode = normalizeKeyCode(key.code);
+          return (
+            <KeySVG
+              key={key.code}
+              keyData={key}
+              mapping={keyMappings.get(normalizedCode)}
+              isPressed={pressedKeys.has(key.code) || pressedKeys.has(normalizedCode)}
+              onClick={() => !simulatorMode && onKeyClick(normalizedCode)}
+              simulatorMode={simulatorMode}
+            />
+          );
+        })}
       </g>
     </svg>
   );

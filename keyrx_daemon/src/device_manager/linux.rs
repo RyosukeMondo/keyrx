@@ -66,6 +66,77 @@ fn is_keyboard(device: &Device) -> bool {
     key_count >= MIN_REQUIRED_KEYS
 }
 
+/// Deduplicates keyboards by filtering out secondary interfaces.
+///
+/// Many USB keyboards register as multiple `/dev/input/event*` devices:
+/// - One for the main keyboard (input0)
+/// - One for consumer controls/media keys (input1, input2, etc.)
+///
+/// This function filters by preferring devices with physical path ending in `/input0`.
+fn deduplicate_keyboards(keyboards: &mut Vec<KeyboardInfo>) {
+    use std::collections::HashMap;
+
+    // Group keyboards by their base physical path (without /inputN suffix)
+    let mut grouped: HashMap<String, Vec<usize>> = HashMap::new();
+
+    for (idx, kb) in keyboards.iter().enumerate() {
+        if let Some(ref phys) = kb.phys {
+            // Get the base path (everything before /inputN)
+            let base_path = if let Some(pos) = phys.rfind("/input") {
+                phys[..pos].to_string()
+            } else {
+                phys.clone()
+            };
+
+            grouped.entry(base_path).or_default().push(idx);
+        } else {
+            // No physical path - keep the device (can't deduplicate)
+            continue;
+        }
+    }
+
+    // For each group, find the primary interface (input0) or keep the first one
+    let mut to_remove: Vec<usize> = Vec::new();
+
+    for indices in grouped.values() {
+        if indices.len() <= 1 {
+            // Only one device in this group - keep it
+            continue;
+        }
+
+        // Find the primary interface (input0)
+        let primary_idx = indices.iter().find(|&&idx| {
+            keyboards[idx]
+                .phys
+                .as_ref()
+                .map(|p| p.ends_with("/input0"))
+                .unwrap_or(false)
+        });
+
+        // Mark all others for removal
+        for &idx in indices {
+            if let Some(&primary) = primary_idx {
+                if idx != primary {
+                    to_remove.push(idx);
+                }
+            } else {
+                // No primary found - keep only the first one
+                if idx != indices[0] {
+                    to_remove.push(idx);
+                }
+            }
+        }
+    }
+
+    // Sort removal indices in reverse order to maintain validity during removal
+    to_remove.sort_unstable_by(|a, b| b.cmp(a));
+
+    // Remove marked devices
+    for idx in to_remove {
+        keyboards.remove(idx);
+    }
+}
+
 pub fn enumerate_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
     let input_dir = Path::new("/dev/input");
     let entries = fs::read_dir(input_dir)?;
@@ -104,6 +175,12 @@ pub fn enumerate_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
     }
 
     keyboards.sort_by(|a, b| a.path.cmp(&b.path));
+
+    // Deduplicate devices: Many USB keyboards register as multiple event devices
+    // (one for keyboard, one for consumer controls/media keys). We filter these
+    // by preferring input0 interfaces and removing duplicates with " Keyboard" suffix.
+    deduplicate_keyboards(&mut keyboards);
+
     Ok(keyboards)
 }
 

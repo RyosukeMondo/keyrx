@@ -42,12 +42,12 @@ export function LayerSwitcher({
   };
 
   return (
-    <div className="w-24 flex flex-col bg-gradient-to-r from-red-900/20 to-red-800/20 rounded-lg border border-red-500/30 flex-shrink-0">
+    <div className="w-24 flex flex-col bg-slate-800/50 rounded-lg border border-slate-700/50 flex-shrink-0">
       {/* Header with search - compact for narrow width */}
-      <div className="p-2 border-b border-red-500/30">
+      <div className="p-2 border-b border-slate-700/50">
         <div className="mb-2">
-          <span className="text-red-400 font-bold text-xs block text-center">LAYERS</span>
-          <span className="text-slate-400 text-xs block text-center">
+          <span className="text-slate-300 font-semibold text-xs block text-center">LAYERS</span>
+          <span className="text-slate-500 text-xs block text-center">
             {filteredLayers.length}
           </span>
         </div>
@@ -58,13 +58,13 @@ export function LayerSwitcher({
           onChange={(e) => setSearchFilter(e.target.value)}
           placeholder="..."
           title="Search layers (e.g., 'md-0a', 'base', '1f')"
-          className="w-full px-1 py-1 bg-slate-800 border border-red-500/50 rounded text-white text-xs font-mono focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="w-full px-1 py-1 bg-slate-900/50 border border-slate-600 rounded text-white text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary-500/50"
           aria-label="Search layers"
         />
       </div>
 
-      {/* Scrollable layer list */}
-      <div className="overflow-y-auto max-h-96 p-1">
+      {/* Scrollable layer list with custom scrollbar */}
+      <div className="overflow-y-auto max-h-96 p-1 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50">
         <div className="space-y-1">
           {filteredLayers.map((layer) => (
             <button
@@ -72,8 +72,8 @@ export function LayerSwitcher({
               onClick={() => onLayerChange(layer)}
               className={`w-full px-1 py-1 rounded text-xs font-medium text-center transition-all break-words ${
                 activeLayer === layer
-                  ? 'bg-red-500 text-white shadow-lg shadow-red-500/50'
-                  : 'bg-slate-800 text-slate-300 border border-red-500/30 hover:bg-slate-700 hover:border-red-400'
+                  ? 'bg-primary-500/80 text-white shadow-md'
+                  : 'bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500'
               }`}
               aria-label={`Select ${formatLayerName(layer)}`}
               aria-pressed={activeLayer === layer}

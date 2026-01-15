@@ -92,6 +92,28 @@
     {"code": "KC_RCTL", "label": "Ctrl", "x": 13.75, "y": 5.5, "w": 1.25},
     {"code": "KC_LEFT", "label": "←", "x": 15.25, "y": 5.5, "w": 1},
     {"code": "KC_DOWN", "label": "↓", "x": 16.25, "y": 5.5, "w": 1},
-    {"code": "KC_RGHT", "label": "→", "x": 17.25, "y": 5.5, "w": 1}
+    {"code": "KC_RGHT", "label": "→", "x": 17.25, "y": 5.5, "w": 1},
+
+    {"code": "KC_NLCK", "label": "Num", "x": 18.5, "y": 1.5, "w": 1},
+    {"code": "KC_PSLS", "label": "/", "x": 19.5, "y": 1.5, "w": 1},
+    {"code": "KC_PAST", "label": "*", "x": 20.5, "y": 1.5, "w": 1},
+    {"code": "KC_PMNS", "label": "-", "x": 21.5, "y": 1.5, "w": 1},
+
+    {"code": "KC_P7", "label": "7", "x": 18.5, "y": 2.5, "w": 1},
+    {"code": "KC_P8", "label": "8", "x": 19.5, "y": 2.5, "w": 1},
+    {"code": "KC_P9", "label": "9", "x": 20.5, "y": 2.5, "w": 1},
+    {"code": "KC_PPLS", "label": "+", "x": 21.5, "y": 2.5, "w": 1, "h": 2},
+
+    {"code": "KC_P4", "label": "4", "x": 18.5, "y": 3.5, "w": 1},
+    {"code": "KC_P5", "label": "5", "x": 19.5, "y": 3.5, "w": 1},
+    {"code": "KC_P6", "label": "6", "x": 20.5, "y": 3.5, "w": 1},
+
+    {"code": "KC_P1", "label": "1", "x": 18.5, "y": 4.5, "w": 1},
+    {"code": "KC_P2", "label": "2", "x": 19.5, "y": 4.5, "w": 1},
+    {"code": "KC_P3", "label": "3", "x": 20.5, "y": 4.5, "w": 1},
+    {"code": "KC_PENT", "label": "Enter", "x": 21.5, "y": 4.5, "w": 1, "h": 2},
+
+    {"code": "KC_P0", "label": "0", "x": 18.5, "y": 5.5, "w": 2},
+    {"code": "KC_PDOT", "label": ".", "x": 20.5, "y": 5.5, "w": 1}
   ]
 }

@@ -9,6 +9,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::broadcast;
 use tokio::time::interval;
 
+use super::metrics::{LatencyRecorder, MetricsAggregator};
 use crate::web::events::{DaemonEvent, DaemonState, KeyEventData, LatencyStats};
 
 /// Broadcaster for daemon events to WebSocket clients
@@ -68,6 +69,13 @@ impl EventBroadcaster {
 ///
 /// * `broadcaster` - The event broadcaster to use
 /// * `running` - Atomic flag that controls task lifetime
+/// * `latency_recorder` - Optional lock-free latency recorder for real metrics
+///
+/// # Performance
+///
+/// Percentile calculation uses HdrHistogram, which is O(log n) for queries
+/// but is done off the hot path (every 1 second in this background task).
+/// The latency recording itself is lock-free O(1) on the hot path.
 ///
 /// # Example
 ///
@@ -77,8 +85,13 @@ impl EventBroadcaster {
 ///
 /// let running = Arc::new(AtomicBool::new(true));
 /// let broadcaster = EventBroadcaster::new(event_tx);
+/// let latency_recorder = Arc::new(LatencyRecorder::new());
 ///
-/// tokio::spawn(start_latency_broadcast_task(broadcaster, Arc::clone(&running)));
+/// tokio::spawn(start_latency_broadcast_task(
+///     broadcaster,
+///     Arc::clone(&running),
+///     Some(Arc::clone(&latency_recorder)),
+/// ));
 ///
 /// // Later...
 /// running.store(false, Ordering::SeqCst);
@@ -86,10 +99,15 @@ impl EventBroadcaster {
 pub async fn start_latency_broadcast_task(
     broadcaster: EventBroadcaster,
     running: Arc<std::sync::atomic::AtomicBool>,
+    latency_recorder: Option<Arc<LatencyRecorder>>,
 ) {
     use std::sync::atomic::Ordering;
 
     log::info!("Starting latency broadcast task (1 second interval)");
+
+    // Create metrics aggregator for percentile computation
+    // This runs in the background task, NOT on the hot path
+    let mut aggregator = MetricsAggregator::new(Duration::from_secs(60));
 
     let mut ticker = interval(Duration::from_secs(1));
 
@@ -104,22 +122,33 @@ pub async fn start_latency_broadcast_task(
             continue;
         }
 
-        // TODO: Collect actual latency metrics from the event processor
-        // For now, send placeholder metrics showing the infrastructure works
-        // SAFETY: SystemTime::now() should always be after UNIX_EPOCH
-        // If system clock is broken, fallback to 0
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_micros() as u64)
-            .unwrap_or(0);
+        // Compute real latency statistics if recorder is available
+        let stats = if let Some(ref recorder) = latency_recorder {
+            let snapshot = aggregator.compute_snapshot(recorder);
 
-        let stats = LatencyStats {
-            min: 0,
-            avg: 0,
-            max: 0,
-            p95: 0,
-            p99: 0,
-            timestamp,
+            LatencyStats {
+                min: snapshot.min_us,
+                avg: snapshot.avg_us,
+                max: snapshot.max_us,
+                p95: snapshot.p95_us,
+                p99: snapshot.p99_us,
+                timestamp: snapshot.timestamp_us,
+            }
+        } else {
+            // Fallback to placeholder zeros if no recorder
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_micros() as u64)
+                .unwrap_or(0);
+
+            LatencyStats {
+                min: 0,
+                avg: 0,
+                max: 0,
+                p95: 0,
+                p99: 0,
+                timestamp,
+            }
         };
 
         broadcaster.broadcast_latency(stats);
@@ -175,6 +204,10 @@ mod tests {
             input: "A".to_string(),
             output: "B".to_string(),
             latency: 2300,
+            device_id: Some("dev-001".to_string()),
+            device_name: Some("USB Keyboard".to_string()),
+            mapping_type: Some("simple".to_string()),
+            mapping_triggered: true,
         };
 
         broadcaster.broadcast_key_event(event.clone());
@@ -241,7 +274,7 @@ mod tests {
 
         let task_running = Arc::clone(&running);
         let task = tokio::spawn(async move {
-            start_latency_broadcast_task(broadcaster, task_running).await;
+            start_latency_broadcast_task(broadcaster, task_running, None).await;
         });
 
         // Let it run for a bit
@@ -266,7 +299,7 @@ mod tests {
 
         let task_running = Arc::clone(&running);
         let task = tokio::spawn(async move {
-            start_latency_broadcast_task(broadcaster, task_running).await;
+            start_latency_broadcast_task(broadcaster, task_running, None).await;
         });
 
         // Wait for at least one broadcast (happens every 1 second)

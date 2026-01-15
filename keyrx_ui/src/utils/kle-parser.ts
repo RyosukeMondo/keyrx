@@ -39,29 +39,14 @@ export interface SVGKeyData {
 }
 
 /**
- * Convert QMK keycode (KC_*) to Windows Virtual Key code (VK_*)
- * This fixes the issue where layout files use QMK convention but Windows expects VK_ prefix
+ * Normalize keycode format
+ * We use QMK format (KC_*) throughout the application
+ * Layout files already use KC_ format, so this is a pass-through
  *
  * @param code - Keycode from layout file (e.g., "KC_A", "KC_ENTER")
- * @returns Windows Virtual Key code (e.g., "VK_A", "VK_ENTER")
- *
- * @example
- * convertToVirtualKey("KC_A") // "VK_A"
- * convertToVirtualKey("KC_ENTER") // "VK_ENTER"
- * convertToVirtualKey("VK_A") // "VK_A" (already correct)
+ * @returns Normalized keycode (same as input)
  */
-function convertToVirtualKey(code: string): string {
-  // If already using VK_ prefix, return as-is
-  if (code.startsWith('VK_')) {
-    return code;
-  }
-
-  // Convert KC_ prefix to VK_ prefix
-  if (code.startsWith('KC_')) {
-    return code.replace(/^KC_/, 'VK_');
-  }
-
-  // If no prefix, return as-is (shouldn't happen but handle gracefully)
+function normalizeKeyCode(code: string): string {
   return code;
 }
 
@@ -72,7 +57,7 @@ function convertToVirtualKey(code: string): string {
  */
 export function parseKLEJson(kleData: KLEData): KeyButton[] {
   return kleData.keys.map((key) => ({
-    keyCode: convertToVirtualKey(key.code),
+    keyCode: normalizeKeyCode(key.code),
     label: key.label,
     gridRow: Math.floor(key.y) + 1, // 1-indexed for CSS Grid
     gridColumn: Math.floor(key.x) + 1,
@@ -107,7 +92,7 @@ function detectKeyShape(key: KLEKey, layoutName: string): 'iso-enter' | 'standar
  */
 export function parseKLEToSVG(kleData: KLEData): SVGKeyData[] {
   return kleData.keys.map((key) => ({
-    code: convertToVirtualKey(key.code),
+    code: normalizeKeyCode(key.code),
     label: key.label,
     x: key.x,
     y: key.y,

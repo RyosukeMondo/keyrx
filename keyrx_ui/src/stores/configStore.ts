@@ -1,121 +1,151 @@
 import { create } from 'zustand';
 import type { KeyMapping } from '../types';
-import * as configApi from '../api/config';
-import { ApiError } from '../api/client';
+
+/**
+ * Layer-aware Configuration Store
+ *
+ * Manages key mappings per layer, enabling proper layer-specific configuration.
+ *
+ * Structure:
+ * - layerMappings: Map<layerId, Map<keyCode, KeyMapping>>
+ *   - Outer map: layer identifier ('base', 'md-00', 'md-01', etc.)
+ *   - Inner map: key code -> mapping configuration
+ *
+ * Example:
+ * {
+ *   'base': Map({ 'VK_A' -> { type: 'simple', tapAction: 'Space' } }),
+ *   'md-00': Map({ 'VK_A' -> { type: 'simple', tapAction: 'Enter' } }),
+ * }
+ */
 
 interface ConfigStore {
   // State
   currentProfile: string | null;
   activeLayer: string;
-  keyMappings: Map<string, KeyMapping>;
+  layerMappings: Map<string, Map<string, KeyMapping>>; // Layer-aware structure
+  globalSelected: boolean;
+  selectedDevices: string[];
   loading: boolean;
   error: string | null;
 
   // Actions
-  fetchConfig: (profile: string) => Promise<void>;
-  setKeyMapping: (key: string, mapping: KeyMapping) => Promise<void>;
-  deleteKeyMapping: (key: string) => Promise<void>;
-  switchLayer: (layerId: string) => void;
+  setActiveLayer: (layerId: string) => void;
+  setKeyMapping: (key: string, mapping: KeyMapping, layerId?: string) => void;
+  deleteKeyMapping: (key: string, layerId?: string) => void;
+  getLayerMappings: (layerId: string) => Map<string, KeyMapping>;
+  getAllLayers: () => string[];
+  clearLayer: (layerId: string) => void;
+  setGlobalSelected: (selected: boolean) => void;
+  setSelectedDevices: (deviceIds: string[]) => void;
+  loadLayerMappings: (mappings: Map<string, Map<string, KeyMapping>>) => void;
   clearError: () => void;
+  reset: () => void;
 }
 
 export const useConfigStore = create<ConfigStore>((set, get) => ({
   // Initial state
   currentProfile: null,
   activeLayer: 'base',
-  keyMappings: new Map(),
+  layerMappings: new Map([['base', new Map()]]), // Initialize with base layer
+  globalSelected: true,
+  selectedDevices: [],
   loading: false,
   error: null,
 
-  // Fetch configuration for a profile
-  fetchConfig: async (profile: string) => {
-    set({ loading: true, error: null });
-    try {
-      const data = await configApi.fetchConfig(profile);
+  // Set active layer
+  setActiveLayer: (layerId: string) => {
+    const { layerMappings } = get();
 
-      // Convert key mappings object to Map
-      const keyMappings = new Map<string, KeyMapping>(
-        Object.entries(data.keyMappings || {})
-      );
-
-      set({
-        currentProfile: profile,
-        keyMappings,
-        activeLayer: data.activeLayer || 'base',
-        loading: false,
-      });
-    } catch (error) {
-      const errorMessage =
-        error instanceof ApiError ? error.message : 'Unknown error';
-      set({ error: errorMessage, loading: false });
+    // Ensure layer exists
+    if (!layerMappings.has(layerId)) {
+      const newLayerMappings = new Map(layerMappings);
+      newLayerMappings.set(layerId, new Map());
+      set({ layerMappings: newLayerMappings, activeLayer: layerId });
+    } else {
+      set({ activeLayer: layerId });
     }
   },
 
-  // Set or update a key mapping
-  setKeyMapping: async (key: string, mapping: KeyMapping) => {
-    const { currentProfile, keyMappings } = get();
+  // Set or update a key mapping in a specific layer
+  setKeyMapping: (key: string, mapping: KeyMapping, layerId?: string) => {
+    const { activeLayer, layerMappings } = get();
+    const targetLayer = layerId || activeLayer;
 
-    if (!currentProfile) {
-      const errorMessage = 'No profile loaded';
-      set({ error: errorMessage });
-      throw new Error(errorMessage);
+    // Get or create layer
+    const newLayerMappings = new Map(layerMappings);
+    if (!newLayerMappings.has(targetLayer)) {
+      newLayerMappings.set(targetLayer, new Map());
     }
 
-    // Store old mapping for rollback
-    const oldMappings = new Map(keyMappings);
+    // Update mapping in the layer
+    const layerMap = new Map(newLayerMappings.get(targetLayer)!);
+    layerMap.set(key, mapping);
+    newLayerMappings.set(targetLayer, layerMap);
 
-    // Optimistic update
-    const updatedMappings = new Map(keyMappings);
-    updatedMappings.set(key, mapping);
-    set({ keyMappings: updatedMappings, error: null });
-
-    try {
-      await configApi.setKeyMapping(currentProfile, key, mapping);
-    } catch (error) {
-      // Rollback on error
-      set({ keyMappings: oldMappings });
-      const errorMessage =
-        error instanceof ApiError ? error.message : 'Unknown error';
-      set({ error: errorMessage });
-      throw error;
-    }
+    set({ layerMappings: newLayerMappings, error: null });
   },
 
-  // Delete a key mapping (restore to default)
-  deleteKeyMapping: async (key: string) => {
-    const { currentProfile, keyMappings } = get();
+  // Delete a key mapping from a specific layer
+  deleteKeyMapping: (key: string, layerId?: string) => {
+    const { activeLayer, layerMappings } = get();
+    const targetLayer = layerId || activeLayer;
 
-    if (!currentProfile) {
-      const errorMessage = 'No profile loaded';
-      set({ error: errorMessage });
-      throw new Error(errorMessage);
-    }
+    if (!layerMappings.has(targetLayer)) return;
 
-    // Store old mapping for rollback
-    const oldMappings = new Map(keyMappings);
+    const newLayerMappings = new Map(layerMappings);
+    const layerMap = new Map(newLayerMappings.get(targetLayer)!);
+    layerMap.delete(key);
+    newLayerMappings.set(targetLayer, layerMap);
 
-    // Optimistic update
-    const updatedMappings = new Map(keyMappings);
-    updatedMappings.delete(key);
-    set({ keyMappings: updatedMappings, error: null });
-
-    try {
-      await configApi.deleteKeyMapping(currentProfile, key);
-    } catch (error) {
-      // Rollback on error
-      set({ keyMappings: oldMappings });
-      const errorMessage =
-        error instanceof ApiError ? error.message : 'Unknown error';
-      set({ error: errorMessage });
-      throw error;
-    }
+    set({ layerMappings: newLayerMappings, error: null });
   },
 
-  // Switch active layer (local state only, doesn't persist)
-  switchLayer: (layerId: string) => {
-    set({ activeLayer: layerId });
+  // Get mappings for a specific layer
+  getLayerMappings: (layerId: string) => {
+    const { layerMappings } = get();
+    return layerMappings.get(layerId) || new Map();
+  },
+
+  // Get all layer IDs
+  getAllLayers: () => {
+    const { layerMappings } = get();
+    return Array.from(layerMappings.keys());
+  },
+
+  // Clear all mappings in a layer
+  clearLayer: (layerId: string) => {
+    const { layerMappings } = get();
+    const newLayerMappings = new Map(layerMappings);
+    newLayerMappings.set(layerId, new Map());
+    set({ layerMappings: newLayerMappings });
+  },
+
+  // Set global scope selection
+  setGlobalSelected: (selected: boolean) => {
+    set({ globalSelected: selected });
+  },
+
+  // Set selected devices
+  setSelectedDevices: (deviceIds: string[]) => {
+    set({ selectedDevices: deviceIds });
+  },
+
+  // Load layer mappings from external source (e.g., parsed Rhai AST)
+  loadLayerMappings: (mappings: Map<string, Map<string, KeyMapping>>) => {
+    set({ layerMappings: new Map(mappings) });
   },
 
   // Clear error state
   clearError: () => set({ error: null }),
+
+  // Reset store to initial state
+  reset: () => set({
+    currentProfile: null,
+    activeLayer: 'base',
+    layerMappings: new Map([['base', new Map()]]),
+    globalSelected: true,
+    selectedDevices: [],
+    loading: false,
+    error: null,
+  }),
 }));
