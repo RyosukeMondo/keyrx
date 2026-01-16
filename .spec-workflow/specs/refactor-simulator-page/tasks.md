@@ -9,7 +9,7 @@
   - _Requirements: 1.4, TR-1, TR-2_
   - _Prompt: Role: React Hooks Developer specializing in WebSocket integration | Task: Implement the task for spec refactor-simulator-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Create useSimulation hook that manages simulation state (events, isRunning) and WebSocket subscription. Extract from SimulatorPage.tsx lines 39-140. Accept options: { maxEvents (default 1000), autoStart (default false) }. Manage events array with max limit (FIFO queue). Implement start/stop to control WebSocket subscription. Compute statistics (event counts by type). | Restrictions: Must be ≤500 lines, all functions ≤50 lines, properly cleanup WebSocket on unmount, memoize callbacks, handle edge cases (rapid start/stop) | Success: Hook manages events and WebSocket, max events enforced, statistics computed, unit tests with mocked WebSocket >80% coverage | After completion: 1) Mark [-] in tasks.md, 2) log-implementation with artifacts, 3) Mark [x]_
 
-- [ ] 2. Create EventList component with virtualization
+- [x] 2. Create EventList component with virtualization
   - File: src/components/simulator/EventList.tsx
   - Display virtualized event list with auto-scroll to latest
   - Purpose: Performant event display for 1000+ events
