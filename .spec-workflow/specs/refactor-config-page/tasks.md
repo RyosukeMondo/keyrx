@@ -35,7 +35,7 @@
   - _Requirements: 2.4, TR-1, TR-2_
   - _Prompt: Role: React Hooks Developer specializing in data synchronization patterns | Task: Implement the task for spec refactor-config-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Create useConfigSync custom hook that encapsulates RhaiSyncEngine initialization and sync status. Extract from ConfigPage.tsx lines 86-96 and 232-234. Accept profileName parameter. Initialize syncEngine with storageKey `profile-${profileName}`, debounceMs: 500. Manage syncStatus ('saved' | 'unsaved' | 'saving') and lastSaveTime state. Return { syncEngine, syncStatus, lastSaveTime, setSyncStatus, setLastSaveTime }. | Restrictions: Do not modify ConfigPage.tsx yet, ensure syncEngine properly reinitializes when profileName changes, handle cleanup on unmount, debounce must be 500ms | Success: Hook initializes syncEngine with correct config, sync status managed properly, cleanup on unmount, unit tests with mocked syncEngine | After completion: 1) Mark [-], 2) log-implementation with artifacts, 3) Mark [x]_
 
-- [ ] 1.5 Write tests for all custom hooks
+- [x] 1.5 Write tests for all custom hooks
   - Files: src/hooks/useProfileSelection.test.ts, useCodePanel.test.ts, useKeyboardLayout.test.ts, useConfigSync.test.ts
   - Comprehensive unit tests for each hook with >80% coverage
   - Purpose: Ensure hook reliability and enable safe refactoring
