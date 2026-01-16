@@ -22,6 +22,7 @@ import { useConfigSync } from '@/hooks/useConfigSync';
 // Import container components
 import { CodePanelContainer } from '@/components/config/CodePanelContainer';
 import { KeyboardVisualizerContainer } from '@/components/config/KeyboardVisualizerContainer';
+import { ProfileSelector } from '@/components/config/ProfileSelector';
 
 interface ConfigPageProps {
   profileName?: string;
@@ -531,24 +532,13 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       {/* Streamlined Header */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-4 border-b border-slate-700">
         {/* Left: Profile Selector */}
-        <div className="flex items-center gap-3">
-          <label htmlFor="profile-selector" className="text-sm font-medium text-slate-300 whitespace-nowrap">
-            Profile:
-          </label>
-          <select
-            id="profile-selector"
-            value={selectedProfileName}
-            onChange={(e) => handleProfileChange(e.target.value)}
-            disabled={isLoadingProfiles || !api.isConnected}
-            className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
-          >
-            {profiles?.map((profile) => (
-              <option key={profile.name} value={profile.name}>
-                {profile.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <ProfileSelector
+          value={selectedProfileName}
+          onChange={handleProfileChange}
+          profiles={profiles}
+          isLoading={isLoadingProfiles}
+          disabled={!api.isConnected}
+        />
 
         {/* Right: Sync Status and Save Button */}
         <div className="flex items-center gap-3">

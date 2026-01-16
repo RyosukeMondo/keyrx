@@ -111,7 +111,7 @@
   - _Requirements: TR-2_
   - _Prompt: Role: QA Engineer specializing in user interaction testing | Task: Implement the task for spec refactor-config-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Write unit tests for ProfileSelector component. Test profile selection changes, create profile button click, loading state display, disabled states, accessibility. Use userEvent for interactions. Achieve >80% coverage. | Restrictions: Test user-facing behavior, verify callbacks called with correct values, test edge cases (empty profiles, loading), check ARIA attributes | Success: Test file created, >80% coverage, selection and creation tested, loading states verified, accessibility checked, tests pass | After completion: 1) Mark [-], 2) log-implementation with artifacts, 3) Mark [x]_
 
-- [ ] 3.3 Update ConfigPage to use ProfileSelector
+- [x] 3.3 Update ConfigPage to use ProfileSelector
   - File: src/pages/ConfigPage.tsx
   - Replace profile selection JSX with ProfileSelector component
   - Purpose: Further simplify ConfigPage
