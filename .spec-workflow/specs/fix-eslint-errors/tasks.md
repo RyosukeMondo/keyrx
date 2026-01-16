@@ -34,6 +34,6 @@
   - Fix any other error types found
   - _Prompt: Role: Code Quality Engineer | Task: Implement the task for spec fix-eslint-errors. First run spec-workflow-guide, then implement: Fix all remaining ESLint errors (triple-slash references, etc). Run `npm run lint` until 0 errors. | Restrictions: Fix properly, don't disable rules | Success: ESLint 0 errors/warnings | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 8. Run full test suite and verify
+- [-] 8. Run full test suite and verify
   - Ensure all tests pass, TypeScript compiles
   - _Prompt: Role: QA Engineer | Task: Implement the task for spec fix-eslint-errors. First run spec-workflow-guide, then implement: Run full test suite (npm test). Run TypeScript compiler (tsc --noEmit). Verify all pass. Fix any breakage. | Restrictions: All tests must pass | Success: Tests pass, TypeScript compiles, ESLint clean | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_

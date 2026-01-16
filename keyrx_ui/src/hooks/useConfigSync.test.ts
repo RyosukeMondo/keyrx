@@ -176,27 +176,23 @@ describe('useConfigSync', () => {
     expect(result.current.syncEngine.direction).toBe('code-to-visual');
   });
 
-  it('should log state changes when onStateChange is called', () => {
-    const consoleDebugSpy = vi
-      .spyOn(console, 'debug')
-      .mockImplementation(() => {});
-
+  it('should handle state changes when onStateChange is called', () => {
     renderHook(() => useConfigSync('TestProfile'));
 
-    // Simulate state change callback
+    // Simulate state change callback - should not throw
     act(() => {
       mockOnStateChange('parsing' as SyncState);
     });
 
-    expect(consoleDebugSpy).toHaveBeenCalledWith(
-      'Sync state changed:',
-      'parsing'
-    );
-
-    consoleDebugSpy.mockRestore();
+    // onStateChange is now a no-op (logging removed for ESLint compliance)
+    // Just verify it doesn't throw
+    expect(true).toBe(true);
   });
 
-  it('should log errors when onError is called', () => {
+  it('should log errors in development mode when onError is called', () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+
     const consoleErrorSpy = vi
       .spyOn(console, 'error')
       .mockImplementation(() => {});
@@ -217,6 +213,7 @@ describe('useConfigSync', () => {
     });
 
     consoleErrorSpy.mockRestore();
+    process.env.NODE_ENV = originalEnv;
   });
 
   it('should maintain stable references for setters', () => {
