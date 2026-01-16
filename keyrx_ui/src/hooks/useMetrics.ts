@@ -68,7 +68,9 @@ export function useWebSocketMetrics() {
     const websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
-      console.log('WebSocket connected');
+      if (import.meta.env.DEV) {
+        console.log('WebSocket connected');
+      }
     };
 
     websocket.onmessage = (event) => {
@@ -122,7 +124,9 @@ export function useWebSocketMetrics() {
     };
 
     websocket.onclose = () => {
-      console.log('WebSocket disconnected');
+      if (import.meta.env.DEV) {
+        console.log('WebSocket disconnected');
+      }
     };
 
     // Cleanup on unmount

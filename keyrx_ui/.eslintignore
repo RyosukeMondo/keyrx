@@ -5,3 +5,7 @@ node_modules
 coverage
 playwright-report
 vitest-reports
+scripts
+tests
+e2e
+vitest-plugins

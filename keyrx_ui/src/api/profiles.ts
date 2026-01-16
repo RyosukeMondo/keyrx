@@ -110,15 +110,18 @@ export async function updateProfile(
   );
   // Validate the response
   if (response && typeof response === 'object') {
-    console.debug(
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'debug',
-        service: 'API Validation',
-        event: 'update_profile_success',
-        context: { originalName, updates },
-      })
-    );
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.debug(
+        JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'debug',
+          service: 'API Validation',
+          event: 'update_profile_success',
+          context: { originalName, updates },
+        })
+      );
+    }
   }
   return { success: true };
 }
@@ -131,15 +134,18 @@ export async function deleteProfile(name: string): Promise<ProfileResponse> {
   // Validate the response - for delete, we expect either empty or success indicator
   // Since there's no specific schema for delete response, we'll just check it doesn't error
   if (response && typeof response === 'object') {
-    console.debug(
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'debug',
-        service: 'API Validation',
-        event: 'delete_profile_success',
-        context: { profileName: name },
-      })
-    );
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.debug(
+        JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'debug',
+          service: 'API Validation',
+          event: 'delete_profile_success',
+          context: { profileName: name },
+        })
+      );
+    }
   }
   return { success: true };
 }

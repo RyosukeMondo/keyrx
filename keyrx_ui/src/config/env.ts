@@ -79,7 +79,7 @@ export const env = {
 } as const;
 
 // Log configuration in debug mode
-if (isDebugMode()) {
+if (import.meta.env.DEV && isDebugMode()) {
   console.log('[ENV] Configuration:', {
     apiUrl: env.apiUrl,
     wsUrl: env.wsUrl,

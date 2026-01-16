@@ -199,7 +199,9 @@ export class WebSocketManager {
    * Handle WebSocket open event
    */
   private handleOpen(): void {
-    console.log('WebSocketManager: Connected');
+    if (import.meta.env.DEV) {
+      console.log('WebSocketManager: Connected');
+    }
     this.reconnectAttempts = 0;
     this.currentReconnectInterval = this.config.reconnectInterval;
     this.setConnectionState('connected');
@@ -264,7 +266,9 @@ export class WebSocketManager {
    * Handle WebSocket close event
    */
   private handleClose(): void {
-    console.log('WebSocketManager: Connection closed');
+    if (import.meta.env.DEV) {
+      console.log('WebSocketManager: Connection closed');
+    }
     this.setConnectionState('disconnected');
 
     if (this.callbacks.onClose) {
@@ -296,9 +300,11 @@ export class WebSocketManager {
     this.reconnectAttempts++;
     const delay = this.currentReconnectInterval;
 
-    console.log(
-      `WebSocketManager: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`
-    );
+    if (import.meta.env.DEV) {
+      console.log(
+        `WebSocketManager: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`
+      );
+    }
 
     this.reconnectTimeoutId = window.setTimeout(() => {
       this.connect();

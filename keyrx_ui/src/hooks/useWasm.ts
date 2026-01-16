@@ -80,7 +80,9 @@ export function useWasm() {
     // Initialize WASM module with retry logic
     async function initWasm() {
       const startTime = performance.now();
-      console.info('[WASM] Starting initialization...');
+      if (import.meta.env.DEV) {
+        console.info('[WASM] Starting initialization...');
+      }
       setIsLoading(true);
 
       let lastError: Error | null = null;
@@ -88,14 +90,18 @@ export function useWasm() {
       for (let attempt = 1; attempt <= RETRY_CONFIG.maxAttempts; attempt++) {
         try {
           if (attempt > 1) {
-            console.info(
-              `[WASM] Retry attempt ${attempt}/${RETRY_CONFIG.maxAttempts}...`
-            );
+            if (import.meta.env.DEV) {
+              console.info(
+                `[WASM] Retry attempt ${attempt}/${RETRY_CONFIG.maxAttempts}...`
+              );
+            }
             await sleep(RETRY_CONFIG.delayMs);
           }
 
           // Try to dynamically import the WASM module
-          console.info('[WASM] Fetching module...');
+          if (import.meta.env.DEV) {
+            console.info('[WASM] Fetching module...');
+          }
           const module = await import('@/wasm/pkg/keyrx_core.js').catch(
             (importErr) => {
               throw new Error(
@@ -110,11 +116,15 @@ export function useWasm() {
             }
           );
 
-          console.info('[WASM] Module loaded, initializing WASM binary...');
+          if (import.meta.env.DEV) {
+            console.info('[WASM] Module loaded, initializing WASM binary...');
+          }
           // For wasm-pack web target, must call default init() first to load WASM binary
           if (module.default && typeof module.default === 'function') {
             await module.default();
-            console.info('[WASM] Binary loaded, setting up panic hook...');
+            if (import.meta.env.DEV) {
+              console.info('[WASM] Binary loaded, setting up panic hook...');
+            }
           }
           // Initialize WASM with panic hook
           module.wasm_init();
@@ -124,10 +134,12 @@ export function useWasm() {
           setIsWasmReady(true);
           setIsLoading(false);
           setError(null);
-          console.info(
-            `[WASM] Initialized successfully in ${loadTime.toFixed(0)}ms` +
-              (attempt > 1 ? ` (succeeded on attempt ${attempt})` : '')
-          );
+          if (import.meta.env.DEV) {
+            console.info(
+              `[WASM] Initialized successfully in ${loadTime.toFixed(0)}ms` +
+                (attempt > 1 ? ` (succeeded on attempt ${attempt})` : '')
+            );
+          }
           return; // Success - exit the retry loop
         } catch (err) {
           lastError = err instanceof Error ? err : new Error(String(err));
@@ -176,14 +188,16 @@ export function useWasm() {
     async (code: string): Promise<ValidationError[]> => {
       if (!isWasmReady || !wasmModule) {
         // Return empty array if WASM not ready - graceful degradation
-        console.debug(
-          '[WASM] Validation skipped: WASM not ready.',
-          isLoading
-            ? 'Still loading...'
-            : error
-              ? `Error: ${error.message}`
-              : 'Not initialized'
-        );
+        if (import.meta.env.DEV) {
+          console.debug(
+            '[WASM] Validation skipped: WASM not ready.',
+            isLoading
+              ? 'Still loading...'
+              : error
+                ? `Error: ${error.message}`
+                : 'Not initialized'
+          );
+        }
         return [];
       }
 
@@ -191,12 +205,16 @@ export function useWasm() {
         // Use load_config to validate - it will throw if invalid
         wasmModule.load_config(code);
         // If we get here, the config is valid
-        console.debug('[WASM] Validation passed');
+        if (import.meta.env.DEV) {
+          console.debug('[WASM] Validation passed');
+        }
         return [];
       } catch (err) {
         // Parse error message to extract line/column information
         const errorMessage = err instanceof Error ? err.message : String(err);
-        console.debug('[WASM] Validation error:', errorMessage);
+        if (import.meta.env.DEV) {
+          console.debug('[WASM] Validation error:', errorMessage);
+        }
 
         // Try to extract line number from error message
         // Rhai errors typically include line information
@@ -233,32 +251,40 @@ export function useWasm() {
     ): Promise<SimulationResult | null> => {
       if (!isWasmReady || !wasmModule) {
         // Return null if WASM not ready - graceful degradation
-        console.debug(
-          '[WASM] Simulation skipped: WASM not ready.',
-          isLoading
-            ? 'Still loading...'
-            : error
-              ? `Error: ${error.message}`
-              : 'Not initialized'
-        );
+        if (import.meta.env.DEV) {
+          console.debug(
+            '[WASM] Simulation skipped: WASM not ready.',
+            isLoading
+              ? 'Still loading...'
+              : error
+                ? `Error: ${error.message}`
+                : 'Not initialized'
+          );
+        }
         return null;
       }
 
       try {
         // Load the configuration
-        console.debug('[WASM] Loading config for simulation...');
+        if (import.meta.env.DEV) {
+          console.debug('[WASM] Loading config for simulation...');
+        }
         const configHandle = wasmModule.load_config(code);
 
         // Run simulation
-        console.debug(
-          '[WASM] Running simulation with',
-          input.events.length,
-          'events...'
-        );
+        if (import.meta.env.DEV) {
+          console.debug(
+            '[WASM] Running simulation with',
+            input.events.length,
+            'events...'
+          );
+        }
         const inputJson = JSON.stringify(input);
         const result = wasmModule.simulate(configHandle, inputJson);
 
-        console.debug('[WASM] Simulation completed successfully');
+        if (import.meta.env.DEV) {
+          console.debug('[WASM] Simulation completed successfully');
+        }
         // Parse and return the result
         return result as SimulationResult;
       } catch (err) {

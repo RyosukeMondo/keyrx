@@ -326,18 +326,20 @@ export function validateApiResponse<T>(
     // but passthrough() already handles this by including extra fields in the result.
     // Just log that we received data for tracking purposes.
     if (receivedKeys.length > 0) {
-      console.debug(
-        JSON.stringify({
-          timestamp: new Date().toISOString(),
-          level: 'debug',
-          service: 'API Validation',
-          event: 'validation_success',
-          context: {
-            endpoint,
-            fieldCount: receivedKeys.length,
-          },
-        })
-      );
+      if (import.meta.env.DEV) {
+        console.debug(
+          JSON.stringify({
+            timestamp: new Date().toISOString(),
+            level: 'debug',
+            service: 'API Validation',
+            event: 'validation_success',
+            context: {
+              endpoint,
+              fieldCount: receivedKeys.length,
+            },
+          })
+        );
+      }
     }
   }
 
