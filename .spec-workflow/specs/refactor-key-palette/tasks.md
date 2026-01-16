@@ -14,7 +14,7 @@
   - _Requirements: TR-1, TR-2_
   - _Prompt: Role: React Hooks Developer | Task: Implement the task for spec refactor-key-palette. First run spec-workflow-guide, then implement: Create useFavoriteKeys hook managing favorites with localStorage. Extract from KeyPalette.tsx lines 291-323. Return { favoriteKeys: string[], toggleFavorite(id), isFavorite(id) }. Store in 'keyrx_favorite_keys'. | Restrictions: ≤200 lines, memoize callbacks, handle errors | Success: Hook manages favorites, toggle works, localStorage persists, tests >80% | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 3. Extract usePaletteSearch hook
+- [-] 3. Extract usePaletteSearch hook
   - File: src/hooks/usePaletteSearch.ts
   - Fuzzy search logic with ranking
   - _Leverage: existing fuzzyMatch function_
