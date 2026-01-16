@@ -746,7 +746,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       {/* Visual Editor Content (Always visible) */}
       <ConfigurationLayout profileName={selectedProfileName}>
         {/* Device Selection Panel (compact at top) */}
-        <Card>
+        <Card aria-label="Device Selection">
           <div
             className="flex items-center gap-4 flex-wrap"
             data-testid="device-selector"
@@ -920,7 +920,10 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
                   availableLayers={availableLayers}
                   onLayerChange={configStore.setActiveLayer}
                 />
-                <Card className="bg-gradient-to-br from-slate-800 to-slate-900 flex-1">
+                <Card
+                  className="bg-gradient-to-br from-slate-800 to-slate-900 flex-1"
+                  aria-label="Global Keyboard Configuration"
+                >
                   <h3 className="text-xl font-bold text-primary-400 mb-4">
                     Global Keyboard (All Devices)
                   </h3>
@@ -1007,7 +1010,10 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
                       availableLayers={availableLayers}
                       onLayerChange={configStore.setActiveLayer}
                     />
-                    <Card className="bg-gradient-to-br from-zinc-800 to-zinc-900 flex-1">
+                    <Card
+                      className="bg-gradient-to-br from-zinc-800 to-zinc-900 flex-1"
+                      aria-label="Device-Specific Keyboard Configuration"
+                    >
                       <h3 className="text-xl font-bold text-primary-400 mb-4">
                         {device.name}
                         {device.serial && (
@@ -1031,7 +1037,10 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
 
           {/* Warning if no selection */}
           {!globalSelected && selectedDevices.length === 0 && (
-            <Card className="bg-yellow-900/20 border border-yellow-700/50 flex-1 block">
+            <Card
+              className="bg-yellow-900/20 border border-yellow-700/50 flex-1 block"
+              aria-label="Configuration Warning"
+            >
               <div className="text-center py-8">
                 <p className="text-yellow-200 text-lg mb-2">
                   ⚠️ No devices selected
