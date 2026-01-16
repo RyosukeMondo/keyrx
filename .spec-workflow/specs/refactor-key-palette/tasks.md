@@ -34,7 +34,7 @@
   - _Requirements: TR-1, TR-2_
   - _Prompt: Role: React Component Developer | Task: Implement the task for spec refactor-key-palette. First run spec-workflow-guide, then implement: Create KeyCategorySection component. Props: { title, keys, onKeySelect, favorites, onToggleFavorite, collapsible }. Render category title and key grid. Support favorite toggle button on each key. Extract category rendering from KeyPalette.tsx. | Restrictions: ≤300 lines, all functions ≤50 lines, keyboard navigation | Success: Category renders keys, selection works, favorite toggle works, tests | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 6. Create PaletteViewModeTabs component
+- [x] 6. Create PaletteViewModeTabs component
   - File: src/components/palette/PaletteViewModeTabs.tsx
   - View mode tabs (Basic/Recent/Favorites/All)
   - _Requirements: TR-1, TR-2_
