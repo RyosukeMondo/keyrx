@@ -21,7 +21,7 @@
   - _Requirements: TR-1, TR-2_
   - _Prompt: Role: React Hooks Developer with search expertise | Task: Implement the task for spec refactor-key-palette. First run spec-workflow-guide, then implement: Create usePaletteSearch hook with fuzzy search. Extract fuzzyMatch from KeyPalette.tsx lines 61-118. Accept keys array. Return { query, setQuery, results (sorted by score) }. Memoize search results. | Restrictions: ≤300 lines, all functions ≤50 lines, memoize expensive operations | Success: Hook provides fuzzy search, results ranked, memoization works, tests >80% | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 4. Create PaletteSearch component
+- [-] 4. Create PaletteSearch component
   - File: src/components/palette/PaletteSearch.tsx
   - Search input with results dropdown
   - _Leverage: existing search UI patterns_
