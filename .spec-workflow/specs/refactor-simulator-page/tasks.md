@@ -1,6 +1,6 @@
 # Tasks: Refactor SimulatorPage Component
 
-- [ ] 1. Create useSimulation hook
+- [x] 1. Create useSimulation hook
   - File: src/hooks/useSimulation.ts
   - Extract simulation state management: events array, isRunning, WebSocket subscription
   - Return { events, isRunning, addEvent, clearEvents, start, stop, statistics }
