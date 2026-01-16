@@ -213,15 +213,19 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
       // Handle legacy DaemonEvent format (backward compatibility)
       // Old format: { type: "latency", payload: {...} }
       // New format: { type: "event", channel: "latency", data: {...} }
-      const anyMessage = message as any;
+      interface LegacyMessage {
+        type: string;
+        payload?: unknown;
+      }
+      const legacyMessage = message as unknown as LegacyMessage;
       if (
-        anyMessage.type &&
-        anyMessage.payload &&
-        anyMessage.type !== 'response' &&
-        anyMessage.type !== 'connected'
+        legacyMessage.type &&
+        legacyMessage.payload &&
+        legacyMessage.type !== 'response' &&
+        legacyMessage.type !== 'connected'
       ) {
-        const legacyType = anyMessage.type as string;
-        const legacyPayload = anyMessage.payload;
+        const legacyType = legacyMessage.type;
+        const legacyPayload = legacyMessage.payload;
 
         // Map legacy event type to channel name
         const channelMap: Record<string, string> = {

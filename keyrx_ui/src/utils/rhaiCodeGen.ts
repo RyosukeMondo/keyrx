@@ -281,9 +281,11 @@ export function generateKeyMapping(
     case 'layer_switch':
       return generateLayerSwitchMapping(mapping);
 
-    default:
-      // TypeScript should prevent this, but handle unknown types gracefully
-      return `// Unknown mapping type: ${(mapping as any).type}`;
+    default: {
+      // Exhaustive check - TypeScript will error if a case is missing
+      const _exhaustiveCheck: never = mapping;
+      return `// Unknown mapping type: ${String(_exhaustiveCheck)}`;
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { parseKLEToSVG, type SVGKeyData } from '@/utils/kle-parser';
+import { parseKLEToSVG, type SVGKeyData, type KLEData } from '@/utils/kle-parser';
 import type { LayoutType } from '@/components/KeyboardVisualizer';
 
 // Import layout data
@@ -15,7 +15,7 @@ import COMPACT_96 from '@/data/layouts/COMPACT_96.json';
 import HHKB from '@/data/layouts/HHKB.json';
 import NUMPAD from '@/data/layouts/NUMPAD.json';
 
-const layoutData: Record<LayoutType, { name: string; keys: any[] }> = {
+const layoutData: Record<LayoutType, KLEData> = {
   ANSI_104,
   ANSI_87,
   ISO_105,
