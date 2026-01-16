@@ -25,7 +25,7 @@
   - _Requirements: 1.1, TR-1, TR-2_
   - _Prompt: Role: React Component Developer focusing on UI controls | Task: Implement the task for spec refactor-simulator-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Create SimulationControls component with start/stop/clear buttons and statistics display. Accept props: { isRunning, eventCount, onStart, onStop, onClear, statistics }. Render button group (Start/Stop toggle, Clear button) and stats panel (event count, events/sec, etc). Extract from SimulatorPage.tsx controls section. Disable clear when no events. | Restrictions: Must be ≤200 lines, all functions ≤50 lines, accessible buttons, visual feedback for running state | Success: Controls render correctly, callbacks invoked on click, disabled states work, statistics displayed, unit tests with user events | After completion: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [-] 4. Create EventInjectionForm component
+- [x] 4. Create EventInjectionForm component
   - File: src/components/simulator/EventInjectionForm.tsx
   - Extract event injection form with key selector and event type selector
   - Purpose: Isolate injection UI and validation
