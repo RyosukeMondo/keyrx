@@ -50,7 +50,7 @@
   - _Requirements: TR-2_
   - _Prompt: Role: QA Engineer | Task: Implement the task for spec refactor-key-palette. First run spec-workflow-guide, then implement: Write unit tests for all three components. Test rendering, callbacks, user interactions, accessibility. Use userEvent. Achieve >80% coverage. | Restrictions: Test behavior, mock dependencies, verify callbacks | Success: All components tested, >80% coverage, tests pass | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 9. Refactor KeyPalette to use extracted code
+- [-] 9. Refactor KeyPalette to use extracted code
   - File: src/components/KeyPalette.tsx
   - Orchestrate new components/hooks
   - _Requirements: TR-3_

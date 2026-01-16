@@ -1,5 +1,4 @@
 import React from 'react';
-// Drag and drop removed - keys are now click-only for better UX clarity
 import {
   Search,
   X,
@@ -15,6 +14,29 @@ import {
 import { Card } from './Card';
 import { KEY_DEFINITIONS, KeyDefinition } from '../data/keyDefinitions';
 import { KeyPaletteItem } from './KeyPaletteItem';
+import { useRecentKeys } from '../hooks/useRecentKeys';
+import { useFavoriteKeys } from '../hooks/useFavoriteKeys';
+import { usePaletteSearch } from '../hooks/usePaletteSearch';
+import { KeyCategorySection } from './palette/KeyCategorySection';
+import { PaletteViewModeTabs, PaletteView } from './palette/PaletteViewModeTabs';
+import {
+  BASIC_KEYS,
+  MODIFIER_KEYS,
+  MEDIA_KEYS,
+  MACRO_KEYS,
+  LAYER_KEYS,
+  SPECIAL_KEYS,
+} from '../data/paletteKeys';
+import {
+  highlightMatches,
+  loadViewMode,
+  saveViewMode,
+  findKeyById,
+  mapDomCodeToKeyId,
+  validateCustomKeycode,
+  type ViewMode,
+  type ValidationResult,
+} from '../utils/paletteHelpers.tsx';
 
 /**
  * Key Palette - Shows available keys/modifiers/layers for assignment
@@ -36,15 +58,6 @@ export interface PaletteKey {
   description?: string;
 }
 
-interface SearchMatch {
-  key: KeyDefinition;
-  score: number;
-  matches: {
-    field: 'id' | 'label' | 'description' | 'alias';
-    text: string;
-    indices: number[];
-  }[];
-}
 
 interface KeyPaletteProps {
   onKeySelect: (key: PaletteKey) => void;
@@ -53,801 +66,6 @@ interface KeyPaletteProps {
   compact?: boolean;
 }
 
-/**
- * Calculate fuzzy match score and find matching character indices
- * Returns { score, indices } where score is higher for better matches
- */
-function fuzzyMatch(
-  text: string,
-  query: string
-): { score: number; indices: number[] } | null {
-  const textLower = text.toLowerCase();
-  const queryLower = query.toLowerCase();
-
-  // Exact match gets highest score
-  if (textLower === queryLower) {
-    return {
-      score: 1000,
-      indices: Array.from({ length: text.length }, (_, i) => i),
-    };
-  }
-
-  // Starts with query gets high score
-  if (textLower.startsWith(queryLower)) {
-    return {
-      score: 500,
-      indices: Array.from({ length: query.length }, (_, i) => i),
-    };
-  }
-
-  // Contains query gets medium score
-  const containsIndex = textLower.indexOf(queryLower);
-  if (containsIndex >= 0) {
-    const indices = Array.from(
-      { length: query.length },
-      (_, i) => containsIndex + i
-    );
-    return { score: 200 - containsIndex, indices };
-  }
-
-  // Fuzzy matching: find all query characters in order
-  const indices: number[] = [];
-  let textIdx = 0;
-  let queryIdx = 0;
-  let consecutiveMatches = 0;
-  let score = 0;
-
-  while (textIdx < textLower.length && queryIdx < queryLower.length) {
-    if (textLower[textIdx] === queryLower[queryIdx]) {
-      indices.push(textIdx);
-      queryIdx++;
-      consecutiveMatches++;
-      // Bonus for consecutive matches
-      score += 10 + consecutiveMatches;
-    } else {
-      consecutiveMatches = 0;
-    }
-    textIdx++;
-  }
-
-  // All query characters must be found
-  if (queryIdx !== queryLower.length) {
-    return null;
-  }
-
-  // Penalty for gaps between matches
-  score -= (textIdx - queryLower.length) * 2;
-
-  return { score: Math.max(score, 1), indices };
-}
-
-/**
- * Search keys with fuzzy matching across all fields
- */
-function searchKeysWithFuzzy(query: string): SearchMatch[] {
-  if (!query.trim()) return [];
-
-  const results: SearchMatch[] = [];
-
-  for (const key of KEY_DEFINITIONS) {
-    const matches: SearchMatch['matches'] = [];
-    let totalScore = 0;
-
-    // Search in ID
-    const idMatch = fuzzyMatch(key.id, query);
-    if (idMatch) {
-      matches.push({ field: 'id', text: key.id, indices: idMatch.indices });
-      totalScore += idMatch.score * 2; // ID matches are important
-    }
-
-    // Search in label
-    const labelMatch = fuzzyMatch(key.label, query);
-    if (labelMatch) {
-      matches.push({
-        field: 'label',
-        text: key.label,
-        indices: labelMatch.indices,
-      });
-      totalScore += labelMatch.score * 1.5;
-    }
-
-    // Search in description
-    const descMatch = fuzzyMatch(key.description, query);
-    if (descMatch) {
-      matches.push({
-        field: 'description',
-        text: key.description,
-        indices: descMatch.indices,
-      });
-      totalScore += descMatch.score;
-    }
-
-    // Search in aliases
-    for (const alias of key.aliases) {
-      const aliasMatch = fuzzyMatch(alias, query);
-      if (aliasMatch) {
-        matches.push({
-          field: 'alias',
-          text: alias,
-          indices: aliasMatch.indices,
-        });
-        totalScore += aliasMatch.score * 1.5;
-        break; // Only count first matching alias
-      }
-    }
-
-    if (matches.length > 0) {
-      results.push({ key, score: totalScore, matches });
-    }
-  }
-
-  // Sort by score descending
-  return results.sort((a, b) => b.score - a.score);
-}
-
-/**
- * Highlight matching characters in text
- */
-function highlightMatches(text: string, indices: number[]): React.ReactNode {
-  if (indices.length === 0) return text;
-
-  const result: React.ReactNode[] = [];
-  let lastIndex = 0;
-
-  // Create set for O(1) lookup
-  const indexSet = new Set(indices);
-
-  for (let i = 0; i < text.length; i++) {
-    if (indexSet.has(i)) {
-      // Add non-highlighted text before this match
-      if (i > lastIndex) {
-        result.push(text.slice(lastIndex, i));
-      }
-      // Add highlighted character
-      result.push(
-        <mark
-          key={i}
-          className="bg-yellow-400/40 text-yellow-200 font-semibold"
-        >
-          {text[i]}
-        </mark>
-      );
-      lastIndex = i + 1;
-    }
-  }
-
-  // Add remaining text
-  if (lastIndex < text.length) {
-    result.push(text.slice(lastIndex));
-  }
-
-  return <>{result}</>;
-}
-
-// VIA-style key definitions with categories and subcategories
-const BASIC_KEYS: PaletteKey[] = [
-  // Letters subcategory
-  { id: 'A', label: 'A', category: 'basic', subcategory: 'letters' },
-  { id: 'B', label: 'B', category: 'basic', subcategory: 'letters' },
-  { id: 'C', label: 'C', category: 'basic', subcategory: 'letters' },
-  { id: 'D', label: 'D', category: 'basic', subcategory: 'letters' },
-  { id: 'E', label: 'E', category: 'basic', subcategory: 'letters' },
-  { id: 'F', label: 'F', category: 'basic', subcategory: 'letters' },
-  { id: 'G', label: 'G', category: 'basic', subcategory: 'letters' },
-  { id: 'H', label: 'H', category: 'basic', subcategory: 'letters' },
-  { id: 'I', label: 'I', category: 'basic', subcategory: 'letters' },
-  { id: 'J', label: 'J', category: 'basic', subcategory: 'letters' },
-  { id: 'K', label: 'K', category: 'basic', subcategory: 'letters' },
-  { id: 'L', label: 'L', category: 'basic', subcategory: 'letters' },
-  { id: 'M', label: 'M', category: 'basic', subcategory: 'letters' },
-  { id: 'N', label: 'N', category: 'basic', subcategory: 'letters' },
-  { id: 'O', label: 'O', category: 'basic', subcategory: 'letters' },
-  { id: 'P', label: 'P', category: 'basic', subcategory: 'letters' },
-  { id: 'Q', label: 'Q', category: 'basic', subcategory: 'letters' },
-  { id: 'R', label: 'R', category: 'basic', subcategory: 'letters' },
-  { id: 'S', label: 'S', category: 'basic', subcategory: 'letters' },
-  { id: 'T', label: 'T', category: 'basic', subcategory: 'letters' },
-  { id: 'U', label: 'U', category: 'basic', subcategory: 'letters' },
-  { id: 'V', label: 'V', category: 'basic', subcategory: 'letters' },
-  { id: 'W', label: 'W', category: 'basic', subcategory: 'letters' },
-  { id: 'X', label: 'X', category: 'basic', subcategory: 'letters' },
-  { id: 'Y', label: 'Y', category: 'basic', subcategory: 'letters' },
-  { id: 'Z', label: 'Z', category: 'basic', subcategory: 'letters' },
-  // Numbers subcategory
-  { id: '0', label: '0', category: 'basic', subcategory: 'numbers' },
-  { id: '1', label: '1', category: 'basic', subcategory: 'numbers' },
-  { id: '2', label: '2', category: 'basic', subcategory: 'numbers' },
-  { id: '3', label: '3', category: 'basic', subcategory: 'numbers' },
-  { id: '4', label: '4', category: 'basic', subcategory: 'numbers' },
-  { id: '5', label: '5', category: 'basic', subcategory: 'numbers' },
-  { id: '6', label: '6', category: 'basic', subcategory: 'numbers' },
-  { id: '7', label: '7', category: 'basic', subcategory: 'numbers' },
-  { id: '8', label: '8', category: 'basic', subcategory: 'numbers' },
-  { id: '9', label: '9', category: 'basic', subcategory: 'numbers' },
-  // Function keys
-  { id: 'F1', label: 'F1', category: 'basic', subcategory: 'function' },
-  { id: 'F2', label: 'F2', category: 'basic', subcategory: 'function' },
-  { id: 'F3', label: 'F3', category: 'basic', subcategory: 'function' },
-  { id: 'F4', label: 'F4', category: 'basic', subcategory: 'function' },
-  { id: 'F5', label: 'F5', category: 'basic', subcategory: 'function' },
-  { id: 'F6', label: 'F6', category: 'basic', subcategory: 'function' },
-  { id: 'F7', label: 'F7', category: 'basic', subcategory: 'function' },
-  { id: 'F8', label: 'F8', category: 'basic', subcategory: 'function' },
-  { id: 'F9', label: 'F9', category: 'basic', subcategory: 'function' },
-  { id: 'F10', label: 'F10', category: 'basic', subcategory: 'function' },
-  { id: 'F11', label: 'F11', category: 'basic', subcategory: 'function' },
-  { id: 'F12', label: 'F12', category: 'basic', subcategory: 'function' },
-  // Navigation subcategory
-  {
-    id: 'Escape',
-    label: 'Esc',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Escape key',
-  },
-  {
-    id: 'Enter',
-    label: 'Enter',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Enter/Return',
-  },
-  {
-    id: 'Space',
-    label: 'Space',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Space bar',
-  },
-  {
-    id: 'Backspace',
-    label: 'BS',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Backspace',
-  },
-  {
-    id: 'Tab',
-    label: 'Tab',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Tab key',
-  },
-  {
-    id: 'Delete',
-    label: 'Del',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Delete',
-  },
-  {
-    id: 'Insert',
-    label: 'Ins',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Insert',
-  },
-  {
-    id: 'Home',
-    label: 'Home',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Home',
-  },
-  {
-    id: 'End',
-    label: 'End',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'End',
-  },
-  {
-    id: 'PageUp',
-    label: 'PgUp',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Page Up',
-  },
-  {
-    id: 'PageDown',
-    label: 'PgDn',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Page Down',
-  },
-  {
-    id: 'Up',
-    label: '↑',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Arrow Up',
-  },
-  {
-    id: 'Down',
-    label: '↓',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Arrow Down',
-  },
-  {
-    id: 'Left',
-    label: '←',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Arrow Left',
-  },
-  {
-    id: 'Right',
-    label: '→',
-    category: 'basic',
-    subcategory: 'navigation',
-    description: 'Arrow Right',
-  },
-  // Punctuation subcategory
-  { id: 'Minus', label: '-', category: 'basic', subcategory: 'punctuation' },
-  { id: 'Equal', label: '=', category: 'basic', subcategory: 'punctuation' },
-  {
-    id: 'LeftBracket',
-    label: '[',
-    category: 'basic',
-    subcategory: 'punctuation',
-  },
-  {
-    id: 'RightBracket',
-    label: ']',
-    category: 'basic',
-    subcategory: 'punctuation',
-  },
-  {
-    id: 'Backslash',
-    label: '\\',
-    category: 'basic',
-    subcategory: 'punctuation',
-  },
-  {
-    id: 'Semicolon',
-    label: ';',
-    category: 'basic',
-    subcategory: 'punctuation',
-  },
-  { id: 'Quote', label: "'", category: 'basic', subcategory: 'punctuation' },
-  { id: 'Comma', label: ',', category: 'basic', subcategory: 'punctuation' },
-  { id: 'Period', label: '.', category: 'basic', subcategory: 'punctuation' },
-  { id: 'Slash', label: '/', category: 'basic', subcategory: 'punctuation' },
-];
-
-const MODIFIER_KEYS: PaletteKey[] = [
-  {
-    id: 'LCtrl',
-    label: 'LCtrl',
-    category: 'modifiers',
-    description: 'Left Control',
-  },
-  {
-    id: 'RCtrl',
-    label: 'RCtrl',
-    category: 'modifiers',
-    description: 'Right Control',
-  },
-  {
-    id: 'LShift',
-    label: 'LShift',
-    category: 'modifiers',
-    description: 'Left Shift',
-  },
-  {
-    id: 'RShift',
-    label: 'RShift',
-    category: 'modifiers',
-    description: 'Right Shift',
-  },
-  { id: 'LAlt', label: 'LAlt', category: 'modifiers', description: 'Left Alt' },
-  {
-    id: 'RAlt',
-    label: 'RAlt',
-    category: 'modifiers',
-    description: 'Right Alt',
-  },
-  {
-    id: 'LMeta',
-    label: 'LWin',
-    category: 'modifiers',
-    description: 'Left Windows/Super',
-  },
-  {
-    id: 'RMeta',
-    label: 'RWin',
-    category: 'modifiers',
-    description: 'Right Windows/Super',
-  },
-  // Generate all 256 custom modifiers (MD_00 to MD_FF)
-  ...Array.from({ length: 256 }, (_, i) => {
-    const hexValue = i.toString(16).toUpperCase().padStart(2, '0');
-    return {
-      id: `MD_${hexValue}`,
-      label: `MD_${hexValue}`,
-      category: 'modifiers' as const,
-      description: `Custom Modifier ${hexValue} (0x${hexValue} / ${i})`,
-    };
-  }),
-];
-
-const MEDIA_KEYS: PaletteKey[] = [
-  // Placeholder for media keys (to be expanded in task 1.2)
-];
-
-const MACRO_KEYS: PaletteKey[] = [
-  // User-defined macros (M0-M15)
-  { id: 'M0', label: 'M0', category: 'macro', description: 'Macro 0' },
-  { id: 'M1', label: 'M1', category: 'macro', description: 'Macro 1' },
-  { id: 'M2', label: 'M2', category: 'macro', description: 'Macro 2' },
-  { id: 'M3', label: 'M3', category: 'macro', description: 'Macro 3' },
-  { id: 'M4', label: 'M4', category: 'macro', description: 'Macro 4' },
-  { id: 'M5', label: 'M5', category: 'macro', description: 'Macro 5' },
-  { id: 'M6', label: 'M6', category: 'macro', description: 'Macro 6' },
-  { id: 'M7', label: 'M7', category: 'macro', description: 'Macro 7' },
-  { id: 'M8', label: 'M8', category: 'macro', description: 'Macro 8' },
-  { id: 'M9', label: 'M9', category: 'macro', description: 'Macro 9' },
-  { id: 'M10', label: 'M10', category: 'macro', description: 'Macro 10' },
-  { id: 'M11', label: 'M11', category: 'macro', description: 'Macro 11' },
-  { id: 'M12', label: 'M12', category: 'macro', description: 'Macro 12' },
-  { id: 'M13', label: 'M13', category: 'macro', description: 'Macro 13' },
-  { id: 'M14', label: 'M14', category: 'macro', description: 'Macro 14' },
-  { id: 'M15', label: 'M15', category: 'macro', description: 'Macro 15' },
-];
-
-// LAYER_KEYS: Now sourced from KEY_DEFINITIONS for single source of truth
-const LAYER_KEYS: PaletteKey[] = KEY_DEFINITIONS.filter(
-  (k) => k.category === 'layers'
-).map((k) => ({
-  id: k.id,
-  label: k.label,
-  category: k.category,
-  subcategory: k.subcategory,
-  description: k.description,
-}));
-
-const SPECIAL_KEYS: PaletteKey[] = [
-  {
-    id: 'LK_00',
-    label: 'CapsLock',
-    category: 'special',
-    description: 'Caps Lock (LK_00)',
-  },
-  {
-    id: 'LK_01',
-    label: 'NumLock',
-    category: 'special',
-    description: 'Num Lock (LK_01)',
-  },
-  {
-    id: 'LK_02',
-    label: 'ScrollLock',
-    category: 'special',
-    description: 'Scroll Lock (LK_02)',
-  },
-  {
-    id: 'LK_03',
-    label: 'LK_03',
-    category: 'special',
-    description: 'Custom Lock 3',
-  },
-  {
-    id: 'LK_04',
-    label: 'LK_04',
-    category: 'special',
-    description: 'Custom Lock 4',
-  },
-  {
-    id: 'LK_05',
-    label: 'LK_05',
-    category: 'special',
-    description: 'Custom Lock 5',
-  },
-  {
-    id: 'LK_06',
-    label: 'LK_06',
-    category: 'special',
-    description: 'Custom Lock 6',
-  },
-  {
-    id: 'LK_07',
-    label: 'LK_07',
-    category: 'special',
-    description: 'Custom Lock 7',
-  },
-  {
-    id: 'LK_08',
-    label: 'LK_08',
-    category: 'special',
-    description: 'Custom Lock 8',
-  },
-  {
-    id: 'LK_09',
-    label: 'LK_09',
-    category: 'special',
-    description: 'Custom Lock 9',
-  },
-];
-
-/**
- * LocalStorage keys for persistence
- */
-const STORAGE_KEY_RECENT = 'keyrx_recent_keys';
-const STORAGE_KEY_FAVORITES = 'keyrx_favorite_keys';
-const STORAGE_KEY_VIEW_MODE = 'keyrx_palette_view_mode';
-const MAX_RECENT_KEYS = 10;
-
-type ViewMode = 'grid' | 'list';
-
-/**
- * Load array from localStorage with error handling
- */
-function loadFromStorage(key: string): string[] {
-  try {
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return Array.isArray(parsed) ? parsed : [];
-    }
-  } catch (err) {
-    console.warn(`Failed to load ${key} from localStorage:`, err);
-  }
-  return [];
-}
-
-/**
- * Save array to localStorage with error handling
- */
-function saveToStorage(key: string, data: string[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (err) {
-    console.error(`Failed to save ${key} to localStorage:`, err);
-  }
-}
-
-/**
- * Load view mode from localStorage with error handling
- */
-function loadViewMode(): ViewMode {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY_VIEW_MODE);
-    if (stored === 'grid' || stored === 'list') {
-      return stored;
-    }
-  } catch (err) {
-    console.warn(`Failed to load view mode from localStorage:`, err);
-  }
-  return 'grid'; // Default to grid view
-}
-
-/**
- * Save view mode to localStorage with error handling
- */
-function saveViewMode(mode: ViewMode): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_VIEW_MODE, mode);
-  } catch (err) {
-    console.error(`Failed to save view mode to localStorage:`, err);
-  }
-}
-
-/**
- * Find a key definition by ID
- */
-function findKeyById(keyId: string): PaletteKey | null {
-  // Search in KEY_DEFINITIONS first
-  const keyDef = KEY_DEFINITIONS.find((k) => k.id === keyId);
-  if (keyDef) {
-    return {
-      id: keyDef.id,
-      label: keyDef.label,
-      category: keyDef.category,
-      subcategory: keyDef.subcategory,
-      description: keyDef.description,
-    };
-  }
-
-  // Fallback: search in static key arrays
-  const allKeys = [
-    ...BASIC_KEYS,
-    ...MODIFIER_KEYS,
-    ...MEDIA_KEYS,
-    ...MACRO_KEYS,
-    ...LAYER_KEYS,
-    ...SPECIAL_KEYS,
-  ];
-  return allKeys.find((k) => k.id === keyId) || null;
-}
-
-/**
- * Validation result for custom keycodes
- */
-interface ValidationResult {
-  valid: boolean;
-  error?: string;
-  normalizedId?: string;
-  label?: string;
-}
-
-/**
- * Map DOM KeyboardEvent.code to our key ID
- * Uses KEY_DEFINITIONS aliases to find matching key
- */
-function mapDomCodeToKeyId(domCode: string): PaletteKey | null {
-  // Normalize the DOM code - it might be like "KeyA", "Digit1", etc.
-  // We need to map these to our KEY_ format
-
-  // First try direct match with aliases
-  const keyDef = KEY_DEFINITIONS.find((k) => k.aliases.includes(domCode));
-  if (keyDef) {
-    return {
-      id: keyDef.id,
-      label: keyDef.label,
-      category: keyDef.category,
-      subcategory: keyDef.subcategory,
-      description: keyDef.description,
-    };
-  }
-
-  // Try normalizing common DOM codes to KEY_ format
-  let normalizedCode = domCode;
-
-  // Handle KeyA -> KEY_A
-  if (domCode.startsWith('Key')) {
-    normalizedCode = `KEY_${domCode.slice(3)}`;
-  }
-  // Handle Digit0 -> KEY_0
-  else if (domCode.startsWith('Digit')) {
-    normalizedCode = `KEY_${domCode.slice(5)}`;
-  }
-  // Handle ArrowUp -> KEY_UP
-  else if (domCode.startsWith('Arrow')) {
-    normalizedCode = `KEY_${domCode.slice(5).toUpperCase()}`;
-  }
-  // Handle others directly
-  else {
-    normalizedCode = `KEY_${domCode.toUpperCase()}`;
-  }
-
-  // Try again with normalized code
-  const normalizedKeyDef = KEY_DEFINITIONS.find((k) =>
-    k.aliases.includes(normalizedCode)
-  );
-  if (normalizedKeyDef) {
-    return {
-      id: normalizedKeyDef.id,
-      label: normalizedKeyDef.label,
-      category: normalizedKeyDef.category,
-      subcategory: normalizedKeyDef.subcategory,
-      description: normalizedKeyDef.description,
-    };
-  }
-
-  return null;
-}
-
-/**
- * Validate QMK-style keycode syntax
- * Supports:
- * - Simple keys: A, KC_A, VK_A
- * - Modifiers: LCTL(KC_C), LSFT(A)
- * - Layer functions: MO(1), TO(2), TG(3), OSL(4)
- * - Layer-tap: LT(2,KC_SPC), LT(1,A)
- */
-function validateCustomKeycode(input: string): ValidationResult {
-  const trimmed = input.trim();
-
-  if (!trimmed) {
-    return { valid: false, error: 'Please enter a keycode' };
-  }
-
-  // Check if it's a simple key ID (matches existing key)
-  const keyDef = KEY_DEFINITIONS.find(
-    (k) => k.id === trimmed || k.aliases.includes(trimmed)
-  );
-
-  if (keyDef) {
-    return {
-      valid: true,
-      normalizedId: keyDef.id,
-      label: keyDef.label,
-    };
-  }
-
-  // Check for modifier combinations: LCTL(KC_C), LSFT(A), etc.
-  const modifierPattern =
-    /^(LCTL|RCTL|LSFT|RSFT|LALT|RALT|LMETA|RMETA)\(([A-Za-z0-9_]+)\)$/;
-  const modMatch = trimmed.match(modifierPattern);
-  if (modMatch) {
-    const [, modifier, keyPart] = modMatch;
-    // Validate inner key exists
-    const innerKey = KEY_DEFINITIONS.find(
-      (k) => k.id === keyPart || k.aliases.includes(keyPart)
-    );
-
-    if (!innerKey) {
-      return {
-        valid: false,
-        error: `Unknown key: ${keyPart}. Try KC_A, KC_ENTER, etc.`,
-      };
-    }
-
-    return {
-      valid: true,
-      normalizedId: trimmed,
-      label: `${modifier}+${innerKey.label}`,
-    };
-  }
-
-  // Check for layer functions: MO(n), TO(n), TG(n), OSL(n)
-  const layerPattern = /^(MO|TO|TG|OSL)\((\d+)\)$/;
-  const layerMatch = trimmed.match(layerPattern);
-  if (layerMatch) {
-    const [, func, layer] = layerMatch;
-    const layerNum = parseInt(layer, 10);
-
-    if (layerNum < 0 || layerNum > 15) {
-      return {
-        valid: false,
-        error: 'Layer number must be between 0-15',
-      };
-    }
-
-    const funcLabels: Record<string, string> = {
-      MO: 'Hold Layer',
-      TO: 'To Layer',
-      TG: 'Toggle Layer',
-      OSL: 'OneShot Layer',
-    };
-
-    return {
-      valid: true,
-      normalizedId: trimmed,
-      label: `${funcLabels[func]} ${layer}`,
-    };
-  }
-
-  // Check for layer-tap: LT(layer, key)
-  const layerTapPattern = /^LT\((\d+),\s*([A-Za-z0-9_]+)\)$/;
-  const ltMatch = trimmed.match(layerTapPattern);
-  if (ltMatch) {
-    const [, layer, keyPart] = ltMatch;
-    const layerNum = parseInt(layer, 10);
-
-    if (layerNum < 0 || layerNum > 15) {
-      return {
-        valid: false,
-        error: 'Layer number must be between 0-15',
-      };
-    }
-
-    // Validate inner key exists
-    const innerKey = KEY_DEFINITIONS.find(
-      (k) => k.id === keyPart || k.aliases.includes(keyPart)
-    );
-
-    if (!innerKey) {
-      return {
-        valid: false,
-        error: `Unknown key: ${keyPart}. Try KC_A, KC_ENTER, etc.`,
-      };
-    }
-
-    return {
-      valid: true,
-      normalizedId: trimmed,
-      label: `LT${layer}/${innerKey.label}`,
-    };
-  }
-
-  // Unknown pattern
-  return {
-    valid: false,
-    error: 'Invalid syntax. Examples: KC_A, LCTL(KC_C), MO(1), LT(2,KC_SPC)',
-  };
-}
 
 export function KeyPalette({
   onKeySelect,
@@ -859,25 +77,20 @@ export function KeyPalette({
   const [activeSubcategory, setActiveSubcategory] = React.useState<
     string | null
   >(null);
-  const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedSearchIndex, setSelectedSearchIndex] = React.useState(0);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-
-  // Drag and drop state
-  // Drag functionality removed for better UX clarity
 
   // View mode state
   const [viewMode, setViewMode] = React.useState<ViewMode>(() =>
     loadViewMode()
   );
 
-  // Recent and Favorite keys state
-  const [recentKeyIds, setRecentKeyIds] = React.useState<string[]>(() =>
-    loadFromStorage(STORAGE_KEY_RECENT)
-  );
-  const [favoriteKeyIds, setFavoriteKeyIds] = React.useState<string[]>(() =>
-    loadFromStorage(STORAGE_KEY_FAVORITES)
-  );
+  // Use extracted hooks
+  const { recentKeys: recentKeyIds, addRecentKey } = useRecentKeys();
+  const { favoriteKeys: favoriteKeyIds, toggleFavorite, isFavorite } =
+    useFavoriteKeys();
+  const { query: searchQuery, setQuery: setSearchQuery, results: searchResults } =
+    usePaletteSearch(KEY_DEFINITIONS);
 
   // Custom keycode input state (for "Any" category)
   const [customKeycode, setCustomKeycode] = React.useState('');
@@ -888,35 +101,6 @@ export function KeyPalette({
   const [isCapturingKey, setIsCapturingKey] = React.useState(false);
   const [capturedKey, setCapturedKey] = React.useState<PaletteKey | null>(null);
 
-  // Add key to recent list (max 10, most recent first)
-  const addToRecent = React.useCallback((keyId: string) => {
-    setRecentKeyIds((prev) => {
-      const filtered = prev.filter((id) => id !== keyId);
-      const updated = [keyId, ...filtered].slice(0, MAX_RECENT_KEYS);
-      saveToStorage(STORAGE_KEY_RECENT, updated);
-      return updated;
-    });
-  }, []);
-
-  // Toggle favorite status
-  const toggleFavorite = React.useCallback((keyId: string) => {
-    setFavoriteKeyIds((prev) => {
-      const isFavorite = prev.includes(keyId);
-      const updated = isFavorite
-        ? prev.filter((id) => id !== keyId)
-        : [...prev, keyId];
-      saveToStorage(STORAGE_KEY_FAVORITES, updated);
-      return updated;
-    });
-  }, []);
-
-  // Check if key is favorite
-  const isFavorite = React.useCallback(
-    (keyId: string) => {
-      return favoriteKeyIds.includes(keyId);
-    },
-    [favoriteKeyIds]
-  );
 
   // Toggle view mode
   const toggleViewMode = React.useCallback(() => {
@@ -930,10 +114,10 @@ export function KeyPalette({
   // Handle key selection with recent tracking
   const handleKeySelect = React.useCallback(
     (key: PaletteKey) => {
-      addToRecent(key.id);
+      addRecentKey(key.id);
       onKeySelect(key);
     },
-    [addToRecent, onKeySelect]
+    [addRecentKey, onKeySelect]
   );
 
   // Handle custom keycode input change
@@ -1045,10 +229,6 @@ export function KeyPalette({
     { id: 'any' as const, label: 'Any', keys: [], icon: '✏️' },
   ];
 
-  // Search results (if query is active)
-  const searchResults = React.useMemo(() => {
-    return searchQuery.trim() ? searchKeysWithFuzzy(searchQuery) : [];
-  }, [searchQuery]);
 
   // Reset selected index when search changes
   React.useEffect(() => {
