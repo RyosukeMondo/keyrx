@@ -11,7 +11,7 @@
   - _Requirements: 2.1, TR-1, TR-2_
   - _Prompt: Role: React Hooks Developer specializing in custom hooks and state management | Task: Implement the task for spec refactor-config-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Create useProfileSelection custom hook that encapsulates profile selection logic from ConfigPage.tsx lines 56-78. The hook must handle priority fallback: manual selection > prop > route param > query param > active profile > 'Default'. Return { selectedProfileName, setSelectedProfileName }. Extract logic from ConfigPage.tsx without modifying the page yet. | Restrictions: Do not modify ConfigPage.tsx yet, ensure hook is pure and side-effect free except for useActiveProfileQuery, no UI logic, TypeScript strict mode, all parameters optional | Success: Hook created with proper TypeScript types, unit test covers all fallback scenarios, manual selection takes precedence, returns correct profile name in all cases | After completion: 1) Mark task as in-progress [-] in tasks.md before starting, 2) Use log-implementation tool to record implementation with detailed artifacts (apiEndpoints, components, functions, classes, integrations), 3) Mark task as complete [x] in tasks.md_
 
-- [ ] 1.2 Create useCodePanel hook
+- [x] 1.2 Create useCodePanel hook
   - File: src/hooks/useCodePanel.ts
   - Extract code panel state: isOpen, height, toggleOpen, setHeight with localStorage persistence
   - Purpose: Manage collapsible code panel UI state
