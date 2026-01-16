@@ -44,9 +44,7 @@ export function isFocusable(element: HTMLElement): boolean {
 /**
  * Get all focusable elements within a container
  */
-export function getFocusableElements(
-  container: HTMLElement
-): HTMLElement[] {
+export function getFocusableElements(container: HTMLElement): HTMLElement[] {
   const selector = [
     'a[href]',
     'button:not([disabled])',
@@ -241,9 +239,7 @@ export function isClickKey(event: React.KeyboardEvent): boolean {
 /**
  * Prevent default for click keys
  */
-export function preventDefaultForClickKeys(
-  event: React.KeyboardEvent
-): void {
+export function preventDefaultForClickKeys(event: React.KeyboardEvent): void {
   if (isClickKey(event)) {
     event.preventDefault();
   }

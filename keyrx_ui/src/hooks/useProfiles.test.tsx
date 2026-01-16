@@ -178,10 +178,9 @@ describe('useActivateProfile', () => {
     await waitFor(() => expect(profilesResult.current.isSuccess).toBe(true));
 
     // Then activate
-    const { result: mutationResult } = renderHook(
-      () => useActivateProfile(),
-      { wrapper }
-    );
+    const { result: mutationResult } = renderHook(() => useActivateProfile(), {
+      wrapper,
+    });
 
     mutationResult.current.mutate('gaming');
 

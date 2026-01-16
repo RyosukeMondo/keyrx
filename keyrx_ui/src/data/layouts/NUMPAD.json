@@ -1,26 +1,26 @@
 {
   "name": "Numpad",
   "keys": [
-    {"code": "KC_NLCK", "label": "Num", "x": 0, "y": 0, "w": 1},
-    {"code": "KC_PSLS", "label": "/", "x": 1, "y": 0, "w": 1},
-    {"code": "KC_PAST", "label": "*", "x": 2, "y": 0, "w": 1},
-    {"code": "KC_PMNS", "label": "-", "x": 3, "y": 0, "w": 1},
+    { "code": "KC_NLCK", "label": "Num", "x": 0, "y": 0, "w": 1 },
+    { "code": "KC_PSLS", "label": "/", "x": 1, "y": 0, "w": 1 },
+    { "code": "KC_PAST", "label": "*", "x": 2, "y": 0, "w": 1 },
+    { "code": "KC_PMNS", "label": "-", "x": 3, "y": 0, "w": 1 },
 
-    {"code": "KC_P7", "label": "7", "x": 0, "y": 1, "w": 1},
-    {"code": "KC_P8", "label": "8", "x": 1, "y": 1, "w": 1},
-    {"code": "KC_P9", "label": "9", "x": 2, "y": 1, "w": 1},
-    {"code": "KC_PPLS", "label": "+", "x": 3, "y": 1, "w": 1, "h": 2},
+    { "code": "KC_P7", "label": "7", "x": 0, "y": 1, "w": 1 },
+    { "code": "KC_P8", "label": "8", "x": 1, "y": 1, "w": 1 },
+    { "code": "KC_P9", "label": "9", "x": 2, "y": 1, "w": 1 },
+    { "code": "KC_PPLS", "label": "+", "x": 3, "y": 1, "w": 1, "h": 2 },
 
-    {"code": "KC_P4", "label": "4", "x": 0, "y": 2, "w": 1},
-    {"code": "KC_P5", "label": "5", "x": 1, "y": 2, "w": 1},
-    {"code": "KC_P6", "label": "6", "x": 2, "y": 2, "w": 1},
+    { "code": "KC_P4", "label": "4", "x": 0, "y": 2, "w": 1 },
+    { "code": "KC_P5", "label": "5", "x": 1, "y": 2, "w": 1 },
+    { "code": "KC_P6", "label": "6", "x": 2, "y": 2, "w": 1 },
 
-    {"code": "KC_P1", "label": "1", "x": 0, "y": 3, "w": 1},
-    {"code": "KC_P2", "label": "2", "x": 1, "y": 3, "w": 1},
-    {"code": "KC_P3", "label": "3", "x": 2, "y": 3, "w": 1},
-    {"code": "KC_PENT", "label": "Enter", "x": 3, "y": 3, "w": 1, "h": 2},
+    { "code": "KC_P1", "label": "1", "x": 0, "y": 3, "w": 1 },
+    { "code": "KC_P2", "label": "2", "x": 1, "y": 3, "w": 1 },
+    { "code": "KC_P3", "label": "3", "x": 2, "y": 3, "w": 1 },
+    { "code": "KC_PENT", "label": "Enter", "x": 3, "y": 3, "w": 1, "h": 2 },
 
-    {"code": "KC_P0", "label": "0", "x": 0, "y": 4, "w": 2},
-    {"code": "KC_PDOT", "label": ".", "x": 2, "y": 4, "w": 1}
+    { "code": "KC_P0", "label": "0", "x": 0, "y": 4, "w": 2 },
+    { "code": "KC_PDOT", "label": ".", "x": 2, "y": 4, "w": 1 }
   ]
 }

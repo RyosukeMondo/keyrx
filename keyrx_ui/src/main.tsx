@@ -10,11 +10,13 @@ import App from './App.tsx';
 
 // Enable axe-core accessibility testing in development
 if (import.meta.env.DEV) {
-  import('@axe-core/react').then((axe) => {
-    axe.default(React, ReactDOM, 1000);
-  }).catch((error) => {
-    console.error('Failed to load axe-core:', error);
-  });
+  import('@axe-core/react')
+    .then((axe) => {
+      axe.default(React, ReactDOM, 1000);
+    })
+    .catch((error) => {
+      console.error('Failed to load axe-core:', error);
+    });
 }
 
 createRoot(document.getElementById('root')!).render(

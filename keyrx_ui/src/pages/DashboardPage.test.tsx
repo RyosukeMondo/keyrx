@@ -8,7 +8,10 @@ import type { DaemonState, KeyEvent, LatencyMetrics } from '../types/rpc';
 vi.mock('../hooks/useUnifiedApi');
 vi.mock('../components/StateIndicatorPanel', () => ({
   StateIndicatorPanel: ({ state }: any) => (
-    <div data-testid="state-indicator-panel" data-state={JSON.stringify(state)} />
+    <div
+      data-testid="state-indicator-panel"
+      data-state={JSON.stringify(state)}
+    />
   ),
 }));
 
@@ -19,7 +22,12 @@ vi.mock('../components/MetricsChart', () => ({
 }));
 
 vi.mock('../components/DashboardEventTimeline', () => ({
-  DashboardEventTimeline: ({ events, isPaused, onTogglePause, onClear }: any) => (
+  DashboardEventTimeline: ({
+    events,
+    isPaused,
+    onTogglePause,
+    onClear,
+  }: any) => (
     <div
       data-testid="event-timeline"
       data-event-count={events.length}

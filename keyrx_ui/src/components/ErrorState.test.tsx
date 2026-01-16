@@ -11,7 +11,9 @@ describe('ErrorState', () => {
   });
 
   it('renders with custom title', () => {
-    renderWithProviders(<ErrorState title="Custom Error" message="Something went wrong" />);
+    renderWithProviders(
+      <ErrorState title="Custom Error" message="Something went wrong" />
+    );
     expect(screen.getByText('Custom Error')).toBeInTheDocument();
   });
 
@@ -27,14 +29,20 @@ describe('ErrorState', () => {
 
   it('renders retry button when onRetry is provided', () => {
     const onRetry = vi.fn();
-    renderWithProviders(<ErrorState message="Something went wrong" onRetry={onRetry} />);
+    renderWithProviders(
+      <ErrorState message="Something went wrong" onRetry={onRetry} />
+    );
     expect(screen.getByLabelText('Try Again')).toBeInTheDocument();
   });
 
   it('renders custom retry label', () => {
     const onRetry = vi.fn();
     renderWithProviders(
-      <ErrorState message="Something went wrong" onRetry={onRetry} retryLabel="Reload" />
+      <ErrorState
+        message="Something went wrong"
+        onRetry={onRetry}
+        retryLabel="Reload"
+      />
     );
     expect(screen.getByLabelText('Reload')).toBeInTheDocument();
     expect(screen.getByText('Reload')).toBeInTheDocument();
@@ -43,7 +51,9 @@ describe('ErrorState', () => {
   it('calls onRetry when retry button is clicked', async () => {
     const user = userEvent.setup();
     const onRetry = vi.fn();
-    renderWithProviders(<ErrorState message="Something went wrong" onRetry={onRetry} />);
+    renderWithProviders(
+      <ErrorState message="Something went wrong" onRetry={onRetry} />
+    );
 
     await user.click(screen.getByLabelText('Try Again'));
     expect(onRetry).toHaveBeenCalledTimes(1);
@@ -56,13 +66,17 @@ describe('ErrorState', () => {
   });
 
   it('applies custom className', () => {
-    renderWithProviders(<ErrorState message="Something went wrong" className="my-custom-class" />);
+    renderWithProviders(
+      <ErrorState message="Something went wrong" className="my-custom-class" />
+    );
     const container = screen.getByRole('alert');
     expect(container).toHaveClass('my-custom-class');
   });
 
   it('renders error icon', () => {
-    const { container } = renderWithProviders(<ErrorState message="Something went wrong" />);
+    const { container } = renderWithProviders(
+      <ErrorState message="Something went wrong" />
+    );
     const icon = container.querySelector('svg');
     expect(icon).toBeInTheDocument();
     expect(icon).toHaveClass('text-red-500');
@@ -70,7 +84,9 @@ describe('ErrorState', () => {
 
   it('renders retry icon when retry button is shown', () => {
     const onRetry = vi.fn();
-    const { container } = renderWithProviders(<ErrorState message="Something went wrong" onRetry={onRetry} />);
+    const { container } = renderWithProviders(
+      <ErrorState message="Something went wrong" onRetry={onRetry} />
+    );
     const icons = container.querySelectorAll('svg');
     // Should have 2 SVGs: error icon and retry icon
     expect(icons.length).toBeGreaterThanOrEqual(2);
@@ -79,6 +95,11 @@ describe('ErrorState', () => {
   it('centers content', () => {
     renderWithProviders(<ErrorState message="Something went wrong" />);
     const container = screen.getByRole('alert');
-    expect(container).toHaveClass('flex', 'flex-col', 'items-center', 'justify-center');
+    expect(container).toHaveClass(
+      'flex',
+      'flex-col',
+      'items-center',
+      'justify-center'
+    );
   });
 });

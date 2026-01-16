@@ -11,18 +11,24 @@ describe('ProfileHeader', () => {
 
   it('displays active badge when isActive is true', () => {
     render(<ProfileHeader profileName="my-profile" isActive={true} />);
-    expect(screen.getByRole('status', { name: /active profile/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('status', { name: /active profile/i })
+    ).toBeInTheDocument();
     expect(screen.getByText('Active')).toBeInTheDocument();
   });
 
   it('does not display active badge when isActive is false', () => {
     render(<ProfileHeader profileName="my-profile" isActive={false} />);
-    expect(screen.queryByRole('status', { name: /active profile/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('status', { name: /active profile/i })
+    ).not.toBeInTheDocument();
   });
 
   it('displays last modified date when provided', () => {
     const lastModified = new Date('2025-01-03T12:30:00');
-    render(<ProfileHeader profileName="my-profile" lastModified={lastModified} />);
+    render(
+      <ProfileHeader profileName="my-profile" lastModified={lastModified} />
+    );
     expect(screen.getByText(/Last modified:/i)).toBeInTheDocument();
     expect(screen.getByText(/2025-01-03/i)).toBeInTheDocument();
   });
@@ -41,12 +47,16 @@ describe('ProfileHeader', () => {
         onProfileChange={vi.fn()}
       />
     );
-    expect(screen.getByRole('button', { name: /select profile to edit/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /select profile to edit/i })
+    ).toBeInTheDocument();
   });
 
   it('does not render dropdown when no profiles provided', () => {
     render(<ProfileHeader profileName="my-profile" />);
-    expect(screen.queryByRole('button', { name: /select profile to edit/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /select profile to edit/i })
+    ).not.toBeInTheDocument();
   });
 
   it('does not render dropdown when no onProfileChange callback provided', () => {
@@ -56,7 +66,9 @@ describe('ProfileHeader', () => {
         availableProfiles={['default', 'my-profile']}
       />
     );
-    expect(screen.queryByRole('button', { name: /select profile to edit/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /select profile to edit/i })
+    ).not.toBeInTheDocument();
   });
 
   it('calls onProfileChange when user selects different profile', async () => {
@@ -73,7 +85,9 @@ describe('ProfileHeader', () => {
     );
 
     // Open dropdown
-    const dropdown = screen.getByRole('button', { name: /select profile to edit/i });
+    const dropdown = screen.getByRole('button', {
+      name: /select profile to edit/i,
+    });
     await user.click(dropdown);
 
     // Select different profile
@@ -99,9 +113,13 @@ describe('ProfileHeader', () => {
 
     // Check all elements are present
     expect(screen.getByText(/Editing: my-profile/i)).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: /active profile/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('status', { name: /active profile/i })
+    ).toBeInTheDocument();
     expect(screen.getByText(/Last modified:/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /select profile to edit/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /select profile to edit/i })
+    ).toBeInTheDocument();
   });
 
   it('has proper ARIA labels for accessibility', () => {
@@ -114,7 +132,11 @@ describe('ProfileHeader', () => {
       />
     );
 
-    expect(screen.getByRole('status', { name: /active profile/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /select profile to edit/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('status', { name: /active profile/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /select profile to edit/i })
+    ).toBeInTheDocument();
   });
 });

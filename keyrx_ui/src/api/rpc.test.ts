@@ -40,7 +40,16 @@ describe('RpcClient', () => {
   describe('Profile Methods', () => {
     it('getProfiles calls query with correct method', async () => {
       const mockProfiles = [
-        { name: 'default', rhaiPath: '/path/default.rhai', krxPath: '/path/default.krx', modifiedAt: '2024-01-01', createdAt: '2024-01-01', layerCount: 1, modifierCount: 0, activeDeviceCount: 0 },
+        {
+          name: 'default',
+          rhaiPath: '/path/default.rhai',
+          krxPath: '/path/default.krx',
+          modifiedAt: '2024-01-01',
+          createdAt: '2024-01-01',
+          layerCount: 1,
+          modifierCount: 0,
+          activeDeviceCount: 0,
+        },
       ];
       vi.mocked(mockApi.query).mockResolvedValue(mockProfiles);
 
@@ -77,7 +86,9 @@ describe('RpcClient', () => {
 
       await client.activateProfile('gaming');
 
-      expect(mockApi.command).toHaveBeenCalledWith('activate_profile', { name: 'gaming' });
+      expect(mockApi.command).toHaveBeenCalledWith('activate_profile', {
+        name: 'gaming',
+      });
     });
 
     it('deleteProfile calls command with name', async () => {
@@ -85,7 +96,9 @@ describe('RpcClient', () => {
 
       await client.deleteProfile('gaming');
 
-      expect(mockApi.command).toHaveBeenCalledWith('delete_profile', { name: 'gaming' });
+      expect(mockApi.command).toHaveBeenCalledWith('delete_profile', {
+        name: 'gaming',
+      });
     });
 
     it('duplicateProfile calls command with source and new name', async () => {
@@ -116,7 +129,9 @@ describe('RpcClient', () => {
 
       const result = await client.getProfileConfig('default');
 
-      expect(mockApi.query).toHaveBeenCalledWith('get_profile_config', { name: 'default' });
+      expect(mockApi.query).toHaveBeenCalledWith('get_profile_config', {
+        name: 'default',
+      });
       expect(result).toEqual({ name: 'default', source: 'map("A", "B");' });
     });
 
@@ -152,7 +167,15 @@ describe('RpcClient', () => {
   describe('Device Methods', () => {
     it('getDevices calls query', async () => {
       const mockDevices = [
-        { id: 'dev1', name: 'Keyboard', path: '/dev/input/event0', serial: 'ABC123', active: true, scope: null, layout: null },
+        {
+          id: 'dev1',
+          name: 'Keyboard',
+          path: '/dev/input/event0',
+          serial: 'ABC123',
+          active: true,
+          scope: null,
+          layout: null,
+        },
       ];
       vi.mocked(mockApi.query).mockResolvedValue(mockDevices);
 
@@ -189,7 +212,9 @@ describe('RpcClient', () => {
 
       await client.forgetDevice('ABC123');
 
-      expect(mockApi.command).toHaveBeenCalledWith('forget_device', { serial: 'ABC123' });
+      expect(mockApi.command).toHaveBeenCalledWith('forget_device', {
+        serial: 'ABC123',
+      });
     });
 
     it('setDeviceLayout calls command with serial and layout', async () => {
@@ -220,7 +245,9 @@ describe('RpcClient', () => {
 
       await client.updateConfig('map("X", "Y");');
 
-      expect(mockApi.command).toHaveBeenCalledWith('update_config', { code: 'map("X", "Y");' });
+      expect(mockApi.command).toHaveBeenCalledWith('update_config', {
+        code: 'map("X", "Y");',
+      });
     });
 
     it('setKeyMapping calls command with layer, key code, and mapping', async () => {
@@ -247,7 +274,10 @@ describe('RpcClient', () => {
     });
 
     it('getLayers calls query', async () => {
-      const mockLayers = [{ name: 'base', keys: {} }, { name: 'function', keys: {} }];
+      const mockLayers = [
+        { name: 'base', keys: {} },
+        { name: 'function', keys: {} },
+      ];
       vi.mocked(mockApi.query).mockResolvedValue(mockLayers);
 
       const result = await client.getLayers();
@@ -286,7 +316,10 @@ describe('RpcClient', () => {
 
       const result = await client.getEvents();
 
-      expect(mockApi.query).toHaveBeenCalledWith('get_events', { limit: undefined, offset: undefined });
+      expect(mockApi.query).toHaveBeenCalledWith('get_events', {
+        limit: undefined,
+        offset: undefined,
+      });
       expect(result).toEqual(mockEvents);
     });
 
@@ -301,7 +334,10 @@ describe('RpcClient', () => {
 
       const result = await client.getEvents(50, 100);
 
-      expect(mockApi.query).toHaveBeenCalledWith('get_events', { limit: 50, offset: 100 });
+      expect(mockApi.query).toHaveBeenCalledWith('get_events', {
+        limit: 50,
+        offset: 100,
+      });
       expect(result).toEqual(mockEvents);
     });
 
@@ -318,22 +354,32 @@ describe('RpcClient', () => {
     it('simulate calls command with input', async () => {
       const mockInput = [
         {
-          events: [{ keycode: 'A', event_type: 'press' as const, timestamp_us: 1000 }],
+          events: [
+            { keycode: 'A', event_type: 'press' as const, timestamp_us: 1000 },
+          ],
         },
       ];
       const mockResult = [
         {
           states: [],
-          outputs: [{ keycode: 'B', event_type: 'press' as const, timestamp_us: 1500 }],
+          outputs: [
+            { keycode: 'B', event_type: 'press' as const, timestamp_us: 1500 },
+          ],
           latency: [500],
-          final_state: { active_modifiers: [], active_locks: [], active_layer: null },
+          final_state: {
+            active_modifiers: [],
+            active_locks: [],
+            active_layer: null,
+          },
         },
       ];
       vi.mocked(mockApi.command).mockResolvedValue(mockResult);
 
       const result = await client.simulate(mockInput);
 
-      expect(mockApi.command).toHaveBeenCalledWith('simulate', { input: mockInput });
+      expect(mockApi.command).toHaveBeenCalledWith('simulate', {
+        input: mockInput,
+      });
       expect(result).toEqual(mockResult);
     });
 
@@ -354,7 +400,10 @@ describe('RpcClient', () => {
 
       const unsubscribe = client.onDaemonState(handler);
 
-      expect(mockApi.subscribe).toHaveBeenCalledWith('daemon-state', expect.any(Function));
+      expect(mockApi.subscribe).toHaveBeenCalledWith(
+        'daemon-state',
+        expect.any(Function)
+      );
       expect(unsubscribe).toBe(mockUnsubscribe);
     });
 
@@ -365,7 +414,10 @@ describe('RpcClient', () => {
 
       const unsubscribe = client.onKeyEvent(handler);
 
-      expect(mockApi.subscribe).toHaveBeenCalledWith('events', expect.any(Function));
+      expect(mockApi.subscribe).toHaveBeenCalledWith(
+        'events',
+        expect.any(Function)
+      );
       expect(unsubscribe).toBe(mockUnsubscribe);
     });
 
@@ -376,7 +428,10 @@ describe('RpcClient', () => {
 
       const unsubscribe = client.onLatencyUpdate(handler);
 
-      expect(mockApi.subscribe).toHaveBeenCalledWith('latency', expect.any(Function));
+      expect(mockApi.subscribe).toHaveBeenCalledWith(
+        'latency',
+        expect.any(Function)
+      );
       expect(unsubscribe).toBe(mockUnsubscribe);
     });
 
@@ -430,7 +485,9 @@ describe('RpcClient', () => {
       const error = new Error('Command failed');
       vi.mocked(mockApi.command).mockRejectedValue(error);
 
-      await expect(client.createProfile('test')).rejects.toThrow('Command failed');
+      await expect(client.createProfile('test')).rejects.toThrow(
+        'Command failed'
+      );
     });
 
     it('handles validation errors in getProfileConfig', async () => {
@@ -447,7 +504,10 @@ describe('RpcClient', () => {
 
       await client.createProfile('');
 
-      expect(mockApi.command).toHaveBeenCalledWith('create_profile', { name: '', template: undefined });
+      expect(mockApi.command).toHaveBeenCalledWith('create_profile', {
+        name: '',
+        template: undefined,
+      });
     });
 
     it('handles special characters in profile names', async () => {
@@ -455,7 +515,9 @@ describe('RpcClient', () => {
 
       await client.activateProfile('my-profile_123');
 
-      expect(mockApi.command).toHaveBeenCalledWith('activate_profile', { name: 'my-profile_123' });
+      expect(mockApi.command).toHaveBeenCalledWith('activate_profile', {
+        name: 'my-profile_123',
+      });
     });
 
     it('handles empty device serial', async () => {
@@ -463,7 +525,10 @@ describe('RpcClient', () => {
 
       await client.renameDevice('', 'New Name');
 
-      expect(mockApi.command).toHaveBeenCalledWith('rename_device', { serial: '', new_name: 'New Name' });
+      expect(mockApi.command).toHaveBeenCalledWith('rename_device', {
+        serial: '',
+        new_name: 'New Name',
+      });
     });
 
     it('handles empty configuration code', async () => {
@@ -471,23 +536,41 @@ describe('RpcClient', () => {
 
       await client.updateConfig('');
 
-      expect(mockApi.command).toHaveBeenCalledWith('update_config', { code: '' });
+      expect(mockApi.command).toHaveBeenCalledWith('update_config', {
+        code: '',
+      });
     });
 
     it('handles large pagination values', async () => {
-      vi.mocked(mockApi.query).mockResolvedValue({ events: [], total: 0, limit: 10000, offset: 50000 });
+      vi.mocked(mockApi.query).mockResolvedValue({
+        events: [],
+        total: 0,
+        limit: 10000,
+        offset: 50000,
+      });
 
       await client.getEvents(10000, 50000);
 
-      expect(mockApi.query).toHaveBeenCalledWith('get_events', { limit: 10000, offset: 50000 });
+      expect(mockApi.query).toHaveBeenCalledWith('get_events', {
+        limit: 10000,
+        offset: 50000,
+      });
     });
 
     it('handles zero pagination values', async () => {
-      vi.mocked(mockApi.query).mockResolvedValue({ events: [], total: 0, limit: 0, offset: 0 });
+      vi.mocked(mockApi.query).mockResolvedValue({
+        events: [],
+        total: 0,
+        limit: 0,
+        offset: 0,
+      });
 
       await client.getEvents(0, 0);
 
-      expect(mockApi.query).toHaveBeenCalledWith('get_events', { limit: 0, offset: 0 });
+      expect(mockApi.query).toHaveBeenCalledWith('get_events', {
+        limit: 0,
+        offset: 0,
+      });
     });
   });
 

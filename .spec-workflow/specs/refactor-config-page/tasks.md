@@ -162,7 +162,7 @@
   - _Requirements: TR-2, TR-3_
   - _Prompt: Role: QA Engineer with debugging expertise | Task: Implement the task for spec refactor-config-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Run full test suite (npm test). Identify and fix any failing tests caused by refactoring. Debug issues, update mocks if needed, fix broken assertions. Ensure all tests pass. Run coverage report and verify >80% coverage maintained. | Restrictions: Do not skip or disable tests, fix root causes not symptoms, maintain test quality, no snapshot updates without verification | Success: All tests pass (npm test), coverage >80%, no skipped tests, no console errors, test run time similar to before | After completion: 1) Mark [-], 2) log-implementation with artifacts, 3) Mark [x]_
 
-- [ ] 5.3 Fix ESLint errors and apply Prettier
+- [x] 5.3 Fix ESLint errors and apply Prettier
   - Run npm run lint:fix and npm run format
   - Purpose: Ensure code quality compliance
   - _Leverage: .eslintrc.js, .prettierrc_

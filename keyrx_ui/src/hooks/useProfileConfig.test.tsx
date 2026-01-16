@@ -91,25 +91,30 @@ describe('useSetProfileConfig', () => {
       await simulateConnected();
 
       // Wait for connection to be established
-      await waitFor(() => {
-        expect(server.server.clients().length).toBe(1);
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(server.server.clients().length).toBe(1);
+        },
+        { timeout: 2000 }
+      );
 
       // Trigger mutation
       result.current.mutate({ name: 'TestProfile', source: 'let x = 42;' });
 
       // Wait for message to be sent
-      await waitFor(() => {
-        const messages = server.messages;
-        expect(messages.length).toBeGreaterThan(0);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          const messages = server.messages;
+          expect(messages.length).toBeGreaterThan(0);
+        },
+        { timeout: 1000 }
+      );
 
       // Get the last message sent
       const messages = server.messages;
       const lastMessage = messages[messages.length - 1];
-      const parsedMessage: ClientMessage = typeof lastMessage === 'string'
-        ? JSON.parse(lastMessage)
-        : lastMessage;
+      const parsedMessage: ClientMessage =
+        typeof lastMessage === 'string' ? JSON.parse(lastMessage) : lastMessage;
 
       // Verify message structure
       expect(parsedMessage).toMatchObject({
@@ -150,9 +155,8 @@ describe('useSetProfileConfig', () => {
 
       const messages = server.messages;
       const lastMessage = messages[messages.length - 1];
-      const parsedMessage: ClientMessage = typeof lastMessage === 'string'
-        ? JSON.parse(lastMessage)
-        : lastMessage;
+      const parsedMessage: ClientMessage =
+        typeof lastMessage === 'string' ? JSON.parse(lastMessage) : lastMessage;
 
       // Verify params structure matches server expectations
       expect(parsedMessage.content.params).toEqual({
@@ -196,9 +200,8 @@ describe('useSetProfileConfig', () => {
 
       // Send success response
       const lastMessage = server.messages[server.messages.length - 1];
-      const parsedMessage: ClientMessage = typeof lastMessage === 'string'
-        ? JSON.parse(lastMessage)
-        : lastMessage;
+      const parsedMessage: ClientMessage =
+        typeof lastMessage === 'string' ? JSON.parse(lastMessage) : lastMessage;
       const requestId = parsedMessage.content.id;
 
       server.send({
@@ -245,9 +248,8 @@ describe('useSetProfileConfig', () => {
 
       // Send error response
       const lastMessage = server.messages[server.messages.length - 1];
-      const parsedMessage: ClientMessage = typeof lastMessage === 'string'
-        ? JSON.parse(lastMessage)
-        : lastMessage;
+      const parsedMessage: ClientMessage =
+        typeof lastMessage === 'string' ? JSON.parse(lastMessage) : lastMessage;
       const requestId = parsedMessage.content.id;
 
       server.send({
@@ -289,7 +291,9 @@ describe('useSetProfileConfig', () => {
       });
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
       );
 
       const { result } = renderHook(() => useSetProfileConfig(), { wrapper });
@@ -334,7 +338,9 @@ describe('useSetProfileConfig', () => {
       queryClient.setQueryData(['config', 'TestProfile'], originalConfig);
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
       );
 
       const { result } = renderHook(() => useSetProfileConfig(), { wrapper });
@@ -364,9 +370,8 @@ describe('useSetProfileConfig', () => {
 
       // Send error response
       const lastMessage = server.messages[server.messages.length - 1];
-      const parsedMessage: ClientMessage = typeof lastMessage === 'string'
-        ? JSON.parse(lastMessage)
-        : lastMessage;
+      const parsedMessage: ClientMessage =
+        typeof lastMessage === 'string' ? JSON.parse(lastMessage) : lastMessage;
       const requestId = parsedMessage.content.id;
 
       server.send({
@@ -406,21 +411,21 @@ describe('useGetProfileConfig', () => {
   // The query is disabled when not connected, making it difficult to test in isolation
   // Core RPC format tests in useSetProfileConfig are sufficient for Task 5.2
   it.skip('should send correct query message structure', async () => {
-    const { result } = renderHook(
-      () => useGetProfileConfig('TestProfile'),
-      {
-        wrapper: createWrapper(),
-      }
-    );
+    const { result } = renderHook(() => useGetProfileConfig('TestProfile'), {
+      wrapper: createWrapper(),
+    });
 
     const server = getMockWebSocket();
     await server.connected;
     await simulateConnected();
 
     // Wait for query to be sent
-    await waitFor(() => {
-      expect(server.messages.length).toBeGreaterThan(0);
-    }, { timeout: 2000 });
+    await waitFor(
+      () => {
+        expect(server.messages.length).toBeGreaterThan(0);
+      },
+      { timeout: 2000 }
+    );
 
     // Find the get_profile_config query
     const queryMessage = server.messages.find((msg) => {
@@ -429,9 +434,10 @@ describe('useGetProfileConfig', () => {
     });
 
     expect(queryMessage).toBeDefined();
-    const parsedMessage: ClientMessage = typeof queryMessage === 'string'
-      ? JSON.parse(queryMessage)
-      : queryMessage!;
+    const parsedMessage: ClientMessage =
+      typeof queryMessage === 'string'
+        ? JSON.parse(queryMessage)
+        : queryMessage!;
 
     expect(parsedMessage).toMatchObject({
       type: 'query',
@@ -446,12 +452,9 @@ describe('useGetProfileConfig', () => {
   });
 
   it.skip('should handle response and transform to ProfileConfig', async () => {
-    const { result } = renderHook(
-      () => useGetProfileConfig('TestProfile'),
-      {
-        wrapper: createWrapper(),
-      }
-    );
+    const { result } = renderHook(() => useGetProfileConfig('TestProfile'), {
+      wrapper: createWrapper(),
+    });
 
     const server = getMockWebSocket();
     await server.connected;
@@ -468,9 +471,10 @@ describe('useGetProfileConfig', () => {
       return parsed.content?.method === 'get_profile_config';
     });
 
-    const parsedMessage: ClientMessage = typeof queryMessage === 'string'
-      ? JSON.parse(queryMessage)
-      : queryMessage!;
+    const parsedMessage: ClientMessage =
+      typeof queryMessage === 'string'
+        ? JSON.parse(queryMessage)
+        : queryMessage!;
     const requestId = parsedMessage.content.id;
 
     // Server returns 'config' field, hook transforms to 'source'
@@ -486,9 +490,12 @@ describe('useGetProfileConfig', () => {
     });
 
     // Wait for data to be available
-    await waitFor(() => {
-      expect(result.current.data).toBeDefined();
-    }, { timeout: 2000 });
+    await waitFor(
+      () => {
+        expect(result.current.data).toBeDefined();
+      },
+      { timeout: 2000 }
+    );
 
     // Hook should transform 'config' to 'source'
     expect(result.current.data).toEqual({

@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
-import { renderWithProviders, setupMockWebSocket, cleanupMockWebSocket } from '../../tests/testUtils';
+import {
+  renderWithProviders,
+  setupMockWebSocket,
+  cleanupMockWebSocket,
+} from '../../tests/testUtils';
 import { SimulatorPage } from './SimulatorPage';
 
 // Mock the KeyboardVisualizer component

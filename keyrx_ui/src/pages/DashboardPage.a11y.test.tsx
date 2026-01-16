@@ -13,7 +13,10 @@ import {
   cleanupMockWebSocket,
   simulateConnected,
 } from '../../tests/testUtils';
-import { runA11yAudit, runCompleteA11yAudit } from '../../tests/AccessibilityTestHelper';
+import {
+  runA11yAudit,
+  runCompleteA11yAudit,
+} from '../../tests/AccessibilityTestHelper';
 import { DashboardPage } from './DashboardPage';
 
 describe('DashboardPage Accessibility', () => {
@@ -31,7 +34,7 @@ describe('DashboardPage Accessibility', () => {
     });
 
     // Small delay to let component initialize
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const results = await runA11yAudit(container);
     expect(results).toHaveNoViolations();

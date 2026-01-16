@@ -40,91 +40,163 @@ describe('Keyboard Layout Data Validation', () => {
     { data: NUMPAD, expectedName: 'Numpad', expectedKeyCount: 17 },
   ];
 
-  describe.each(layouts)('$expectedName Layout', ({ data, expectedName, expectedKeyCount }) => {
-    const layout = data as Layout;
+  describe.each(layouts)(
+    '$expectedName Layout',
+    ({ data, expectedName, expectedKeyCount }) => {
+      const layout = data as Layout;
 
-    it('should have required name field', () => {
-      expect(layout).toHaveProperty('name');
-      expect(layout.name).toBe(expectedName);
-      expect(typeof layout.name).toBe('string');
-      expect(layout.name.length).toBeGreaterThan(0);
-    });
-
-    it('should have required keys array', () => {
-      expect(layout).toHaveProperty('keys');
-      expect(Array.isArray(layout.keys)).toBe(true);
-    });
-
-    it(`should have exactly ${expectedKeyCount} keys`, () => {
-      expect(layout.keys).toHaveLength(expectedKeyCount);
-    });
-
-    it('should have all keys with required fields', () => {
-      layout.keys.forEach((key, index) => {
-        expect(key, `Key at index ${index} should have 'code' field`).toHaveProperty('code');
-        expect(key, `Key at index ${index} should have 'label' field`).toHaveProperty('label');
-        expect(key, `Key at index ${index} should have 'x' field`).toHaveProperty('x');
-        expect(key, `Key at index ${index} should have 'y' field`).toHaveProperty('y');
-
-        expect(typeof key.code, `Key '${key.code}' code should be string`).toBe('string');
-        expect(typeof key.label, `Key '${key.code}' label should be string`).toBe('string');
-        expect(typeof key.x, `Key '${key.code}' x should be number`).toBe('number');
-        expect(typeof key.y, `Key '${key.code}' y should be number`).toBe('number');
-
-        expect(key.code.length, `Key '${key.code}' code should not be empty`).toBeGreaterThan(0);
-        expect(key.label.length, `Key '${key.code}' label should not be empty`).toBeGreaterThan(0);
+      it('should have required name field', () => {
+        expect(layout).toHaveProperty('name');
+        expect(layout.name).toBe(expectedName);
+        expect(typeof layout.name).toBe('string');
+        expect(layout.name.length).toBeGreaterThan(0);
       });
-    });
 
-    it('should have valid optional width field when present', () => {
-      layout.keys.forEach((key) => {
-        if ('w' in key) {
-          expect(typeof key.w, `Key '${key.code}' width should be number`).toBe('number');
-          expect(key.w, `Key '${key.code}' width should be positive`).toBeGreaterThan(0);
-        }
+      it('should have required keys array', () => {
+        expect(layout).toHaveProperty('keys');
+        expect(Array.isArray(layout.keys)).toBe(true);
       });
-    });
 
-    it('should have valid optional height field when present', () => {
-      layout.keys.forEach((key) => {
-        if ('h' in key) {
-          expect(typeof key.h, `Key '${key.code}' height should be number`).toBe('number');
-          expect(key.h, `Key '${key.code}' height should be positive`).toBeGreaterThan(0);
-        }
+      it(`should have exactly ${expectedKeyCount} keys`, () => {
+        expect(layout.keys).toHaveLength(expectedKeyCount);
       });
-    });
 
-    it('should have non-negative coordinates', () => {
-      layout.keys.forEach((key) => {
-        expect(key.x, `Key '${key.code}' x coordinate should be non-negative`).toBeGreaterThanOrEqual(0);
-        expect(key.y, `Key '${key.code}' y coordinate should be non-negative`).toBeGreaterThanOrEqual(0);
+      it('should have all keys with required fields', () => {
+        layout.keys.forEach((key, index) => {
+          expect(
+            key,
+            `Key at index ${index} should have 'code' field`
+          ).toHaveProperty('code');
+          expect(
+            key,
+            `Key at index ${index} should have 'label' field`
+          ).toHaveProperty('label');
+          expect(
+            key,
+            `Key at index ${index} should have 'x' field`
+          ).toHaveProperty('x');
+          expect(
+            key,
+            `Key at index ${index} should have 'y' field`
+          ).toHaveProperty('y');
+
+          expect(
+            typeof key.code,
+            `Key '${key.code}' code should be string`
+          ).toBe('string');
+          expect(
+            typeof key.label,
+            `Key '${key.code}' label should be string`
+          ).toBe('string');
+          expect(typeof key.x, `Key '${key.code}' x should be number`).toBe(
+            'number'
+          );
+          expect(typeof key.y, `Key '${key.code}' y should be number`).toBe(
+            'number'
+          );
+
+          expect(
+            key.code.length,
+            `Key '${key.code}' code should not be empty`
+          ).toBeGreaterThan(0);
+          expect(
+            key.label.length,
+            `Key '${key.code}' label should not be empty`
+          ).toBeGreaterThan(0);
+        });
       });
-    });
 
-    it('should have unique key codes', () => {
-      const keyCodes = layout.keys.map((key) => key.code);
-      const uniqueKeyCodes = new Set(keyCodes);
-      expect(uniqueKeyCodes.size, 'All key codes should be unique').toBe(keyCodes.length);
-    });
-  });
+      it('should have valid optional width field when present', () => {
+        layout.keys.forEach((key) => {
+          if ('w' in key) {
+            expect(
+              typeof key.w,
+              `Key '${key.code}' width should be number`
+            ).toBe('number');
+            expect(
+              key.w,
+              `Key '${key.code}' width should be positive`
+            ).toBeGreaterThan(0);
+          }
+        });
+      });
+
+      it('should have valid optional height field when present', () => {
+        layout.keys.forEach((key) => {
+          if ('h' in key) {
+            expect(
+              typeof key.h,
+              `Key '${key.code}' height should be number`
+            ).toBe('number');
+            expect(
+              key.h,
+              `Key '${key.code}' height should be positive`
+            ).toBeGreaterThan(0);
+          }
+        });
+      });
+
+      it('should have non-negative coordinates', () => {
+        layout.keys.forEach((key) => {
+          expect(
+            key.x,
+            `Key '${key.code}' x coordinate should be non-negative`
+          ).toBeGreaterThanOrEqual(0);
+          expect(
+            key.y,
+            `Key '${key.code}' y coordinate should be non-negative`
+          ).toBeGreaterThanOrEqual(0);
+        });
+      });
+
+      it('should have unique key codes', () => {
+        const keyCodes = layout.keys.map((key) => key.code);
+        const uniqueKeyCodes = new Set(keyCodes);
+        expect(uniqueKeyCodes.size, 'All key codes should be unique').toBe(
+          keyCodes.length
+        );
+      });
+    }
+  );
 
   describe('Layout-specific validations', () => {
     it('ANSI_104 should have numpad keys', () => {
       const ansiLayout = ANSI_104 as Layout;
-      const hasNumpadKeys = ansiLayout.keys.some((key) =>
-        ['KC_NLCK', 'KC_PSLS', 'KC_PAST', 'KC_PMNS', 'KC_PPLS', 'KC_PENT', 'KC_PDOT'].includes(key.code) ||
-        /^KC_P[0-9]$/.test(key.code)
+      const hasNumpadKeys = ansiLayout.keys.some(
+        (key) =>
+          [
+            'KC_NLCK',
+            'KC_PSLS',
+            'KC_PAST',
+            'KC_PMNS',
+            'KC_PPLS',
+            'KC_PENT',
+            'KC_PDOT',
+          ].includes(key.code) || /^KC_P[0-9]$/.test(key.code)
       );
-      expect(hasNumpadKeys, 'ANSI_104 should contain numpad keys (full-size layout)').toBe(true);
+      expect(
+        hasNumpadKeys,
+        'ANSI_104 should contain numpad keys (full-size layout)'
+      ).toBe(true);
     });
 
     it('ANSI_87 should not have numpad keys', () => {
       const tkl87Layout = ANSI_87 as Layout;
-      const hasNumpadKeys = tkl87Layout.keys.some((key) =>
-        ['KC_NLCK', 'KC_PSLS', 'KC_PAST', 'KC_PMNS', 'KC_PPLS', 'KC_PENT', 'KC_PDOT'].includes(key.code) ||
-        /^KC_P[0-9]$/.test(key.code)
+      const hasNumpadKeys = tkl87Layout.keys.some(
+        (key) =>
+          [
+            'KC_NLCK',
+            'KC_PSLS',
+            'KC_PAST',
+            'KC_PMNS',
+            'KC_PPLS',
+            'KC_PENT',
+            'KC_PDOT',
+          ].includes(key.code) || /^KC_P[0-9]$/.test(key.code)
       );
-      expect(hasNumpadKeys, 'ANSI_87 should not contain numpad keys').toBe(false);
+      expect(hasNumpadKeys, 'ANSI_87 should not contain numpad keys').toBe(
+        false
+      );
     });
 
     it('ISO_105 should have ISO-specific key KC_NUBS', () => {
@@ -141,7 +213,13 @@ describe('Keyboard Layout Data Validation', () => {
 
     it('JIS_109 should have Japanese-specific keys', () => {
       const jisLayout = JIS_109 as Layout;
-      const japaneseKeys = ['KC_JYEN', 'KC_RO', 'KC_HENK', 'KC_MHEN', 'KC_KANA'];
+      const japaneseKeys = [
+        'KC_JYEN',
+        'KC_RO',
+        'KC_HENK',
+        'KC_MHEN',
+        'KC_KANA',
+      ];
 
       japaneseKeys.forEach((keyCode) => {
         const hasKey = jisLayout.keys.some((key) => key.code === keyCode);
@@ -151,13 +229,17 @@ describe('Keyboard Layout Data Validation', () => {
 
     it('COMPACT_60 should not have F-row keys', () => {
       const compact60Layout = COMPACT_60 as Layout;
-      const hasFKeys = compact60Layout.keys.some((key) => /^KC_F\d+$/.test(key.code));
+      const hasFKeys = compact60Layout.keys.some((key) =>
+        /^KC_F\d+$/.test(key.code)
+      );
       expect(hasFKeys, '60% layout should not have F-row keys').toBe(false);
     });
 
     it('COMPACT_75 should have F-row keys', () => {
       const compact75Layout = COMPACT_75 as Layout;
-      const hasFKeys = compact75Layout.keys.some((key) => /^KC_F\d+$/.test(key.code));
+      const hasFKeys = compact75Layout.keys.some((key) =>
+        /^KC_F\d+$/.test(key.code)
+      );
       expect(hasFKeys, '75% layout should have F-row keys').toBe(true);
     });
 
@@ -171,11 +253,21 @@ describe('Keyboard Layout Data Validation', () => {
 
     it('NUMPAD should only have numpad-related keys', () => {
       const numpadLayout = NUMPAD as Layout;
-      const allKeysAreNumpad = numpadLayout.keys.every((key) =>
-        ['KC_NLCK', 'KC_PSLS', 'KC_PAST', 'KC_PMNS', 'KC_PPLS', 'KC_PENT', 'KC_PDOT'].includes(key.code) ||
-        /^KC_P[0-9]$/.test(key.code)
+      const allKeysAreNumpad = numpadLayout.keys.every(
+        (key) =>
+          [
+            'KC_NLCK',
+            'KC_PSLS',
+            'KC_PAST',
+            'KC_PMNS',
+            'KC_PPLS',
+            'KC_PENT',
+            'KC_PDOT',
+          ].includes(key.code) || /^KC_P[0-9]$/.test(key.code)
       );
-      expect(allKeysAreNumpad, 'NUMPAD should only contain numpad keys').toBe(true);
+      expect(allKeysAreNumpad, 'NUMPAD should only contain numpad keys').toBe(
+        true
+      );
     });
 
     it('HHKB should have Control in Caps Lock position', () => {

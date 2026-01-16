@@ -49,9 +49,7 @@ describe('ConfigurationLayout', () => {
 
   it('renders with empty children', () => {
     const { container } = renderWithProviders(
-      <ConfigurationLayout {...defaultProps}>
-        {null}
-      </ConfigurationLayout>
+      <ConfigurationLayout {...defaultProps}>{null}</ConfigurationLayout>
     );
 
     const layoutDiv = container.querySelector('.flex.flex-col.gap-4');

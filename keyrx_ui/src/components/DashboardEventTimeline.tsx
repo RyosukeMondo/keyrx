@@ -5,11 +5,11 @@
  * with large event lists. Supports pause/resume and clearing of events.
  */
 
-import { useState } from "react";
-import { FixedSizeList } from "react-window";
-import type { KeyEvent } from "../types/rpc";
-import { formatKeyCode } from "../utils/keyCodeMapping";
-import { formatTimestampRelative } from "../utils/timeFormatting";
+import { useState } from 'react';
+import { FixedSizeList } from 'react-window';
+import type { KeyEvent } from '../types/rpc';
+import { formatKeyCode } from '../utils/keyCodeMapping';
+import { formatTimestampRelative } from '../utils/timeFormatting';
 
 /**
  * Props for the DashboardEventTimeline component.
@@ -63,9 +63,9 @@ function EventRow({ event, style }: EventRowProps) {
       <div className="w-20 text-sm">
         <span
           className={`px-2 py-1 rounded text-xs font-medium ${
-            event.eventType === "press"
-              ? "bg-green-900 text-green-200"
-              : "bg-red-900 text-red-200"
+            event.eventType === 'press'
+              ? 'bg-green-900 text-green-200'
+              : 'bg-red-900 text-red-200'
           }`}
         >
           {event.eventType}
@@ -84,7 +84,10 @@ function EventRow({ event, style }: EventRowProps) {
 
       {/* Tooltip with full details */}
       {showTooltip && (
-        <div className="absolute left-0 top-full z-50 mt-1 p-3 bg-slate-900 border border-slate-700 rounded shadow-lg text-xs font-mono whitespace-nowrap" data-testid="event-tooltip">
+        <div
+          className="absolute left-0 top-full z-50 mt-1 p-3 bg-slate-900 border border-slate-700 rounded shadow-lg text-xs font-mono whitespace-nowrap"
+          data-testid="event-tooltip"
+        >
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             <span className="text-slate-500">Timestamp:</span>
             <span className="text-slate-200">{event.timestamp}μs</span>
@@ -138,9 +141,11 @@ export function DashboardEventTimeline({
           <button
             onClick={onTogglePause}
             className="min-h-[44px] md:min-h-0 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors text-sm font-medium"
-            aria-label={isPaused ? "Resume event updates" : "Pause event updates"}
+            aria-label={
+              isPaused ? 'Resume event updates' : 'Pause event updates'
+            }
           >
-            {isPaused ? "Resume" : "Pause"}
+            {isPaused ? 'Resume' : 'Pause'}
           </button>
           <button
             onClick={onClear}
@@ -154,7 +159,10 @@ export function DashboardEventTimeline({
 
       {/* Event list or empty state */}
       {events.length === 0 ? (
-        <div className="flex items-center justify-center h-96 text-slate-500" data-testid="event-list">
+        <div
+          className="flex items-center justify-center h-96 text-slate-500"
+          data-testid="event-list"
+        >
           No events yet. Start typing to see events appear.
         </div>
       ) : (
@@ -166,7 +174,9 @@ export function DashboardEventTimeline({
             width="100%"
             className="bg-slate-950"
           >
-            {({ index, style }) => <EventRow event={events[index]} style={style} />}
+            {({ index, style }) => (
+              <EventRow event={events[index]} style={style} />
+            )}
           </FixedSizeList>
         </div>
       )}

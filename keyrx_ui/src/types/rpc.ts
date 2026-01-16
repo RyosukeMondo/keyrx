@@ -20,40 +20,40 @@ export const INTERNAL_ERROR = -32603;
  */
 export type RpcMethod =
   // Query methods (read-only)
-  | "get_profiles"
-  | "get_devices"
-  | "get_config"
-  | "get_layers"
-  | "get_latency"
-  | "get_events"
-  | "get_profile_config"
-  | "get_active_profile"
-  | "get_global_layout"
+  | 'get_profiles'
+  | 'get_devices'
+  | 'get_config'
+  | 'get_layers'
+  | 'get_latency'
+  | 'get_events'
+  | 'get_profile_config'
+  | 'get_active_profile'
+  | 'get_global_layout'
   // Command methods (state-modifying)
-  | "create_profile"
-  | "activate_profile"
-  | "delete_profile"
-  | "duplicate_profile"
-  | "rename_profile"
-  | "rename_device"
-  | "set_scope_device"
-  | "forget_device"
-  | "update_config"
-  | "set_key_mapping"
-  | "delete_key_mapping"
-  | "clear_events"
-  | "simulate"
-  | "reset_simulator"
-  | "set_profile_config"
-  | "set_device_layout"
-  | "set_global_layout"
+  | 'create_profile'
+  | 'activate_profile'
+  | 'delete_profile'
+  | 'duplicate_profile'
+  | 'rename_profile'
+  | 'rename_device'
+  | 'set_scope_device'
+  | 'forget_device'
+  | 'update_config'
+  | 'set_key_mapping'
+  | 'delete_key_mapping'
+  | 'clear_events'
+  | 'simulate'
+  | 'reset_simulator'
+  | 'set_profile_config'
+  | 'set_device_layout'
+  | 'set_global_layout'
   // Daemon control methods
-  | "restart_daemon";
+  | 'restart_daemon';
 
 /**
  * Available subscription channels for real-time updates.
  */
-export type SubscriptionChannel = "daemon-state" | "events" | "latency";
+export type SubscriptionChannel = 'daemon-state' | 'events' | 'latency';
 
 /**
  * Messages sent from client to server.
@@ -63,7 +63,7 @@ export type SubscriptionChannel = "daemon-state" | "events" | "latency";
 export type ClientMessage =
   | {
       /** Message type discriminator */
-      type: "query";
+      type: 'query';
       /** Message content */
       content: {
         /** Unique identifier for request/response correlation */
@@ -76,7 +76,7 @@ export type ClientMessage =
     }
   | {
       /** Message type discriminator */
-      type: "command";
+      type: 'command';
       /** Message content */
       content: {
         /** Unique identifier for request/response correlation */
@@ -89,7 +89,7 @@ export type ClientMessage =
     }
   | {
       /** Message type discriminator */
-      type: "subscribe";
+      type: 'subscribe';
       /** Message content */
       content: {
         /** Unique identifier for request/response correlation */
@@ -100,7 +100,7 @@ export type ClientMessage =
     }
   | {
       /** Message type discriminator */
-      type: "unsubscribe";
+      type: 'unsubscribe';
       /** Message content */
       content: {
         /** Unique identifier for request/response correlation */
@@ -118,7 +118,7 @@ export type ClientMessage =
 export type ServerMessage =
   | {
       /** Message type discriminator */
-      type: "response";
+      type: 'response';
       /** Message content */
       content: {
         /** Request ID this response corresponds to */
@@ -131,7 +131,7 @@ export type ServerMessage =
     }
   | {
       /** Message type discriminator */
-      type: "event";
+      type: 'event';
       /** Message content */
       content: {
         /** Channel this event was published on */
@@ -142,7 +142,7 @@ export type ServerMessage =
     }
   | {
       /** Message type discriminator */
-      type: "connected";
+      type: 'connected';
       /** Message content */
       content: {
         /** Protocol version */
@@ -187,7 +187,7 @@ export interface KeyEvent {
   /** Key code (e.g., "KEY_A") */
   keyCode: string;
   /** Event type ("press" or "release") */
-  eventType: "press" | "release";
+  eventType: 'press' | 'release';
   /** Input key (before mapping) */
   input: string;
   /** Output key (after mapping) */
@@ -218,20 +218,26 @@ export interface LatencyMetrics {
 /**
  * Type guard to check if a ServerMessage is a Response.
  */
-export function isResponse(msg: ServerMessage): msg is Extract<ServerMessage, { type: "response" }> {
-  return msg.type === "response";
+export function isResponse(
+  msg: ServerMessage
+): msg is Extract<ServerMessage, { type: 'response' }> {
+  return msg.type === 'response';
 }
 
 /**
  * Type guard to check if a ServerMessage is an Event.
  */
-export function isEvent(msg: ServerMessage): msg is Extract<ServerMessage, { type: "event" }> {
-  return msg.type === "event";
+export function isEvent(
+  msg: ServerMessage
+): msg is Extract<ServerMessage, { type: 'event' }> {
+  return msg.type === 'event';
 }
 
 /**
  * Type guard to check if a ServerMessage is a Connected handshake.
  */
-export function isConnected(msg: ServerMessage): msg is Extract<ServerMessage, { type: "connected" }> {
-  return msg.type === "connected";
+export function isConnected(
+  msg: ServerMessage
+): msg is Extract<ServerMessage, { type: 'connected' }> {
+  return msg.type === 'connected';
 }

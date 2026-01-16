@@ -98,7 +98,7 @@ describe('ProfileCard', () => {
     await user.tab();
 
     // Wait for debounced save (500ms)
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     expect(mockOnUpdateName).toHaveBeenCalledWith('Updated Profile');
   });
@@ -152,7 +152,9 @@ describe('ProfileCard', () => {
       screen.getByRole('button', { name: /Edit profile name: Test Profile/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Edit profile description: Test Profile/i })
+      screen.getByRole('button', {
+        name: /Edit profile description: Test Profile/i,
+      })
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /Delete profile Test Profile/i })
@@ -173,10 +175,14 @@ describe('ProfileCard', () => {
     });
 
     it('does not display Rhai path when not provided', () => {
-      const { container } = renderWithProviders(<ProfileCard {...defaultProps} />);
+      const { container } = renderWithProviders(
+        <ProfileCard {...defaultProps} />
+      );
 
       // Should not find any file icon or path text
-      expect(container.querySelector('[data-lucide="file-code"]')).not.toBeInTheDocument();
+      expect(
+        container.querySelector('[data-lucide="file-code"]')
+      ).not.toBeInTheDocument();
     });
 
     it('shows tooltip with full path on hover', async () => {
@@ -237,7 +243,9 @@ describe('ProfileCard', () => {
       );
 
       // Should have AlertTriangle icon with "File not found" label
-      const warningIcon = container.querySelector('[aria-label="File not found"]');
+      const warningIcon = container.querySelector(
+        '[aria-label="File not found"]'
+      );
       expect(warningIcon).toBeInTheDocument();
     });
 
@@ -251,7 +259,9 @@ describe('ProfileCard', () => {
       );
 
       // Should not have AlertTriangle icon with "File not found" label
-      const warningIcon = container.querySelector('[aria-label="File not found"]');
+      const warningIcon = container.querySelector(
+        '[aria-label="File not found"]'
+      );
       expect(warningIcon).not.toBeInTheDocument();
     });
 

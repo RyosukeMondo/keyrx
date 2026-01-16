@@ -513,7 +513,9 @@ describe('ConfigPage - Integration Tests', () => {
 
       renderConfigPage();
 
-      expect(screen.getByRole('status', { name: /Loading/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('status', { name: /Loading/i })
+      ).toBeInTheDocument();
     });
 
     it('displays error message when fetch fails', async () => {
@@ -702,7 +704,9 @@ describe('ConfigPage - Integration Tests', () => {
       // This test verifies that mappings are displayed when keyMappings prop is provided
 
       // Look for any existing key mappings displayed on the keyboard
-      const keyboardSection = screen.getByText('Keyboard Layout').closest('div');
+      const keyboardSection = screen
+        .getByText('Keyboard Layout')
+        .closest('div');
       expect(keyboardSection).toBeInTheDocument();
 
       // Verify KeyboardVisualizer is rendered
@@ -741,7 +745,9 @@ describe('ConfigPage - Integration Tests', () => {
       // which sends PUT /api/profiles/{name}/config with the updated mapping
 
       // For integration testing, we verify the components are wired correctly
-      const keyboardSection = screen.getByText('Keyboard Layout').closest('div');
+      const keyboardSection = screen
+        .getByText('Keyboard Layout')
+        .closest('div');
       expect(keyboardSection).toBeInTheDocument();
     });
 
@@ -757,7 +763,9 @@ describe('ConfigPage - Integration Tests', () => {
       // If the API call fails, it should rollback to the previous state
 
       // Verify error handling UI is present (error boundary or error state)
-      const keyboardSection = screen.getByText('Keyboard Layout').closest('div');
+      const keyboardSection = screen
+        .getByText('Keyboard Layout')
+        .closest('div');
       expect(keyboardSection).toBeInTheDocument();
     });
 
@@ -832,7 +840,9 @@ describe('ConfigPage - Integration Tests', () => {
       // This is managed by @dnd-kit's DragOverlay component
 
       // Verify DndContext is rendered (contains ConfigPage)
-      const keyboardSection = screen.getByText('Keyboard Layout').closest('div');
+      const keyboardSection = screen
+        .getByText('Keyboard Layout')
+        .closest('div');
       expect(keyboardSection).toBeInTheDocument();
 
       // Verify palette and keyboard are both rendered (required for drag-and-drop)
@@ -854,7 +864,9 @@ describe('ConfigPage - Integration Tests', () => {
       // This is ensured by the API persistence layer
 
       // Verify the configuration is loaded from API
-      const keyboardSection = screen.getByText('Keyboard Layout').closest('div');
+      const keyboardSection = screen
+        .getByText('Keyboard Layout')
+        .closest('div');
       expect(keyboardSection).toBeInTheDocument();
     });
 
@@ -889,7 +901,12 @@ describe('ConfigPage - Integration Tests', () => {
       const layers = screen.queryByText('Layers');
 
       // At least some categories should be visible
-      const categoriesPresent = [virtualKeys, modifiers, lockKeys, layers].filter(Boolean);
+      const categoriesPresent = [
+        virtualKeys,
+        modifiers,
+        lockKeys,
+        layers,
+      ].filter(Boolean);
       expect(categoriesPresent.length).toBeGreaterThan(0);
     });
   });

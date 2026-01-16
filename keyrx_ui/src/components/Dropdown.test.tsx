@@ -70,7 +70,9 @@ describe('Dropdown', () => {
         />
       );
 
-      const chevron = screen.getByLabelText('Test dropdown').querySelector('svg');
+      const chevron = screen
+        .getByLabelText('Test dropdown')
+        .querySelector('svg');
       expect(chevron).toBeInTheDocument();
     });
   });
@@ -307,7 +309,9 @@ describe('Dropdown', () => {
       await userEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.queryByPlaceholderText('Search...')).not.toBeInTheDocument();
+        expect(
+          screen.queryByPlaceholderText('Search...')
+        ).not.toBeInTheDocument();
       });
     });
 
@@ -330,7 +334,9 @@ describe('Dropdown', () => {
       await userEvent.type(searchInput, 'long');
 
       await waitFor(() => {
-        expect(screen.getByText('Very Long Option Name That Might Overflow')).toBeInTheDocument();
+        expect(
+          screen.getByText('Very Long Option Name That Might Overflow')
+        ).toBeInTheDocument();
         expect(screen.queryByText('Option 2')).not.toBeInTheDocument();
       });
     });
@@ -384,9 +390,9 @@ describe('Dropdown', () => {
         // At least one should be visible (could be in button + list)
         expect(allOption2.length).toBeGreaterThan(0);
         // Option 1 and 3 should be hidden
-        const option1InList = screen.queryAllByText('Option 1').filter(el =>
-          el.closest('[role="option"]')
-        );
+        const option1InList = screen
+          .queryAllByText('Option 1')
+          .filter((el) => el.closest('[role="option"]'));
         expect(option1InList.length).toBe(0);
       });
     });
@@ -451,9 +457,9 @@ describe('Dropdown', () => {
       await waitFor(() => {
         const options = screen.getAllByText('Option 2');
         // Find the one inside a list item with role="option"
-        const selectedOption = options.find((el) =>
-          el.closest('[role="option"]')
-        )?.closest('[role="option"]');
+        const selectedOption = options
+          .find((el) => el.closest('[role="option"]'))
+          ?.closest('[role="option"]');
         expect(selectedOption).toHaveClass('font-semibold');
       });
     });
@@ -475,9 +481,9 @@ describe('Dropdown', () => {
       await waitFor(() => {
         const options = screen.getAllByText('Option 2');
         // Find the one inside a list item with role="option"
-        const selectedOption = options.find((el) =>
-          el.closest('[role="option"]')
-        )?.closest('[role="option"]');
+        const selectedOption = options
+          .find((el) => el.closest('[role="option"]'))
+          ?.closest('[role="option"]');
         const checkmark = selectedOption?.querySelector('svg');
         expect(checkmark).toBeInTheDocument();
       });
@@ -495,7 +501,10 @@ describe('Dropdown', () => {
       );
 
       const button = screen.getByLabelText('Test dropdown');
-      expect(button).toHaveClass('focus:outline-2', 'focus:outline-primary-500');
+      expect(button).toHaveClass(
+        'focus:outline-2',
+        'focus:outline-primary-500'
+      );
     });
   });
 

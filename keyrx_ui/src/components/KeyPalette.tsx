@@ -1,6 +1,17 @@
 import React from 'react';
 // Drag and drop removed - keys are now click-only for better UX clarity
-import { Search, X, Star, Clock, Check, AlertCircle, HelpCircle, Grid3x3, List, Keyboard } from 'lucide-react';
+import {
+  Search,
+  X,
+  Star,
+  Clock,
+  Check,
+  AlertCircle,
+  HelpCircle,
+  Grid3x3,
+  List,
+  Keyboard,
+} from 'lucide-react';
 import { Card } from './Card';
 import { KEY_DEFINITIONS, KeyDefinition } from '../data/keyDefinitions';
 import { KeyPaletteItem } from './KeyPaletteItem';
@@ -13,7 +24,14 @@ import { KeyPaletteItem } from './KeyPaletteItem';
 export interface PaletteKey {
   id: string;
   label: string;
-  category: 'basic' | 'modifiers' | 'media' | 'macro' | 'layers' | 'special' | 'any';
+  category:
+    | 'basic'
+    | 'modifiers'
+    | 'media'
+    | 'macro'
+    | 'layers'
+    | 'special'
+    | 'any';
   subcategory?: string;
   description?: string;
 }
@@ -39,24 +57,36 @@ interface KeyPaletteProps {
  * Calculate fuzzy match score and find matching character indices
  * Returns { score, indices } where score is higher for better matches
  */
-function fuzzyMatch(text: string, query: string): { score: number; indices: number[] } | null {
+function fuzzyMatch(
+  text: string,
+  query: string
+): { score: number; indices: number[] } | null {
   const textLower = text.toLowerCase();
   const queryLower = query.toLowerCase();
 
   // Exact match gets highest score
   if (textLower === queryLower) {
-    return { score: 1000, indices: Array.from({ length: text.length }, (_, i) => i) };
+    return {
+      score: 1000,
+      indices: Array.from({ length: text.length }, (_, i) => i),
+    };
   }
 
   // Starts with query gets high score
   if (textLower.startsWith(queryLower)) {
-    return { score: 500, indices: Array.from({ length: query.length }, (_, i) => i) };
+    return {
+      score: 500,
+      indices: Array.from({ length: query.length }, (_, i) => i),
+    };
   }
 
   // Contains query gets medium score
   const containsIndex = textLower.indexOf(queryLower);
   if (containsIndex >= 0) {
-    const indices = Array.from({ length: query.length }, (_, i) => containsIndex + i);
+    const indices = Array.from(
+      { length: query.length },
+      (_, i) => containsIndex + i
+    );
     return { score: 200 - containsIndex, indices };
   }
 
@@ -113,14 +143,22 @@ function searchKeysWithFuzzy(query: string): SearchMatch[] {
     // Search in label
     const labelMatch = fuzzyMatch(key.label, query);
     if (labelMatch) {
-      matches.push({ field: 'label', text: key.label, indices: labelMatch.indices });
+      matches.push({
+        field: 'label',
+        text: key.label,
+        indices: labelMatch.indices,
+      });
       totalScore += labelMatch.score * 1.5;
     }
 
     // Search in description
     const descMatch = fuzzyMatch(key.description, query);
     if (descMatch) {
-      matches.push({ field: 'description', text: key.description, indices: descMatch.indices });
+      matches.push({
+        field: 'description',
+        text: key.description,
+        indices: descMatch.indices,
+      });
       totalScore += descMatch.score;
     }
 
@@ -128,7 +166,11 @@ function searchKeysWithFuzzy(query: string): SearchMatch[] {
     for (const alias of key.aliases) {
       const aliasMatch = fuzzyMatch(alias, query);
       if (aliasMatch) {
-        matches.push({ field: 'alias', text: alias, indices: aliasMatch.indices });
+        matches.push({
+          field: 'alias',
+          text: alias,
+          indices: aliasMatch.indices,
+        });
         totalScore += aliasMatch.score * 1.5;
         break; // Only count first matching alias
       }
@@ -163,7 +205,10 @@ function highlightMatches(text: string, indices: number[]): React.ReactNode {
       }
       // Add highlighted character
       result.push(
-        <mark key={i} className="bg-yellow-400/40 text-yellow-200 font-semibold">
+        <mark
+          key={i}
+          className="bg-yellow-400/40 text-yellow-200 font-semibold"
+        >
           {text[i]}
         </mark>
       );
@@ -233,28 +278,138 @@ const BASIC_KEYS: PaletteKey[] = [
   { id: 'F11', label: 'F11', category: 'basic', subcategory: 'function' },
   { id: 'F12', label: 'F12', category: 'basic', subcategory: 'function' },
   // Navigation subcategory
-  { id: 'Escape', label: 'Esc', category: 'basic', subcategory: 'navigation', description: 'Escape key' },
-  { id: 'Enter', label: 'Enter', category: 'basic', subcategory: 'navigation', description: 'Enter/Return' },
-  { id: 'Space', label: 'Space', category: 'basic', subcategory: 'navigation', description: 'Space bar' },
-  { id: 'Backspace', label: 'BS', category: 'basic', subcategory: 'navigation', description: 'Backspace' },
-  { id: 'Tab', label: 'Tab', category: 'basic', subcategory: 'navigation', description: 'Tab key' },
-  { id: 'Delete', label: 'Del', category: 'basic', subcategory: 'navigation', description: 'Delete' },
-  { id: 'Insert', label: 'Ins', category: 'basic', subcategory: 'navigation', description: 'Insert' },
-  { id: 'Home', label: 'Home', category: 'basic', subcategory: 'navigation', description: 'Home' },
-  { id: 'End', label: 'End', category: 'basic', subcategory: 'navigation', description: 'End' },
-  { id: 'PageUp', label: 'PgUp', category: 'basic', subcategory: 'navigation', description: 'Page Up' },
-  { id: 'PageDown', label: 'PgDn', category: 'basic', subcategory: 'navigation', description: 'Page Down' },
-  { id: 'Up', label: '↑', category: 'basic', subcategory: 'navigation', description: 'Arrow Up' },
-  { id: 'Down', label: '↓', category: 'basic', subcategory: 'navigation', description: 'Arrow Down' },
-  { id: 'Left', label: '←', category: 'basic', subcategory: 'navigation', description: 'Arrow Left' },
-  { id: 'Right', label: '→', category: 'basic', subcategory: 'navigation', description: 'Arrow Right' },
+  {
+    id: 'Escape',
+    label: 'Esc',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Escape key',
+  },
+  {
+    id: 'Enter',
+    label: 'Enter',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Enter/Return',
+  },
+  {
+    id: 'Space',
+    label: 'Space',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Space bar',
+  },
+  {
+    id: 'Backspace',
+    label: 'BS',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Backspace',
+  },
+  {
+    id: 'Tab',
+    label: 'Tab',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Tab key',
+  },
+  {
+    id: 'Delete',
+    label: 'Del',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Delete',
+  },
+  {
+    id: 'Insert',
+    label: 'Ins',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Insert',
+  },
+  {
+    id: 'Home',
+    label: 'Home',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Home',
+  },
+  {
+    id: 'End',
+    label: 'End',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'End',
+  },
+  {
+    id: 'PageUp',
+    label: 'PgUp',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Page Up',
+  },
+  {
+    id: 'PageDown',
+    label: 'PgDn',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Page Down',
+  },
+  {
+    id: 'Up',
+    label: '↑',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Arrow Up',
+  },
+  {
+    id: 'Down',
+    label: '↓',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Arrow Down',
+  },
+  {
+    id: 'Left',
+    label: '←',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Arrow Left',
+  },
+  {
+    id: 'Right',
+    label: '→',
+    category: 'basic',
+    subcategory: 'navigation',
+    description: 'Arrow Right',
+  },
   // Punctuation subcategory
   { id: 'Minus', label: '-', category: 'basic', subcategory: 'punctuation' },
   { id: 'Equal', label: '=', category: 'basic', subcategory: 'punctuation' },
-  { id: 'LeftBracket', label: '[', category: 'basic', subcategory: 'punctuation' },
-  { id: 'RightBracket', label: ']', category: 'basic', subcategory: 'punctuation' },
-  { id: 'Backslash', label: '\\', category: 'basic', subcategory: 'punctuation' },
-  { id: 'Semicolon', label: ';', category: 'basic', subcategory: 'punctuation' },
+  {
+    id: 'LeftBracket',
+    label: '[',
+    category: 'basic',
+    subcategory: 'punctuation',
+  },
+  {
+    id: 'RightBracket',
+    label: ']',
+    category: 'basic',
+    subcategory: 'punctuation',
+  },
+  {
+    id: 'Backslash',
+    label: '\\',
+    category: 'basic',
+    subcategory: 'punctuation',
+  },
+  {
+    id: 'Semicolon',
+    label: ';',
+    category: 'basic',
+    subcategory: 'punctuation',
+  },
   { id: 'Quote', label: "'", category: 'basic', subcategory: 'punctuation' },
   { id: 'Comma', label: ',', category: 'basic', subcategory: 'punctuation' },
   { id: 'Period', label: '.', category: 'basic', subcategory: 'punctuation' },
@@ -262,14 +417,49 @@ const BASIC_KEYS: PaletteKey[] = [
 ];
 
 const MODIFIER_KEYS: PaletteKey[] = [
-  { id: 'LCtrl', label: 'LCtrl', category: 'modifiers', description: 'Left Control' },
-  { id: 'RCtrl', label: 'RCtrl', category: 'modifiers', description: 'Right Control' },
-  { id: 'LShift', label: 'LShift', category: 'modifiers', description: 'Left Shift' },
-  { id: 'RShift', label: 'RShift', category: 'modifiers', description: 'Right Shift' },
+  {
+    id: 'LCtrl',
+    label: 'LCtrl',
+    category: 'modifiers',
+    description: 'Left Control',
+  },
+  {
+    id: 'RCtrl',
+    label: 'RCtrl',
+    category: 'modifiers',
+    description: 'Right Control',
+  },
+  {
+    id: 'LShift',
+    label: 'LShift',
+    category: 'modifiers',
+    description: 'Left Shift',
+  },
+  {
+    id: 'RShift',
+    label: 'RShift',
+    category: 'modifiers',
+    description: 'Right Shift',
+  },
   { id: 'LAlt', label: 'LAlt', category: 'modifiers', description: 'Left Alt' },
-  { id: 'RAlt', label: 'RAlt', category: 'modifiers', description: 'Right Alt' },
-  { id: 'LMeta', label: 'LWin', category: 'modifiers', description: 'Left Windows/Super' },
-  { id: 'RMeta', label: 'RWin', category: 'modifiers', description: 'Right Windows/Super' },
+  {
+    id: 'RAlt',
+    label: 'RAlt',
+    category: 'modifiers',
+    description: 'Right Alt',
+  },
+  {
+    id: 'LMeta',
+    label: 'LWin',
+    category: 'modifiers',
+    description: 'Left Windows/Super',
+  },
+  {
+    id: 'RMeta',
+    label: 'RWin',
+    category: 'modifiers',
+    description: 'Right Windows/Super',
+  },
   // Generate all 256 custom modifiers (MD_00 to MD_FF)
   ...Array.from({ length: 256 }, (_, i) => {
     const hexValue = i.toString(16).toUpperCase().padStart(2, '0');
@@ -307,27 +497,77 @@ const MACRO_KEYS: PaletteKey[] = [
 ];
 
 // LAYER_KEYS: Now sourced from KEY_DEFINITIONS for single source of truth
-const LAYER_KEYS: PaletteKey[] = KEY_DEFINITIONS
-  .filter(k => k.category === 'layers')
-  .map(k => ({
-    id: k.id,
-    label: k.label,
-    category: k.category,
-    subcategory: k.subcategory,
-    description: k.description,
-  }));
+const LAYER_KEYS: PaletteKey[] = KEY_DEFINITIONS.filter(
+  (k) => k.category === 'layers'
+).map((k) => ({
+  id: k.id,
+  label: k.label,
+  category: k.category,
+  subcategory: k.subcategory,
+  description: k.description,
+}));
 
 const SPECIAL_KEYS: PaletteKey[] = [
-  { id: 'LK_00', label: 'CapsLock', category: 'special', description: 'Caps Lock (LK_00)' },
-  { id: 'LK_01', label: 'NumLock', category: 'special', description: 'Num Lock (LK_01)' },
-  { id: 'LK_02', label: 'ScrollLock', category: 'special', description: 'Scroll Lock (LK_02)' },
-  { id: 'LK_03', label: 'LK_03', category: 'special', description: 'Custom Lock 3' },
-  { id: 'LK_04', label: 'LK_04', category: 'special', description: 'Custom Lock 4' },
-  { id: 'LK_05', label: 'LK_05', category: 'special', description: 'Custom Lock 5' },
-  { id: 'LK_06', label: 'LK_06', category: 'special', description: 'Custom Lock 6' },
-  { id: 'LK_07', label: 'LK_07', category: 'special', description: 'Custom Lock 7' },
-  { id: 'LK_08', label: 'LK_08', category: 'special', description: 'Custom Lock 8' },
-  { id: 'LK_09', label: 'LK_09', category: 'special', description: 'Custom Lock 9' },
+  {
+    id: 'LK_00',
+    label: 'CapsLock',
+    category: 'special',
+    description: 'Caps Lock (LK_00)',
+  },
+  {
+    id: 'LK_01',
+    label: 'NumLock',
+    category: 'special',
+    description: 'Num Lock (LK_01)',
+  },
+  {
+    id: 'LK_02',
+    label: 'ScrollLock',
+    category: 'special',
+    description: 'Scroll Lock (LK_02)',
+  },
+  {
+    id: 'LK_03',
+    label: 'LK_03',
+    category: 'special',
+    description: 'Custom Lock 3',
+  },
+  {
+    id: 'LK_04',
+    label: 'LK_04',
+    category: 'special',
+    description: 'Custom Lock 4',
+  },
+  {
+    id: 'LK_05',
+    label: 'LK_05',
+    category: 'special',
+    description: 'Custom Lock 5',
+  },
+  {
+    id: 'LK_06',
+    label: 'LK_06',
+    category: 'special',
+    description: 'Custom Lock 6',
+  },
+  {
+    id: 'LK_07',
+    label: 'LK_07',
+    category: 'special',
+    description: 'Custom Lock 7',
+  },
+  {
+    id: 'LK_08',
+    label: 'LK_08',
+    category: 'special',
+    description: 'Custom Lock 8',
+  },
+  {
+    id: 'LK_09',
+    label: 'LK_09',
+    category: 'special',
+    description: 'Custom Lock 9',
+  },
 ];
 
 /**
@@ -398,7 +638,7 @@ function saveViewMode(mode: ViewMode): void {
  */
 function findKeyById(keyId: string): PaletteKey | null {
   // Search in KEY_DEFINITIONS first
-  const keyDef = KEY_DEFINITIONS.find(k => k.id === keyId);
+  const keyDef = KEY_DEFINITIONS.find((k) => k.id === keyId);
   if (keyDef) {
     return {
       id: keyDef.id,
@@ -410,8 +650,15 @@ function findKeyById(keyId: string): PaletteKey | null {
   }
 
   // Fallback: search in static key arrays
-  const allKeys = [...BASIC_KEYS, ...MODIFIER_KEYS, ...MEDIA_KEYS, ...MACRO_KEYS, ...LAYER_KEYS, ...SPECIAL_KEYS];
-  return allKeys.find(k => k.id === keyId) || null;
+  const allKeys = [
+    ...BASIC_KEYS,
+    ...MODIFIER_KEYS,
+    ...MEDIA_KEYS,
+    ...MACRO_KEYS,
+    ...LAYER_KEYS,
+    ...SPECIAL_KEYS,
+  ];
+  return allKeys.find((k) => k.id === keyId) || null;
 }
 
 /**
@@ -433,7 +680,7 @@ function mapDomCodeToKeyId(domCode: string): PaletteKey | null {
   // We need to map these to our KEY_ format
 
   // First try direct match with aliases
-  const keyDef = KEY_DEFINITIONS.find(k => k.aliases.includes(domCode));
+  const keyDef = KEY_DEFINITIONS.find((k) => k.aliases.includes(domCode));
   if (keyDef) {
     return {
       id: keyDef.id,
@@ -465,7 +712,9 @@ function mapDomCodeToKeyId(domCode: string): PaletteKey | null {
   }
 
   // Try again with normalized code
-  const normalizedKeyDef = KEY_DEFINITIONS.find(k => k.aliases.includes(normalizedCode));
+  const normalizedKeyDef = KEY_DEFINITIONS.find((k) =>
+    k.aliases.includes(normalizedCode)
+  );
   if (normalizedKeyDef) {
     return {
       id: normalizedKeyDef.id,
@@ -495,8 +744,8 @@ function validateCustomKeycode(input: string): ValidationResult {
   }
 
   // Check if it's a simple key ID (matches existing key)
-  const keyDef = KEY_DEFINITIONS.find(k =>
-    k.id === trimmed || k.aliases.includes(trimmed)
+  const keyDef = KEY_DEFINITIONS.find(
+    (k) => k.id === trimmed || k.aliases.includes(trimmed)
   );
 
   if (keyDef) {
@@ -508,19 +757,20 @@ function validateCustomKeycode(input: string): ValidationResult {
   }
 
   // Check for modifier combinations: LCTL(KC_C), LSFT(A), etc.
-  const modifierPattern = /^(LCTL|RCTL|LSFT|RSFT|LALT|RALT|LMETA|RMETA)\(([A-Za-z0-9_]+)\)$/;
+  const modifierPattern =
+    /^(LCTL|RCTL|LSFT|RSFT|LALT|RALT|LMETA|RMETA)\(([A-Za-z0-9_]+)\)$/;
   const modMatch = trimmed.match(modifierPattern);
   if (modMatch) {
     const [, modifier, keyPart] = modMatch;
     // Validate inner key exists
-    const innerKey = KEY_DEFINITIONS.find(k =>
-      k.id === keyPart || k.aliases.includes(keyPart)
+    const innerKey = KEY_DEFINITIONS.find(
+      (k) => k.id === keyPart || k.aliases.includes(keyPart)
     );
 
     if (!innerKey) {
       return {
         valid: false,
-        error: `Unknown key: ${keyPart}. Try KC_A, KC_ENTER, etc.`
+        error: `Unknown key: ${keyPart}. Try KC_A, KC_ENTER, etc.`,
       };
     }
 
@@ -541,7 +791,7 @@ function validateCustomKeycode(input: string): ValidationResult {
     if (layerNum < 0 || layerNum > 15) {
       return {
         valid: false,
-        error: 'Layer number must be between 0-15'
+        error: 'Layer number must be between 0-15',
       };
     }
 
@@ -569,19 +819,19 @@ function validateCustomKeycode(input: string): ValidationResult {
     if (layerNum < 0 || layerNum > 15) {
       return {
         valid: false,
-        error: 'Layer number must be between 0-15'
+        error: 'Layer number must be between 0-15',
       };
     }
 
     // Validate inner key exists
-    const innerKey = KEY_DEFINITIONS.find(k =>
-      k.id === keyPart || k.aliases.includes(keyPart)
+    const innerKey = KEY_DEFINITIONS.find(
+      (k) => k.id === keyPart || k.aliases.includes(keyPart)
     );
 
     if (!innerKey) {
       return {
         valid: false,
-        error: `Unknown key: ${keyPart}. Try KC_A, KC_ENTER, etc.`
+        error: `Unknown key: ${keyPart}. Try KC_A, KC_ENTER, etc.`,
       };
     }
 
@@ -599,9 +849,16 @@ function validateCustomKeycode(input: string): ValidationResult {
   };
 }
 
-export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPaletteProps) {
-  const [activeCategory, setActiveCategory] = React.useState<PaletteKey['category']>('basic');
-  const [activeSubcategory, setActiveSubcategory] = React.useState<string | null>(null);
+export function KeyPalette({
+  onKeySelect,
+  selectedKey,
+  compact = false,
+}: KeyPaletteProps) {
+  const [activeCategory, setActiveCategory] =
+    React.useState<PaletteKey['category']>('basic');
+  const [activeSubcategory, setActiveSubcategory] = React.useState<
+    string | null
+  >(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedSearchIndex, setSelectedSearchIndex] = React.useState(0);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -610,15 +867,22 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
   // Drag functionality removed for better UX clarity
 
   // View mode state
-  const [viewMode, setViewMode] = React.useState<ViewMode>(() => loadViewMode());
+  const [viewMode, setViewMode] = React.useState<ViewMode>(() =>
+    loadViewMode()
+  );
 
   // Recent and Favorite keys state
-  const [recentKeyIds, setRecentKeyIds] = React.useState<string[]>(() => loadFromStorage(STORAGE_KEY_RECENT));
-  const [favoriteKeyIds, setFavoriteKeyIds] = React.useState<string[]>(() => loadFromStorage(STORAGE_KEY_FAVORITES));
+  const [recentKeyIds, setRecentKeyIds] = React.useState<string[]>(() =>
+    loadFromStorage(STORAGE_KEY_RECENT)
+  );
+  const [favoriteKeyIds, setFavoriteKeyIds] = React.useState<string[]>(() =>
+    loadFromStorage(STORAGE_KEY_FAVORITES)
+  );
 
   // Custom keycode input state (for "Any" category)
   const [customKeycode, setCustomKeycode] = React.useState('');
-  const [customValidation, setCustomValidation] = React.useState<ValidationResult>({ valid: false });
+  const [customValidation, setCustomValidation] =
+    React.useState<ValidationResult>({ valid: false });
 
   // Physical key capture state
   const [isCapturingKey, setIsCapturingKey] = React.useState(false);
@@ -626,8 +890,8 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
 
   // Add key to recent list (max 10, most recent first)
   const addToRecent = React.useCallback((keyId: string) => {
-    setRecentKeyIds(prev => {
-      const filtered = prev.filter(id => id !== keyId);
+    setRecentKeyIds((prev) => {
+      const filtered = prev.filter((id) => id !== keyId);
       const updated = [keyId, ...filtered].slice(0, MAX_RECENT_KEYS);
       saveToStorage(STORAGE_KEY_RECENT, updated);
       return updated;
@@ -636,10 +900,10 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
 
   // Toggle favorite status
   const toggleFavorite = React.useCallback((keyId: string) => {
-    setFavoriteKeyIds(prev => {
+    setFavoriteKeyIds((prev) => {
       const isFavorite = prev.includes(keyId);
       const updated = isFavorite
-        ? prev.filter(id => id !== keyId)
+        ? prev.filter((id) => id !== keyId)
         : [...prev, keyId];
       saveToStorage(STORAGE_KEY_FAVORITES, updated);
       return updated;
@@ -647,13 +911,16 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
   }, []);
 
   // Check if key is favorite
-  const isFavorite = React.useCallback((keyId: string) => {
-    return favoriteKeyIds.includes(keyId);
-  }, [favoriteKeyIds]);
+  const isFavorite = React.useCallback(
+    (keyId: string) => {
+      return favoriteKeyIds.includes(keyId);
+    },
+    [favoriteKeyIds]
+  );
 
   // Toggle view mode
   const toggleViewMode = React.useCallback(() => {
-    setViewMode(prev => {
+    setViewMode((prev) => {
       const newMode = prev === 'grid' ? 'list' : 'grid';
       saveViewMode(newMode);
       return newMode;
@@ -661,10 +928,13 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
   }, []);
 
   // Handle key selection with recent tracking
-  const handleKeySelect = React.useCallback((key: PaletteKey) => {
-    addToRecent(key.id);
-    onKeySelect(key);
-  }, [addToRecent, onKeySelect]);
+  const handleKeySelect = React.useCallback(
+    (key: PaletteKey) => {
+      addToRecent(key.id);
+      onKeySelect(key);
+    },
+    [addToRecent, onKeySelect]
+  );
 
   // Handle custom keycode input change
   const handleCustomKeycodeChange = React.useCallback((value: string) => {
@@ -675,7 +945,11 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
 
   // Apply custom keycode
   const handleApplyCustomKeycode = React.useCallback(() => {
-    if (customValidation.valid && customValidation.normalizedId && customValidation.label) {
+    if (
+      customValidation.valid &&
+      customValidation.normalizedId &&
+      customValidation.label
+    ) {
       const customKey: PaletteKey = {
         id: customValidation.normalizedId,
         label: customValidation.label,
@@ -743,17 +1017,31 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
 
   // Get recent and favorite key objects
   const recentKeys = React.useMemo(() => {
-    return recentKeyIds.map(id => findKeyById(id)).filter((k): k is PaletteKey => k !== null);
+    return recentKeyIds
+      .map((id) => findKeyById(id))
+      .filter((k): k is PaletteKey => k !== null);
   }, [recentKeyIds]);
 
   const favoriteKeys = React.useMemo(() => {
-    return favoriteKeyIds.map(id => findKeyById(id)).filter((k): k is PaletteKey => k !== null);
+    return favoriteKeyIds
+      .map((id) => findKeyById(id))
+      .filter((k): k is PaletteKey => k !== null);
   }, [favoriteKeyIds]);
 
   const categories = [
     { id: 'basic' as const, label: 'Basic', keys: BASIC_KEYS, icon: '⌨️' },
-    { id: 'modifiers' as const, label: 'Modifiers', keys: MODIFIER_KEYS, icon: '⌥' },
-    { id: 'special' as const, label: 'Special', keys: SPECIAL_KEYS, icon: '⭐' },
+    {
+      id: 'modifiers' as const,
+      label: 'Modifiers',
+      keys: MODIFIER_KEYS,
+      icon: '⌥',
+    },
+    {
+      id: 'special' as const,
+      label: 'Special',
+      keys: SPECIAL_KEYS,
+      icon: '⭐',
+    },
     { id: 'any' as const, label: 'Any', keys: [], icon: '✏️' },
   ];
 
@@ -767,23 +1055,32 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
     setSelectedSearchIndex(0);
   }, [searchQuery]);
 
-  const activeCategoryData = categories.find(c => c.id === activeCategory);
+  const activeCategoryData = categories.find((c) => c.id === activeCategory);
   let activeKeys = activeCategoryData?.keys || [];
 
   // If searching, use search results instead
   const isSearching = searchQuery.trim().length > 0;
 
   // Filter by subcategory if one is active
-  if (activeSubcategory && (activeCategory === 'basic' || activeCategory === 'layers') && !isSearching) {
-    activeKeys = activeKeys.filter(k => k.subcategory === activeSubcategory);
+  if (
+    activeSubcategory &&
+    (activeCategory === 'basic' || activeCategory === 'layers') &&
+    !isSearching
+  ) {
+    activeKeys = activeKeys.filter((k) => k.subcategory === activeSubcategory);
   }
 
   // Get unique subcategories for Basic and Layers categories
-  const subcategories = activeCategory === 'basic'
-    ? Array.from(new Set(BASIC_KEYS.map(k => k.subcategory).filter(Boolean)))
-    : activeCategory === 'layers'
-    ? Array.from(new Set(LAYER_KEYS.map(k => k.subcategory).filter(Boolean)))
-    : [];
+  const subcategories =
+    activeCategory === 'basic'
+      ? Array.from(
+          new Set(BASIC_KEYS.map((k) => k.subcategory).filter(Boolean))
+        )
+      : activeCategory === 'layers'
+        ? Array.from(
+            new Set(LAYER_KEYS.map((k) => k.subcategory).filter(Boolean))
+          )
+        : [];
 
   // Handle keyboard navigation in search results
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -792,11 +1089,13 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedSearchIndex(prev => Math.min(prev + 1, searchResults.length - 1));
+        setSelectedSearchIndex((prev) =>
+          Math.min(prev + 1, searchResults.length - 1)
+        );
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedSearchIndex(prev => Math.max(prev - 1, 0));
+        setSelectedSearchIndex((prev) => Math.max(prev - 1, 0));
         break;
       case 'Enter':
         e.preventDefault();
@@ -823,7 +1122,11 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
   // Drag handlers removed - using click-only interaction now
 
   // Render a key item with star button using KeyPaletteItem component
-  const renderKeyItem = (key: PaletteKey, onClick: () => void, showStar: boolean = true) => {
+  const renderKeyItem = (
+    key: PaletteKey,
+    onClick: () => void,
+    showStar: boolean = true
+  ) => {
     const favorite = isFavorite(key.id);
 
     return (
@@ -841,10 +1144,10 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
   };
 
   return (
-      <Card className={`flex flex-col ${compact ? 'h-full p-2' : 'h-full'}`}>
-        {/* Header with title, capture button, and view toggle - hidden in compact mode */}
-        {!compact && (
-          <div className="flex items-center justify-between mb-4">
+    <Card className={`flex flex-col ${compact ? 'h-full p-2' : 'h-full'}`}>
+      {/* Header with title, capture button, and view toggle - hidden in compact mode */}
+      {!compact && (
+        <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-100">Key Palette</h3>
           <div className="flex gap-2">
             {/* Capture Key button */}
@@ -887,7 +1190,7 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
             </div>
           </div>
         </div>
-        )}
+      )}
 
       {/* Favorites Section - hidden in compact mode */}
       {!compact && favoriteKeys.length > 0 && (
@@ -896,12 +1199,16 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
             <h4 className="text-sm font-semibold text-slate-300">Favorites</h4>
           </div>
-          <div className={`p-3 bg-slate-800/50 rounded-lg ${
-            viewMode === 'grid'
-              ? 'grid grid-cols-8 gap-2'
-              : 'flex flex-col gap-2'
-          }`}>
-            {favoriteKeys.map(key => renderKeyItem(key, () => handleKeySelect(key), true))}
+          <div
+            className={`p-3 bg-slate-800/50 rounded-lg ${
+              viewMode === 'grid'
+                ? 'grid grid-cols-8 gap-2'
+                : 'flex flex-col gap-2'
+            }`}
+          >
+            {favoriteKeys.map((key) =>
+              renderKeyItem(key, () => handleKeySelect(key), true)
+            )}
           </div>
         </div>
       )}
@@ -913,35 +1220,50 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
             <Clock className="w-4 h-4 text-slate-400" />
             <h4 className="text-sm font-semibold text-slate-300">Recent</h4>
           </div>
-          <div className={`p-3 bg-slate-800/50 rounded-lg ${
-            viewMode === 'grid'
-              ? 'grid grid-cols-8 gap-2'
-              : 'flex flex-col gap-2'
-          }`}>
-            {recentKeys.map(key => renderKeyItem(key, () => handleKeySelect(key), true))}
+          <div
+            className={`p-3 bg-slate-800/50 rounded-lg ${
+              viewMode === 'grid'
+                ? 'grid grid-cols-8 gap-2'
+                : 'flex flex-col gap-2'
+            }`}
+          >
+            {recentKeys.map((key) =>
+              renderKeyItem(key, () => handleKeySelect(key), true)
+            )}
           </div>
         </div>
       )}
 
       {/* Empty state when no favorites or recent - hidden in compact mode */}
-      {!compact && favoriteKeys.length === 0 && recentKeys.length === 0 && !searchQuery && (
-        <div className="mb-4 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
-          <p className="text-xs text-slate-500 text-center">
-            Star keys to add favorites. Recent keys will appear automatically.
-          </p>
-        </div>
-      )}
+      {!compact &&
+        favoriteKeys.length === 0 &&
+        recentKeys.length === 0 &&
+        !searchQuery && (
+          <div className="mb-4 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+            <p className="text-xs text-slate-500 text-center">
+              Star keys to add favorites. Recent keys will appear automatically.
+            </p>
+          </div>
+        )}
 
       {/* Search Input */}
       <div className={`relative ${compact ? 'mb-2' : 'mb-4'}`}>
-        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 ${compact ? 'w-3 h-3' : 'w-4 h-4'}`} />
+        <Search
+          className={`absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 ${
+            compact ? 'w-3 h-3' : 'w-4 h-4'
+          }`}
+        />
         <input
           ref={searchInputRef}
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleSearchKeyDown}
-          placeholder={compact ? "Search keys..." : "Search keys (e.g., ctrl, enter, KC_A)..."}
+          placeholder={
+            compact
+              ? 'Search keys...'
+              : 'Search keys (e.g., ctrl, enter, KC_A)...'
+          }
           className={`w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${
             compact ? 'pl-8 pr-8 py-1.5 text-xs' : 'pl-10 pr-10 py-2 text-sm'
           }`}
@@ -958,33 +1280,38 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
         {/* Search result count */}
         {searchQuery && (
           <div className="absolute -bottom-5 left-0 text-xs text-slate-400">
-            {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
+            {searchResults.length}{' '}
+            {searchResults.length === 1 ? 'result' : 'results'}
           </div>
         )}
       </div>
 
       {/* Category Tabs */}
       {!isSearching && (
-        <div className={`flex gap-1 border-b border-slate-700 overflow-x-auto ${compact ? 'mb-2' : 'mb-4'}`}>
-        {categories.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => {
-              setActiveCategory(cat.id);
-              setActiveSubcategory(null);
-            }}
-            className={`font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
-              compact ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'
-            } ${
-              activeCategory === cat.id
-                ? 'text-primary-400 border-b-2 border-primary-400'
-                : 'text-slate-400 hover:text-slate-300'
-            }`}
-          >
-            {!compact && <span>{cat.icon}</span>}
-            <span>{cat.label}</span>
-          </button>
-        ))}
+        <div
+          className={`flex gap-1 border-b border-slate-700 overflow-x-auto ${
+            compact ? 'mb-2' : 'mb-4'
+          }`}
+        >
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => {
+                setActiveCategory(cat.id);
+                setActiveSubcategory(null);
+              }}
+              className={`font-medium transition-colors whitespace-nowrap flex items-center gap-1 ${
+                compact ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'
+              } ${
+                activeCategory === cat.id
+                  ? 'text-primary-400 border-b-2 border-primary-400'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              {!compact && <span>{cat.icon}</span>}
+              <span>{cat.label}</span>
+            </button>
+          ))}
         </div>
       )}
 
@@ -1001,7 +1328,7 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
           >
             All
           </button>
-          {subcategories.map(sub => (
+          {subcategories.map((sub) => (
             <button
               key={sub}
               onClick={() => setActiveSubcategory(sub || null)}
@@ -1024,7 +1351,9 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
           searchResults.length === 0 ? (
             <div className="p-4 text-center text-slate-400">
               <p className="mb-2">No results found for "{searchQuery}"</p>
-              <p className="text-xs text-slate-500">Try different search terms like "ctrl", "enter", or "KC_A"</p>
+              <p className="text-xs text-slate-500">
+                Try different search terms like "ctrl", "enter", or "KC_A"
+              </p>
             </div>
           ) : (
             <div className="space-y-2 p-4">
@@ -1047,9 +1376,10 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
                     }}
                     className={`
                       w-full text-left p-3 rounded-lg border transition-all
-                      ${isSelected
-                        ? 'border-primary-500 bg-primary-500/10 ring-2 ring-primary-500/50'
-                        : 'border-slate-700 bg-slate-800 hover:border-slate-600 hover:bg-slate-750'
+                      ${
+                        isSelected
+                          ? 'border-primary-500 bg-primary-500/10 ring-2 ring-primary-500/50'
+                          : 'border-slate-700 bg-slate-800 hover:border-slate-600 hover:bg-slate-750'
                       }
                     `}
                   >
@@ -1059,24 +1389,24 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
                         <div className="text-lg font-bold text-white font-mono mb-1">
                           {match.field === 'label'
                             ? highlightMatches(result.key.label, match.indices)
-                            : result.key.label
-                          }
+                            : result.key.label}
                         </div>
 
                         {/* Key ID */}
                         <div className="text-xs text-slate-400 font-mono mb-1">
                           {match.field === 'id'
                             ? highlightMatches(result.key.id, match.indices)
-                            : result.key.id
-                          }
+                            : result.key.id}
                         </div>
 
                         {/* Description */}
                         <div className="text-sm text-slate-300">
                           {match.field === 'description'
-                            ? highlightMatches(result.key.description, match.indices)
-                            : result.key.description
-                          }
+                            ? highlightMatches(
+                                result.key.description,
+                                match.indices
+                              )
+                            : result.key.description}
                         </div>
 
                         {/* Matched alias */}
@@ -1088,15 +1418,41 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
                       </div>
 
                       {/* Category badge */}
-                      <div className={`
+                      <div
+                        className={`
                         px-2 py-1 text-xs rounded capitalize whitespace-nowrap
-                        ${result.key.category === 'basic' ? 'bg-blue-500/20 text-blue-300' : ''}
-                        ${result.key.category === 'modifiers' ? 'bg-cyan-500/20 text-cyan-300' : ''}
-                        ${result.key.category === 'media' ? 'bg-pink-500/20 text-pink-300' : ''}
-                        ${result.key.category === 'macro' ? 'bg-green-500/20 text-green-300' : ''}
-                        ${result.key.category === 'layers' ? 'bg-yellow-500/20 text-yellow-300' : ''}
-                        ${result.key.category === 'special' ? 'bg-purple-500/20 text-purple-300' : ''}
-                      `}>
+                        ${
+                          result.key.category === 'basic'
+                            ? 'bg-blue-500/20 text-blue-300'
+                            : ''
+                        }
+                        ${
+                          result.key.category === 'modifiers'
+                            ? 'bg-cyan-500/20 text-cyan-300'
+                            : ''
+                        }
+                        ${
+                          result.key.category === 'media'
+                            ? 'bg-pink-500/20 text-pink-300'
+                            : ''
+                        }
+                        ${
+                          result.key.category === 'macro'
+                            ? 'bg-green-500/20 text-green-300'
+                            : ''
+                        }
+                        ${
+                          result.key.category === 'layers'
+                            ? 'bg-yellow-500/20 text-yellow-300'
+                            : ''
+                        }
+                        ${
+                          result.key.category === 'special'
+                            ? 'bg-purple-500/20 text-purple-300'
+                            : ''
+                        }
+                      `}
+                      >
                         {result.key.category}
                       </div>
                     </div>
@@ -1109,7 +1465,9 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
           // Custom keycode input (Any category)
           <div className="p-6 space-y-6">
             <div>
-              <h4 className="text-lg font-semibold text-slate-200 mb-2">Custom Keycode</h4>
+              <h4 className="text-lg font-semibold text-slate-200 mb-2">
+                Custom Keycode
+              </h4>
               <p className="text-sm text-slate-400 mb-4">
                 Enter any valid QMK-style keycode for advanced customization.
               </p>
@@ -1135,11 +1493,12 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
                     placeholder-slate-500
                     focus:outline-none focus:ring-2
                     transition-colors
-                    ${customValidation.valid
-                      ? 'border-green-500 focus:border-green-400 focus:ring-green-500/50'
-                      : customKeycode && !customValidation.valid
-                      ? 'border-red-500 focus:border-red-400 focus:ring-red-500/50'
-                      : 'border-slate-700 focus:border-primary-500 focus:ring-primary-500/50'
+                    ${
+                      customValidation.valid
+                        ? 'border-green-500 focus:border-green-400 focus:ring-green-500/50'
+                        : customKeycode && !customValidation.valid
+                          ? 'border-red-500 focus:border-red-400 focus:ring-red-500/50'
+                          : 'border-slate-700 focus:border-primary-500 focus:ring-primary-500/50'
                     }
                   `}
                 />
@@ -1155,14 +1514,21 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
 
               {/* Validation message */}
               {customKeycode && (
-                <div className={`text-sm ${customValidation.valid ? 'text-green-400' : 'text-red-400'}`}>
+                <div
+                  className={`text-sm ${
+                    customValidation.valid ? 'text-green-400' : 'text-red-400'
+                  }`}
+                >
                   {customValidation.valid ? (
                     <div className="flex items-start gap-2">
                       <Check className="w-4 h-4 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="font-medium">Valid keycode</p>
                         <p className="text-slate-400 text-xs mt-0.5">
-                          Will be mapped as: <span className="font-mono">{customValidation.label}</span>
+                          Will be mapped as:{' '}
+                          <span className="font-mono">
+                            {customValidation.label}
+                          </span>
                         </p>
                       </div>
                     </div>
@@ -1182,13 +1548,16 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
                 className={`
                   w-full px-4 py-3 rounded-lg font-medium
                   transition-all
-                  ${customValidation.valid
-                    ? 'bg-primary-500 hover:bg-primary-600 text-white shadow-lg hover:shadow-xl'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  ${
+                    customValidation.valid
+                      ? 'bg-primary-500 hover:bg-primary-600 text-white shadow-lg hover:shadow-xl'
+                      : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                   }
                 `}
               >
-                {customValidation.valid ? 'Apply Keycode' : 'Enter a valid keycode'}
+                {customValidation.valid
+                  ? 'Apply Keycode'
+                  : 'Enter a valid keycode'}
               </button>
             </div>
 
@@ -1196,11 +1565,15 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
             <div className="pt-6 border-t border-slate-700">
               <div className="flex items-start gap-2 mb-3">
                 <HelpCircle className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                <h5 className="text-sm font-semibold text-slate-300">Supported Syntax</h5>
+                <h5 className="text-sm font-semibold text-slate-300">
+                  Supported Syntax
+                </h5>
               </div>
               <div className="space-y-3 text-sm text-slate-400">
                 <div>
-                  <p className="font-mono text-xs text-primary-400 mb-1">Simple Keys</p>
+                  <p className="font-mono text-xs text-primary-400 mb-1">
+                    Simple Keys
+                  </p>
                   <p className="text-xs">
                     <span className="font-mono text-slate-300">A</span>,{' '}
                     <span className="font-mono text-slate-300">KC_A</span>,{' '}
@@ -1208,25 +1581,39 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-xs text-primary-400 mb-1">Modifier Combinations</p>
+                  <p className="font-mono text-xs text-primary-400 mb-1">
+                    Modifier Combinations
+                  </p>
                   <p className="text-xs">
-                    <span className="font-mono text-slate-300">LCTL(KC_C)</span>,{' '}
-                    <span className="font-mono text-slate-300">LSFT(A)</span>
+                    <span className="font-mono text-slate-300">LCTL(KC_C)</span>
+                    , <span className="font-mono text-slate-300">LSFT(A)</span>
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-xs text-primary-400 mb-1">Layer Functions</p>
+                  <p className="font-mono text-xs text-primary-400 mb-1">
+                    Layer Functions
+                  </p>
                   <p className="text-xs">
-                    <span className="font-mono text-slate-300">MO(1)</span> = Hold layer,{' '}
-                    <span className="font-mono text-slate-300">TO(2)</span> = Switch to layer<br />
-                    <span className="font-mono text-slate-300">TG(3)</span> = Toggle layer,{' '}
-                    <span className="font-mono text-slate-300">OSL(4)</span> = One-shot layer
+                    <span className="font-mono text-slate-300">MO(1)</span> =
+                    Hold layer,{' '}
+                    <span className="font-mono text-slate-300">TO(2)</span> =
+                    Switch to layer
+                    <br />
+                    <span className="font-mono text-slate-300">TG(3)</span> =
+                    Toggle layer,{' '}
+                    <span className="font-mono text-slate-300">OSL(4)</span> =
+                    One-shot layer
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-xs text-primary-400 mb-1">Layer-Tap</p>
+                  <p className="font-mono text-xs text-primary-400 mb-1">
+                    Layer-Tap
+                  </p>
                   <p className="text-xs">
-                    <span className="font-mono text-slate-300">LT(2,KC_SPC)</span> = Hold for layer 2, tap for Space
+                    <span className="font-mono text-slate-300">
+                      LT(2,KC_SPC)
+                    </span>{' '}
+                    = Hold for layer 2, tap for Space
                   </p>
                 </div>
               </div>
@@ -1237,14 +1624,18 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
             <p>No keys in this category yet</p>
           </div>
         ) : (
-          <div className={`bg-slate-800/50 rounded-lg ${
-            compact ? 'p-2' : 'p-4'
-          } ${
-            viewMode === 'grid'
-              ? compact ? 'grid grid-cols-12 gap-1' : 'grid grid-cols-8 gap-2'
-              : 'flex flex-col gap-2'
-          }`}>
-            {activeKeys.map(key => renderKeyItem(key, () => handleKeySelect(key), !compact))}
+          <div
+            className={`bg-slate-800/50 rounded-lg ${compact ? 'p-2' : 'p-4'} ${
+              viewMode === 'grid'
+                ? compact
+                  ? 'grid grid-cols-12 gap-1'
+                  : 'grid grid-cols-8 gap-2'
+                : 'flex flex-col gap-2'
+            }`}
+          >
+            {activeKeys.map((key) =>
+              renderKeyItem(key, () => handleKeySelect(key), !compact)
+            )}
           </div>
         )}
       </div>
@@ -1254,81 +1645,82 @@ export function KeyPalette({ onKeySelect, selectedKey, compact = false }: KeyPal
         <p className="text-xs text-slate-500 mt-4">
           {isSearching
             ? 'Use ↑↓ arrows to navigate, Enter to select, Esc to clear'
-            : 'Search for keys or browse by category. Click to select.'
-          }
+            : 'Search for keys or browse by category. Click to select.'}
         </p>
       )}
 
       {/* Key Capture Modal */}
       {isCapturingKey && (
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
-        onClick={cancelKeyCapture}
-      >
         <div
-          className="bg-slate-800 border-2 border-primary-500 rounded-xl p-8 shadow-2xl max-w-md w-full mx-4"
-          onClick={(e) => e.stopPropagation()}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={cancelKeyCapture}
         >
-          {/* Waiting for key press */}
-          {!capturedKey ? (
-            <div className="text-center">
-              <div className="mb-6">
-                <Keyboard className="w-16 h-16 text-primary-400 mx-auto animate-pulse" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-3">
-                Press any key...
-              </h3>
-              <p className="text-slate-400 mb-6">
-                Press the physical key you want to select.
-              </p>
-              <div className="text-xs text-slate-500">
-                Press <kbd className="px-2 py-1 bg-slate-700 rounded border border-slate-600 font-mono">Esc</kbd> to cancel
-              </div>
-            </div>
-          ) : (
-            /* Key captured - show confirmation */
-            <div className="text-center">
-              <div className="mb-6">
-                <div className="inline-block p-4 bg-green-500/20 rounded-full">
-                  <Check className="w-12 h-12 text-green-400" />
+          <div
+            className="bg-slate-800 border-2 border-primary-500 rounded-xl p-8 shadow-2xl max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Waiting for key press */}
+            {!capturedKey ? (
+              <div className="text-center">
+                <div className="mb-6">
+                  <Keyboard className="w-16 h-16 text-primary-400 mx-auto animate-pulse" />
                 </div>
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-3">
-                Key Captured!
-              </h3>
-              <div className="mb-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-                <div className="text-3xl font-bold text-white font-mono mb-2">
-                  {capturedKey.label}
-                </div>
-                <div className="text-sm text-slate-400 font-mono mb-1">
-                  {capturedKey.id}
-                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">
+                  Press any key...
+                </h3>
+                <p className="text-slate-400 mb-6">
+                  Press the physical key you want to select.
+                </p>
                 <div className="text-xs text-slate-500">
-                  {capturedKey.description}
+                  Press{' '}
+                  <kbd className="px-2 py-1 bg-slate-700 rounded border border-slate-600 font-mono">
+                    Esc
+                  </kbd>{' '}
+                  to cancel
                 </div>
               </div>
-              <p className="text-slate-400 mb-6">
-                Use this key for mapping?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={cancelKeyCapture}
-                  className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmCapturedKey}
-                  className="flex-1 px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium"
-                >
-                  Use This Key
-                </button>
+            ) : (
+              /* Key captured - show confirmation */
+              <div className="text-center">
+                <div className="mb-6">
+                  <div className="inline-block p-4 bg-green-500/20 rounded-full">
+                    <Check className="w-12 h-12 text-green-400" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">
+                  Key Captured!
+                </h3>
+                <div className="mb-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
+                  <div className="text-3xl font-bold text-white font-mono mb-2">
+                    {capturedKey.label}
+                  </div>
+                  <div className="text-sm text-slate-400 font-mono mb-1">
+                    {capturedKey.id}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {capturedKey.description}
+                  </div>
+                </div>
+                <p className="text-slate-400 mb-6">Use this key for mapping?</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={cancelKeyCapture}
+                    className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmCapturedKey}
+                    className="flex-1 px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium"
+                  >
+                    Use This Key
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    )}
+      )}
     </Card>
   );
 }

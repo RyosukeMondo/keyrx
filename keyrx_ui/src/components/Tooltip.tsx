@@ -37,11 +37,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
   const { x, y, refs, strategy } = useFloating({
     placement,
-    middleware: [
-      offset(8),
-      flip(),
-      shift({ padding: 8 }),
-    ],
+    middleware: [offset(8), flip(), shift({ padding: 8 })],
     whileElementsMounted: autoUpdate,
   });
 

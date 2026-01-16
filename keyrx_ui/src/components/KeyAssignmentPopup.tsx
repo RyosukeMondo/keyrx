@@ -5,7 +5,13 @@ import { Input } from './Input';
 import type { KeyMapping } from '@/types';
 import type { AssignableKey } from './KeyAssignmentPanel';
 
-type AssignmentType = 'key' | 'modifier' | 'lock' | 'layer' | 'macro' | 'tap-hold';
+type AssignmentType =
+  | 'key'
+  | 'modifier'
+  | 'lock'
+  | 'layer'
+  | 'macro'
+  | 'tap-hold';
 
 export interface KeyAssignmentPopupProps {
   open: boolean;
@@ -28,11 +34,15 @@ export const KeyAssignmentPopup: React.FC<KeyAssignmentPopupProps> = ({
 }) => {
   const [selectedType, setSelectedType] = useState<AssignmentType>('key');
   const [tapAction, setTapAction] = useState(currentMapping?.tapAction || '');
-  const [holdAction, setHoldAction] = useState(currentMapping?.holdAction || '');
+  const [holdAction, setHoldAction] = useState(
+    currentMapping?.holdAction || ''
+  );
   const [holdThreshold, setHoldThreshold] = useState(
     currentMapping?.threshold?.toString() || '200'
   );
-  const [targetLayer, setTargetLayer] = useState(currentMapping?.targetLayer || '');
+  const [targetLayer, setTargetLayer] = useState(
+    currentMapping?.targetLayer || ''
+  );
   const [macroName, setMacroName] = useState('');
 
   const tabs: Array<{ value: AssignmentType; label: string }> = [
@@ -71,7 +81,11 @@ export const KeyAssignmentPopup: React.FC<KeyAssignmentPopupProps> = ({
 
   const layers: string[] = ['base', 'nav', 'num', 'fn', 'gaming'];
 
-  const commonMacros: Array<{ id: string; label: string; description: string }> = [
+  const commonMacros: Array<{
+    id: string;
+    label: string;
+    description: string;
+  }> = [
     { id: 'MACRO_COPY', label: 'Copy', description: 'Ctrl+C' },
     { id: 'MACRO_PASTE', label: 'Paste', description: 'Ctrl+V' },
     { id: 'MACRO_CUT', label: 'Cut', description: 'Ctrl+X' },
@@ -294,7 +308,9 @@ export const KeyAssignmentPopup: React.FC<KeyAssignmentPopupProps> = ({
                     type="button"
                   >
                     <div className="font-medium">{macro.label}</div>
-                    <div className="text-sm opacity-75">{macro.description}</div>
+                    <div className="text-sm opacity-75">
+                      {macro.description}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -339,7 +355,8 @@ export const KeyAssignmentPopup: React.FC<KeyAssignmentPopupProps> = ({
             <div className="p-3 bg-slate-700/50 rounded border border-slate-600">
               <p className="text-sm text-slate-300">
                 <strong>Tap:</strong> {tapAction || keyCode} &nbsp;|&nbsp;{' '}
-                <strong>Hold ({holdThreshold}ms):</strong> {holdAction || 'None'}
+                <strong>Hold ({holdThreshold}ms):</strong>{' '}
+                {holdAction || 'None'}
               </p>
             </div>
           </div>
@@ -351,10 +368,18 @@ export const KeyAssignmentPopup: React.FC<KeyAssignmentPopupProps> = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={`Configure ${keyCode}`} className="max-w-2xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`Configure ${keyCode}`}
+      className="max-w-2xl"
+    >
       <div className="space-y-4">
         {/* Tab Navigation */}
-        <div role="tablist" className="flex flex-wrap gap-2 border-b border-slate-700 pb-3">
+        <div
+          role="tablist"
+          className="flex flex-wrap gap-2 border-b border-slate-700 pb-3"
+        >
           {tabs.map((tab) => (
             <button
               key={tab.value}
@@ -377,7 +402,11 @@ export const KeyAssignmentPopup: React.FC<KeyAssignmentPopupProps> = ({
         </div>
 
         {/* Tab Content */}
-        <div id={`panel-${selectedType}`} role="tabpanel" className="min-h-[300px]">
+        <div
+          id={`panel-${selectedType}`}
+          role="tabpanel"
+          className="min-h-[300px]"
+        >
           {renderTabContent()}
         </div>
 

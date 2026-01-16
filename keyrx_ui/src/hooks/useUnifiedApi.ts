@@ -83,7 +83,10 @@ export interface UseUnifiedApiReturn {
   /** Execute a command (state-modifying) RPC method */
   command: <T = unknown>(method: RpcMethod, params?: unknown) => Promise<T>;
   /** Subscribe to a channel for real-time updates */
-  subscribe: (channel: SubscriptionChannel, handler: SubscriptionHandler) => () => void;
+  subscribe: (
+    channel: SubscriptionChannel,
+    handler: SubscriptionHandler
+  ) => () => void;
   /** Unsubscribe from a channel */
   unsubscribe: (channel: SubscriptionChannel) => void;
   /** Current WebSocket connection state */
@@ -109,7 +112,9 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
 
   // Use useRef for mutable tracking (not useState to avoid re-renders)
   const pendingRequests = useRef<Map<string, PendingRequest>>(new Map());
-  const subscriptions = useRef<Map<SubscriptionChannel, Set<SubscriptionHandler>>>(new Map());
+  const subscriptions = useRef<
+    Map<SubscriptionChannel, Set<SubscriptionHandler>>
+  >(new Map());
 
   // WebSocket connection with auto-reconnect
   const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl, {
@@ -146,8 +151,15 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
       try {
         message = validateRpcMessage(parsedData, 'server');
       } catch (validationError) {
-        console.error('[useUnifiedApi] Message validation failed:', validationError);
-        setLastError(validationError instanceof Error ? validationError : new Error('Message validation failed'));
+        console.error(
+          '[useUnifiedApi] Message validation failed:',
+          validationError
+        );
+        setLastError(
+          validationError instanceof Error
+            ? validationError
+            : new Error('Message validation failed')
+        );
         return;
       }
 
@@ -172,7 +184,10 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
             pending.resolve(message.content.result);
           }
         } else {
-          console.warn('[useUnifiedApi] Received response for unknown request:', message.content.id);
+          console.warn(
+            '[useUnifiedApi] Received response for unknown request:',
+            message.content.id
+          );
         }
         return;
       }
@@ -185,7 +200,10 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
             try {
               handler(message.content.data);
             } catch (error) {
-              console.error('[useUnifiedApi] Subscription handler error:', error);
+              console.error(
+                '[useUnifiedApi] Subscription handler error:',
+                error
+              );
             }
           });
         }
@@ -196,27 +214,37 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
       // Old format: { type: "latency", payload: {...} }
       // New format: { type: "event", channel: "latency", data: {...} }
       const anyMessage = message as any;
-      if (anyMessage.type && anyMessage.payload && anyMessage.type !== 'response' && anyMessage.type !== 'connected') {
+      if (
+        anyMessage.type &&
+        anyMessage.payload &&
+        anyMessage.type !== 'response' &&
+        anyMessage.type !== 'connected'
+      ) {
         const legacyType = anyMessage.type as string;
         const legacyPayload = anyMessage.payload;
 
         // Map legacy event type to channel name
         const channelMap: Record<string, string> = {
-          'latency': 'latency',
-          'state': 'daemon-state',
-          'event': 'events',
-          'heartbeat': 'heartbeat', // Ignore heartbeats
+          latency: 'latency',
+          state: 'daemon-state',
+          event: 'events',
+          heartbeat: 'heartbeat', // Ignore heartbeats
         };
 
         const channel = channelMap[legacyType];
         if (channel && channel !== 'heartbeat') {
-          const handlers = subscriptions.current.get(channel as SubscriptionChannel);
+          const handlers = subscriptions.current.get(
+            channel as SubscriptionChannel
+          );
           if (handlers) {
             handlers.forEach((handler) => {
               try {
                 handler(legacyPayload);
               } catch (error) {
-                console.error('[useUnifiedApi] Subscription handler error:', error);
+                console.error(
+                  '[useUnifiedApi] Subscription handler error:',
+                  error
+                );
               }
             });
           }
@@ -227,7 +255,9 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
       console.warn('[useUnifiedApi] Unknown message type:', message);
     } catch (error) {
       console.error('[useUnifiedApi] Failed to parse message:', error);
-      setLastError(error instanceof Error ? error : new Error('Failed to parse message'));
+      setLastError(
+        error instanceof Error ? error : new Error('Failed to parse message')
+      );
     }
   }, [lastMessage]);
 
@@ -263,8 +293,15 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
         } catch (validationError) {
           clearTimeout(timeoutId);
           pendingRequests.current.delete(id);
-          console.error('[useUnifiedApi] Outgoing message validation failed:', validationError);
-          reject(validationError instanceof Error ? validationError : new Error('Message validation failed'));
+          console.error(
+            '[useUnifiedApi] Outgoing message validation failed:',
+            validationError
+          );
+          reject(
+            validationError instanceof Error
+              ? validationError
+              : new Error('Message validation failed')
+          );
           return;
         }
 
@@ -327,7 +364,10 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
    * @returns Unsubscribe function
    */
   const subscribe = useCallback(
-    (channel: SubscriptionChannel, handler: SubscriptionHandler): (() => void) => {
+    (
+      channel: SubscriptionChannel,
+      handler: SubscriptionHandler
+    ): (() => void) => {
       // Add handler to subscriptions
       let handlers = subscriptions.current.get(channel);
       if (!handlers) {
@@ -428,7 +468,10 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
           try {
             sendMessage(JSON.stringify(message));
           } catch (error) {
-            console.error('[useUnifiedApi] Failed to send unsubscribe on unmount:', error);
+            console.error(
+              '[useUnifiedApi] Failed to send unsubscribe on unmount:',
+              error
+            );
           }
         }
       });

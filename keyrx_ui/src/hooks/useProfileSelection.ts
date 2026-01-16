@@ -39,12 +39,13 @@ export function useProfileSelection(propProfileName?: string) {
 
   // Effective profile: manual selection > explicit URL/prop > active profile > 'Default'
   // Use || instead of ?? to treat empty strings as falsy
-  const selectedProfileName = manualSelection
-    || propProfileName
-    || profileNameFromRoute
-    || profileNameFromQuery
-    || activeProfileName
-    || 'Default';
+  const selectedProfileName =
+    manualSelection ||
+    propProfileName ||
+    profileNameFromRoute ||
+    profileNameFromQuery ||
+    activeProfileName ||
+    'Default';
 
   /**
    * Set the selected profile name (tracks manual selection)

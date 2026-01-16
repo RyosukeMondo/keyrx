@@ -168,7 +168,9 @@ describe('ProfilesPage - Integration Tests', () => {
 
       // Should show validation errors
       await waitFor(() => {
-        expect(screen.getByText(/Profile name is required/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Profile name is required/i)
+        ).toBeInTheDocument();
       });
     });
 
@@ -385,7 +387,9 @@ describe('ProfilesPage - Integration Tests', () => {
       renderWithProviders(<ProfilesPage />);
 
       // Should show loading skeleton
-      expect(screen.getByRole('status', { name: /Loading/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('status', { name: /Loading/i })
+      ).toBeInTheDocument();
     });
 
     it('displays error message when fetch fails', async () => {
@@ -407,7 +411,9 @@ describe('ProfilesPage - Integration Tests', () => {
 
       renderWithProviders(<ProfilesPage />);
 
-      expect(screen.getByText(/Failed to activate profile/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Failed to activate profile/i)
+      ).toBeInTheDocument();
     });
   });
 

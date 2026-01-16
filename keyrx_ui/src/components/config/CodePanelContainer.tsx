@@ -118,13 +118,17 @@ export const CodePanelContainer: React.FC<CodePanelContainerProps> = ({
             {syncEngine.state === 'parsing' && (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400" />
-                <span className="text-sm text-slate-300">Parsing Rhai script...</span>
+                <span className="text-sm text-slate-300">
+                  Parsing Rhai script...
+                </span>
               </>
             )}
             {syncEngine.state === 'generating' && (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400" />
-                <span className="text-sm text-slate-300">Generating code...</span>
+                <span className="text-sm text-slate-300">
+                  Generating code...
+                </span>
               </>
             )}
             {syncEngine.state === 'syncing' && (
@@ -142,9 +146,12 @@ export const CodePanelContainer: React.FC<CodePanelContainerProps> = ({
             <div className="flex items-start gap-3">
               <span className="text-red-400 text-lg">⚠️</span>
               <div className="flex-1">
-                <h4 className="text-red-400 font-semibold text-sm mb-1">Parse Error</h4>
+                <h4 className="text-red-400 font-semibold text-sm mb-1">
+                  Parse Error
+                </h4>
                 <p className="text-xs text-red-300 mb-1">
-                  Line {syncEngine.error.line}, Column {syncEngine.error.column}: {syncEngine.error.message}
+                  Line {syncEngine.error.line}, Column {syncEngine.error.column}
+                  : {syncEngine.error.message}
                 </p>
                 {syncEngine.error.suggestion && (
                   <p className="text-xs text-slate-300 italic">
@@ -168,7 +175,9 @@ export const CodePanelContainer: React.FC<CodePanelContainerProps> = ({
           <MonacoEditor
             value={rhaiCode}
             onChange={onChange}
-            height={`${height - calculateHeaderHeight(syncEngine.state, syncEngine.error)}px`}
+            height={`${
+              height - calculateHeaderHeight(syncEngine.state, syncEngine.error)
+            }px`}
           />
         </div>
       </div>

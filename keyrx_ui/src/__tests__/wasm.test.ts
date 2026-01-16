@@ -14,7 +14,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useWasm, type ValidationError, type SimulationResult } from '../hooks/useWasm';
+import {
+  useWasm,
+  type ValidationError,
+  type SimulationResult,
+} from '../hooks/useWasm';
 
 // Mock the WASM module import
 vi.mock('@/wasm/pkg/keyrx_core.js', () => {
@@ -24,13 +28,17 @@ vi.mock('@/wasm/pkg/keyrx_core.js', () => {
     wasm_init: vi.fn(),
     load_config: vi.fn((code: string) => {
       if (code.includes('invalid')) {
-        throw new Error('Parse error at line 2 column 5: Invalid function call');
+        throw new Error(
+          'Parse error at line 2 column 5: Invalid function call'
+        );
       }
       return 12345; // Mock ConfigHandle
     }),
     validate_config: vi.fn((code: string) => {
       if (code.includes('invalid')) {
-        throw new Error('Parse error at line 2 column 5: Invalid function call');
+        throw new Error(
+          'Parse error at line 2 column 5: Invalid function call'
+        );
       }
     }),
     simulate: vi.fn((handle: number, eventsJson: string) => {
@@ -44,11 +52,17 @@ vi.mock('@/wasm/pkg/keyrx_core.js', () => {
             active_layer: null,
           },
         ],
-        outputs: events.events.map((e: { keycode: string; event_type: string; timestamp_us: number }) => ({
-          keycode: e.keycode,
-          event_type: e.event_type,
-          timestamp_us: e.timestamp_us,
-        })),
+        outputs: events.events.map(
+          (e: {
+            keycode: string;
+            event_type: string;
+            timestamp_us: number;
+          }) => ({
+            keycode: e.keycode,
+            event_type: e.event_type,
+            timestamp_us: e.timestamp_us,
+          })
+        ),
         latency: [100],
         final_state: {
           active_modifiers: [],
@@ -201,7 +215,11 @@ device("*") {
       const simulationInput = {
         events: [
           { keycode: 'A', event_type: 'press' as const, timestamp_us: 0 },
-          { keycode: 'A', event_type: 'release' as const, timestamp_us: 100000 },
+          {
+            keycode: 'A',
+            event_type: 'release' as const,
+            timestamp_us: 100000,
+          },
         ],
       };
 
@@ -238,7 +256,9 @@ device("*") {
       // Mock will throw for invalid config
       const invalidConfig = 'invalid syntax';
       const simulationInput = {
-        events: [{ keycode: 'A', event_type: 'press' as const, timestamp_us: 0 }],
+        events: [
+          { keycode: 'A', event_type: 'press' as const, timestamp_us: 0 },
+        ],
       };
 
       const simulationResult = await result.current.runSimulation(
@@ -254,7 +274,9 @@ device("*") {
 
       // Call runSimulation before WASM is ready
       const simulationInput = {
-        events: [{ keycode: 'A', event_type: 'press' as const, timestamp_us: 0 }],
+        events: [
+          { keycode: 'A', event_type: 'press' as const, timestamp_us: 0 },
+        ],
       };
 
       const simulationResult = await result.current.runSimulation(
@@ -292,7 +314,9 @@ device("*") {
       expect(errors).toEqual([]);
 
       // runSimulation should return null (graceful degradation)
-      const simResult = await result.current.runSimulation('test', { events: [] });
+      const simResult = await result.current.runSimulation('test', {
+        events: [],
+      });
       expect(simResult).toBeNull();
     });
 
@@ -430,7 +454,9 @@ device("*") {
 
       const validConfig = 'device("*") { map("VK_A", "VK_B"); }';
       const simulationInput = {
-        events: [{ keycode: 'A', event_type: 'press' as const, timestamp_us: 0 }],
+        events: [
+          { keycode: 'A', event_type: 'press' as const, timestamp_us: 0 },
+        ],
       };
 
       const startTime = performance.now();

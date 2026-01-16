@@ -36,14 +36,15 @@ describe('CodePanelContainer', () => {
 
   const createMockSyncEngine = (
     overrides?: Partial<RhaiSyncEngineResult>
-  ): RhaiSyncEngineResult => ({
-    state: 'idle',
-    error: null,
-    clearError: mockClearError,
-    getCode: vi.fn(() => ''),
-    onCodeChange: vi.fn(),
-    ...overrides,
-  } as unknown as RhaiSyncEngineResult);
+  ): RhaiSyncEngineResult =>
+    ({
+      state: 'idle',
+      error: null,
+      clearError: mockClearError,
+      getCode: vi.fn(() => ''),
+      onCodeChange: vi.fn(),
+      ...overrides,
+    }) as unknown as RhaiSyncEngineResult;
 
   const defaultProps = {
     profileName: 'Default',
@@ -81,7 +82,9 @@ describe('CodePanelContainer', () => {
 
       render(<CodePanelContainer {...defaultProps} />);
 
-      expect(screen.queryByTestId('code-panel-container')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('code-panel-container')
+      ).not.toBeInTheDocument();
     });
 
     it('displays profile name in header', () => {
@@ -103,7 +106,9 @@ describe('CodePanelContainer', () => {
     it('renders hide button', () => {
       render(<CodePanelContainer {...defaultProps} />);
 
-      const hideButton = screen.getByRole('button', { name: /hide code editor/i });
+      const hideButton = screen.getByRole('button', {
+        name: /hide code editor/i,
+      });
       expect(hideButton).toBeInTheDocument();
       expect(hideButton).toHaveTextContent('▼ Hide');
     });
@@ -136,7 +141,9 @@ describe('CodePanelContainer', () => {
 
       render(<CodePanelContainer {...defaultProps} />);
 
-      const hideButton = screen.getByRole('button', { name: /hide code editor/i });
+      const hideButton = screen.getByRole('button', {
+        name: /hide code editor/i,
+      });
       await user.click(hideButton);
 
       expect(mockToggleOpen).toHaveBeenCalledTimes(1);
@@ -183,7 +190,8 @@ describe('CodePanelContainer', () => {
 
       expect(mockSetHeight).toHaveBeenCalled();
       // Height should be clamped to minimum: Math.max(200, 300 + (100 - 500)) = 200
-      const lastCall = mockSetHeight.mock.calls[mockSetHeight.mock.calls.length - 1];
+      const lastCall =
+        mockSetHeight.mock.calls[mockSetHeight.mock.calls.length - 1];
       expect(lastCall[0]).toBeGreaterThanOrEqual(200);
     });
 
@@ -200,7 +208,8 @@ describe('CodePanelContainer', () => {
 
       expect(mockSetHeight).toHaveBeenCalled();
       // Height should be clamped to maximum: Math.min(600, 300 + (500 - 100)) = 600
-      const lastCall = mockSetHeight.mock.calls[mockSetHeight.mock.calls.length - 1];
+      const lastCall =
+        mockSetHeight.mock.calls[mockSetHeight.mock.calls.length - 1];
       expect(lastCall[0]).toBeLessThanOrEqual(600);
     });
 
@@ -274,14 +283,18 @@ describe('CodePanelContainer', () => {
       const syncEngine = createMockSyncEngine({ state: 'idle' });
       render(<CodePanelContainer {...defaultProps} syncEngine={syncEngine} />);
 
-      expect(screen.queryByText('Parsing Rhai script...')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Parsing Rhai script...')
+      ).not.toBeInTheDocument();
       expect(screen.queryByText('Generating code...')).not.toBeInTheDocument();
       expect(screen.queryByText('Syncing...')).not.toBeInTheDocument();
     });
 
     it('shows spinner during non-idle states', () => {
       const syncEngine = createMockSyncEngine({ state: 'parsing' });
-      const { container } = render(<CodePanelContainer {...defaultProps} syncEngine={syncEngine} />);
+      const { container } = render(
+        <CodePanelContainer {...defaultProps} syncEngine={syncEngine} />
+      );
 
       const spinner = container.querySelector('.animate-spin');
       expect(spinner).toBeInTheDocument();
@@ -301,7 +314,9 @@ describe('CodePanelContainer', () => {
       render(<CodePanelContainer {...defaultProps} syncEngine={syncEngine} />);
 
       expect(screen.getByText(/Parse Error/i)).toBeInTheDocument();
-      expect(screen.getByText(/Line 10, Column 5: Unexpected token/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Line 10, Column 5: Unexpected token/i)
+      ).toBeInTheDocument();
     });
 
     it('displays error suggestion if provided', () => {
@@ -316,7 +331,9 @@ describe('CodePanelContainer', () => {
 
       render(<CodePanelContainer {...defaultProps} syncEngine={syncEngine} />);
 
-      expect(screen.getByText(/💡 Add a semicolon at the end of the line/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/💡 Add a semicolon at the end of the line/i)
+      ).toBeInTheDocument();
     });
 
     it('does not display error suggestion if not provided', () => {
@@ -414,7 +431,9 @@ describe('CodePanelContainer', () => {
     it('has accessible label for hide button', () => {
       render(<CodePanelContainer {...defaultProps} />);
 
-      const hideButton = screen.getByRole('button', { name: /hide code editor/i });
+      const hideButton = screen.getByRole('button', {
+        name: /hide code editor/i,
+      });
       expect(hideButton).toHaveAttribute('aria-label', 'Hide code editor');
     });
 
@@ -449,17 +468,26 @@ describe('CodePanelContainer', () => {
       const longName = 'A'.repeat(100);
       render(<CodePanelContainer {...defaultProps} profileName={longName} />);
 
-      expect(screen.getByText(new RegExp(`Code - ${longName}`))).toBeInTheDocument();
+      expect(
+        screen.getByText(new RegExp(`Code - ${longName}`))
+      ).toBeInTheDocument();
     });
 
     it('handles rapid state changes', () => {
       const { rerender } = render(<CodePanelContainer {...defaultProps} />);
 
-      const states: Array<RhaiSyncEngineResult['state']> = ['parsing', 'generating', 'syncing', 'idle'];
+      const states: Array<RhaiSyncEngineResult['state']> = [
+        'parsing',
+        'generating',
+        'syncing',
+        'idle',
+      ];
 
       states.forEach((state) => {
         const syncEngine = createMockSyncEngine({ state });
-        rerender(<CodePanelContainer {...defaultProps} syncEngine={syncEngine} />);
+        rerender(
+          <CodePanelContainer {...defaultProps} syncEngine={syncEngine} />
+        );
         expect(screen.getByTestId('code-panel-container')).toBeInTheDocument();
       });
     });

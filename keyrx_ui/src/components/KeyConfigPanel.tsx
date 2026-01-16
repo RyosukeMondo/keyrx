@@ -7,7 +7,7 @@ import {
   Lock,
   Command,
   X,
-  Radio
+  Radio,
 } from 'lucide-react';
 import type { KeyMapping } from '@/types';
 import { SVGKeyboard, type SVGKey } from './SVGKeyboard';
@@ -65,9 +65,12 @@ export function KeyConfigPanel({
     return currentMapping.type === 'tap_hold' ? 'tap_hold' : 'simple';
   }, [currentMapping]);
 
-  const [mappingType, setMappingType] = useState<MappingType>(initialMappingType);
+  const [mappingType, setMappingType] =
+    useState<MappingType>(initialMappingType);
   const [tapAction, setTapAction] = useState(currentMapping?.tapAction || '');
-  const [holdAction, setHoldAction] = useState(currentMapping?.holdAction || '');
+  const [holdAction, setHoldAction] = useState(
+    currentMapping?.holdAction || ''
+  );
   const [threshold, setThreshold] = useState(currentMapping?.threshold || 200);
   const [activeTab, setActiveTab] = useState<KeySelectionTab>('keyboard');
 
@@ -92,37 +95,40 @@ export function KeyConfigPanel({
   }, [physicalKey, currentMapping, initialMappingType]);
 
   // Key listening effect
-  const handleKeyCapture = useCallback((event: KeyboardEvent) => {
-    if (!isListening) return;
+  const handleKeyCapture = useCallback(
+    (event: KeyboardEvent) => {
+      if (!isListening) return;
 
-    event.preventDefault();
-    event.stopPropagation();
+      event.preventDefault();
+      event.stopPropagation();
 
-    // Allow Escape to cancel listening
-    if (event.key === 'Escape') {
-      stopListening();
-      return;
-    }
+      // Allow Escape to cancel listening
+      if (event.key === 'Escape') {
+        stopListening();
+        return;
+      }
 
-    // Convert event.code to VK format (e.g., "KeyA" -> "VK_A")
-    let vkCode = event.code;
-    if (vkCode.startsWith('Key')) {
-      vkCode = 'VK_' + vkCode.substring(3);
-    } else if (vkCode.startsWith('Digit')) {
-      vkCode = 'VK_' + vkCode.substring(5);
-    } else {
-      vkCode = 'VK_' + vkCode.toUpperCase();
-    }
+      // Convert event.code to VK format (e.g., "KeyA" -> "VK_A")
+      let vkCode = event.code;
+      if (vkCode.startsWith('Key')) {
+        vkCode = 'VK_' + vkCode.substring(3);
+      } else if (vkCode.startsWith('Digit')) {
+        vkCode = 'VK_' + vkCode.substring(5);
+      } else {
+        vkCode = 'VK_' + vkCode.toUpperCase();
+      }
 
-    if (listeningFor === 'tap') {
-      setTapAction(vkCode);
-    } else if (listeningFor === 'hold') {
-      setHoldAction(vkCode);
-    }
+      if (listeningFor === 'tap') {
+        setTapAction(vkCode);
+      } else if (listeningFor === 'hold') {
+        setHoldAction(vkCode);
+      }
 
-    setIsListening(false);
-    setListeningFor(null);
-  }, [isListening, listeningFor]);
+      setIsListening(false);
+      setListeningFor(null);
+    },
+    [isListening, listeningFor]
+  );
 
   useEffect(() => {
     if (isListening) {
@@ -144,17 +150,18 @@ export function KeyConfigPanel({
   const handleSave = () => {
     if (!physicalKey) return;
 
-    const mapping: KeyMapping = mappingType === 'tap_hold'
-      ? {
-          type: 'tap_hold',
-          tapAction: tapAction,
-          holdAction: holdAction,
-          threshold: threshold,
-        }
-      : {
-          type: 'simple',
-          tapAction: tapAction,
-        };
+    const mapping: KeyMapping =
+      mappingType === 'tap_hold'
+        ? {
+            type: 'tap_hold',
+            tapAction: tapAction,
+            holdAction: holdAction,
+            threshold: threshold,
+          }
+        : {
+            type: 'simple',
+            tapAction: tapAction,
+          };
 
     onSave(mapping);
   };
@@ -166,7 +173,9 @@ export function KeyConfigPanel({
       if (!tapAction && !holdAction) {
         return 'Configure tap and hold actions';
       }
-      return `Quick tap: ${physicalKey} → ${tapAction || '?'}\nHold ${threshold}ms: ${physicalKey} → ${holdAction || '?'}`;
+      return `Quick tap: ${physicalKey} → ${
+        tapAction || '?'
+      }\nHold ${threshold}ms: ${physicalKey} → ${holdAction || '?'}`;
     }
 
     return tapAction
@@ -174,10 +183,10 @@ export function KeyConfigPanel({
       : 'Select a target key';
   };
 
-  const isSaveDisabled = !physicalKey || (
+  const isSaveDisabled =
+    !physicalKey ||
     (mappingType === 'simple' && !tapAction) ||
-    (mappingType === 'tap_hold' && (!tapAction || !holdAction))
-  );
+    (mappingType === 'tap_hold' && (!tapAction || !holdAction));
 
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 space-y-6">
@@ -212,7 +221,9 @@ export function KeyConfigPanel({
       {!physicalKey ? (
         <div className="text-center py-12 text-slate-400">
           <Keyboard className="w-16 h-16 mx-auto mb-4 opacity-50" />
-          <p className="text-lg">Click a key on the keyboard above to configure it</p>
+          <p className="text-lg">
+            Click a key on the keyboard above to configure it
+          </p>
         </div>
       ) : (
         <>
@@ -221,21 +232,33 @@ export function KeyConfigPanel({
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Keyboard className="w-4 h-4 text-primary-400" />
-                <span className="text-xs text-slate-400 uppercase tracking-wide">Key</span>
-                <span className="text-base font-bold text-slate-100">{physicalKey}</span>
+                <span className="text-xs text-slate-400 uppercase tracking-wide">
+                  Key
+                </span>
+                <span className="text-base font-bold text-slate-100">
+                  {physicalKey}
+                </span>
               </div>
 
               <ArrowRight className="w-4 h-4 text-slate-500" />
 
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 uppercase tracking-wide">Target</span>
-                <span className="text-base font-bold text-green-400">{tapAction || '—'}</span>
+                <span className="text-xs text-slate-400 uppercase tracking-wide">
+                  Target
+                </span>
+                <span className="text-base font-bold text-green-400">
+                  {tapAction || '—'}
+                </span>
               </div>
 
               <div className="ml-auto flex items-center gap-2">
-                <span className="text-xs text-slate-400 uppercase tracking-wide">Layer</span>
+                <span className="text-xs text-slate-400 uppercase tracking-wide">
+                  Layer
+                </span>
                 <span className="text-sm font-bold text-yellow-400">
-                  {activeLayer === 'base' ? 'Base' : activeLayer.toUpperCase().replace('-', '_')}
+                  {activeLayer === 'base'
+                    ? 'Base'
+                    : activeLayer.toUpperCase().replace('-', '_')}
                 </span>
               </div>
             </div>
@@ -270,7 +293,9 @@ export function KeyConfigPanel({
                     title="Press any key on your keyboard to capture it"
                   >
                     <Radio className="w-3.5 h-3.5" />
-                    {isListening && listeningFor === 'tap' ? 'Listening...' : 'Listen'}
+                    {isListening && listeningFor === 'tap'
+                      ? 'Listening...'
+                      : 'Listen'}
                   </button>
                 </div>
               </div>
@@ -330,7 +355,9 @@ export function KeyConfigPanel({
               {/* Modifier Tab - MD_00 to MD_FF */}
               {activeTab === 'modifier' && (
                 <div className="border border-slate-600 rounded-lg p-4 bg-slate-900 max-h-96 overflow-y-auto">
-                  <p className="text-xs text-slate-400 mb-3">Select a custom modifier (MD_00 to MD_FF)</p>
+                  <p className="text-xs text-slate-400 mb-3">
+                    Select a custom modifier (MD_00 to MD_FF)
+                  </p>
                   <div className="grid grid-cols-8 gap-2">
                     {Array.from({ length: 256 }, (_, i) => {
                       const hex = i.toString(16).toUpperCase().padStart(2, '0');
@@ -357,15 +384,17 @@ export function KeyConfigPanel({
               {/* Lock Tab - LK_00 to LK_FF */}
               {activeTab === 'lock' && (
                 <div className="border border-slate-600 rounded-lg p-4 bg-slate-900 max-h-96 overflow-y-auto">
-                  <p className="text-xs text-slate-400 mb-3">Select a lock state (LK_00 to LK_FF)</p>
+                  <p className="text-xs text-slate-400 mb-3">
+                    Select a lock state (LK_00 to LK_FF)
+                  </p>
                   <div className="grid grid-cols-8 gap-2">
                     {Array.from({ length: 256 }, (_, i) => {
                       const hex = i.toString(16).toUpperCase().padStart(2, '0');
                       const id = `LK_${hex}`;
                       const labels: Record<string, string> = {
-                        'LK_00': 'CapsLock',
-                        'LK_01': 'NumLock',
-                        'LK_02': 'ScrollLock',
+                        LK_00: 'CapsLock',
+                        LK_01: 'NumLock',
+                        LK_02: 'ScrollLock',
                       };
                       return (
                         <button
@@ -401,7 +430,9 @@ export function KeyConfigPanel({
                     {tapAction && (
                       <>
                         <div className="px-3 py-1 bg-green-500/20 border border-green-500 rounded">
-                          <span className="text-sm font-bold text-green-300 font-mono">{tapAction}</span>
+                          <span className="text-sm font-bold text-green-300 font-mono">
+                            {tapAction}
+                          </span>
                         </div>
                         <button
                           onClick={() => setTapAction('')}
@@ -423,7 +454,9 @@ export function KeyConfigPanel({
                       title="Press any key on your keyboard to capture it"
                     >
                       <Radio className="w-3.5 h-3.5" />
-                      {isListening && listeningFor === 'tap' ? 'Listening...' : 'Listen'}
+                      {isListening && listeningFor === 'tap'
+                        ? 'Listening...'
+                        : 'Listen'}
                     </button>
                   </div>
                 </div>
@@ -484,7 +517,10 @@ export function KeyConfigPanel({
                     <div className="border border-slate-600 rounded-lg p-3 bg-slate-900 max-h-64 overflow-y-auto">
                       <div className="grid grid-cols-8 gap-2">
                         {Array.from({ length: 256 }, (_, i) => {
-                          const hex = i.toString(16).toUpperCase().padStart(2, '0');
+                          const hex = i
+                            .toString(16)
+                            .toUpperCase()
+                            .padStart(2, '0');
                           const id = `MD_${hex}`;
                           return (
                             <button
@@ -509,7 +545,10 @@ export function KeyConfigPanel({
                     <div className="border border-slate-600 rounded-lg p-3 bg-slate-900 max-h-64 overflow-y-auto">
                       <div className="grid grid-cols-8 gap-2">
                         {Array.from({ length: 256 }, (_, i) => {
-                          const hex = i.toString(16).toUpperCase().padStart(2, '0');
+                          const hex = i
+                            .toString(16)
+                            .toUpperCase()
+                            .padStart(2, '0');
                           const id = `LK_${hex}`;
                           return (
                             <button
@@ -538,12 +577,16 @@ export function KeyConfigPanel({
                     <label className="text-sm font-medium text-slate-300">
                       Hold Action (modifier)
                     </label>
-                    <p className="text-xs text-slate-400 mt-1">Select modifier 0-255</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Select modifier 0-255
+                    </p>
                   </div>
                   {holdAction && (
                     <div className="flex items-center gap-2">
                       <div className="px-3 py-1 bg-red-500/20 border border-red-500 rounded">
-                        <span className="text-sm font-bold text-red-300 font-mono">{holdAction}</span>
+                        <span className="text-sm font-bold text-red-300 font-mono">
+                          {holdAction}
+                        </span>
                       </div>
                       <button
                         onClick={() => setHoldAction('')}
@@ -560,10 +603,20 @@ export function KeyConfigPanel({
                     type="number"
                     min="0"
                     max="255"
-                    value={holdAction ? parseInt(holdAction.replace('MD_', ''), 16) : 0}
+                    value={
+                      holdAction
+                        ? parseInt(holdAction.replace('MD_', ''), 16)
+                        : 0
+                    }
                     onChange={(e) => {
-                      const val = Math.max(0, Math.min(255, parseInt(e.target.value) || 0));
-                      const hex = val.toString(16).toUpperCase().padStart(2, '0');
+                      const val = Math.max(
+                        0,
+                        Math.min(255, parseInt(e.target.value) || 0)
+                      );
+                      const hex = val
+                        .toString(16)
+                        .toUpperCase()
+                        .padStart(2, '0');
                       setHoldAction(`MD_${hex}`);
                     }}
                     className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -574,10 +627,17 @@ export function KeyConfigPanel({
                       type="range"
                       min="0"
                       max="255"
-                      value={holdAction ? parseInt(holdAction.replace('MD_', ''), 16) : 0}
+                      value={
+                        holdAction
+                          ? parseInt(holdAction.replace('MD_', ''), 16)
+                          : 0
+                      }
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        const hex = val.toString(16).toUpperCase().padStart(2, '0');
+                        const hex = val
+                          .toString(16)
+                          .toUpperCase()
+                          .padStart(2, '0');
                         setHoldAction(`MD_${hex}`);
                       }}
                       className="w-full"
@@ -669,7 +729,11 @@ export function KeyConfigPanel({
               Press any key on your keyboard to capture it
             </p>
             <p className="text-sm text-slate-400">
-              Press <kbd className="px-2 py-1 bg-slate-700 rounded text-slate-200">Escape</kbd> to cancel
+              Press{' '}
+              <kbd className="px-2 py-1 bg-slate-700 rounded text-slate-200">
+                Escape
+              </kbd>{' '}
+              to cancel
             </p>
             <button
               onClick={stopListening}

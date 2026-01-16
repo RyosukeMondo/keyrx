@@ -60,7 +60,7 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
     }
 
     // Check for duplicate names
-    if (profiles?.some(p => p.name === newProfileName.trim())) {
+    if (profiles?.some((p) => p.name === newProfileName.trim())) {
       setCreateError('Profile name already exists');
       return;
     }
@@ -124,7 +124,11 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
             ✕
           </button>
           {createError && (
-            <span id="create-error" className="text-xs text-red-400" role="alert">
+            <span
+              id="create-error"
+              className="text-xs text-red-400"
+              role="alert"
+            >
               {createError}
             </span>
           )}

@@ -55,13 +55,17 @@ import type { DaemonState, KeyEvent, LatencyMetrics } from '../../types/rpc';
  * });
  * ```
  */
-export function setDaemonState(state: Partial<DaemonState> & { activeProfile?: string }): void {
+export function setDaemonState(
+  state: Partial<DaemonState> & { activeProfile?: string }
+): void {
   // Merge with default state to ensure all required fields are present
   const fullState: DaemonState & { activeProfile?: string } = {
     modifiers: state.modifiers ?? [],
     locks: state.locks ?? [],
     layer: state.layer ?? 'base',
-    ...(state.activeProfile !== undefined && { activeProfile: state.activeProfile }),
+    ...(state.activeProfile !== undefined && {
+      activeProfile: state.activeProfile,
+    }),
   };
 
   broadcastEvent('daemon-state', fullState);
@@ -105,7 +109,9 @@ export function setDaemonState(state: Partial<DaemonState> & { activeProfile?: s
  * });
  * ```
  */
-export function sendLatencyUpdate(stats: Omit<LatencyMetrics, 'timestamp'>): void {
+export function sendLatencyUpdate(
+  stats: Omit<LatencyMetrics, 'timestamp'>
+): void {
   const metrics: LatencyMetrics = {
     ...stats,
     timestamp: Date.now() * 1000, // Convert to microseconds
@@ -275,6 +281,9 @@ export function waitForWebSocketConnection(timeout = 5000): Promise<void> {
  * });
  * ```
  */
-export function sendServerMessage(channel: 'daemon-state' | 'events' | 'latency', data: unknown): void {
+export function sendServerMessage(
+  channel: 'daemon-state' | 'events' | 'latency',
+  data: unknown
+): void {
   broadcastEvent(channel, data);
 }

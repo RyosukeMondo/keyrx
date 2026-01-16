@@ -75,7 +75,7 @@ export const DeviceScopeToggle: React.FC<DeviceScopeToggleProps> = ({
   };
 
   // Convert devices to dropdown options
-  const deviceOptions = devices.map(device => ({
+  const deviceOptions = devices.map((device) => ({
     value: device.serial,
     label: device.name,
   }));
@@ -160,7 +160,8 @@ export const DeviceScopeToggle: React.FC<DeviceScopeToggleProps> = ({
               className="rounded-md border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-slate-400"
               role="alert"
             >
-              No devices available. Connect a device to use device-specific mappings.
+              No devices available. Connect a device to use device-specific
+              mappings.
             </div>
           ) : (
             <Dropdown
@@ -178,9 +179,7 @@ export const DeviceScopeToggle: React.FC<DeviceScopeToggleProps> = ({
       {/* Help text */}
       <p className="text-xs text-slate-400">
         {scope === 'global' ? (
-          <>
-            Global mappings apply to all connected devices.
-          </>
+          <>Global mappings apply to all connected devices.</>
         ) : (
           <>
             Device-specific mappings apply only to the selected device.

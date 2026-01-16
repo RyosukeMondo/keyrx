@@ -55,9 +55,7 @@ describe('useProfileSelection', () => {
         error: null,
       } as any);
 
-      const { result } = renderHook(() =>
-        useProfileSelection('PropProfile')
-      );
+      const { result } = renderHook(() => useProfileSelection('PropProfile'));
 
       // Initially should use prop
       expect(result.current.selectedProfileName).toBe('PropProfile');
@@ -70,9 +68,7 @@ describe('useProfileSelection', () => {
     });
 
     it('should use prop when no manual selection', () => {
-      const { result } = renderHook(() =>
-        useProfileSelection('PropProfile')
-      );
+      const { result } = renderHook(() => useProfileSelection('PropProfile'));
 
       expect(result.current.selectedProfileName).toBe('PropProfile');
     });
@@ -119,9 +115,7 @@ describe('useProfileSelection', () => {
     it('should prioritize prop over route parameter', () => {
       mockUseParams.mockReturnValue({ name: 'RouteProfile' });
 
-      const { result } = renderHook(() =>
-        useProfileSelection('PropProfile')
-      );
+      const { result } = renderHook(() => useProfileSelection('PropProfile'));
 
       expect(result.current.selectedProfileName).toBe('PropProfile');
     });

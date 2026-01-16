@@ -9,9 +9,15 @@ describe('KeyAssignmentPanel', () => {
       renderWithProviders(<KeyAssignmentPanel />, { wrapWithWasm: false });
 
       // Verify all category tabs are present
-      expect(screen.getByRole('tab', { name: /All Keys/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /Virtual Keys/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /Modifiers/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('tab', { name: /All Keys/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('tab', { name: /Virtual Keys/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('tab', { name: /Modifiers/i })
+      ).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /Locks/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /Layers/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /Macros/i })).toBeInTheDocument();
@@ -22,9 +28,9 @@ describe('KeyAssignmentPanel', () => {
       renderWithProviders(<KeyAssignmentPanel />, { wrapWithWasm: false });
 
       // Get all draggable key buttons
-      const keyButtons = screen.getAllByRole('button').filter(
-        (button) => button.getAttribute('aria-grabbed') !== null
-      );
+      const keyButtons = screen
+        .getAllByRole('button')
+        .filter((button) => button.getAttribute('aria-grabbed') !== null);
 
       expect(keyButtons.length).toBeGreaterThanOrEqual(100);
     });
@@ -42,7 +48,7 @@ describe('KeyAssignmentPanel', () => {
       // Check for all letters using more specific aria-label query
       for (const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
         const buttons = screen.getAllByRole('button', {
-          name: new RegExp(`^${letter} key\\.`, 'i')
+          name: new RegExp(`^${letter} key\\.`, 'i'),
         });
         expect(buttons.length).toBeGreaterThanOrEqual(1);
       }
@@ -58,7 +64,9 @@ describe('KeyAssignmentPanel', () => {
 
       // Check for all numbers
       for (let num = 0; num <= 9; num++) {
-        expect(screen.getByRole('button', { name: new RegExp(`Number ${num}`, 'i') })).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: new RegExp(`Number ${num}`, 'i') })
+        ).toBeInTheDocument();
       }
     });
 
@@ -73,7 +81,7 @@ describe('KeyAssignmentPanel', () => {
       // Check for all function keys F1-F24 using more specific query
       for (let fNum = 1; fNum <= 24; fNum++) {
         const buttons = screen.getAllByRole('button', {
-          name: new RegExp(`^F${fNum} key\\.`, 'i')
+          name: new RegExp(`^F${fNum} key\\.`, 'i'),
         });
         expect(buttons.length).toBeGreaterThanOrEqual(1);
       }
@@ -88,14 +96,26 @@ describe('KeyAssignmentPanel', () => {
       await user.click(virtualKeysTab);
 
       // Check for navigation keys
-      expect(screen.getByRole('button', { name: /Arrow Up/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Arrow Down/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Arrow Left/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Arrow Right/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Arrow Up/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Arrow Down/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Arrow Left/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Arrow Right/i })
+      ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Home/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /End/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Page Up/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Page Down/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Page Up/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Page Down/i })
+      ).toBeInTheDocument();
     });
 
     it('should contain numpad keys 0-9 and operators', async () => {
@@ -108,16 +128,30 @@ describe('KeyAssignmentPanel', () => {
 
       // Check for numpad numbers
       for (let num = 0; num <= 9; num++) {
-        expect(screen.getByRole('button', { name: new RegExp(`Numpad ${num}`, 'i') })).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: new RegExp(`Numpad ${num}`, 'i') })
+        ).toBeInTheDocument();
       }
 
       // Check for numpad operators
-      expect(screen.getByRole('button', { name: /Numpad multiply/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Numpad minus/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Numpad plus/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Numpad divide/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Numpad decimal/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Numpad enter/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Numpad multiply/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Numpad minus/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Numpad plus/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Numpad divide/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Numpad decimal/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Numpad enter/i })
+      ).toBeInTheDocument();
     });
 
     it('should contain special keys (Enter, Escape, Tab, Space, Backspace)', async () => {
@@ -129,19 +163,27 @@ describe('KeyAssignmentPanel', () => {
       await user.click(virtualKeysTab);
 
       // Use more specific queries to avoid duplicates
-      const enterButtons = screen.getAllByRole('button', { name: /^Enter key\./i });
+      const enterButtons = screen.getAllByRole('button', {
+        name: /^Enter key\./i,
+      });
       expect(enterButtons.length).toBeGreaterThanOrEqual(1);
 
-      const escapeButtons = screen.getAllByRole('button', { name: /^Esc key\./i });
+      const escapeButtons = screen.getAllByRole('button', {
+        name: /^Esc key\./i,
+      });
       expect(escapeButtons.length).toBeGreaterThanOrEqual(1);
 
       const tabButtons = screen.getAllByRole('button', { name: /^Tab key\./i });
       expect(tabButtons.length).toBeGreaterThanOrEqual(1);
 
-      const spaceButtons = screen.getAllByRole('button', { name: /^Space key\./i });
+      const spaceButtons = screen.getAllByRole('button', {
+        name: /^Space key\./i,
+      });
       expect(spaceButtons.length).toBeGreaterThanOrEqual(1);
 
-      const backspaceButtons = screen.getAllByRole('button', { name: /^Backspace key\./i });
+      const backspaceButtons = screen.getAllByRole('button', {
+        name: /^Backspace key\./i,
+      });
       expect(backspaceButtons.length).toBeGreaterThanOrEqual(1);
     });
   });
@@ -156,16 +198,22 @@ describe('KeyAssignmentPanel', () => {
       await user.click(modifiersTab);
 
       // Check for left modifiers using specific aria-label patterns
-      const ctrlButtons = screen.getAllByRole('button', { name: /Ctrl key\./i });
+      const ctrlButtons = screen.getAllByRole('button', {
+        name: /Ctrl key\./i,
+      });
       expect(ctrlButtons.length).toBeGreaterThanOrEqual(1);
 
-      const shiftButtons = screen.getAllByRole('button', { name: /Shift key\./i });
+      const shiftButtons = screen.getAllByRole('button', {
+        name: /Shift key\./i,
+      });
       expect(shiftButtons.length).toBeGreaterThanOrEqual(1);
 
       const altButtons = screen.getAllByRole('button', { name: /Alt key\./i });
       expect(altButtons.length).toBeGreaterThanOrEqual(1);
 
-      const superButtons = screen.getAllByRole('button', { name: /Super key\./i });
+      const superButtons = screen.getAllByRole('button', {
+        name: /Super key\./i,
+      });
       expect(superButtons.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -177,10 +225,16 @@ describe('KeyAssignmentPanel', () => {
       const modifiersTab = screen.getByRole('tab', { name: /Modifiers/i });
       await user.click(modifiersTab);
 
-      expect(screen.getByRole('button', { name: /RCtrl/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /RShift/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /RCtrl/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /RShift/i })
+      ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /RAlt/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /RSuper/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /RSuper/i })
+      ).toBeInTheDocument();
     });
   });
 
@@ -193,9 +247,15 @@ describe('KeyAssignmentPanel', () => {
       const locksTab = screen.getByRole('tab', { name: /Locks/i });
       await user.click(locksTab);
 
-      expect(screen.getByRole('button', { name: /CapsLock/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /NumLock/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /ScrollLock/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /CapsLock/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /NumLock/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /ScrollLock/i })
+      ).toBeInTheDocument();
     });
   });
 
@@ -216,9 +276,9 @@ describe('KeyAssignmentPanel', () => {
       expect(f1Buttons.length).toBeGreaterThanOrEqual(1);
 
       // Get all draggable key buttons after filtering
-      const keyButtons = screen.getAllByRole('button').filter(
-        (button) => button.getAttribute('aria-grabbed') !== null
-      );
+      const keyButtons = screen
+        .getAllByRole('button')
+        .filter((button) => button.getAttribute('aria-grabbed') !== null);
 
       // F1 matches: F1, F10-F19 (11 keys total)
       expect(keyButtons.length).toBeGreaterThanOrEqual(11);
@@ -251,9 +311,9 @@ describe('KeyAssignmentPanel', () => {
       await user.clear(searchInput);
 
       // Should show all keys again
-      const keyButtons = screen.getAllByRole('button').filter(
-        (button) => button.getAttribute('aria-grabbed') !== null
-      );
+      const keyButtons = screen
+        .getAllByRole('button')
+        .filter((button) => button.getAttribute('aria-grabbed') !== null);
 
       expect(keyButtons.length).toBeGreaterThanOrEqual(100);
     });
@@ -312,9 +372,9 @@ describe('KeyAssignmentPanel', () => {
       renderWithProviders(<KeyAssignmentPanel />, { wrapWithWasm: false });
 
       // Get all key buttons
-      const keyButtons = screen.getAllByRole('button').filter(
-        (button) => button.getAttribute('aria-grabbed') !== null
-      );
+      const keyButtons = screen
+        .getAllByRole('button')
+        .filter((button) => button.getAttribute('aria-grabbed') !== null);
 
       // All draggable keys should have aria-grabbed attribute
       keyButtons.forEach((button) => {
@@ -337,7 +397,9 @@ describe('KeyAssignmentPanel', () => {
 
       // Get initial count
       const countText = screen.getByText(/\d+ keys?/i);
-      const initialCount = parseInt(countText.textContent?.match(/\d+/)?.[0] || '0');
+      const initialCount = parseInt(
+        countText.textContent?.match(/\d+/)?.[0] || '0'
+      );
 
       // Apply filter
       const searchInput = screen.getByPlaceholderText(/Search keys/i);
@@ -345,7 +407,9 @@ describe('KeyAssignmentPanel', () => {
 
       // Count should be different (fewer)
       const newCountText = screen.getByText(/\d+ keys?/i);
-      const newCount = parseInt(newCountText.textContent?.match(/\d+/)?.[0] || '0');
+      const newCount = parseInt(
+        newCountText.textContent?.match(/\d+/)?.[0] || '0'
+      );
 
       expect(newCount).toBeLessThan(initialCount);
       expect(newCount).toBeGreaterThan(0); // Should find at least "Enter" key

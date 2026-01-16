@@ -81,47 +81,51 @@ export function useAutoSave<T>(
   }, []);
 
   // Save function with retry logic
-  const executeSave = useCallback(async (dataToSave: T, retryCount: number = 0) => {
-    if (!isMountedRef.current) return;
-
-    try {
-      setIsSaving(true);
-      setError(null);
-
-      await saveFn(dataToSave);
-
+  const executeSave = useCallback(
+    async (dataToSave: T, retryCount: number = 0) => {
       if (!isMountedRef.current) return;
 
-      setLastSavedAt(new Date());
-      setIsSaving(false);
-      retryCountRef.current = 0;
-    } catch (err) {
-      if (!isMountedRef.current) return;
+      try {
+        setIsSaving(true);
+        setError(null);
 
-      const error = err instanceof Error ? err : new Error(String(err));
+        await saveFn(dataToSave);
 
-      // Don't retry on validation errors (4xx status codes)
-      const isValidationError =
-        error.message.includes('400') ||
-        error.message.includes('404') ||
-        error.message.includes('validation');
+        if (!isMountedRef.current) return;
 
-      if (isValidationError || retryCount >= maxRetries) {
-        setError(error);
+        setLastSavedAt(new Date());
         setIsSaving(false);
         retryCountRef.current = 0;
-        return;
+      } catch (err) {
+        if (!isMountedRef.current) return;
+
+        const error = err instanceof Error ? err : new Error(String(err));
+
+        // Don't retry on validation errors (4xx status codes)
+        const isValidationError =
+          error.message.includes('400') ||
+          error.message.includes('404') ||
+          error.message.includes('validation');
+
+        if (isValidationError || retryCount >= maxRetries) {
+          setError(error);
+          setIsSaving(false);
+          retryCountRef.current = 0;
+          return;
+        }
+
+        // Retry with exponential backoff
+        const delay = retryDelayMs * Math.pow(2, retryCount);
+        retryCountRef.current = retryCount + 1;
+
+        retryTimerRef.current = setTimeout(() => {
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+          executeSave(dataToSave, retryCount + 1);
+        }, delay);
       }
-
-      // Retry with exponential backoff
-      const delay = retryDelayMs * Math.pow(2, retryCount);
-      retryCountRef.current = retryCount + 1;
-
-      retryTimerRef.current = setTimeout(() => {
-        executeSave(dataToSave, retryCount + 1);
-      }, delay);
-    }
-  }, [saveFn, maxRetries, retryDelayMs]);
+    },
+    [saveFn, maxRetries, retryDelayMs]
+  );
 
   // Trigger save immediately without debouncing
   const saveNow = useCallback(() => {

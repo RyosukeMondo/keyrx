@@ -27,7 +27,10 @@
  * }
  * ```
  */
-export function getErrorMessage(error: unknown, fallback = 'An error occurred'): string {
+export function getErrorMessage(
+  error: unknown,
+  fallback = 'An error occurred'
+): string {
   // Handle null/undefined, but allow false/0/"" as valid values
   if (error === null || error === undefined) {
     return fallback;
@@ -80,7 +83,10 @@ export function getErrorMessage(error: unknown, fallback = 'An error occurred'):
  * @param context - Optional context prefix (e.g., "Failed to save profile")
  * @returns Formatted error message
  */
-export function formatErrorForDisplay(error: unknown, context?: string): string {
+export function formatErrorForDisplay(
+  error: unknown,
+  context?: string
+): string {
   const message = getErrorMessage(error);
 
   if (context) {

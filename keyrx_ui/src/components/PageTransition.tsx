@@ -6,7 +6,11 @@
  */
 
 import { motion } from 'framer-motion';
-import { pageVariants, transitions, createAnimationProps } from '@/utils/animations';
+import {
+  pageVariants,
+  transitions,
+  createAnimationProps,
+} from '@/utils/animations';
 
 interface PageTransitionProps {
   children: React.ReactNode;

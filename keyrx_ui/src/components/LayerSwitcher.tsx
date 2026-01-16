@@ -33,7 +33,7 @@ export function LayerSwitcher({
       return allLayers;
     }
     const filter = searchFilter.toLowerCase();
-    return allLayers.filter(layer => layer.toLowerCase().includes(filter));
+    return allLayers.filter((layer) => layer.toLowerCase().includes(filter));
   }, [allLayers, searchFilter]);
 
   const formatLayerName = (layer: string) => {
@@ -46,7 +46,9 @@ export function LayerSwitcher({
       {/* Header with search - compact for narrow width */}
       <div className="p-2 border-b border-slate-700/50">
         <div className="mb-2">
-          <span className="text-slate-300 font-semibold text-xs block text-center">LAYERS</span>
+          <span className="text-slate-300 font-semibold text-xs block text-center">
+            LAYERS
+          </span>
           <span className="text-slate-500 text-xs block text-center">
             {filteredLayers.length}
           </span>

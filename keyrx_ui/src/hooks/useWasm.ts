@@ -63,7 +63,7 @@ const RETRY_CONFIG = {
 };
 
 // Helper function to sleep for a specified duration
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Hook for integrating with WASM module for validation and simulation
@@ -88,19 +88,27 @@ export function useWasm() {
       for (let attempt = 1; attempt <= RETRY_CONFIG.maxAttempts; attempt++) {
         try {
           if (attempt > 1) {
-            console.info(`[WASM] Retry attempt ${attempt}/${RETRY_CONFIG.maxAttempts}...`);
+            console.info(
+              `[WASM] Retry attempt ${attempt}/${RETRY_CONFIG.maxAttempts}...`
+            );
             await sleep(RETRY_CONFIG.delayMs);
           }
 
           // Try to dynamically import the WASM module
           console.info('[WASM] Fetching module...');
-          const module = await import('@/wasm/pkg/keyrx_core.js').catch((importErr) => {
-            throw new Error(
-              `WASM module not found at @/wasm/pkg/keyrx_core.js. ` +
-              `Run 'npm run build:wasm' to compile the WASM module. ` +
-              `Import error: ${importErr instanceof Error ? importErr.message : String(importErr)}`
-            );
-          });
+          const module = await import('@/wasm/pkg/keyrx_core.js').catch(
+            (importErr) => {
+              throw new Error(
+                `WASM module not found at @/wasm/pkg/keyrx_core.js. ` +
+                  `Run 'npm run build:wasm' to compile the WASM module. ` +
+                  `Import error: ${
+                    importErr instanceof Error
+                      ? importErr.message
+                      : String(importErr)
+                  }`
+              );
+            }
+          );
 
           console.info('[WASM] Module loaded, initializing WASM binary...');
           // For wasm-pack web target, must call default init() first to load WASM binary
@@ -118,7 +126,7 @@ export function useWasm() {
           setError(null);
           console.info(
             `[WASM] Initialized successfully in ${loadTime.toFixed(0)}ms` +
-            (attempt > 1 ? ` (succeeded on attempt ${attempt})` : '')
+              (attempt > 1 ? ` (succeeded on attempt ${attempt})` : '')
           );
           return; // Success - exit the retry loop
         } catch (err) {
@@ -127,13 +135,17 @@ export function useWasm() {
 
           if (attempt < RETRY_CONFIG.maxAttempts) {
             console.warn(
-              `[WASM] Attempt ${attempt}/${RETRY_CONFIG.maxAttempts} failed after ${loadTime.toFixed(0)}ms:`,
+              `[WASM] Attempt ${attempt}/${
+                RETRY_CONFIG.maxAttempts
+              } failed after ${loadTime.toFixed(0)}ms:`,
               lastError.message,
               `- Retrying in ${RETRY_CONFIG.delayMs}ms...`
             );
           } else {
             console.error(
-              `[WASM] All ${RETRY_CONFIG.maxAttempts} initialization attempts failed after ${loadTime.toFixed(0)}ms:`,
+              `[WASM] All ${
+                RETRY_CONFIG.maxAttempts
+              } initialization attempts failed after ${loadTime.toFixed(0)}ms:`,
               lastError.message
             );
           }
@@ -166,7 +178,11 @@ export function useWasm() {
         // Return empty array if WASM not ready - graceful degradation
         console.debug(
           '[WASM] Validation skipped: WASM not ready.',
-          isLoading ? 'Still loading...' : error ? `Error: ${error.message}` : 'Not initialized'
+          isLoading
+            ? 'Still loading...'
+            : error
+              ? `Error: ${error.message}`
+              : 'Not initialized'
         );
         return [];
       }
@@ -211,12 +227,19 @@ export function useWasm() {
    * @returns Simulation results or null if WASM not ready or simulation fails
    */
   const runSimulation = useCallback(
-    async (code: string, input: SimulationInput): Promise<SimulationResult | null> => {
+    async (
+      code: string,
+      input: SimulationInput
+    ): Promise<SimulationResult | null> => {
       if (!isWasmReady || !wasmModule) {
         // Return null if WASM not ready - graceful degradation
         console.debug(
           '[WASM] Simulation skipped: WASM not ready.',
-          isLoading ? 'Still loading...' : error ? `Error: ${error.message}` : 'Not initialized'
+          isLoading
+            ? 'Still loading...'
+            : error
+              ? `Error: ${error.message}`
+              : 'Not initialized'
         );
         return null;
       }
@@ -227,7 +250,11 @@ export function useWasm() {
         const configHandle = wasmModule.load_config(code);
 
         // Run simulation
-        console.debug('[WASM] Running simulation with', input.events.length, 'events...');
+        console.debug(
+          '[WASM] Running simulation with',
+          input.events.length,
+          'events...'
+        );
         const inputJson = JSON.stringify(input);
         const result = wasmModule.simulate(configHandle, inputJson);
 

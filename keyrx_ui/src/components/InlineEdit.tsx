@@ -102,8 +102,9 @@ export const InlineEdit = React.memo<InlineEditProps>(
       const commonProps = {
         ref: inputRef as any,
         value: editValue,
-        onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-          setEditValue(e.target.value),
+        onChange: (
+          e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        ) => setEditValue(e.target.value),
         onBlur: handleBlur,
         onKeyDown: handleKeyDown,
         maxLength,
@@ -121,12 +122,20 @@ export const InlineEdit = React.memo<InlineEditProps>(
         );
       }
 
-      return <input type="text" {...commonProps} className={`${commonProps.className} w-full`} />;
+      return (
+        <input
+          type="text"
+          {...commonProps}
+          className={`${commonProps.className} w-full`}
+        />
+      );
     }
 
     return (
       <div
-        className={`relative group ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} pr-6`}
+        className={`relative group ${
+          disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+        } pr-6`}
         onClick={handleClick}
         onMouseEnter={() => !disabled && setShowPencil(true)}
         onMouseLeave={() => setShowPencil(false)}
@@ -140,7 +149,11 @@ export const InlineEdit = React.memo<InlineEditProps>(
         }}
         aria-label={ariaLabel || `Edit ${value || 'text'}`}
       >
-        <span className={`${className} ${showPlaceholder ? 'text-slate-500 italic' : ''}`}>
+        <span
+          className={`${className} ${
+            showPlaceholder ? 'text-slate-500 italic' : ''
+          }`}
+        >
           {displayValue}
         </span>
         {!disabled && (

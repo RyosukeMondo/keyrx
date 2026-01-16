@@ -182,10 +182,13 @@ describe('Modal', () => {
     });
 
     // Focus should return to the trigger button
-    await waitFor(() => {
-      const triggerButton = document.getElementById('trigger-button');
-      expect(triggerButton).toHaveFocus();
-    }, { timeout: 1000 });
+    await waitFor(
+      () => {
+        const triggerButton = document.getElementById('trigger-button');
+        expect(triggerButton).toHaveFocus();
+      },
+      { timeout: 1000 }
+    );
   });
 
   it('prevents body scroll when open', () => {
@@ -227,7 +230,9 @@ describe('Modal', () => {
   });
 
   it('handles rapid open/close transitions', async () => {
-    const { rerender } = renderWithProviders(<Modal {...defaultProps} open={false} />);
+    const { rerender } = renderWithProviders(
+      <Modal {...defaultProps} open={false} />
+    );
 
     // Rapidly toggle open state
     rerender(<Modal {...defaultProps} open={true} />);

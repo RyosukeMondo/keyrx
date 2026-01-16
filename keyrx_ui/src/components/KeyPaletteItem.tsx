@@ -141,7 +141,9 @@ export function KeyPaletteItem({
   const tooltipText = [
     keyItem.description || keyItem.label,
     keyItem.id !== keyItem.label ? `ID: ${keyItem.id}` : null,
-    keyItem.subcategory ? `Category: ${keyItem.category} / ${keyItem.subcategory}` : null,
+    keyItem.subcategory
+      ? `Category: ${keyItem.category} / ${keyItem.subcategory}`
+      : null,
   ]
     .filter(Boolean)
     .join('\n');
@@ -167,9 +169,7 @@ export function KeyPaletteItem({
           aria-label={`Select key ${keyItem.label}`}
         >
           {/* Icon (category indicator) */}
-          <div className={`${colors.icon} opacity-70`}>
-            {icon}
-          </div>
+          <div className={`${colors.icon} opacity-70`}>{icon}</div>
 
           {/* Key label (main) */}
           <div className="text-sm font-bold text-white font-mono leading-none">
@@ -193,7 +193,9 @@ export function KeyPaletteItem({
             }}
             className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
             title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label={
+              isFavorite ? 'Remove from favorites' : 'Add to favorites'
+            }
           >
             <Star
               className={`w-3 h-3 ${
@@ -228,9 +230,7 @@ export function KeyPaletteItem({
         aria-label={`Select key ${keyItem.label}`}
       >
         {/* Icon (category indicator) */}
-        <div className={`${colors.icon} opacity-70 flex-shrink-0`}>
-          {icon}
-        </div>
+        <div className={`${colors.icon} opacity-70 flex-shrink-0`}>{icon}</div>
 
         {/* Content (left aligned) */}
         <div className="flex-1 text-left">
@@ -248,9 +248,7 @@ export function KeyPaletteItem({
 
           {/* Description (visible in list view) */}
           {keyItem.description && (
-            <div className="text-sm text-slate-300">
-              {keyItem.description}
-            </div>
+            <div className="text-sm text-slate-300">{keyItem.description}</div>
           )}
         </div>
       </button>

@@ -12,7 +12,9 @@ describe('QuickStatsCard', () => {
   };
 
   it('renders loading state', () => {
-    const { container } = renderWithProviders(<QuickStatsCard loading={true} />);
+    const { container } = renderWithProviders(
+      <QuickStatsCard loading={true} />
+    );
     // LoadingSkeleton uses animate-pulse class for loading animation
     const loadingElements = container.querySelectorAll('.animate-pulse');
     expect(loadingElements.length).toBeGreaterThan(0);
@@ -21,9 +23,7 @@ describe('QuickStatsCard', () => {
   it('renders empty state when no stats', () => {
     renderWithProviders(<QuickStatsCard />);
     expect(screen.getByText('Quick Stats')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Statistics unavailable/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Statistics unavailable/)).toBeInTheDocument();
   });
 
   it('renders stats heading', () => {
@@ -133,19 +133,22 @@ describe('QuickStatsCard', () => {
       // sendLatencyUpdate uses broadcastEvent internally which broadcasts
       // to all connections subscribed to the 'latency' channel
       sendLatencyUpdate({
-        min: 500,     // 0.5ms
-        avg: 1000,    // 1.0ms
-        max: 2000,    // 2.0ms
-        p95: 1800,    // 1.8ms
-        p99: 1950,    // 1.95ms
+        min: 500, // 0.5ms
+        avg: 1000, // 1.0ms
+        max: 2000, // 2.0ms
+        p95: 1800, // 1.8ms
+        p99: 1950, // 1.95ms
       });
 
       // Verify that the helper function doesn't throw and successfully
       // broadcasts the event through MSW WebSocket handlers
-      await waitFor(() => {
-        // If the broadcast failed, this test would timeout or throw
-        expect(true).toBe(true);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          // If the broadcast failed, this test would timeout or throw
+          expect(true).toBe(true);
+        },
+        { timeout: 1000 }
+      );
     });
 
     it('MSW WebSocket handlers handle multiple sequential latency updates', async () => {
@@ -176,25 +179,31 @@ describe('QuickStatsCard', () => {
         p99: 2100,
       });
 
-      await waitFor(() => {
-        expect(true).toBe(true);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(true).toBe(true);
+        },
+        { timeout: 1000 }
+      );
     });
 
     it('MSW WebSocket handlers handle latency spikes correctly', async () => {
       // Test that MSW infrastructure handles high latency values (performance degradation)
 
       sendLatencyUpdate({
-        min: 5000,    // 5ms
-        avg: 15000,   // 15ms
-        max: 50000,   // 50ms spike
-        p95: 30000,   // 30ms
-        p99: 45000,   // 45ms
+        min: 5000, // 5ms
+        avg: 15000, // 15ms
+        max: 50000, // 50ms spike
+        p95: 30000, // 30ms
+        p99: 45000, // 45ms
       });
 
-      await waitFor(() => {
-        expect(true).toBe(true);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(true).toBe(true);
+        },
+        { timeout: 1000 }
+      );
     });
   });
 });

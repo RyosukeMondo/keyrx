@@ -54,8 +54,12 @@ describe('KeyboardVisualizerContainer', () => {
     // Check that all layout options are present
     const options = screen.getAllByRole('option');
     expect(options).toHaveLength(11);
-    expect(screen.getByRole('option', { name: 'ANSI Full (104)' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'ISO Full (105)' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', { name: 'ANSI Full (104)' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', { name: 'ISO Full (105)' })
+    ).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'HHKB' })).toBeInTheDocument();
   });
 
@@ -73,10 +77,7 @@ describe('KeyboardVisualizerContainer', () => {
     ]);
 
     render(
-      <KeyboardVisualizerContainer
-        {...defaultProps}
-        mappings={mappings}
-      />
+      <KeyboardVisualizerContainer {...defaultProps} mappings={mappings} />
     );
 
     // Verify mappings are passed
@@ -88,10 +89,7 @@ describe('KeyboardVisualizerContainer', () => {
     const onKeyClick = vi.fn();
 
     render(
-      <KeyboardVisualizerContainer
-        {...defaultProps}
-        onKeyClick={onKeyClick}
-      />
+      <KeyboardVisualizerContainer {...defaultProps} onKeyClick={onKeyClick} />
     );
 
     const mockKey = screen.getByText('Mock Key A');
@@ -131,10 +129,7 @@ describe('KeyboardVisualizerContainer', () => {
 
   it('applies custom className', () => {
     const { container } = render(
-      <KeyboardVisualizerContainer
-        {...defaultProps}
-        className="custom-class"
-      />
+      <KeyboardVisualizerContainer {...defaultProps} className="custom-class" />
     );
 
     expect(container.firstChild).toHaveClass('custom-class');
@@ -152,10 +147,7 @@ describe('KeyboardVisualizerContainer', () => {
     const emptyMappings = new Map<string, KeyMapping>();
 
     render(
-      <KeyboardVisualizerContainer
-        {...defaultProps}
-        mappings={emptyMappings}
-      />
+      <KeyboardVisualizerContainer {...defaultProps} mappings={emptyMappings} />
     );
 
     expect(screen.getByTestId('key-mappings-count')).toHaveTextContent('0');

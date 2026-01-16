@@ -41,7 +41,7 @@ export function formatTimestampRelative(timestamp: number): string {
   const diffSec = Math.floor(diffMs / 1000);
 
   if (diffSec < 1) {
-    return "just now";
+    return 'just now';
   } else if (diffSec < 60) {
     return `${diffSec}s ago`;
   } else if (diffSec < 3600) {

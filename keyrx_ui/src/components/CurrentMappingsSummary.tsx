@@ -55,7 +55,10 @@ export function CurrentMappingsSummary({
 
   // Group mappings by type
   const mappingsByType = React.useMemo(() => {
-    const grouped: Record<string, Array<{ keyCode: string; mapping: KeyMapping }>> = {
+    const grouped: Record<
+      string,
+      Array<{ keyCode: string; mapping: KeyMapping }>
+    > = {
       simple: [],
       tap_hold: [],
       macro: [],
@@ -90,7 +93,9 @@ export function CurrentMappingsSummary({
       case 'simple':
         return mapping.tapAction || '(not set)';
       case 'tap_hold':
-        return `Tap: ${mapping.tapAction || '?'}, Hold (${mapping.threshold || 200}ms): ${mapping.holdAction || '?'}`;
+        return `Tap: ${mapping.tapAction || '?'}, Hold (${
+          mapping.threshold || 200
+        }ms): ${mapping.holdAction || '?'}`;
       case 'macro':
         return mapping.macroSteps?.length
           ? `${mapping.macroSteps.length} step(s)`
@@ -106,7 +111,8 @@ export function CurrentMappingsSummary({
     return (
       <div className="p-4 bg-slate-800/30 border border-slate-700/50 rounded-lg">
         <p className="text-sm text-slate-500 text-center">
-          No key mappings configured. Click a key on the keyboard to add a mapping.
+          No key mappings configured. Click a key on the keyboard to add a
+          mapping.
         </p>
       </div>
     );
@@ -126,7 +132,11 @@ export function CurrentMappingsSummary({
 
       {/* Mapping Groups */}
       <div className="divide-y divide-slate-700/50">
-        {(Object.keys(MAPPING_TYPE_STYLES) as Array<keyof typeof MAPPING_TYPE_STYLES>).map((type) => {
+        {(
+          Object.keys(MAPPING_TYPE_STYLES) as Array<
+            keyof typeof MAPPING_TYPE_STYLES
+          >
+        ).map((type) => {
           const style = MAPPING_TYPE_STYLES[type];
           const mappings = mappingsByType[type];
           const isExpanded = expandedTypes.has(type);

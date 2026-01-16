@@ -16,7 +16,11 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders, setupMockWebSocket, cleanupMockWebSocket } from '../../tests/testUtils';
+import {
+  renderWithProviders,
+  setupMockWebSocket,
+  cleanupMockWebSocket,
+} from '../../tests/testUtils';
 import ConfigPage from './ConfigPage';
 import { http, HttpResponse } from 'msw';
 import { server } from '../test/mocks/server';
@@ -43,7 +47,9 @@ describe('ConfigPage - Simple Tests', () => {
 
       // Should render without crashing and show save button
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Save/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: /Save/i })
+        ).toBeInTheDocument();
       });
     });
 
@@ -133,7 +139,9 @@ describe('ConfigPage - Simple Tests', () => {
 
       // After clicking, button text should change to "Hide Code"
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Hide Code/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: /Hide Code/i })
+        ).toBeInTheDocument();
       });
     });
 
@@ -150,7 +158,9 @@ describe('ConfigPage - Simple Tests', () => {
       await waitFor(() => {
         const statusElements = screen.queryAllByText(/Saved|Unsaved|Saving/i);
         // May or may not be visible depending on state, but component should render
-        expect(screen.getByRole('button', { name: /Save/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: /Save/i })
+        ).toBeInTheDocument();
       });
     });
   });
@@ -164,10 +174,14 @@ describe('ConfigPage - Simple Tests', () => {
       );
 
       // Test that useProfileSelection hook works by providing a profile prop
-      renderWithProviders(<ConfigPage profileName="TestProfile" />, { wrapWithRouter: true });
+      renderWithProviders(<ConfigPage profileName="TestProfile" />, {
+        wrapWithRouter: true,
+      });
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Save/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: /Save/i })
+        ).toBeInTheDocument();
       });
     });
 

@@ -57,10 +57,8 @@ export const Button = React.memo<ButtonProps>(
         'bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700',
       secondary:
         'bg-transparent border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white',
-      danger:
-        'bg-red-500 text-white hover:bg-red-600 active:bg-red-700',
-      ghost:
-        'bg-transparent text-primary-500 hover:bg-primary-500/10',
+      danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700',
+      ghost: 'bg-transparent text-primary-500 hover:bg-primary-500/10',
     };
 
     const sizeClasses = {
@@ -69,9 +67,8 @@ export const Button = React.memo<ButtonProps>(
       lg: 'py-4 px-6 text-lg',
     };
 
-    const disabledClasses = disabled || loading
-      ? 'opacity-50 cursor-not-allowed'
-      : '';
+    const disabledClasses =
+      disabled || loading ? 'opacity-50 cursor-not-allowed' : '';
 
     // Disable animations if user prefers reduced motion
     const shouldAnimate = !prefersReducedMotion() && !disabled && !loading;

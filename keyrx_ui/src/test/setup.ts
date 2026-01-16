@@ -4,7 +4,10 @@ import * as matchers from '@testing-library/jest-dom/matchers';
 import * as axeMatchers from 'vitest-axe/matchers';
 import { server } from './mocks/server';
 import { resetMockData } from './mocks/handlers';
-import { setupMockWebSocket, cleanupMockWebSocket } from '../../tests/helpers/websocket';
+import {
+  setupMockWebSocket,
+  cleanupMockWebSocket,
+} from '../../tests/helpers/websocket';
 import { getQuarantinedTestPatterns } from '../../tests/quarantine-manager';
 
 // Extend Vitest's expect with jest-dom matchers
@@ -29,7 +32,7 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock scrollIntoView for jsdom
-Element.prototype.scrollIntoView = function() {
+Element.prototype.scrollIntoView = function () {
   // No-op implementation for tests
 };
 
@@ -63,7 +66,9 @@ beforeAll(() =>
       }
 
       // Log warning for unhandled HTTP requests
-      console.error(`[MSW] Unhandled ${request.method} request to ${request.url}`);
+      console.error(
+        `[MSW] Unhandled ${request.method} request to ${request.url}`
+      );
       throw new Error(
         `Unhandled ${request.method} request to ${request.url}. ` +
           `Add a handler for this endpoint in src/test/mocks/handlers.ts`
@@ -103,7 +108,12 @@ beforeEach(async (context) => {
         .join(' > ');
 
       // Check if this test is quarantined
-      if (quarantinedTests.some(pattern => fullTestPath.includes(pattern) || pattern.includes(fullTestPath))) {
+      if (
+        quarantinedTests.some(
+          (pattern) =>
+            fullTestPath.includes(pattern) || pattern.includes(fullTestPath)
+        )
+      ) {
         // Skip with informative message
         console.log(`⏭️  Skipping quarantined test: ${fullTestPath}`);
         context.skip();

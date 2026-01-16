@@ -22,7 +22,10 @@ export function getDeviceEnabledStates(): DeviceEnabledState {
     }
     return JSON.parse(stored) as DeviceEnabledState;
   } catch (err) {
-    console.error('Failed to parse device enabled states from localStorage:', err);
+    console.error(
+      'Failed to parse device enabled states from localStorage:',
+      err
+    );
     return {};
   }
 }

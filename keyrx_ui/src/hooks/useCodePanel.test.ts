@@ -60,10 +60,14 @@ describe('useCodePanel', () => {
     });
 
     it('should handle localStorage errors gracefully', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-        throw new Error('Storage error');
-      });
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const getItemSpy = vi
+        .spyOn(Storage.prototype, 'getItem')
+        .mockImplementation(() => {
+          throw new Error('Storage error');
+        });
 
       const { result } = renderHook(() => useCodePanel());
 
@@ -138,7 +142,9 @@ describe('useCodePanel', () => {
       });
 
       expect(result.current.height).toBe(DEFAULT_HEIGHT);
-      expect(localStorage.getItem(STORAGE_KEY_HEIGHT)).toBe(DEFAULT_HEIGHT.toString());
+      expect(localStorage.getItem(STORAGE_KEY_HEIGHT)).toBe(
+        DEFAULT_HEIGHT.toString()
+      );
     });
 
     it('should not update height if value is negative', () => {
@@ -149,7 +155,9 @@ describe('useCodePanel', () => {
       });
 
       expect(result.current.height).toBe(DEFAULT_HEIGHT);
-      expect(localStorage.getItem(STORAGE_KEY_HEIGHT)).toBe(DEFAULT_HEIGHT.toString());
+      expect(localStorage.getItem(STORAGE_KEY_HEIGHT)).toBe(
+        DEFAULT_HEIGHT.toString()
+      );
     });
 
     it('should persist height changes to localStorage', () => {
@@ -169,10 +177,14 @@ describe('useCodePanel', () => {
     });
 
     it('should handle localStorage errors gracefully when persisting', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-        throw new Error('Storage error');
-      });
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const setItemSpy = vi
+        .spyOn(Storage.prototype, 'setItem')
+        .mockImplementation(() => {
+          throw new Error('Storage error');
+        });
 
       const { result } = renderHook(() => useCodePanel());
 

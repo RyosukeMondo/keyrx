@@ -24,11 +24,7 @@ export {
 export { useValidateConfig } from './useValidateConfig';
 
 // Config hooks
-export {
-  useConfig,
-  useSetKeyMapping,
-  useDeleteKeyMapping,
-} from './useConfig';
+export { useConfig, useSetKeyMapping, useDeleteKeyMapping } from './useConfig';
 
 // Metrics hooks
 export {
@@ -42,5 +38,9 @@ export {
 export { useUnifiedApi, type UseUnifiedApiReturn } from './useUnifiedApi';
 
 // Utility hooks
-export { useAutoSave, type UseAutoSaveOptions, type UseAutoSaveResult } from './useAutoSave';
+export {
+  useAutoSave,
+  type UseAutoSaveOptions,
+  type UseAutoSaveResult,
+} from './useAutoSave';
 export { useProfileSelection } from './useProfileSelection';

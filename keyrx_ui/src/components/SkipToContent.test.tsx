@@ -46,7 +46,10 @@ describe('SkipToContent', () => {
     renderWithProviders(<SkipToContent />);
 
     const link = screen.getByText('Skip to main content');
-    const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
+    const clickEvent = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
     const preventDefaultSpy = vi.spyOn(clickEvent, 'preventDefault');
 
     link.dispatchEvent(clickEvent);

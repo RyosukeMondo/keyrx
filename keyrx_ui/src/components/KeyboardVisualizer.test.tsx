@@ -24,7 +24,9 @@ describe('KeyboardVisualizer', () => {
   });
 
   it('renders with SVG element', () => {
-    const { container } = renderWithProviders(<KeyboardVisualizer {...defaultProps} />);
+    const { container } = renderWithProviders(
+      <KeyboardVisualizer {...defaultProps} />
+    );
 
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();
@@ -44,7 +46,9 @@ describe('KeyboardVisualizer', () => {
 
     // Find a key button (VK_ESC is first key in ANSI layout)
     const buttons = screen.getAllByRole('button');
-    const escKey = buttons.find(b => b.getAttribute('aria-label')?.includes('VK_ESC'));
+    const escKey = buttons.find(
+      (b) => b.getAttribute('aria-label')?.includes('VK_ESC')
+    );
 
     if (escKey) {
       await user.click(escKey);
@@ -63,7 +67,7 @@ describe('KeyboardVisualizer', () => {
 
     // Should have text elements showing mapping
     const texts = container.querySelectorAll('text');
-    const mappingText = Array.from(texts).find(t => t.textContent === 'B');
+    const mappingText = Array.from(texts).find((t) => t.textContent === 'B');
     expect(mappingText).toBeTruthy();
   });
 
@@ -81,7 +85,9 @@ describe('KeyboardVisualizer', () => {
 
     // Pressed keys have green fill color (#22c55e)
     const paths = container.querySelectorAll('path');
-    const pressedPath = Array.from(paths).find(p => p.getAttribute('fill') === '#22c55e');
+    const pressedPath = Array.from(paths).find(
+      (p) => p.getAttribute('fill') === '#22c55e'
+    );
     expect(pressedPath).toBeTruthy();
   });
 
@@ -97,7 +103,7 @@ describe('KeyboardVisualizer', () => {
   it('renders different layouts', () => {
     const layouts = ['ANSI_104', 'ISO_105', 'JIS_109', 'COMPACT_60'] as const;
 
-    layouts.forEach(layout => {
+    layouts.forEach((layout) => {
       const { unmount, container } = renderWithProviders(
         <KeyboardVisualizer {...defaultProps} layout={layout} />
       );
@@ -128,20 +134,34 @@ describe('KeyboardVisualizer', () => {
 
     // ISO layout should have VK_ENT key
     const buttons = screen.getAllByRole('button');
-    const enterKey = buttons.find(b => b.getAttribute('aria-label')?.includes('VK_ENT'));
+    const enterKey = buttons.find(
+      (b) => b.getAttribute('aria-label')?.includes('VK_ENT')
+    );
     expect(enterKey).toBeTruthy();
   });
 
   // TODO: Fix - tests implementation details (exact aria-label text content)
   it.skip('displays tooltip content on key aria-label', () => {
     const keyMappings = new Map<string, KeyMapping>([
-      ['VK_A', { type: 'tap_hold', tapAction: 'VK_A', holdAction: 'VK_LCTL', threshold: 200 }],
+      [
+        'VK_A',
+        {
+          type: 'tap_hold',
+          tapAction: 'VK_A',
+          holdAction: 'VK_LCTL',
+          threshold: 200,
+        },
+      ],
     ]);
 
-    renderWithProviders(<KeyboardVisualizer {...defaultProps} keyMappings={keyMappings} />);
+    renderWithProviders(
+      <KeyboardVisualizer {...defaultProps} keyMappings={keyMappings} />
+    );
 
     const buttons = screen.getAllByRole('button');
-    const aKey = buttons.find(b => b.getAttribute('aria-label')?.includes('VK_A'));
+    const aKey = buttons.find(
+      (b) => b.getAttribute('aria-label')?.includes('VK_A')
+    );
 
     // Should have tap/hold info in aria-label
     expect(aKey?.getAttribute('aria-label')).toContain('Tap');
@@ -170,24 +190,33 @@ describe('KeyboardVisualizer', () => {
       // - Result: mappings didn't show until normalization was added
 
       const keyMappings = new Map<string, KeyMapping>([
-        ['VK_B', {
-          type: 'tap_hold',
-          tapAction: 'VK_Enter',
-          holdAction: 'MD_00',
-          threshold: 200,
-        }],
-        ['VK_V', {
-          type: 'tap_hold',
-          tapAction: 'VK_Delete',
-          holdAction: 'MD_01',
-          threshold: 200,
-        }],
-        ['VK_M', {
-          type: 'tap_hold',
-          tapAction: 'VK_Backspace',
-          holdAction: 'MD_02',
-          threshold: 200,
-        }],
+        [
+          'VK_B',
+          {
+            type: 'tap_hold',
+            tapAction: 'VK_Enter',
+            holdAction: 'MD_00',
+            threshold: 200,
+          },
+        ],
+        [
+          'VK_V',
+          {
+            type: 'tap_hold',
+            tapAction: 'VK_Delete',
+            holdAction: 'MD_01',
+            threshold: 200,
+          },
+        ],
+        [
+          'VK_M',
+          {
+            type: 'tap_hold',
+            tapAction: 'VK_Backspace',
+            holdAction: 'MD_02',
+            threshold: 200,
+          },
+        ],
       ]);
 
       const { container } = renderWithProviders(
@@ -198,15 +227,25 @@ describe('KeyboardVisualizer', () => {
       const texts = container.querySelectorAll('text');
 
       // Check for tap/hold mapping text
-      const hasEnterMapping = Array.from(texts).some(t => t.textContent?.includes('Enter'));
-      const hasDeleteMapping = Array.from(texts).some(t => t.textContent?.includes('Del'));
-      const hasBackspaceMapping = Array.from(texts).some(t => t.textContent?.includes('BS'));
+      const hasEnterMapping = Array.from(texts).some(
+        (t) => t.textContent?.includes('Enter')
+      );
+      const hasDeleteMapping = Array.from(texts).some(
+        (t) => t.textContent?.includes('Del')
+      );
+      const hasBackspaceMapping = Array.from(texts).some(
+        (t) => t.textContent?.includes('BS')
+      );
 
-      expect(hasEnterMapping || hasDeleteMapping || hasBackspaceMapping).toBe(true);
+      expect(hasEnterMapping || hasDeleteMapping || hasBackspaceMapping).toBe(
+        true
+      );
 
       // Should have red strokes for tap_hold mappings
       const paths = container.querySelectorAll('path');
-      const redStrokes = Array.from(paths).filter(p => p.getAttribute('stroke') === '#ef4444');
+      const redStrokes = Array.from(paths).filter(
+        (p) => p.getAttribute('stroke') === '#ef4444'
+      );
       expect(redStrokes.length).toBeGreaterThan(0);
     });
 
@@ -222,7 +261,9 @@ describe('KeyboardVisualizer', () => {
 
       // Should have green strokes for simple mappings
       const paths = container.querySelectorAll('path');
-      const greenStrokes = Array.from(paths).filter(p => p.getAttribute('stroke') === '#22c55e');
+      const greenStrokes = Array.from(paths).filter(
+        (p) => p.getAttribute('stroke') === '#22c55e'
+      );
       expect(greenStrokes.length).toBeGreaterThan(0);
     });
 
@@ -232,7 +273,9 @@ describe('KeyboardVisualizer', () => {
 
       // Layout files use KC_ESC, but onKeyClick should receive VK_ESC
       const buttons = screen.getAllByRole('button');
-      const escKey = buttons.find(b => b.getAttribute('aria-label')?.includes('VK_ESC'));
+      const escKey = buttons.find(
+        (b) => b.getAttribute('aria-label')?.includes('VK_ESC')
+      );
 
       if (escKey) {
         await user.click(escKey);

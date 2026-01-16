@@ -47,10 +47,13 @@ describe('useAutoSave', () => {
       expect(saveFn).not.toHaveBeenCalled();
 
       // Wait for debounce delay
-      await waitFor(() => {
-        expect(saveFn).toHaveBeenCalledTimes(1);
-        expect(saveFn).toHaveBeenCalledWith('data4');
-      }, { timeout: 200 });
+      await waitFor(
+        () => {
+          expect(saveFn).toHaveBeenCalledTimes(1);
+          expect(saveFn).toHaveBeenCalledWith('data4');
+        },
+        { timeout: 200 }
+      );
     });
 
     it('saves data successfully', async () => {
@@ -60,8 +63,7 @@ describe('useAutoSave', () => {
       );
 
       // Wait for debounce and save to complete
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(result.current.isSaving).toBe(false);
@@ -86,8 +88,7 @@ describe('useAutoSave', () => {
       );
 
       // Trigger save
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should be saving
       await waitFor(() => {
@@ -137,8 +138,7 @@ describe('useAutoSave', () => {
       rerender({ data: 'data2' });
 
       // Wait a bit but not long enough for debounce
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Call saveNow
       act(() => {
@@ -151,8 +151,7 @@ describe('useAutoSave', () => {
       });
 
       // Advance past original debounce time
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should still only have been called once
       expect(saveFn).toHaveBeenCalledTimes(1);
@@ -170,8 +169,7 @@ describe('useAutoSave', () => {
       });
 
       // Advance timers
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should not have saved
       expect(saveFn).not.toHaveBeenCalled();
@@ -199,16 +197,13 @@ describe('useAutoSave', () => {
       );
 
       // Trigger initial save
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // First retry after 100ms
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Second retry after 200ms (exponential backoff)
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should have succeeded on third attempt
       await waitFor(() => {
@@ -231,16 +226,13 @@ describe('useAutoSave', () => {
       );
 
       // Trigger initial save
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // First retry
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Second retry
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should have stopped retrying
       await waitFor(() => {
@@ -264,12 +256,10 @@ describe('useAutoSave', () => {
       );
 
       // Trigger save
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Wait for potential retries
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should not have retried
       await waitFor(() => {
@@ -289,8 +279,7 @@ describe('useAutoSave', () => {
         })
       );
 
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(saveFn).toHaveBeenCalledTimes(1);
@@ -300,7 +289,9 @@ describe('useAutoSave', () => {
 
     // TODO: Fix - error.message is undefined in test environment
     it.skip('does not retry validation errors with "validation" in message', async () => {
-      const saveFn = vi.fn().mockRejectedValue(new Error('Validation failed: invalid data'));
+      const saveFn = vi
+        .fn()
+        .mockRejectedValue(new Error('Validation failed: invalid data'));
 
       const { result } = renderHook(() =>
         useAutoSave('test data', {
@@ -310,8 +301,7 @@ describe('useAutoSave', () => {
         })
       );
 
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(saveFn).toHaveBeenCalledTimes(1);
@@ -341,12 +331,10 @@ describe('useAutoSave', () => {
       );
 
       // Trigger save (will fail once then succeed)
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Wait for retry and success
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(result.current.error).toBe(null);
@@ -358,12 +346,10 @@ describe('useAutoSave', () => {
       saveFn.mockRejectedValue(new Error('New error'));
       rerender({ data: 'data2' });
 
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should retry from count 0, not continue from previous
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(saveFn).toHaveBeenCalled();
@@ -383,8 +369,7 @@ describe('useAutoSave', () => {
         })
       );
 
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(result.current.error).toBeInstanceOf(Error);
@@ -404,8 +389,7 @@ describe('useAutoSave', () => {
         })
       );
 
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(result.current.error).toBeInstanceOf(Error);
@@ -424,8 +408,7 @@ describe('useAutoSave', () => {
         })
       );
 
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(result.current.error).not.toBe(null);
@@ -458,8 +441,7 @@ describe('useAutoSave', () => {
       );
 
       // Trigger failing save
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(result.current.error).not.toBe(null);
@@ -469,8 +451,7 @@ describe('useAutoSave', () => {
       shouldFail = false;
       rerender({ data: 'data2' });
 
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(result.current.error).toBe(null);
@@ -491,8 +472,7 @@ describe('useAutoSave', () => {
       rerender({ data: 'data2' });
 
       // Wait for debounce
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should not have saved
       expect(saveFn).not.toHaveBeenCalled();
@@ -507,16 +487,14 @@ describe('useAutoSave', () => {
       );
 
       // Should not save when disabled
-      await act(async () => {
-      });
+      await act(async () => {});
       expect(saveFn).not.toHaveBeenCalled();
 
       // Enable auto-save
       rerender({ enabled: true });
 
       // Should now save
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(saveFn).toHaveBeenCalledWith('test data');
@@ -538,8 +516,7 @@ describe('useAutoSave', () => {
       rerender({ enabled: false, data: 'data2' });
 
       // Wait for debounce
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should not have saved
       expect(saveFn).not.toHaveBeenCalled();
@@ -557,8 +534,7 @@ describe('useAutoSave', () => {
       unmount();
 
       // Advance timers
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should not have saved after unmount
       expect(saveFn).not.toHaveBeenCalled();
@@ -571,8 +547,7 @@ describe('useAutoSave', () => {
       );
 
       // Trigger save
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Unmount immediately
       unmount();
@@ -598,15 +573,13 @@ describe('useAutoSave', () => {
       );
 
       // Trigger save (will fail)
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Unmount before retry
       unmount();
 
       // Advance past retry time
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // Should only have been called once (initial attempt)
       expect(saveFn).toHaveBeenCalledTimes(1);
@@ -616,18 +589,14 @@ describe('useAutoSave', () => {
   describe('Custom Configuration', () => {
     it('uses custom debounce time', async () => {
       const saveFn = vi.fn().mockResolvedValue(undefined);
-      renderHook(() =>
-        useAutoSave('test data', { saveFn, debounceMs: 200 })
-      );
+      renderHook(() => useAutoSave('test data', { saveFn, debounceMs: 200 }));
 
       // Wait for 1 second (less than debounce)
-      await act(async () => {
-      });
+      await act(async () => {});
       expect(saveFn).not.toHaveBeenCalled();
 
       // Wait for another 1 second (total 2 seconds)
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(saveFn).toHaveBeenCalled();
@@ -648,8 +617,7 @@ describe('useAutoSave', () => {
       );
 
       // Trigger initial save + 5 retries
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(saveFn).toHaveBeenCalledTimes(6); // Initial + 5 retries
@@ -676,12 +644,10 @@ describe('useAutoSave', () => {
       );
 
       // Initial save
-      await act(async () => {
-      });
+      await act(async () => {});
 
       // First retry should be after 500ms
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(saveFn).toHaveBeenCalledTimes(2);
@@ -703,8 +669,7 @@ describe('useAutoSave', () => {
       }
 
       // Should only save once with latest data
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(saveFn).toHaveBeenCalledTimes(1);
@@ -727,8 +692,7 @@ describe('useAutoSave', () => {
       );
 
       // Trigger first save
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(result.current.isSaving).toBe(true);
@@ -744,8 +708,7 @@ describe('useAutoSave', () => {
       });
 
       // Should trigger second save
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(saveFn).toHaveBeenCalledTimes(2);
@@ -757,8 +720,7 @@ describe('useAutoSave', () => {
       const saveFn = vi.fn().mockResolvedValue(undefined);
       renderHook(() => useAutoSave('test data', { saveFn, debounceMs: 0 }));
 
-      await act(async () => {
-      });
+      await act(async () => {});
 
       await waitFor(() => {
         expect(saveFn).toHaveBeenCalled();

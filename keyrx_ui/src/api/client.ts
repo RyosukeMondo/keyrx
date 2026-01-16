@@ -56,9 +56,8 @@ async function apiFetch<T>(
         const message = data.error.message;
 
         // Ensure message is a string (handle case where message itself is an object)
-        errorMessage = typeof message === 'string'
-          ? message
-          : JSON.stringify(message);
+        errorMessage =
+          typeof message === 'string' ? message : JSON.stringify(message);
 
         errorCode = data.error.code;
       } else if (typeof data.error === 'string') {
@@ -71,11 +70,7 @@ async function apiFetch<T>(
         errorCode = data.errorCode;
       }
 
-      throw new ApiError(
-        errorMessage,
-        response.status,
-        errorCode
-      );
+      throw new ApiError(errorMessage, response.status, errorCode);
     }
 
     // Return the data directly if it's wrapped, otherwise return the whole response

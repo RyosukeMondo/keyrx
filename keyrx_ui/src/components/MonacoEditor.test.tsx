@@ -144,7 +144,9 @@ describe('MonacoEditor', () => {
       });
 
       await waitFor(() => {
-        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith(testValue);
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith(
+          testValue
+        );
       });
     });
 
@@ -199,7 +201,9 @@ describe('MonacoEditor', () => {
       const onValidate = vi.fn();
 
       await act(async () => {
-        renderWithProviders(<MonacoEditor value="invalid" onValidate={onValidate} />);
+        renderWithProviders(
+          <MonacoEditor value="invalid" onValidate={onValidate} />
+        );
       });
 
       await waitFor(() => {
@@ -212,7 +216,9 @@ describe('MonacoEditor', () => {
 
       const onChange = vi.fn();
       await act(async () => {
-        renderWithProviders(<MonacoEditor value="initial" onChange={onChange} />);
+        renderWithProviders(
+          <MonacoEditor value="initial" onChange={onChange} />
+        );
       });
 
       // Wait for initial validation to complete
@@ -246,7 +252,9 @@ describe('MonacoEditor', () => {
     });
 
     it('handles validation errors gracefully', async () => {
-      mockWasmContextValue.validateConfig.mockRejectedValue(new Error('Validation failed'));
+      mockWasmContextValue.validateConfig.mockRejectedValue(
+        new Error('Validation failed')
+      );
 
       await act(async () => {
         renderWithProviders(<MonacoEditor value="test" />);
@@ -270,7 +278,9 @@ describe('MonacoEditor', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Press F8 to navigate to next error')).toBeInTheDocument();
+        expect(
+          screen.getByText('Press F8 to navigate to next error')
+        ).toBeInTheDocument();
       });
     });
 
@@ -285,7 +295,9 @@ describe('MonacoEditor', () => {
         expect(mockWasmContextValue.validateConfig).toHaveBeenCalled();
       });
 
-      expect(screen.queryByText('Press F8 to navigate to next error')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Press F8 to navigate to next error')
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -311,7 +323,9 @@ describe('MonacoEditor', () => {
     it('calls onChange when editor value changes', async () => {
       const onChange = vi.fn();
       await act(async () => {
-        renderWithProviders(<MonacoEditor value="initial" onChange={onChange} />);
+        renderWithProviders(
+          <MonacoEditor value="initial" onChange={onChange} />
+        );
       });
 
       // onChange callback is properly passed to the component
@@ -321,12 +335,16 @@ describe('MonacoEditor', () => {
     it('triggers validation after onChange', async () => {
       const onChange = vi.fn();
       await act(async () => {
-        renderWithProviders(<MonacoEditor value="initial" onChange={onChange} />);
+        renderWithProviders(
+          <MonacoEditor value="initial" onChange={onChange} />
+        );
       });
 
       // Initial validation completes
       await waitFor(() => {
-        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith('initial');
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith(
+          'initial'
+        );
       });
     });
   });
@@ -477,7 +495,9 @@ describe('MonacoEditor', () => {
 
       // Initial validation happens
       await waitFor(() => {
-        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith('initial');
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith(
+          'initial'
+        );
       });
     });
 
@@ -531,7 +551,9 @@ describe('MonacoEditor', () => {
       });
 
       await waitFor(() => {
-        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith('let x = 42;');
+        expect(mockWasmContextValue.validateConfig).toHaveBeenCalledWith(
+          'let x = 42;'
+        );
       });
     });
 
@@ -583,7 +605,9 @@ describe('MonacoEditor', () => {
 
       // Should show errors
       expect(screen.getByText('✗ 1 error')).toBeInTheDocument();
-      expect(screen.getByText('Press F8 to navigate to next error')).toBeInTheDocument();
+      expect(
+        screen.getByText('Press F8 to navigate to next error')
+      ).toBeInTheDocument();
     });
   });
 });

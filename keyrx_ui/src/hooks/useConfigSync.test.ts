@@ -1,7 +1,10 @@
 import { renderHook, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useConfigSync } from './useConfigSync';
-import type { RhaiSyncEngineResult, SyncState } from '@/components/RhaiSyncEngine';
+import type {
+  RhaiSyncEngineResult,
+  SyncState,
+} from '@/components/RhaiSyncEngine';
 
 // Mock the useRhaiSyncEngine hook
 vi.mock('@/components/RhaiSyncEngine', () => ({
@@ -174,7 +177,9 @@ describe('useConfigSync', () => {
   });
 
   it('should log state changes when onStateChange is called', () => {
-    const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const consoleDebugSpy = vi
+      .spyOn(console, 'debug')
+      .mockImplementation(() => {});
 
     renderHook(() => useConfigSync('TestProfile'));
 
@@ -183,13 +188,18 @@ describe('useConfigSync', () => {
       mockOnStateChange('parsing' as SyncState);
     });
 
-    expect(consoleDebugSpy).toHaveBeenCalledWith('Sync state changed:', 'parsing');
+    expect(consoleDebugSpy).toHaveBeenCalledWith(
+      'Sync state changed:',
+      'parsing'
+    );
 
     consoleDebugSpy.mockRestore();
   });
 
   it('should log errors when onError is called', () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
 
     renderHook(() => useConfigSync('TestProfile'));
 

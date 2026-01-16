@@ -163,9 +163,7 @@ describe('useRenameDevice', () => {
     ];
 
     vi.mocked(deviceApi.fetchDevices).mockResolvedValue(mockDevices);
-    vi.mocked(deviceApi.renameDevice).mockRejectedValue(
-      new Error('API error')
-    );
+    vi.mocked(deviceApi.renameDevice).mockRejectedValue(new Error('API error'));
 
     const wrapper = createWrapper();
 
@@ -214,10 +212,9 @@ describe('useSetDeviceScope', () => {
     });
     await waitFor(() => expect(devicesResult.current.isSuccess).toBe(true));
 
-    const { result: mutationResult } = renderHook(
-      () => useSetDeviceScope(),
-      { wrapper }
-    );
+    const { result: mutationResult } = renderHook(() => useSetDeviceScope(), {
+      wrapper,
+    });
 
     mutationResult.current.mutate({
       id: 'device-1',

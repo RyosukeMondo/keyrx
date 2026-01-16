@@ -42,9 +42,5 @@ interface ConfigurationLayoutProps {
 export const ConfigurationLayout: React.FC<ConfigurationLayoutProps> = ({
   children,
 }) => {
-  return (
-    <div className="flex flex-col gap-4">
-      {children}
-    </div>
-  );
+  return <div className="flex flex-col gap-4">{children}</div>;
 };

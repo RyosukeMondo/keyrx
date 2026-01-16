@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/react';
-import { renderWithProviders, setupMockWebSocket, cleanupMockWebSocket } from '../../tests/testUtils';
+import {
+  renderWithProviders,
+  setupMockWebSocket,
+  cleanupMockWebSocket,
+} from '../../tests/testUtils';
 import { MetricsPage } from './MetricsPage';
 
 // Mock recharts to avoid rendering issues in tests
@@ -24,7 +28,10 @@ vi.mock('react-window', () => ({
     children,
     itemCount,
   }: {
-    children: (props: { index: number; style: React.CSSProperties }) => React.ReactNode;
+    children: (props: {
+      index: number;
+      style: React.CSSProperties;
+    }) => React.ReactNode;
     itemCount: number;
   }) => (
     <div data-testid="virtual-list">
@@ -111,9 +118,16 @@ describe('MetricsPage', () => {
     renderWithProviders(<MetricsPage />);
 
     // Should render some event entries (at least the first 10 due to virtual scrolling mock)
-    const eventTypes = ['press', 'release', 'tap', 'hold', 'macro', 'layer_switch'];
-    const renderedTypes = eventTypes.filter((type) =>
-      screen.queryAllByText(type).length > 0
+    const eventTypes = [
+      'press',
+      'release',
+      'tap',
+      'hold',
+      'macro',
+      'layer_switch',
+    ];
+    const renderedTypes = eventTypes.filter(
+      (type) => screen.queryAllByText(type).length > 0
     );
 
     expect(renderedTypes.length).toBeGreaterThan(0);
@@ -123,7 +137,9 @@ describe('MetricsPage', () => {
     renderWithProviders(<MetricsPage />);
 
     expect(screen.getByText('State Inspector')).toBeInTheDocument();
-    expect(screen.getByText('Current daemon internal state')).toBeInTheDocument();
+    expect(
+      screen.getByText('Current daemon internal state')
+    ).toBeInTheDocument();
   });
 
   it('displays state fields', () => {

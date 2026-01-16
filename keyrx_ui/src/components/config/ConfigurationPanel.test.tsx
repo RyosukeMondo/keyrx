@@ -13,12 +13,19 @@ import type { Device } from '@/components/DeviceSelector';
 
 // Mock all child components
 vi.mock('@/components/DeviceSelector', () => ({
-  DeviceSelector: ({ devices, selectedDevices, globalSelected, onSelectionChange }: any) => (
+  DeviceSelector: ({
+    devices,
+    selectedDevices,
+    globalSelected,
+    onSelectionChange,
+  }: any) => (
     <div data-testid="device-selector">
       <div data-testid="devices-count">{devices.length}</div>
       <div data-testid="selected-count">{selectedDevices.length}</div>
       <div data-testid="global-selected">{String(globalSelected)}</div>
-      <button onClick={() => onSelectionChange(['device1'], false)}>Change Selection</button>
+      <button onClick={() => onSelectionChange(['device1'], false)}>
+        Change Selection
+      </button>
     </div>
   ),
 }));
@@ -36,10 +43,14 @@ vi.mock('@/components/LayerSwitcher', () => ({
 vi.mock('@/components/KeyPalette', () => ({
   KeyPalette: ({ onKeySelect, selectedKey, compact }: any) => (
     <div data-testid="key-palette">
-      <div data-testid="selected-key">{selectedKey ? selectedKey.code : 'none'}</div>
+      <div data-testid="selected-key">
+        {selectedKey ? selectedKey.code : 'none'}
+      </div>
       <div data-testid="compact-mode">{String(compact)}</div>
       <button
-        onClick={() => onKeySelect({ code: 'VK_A', label: 'A', category: 'letter' })}
+        onClick={() =>
+          onKeySelect({ code: 'VK_A', label: 'A', category: 'letter' })
+        }
       >
         Select Key
       </button>
@@ -48,7 +59,12 @@ vi.mock('@/components/KeyPalette', () => ({
 }));
 
 vi.mock('@/components/KeyConfigPanel', () => ({
-  KeyConfigPanel: ({ physicalKey, currentMapping, onSave, onClearMapping, activeLayer }: any) => (
+  KeyConfigPanel: ({
+    physicalKey,
+    onSave,
+    onClearMapping,
+    activeLayer,
+  }: any) => (
     <div data-testid="key-config-panel">
       <div data-testid="physical-key">{physicalKey || 'none'}</div>
       <div data-testid="active-layer-in-config">{activeLayer}</div>
@@ -60,14 +76,20 @@ vi.mock('@/components/KeyConfigPanel', () => ({
         Save Mapping
       </button>
       {physicalKey && (
-        <button onClick={() => onClearMapping(physicalKey)}>Clear Mapping</button>
+        <button onClick={() => onClearMapping(physicalKey)}>
+          Clear Mapping
+        </button>
       )}
     </div>
   ),
 }));
 
 vi.mock('@/components/CurrentMappingsSummary', () => ({
-  CurrentMappingsSummary: ({ keyMappings, onEditMapping, onClearMapping }: any) => (
+  CurrentMappingsSummary: ({
+    keyMappings,
+    onEditMapping,
+    onClearMapping,
+  }: any) => (
     <div data-testid="mappings-summary">
       <div data-testid="mappings-count">{keyMappings.size}</div>
       <button onClick={() => onEditMapping('VK_A')}>Edit Mapping</button>
@@ -126,7 +148,9 @@ describe('ConfigurationPanel', () => {
       const { container } = render(<ConfigurationPanel {...defaultProps} />);
 
       const children = Array.from(container.querySelectorAll('[data-testid]'));
-      const testIds = children.map((child) => child.getAttribute('data-testid'));
+      const testIds = children.map((child) =>
+        child.getAttribute('data-testid')
+      );
 
       // Verify order: DeviceSelector -> LayerSwitcher -> KeyPalette -> KeyConfigPanel -> MappingsSummary
       expect(testIds).toContain('device-selector');
@@ -145,7 +169,12 @@ describe('ConfigurationPanel', () => {
     });
 
     it('passes selectedDevices prop to DeviceSelector', () => {
-      render(<ConfigurationPanel {...defaultProps} selectedDevices={['device1', 'device2']} />);
+      render(
+        <ConfigurationPanel
+          {...defaultProps}
+          selectedDevices={['device1', 'device2']}
+        />
+      );
 
       expect(screen.getByTestId('selected-count')).toHaveTextContent('2');
     });
@@ -164,7 +193,10 @@ describe('ConfigurationPanel', () => {
       const button = screen.getByText('Change Selection');
       await user.click(button);
 
-      expect(mockOnDeviceSelectionChange).toHaveBeenCalledWith(['device1'], false);
+      expect(mockOnDeviceSelectionChange).toHaveBeenCalledWith(
+        ['device1'],
+        false
+      );
       expect(mockOnDeviceSelectionChange).toHaveBeenCalledTimes(1);
     });
 
@@ -183,7 +215,12 @@ describe('ConfigurationPanel', () => {
     });
 
     it('passes availableLayers prop to LayerSwitcher', () => {
-      render(<ConfigurationPanel {...defaultProps} availableLayers={['base', 'md-00']} />);
+      render(
+        <ConfigurationPanel
+          {...defaultProps}
+          availableLayers={['base', 'md-00']}
+        />
+      );
 
       expect(screen.getByTestId('layers-count')).toHaveTextContent('2');
     });
@@ -201,7 +238,9 @@ describe('ConfigurationPanel', () => {
     });
 
     it('handles single layer', () => {
-      render(<ConfigurationPanel {...defaultProps} availableLayers={['base']} />);
+      render(
+        <ConfigurationPanel {...defaultProps} availableLayers={['base']} />
+      );
 
       expect(screen.getByTestId('layers-count')).toHaveTextContent('1');
     });
@@ -215,13 +254,20 @@ describe('ConfigurationPanel', () => {
         category: 'letter',
       };
 
-      render(<ConfigurationPanel {...defaultProps} selectedPaletteKey={selectedKey} />);
+      render(
+        <ConfigurationPanel
+          {...defaultProps}
+          selectedPaletteKey={selectedKey}
+        />
+      );
 
       expect(screen.getByTestId('selected-key')).toHaveTextContent('VK_A');
     });
 
     it('shows none when no key is selected', () => {
-      render(<ConfigurationPanel {...defaultProps} selectedPaletteKey={null} />);
+      render(
+        <ConfigurationPanel {...defaultProps} selectedPaletteKey={null} />
+      );
 
       expect(screen.getByTestId('selected-key')).toHaveTextContent('none');
     });
@@ -251,13 +297,17 @@ describe('ConfigurationPanel', () => {
 
   describe('KeyConfigPanel Integration', () => {
     it('passes selectedPhysicalKey to KeyConfigPanel', () => {
-      render(<ConfigurationPanel {...defaultProps} selectedPhysicalKey="VK_A" />);
+      render(
+        <ConfigurationPanel {...defaultProps} selectedPhysicalKey="VK_A" />
+      );
 
       expect(screen.getByTestId('physical-key')).toHaveTextContent('VK_A');
     });
 
     it('shows none when no physical key is selected', () => {
-      render(<ConfigurationPanel {...defaultProps} selectedPhysicalKey={null} />);
+      render(
+        <ConfigurationPanel {...defaultProps} selectedPhysicalKey={null} />
+      );
 
       expect(screen.getByTestId('physical-key')).toHaveTextContent('none');
     });
@@ -265,13 +315,17 @@ describe('ConfigurationPanel', () => {
     it('passes activeLayer to KeyConfigPanel', () => {
       render(<ConfigurationPanel {...defaultProps} activeLayer="md-01" />);
 
-      expect(screen.getByTestId('active-layer-in-config')).toHaveTextContent('md-01');
+      expect(screen.getByTestId('active-layer-in-config')).toHaveTextContent(
+        'md-01'
+      );
     });
 
     it('calls onSaveMapping when save button is clicked', async () => {
       const user = userEvent.setup();
 
-      render(<ConfigurationPanel {...defaultProps} selectedPhysicalKey="VK_A" />);
+      render(
+        <ConfigurationPanel {...defaultProps} selectedPhysicalKey="VK_A" />
+      );
 
       const button = screen.getByText('Save Mapping');
       await user.click(button);
@@ -287,7 +341,9 @@ describe('ConfigurationPanel', () => {
     it('calls onClearMapping when clear button is clicked', async () => {
       const user = userEvent.setup();
 
-      render(<ConfigurationPanel {...defaultProps} selectedPhysicalKey="VK_A" />);
+      render(
+        <ConfigurationPanel {...defaultProps} selectedPhysicalKey="VK_A" />
+      );
 
       // Get the clear button from KeyConfigPanel specifically (first one)
       const buttons = screen.getAllByText('Clear Mapping');
@@ -368,7 +424,9 @@ describe('ConfigurationPanel', () => {
 
       expect(screen.getByTestId('physical-key')).toHaveTextContent('none');
 
-      rerender(<ConfigurationPanel {...defaultProps} selectedPhysicalKey="VK_A" />);
+      rerender(
+        <ConfigurationPanel {...defaultProps} selectedPhysicalKey="VK_A" />
+      );
 
       expect(screen.getByTestId('physical-key')).toHaveTextContent('VK_A');
     });
@@ -454,10 +512,15 @@ describe('ConfigurationPanel', () => {
     it('handles large number of mappings', () => {
       const largeMappings = new Map<string, KeyMapping>();
       for (let i = 0; i < 100; i++) {
-        largeMappings.set(`VK_${i}`, { type: 'simple', tapAction: `VK_${i + 1}` });
+        largeMappings.set(`VK_${i}`, {
+          type: 'simple',
+          tapAction: `VK_${i + 1}`,
+        });
       }
 
-      render(<ConfigurationPanel {...defaultProps} keyMappings={largeMappings} />);
+      render(
+        <ConfigurationPanel {...defaultProps} keyMappings={largeMappings} />
+      );
 
       expect(screen.getByTestId('mappings-count')).toHaveTextContent('100');
     });

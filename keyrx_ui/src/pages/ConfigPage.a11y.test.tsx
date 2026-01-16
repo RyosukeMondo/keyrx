@@ -13,7 +13,10 @@ import {
   cleanupMockWebSocket,
   simulateConnected,
 } from '../../tests/testUtils';
-import { runA11yAudit, runCompleteA11yAudit } from '../../tests/AccessibilityTestHelper';
+import {
+  runA11yAudit,
+  runCompleteA11yAudit,
+} from '../../tests/AccessibilityTestHelper';
 import ConfigPage from './ConfigPage';
 
 describe('ConfigPage Accessibility', () => {
@@ -31,7 +34,7 @@ describe('ConfigPage Accessibility', () => {
     });
 
     // Small delay to let component initialize
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const results = await runA11yAudit(container);
     expect(results).toHaveNoViolations();
@@ -43,7 +46,7 @@ describe('ConfigPage Accessibility', () => {
     });
 
     // Small delay to let component initialize
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const results = await runCompleteA11yAudit(container);
 
@@ -66,7 +69,7 @@ describe('ConfigPage Accessibility', () => {
     });
 
     // Small delay to let component initialize
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Verify semantic HTML landmarks exist
     const main = container.querySelector('main');
@@ -79,7 +82,7 @@ describe('ConfigPage Accessibility', () => {
     });
 
     // Small delay to let component initialize
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Look for h1 or h2 heading
     const heading = container.querySelector('h1, h2');

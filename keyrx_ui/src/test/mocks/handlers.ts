@@ -50,7 +50,7 @@ const initialDevices: DeviceEntry[] = [
   },
 ];
 
-let mockDevices: DeviceEntry[] = JSON.parse(JSON.stringify(initialDevices));
+const mockDevices: DeviceEntry[] = JSON.parse(JSON.stringify(initialDevices));
 
 const initialProfiles: MockProfile[] = [
   {
@@ -77,7 +77,7 @@ const initialProfiles: MockProfile[] = [
   },
 ];
 
-let mockProfiles: MockProfile[] = JSON.parse(JSON.stringify(initialProfiles));
+const mockProfiles: MockProfile[] = JSON.parse(JSON.stringify(initialProfiles));
 
 export const handlers = [
   // Device endpoints
@@ -114,7 +114,11 @@ export const handlers = [
 
   http.patch('/api/devices/:id', async ({ request, params }) => {
     const { id } = params;
-    const body = (await request.json()) as { name?: string; layout?: string; enabled?: boolean };
+    const body = (await request.json()) as {
+      name?: string;
+      layout?: string;
+      enabled?: boolean;
+    };
 
     const device = mockDevices.find((d) => d.id === id);
     if (!device) {

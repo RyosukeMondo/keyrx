@@ -124,7 +124,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       {/* Key Configuration Panel - Configure selected key */}
       <KeyConfigPanel
         physicalKey={selectedPhysicalKey}
-        currentMapping={selectedPhysicalKey ? keyMappings.get(selectedPhysicalKey) : undefined}
+        currentMapping={
+          selectedPhysicalKey ? keyMappings.get(selectedPhysicalKey) : undefined
+        }
         onSave={onSaveMapping}
         onClearMapping={onClearMapping}
         onEditMapping={onEditMapping}

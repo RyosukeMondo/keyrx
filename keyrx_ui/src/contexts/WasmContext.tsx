@@ -1,5 +1,15 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { ValidationError, SimulationResult, SimulationInput } from '../hooks/useWasm';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
+import type {
+  ValidationError,
+  SimulationResult,
+  SimulationInput,
+} from '../hooks/useWasm';
 
 // Type definitions for WASM module
 interface WasmModule {
@@ -13,7 +23,10 @@ interface WasmContextValue {
   isLoading: boolean;
   error: Error | null;
   validateConfig: (code: string) => Promise<ValidationError[]>;
-  runSimulation: (code: string, input: SimulationInput) => Promise<SimulationResult | null>;
+  runSimulation: (
+    code: string,
+    input: SimulationInput
+  ) => Promise<SimulationResult | null>;
 }
 
 const WasmContext = createContext<WasmContextValue | null>(null);
@@ -38,7 +51,9 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
       try {
         console.info('[WASM] Fetching module...');
         const module = await import('@/wasm/pkg/keyrx_core.js').catch(() => {
-          throw new Error('WASM module not found. Run build:wasm to compile the WASM module.');
+          throw new Error(
+            'WASM module not found. Run build:wasm to compile the WASM module.'
+          );
         });
 
         console.info('[WASM] Module loaded, initializing...');
@@ -48,11 +63,16 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
         setWasmModule(module as unknown as WasmModule);
         setIsWasmReady(true);
         setIsLoading(false);
-        console.info(`[WASM] ✓ Global initialization complete in ${loadTime.toFixed(0)}ms`);
+        console.info(
+          `[WASM] ✓ Global initialization complete in ${loadTime.toFixed(0)}ms`
+        );
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         const loadTime = performance.now() - startTime;
-        console.warn(`[WASM] Initialization failed after ${loadTime.toFixed(0)}ms:`, errorMessage);
+        console.warn(
+          `[WASM] Initialization failed after ${loadTime.toFixed(0)}ms:`,
+          errorMessage
+        );
         setError(err instanceof Error ? err : new Error(errorMessage));
         setIsWasmReady(false);
         setIsLoading(false);
@@ -96,7 +116,10 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
   );
 
   const runSimulation = useCallback(
-    async (code: string, input: SimulationInput): Promise<SimulationResult | null> => {
+    async (
+      code: string,
+      input: SimulationInput
+    ): Promise<SimulationResult | null> => {
       if (!isWasmReady || !wasmModule) {
         console.debug('WASM not ready, skipping simulation');
         return null;

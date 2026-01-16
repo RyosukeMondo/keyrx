@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useRhaiSyncEngine, type RhaiSyncEngineResult } from '@/components/RhaiSyncEngine';
+import {
+  useRhaiSyncEngine,
+  type RhaiSyncEngineResult,
+} from '@/components/RhaiSyncEngine';
 
 export type SyncStatus = 'saved' | 'unsaved' | 'saving';
 
@@ -41,17 +44,24 @@ export function useConfigSync(profileName: string): UseConfigSyncReturn {
   const syncEngine = useRhaiSyncEngine({
     storageKey: `profile-${profileName}`,
     debounceMs: 500,
-    onStateChange: (state) => {
-      console.debug('Sync state changed:', state);
+    onStateChange: () => {
+      // Sync state changed
     },
     onError: (error, direction) => {
-      console.error('Sync error:', { error, direction });
+      // Log error to console in development
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('Sync error:', { error, direction });
+      }
     },
   });
 
   // Reset sync status when profile changes
+  // This is intentional - we want to reset state synchronously when the profile changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSyncStatus('saved');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLastSaveTime(null);
   }, [profileName]);
 

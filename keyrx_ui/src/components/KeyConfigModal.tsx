@@ -11,7 +11,7 @@ import {
   Lock,
   Command,
   X,
-  Radio
+  Radio,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import type { KeyMapping } from '@/types';
@@ -80,19 +80,32 @@ export function KeyConfigModal({
   // Determine initial mapping type
   const initialMappingType = useMemo(() => {
     if (!currentMapping) return 'simple';
-    const validTypes: MappingType[] = ['simple', 'modifier', 'lock', 'tap_hold', 'layer_active'];
+    const validTypes: MappingType[] = [
+      'simple',
+      'modifier',
+      'lock',
+      'tap_hold',
+      'layer_active',
+    ];
     return validTypes.includes(currentMapping.type as MappingType)
       ? (currentMapping.type as MappingType)
       : 'simple';
   }, [currentMapping]);
 
-  const [mappingType, setMappingType] = useState<MappingType>(initialMappingType);
+  const [mappingType, setMappingType] =
+    useState<MappingType>(initialMappingType);
   const [tapAction, setTapAction] = useState(currentMapping?.tapAction || '');
-  const [holdAction, setHoldAction] = useState(currentMapping?.holdAction || '');
+  const [holdAction, setHoldAction] = useState(
+    currentMapping?.holdAction || ''
+  );
   const [threshold, setThreshold] = useState(currentMapping?.threshold || 200);
-  const [modifierKey, setModifierKey] = useState(currentMapping?.modifierKey || '');
+  const [modifierKey, setModifierKey] = useState(
+    currentMapping?.modifierKey || ''
+  );
   const [lockKey, setLockKey] = useState(currentMapping?.lockKey || '');
-  const [targetLayer, setTargetLayer] = useState(currentMapping?.targetLayer || '');
+  const [targetLayer, setTargetLayer] = useState(
+    currentMapping?.targetLayer || ''
+  );
   const [useKeyboard, setUseKeyboard] = useState(false); // Toggle between keyboard and palette
 
   // Key listening state
@@ -100,37 +113,40 @@ export function KeyConfigModal({
   const [listeningFor, setListeningFor] = useState<'tap' | 'hold' | null>(null);
 
   // Key listening effect
-  const handleKeyCapture = useCallback((event: KeyboardEvent) => {
-    if (!isListening) return;
+  const handleKeyCapture = useCallback(
+    (event: KeyboardEvent) => {
+      if (!isListening) return;
 
-    event.preventDefault();
-    event.stopPropagation();
+      event.preventDefault();
+      event.stopPropagation();
 
-    // Allow Escape to cancel listening
-    if (event.key === 'Escape') {
-      stopListening();
-      return;
-    }
+      // Allow Escape to cancel listening
+      if (event.key === 'Escape') {
+        stopListening();
+        return;
+      }
 
-    // Convert event.code to VK format
-    let vkCode = event.code;
-    if (vkCode.startsWith('Key')) {
-      vkCode = 'VK_' + vkCode.substring(3);
-    } else if (vkCode.startsWith('Digit')) {
-      vkCode = 'VK_' + vkCode.substring(5);
-    } else {
-      vkCode = 'VK_' + vkCode.toUpperCase();
-    }
+      // Convert event.code to VK format
+      let vkCode = event.code;
+      if (vkCode.startsWith('Key')) {
+        vkCode = 'VK_' + vkCode.substring(3);
+      } else if (vkCode.startsWith('Digit')) {
+        vkCode = 'VK_' + vkCode.substring(5);
+      } else {
+        vkCode = 'VK_' + vkCode.toUpperCase();
+      }
 
-    if (listeningFor === 'tap') {
-      setTapAction(vkCode);
-    } else if (listeningFor === 'hold') {
-      setHoldAction(vkCode);
-    }
+      if (listeningFor === 'tap') {
+        setTapAction(vkCode);
+      } else if (listeningFor === 'hold') {
+        setHoldAction(vkCode);
+      }
 
-    setIsListening(false);
-    setListeningFor(null);
-  }, [isListening, listeningFor]);
+      setIsListening(false);
+      setListeningFor(null);
+    },
+    [isListening, listeningFor]
+  );
 
   useEffect(() => {
     if (isListening) {
@@ -216,7 +232,9 @@ export function KeyConfigModal({
         if (!tapAction && !holdAction) {
           return 'Configure tap and hold actions';
         }
-        return `Quick tap: ${physicalKey} → ${tapAction || '?'}\nHold ${threshold}ms: ${physicalKey} → ${holdAction || '?'}`;
+        return `Quick tap: ${physicalKey} → ${
+          tapAction || '?'
+        }\nHold ${threshold}ms: ${physicalKey} → ${holdAction || '?'}`;
       case 'layer_active':
         return targetLayer
           ? `${physicalKey} activates ${targetLayer} layer`
@@ -227,7 +245,12 @@ export function KeyConfigModal({
   };
 
   return (
-    <Modal open={isOpen} onClose={onClose} title="Configure Key Mapping" size="xl">
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title="Configure Key Mapping"
+      size="xl"
+    >
       <div className="space-y-6">
         {/* Mapping Type Selector - Compact horizontal layout */}
         <div className="flex items-center gap-3">
@@ -262,29 +285,42 @@ export function KeyConfigModal({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Keyboard className="w-4 h-4 text-primary-400" />
-              <span className="text-xs text-slate-400 uppercase tracking-wide">Key</span>
-              <span className="text-base font-bold text-slate-100">{physicalKey}</span>
+              <span className="text-xs text-slate-400 uppercase tracking-wide">
+                Key
+              </span>
+              <span className="text-base font-bold text-slate-100">
+                {physicalKey}
+              </span>
             </div>
 
             <ArrowRight className="w-4 h-4 text-slate-500" />
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 uppercase tracking-wide">Target</span>
-              <span className="text-base font-bold text-green-400">{tapAction || '—'}</span>
+              <span className="text-xs text-slate-400 uppercase tracking-wide">
+                Target
+              </span>
+              <span className="text-base font-bold text-green-400">
+                {tapAction || '—'}
+              </span>
             </div>
 
             <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs text-slate-400 uppercase tracking-wide">Layer</span>
+              <span className="text-xs text-slate-400 uppercase tracking-wide">
+                Layer
+              </span>
               <span className="text-sm font-bold text-yellow-400">
-                {activeLayer === 'base' ? 'Base' : activeLayer.toUpperCase().replace('-', '_')}
+                {activeLayer === 'base'
+                  ? 'Base'
+                  : activeLayer.toUpperCase().replace('-', '_')}
               </span>
             </div>
           </div>
         </div>
 
-
         {/* View Toggle - Keyboard vs Palette */}
-        {(mappingType === 'simple' || mappingType === 'modifier' || mappingType === 'lock') && (
+        {(mappingType === 'simple' ||
+          mappingType === 'modifier' ||
+          mappingType === 'lock') && (
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-slate-300">
               Select Key
@@ -324,7 +360,9 @@ export function KeyConfigModal({
                 {tapAction && (
                   <>
                     <div className="px-4 py-2 bg-primary-500/20 border border-primary-500 rounded-lg">
-                      <span className="text-xl font-bold text-primary-300 font-mono">{tapAction}</span>
+                      <span className="text-xl font-bold text-primary-300 font-mono">
+                        {tapAction}
+                      </span>
                     </div>
                     <button
                       onClick={() => setTapAction('')}
@@ -347,10 +385,14 @@ export function KeyConfigModal({
                 title="Press any key on your keyboard to capture it"
               >
                 <Radio className="w-4 h-4" />
-                {isListening && listeningFor === 'tap' ? 'Listening...' : 'Listen for Key'}
+                {isListening && listeningFor === 'tap'
+                  ? 'Listening...'
+                  : 'Listen for Key'}
               </button>
             </div>
-            <p className="text-xs text-slate-400 mb-2">Click a key below or use Listen button</p>
+            <p className="text-xs text-slate-400 mb-2">
+              Click a key below or use Listen button
+            </p>
             {useKeyboard && layoutKeys.length > 0 ? (
               <div className="border border-slate-600 rounded-lg overflow-auto max-h-96 bg-slate-900">
                 <SVGKeyboard
@@ -365,7 +407,11 @@ export function KeyConfigModal({
                 <KeyPalette
                   compact
                   onKeySelect={(key) => setTapAction(key.id)}
-                  selectedKey={tapAction ? { id: tapAction, label: tapAction, category: 'basic' } : null}
+                  selectedKey={
+                    tapAction
+                      ? { id: tapAction, label: tapAction, category: 'basic' }
+                      : null
+                  }
                 />
               </div>
             )}
@@ -380,7 +426,9 @@ export function KeyConfigModal({
                 {modifierKey && (
                   <>
                     <div className="px-4 py-2 bg-cyan-500/20 border border-cyan-500 rounded-lg">
-                      <span className="text-xl font-bold text-cyan-300 font-mono">{modifierKey}</span>
+                      <span className="text-xl font-bold text-cyan-300 font-mono">
+                        {modifierKey}
+                      </span>
                     </div>
                     <button
                       onClick={() => setModifierKey('')}
@@ -393,7 +441,9 @@ export function KeyConfigModal({
                 )}
               </div>
             </div>
-            <p className="text-xs text-slate-400 mb-2">Select a modifier key (Ctrl, Shift, Alt, etc.)</p>
+            <p className="text-xs text-slate-400 mb-2">
+              Select a modifier key (Ctrl, Shift, Alt, etc.)
+            </p>
             {useKeyboard && layoutKeys.length > 0 ? (
               <div className="border border-slate-600 rounded-lg overflow-auto max-h-96 bg-slate-900">
                 <SVGKeyboard
@@ -408,7 +458,15 @@ export function KeyConfigModal({
                 <KeyPalette
                   compact
                   onKeySelect={(key) => setModifierKey(key.id)}
-                  selectedKey={modifierKey ? { id: modifierKey, label: modifierKey, category: 'modifiers' } : null}
+                  selectedKey={
+                    modifierKey
+                      ? {
+                          id: modifierKey,
+                          label: modifierKey,
+                          category: 'modifiers',
+                        }
+                      : null
+                  }
                 />
               </div>
             )}
@@ -423,7 +481,9 @@ export function KeyConfigModal({
                 {lockKey && (
                   <>
                     <div className="px-4 py-2 bg-purple-500/20 border border-purple-500 rounded-lg">
-                      <span className="text-xl font-bold text-purple-300 font-mono">{lockKey}</span>
+                      <span className="text-xl font-bold text-purple-300 font-mono">
+                        {lockKey}
+                      </span>
                     </div>
                     <button
                       onClick={() => setLockKey('')}
@@ -436,7 +496,9 @@ export function KeyConfigModal({
                 )}
               </div>
             </div>
-            <p className="text-xs text-slate-400 mb-2">Select a lock key (CapsLock, NumLock, etc.)</p>
+            <p className="text-xs text-slate-400 mb-2">
+              Select a lock key (CapsLock, NumLock, etc.)
+            </p>
             {useKeyboard && layoutKeys.length > 0 ? (
               <div className="border border-slate-600 rounded-lg overflow-auto max-h-96 bg-slate-900">
                 <SVGKeyboard
@@ -451,7 +513,11 @@ export function KeyConfigModal({
                 <KeyPalette
                   compact
                   onKeySelect={(key) => setLockKey(key.id)}
-                  selectedKey={lockKey ? { id: lockKey, label: lockKey, category: 'special' } : null}
+                  selectedKey={
+                    lockKey
+                      ? { id: lockKey, label: lockKey, category: 'special' }
+                      : null
+                  }
                 />
               </div>
             )}
@@ -464,16 +530,28 @@ export function KeyConfigModal({
             <div className="flex items-center justify-between mb-2">
               {targetLayer && (
                 <div className="px-4 py-2 bg-yellow-500/20 border border-yellow-500 rounded-lg">
-                  <span className="text-xl font-bold text-yellow-300 font-mono">{targetLayer}</span>
+                  <span className="text-xl font-bold text-yellow-300 font-mono">
+                    {targetLayer}
+                  </span>
                 </div>
               )}
             </div>
-            <p className="text-xs text-slate-400 mb-2">Select a layer to activate (MO, TO, TG, OSL)</p>
+            <p className="text-xs text-slate-400 mb-2">
+              Select a layer to activate (MO, TO, TG, OSL)
+            </p>
             <div className="border border-slate-600 rounded-lg overflow-y-auto max-h-72">
               <KeyPalette
                 compact
                 onKeySelect={(key) => setTargetLayer(key.id)}
-                selectedKey={targetLayer ? { id: targetLayer, label: targetLayer, category: 'layers' } : null}
+                selectedKey={
+                  targetLayer
+                    ? {
+                        id: targetLayer,
+                        label: targetLayer,
+                        category: 'layers',
+                      }
+                    : null
+                }
               />
             </div>
           </div>
@@ -492,7 +570,9 @@ export function KeyConfigModal({
                   {tapAction && (
                     <>
                       <div className="px-3 py-1 bg-green-500/20 border border-green-500 rounded">
-                        <span className="text-sm font-bold text-green-300 font-mono">{tapAction}</span>
+                        <span className="text-sm font-bold text-green-300 font-mono">
+                          {tapAction}
+                        </span>
                       </div>
                       <button
                         onClick={() => setTapAction('')}
@@ -514,16 +594,24 @@ export function KeyConfigModal({
                     title="Press any key on your keyboard to capture it"
                   >
                     <Radio className="w-3.5 h-3.5" />
-                    {isListening && listeningFor === 'tap' ? 'Listening...' : 'Listen'}
+                    {isListening && listeningFor === 'tap'
+                      ? 'Listening...'
+                      : 'Listen'}
                   </button>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 mb-3">Click a key to select it</p>
+              <p className="text-xs text-slate-400 mb-3">
+                Click a key to select it
+              </p>
               <div className="border border-slate-600 rounded-lg overflow-y-auto max-h-72">
                 <KeyPalette
                   compact
                   onKeySelect={(key) => setTapAction(key.id)}
-                  selectedKey={tapAction ? { id: tapAction, label: tapAction, category: 'basic' } : null}
+                  selectedKey={
+                    tapAction
+                      ? { id: tapAction, label: tapAction, category: 'basic' }
+                      : null
+                  }
                 />
               </div>
             </div>
@@ -535,12 +623,16 @@ export function KeyConfigModal({
                   <label className="text-sm font-medium text-slate-300">
                     Hold Action (modifier)
                   </label>
-                  <p className="text-xs text-slate-400 mt-1">Select modifier 0-255</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Select modifier 0-255
+                  </p>
                 </div>
                 {holdAction && (
                   <div className="flex items-center gap-2">
                     <div className="px-3 py-1 bg-red-500/20 border border-red-500 rounded">
-                      <span className="text-sm font-bold text-red-300 font-mono">{holdAction}</span>
+                      <span className="text-sm font-bold text-red-300 font-mono">
+                        {holdAction}
+                      </span>
                     </div>
                     <button
                       onClick={() => setHoldAction('')}
@@ -557,9 +649,14 @@ export function KeyConfigModal({
                   type="number"
                   min="0"
                   max="255"
-                  value={holdAction ? parseInt(holdAction.replace('MD_', ''), 16) : 0}
+                  value={
+                    holdAction ? parseInt(holdAction.replace('MD_', ''), 16) : 0
+                  }
                   onChange={(e) => {
-                    const val = Math.max(0, Math.min(255, parseInt(e.target.value) || 0));
+                    const val = Math.max(
+                      0,
+                      Math.min(255, parseInt(e.target.value) || 0)
+                    );
                     const hex = val.toString(16).toUpperCase().padStart(2, '0');
                     setHoldAction(`MD_${hex}`);
                   }}
@@ -571,10 +668,17 @@ export function KeyConfigModal({
                     type="range"
                     min="0"
                     max="255"
-                    value={holdAction ? parseInt(holdAction.replace('MD_', ''), 16) : 0}
+                    value={
+                      holdAction
+                        ? parseInt(holdAction.replace('MD_', ''), 16)
+                        : 0
+                    }
                     onChange={(e) => {
                       const val = parseInt(e.target.value);
-                      const hex = val.toString(16).toUpperCase().padStart(2, '0');
+                      const hex = val
+                        .toString(16)
+                        .toUpperCase()
+                        .padStart(2, '0');
                       setHoldAction(`MD_${hex}`);
                     }}
                     className="w-full"
@@ -607,7 +711,6 @@ export function KeyConfigModal({
             </div>
           </>
         )}
-
 
         {/* Preview Panel */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
@@ -674,7 +777,11 @@ export function KeyConfigModal({
                 Press any key on your keyboard to capture it
               </p>
               <p className="text-sm text-slate-400">
-                Press <kbd className="px-2 py-1 bg-slate-700 rounded text-slate-200">Escape</kbd> to cancel
+                Press{' '}
+                <kbd className="px-2 py-1 bg-slate-700 rounded text-slate-200">
+                  Escape
+                </kbd>{' '}
+                to cancel
               </p>
               <button
                 onClick={stopListening}

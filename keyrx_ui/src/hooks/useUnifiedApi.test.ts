@@ -10,7 +10,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useUnifiedApi } from './useUnifiedApi';
-import { setupMockWebSocket, cleanupMockWebSocket } from '../../tests/helpers/websocket';
+import {
+  setupMockWebSocket,
+  cleanupMockWebSocket,
+} from '../../tests/helpers/websocket';
 
 describe('useUnifiedApi - Simple Tests', () => {
   beforeEach(async () => {

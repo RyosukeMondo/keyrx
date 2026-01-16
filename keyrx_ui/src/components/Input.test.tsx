@@ -299,11 +299,7 @@ describe('Input', () => {
     it('has required aria-label', () => {
       const handleChange = vi.fn();
       renderWithProviders(
-        <Input
-          value=""
-          onChange={handleChange}
-          aria-label="Username input"
-        />
+        <Input value="" onChange={handleChange} aria-label="Username input" />
       );
 
       const input = screen.getByLabelText('Username input');

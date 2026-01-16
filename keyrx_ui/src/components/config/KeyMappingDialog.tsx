@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/Modal';
-import { Dropdown } from '@/components/Dropdown';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import type { KeyMapping } from '@/types/config';
@@ -43,7 +42,8 @@ export interface KeyMappingDialogProps {
  */
 export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
   ({ open, onClose, keyCode, currentMapping, onSave }) => {
-    const [mappingType, setMappingType] = useState<KeyMapping['type']>('simple');
+    const [mappingType, setMappingType] =
+      useState<KeyMapping['type']>('simple');
     const [simpleAction, setSimpleAction] = useState('');
     const [tapAction, setTapAction] = useState('');
     const [holdAction, setHoldAction] = useState('');
@@ -60,13 +60,19 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
 
         if (currentMapping.type === 'simple' && currentMapping.simple) {
           setSimpleAction(currentMapping.simple);
-        } else if (currentMapping.type === 'tap_hold' && currentMapping.tapHold) {
+        } else if (
+          currentMapping.type === 'tap_hold' &&
+          currentMapping.tapHold
+        ) {
           setTapAction(currentMapping.tapHold.tap);
           setHoldAction(currentMapping.tapHold.hold);
           setTimeout(currentMapping.tapHold.timeoutMs.toString());
         } else if (currentMapping.type === 'macro' && currentMapping.macro) {
           setMacroSequence(currentMapping.macro.join(', '));
-        } else if (currentMapping.type === 'layer_switch' && currentMapping.layer) {
+        } else if (
+          currentMapping.type === 'layer_switch' &&
+          currentMapping.layer
+        ) {
           setLayerName(currentMapping.layer);
         }
       } else if (open && !currentMapping) {
@@ -155,7 +161,8 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
         onClose();
       } catch (err) {
         setErrors({
-          general: err instanceof Error ? err.message : 'Failed to save mapping',
+          general:
+            err instanceof Error ? err.message : 'Failed to save mapping',
         });
       } finally {
         setIsSaving(false);
@@ -192,7 +199,9 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setMappingType(option.value as KeyMapping['type'])}
+                  onClick={() =>
+                    setMappingType(option.value as KeyMapping['type'])
+                  }
                   className={`
                     px-4 py-2 rounded-md text-sm font-medium transition-colors
                     ${

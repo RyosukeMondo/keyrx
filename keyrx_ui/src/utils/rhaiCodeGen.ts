@@ -75,7 +75,10 @@ const DEFAULT_FORMAT_OPTIONS: Required<FormatOptions> = {
  * // map("VK_A", "VK_B");
  * ```
  */
-export function generateRhaiScript(ast: RhaiAST, options?: FormatOptions): string {
+export function generateRhaiScript(
+  ast: RhaiAST,
+  options?: FormatOptions
+): string {
   const opts = { ...DEFAULT_FORMAT_OPTIONS, ...options };
   const lines: string[] = [];
 
@@ -94,7 +97,11 @@ export function generateRhaiScript(ast: RhaiAST, options?: FormatOptions): strin
   // This ensures compatibility with the Rhai validator which requires all mappings inside device blocks
   if (ast.globalMappings.length > 0) {
     // Add comments that appear before global mappings
-    const globalComments = getCommentsForSection(ast.comments, 0, getFirstDeviceLineOrEnd(ast));
+    const globalComments = getCommentsForSection(
+      ast.comments,
+      0,
+      getFirstDeviceLineOrEnd(ast)
+    );
     for (const comment of globalComments) {
       lines.push(generateComment(comment));
     }
@@ -224,7 +231,7 @@ function generateModifierLayer(
   // Format modifiers - single string or array
   let modifiersArg: string;
   if (Array.isArray(layer.modifiers)) {
-    const quotedMods = layer.modifiers.map(m => `"${m}"`).join(', ');
+    const quotedMods = layer.modifiers.map((m) => `"${m}"`).join(', ');
     modifiersArg = `[${quotedMods}]`;
   } else {
     modifiersArg = `"${layer.modifiers}"`;
@@ -235,7 +242,9 @@ function generateModifierLayer(
 
   // Layer mappings
   for (const mapping of layer.mappings) {
-    lines.push(innerIndent + generateKeyMapping(mapping, baseIndentLevel + 1, options));
+    lines.push(
+      innerIndent + generateKeyMapping(mapping, baseIndentLevel + 1, options)
+    );
   }
 
   // When end
@@ -322,12 +331,16 @@ function generateSimpleMapping(mapping: KeyMapping): string {
  */
 function generateTapHoldMapping(mapping: KeyMapping): string {
   if (!mapping.tapHold) {
-    throw new Error(`Tap-hold mapping missing tapHold config at line ${mapping.line}`);
+    throw new Error(
+      `Tap-hold mapping missing tapHold config at line ${mapping.line}`
+    );
   }
 
   const sourceKey = ensureVKPrefix(mapping.sourceKey);
   const { tapAction, holdAction, thresholdMs } = mapping.tapHold;
-  return `tap_hold("${sourceKey}", "${ensureVKPrefix(tapAction)}", "${ensureVKPrefix(holdAction)}", ${thresholdMs});`;
+  return `tap_hold("${sourceKey}", "${ensureVKPrefix(
+    tapAction
+  )}", "${ensureVKPrefix(holdAction)}", ${thresholdMs});`;
 }
 
 /**
@@ -335,12 +348,14 @@ function generateTapHoldMapping(mapping: KeyMapping): string {
  */
 function generateMacroMapping(mapping: KeyMapping): string {
   if (!mapping.macro) {
-    throw new Error(`Macro mapping missing macro config at line ${mapping.line}`);
+    throw new Error(
+      `Macro mapping missing macro config at line ${mapping.line}`
+    );
   }
 
   const sourceKey = ensureVKPrefix(mapping.sourceKey);
   const { keys, delayMs } = mapping.macro;
-  const keysStr = keys.map(k => `"${ensureVKPrefix(k)}"`).join(', ');
+  const keysStr = keys.map((k) => `"${ensureVKPrefix(k)}"`).join(', ');
 
   if (delayMs !== undefined) {
     return `macro("${sourceKey}", [${keysStr}], ${delayMs});`;
@@ -354,7 +369,9 @@ function generateMacroMapping(mapping: KeyMapping): string {
  */
 function generateLayerSwitchMapping(mapping: KeyMapping): string {
   if (!mapping.layerSwitch) {
-    throw new Error(`Layer switch mapping missing layerSwitch config at line ${mapping.line}`);
+    throw new Error(
+      `Layer switch mapping missing layerSwitch config at line ${mapping.line}`
+    );
   }
 
   const sourceKey = ensureVKPrefix(mapping.sourceKey);
@@ -375,7 +392,7 @@ function getCommentsForSection(
   startLine: number,
   endLine: number
 ): Comment[] {
-  return comments.filter(c => c.line >= startLine && c.line < endLine);
+  return comments.filter((c) => c.line >= startLine && c.line < endLine);
 }
 
 /**
@@ -402,7 +419,10 @@ function getFirstDeviceLineOrEnd(ast: RhaiAST): number {
  * @param options - Formatting options
  * @returns Formatted script
  */
-export function formatRhaiScript(script: string, options?: FormatOptions): string {
+export function formatRhaiScript(
+  script: string,
+  options?: FormatOptions
+): string {
   // This function is deprecated - use rhaiFormatter.formatRhaiScript instead
   throw new Error(
     'formatRhaiScript has been moved to rhaiFormatter.ts. Please import from there instead.'

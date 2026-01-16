@@ -93,7 +93,8 @@ describe('API Client Error Handling', () => {
           success: false,
           error: {
             code: 'COMPILATION_ERROR',
-            message: 'Failed to compile profile: syntax error in layer definition',
+            message:
+              'Failed to compile profile: syntax error in layer definition',
           },
         }),
       });
@@ -103,7 +104,9 @@ describe('API Client Error Handling', () => {
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiError);
-        expect((error as ApiError).message).toContain('Failed to compile profile');
+        expect((error as ApiError).message).toContain(
+          'Failed to compile profile'
+        );
         expect((error as ApiError).message).toContain('syntax error');
         // This should NOT be [object Object]
         expect((error as ApiError).message).not.toBe('[object Object]');

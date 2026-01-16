@@ -117,7 +117,7 @@ export async function setupApiMocks(
 ): Promise<void> {
   const profiles = options.profiles ?? [...defaultMockData.profiles];
   const devices = options.devices ?? [...defaultMockData.devices];
-  let daemonState = options.daemonState ?? { ...defaultMockData.daemonState };
+  const daemonState = options.daemonState ?? { ...defaultMockData.daemonState };
   let globalLayout = options.globalLayout ?? defaultMockData.globalLayout;
 
   // GET /api/profiles - List all profiles

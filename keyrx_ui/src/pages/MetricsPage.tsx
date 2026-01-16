@@ -89,9 +89,12 @@ export const MetricsPage: React.FC = () => {
     return storeEventLog.map((event) => ({
       id: event.id,
       timestamp: new Date(event.timestamp).getTime(),
-      type: event.type === 'key_press' ? 'press' :
-            event.type === 'key_release' ? 'release' :
-            event.type as EventLogEntry['type'],
+      type:
+        event.type === 'key_press'
+          ? 'press'
+          : event.type === 'key_release'
+            ? 'release'
+            : (event.type as EventLogEntry['type']),
       keyCode: event.keyCode,
       action: event.action,
       latency: event.latencyUs / 1000, // Convert microseconds to milliseconds
@@ -184,8 +187,11 @@ export const MetricsPage: React.FC = () => {
     };
 
     // Check if input differs from output (remapping occurred)
-    const wasRemapped = event.input && event.output && event.input !== event.output;
-    const hasMappingTriggered = event.mappingTriggered || wasRemapped ||
+    const wasRemapped =
+      event.input && event.output && event.input !== event.output;
+    const hasMappingTriggered =
+      event.mappingTriggered ||
+      wasRemapped ||
       ['tap', 'hold', 'macro', 'layer_switch'].includes(event.type);
 
     // Format input/output for display
@@ -207,31 +213,55 @@ export const MetricsPage: React.FC = () => {
         className="flex items-center gap-3 px-4 text-sm font-mono border-b border-slate-700 hover:bg-slate-700/50"
         title={`Device: ${event.deviceName || event.deviceId || 'Unknown'}`}
       >
-        <span className="w-20 text-slate-400 text-xs">{formatTime(event.timestamp)}</span>
+        <span className="w-20 text-slate-400 text-xs">
+          {formatTime(event.timestamp)}
+        </span>
         <span className={`w-14 ${typeColors[event.type]}`} title={event.type}>
           {typeSymbols[event.type]} {event.type.slice(0, 3)}
         </span>
-        <span className="w-20 text-slate-200 truncate" title={event.input || event.keyCode}>
+        <span
+          className="w-20 text-slate-200 truncate"
+          title={event.input || event.keyCode}
+        >
           {formatKey(event.input || event.keyCode)}
         </span>
         {/* Mapping indicator */}
-        <span className={`w-6 text-center ${hasMappingTriggered ? 'text-green-400' : 'text-slate-600'}`}>
+        <span
+          className={`w-6 text-center ${
+            hasMappingTriggered ? 'text-green-400' : 'text-slate-600'
+          }`}
+        >
           {hasMappingTriggered ? '→' : '–'}
         </span>
         {/* Output */}
-        <span className={`w-20 truncate ${wasRemapped ? 'text-blue-400' : 'text-slate-400'}`} title={event.output}>
+        <span
+          className={`w-20 truncate ${
+            wasRemapped ? 'text-blue-400' : 'text-slate-400'
+          }`}
+          title={event.output}
+        >
           {formatKey(event.output)}
         </span>
         {/* Mapping type */}
-        <span className="w-16 text-slate-500 text-xs truncate" title={event.mappingType || 'passthrough'}>
+        <span
+          className="w-16 text-slate-500 text-xs truncate"
+          title={event.mappingType || 'passthrough'}
+        >
           {event.mappingType || (wasRemapped ? 'remap' : '–')}
         </span>
         {/* Device */}
-        <span className="flex-1 text-slate-500 text-xs truncate" title={event.deviceName || event.deviceId}>
+        <span
+          className="flex-1 text-slate-500 text-xs truncate"
+          title={event.deviceName || event.deviceId}
+        >
           {shortDeviceName}
         </span>
         {/* Latency */}
-        <span className={`w-16 text-right ${event.latency > 1 ? 'text-yellow-400' : 'text-slate-400'}`}>
+        <span
+          className={`w-16 text-right ${
+            event.latency > 1 ? 'text-yellow-400' : 'text-slate-400'
+          }`}
+        >
           {formatLatency(event.latency)}
         </span>
       </div>
@@ -243,7 +273,12 @@ export const MetricsPage: React.FC = () => {
       <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
         <div>
           <LoadingSkeleton variant="text" width="250px" height="32px" />
-          <LoadingSkeleton variant="text" width="300px" height="20px" className="mt-2" />
+          <LoadingSkeleton
+            variant="text"
+            width="300px"
+            height="20px"
+            className="mt-2"
+          />
         </div>
 
         <Card padding="md">
@@ -266,17 +301,32 @@ export const MetricsPage: React.FC = () => {
         </div>
 
         <Card padding="lg">
-          <LoadingSkeleton variant="text" width="150px" height="24px" className="mb-4" />
+          <LoadingSkeleton
+            variant="text"
+            width="150px"
+            height="24px"
+            className="mb-4"
+          />
           <LoadingSkeleton variant="rectangular" height="300px" />
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           <Card padding="lg">
-            <LoadingSkeleton variant="text" width="120px" height="24px" className="mb-4" />
+            <LoadingSkeleton
+              variant="text"
+              width="120px"
+              height="24px"
+              className="mb-4"
+            />
             <LoadingSkeleton variant="rectangular" height="400px" />
           </Card>
           <Card padding="lg">
-            <LoadingSkeleton variant="text" width="140px" height="24px" className="mb-4" />
+            <LoadingSkeleton
+              variant="text"
+              width="140px"
+              height="24px"
+              className="mb-4"
+            />
             <LoadingSkeleton variant="rectangular" height="400px" />
           </Card>
         </div>
@@ -285,7 +335,11 @@ export const MetricsPage: React.FC = () => {
   }
 
   return (
-    <main className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6" role="main" aria-label="Performance Metrics">
+    <main
+      className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6"
+      role="main"
+      aria-label="Performance Metrics"
+    >
       {/* Page Header */}
       <header>
         <div className="flex items-center justify-between">
@@ -331,26 +385,35 @@ export const MetricsPage: React.FC = () => {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Link
-                    to={`/config?profile=${encodeURIComponent(activeProfile.name)}`}
+                    to={`/config?profile=${encodeURIComponent(
+                      activeProfile.name
+                    )}`}
                     className="text-lg font-semibold text-blue-400 hover:text-blue-300 transition-colors underline"
                     aria-label={`Edit ${activeProfile.name} configuration`}
                   >
                     {activeProfile.name}
                   </Link>
-                  <FileCode className="w-4 h-4 text-slate-400" aria-hidden="true" />
+                  <FileCode
+                    className="w-4 h-4 text-slate-400"
+                    aria-hidden="true"
+                  />
                   <span className="text-sm text-slate-400 font-mono">
                     {activeProfile.name}.rhai
                   </span>
                 </div>
                 {activeProfile.modifiedAt && (
                   <p className="text-xs text-slate-500">
-                    Last modified: {new Date(activeProfile.modifiedAt).toLocaleString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    Last modified:{' '}
+                    {new Date(activeProfile.modifiedAt).toLocaleString(
+                      'en-US',
+                      {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      }
+                    )}
                   </p>
                 )}
               </div>
@@ -374,15 +437,24 @@ export const MetricsPage: React.FC = () => {
       </Card>
 
       {/* Latency Statistics Cards - responsive grid */}
-      <section className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4" aria-label="Latency statistics">
+      <section
+        className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4"
+        aria-label="Latency statistics"
+      >
         <Card padding="md" aria-label="Current latency">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg" aria-hidden="true">
+            <div
+              className="p-2 sm:p-3 bg-blue-500/10 rounded-lg"
+              aria-hidden="true"
+            >
               <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
             </div>
             <div>
               <p className="text-xs sm:text-sm text-slate-400">Current</p>
-              <p className="text-lg sm:text-2xl font-bold text-slate-100" aria-label={`Current latency: ${formatLatency(stats.current)}`}>
+              <p
+                className="text-lg sm:text-2xl font-bold text-slate-100"
+                aria-label={`Current latency: ${formatLatency(stats.current)}`}
+              >
                 {formatLatency(stats.current)}
               </p>
             </div>
@@ -391,12 +463,18 @@ export const MetricsPage: React.FC = () => {
 
         <Card padding="md" aria-label="Average latency">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-            <div className="p-2 sm:p-3 bg-green-500/10 rounded-lg" aria-hidden="true">
+            <div
+              className="p-2 sm:p-3 bg-green-500/10 rounded-lg"
+              aria-hidden="true"
+            >
               <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
             </div>
             <div>
               <p className="text-xs sm:text-sm text-slate-400">Average</p>
-              <p className="text-lg sm:text-2xl font-bold text-slate-100" aria-label={`Average latency: ${formatLatency(stats.avg)}`}>
+              <p
+                className="text-lg sm:text-2xl font-bold text-slate-100"
+                aria-label={`Average latency: ${formatLatency(stats.avg)}`}
+              >
                 {formatLatency(stats.avg)}
               </p>
             </div>
@@ -435,10 +513,15 @@ export const MetricsPage: React.FC = () => {
       {/* Latency Chart */}
       <Card aria-labelledby="latency-chart-heading">
         <div className="mb-4">
-          <h2 id="latency-chart-heading" className="text-lg md:text-xl font-semibold text-slate-100">
+          <h2
+            id="latency-chart-heading"
+            className="text-lg md:text-xl font-semibold text-slate-100"
+          >
             Latency Over Time
           </h2>
-          <p className="text-xs md:text-sm text-slate-400 mt-1">Last 60 seconds</p>
+          <p className="text-xs md:text-sm text-slate-400 mt-1">
+            Last 60 seconds
+          </p>
         </div>
 
         <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
@@ -492,7 +575,12 @@ export const MetricsPage: React.FC = () => {
       {/* Event Log */}
       <Card aria-labelledby="event-log-heading">
         <div className="mb-4">
-          <h2 id="event-log-heading" className="text-lg md:text-xl font-semibold text-slate-100">Event Log</h2>
+          <h2
+            id="event-log-heading"
+            className="text-lg md:text-xl font-semibold text-slate-100"
+          >
+            Event Log
+          </h2>
           <p className="text-xs md:text-sm text-slate-400 mt-1">
             Recent keyboard events ({eventLog.length} total)
           </p>
@@ -503,7 +591,9 @@ export const MetricsPage: React.FC = () => {
           <span className="w-20">Time</span>
           <span className="w-14">Type</span>
           <span className="w-20">Input</span>
-          <span className="w-6 text-center" title="Mapping Triggered">→</span>
+          <span className="w-6 text-center" title="Mapping Triggered">
+            →
+          </span>
           <span className="w-20">Output</span>
           <span className="w-16">Map Type</span>
           <span className="flex-1 truncate">Device</span>
@@ -525,7 +615,10 @@ export const MetricsPage: React.FC = () => {
       {/* State Inspector */}
       <Card aria-labelledby="state-inspector-heading">
         <div className="mb-4">
-          <h2 id="state-inspector-heading" className="text-lg md:text-xl font-semibold text-slate-100">
+          <h2
+            id="state-inspector-heading"
+            className="text-lg md:text-xl font-semibold text-slate-100"
+          >
             State Inspector
           </h2>
           <p className="text-xs md:text-sm text-slate-400 mt-1">

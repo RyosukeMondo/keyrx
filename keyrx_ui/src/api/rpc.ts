@@ -27,8 +27,22 @@
 
 import type { UseUnifiedApiReturn } from '../hooks/useUnifiedApi';
 import type { DaemonState, KeyEvent, LatencyMetrics } from '../types/rpc';
-import type { Profile, ProfileConfig, Device, Config, Layer, SimulationInput, SimulationResult, PaginatedEvents } from './types';
-import { validateApiResponse, ProfileConfigRpcSchema, ProfileRpcInfoSchema, DeviceRpcInfoSchema } from './schemas';
+import type {
+  Profile,
+  ProfileConfig,
+  Device,
+  Config,
+  Layer,
+  SimulationInput,
+  SimulationResult,
+  PaginatedEvents,
+} from './types';
+import {
+  validateApiResponse,
+  ProfileConfigRpcSchema,
+  ProfileRpcInfoSchema,
+  DeviceRpcInfoSchema,
+} from './schemas';
 
 /**
  * Type-safe RPC client for daemon communication.
@@ -102,7 +116,10 @@ export class RpcClient {
    * @throws Error if source does not exist or new name is invalid
    */
   async duplicateProfile(sourceName: string, newName: string): Promise<void> {
-    return this.api.command<void>('duplicate_profile', { source_name: sourceName, new_name: newName });
+    return this.api.command<void>('duplicate_profile', {
+      source_name: sourceName,
+      new_name: newName,
+    });
   }
 
   /**
@@ -114,7 +131,10 @@ export class RpcClient {
    * @throws Error if profile does not exist or new name is invalid
    */
   async renameProfile(oldName: string, newName: string): Promise<void> {
-    return this.api.command<void>('rename_profile', { old_name: oldName, new_name: newName });
+    return this.api.command<void>('rename_profile', {
+      old_name: oldName,
+      new_name: newName,
+    });
   }
 
   /**
@@ -126,7 +146,11 @@ export class RpcClient {
    */
   async getProfileConfig(name: string): Promise<ProfileConfig> {
     const response = await this.api.query<any>('get_profile_config', { name });
-    const validated = validateApiResponse(ProfileConfigRpcSchema, response, 'get_profile_config');
+    const validated = validateApiResponse(
+      ProfileConfigRpcSchema,
+      response,
+      'get_profile_config'
+    );
     return {
       name: validated.name,
       source: validated.source, // Backend returns 'source' field
@@ -142,17 +166,22 @@ export class RpcClient {
    * @throws Error if profile does not exist or source is invalid
    */
   async setProfileConfig(name: string, source: string): Promise<void> {
-    const response = await this.api.command<any>('set_profile_config', { name, source });
+    const response = await this.api.command<any>('set_profile_config', {
+      name,
+      source,
+    });
     // For commands, the response is typically empty on success or contains error info
     // Validation already happened at the WebSocket layer, so we just need to check for errors
     if (response && typeof response === 'object') {
-      console.debug(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'debug',
-        service: 'RPC Client',
-        event: 'set_profile_config_success',
-        context: { profileName: name },
-      }));
+      console.debug(
+        JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'debug',
+          service: 'RPC Client',
+          event: 'set_profile_config_success',
+          context: { profileName: name },
+        })
+      );
     }
   }
 
@@ -189,7 +218,10 @@ export class RpcClient {
    * @throws Error if device does not exist or name is invalid
    */
   async renameDevice(serial: string, newName: string): Promise<void> {
-    return this.api.command<void>('rename_device', { serial, new_name: newName });
+    return this.api.command<void>('rename_device', {
+      serial,
+      new_name: newName,
+    });
   }
 
   /**
@@ -200,7 +232,10 @@ export class RpcClient {
    * @returns Success status
    * @throws Error if device does not exist or scope is invalid
    */
-  async setScopeDevice(serial: string, scope: 'global' | 'profile'): Promise<void> {
+  async setScopeDevice(
+    serial: string,
+    scope: 'global' | 'profile'
+  ): Promise<void> {
     return this.api.command<void>('set_scope_device', { serial, scope });
   }
 
@@ -261,8 +296,16 @@ export class RpcClient {
    * @returns Success status
    * @throws Error if layer or mapping is invalid
    */
-  async setKeyMapping(layer: string, keyCode: string, mapping: string): Promise<void> {
-    return this.api.command<void>('set_key_mapping', { layer, key_code: keyCode, mapping });
+  async setKeyMapping(
+    layer: string,
+    keyCode: string,
+    mapping: string
+  ): Promise<void> {
+    return this.api.command<void>('set_key_mapping', {
+      layer,
+      key_code: keyCode,
+      mapping,
+    });
   }
 
   /**
@@ -274,7 +317,10 @@ export class RpcClient {
    * @throws Error if layer does not exist
    */
   async deleteKeyMapping(layer: string, keyCode: string): Promise<void> {
-    return this.api.command<void>('delete_key_mapping', { layer, key_code: keyCode });
+    return this.api.command<void>('delete_key_mapping', {
+      layer,
+      key_code: keyCode,
+    });
   }
 
   /**
@@ -359,7 +405,10 @@ export class RpcClient {
    * @returns Unsubscribe function
    */
   onDaemonState(handler: (state: DaemonState) => void): () => void {
-    return this.api.subscribe('daemon-state', handler as (data: unknown) => void);
+    return this.api.subscribe(
+      'daemon-state',
+      handler as (data: unknown) => void
+    );
   }
 
   /**
@@ -396,7 +445,10 @@ export class RpcClient {
    * @throws Error if restart fails to initiate
    */
   async restartDaemon(): Promise<{ success: boolean; message: string }> {
-    return this.api.command<{ success: boolean; message: string }>('restart_daemon', {});
+    return this.api.command<{ success: boolean; message: string }>(
+      'restart_daemon',
+      {}
+    );
   }
 
   /**
@@ -412,7 +464,7 @@ export class RpcClient {
   async activateProfileAndRestart(name: string): Promise<void> {
     await this.activateProfile(name);
     // Brief delay to ensure activation is complete
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     await this.restartDaemon();
   }
 

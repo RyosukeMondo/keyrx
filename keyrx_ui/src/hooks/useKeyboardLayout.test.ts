@@ -35,7 +35,9 @@ describe('useKeyboardLayout', () => {
   });
 
   it('should memoize layoutKeys - same reference when layout unchanged', () => {
-    const { result, rerender } = renderHook(() => useKeyboardLayout('ANSI_104'));
+    const { result, rerender } = renderHook(() =>
+      useKeyboardLayout('ANSI_104')
+    );
 
     const firstKeys = result.current.layoutKeys;
 
@@ -131,7 +133,9 @@ describe('useKeyboardLayout', () => {
   });
 
   it('should provide stable setLayout reference', () => {
-    const { result, rerender } = renderHook(() => useKeyboardLayout('ANSI_104'));
+    const { result, rerender } = renderHook(() =>
+      useKeyboardLayout('ANSI_104')
+    );
 
     const firstSetLayout = result.current.setLayout;
 

@@ -106,7 +106,10 @@ export function useActivateProfile() {
       if (result.errors && result.errors.length > 0) {
         // Rollback optimistic update on compilation error
         if (context?.previousProfiles) {
-          queryClient.setQueryData(queryKeys.profiles, context.previousProfiles);
+          queryClient.setQueryData(
+            queryKeys.profiles,
+            context.previousProfiles
+          );
         }
         return;
       }
@@ -139,8 +142,13 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ originalName, updates }: { originalName: string; updates: { name?: string; description?: string } }) =>
-      profileApi.updateProfile(originalName, updates),
+    mutationFn: ({
+      originalName,
+      updates,
+    }: {
+      originalName: string;
+      updates: { name?: string; description?: string };
+    }) => profileApi.updateProfile(originalName, updates),
 
     onMutate: async ({ originalName, updates }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.profiles });
@@ -150,18 +158,20 @@ export function useUpdateProfile() {
       );
 
       // Optimistically update profile
-      queryClient.setQueryData<ProfileMetadata[]>(queryKeys.profiles, (old) =>
-        old?.map((p) => {
-          if (p.name === originalName) {
-            return {
-              ...p,
-              ...(updates.name && { name: updates.name }),
-              // Note: description is not in ProfileMetadata, so we can't update it here
-              // But the API call will succeed
-            };
-          }
-          return p;
-        })
+      queryClient.setQueryData<ProfileMetadata[]>(
+        queryKeys.profiles,
+        (old) =>
+          old?.map((p) => {
+            if (p.name === originalName) {
+              return {
+                ...p,
+                ...(updates.name && { name: updates.name }),
+                // Note: description is not in ProfileMetadata, so we can't update it here
+                // But the API call will succeed
+              };
+            }
+            return p;
+          })
       );
 
       return { previousProfiles };
@@ -208,8 +218,9 @@ export function useDeleteProfile() {
       );
 
       // Optimistically remove profile
-      queryClient.setQueryData<ProfileMetadata[]>(queryKeys.profiles, (old) =>
-        old?.filter((p) => p.name !== name)
+      queryClient.setQueryData<ProfileMetadata[]>(
+        queryKeys.profiles,
+        (old) => old?.filter((p) => p.name !== name)
       );
 
       return { previousProfiles };

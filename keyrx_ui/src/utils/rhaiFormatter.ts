@@ -51,7 +51,10 @@ import { generateRhaiScript, type FormatOptions } from './rhaiCodeGen';
  * // device_end();
  * ```
  */
-export function formatRhaiScript(script: string, options?: FormatOptions): string {
+export function formatRhaiScript(
+  script: string,
+  options?: FormatOptions
+): string {
   // Parse the script into AST
   const parseResult = parseRhaiScript(script);
 
@@ -59,9 +62,9 @@ export function formatRhaiScript(script: string, options?: FormatOptions): strin
     // If parsing fails, throw error with details
     const error = parseResult.error;
     throw new Error(
-      `Failed to parse Rhai script at line ${error?.line || 'unknown'}: ${error?.message || 'Unknown error'}${
-        error?.suggestion ? `\nSuggestion: ${error.suggestion}` : ''
-      }`
+      `Failed to parse Rhai script at line ${error?.line || 'unknown'}: ${
+        error?.message || 'Unknown error'
+      }${error?.suggestion ? `\nSuggestion: ${error.suggestion}` : ''}`
     );
   }
 
@@ -89,13 +92,17 @@ export function formatRhaiScript(script: string, options?: FormatOptions): strin
  * // ['    map("VK_A", "VK_B");', '    map("VK_C", "VK_D");']
  * ```
  */
-export function indentBlock(lines: string[], level: number, indentSize: number = 4): string[] {
+export function indentBlock(
+  lines: string[],
+  level: number,
+  indentSize: number = 4
+): string[] {
   if (level <= 0) {
     return lines;
   }
 
   const indent = ' '.repeat(level * indentSize);
-  return lines.map(line => {
+  return lines.map((line) => {
     // Don't indent empty lines
     if (line.trim() === '') {
       return line;
@@ -154,7 +161,9 @@ export function isLineTooLong(line: string, maxLength: number): boolean {
  * @param options - Partial formatting options
  * @returns Complete formatting options with defaults
  */
-export function applyDefaultFormatOptions(options?: FormatOptions): Required<FormatOptions> {
+export function applyDefaultFormatOptions(
+  options?: FormatOptions
+): Required<FormatOptions> {
   return {
     indentSize: options?.indentSize ?? 4,
     maxLineLength: options?.maxLineLength ?? 100,

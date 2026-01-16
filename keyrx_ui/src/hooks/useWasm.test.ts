@@ -37,7 +37,11 @@ describe('useWasm', () => {
       states: [],
       outputs: [],
       latency: [],
-      final_state: { active_modifiers: [], active_locks: [], active_layer: null },
+      final_state: {
+        active_modifiers: [],
+        active_locks: [],
+        active_layer: null,
+      },
     });
     mockValidateConfig.mockImplementation(() => {});
   });
@@ -170,10 +174,21 @@ describe('useWasm', () => {
   describe('runSimulation', () => {
     it('runs simulation with valid configuration', async () => {
       mockSimulate.mockReturnValue({
-        states: [{ timestamp_us: 0, active_modifiers: [], active_locks: [], active_layer: null }],
+        states: [
+          {
+            timestamp_us: 0,
+            active_modifiers: [],
+            active_locks: [],
+            active_layer: null,
+          },
+        ],
         outputs: [{ keycode: 'B', event_type: 'press', timestamp_us: 0 }],
         latency: [100],
-        final_state: { active_modifiers: [], active_locks: [], active_layer: null },
+        final_state: {
+          active_modifiers: [],
+          active_locks: [],
+          active_layer: null,
+        },
       });
 
       const { result } = renderHook(() => useWasm());
@@ -206,7 +221,9 @@ describe('useWasm', () => {
         { timeout: 10000 }
       );
 
-      const simResult = await result.current.runSimulation('test', { events: [] });
+      const simResult = await result.current.runSimulation('test', {
+        events: [],
+      });
       expect(simResult).toBeNull();
     });
 
@@ -221,7 +238,9 @@ describe('useWasm', () => {
         expect(result.current.isWasmReady).toBe(true);
       });
 
-      const simResult = await result.current.runSimulation('map("A", "B");', { events: [] });
+      const simResult = await result.current.runSimulation('map("A", "B");', {
+        events: [],
+      });
       expect(simResult).toBeNull();
     });
   });

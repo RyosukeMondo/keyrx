@@ -65,7 +65,9 @@ describe('TopBar', () => {
   });
 
   it('applies custom className', () => {
-    const { container } = renderWithProviders(<TopBar className="custom-class" />);
+    const { container } = renderWithProviders(
+      <TopBar className="custom-class" />
+    );
 
     const header = container.querySelector('header');
     expect(header).toHaveClass('custom-class');

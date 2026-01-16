@@ -8,7 +8,13 @@
  * - Resource cleanup
  */
 
-import type { WSMessage, EventRecord, DaemonState, LatencyStats, KeyEventPayload } from '../types';
+import type {
+  WSMessage,
+  EventRecord,
+  DaemonState,
+  LatencyStats,
+  KeyEventPayload,
+} from '../types';
 
 /**
  * Transform daemon's KeyEventPayload to frontend's EventRecord
@@ -31,7 +37,11 @@ function transformKeyEvent(payload: KeyEventPayload): EventRecord {
   };
 }
 
-export type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error';
+export type ConnectionState =
+  | 'connecting'
+  | 'connected'
+  | 'disconnected'
+  | 'error';
 
 export interface WebSocketConfig {
   url?: string;
@@ -71,7 +81,10 @@ export class WebSocketManager {
   private connectionState: ConnectionState = 'disconnected';
   private isClosed = false;
 
-  constructor(config: WebSocketConfig = {}, callbacks: WebSocketCallbacks = {}) {
+  constructor(
+    config: WebSocketConfig = {},
+    callbacks: WebSocketCallbacks = {}
+  ) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.callbacks = callbacks;
     this.currentReconnectInterval = this.config.reconnectInterval;

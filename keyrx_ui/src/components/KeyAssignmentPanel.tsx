@@ -30,7 +30,9 @@ interface KeyItemProps {
  * Individual key item within the palette
  */
 const KeyItem: React.FC<KeyItemProps> = ({ keyItem, onClick }) => {
-  const ariaLabel = `${keyItem.label} key. ${keyItem.description || ''}. Click to select.`;
+  const ariaLabel = `${keyItem.label} key. ${
+    keyItem.description || ''
+  }. Click to select.`;
 
   return (
     <button
@@ -69,9 +71,13 @@ export interface KeyAssignmentPanelProps {
  * Provides draggable key sources organized by type (Virtual Keys, Modifiers, Locks, Layers, Macros).
  * Users can drag keys from this panel onto the keyboard visualizer to assign key mappings.
  */
-export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ className = '' }) => {
+export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({
+  className = '',
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<KeyCategory | 'all'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<KeyCategory | 'all'>(
+    'all'
+  );
 
   // Define available keys by category
   const allKeys = useMemo<AssignableKey[]>(() => {
@@ -113,107 +119,542 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
       { id: 'VK_8', label: '8', category: 'virtual', description: 'Number 8' },
       { id: 'VK_9', label: '9', category: 'virtual', description: 'Number 9' },
       { id: 'VK_0', label: '0', category: 'virtual', description: 'Number 0' },
-      { id: 'VK_ENTER', label: 'Enter', category: 'virtual', description: 'Enter key' },
-      { id: 'VK_ESCAPE', label: 'Esc', category: 'virtual', description: 'Escape key' },
-      { id: 'VK_BACKSPACE', label: 'Backspace', category: 'virtual', description: 'Backspace key' },
-      { id: 'VK_TAB', label: 'Tab', category: 'virtual', description: 'Tab key' },
-      { id: 'VK_SPACE', label: 'Space', category: 'virtual', description: 'Space bar' },
-      { id: 'VK_F1', label: 'F1', category: 'virtual', description: 'Function key F1' },
-      { id: 'VK_F2', label: 'F2', category: 'virtual', description: 'Function key F2' },
-      { id: 'VK_F3', label: 'F3', category: 'virtual', description: 'Function key F3' },
-      { id: 'VK_F4', label: 'F4', category: 'virtual', description: 'Function key F4' },
-      { id: 'VK_F5', label: 'F5', category: 'virtual', description: 'Function key F5' },
-      { id: 'VK_F6', label: 'F6', category: 'virtual', description: 'Function key F6' },
-      { id: 'VK_F7', label: 'F7', category: 'virtual', description: 'Function key F7' },
-      { id: 'VK_F8', label: 'F8', category: 'virtual', description: 'Function key F8' },
-      { id: 'VK_F9', label: 'F9', category: 'virtual', description: 'Function key F9' },
-      { id: 'VK_F10', label: 'F10', category: 'virtual', description: 'Function key F10' },
-      { id: 'VK_F11', label: 'F11', category: 'virtual', description: 'Function key F11' },
-      { id: 'VK_F12', label: 'F12', category: 'virtual', description: 'Function key F12' },
-      { id: 'VK_F13', label: 'F13', category: 'virtual', description: 'Function key F13' },
-      { id: 'VK_F14', label: 'F14', category: 'virtual', description: 'Function key F14' },
-      { id: 'VK_F15', label: 'F15', category: 'virtual', description: 'Function key F15' },
-      { id: 'VK_F16', label: 'F16', category: 'virtual', description: 'Function key F16' },
-      { id: 'VK_F17', label: 'F17', category: 'virtual', description: 'Function key F17' },
-      { id: 'VK_F18', label: 'F18', category: 'virtual', description: 'Function key F18' },
-      { id: 'VK_F19', label: 'F19', category: 'virtual', description: 'Function key F19' },
-      { id: 'VK_F20', label: 'F20', category: 'virtual', description: 'Function key F20' },
-      { id: 'VK_F21', label: 'F21', category: 'virtual', description: 'Function key F21' },
-      { id: 'VK_F22', label: 'F22', category: 'virtual', description: 'Function key F22' },
-      { id: 'VK_F23', label: 'F23', category: 'virtual', description: 'Function key F23' },
-      { id: 'VK_F24', label: 'F24', category: 'virtual', description: 'Function key F24' },
+      {
+        id: 'VK_ENTER',
+        label: 'Enter',
+        category: 'virtual',
+        description: 'Enter key',
+      },
+      {
+        id: 'VK_ESCAPE',
+        label: 'Esc',
+        category: 'virtual',
+        description: 'Escape key',
+      },
+      {
+        id: 'VK_BACKSPACE',
+        label: 'Backspace',
+        category: 'virtual',
+        description: 'Backspace key',
+      },
+      {
+        id: 'VK_TAB',
+        label: 'Tab',
+        category: 'virtual',
+        description: 'Tab key',
+      },
+      {
+        id: 'VK_SPACE',
+        label: 'Space',
+        category: 'virtual',
+        description: 'Space bar',
+      },
+      {
+        id: 'VK_F1',
+        label: 'F1',
+        category: 'virtual',
+        description: 'Function key F1',
+      },
+      {
+        id: 'VK_F2',
+        label: 'F2',
+        category: 'virtual',
+        description: 'Function key F2',
+      },
+      {
+        id: 'VK_F3',
+        label: 'F3',
+        category: 'virtual',
+        description: 'Function key F3',
+      },
+      {
+        id: 'VK_F4',
+        label: 'F4',
+        category: 'virtual',
+        description: 'Function key F4',
+      },
+      {
+        id: 'VK_F5',
+        label: 'F5',
+        category: 'virtual',
+        description: 'Function key F5',
+      },
+      {
+        id: 'VK_F6',
+        label: 'F6',
+        category: 'virtual',
+        description: 'Function key F6',
+      },
+      {
+        id: 'VK_F7',
+        label: 'F7',
+        category: 'virtual',
+        description: 'Function key F7',
+      },
+      {
+        id: 'VK_F8',
+        label: 'F8',
+        category: 'virtual',
+        description: 'Function key F8',
+      },
+      {
+        id: 'VK_F9',
+        label: 'F9',
+        category: 'virtual',
+        description: 'Function key F9',
+      },
+      {
+        id: 'VK_F10',
+        label: 'F10',
+        category: 'virtual',
+        description: 'Function key F10',
+      },
+      {
+        id: 'VK_F11',
+        label: 'F11',
+        category: 'virtual',
+        description: 'Function key F11',
+      },
+      {
+        id: 'VK_F12',
+        label: 'F12',
+        category: 'virtual',
+        description: 'Function key F12',
+      },
+      {
+        id: 'VK_F13',
+        label: 'F13',
+        category: 'virtual',
+        description: 'Function key F13',
+      },
+      {
+        id: 'VK_F14',
+        label: 'F14',
+        category: 'virtual',
+        description: 'Function key F14',
+      },
+      {
+        id: 'VK_F15',
+        label: 'F15',
+        category: 'virtual',
+        description: 'Function key F15',
+      },
+      {
+        id: 'VK_F16',
+        label: 'F16',
+        category: 'virtual',
+        description: 'Function key F16',
+      },
+      {
+        id: 'VK_F17',
+        label: 'F17',
+        category: 'virtual',
+        description: 'Function key F17',
+      },
+      {
+        id: 'VK_F18',
+        label: 'F18',
+        category: 'virtual',
+        description: 'Function key F18',
+      },
+      {
+        id: 'VK_F19',
+        label: 'F19',
+        category: 'virtual',
+        description: 'Function key F19',
+      },
+      {
+        id: 'VK_F20',
+        label: 'F20',
+        category: 'virtual',
+        description: 'Function key F20',
+      },
+      {
+        id: 'VK_F21',
+        label: 'F21',
+        category: 'virtual',
+        description: 'Function key F21',
+      },
+      {
+        id: 'VK_F22',
+        label: 'F22',
+        category: 'virtual',
+        description: 'Function key F22',
+      },
+      {
+        id: 'VK_F23',
+        label: 'F23',
+        category: 'virtual',
+        description: 'Function key F23',
+      },
+      {
+        id: 'VK_F24',
+        label: 'F24',
+        category: 'virtual',
+        description: 'Function key F24',
+      },
       { id: 'VK_UP', label: '↑', category: 'virtual', description: 'Arrow Up' },
-      { id: 'VK_DOWN', label: '↓', category: 'virtual', description: 'Arrow Down' },
-      { id: 'VK_LEFT', label: '←', category: 'virtual', description: 'Arrow Left' },
-      { id: 'VK_RIGHT', label: '→', category: 'virtual', description: 'Arrow Right' },
-      { id: 'VK_HOME', label: 'Home', category: 'virtual', description: 'Home key' },
-      { id: 'VK_END', label: 'End', category: 'virtual', description: 'End key' },
-      { id: 'VK_PAGEUP', label: 'PgUp', category: 'virtual', description: 'Page Up' },
-      { id: 'VK_PAGEDOWN', label: 'PgDn', category: 'virtual', description: 'Page Down' },
-      { id: 'VK_DELETE', label: 'Del', category: 'virtual', description: 'Delete key' },
-      { id: 'VK_INSERT', label: 'Insert', category: 'virtual', description: 'Insert key' },
-      { id: 'VK_PRINTSCREEN', label: 'PrtScn', category: 'virtual', description: 'Print Screen' },
-      { id: 'VK_PAUSE', label: 'Pause', category: 'virtual', description: 'Pause key' },
+      {
+        id: 'VK_DOWN',
+        label: '↓',
+        category: 'virtual',
+        description: 'Arrow Down',
+      },
+      {
+        id: 'VK_LEFT',
+        label: '←',
+        category: 'virtual',
+        description: 'Arrow Left',
+      },
+      {
+        id: 'VK_RIGHT',
+        label: '→',
+        category: 'virtual',
+        description: 'Arrow Right',
+      },
+      {
+        id: 'VK_HOME',
+        label: 'Home',
+        category: 'virtual',
+        description: 'Home key',
+      },
+      {
+        id: 'VK_END',
+        label: 'End',
+        category: 'virtual',
+        description: 'End key',
+      },
+      {
+        id: 'VK_PAGEUP',
+        label: 'PgUp',
+        category: 'virtual',
+        description: 'Page Up',
+      },
+      {
+        id: 'VK_PAGEDOWN',
+        label: 'PgDn',
+        category: 'virtual',
+        description: 'Page Down',
+      },
+      {
+        id: 'VK_DELETE',
+        label: 'Del',
+        category: 'virtual',
+        description: 'Delete key',
+      },
+      {
+        id: 'VK_INSERT',
+        label: 'Insert',
+        category: 'virtual',
+        description: 'Insert key',
+      },
+      {
+        id: 'VK_PRINTSCREEN',
+        label: 'PrtScn',
+        category: 'virtual',
+        description: 'Print Screen',
+      },
+      {
+        id: 'VK_PAUSE',
+        label: 'Pause',
+        category: 'virtual',
+        description: 'Pause key',
+      },
 
       // Numpad
-      { id: 'VK_KP0', label: 'Num 0', category: 'virtual', description: 'Numpad 0' },
-      { id: 'VK_KP1', label: 'Num 1', category: 'virtual', description: 'Numpad 1' },
-      { id: 'VK_KP2', label: 'Num 2', category: 'virtual', description: 'Numpad 2' },
-      { id: 'VK_KP3', label: 'Num 3', category: 'virtual', description: 'Numpad 3' },
-      { id: 'VK_KP4', label: 'Num 4', category: 'virtual', description: 'Numpad 4' },
-      { id: 'VK_KP5', label: 'Num 5', category: 'virtual', description: 'Numpad 5' },
-      { id: 'VK_KP6', label: 'Num 6', category: 'virtual', description: 'Numpad 6' },
-      { id: 'VK_KP7', label: 'Num 7', category: 'virtual', description: 'Numpad 7' },
-      { id: 'VK_KP8', label: 'Num 8', category: 'virtual', description: 'Numpad 8' },
-      { id: 'VK_KP9', label: 'Num 9', category: 'virtual', description: 'Numpad 9' },
-      { id: 'VK_KPASTERISK', label: 'Num *', category: 'virtual', description: 'Numpad multiply' },
-      { id: 'VK_KPMINUS', label: 'Num -', category: 'virtual', description: 'Numpad minus' },
-      { id: 'VK_KPPLUS', label: 'Num +', category: 'virtual', description: 'Numpad plus' },
-      { id: 'VK_KPDOT', label: 'Num .', category: 'virtual', description: 'Numpad decimal' },
-      { id: 'VK_KPSLASH', label: 'Num /', category: 'virtual', description: 'Numpad divide' },
-      { id: 'VK_KPENTER', label: 'Num Enter', category: 'virtual', description: 'Numpad enter' },
+      {
+        id: 'VK_KP0',
+        label: 'Num 0',
+        category: 'virtual',
+        description: 'Numpad 0',
+      },
+      {
+        id: 'VK_KP1',
+        label: 'Num 1',
+        category: 'virtual',
+        description: 'Numpad 1',
+      },
+      {
+        id: 'VK_KP2',
+        label: 'Num 2',
+        category: 'virtual',
+        description: 'Numpad 2',
+      },
+      {
+        id: 'VK_KP3',
+        label: 'Num 3',
+        category: 'virtual',
+        description: 'Numpad 3',
+      },
+      {
+        id: 'VK_KP4',
+        label: 'Num 4',
+        category: 'virtual',
+        description: 'Numpad 4',
+      },
+      {
+        id: 'VK_KP5',
+        label: 'Num 5',
+        category: 'virtual',
+        description: 'Numpad 5',
+      },
+      {
+        id: 'VK_KP6',
+        label: 'Num 6',
+        category: 'virtual',
+        description: 'Numpad 6',
+      },
+      {
+        id: 'VK_KP7',
+        label: 'Num 7',
+        category: 'virtual',
+        description: 'Numpad 7',
+      },
+      {
+        id: 'VK_KP8',
+        label: 'Num 8',
+        category: 'virtual',
+        description: 'Numpad 8',
+      },
+      {
+        id: 'VK_KP9',
+        label: 'Num 9',
+        category: 'virtual',
+        description: 'Numpad 9',
+      },
+      {
+        id: 'VK_KPASTERISK',
+        label: 'Num *',
+        category: 'virtual',
+        description: 'Numpad multiply',
+      },
+      {
+        id: 'VK_KPMINUS',
+        label: 'Num -',
+        category: 'virtual',
+        description: 'Numpad minus',
+      },
+      {
+        id: 'VK_KPPLUS',
+        label: 'Num +',
+        category: 'virtual',
+        description: 'Numpad plus',
+      },
+      {
+        id: 'VK_KPDOT',
+        label: 'Num .',
+        category: 'virtual',
+        description: 'Numpad decimal',
+      },
+      {
+        id: 'VK_KPSLASH',
+        label: 'Num /',
+        category: 'virtual',
+        description: 'Numpad divide',
+      },
+      {
+        id: 'VK_KPENTER',
+        label: 'Num Enter',
+        category: 'virtual',
+        description: 'Numpad enter',
+      },
 
       // Punctuation
-      { id: 'VK_MINUS', label: '-', category: 'virtual', description: 'Minus/Hyphen' },
-      { id: 'VK_EQUAL', label: '=', category: 'virtual', description: 'Equals' },
-      { id: 'VK_LEFTBRACE', label: '[', category: 'virtual', description: 'Left bracket' },
-      { id: 'VK_RIGHTBRACE', label: ']', category: 'virtual', description: 'Right bracket' },
-      { id: 'VK_SEMICOLON', label: ';', category: 'virtual', description: 'Semicolon' },
-      { id: 'VK_APOSTROPHE', label: "'", category: 'virtual', description: 'Apostrophe/Quote' },
-      { id: 'VK_GRAVE', label: '`', category: 'virtual', description: 'Grave/Backtick' },
-      { id: 'VK_BACKSLASH', label: '\\', category: 'virtual', description: 'Backslash' },
+      {
+        id: 'VK_MINUS',
+        label: '-',
+        category: 'virtual',
+        description: 'Minus/Hyphen',
+      },
+      {
+        id: 'VK_EQUAL',
+        label: '=',
+        category: 'virtual',
+        description: 'Equals',
+      },
+      {
+        id: 'VK_LEFTBRACE',
+        label: '[',
+        category: 'virtual',
+        description: 'Left bracket',
+      },
+      {
+        id: 'VK_RIGHTBRACE',
+        label: ']',
+        category: 'virtual',
+        description: 'Right bracket',
+      },
+      {
+        id: 'VK_SEMICOLON',
+        label: ';',
+        category: 'virtual',
+        description: 'Semicolon',
+      },
+      {
+        id: 'VK_APOSTROPHE',
+        label: "'",
+        category: 'virtual',
+        description: 'Apostrophe/Quote',
+      },
+      {
+        id: 'VK_GRAVE',
+        label: '`',
+        category: 'virtual',
+        description: 'Grave/Backtick',
+      },
+      {
+        id: 'VK_BACKSLASH',
+        label: '\\',
+        category: 'virtual',
+        description: 'Backslash',
+      },
       { id: 'VK_COMMA', label: ',', category: 'virtual', description: 'Comma' },
-      { id: 'VK_DOT', label: '.', category: 'virtual', description: 'Period/Dot' },
-      { id: 'VK_SLASH', label: '/', category: 'virtual', description: 'Forward slash' },
+      {
+        id: 'VK_DOT',
+        label: '.',
+        category: 'virtual',
+        description: 'Period/Dot',
+      },
+      {
+        id: 'VK_SLASH',
+        label: '/',
+        category: 'virtual',
+        description: 'Forward slash',
+      },
 
       // Modifiers (MD_*)
-      { id: 'MD_CTRL', label: 'Ctrl', category: 'modifier', description: 'Control modifier' },
-      { id: 'MD_SHIFT', label: 'Shift', category: 'modifier', description: 'Shift modifier' },
-      { id: 'MD_ALT', label: 'Alt', category: 'modifier', description: 'Alt modifier' },
-      { id: 'MD_GUI', label: 'Super', category: 'modifier', description: 'Super/Windows/Command modifier' },
-      { id: 'MD_RCTRL', label: 'RCtrl', category: 'modifier', description: 'Right Control modifier' },
-      { id: 'MD_RSHIFT', label: 'RShift', category: 'modifier', description: 'Right Shift modifier' },
-      { id: 'MD_RALT', label: 'RAlt', category: 'modifier', description: 'Right Alt modifier' },
-      { id: 'MD_RGUI', label: 'RSuper', category: 'modifier', description: 'Right Super modifier' },
+      {
+        id: 'MD_CTRL',
+        label: 'Ctrl',
+        category: 'modifier',
+        description: 'Control modifier',
+      },
+      {
+        id: 'MD_SHIFT',
+        label: 'Shift',
+        category: 'modifier',
+        description: 'Shift modifier',
+      },
+      {
+        id: 'MD_ALT',
+        label: 'Alt',
+        category: 'modifier',
+        description: 'Alt modifier',
+      },
+      {
+        id: 'MD_GUI',
+        label: 'Super',
+        category: 'modifier',
+        description: 'Super/Windows/Command modifier',
+      },
+      {
+        id: 'MD_RCTRL',
+        label: 'RCtrl',
+        category: 'modifier',
+        description: 'Right Control modifier',
+      },
+      {
+        id: 'MD_RSHIFT',
+        label: 'RShift',
+        category: 'modifier',
+        description: 'Right Shift modifier',
+      },
+      {
+        id: 'MD_RALT',
+        label: 'RAlt',
+        category: 'modifier',
+        description: 'Right Alt modifier',
+      },
+      {
+        id: 'MD_RGUI',
+        label: 'RSuper',
+        category: 'modifier',
+        description: 'Right Super modifier',
+      },
 
       // Locks (LK_*)
-      { id: 'VK_CAPSLOCK', label: 'CapsLock', category: 'lock', description: 'Caps Lock key' },
-      { id: 'VK_NUMLOCK', label: 'NumLock', category: 'lock', description: 'Num Lock key' },
-      { id: 'VK_SCROLLLOCK', label: 'ScrollLock', category: 'lock', description: 'Scroll Lock key' },
+      {
+        id: 'VK_CAPSLOCK',
+        label: 'CapsLock',
+        category: 'lock',
+        description: 'Caps Lock key',
+      },
+      {
+        id: 'VK_NUMLOCK',
+        label: 'NumLock',
+        category: 'lock',
+        description: 'Num Lock key',
+      },
+      {
+        id: 'VK_SCROLLLOCK',
+        label: 'ScrollLock',
+        category: 'lock',
+        description: 'Scroll Lock key',
+      },
 
       // Layers (common layer names)
-      { id: 'LAYER_BASE', label: 'Base Layer', category: 'layer', description: 'Switch to base layer' },
-      { id: 'LAYER_NAV', label: 'Nav Layer', category: 'layer', description: 'Switch to navigation layer' },
-      { id: 'LAYER_NUM', label: 'Num Layer', category: 'layer', description: 'Switch to number layer' },
-      { id: 'LAYER_FN', label: 'Fn Layer', category: 'layer', description: 'Switch to function layer' },
-      { id: 'LAYER_GAMING', label: 'Gaming Layer', category: 'layer', description: 'Switch to gaming layer' },
+      {
+        id: 'LAYER_BASE',
+        label: 'Base Layer',
+        category: 'layer',
+        description: 'Switch to base layer',
+      },
+      {
+        id: 'LAYER_NAV',
+        label: 'Nav Layer',
+        category: 'layer',
+        description: 'Switch to navigation layer',
+      },
+      {
+        id: 'LAYER_NUM',
+        label: 'Num Layer',
+        category: 'layer',
+        description: 'Switch to number layer',
+      },
+      {
+        id: 'LAYER_FN',
+        label: 'Fn Layer',
+        category: 'layer',
+        description: 'Switch to function layer',
+      },
+      {
+        id: 'LAYER_GAMING',
+        label: 'Gaming Layer',
+        category: 'layer',
+        description: 'Switch to gaming layer',
+      },
 
       // Macros (example macros)
-      { id: 'MACRO_COPY', label: 'Copy', category: 'macro', description: 'Copy macro (Ctrl+C)' },
-      { id: 'MACRO_PASTE', label: 'Paste', category: 'macro', description: 'Paste macro (Ctrl+V)' },
-      { id: 'MACRO_CUT', label: 'Cut', category: 'macro', description: 'Cut macro (Ctrl+X)' },
-      { id: 'MACRO_UNDO', label: 'Undo', category: 'macro', description: 'Undo macro (Ctrl+Z)' },
-      { id: 'MACRO_REDO', label: 'Redo', category: 'macro', description: 'Redo macro (Ctrl+Y)' },
+      {
+        id: 'MACRO_COPY',
+        label: 'Copy',
+        category: 'macro',
+        description: 'Copy macro (Ctrl+C)',
+      },
+      {
+        id: 'MACRO_PASTE',
+        label: 'Paste',
+        category: 'macro',
+        description: 'Paste macro (Ctrl+V)',
+      },
+      {
+        id: 'MACRO_CUT',
+        label: 'Cut',
+        category: 'macro',
+        description: 'Cut macro (Ctrl+X)',
+      },
+      {
+        id: 'MACRO_UNDO',
+        label: 'Undo',
+        category: 'macro',
+        description: 'Undo macro (Ctrl+Z)',
+      },
+      {
+        id: 'MACRO_REDO',
+        label: 'Redo',
+        category: 'macro',
+        description: 'Redo macro (Ctrl+Y)',
+      },
     ];
   }, []);
 
@@ -223,14 +664,14 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
 
     // Filter by category
     if (selectedCategory !== 'all') {
-      keys = keys.filter(key => key.category === selectedCategory);
+      keys = keys.filter((key) => key.category === selectedCategory);
     }
 
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       keys = keys.filter(
-        key =>
+        (key) =>
           key.label.toLowerCase().includes(query) ||
           key.id.toLowerCase().includes(query) ||
           key.description?.toLowerCase().includes(query)
@@ -250,7 +691,7 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
       macro: [],
     };
 
-    filteredKeys.forEach(key => {
+    filteredKeys.forEach((key) => {
       groups[key.category].push(key);
     });
 
@@ -276,11 +717,23 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
   };
 
   return (
-    <div className={cn('flex flex-col h-full bg-slate-800 border border-slate-700 rounded-md', className)} role="complementary" aria-label="Key assignment palette">
+    <div
+      className={cn(
+        'flex flex-col h-full bg-slate-800 border border-slate-700 rounded-md',
+        className
+      )}
+      role="complementary"
+      aria-label="Key assignment palette"
+    >
       {/* Header */}
       <div className="p-4 border-b border-slate-700">
-        <h2 className="text-lg font-semibold text-slate-100 mb-2">Key Palette</h2>
-        <p className="text-xs text-slate-400 mb-3" id="key-palette-instructions">
+        <h2 className="text-lg font-semibold text-slate-100 mb-2">
+          Key Palette
+        </h2>
+        <p
+          className="text-xs text-slate-400 mb-3"
+          id="key-palette-instructions"
+        >
           Click a key to select it for assignment
         </p>
 
@@ -296,7 +749,7 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
 
         {/* Category filter tabs */}
         <div role="tablist" className="flex flex-wrap gap-2">
-          {categories.map(cat => (
+          {categories.map((cat) => (
             <button
               key={cat.value}
               role="tab"
@@ -325,14 +778,15 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
           <div id="panel-all" role="tabpanel">
             {Object.entries(groupedKeys).map(([category, keys]) => {
               if (keys.length === 0) return null;
-              const categoryLabel = categories.find(c => c.value === category)?.label || category;
+              const categoryLabel =
+                categories.find((c) => c.value === category)?.label || category;
               return (
                 <div key={category} className="mb-4">
                   <h3 className="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wide">
                     {categoryLabel}
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
-                    {keys.map(key => (
+                    {keys.map((key) => (
                       <KeyItem key={key.id} keyItem={key} />
                     ))}
                   </div>
@@ -347,7 +801,7 @@ export const KeyAssignmentPanel: React.FC<KeyAssignmentPanelProps> = ({ classNam
               <p className="text-slate-400 text-center py-8">No keys found</p>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                {filteredKeys.map(key => (
+                {filteredKeys.map((key) => (
                   <KeyItem key={key.id} keyItem={key} />
                 ))}
               </div>

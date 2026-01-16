@@ -64,16 +64,27 @@ export const SimulatorPage: React.FC = () => {
   // Profile selection
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const { data: profiles, isLoading: isLoadingProfiles } = useProfiles();
-  const { data: profileConfig, isLoading: isLoadingConfig } = useGetProfileConfig(selectedProfile);
-  const { isWasmReady, isLoading: isLoadingWasm, error, validateConfig, runSimulation } = useWasm();
+  const { data: profileConfig, isLoading: isLoadingConfig } =
+    useGetProfileConfig(selectedProfile);
+  const {
+    isWasmReady,
+    isLoading: isLoadingWasm,
+    error,
+    validateConfig,
+    runSimulation,
+  } = useWasm();
   const [configLoadError, setConfigLoadError] = useState<string | null>(null);
   const [isUsingProfileConfig, setIsUsingProfileConfig] = useState(false);
   const [wasmState, setWasmState] = useState<DaemonState | null>(null);
 
   // Custom code editor mode
   const [useCustomCode, setUseCustomCode] = useState(false);
-  const [customCode, setCustomCode] = useState<string>('// Write your Rhai configuration here\n');
-  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [customCode, setCustomCode] = useState<string>(
+    '// Write your Rhai configuration here\n'
+  );
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
+    []
+  );
 
   // Set the first profile as selected when profiles load
   useEffect(() => {
@@ -95,7 +106,9 @@ export const SimulatorPage: React.FC = () => {
         // Validate the config
         const errors = await validateConfig(profileConfig.source);
         if (errors.length > 0) {
-          const errorMsg = errors.map((e) => `Line ${e.line}: ${e.message}`).join('; ');
+          const errorMsg = errors
+            .map((e) => `Line ${e.line}: ${e.message}`)
+            .join('; ');
           setConfigLoadError(errorMsg);
           setIsUsingProfileConfig(false);
           console.error('Profile config validation failed:', errorMsg);
@@ -162,7 +175,12 @@ export const SimulatorPage: React.FC = () => {
       });
 
       // If WASM is ready and we have a valid profile config, use WASM simulation
-      if (isUsingProfileConfig && profileConfig && isWasmReady && runSimulation) {
+      if (
+        isUsingProfileConfig &&
+        profileConfig &&
+        isWasmReady &&
+        runSimulation
+      ) {
         try {
           const input: SimulationInput = {
             events: [
@@ -179,8 +197,12 @@ export const SimulatorPage: React.FC = () => {
           if (result) {
             // Update state from WASM result
             setWasmState({
-              modifiers: result.final_state.active_modifiers.map((id) => `MD_${id.toString().padStart(2, '0')}`),
-              locks: result.final_state.active_locks.map((id) => `LK_${id.toString().padStart(2, '0')}`),
+              modifiers: result.final_state.active_modifiers.map(
+                (id) => `MD_${id.toString().padStart(2, '0')}`
+              ),
+              locks: result.final_state.active_locks.map(
+                (id) => `LK_${id.toString().padStart(2, '0')}`
+              ),
               layer: result.final_state.active_layer || 'Base',
             });
 
@@ -253,7 +275,15 @@ export const SimulatorPage: React.FC = () => {
         }
       }
     },
-    [isPaused, keyMappings, addEvent, isUsingProfileConfig, profileConfig, isWasmReady, runSimulation]
+    [
+      isPaused,
+      keyMappings,
+      addEvent,
+      isUsingProfileConfig,
+      profileConfig,
+      isWasmReady,
+      runSimulation,
+    ]
   );
 
   const handleKeyRelease = useCallback(
@@ -277,7 +307,12 @@ export const SimulatorPage: React.FC = () => {
       });
 
       // If WASM is ready and we have a valid profile config, use WASM simulation
-      if (isUsingProfileConfig && profileConfig && isWasmReady && runSimulation) {
+      if (
+        isUsingProfileConfig &&
+        profileConfig &&
+        isWasmReady &&
+        runSimulation
+      ) {
         try {
           const input: SimulationInput = {
             events: [
@@ -294,8 +329,12 @@ export const SimulatorPage: React.FC = () => {
           if (result) {
             // Update state from WASM result
             setWasmState({
-              modifiers: result.final_state.active_modifiers.map((id) => `MD_${id.toString().padStart(2, '0')}`),
-              locks: result.final_state.active_locks.map((id) => `LK_${id.toString().padStart(2, '0')}`),
+              modifiers: result.final_state.active_modifiers.map(
+                (id) => `MD_${id.toString().padStart(2, '0')}`
+              ),
+              locks: result.final_state.active_locks.map(
+                (id) => `LK_${id.toString().padStart(2, '0')}`
+              ),
               layer: result.final_state.active_layer || 'Base',
             });
 
@@ -364,7 +403,16 @@ export const SimulatorPage: React.FC = () => {
         }
       }
     },
-    [isPaused, holdTimers, keyMappings, addEvent, isUsingProfileConfig, profileConfig, isWasmReady, runSimulation]
+    [
+      isPaused,
+      holdTimers,
+      keyMappings,
+      addEvent,
+      isUsingProfileConfig,
+      profileConfig,
+      isWasmReady,
+      runSimulation,
+    ]
   );
 
   const handleKeyClick = useCallback(
@@ -487,7 +535,9 @@ export const SimulatorPage: React.FC = () => {
       <Card aria-label="Configuration mode selector">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-slate-300">Configuration Mode:</span>
+            <span className="text-sm font-medium text-slate-300">
+              Configuration Mode:
+            </span>
             <div className="flex gap-2">
               <button
                 onClick={() => setUseCustomCode(false)}
@@ -526,7 +576,9 @@ export const SimulatorPage: React.FC = () => {
                   id="profile-selector"
                   value={selectedProfile}
                   onChange={(e) => setSelectedProfile(e.target.value)}
-                  disabled={isLoadingProfiles || !profiles || profiles.length === 0}
+                  disabled={
+                    isLoadingProfiles || !profiles || profiles.length === 0
+                  }
                   className="w-full sm:w-auto min-w-[200px] px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Select profile for simulation"
                 >
@@ -575,9 +627,14 @@ export const SimulatorPage: React.FC = () => {
                     ✓ WASM Simulator Active
                   </span>
                 )}
-                {!isLoadingConfig && profileConfig && !isUsingProfileConfig && !configLoadError && (
-                  <span className="text-yellow-400">⚠ Using mock simulation (WASM not ready)</span>
-                )}
+                {!isLoadingConfig &&
+                  profileConfig &&
+                  !isUsingProfileConfig &&
+                  !configLoadError && (
+                    <span className="text-yellow-400">
+                      ⚠ Using mock simulation (WASM not ready)
+                    </span>
+                  )}
                 {!isWasmReady && !isLoadingWasm && (
                   <span className="text-yellow-400">
                     ⚠ WASM not available (run build:wasm)
@@ -590,11 +647,13 @@ export const SimulatorPage: React.FC = () => {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-slate-400">
-                  Edit Rhai configuration and test with WASM compilation + simulation
+                  Edit Rhai configuration and test with WASM compilation +
+                  simulation
                 </p>
                 {validationErrors.length > 0 && (
                   <span className="text-xs text-red-400">
-                    {validationErrors.length} error{validationErrors.length > 1 ? 's' : ''}
+                    {validationErrors.length} error
+                    {validationErrors.length > 1 ? 's' : ''}
                   </span>
                 )}
               </div>
@@ -622,8 +681,8 @@ export const SimulatorPage: React.FC = () => {
             Failed to load profile configuration: {configLoadError}
           </p>
           <p className="text-xs mt-2 text-red-300">
-            The simulator is using mock key mappings. Fix the configuration to use
-            real profile logic.
+            The simulator is using mock key mappings. Fix the configuration to
+            use real profile logic.
           </p>
         </div>
       )}
@@ -643,8 +702,14 @@ export const SimulatorPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* State Display */}
-        <Card className="lg:col-span-1" aria-labelledby="simulator-state-heading">
-          <h2 id="simulator-state-heading" className="text-base md:text-lg font-semibold text-slate-100 mb-3">
+        <Card
+          className="lg:col-span-1"
+          aria-labelledby="simulator-state-heading"
+        >
+          <h2
+            id="simulator-state-heading"
+            className="text-base md:text-lg font-semibold text-slate-100 mb-3"
+          >
             State Inspector
           </h2>
           {isUsingProfileConfig && wasmState ? (
@@ -654,7 +719,9 @@ export const SimulatorPage: React.FC = () => {
               <div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-400">Active Layer:</span>
+                    <span className="text-sm text-slate-400">
+                      Active Layer:
+                    </span>
                     <span className="text-sm font-mono text-slate-100">
                       {state.activeLayer}
                     </span>
@@ -718,8 +785,14 @@ export const SimulatorPage: React.FC = () => {
         </Card>
 
         {/* Event Log */}
-        <Card className="lg:col-span-2" aria-labelledby="simulator-event-log-heading">
-          <h2 id="simulator-event-log-heading" className="text-base md:text-lg font-semibold text-slate-100 mb-3">
+        <Card
+          className="lg:col-span-2"
+          aria-labelledby="simulator-event-log-heading"
+        >
+          <h2
+            id="simulator-event-log-heading"
+            className="text-base md:text-lg font-semibold text-slate-100 mb-3"
+          >
             Event Log
             <span className="text-xs md:text-sm font-normal text-slate-400 ml-2">
               (last {Math.min(events.length, MAX_EVENTS)} events)
@@ -764,7 +837,10 @@ export const SimulatorPage: React.FC = () => {
 
       {/* Keyboard Visualizer */}
       <Card aria-labelledby="interactive-keyboard-heading">
-        <h2 id="interactive-keyboard-heading" className="text-base md:text-lg font-semibold text-slate-100 mb-4">
+        <h2
+          id="interactive-keyboard-heading"
+          className="text-base md:text-lg font-semibold text-slate-100 mb-4"
+        >
           Interactive Keyboard
         </h2>
         <div className="flex justify-center overflow-x-auto md:overflow-x-visible">

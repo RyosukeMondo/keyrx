@@ -8,7 +8,10 @@
  */
 
 import React from 'react';
-import { KeyboardVisualizer, type LayoutType } from '@/components/KeyboardVisualizer';
+import {
+  KeyboardVisualizer,
+  type LayoutType,
+} from '@/components/KeyboardVisualizer';
 import { useKeyboardLayout } from '@/hooks/useKeyboardLayout';
 import type { KeyMapping } from '@/types';
 
@@ -49,15 +52,18 @@ export interface KeyboardVisualizerContainerProps {
 export const KeyboardVisualizerContainer: React.FC<
   KeyboardVisualizerContainerProps
 > = ({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   profileName,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   activeLayer,
   mappings,
   onKeyClick,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedKeyCode,
   initialLayout = 'ANSI_104',
   className = '',
 }) => {
-  const { layout, setLayout, layoutKeys } = useKeyboardLayout(initialLayout);
+  const { layout, setLayout } = useKeyboardLayout(initialLayout);
 
   return (
     <div className={className}>

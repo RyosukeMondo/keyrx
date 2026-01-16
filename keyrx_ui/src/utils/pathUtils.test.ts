@@ -38,7 +38,8 @@ describe('pathUtils', () => {
     });
 
     it('should use default max length of 50', () => {
-      const longPath = '/home/user/very/long/path/with/many/segments/that/exceeds/fifty/characters/total.rhai';
+      const longPath =
+        '/home/user/very/long/path/with/many/segments/that/exceeds/fifty/characters/total.rhai';
       const result = truncatePath(longPath);
       expect(result.length).toBeLessThanOrEqual(53); // Allow ellipsis
     });
