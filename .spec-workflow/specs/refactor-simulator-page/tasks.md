@@ -66,7 +66,7 @@
   - _Requirements: TR-2, TR-3_
   - _Prompt: Role: QA Engineer specializing in integration testing | Task: Implement the task for spec refactor-simulator-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Update SimulatorPage.test.tsx to test refactored page. Mock useSimulation, EventList, SimulationControls, EventInjectionForm. Test composition and prop passing. Verify integration scenarios. Maintain/improve coverage. | Restrictions: Test integration not details, mock children, verify data flow, maintain test scenarios | Success: Tests updated and passing, coverage maintained/improved, integration verified, no failing tests | After completion: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [-] 9. Fix ESLint errors and apply Prettier
+- [x] 9. Fix ESLint errors and apply Prettier
   - Run linting and formatting on all modified files
   - Purpose: Ensure code quality compliance
   - _Requirements: TR-1_
