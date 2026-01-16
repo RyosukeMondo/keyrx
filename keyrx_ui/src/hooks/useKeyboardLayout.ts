@@ -1,5 +1,9 @@
 import { useState, useMemo } from 'react';
-import { parseKLEToSVG, type SVGKeyData, type KLEData } from '@/utils/kle-parser';
+import {
+  parseKLEToSVG,
+  type SVGKeyData,
+  type KLEData,
+} from '@/utils/kle-parser';
 import type { LayoutType } from '@/components/KeyboardVisualizer';
 
 // Import layout data

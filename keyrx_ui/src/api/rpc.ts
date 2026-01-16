@@ -37,10 +37,7 @@ import type {
   SimulationResult,
   PaginatedEvents,
 } from './types';
-import {
-  validateApiResponse,
-  ProfileConfigRpcSchema,
-} from './schemas';
+import { validateApiResponse, ProfileConfigRpcSchema } from './schemas';
 import type { z } from 'zod';
 
 /**
@@ -144,7 +141,9 @@ export class RpcClient {
    * @throws Error if profile does not exist
    */
   async getProfileConfig(name: string): Promise<ProfileConfig> {
-    const response = await this.api.query<z.infer<typeof ProfileConfigRpcSchema>>('get_profile_config', { name });
+    const response = await this.api.query<
+      z.infer<typeof ProfileConfigRpcSchema>
+    >('get_profile_config', { name });
     const validated = validateApiResponse(
       ProfileConfigRpcSchema,
       response,

@@ -75,7 +75,9 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
         if (import.meta.env.DEV) {
           // eslint-disable-next-line no-console
           console.info(
-            `[WASM] ✓ Global initialization complete in ${loadTime.toFixed(0)}ms`
+            `[WASM] ✓ Global initialization complete in ${loadTime.toFixed(
+              0
+            )}ms`
           );
         }
       } catch (err) {

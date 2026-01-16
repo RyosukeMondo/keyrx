@@ -266,7 +266,6 @@ export function generateKeyMapping(
   _indentLevel: number = 0,
   _options?: FormatOptions
 ): string {
-
   switch (mapping.type) {
     case 'simple':
       return generateSimpleMapping(mapping);

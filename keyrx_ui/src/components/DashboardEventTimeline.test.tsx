@@ -6,7 +6,10 @@ import type { KeyEvent } from '../types/rpc';
 
 // Mock react-window
 interface FixedSizeListProps {
-  children: (props: { index: number; style: Record<string, unknown> }) => React.ReactNode;
+  children: (props: {
+    index: number;
+    style: Record<string, unknown>;
+  }) => React.ReactNode;
   itemCount: number;
   height: number;
   itemSize: number;

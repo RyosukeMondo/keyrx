@@ -44,7 +44,11 @@ interface MockLayerSwitcherProps {
 }
 
 vi.mock('@/components/LayerSwitcher', () => ({
-  LayerSwitcher: ({ activeLayer, availableLayers, onLayerChange }: MockLayerSwitcherProps) => (
+  LayerSwitcher: ({
+    activeLayer,
+    availableLayers,
+    onLayerChange,
+  }: MockLayerSwitcherProps) => (
     <div data-testid="layer-switcher">
       <div data-testid="active-layer">{activeLayer}</div>
       <div data-testid="layers-count">{availableLayers.length}</div>

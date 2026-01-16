@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useMemo,
-  useRef,
-  useCallback,
-} from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
 
 interface DropdownOption {

@@ -70,7 +70,10 @@ export async function createProfile(
   template: Template
 ): Promise<ProfileResponse> {
   const request: CreateProfileRequest = { name, template };
-  const response = await apiClient.post<z.infer<typeof ProfileRpcInfoSchema>>('/api/profiles', request);
+  const response = await apiClient.post<z.infer<typeof ProfileRpcInfoSchema>>(
+    '/api/profiles',
+    request
+  );
   // Validate the returned profile info
   validateApiResponse(ProfileRpcInfoSchema, response, 'POST /api/profiles');
   return { success: true };
@@ -80,7 +83,9 @@ export async function createProfile(
  * Activate a profile
  */
 export async function activateProfile(name: string): Promise<ActivationResult> {
-  const response = await apiClient.post<z.infer<typeof ActivationRpcResultSchema>>(`/api/profiles/${name}/activate`);
+  const response = await apiClient.post<
+    z.infer<typeof ActivationRpcResultSchema>
+  >(`/api/profiles/${name}/activate`);
   const validated = validateApiResponse(
     ActivationRpcResultSchema,
     response,
@@ -130,7 +135,9 @@ export async function updateProfile(
  * Delete a profile
  */
 export async function deleteProfile(name: string): Promise<ProfileResponse> {
-  const response = await apiClient.delete<EmptyResponse>(`/api/profiles/${name}`);
+  const response = await apiClient.delete<EmptyResponse>(
+    `/api/profiles/${name}`
+  );
   // Validate the response - for delete, we expect either empty or success indicator
   // Since there's no specific schema for delete response, we'll just check it doesn't error
   if (response && typeof response === 'object') {

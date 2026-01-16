@@ -18,7 +18,11 @@ interface MockKeyboardVisualizerProps {
 }
 
 vi.mock('@/components/KeyboardVisualizer', () => ({
-  KeyboardVisualizer: ({ layout, keyMappings, onKeyClick }: MockKeyboardVisualizerProps) => (
+  KeyboardVisualizer: ({
+    layout,
+    keyMappings,
+    onKeyClick,
+  }: MockKeyboardVisualizerProps) => (
     <div data-testid="keyboard-visualizer" data-layout={layout}>
       <button onClick={() => onKeyClick('VK_A')}>Mock Key A</button>
       <div data-testid="key-mappings-count">{keyMappings.size}</div>
