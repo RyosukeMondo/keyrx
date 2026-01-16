@@ -43,7 +43,7 @@
   - _Requirements: TR-2_
   - _Prompt: Role: QA Engineer specializing in React hooks testing with @testing-library/react-hooks | Task: Implement the task for spec refactor-config-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Write comprehensive unit tests for useProfileSelection, useCodePanel, useKeyboardLayout, and useConfigSync hooks. Test all state transitions, fallback logic, memoization behavior, side effects, and edge cases. Use renderHook from @testing-library/react. Mock dependencies: useActiveProfileQuery, useRhaiSyncEngine. Achieve >80% coverage. | Restrictions: Test hooks in isolation, mock all external dependencies, no integration tests here, use act() for state updates, verify memoization with toBe reference equality | Success: All hooks have test files, >80% coverage achieved, all state transitions tested, memoization verified, tests pass reliably | After completion: 1) Mark [-], 2) log-implementation with artifacts, 3) Mark [x]_
 
-- [ ] 1.6 Update ConfigPage to use custom hooks
+- [x] 1.6 Update ConfigPage to use custom hooks
   - File: src/pages/ConfigPage.tsx
   - Replace inline state management with custom hooks
   - Purpose: Simplify ConfigPage by delegating to hooks
