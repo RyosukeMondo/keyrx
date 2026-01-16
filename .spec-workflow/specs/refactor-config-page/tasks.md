@@ -61,7 +61,7 @@
   - _Requirements: 3.1, TR-1, TR-2_
   - _Prompt: Role: React Component Developer specializing in container/presentational pattern | Task: Implement the task for spec refactor-config-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Create KeyboardVisualizerContainer component that wraps KeyboardVisualizer with layout management. Use useKeyboardLayout hook. Accept props: { profileName, activeLayer, mappings, onKeyClick, selectedKeyCode }. Render layout selector (dropdown) and KeyboardVisualizer component. Pass layoutKeys, mappings, onKeyClick, selectedKey to KeyboardVisualizer. Extract from ConfigPage.tsx keyboard visualization section. | Restrictions: Must be ≤500 lines, all functions ≤50 lines, use existing KeyboardVisualizer component unchanged, TypeScript strict mode, no direct DOM manipulation | Success: Component renders keyboard with layout selector, handles key clicks, layout changes work, props interface clear, unit tests with mocked KeyboardVisualizer | After completion: 1) Mark [-], 2) log-implementation with artifacts, 3) Mark [x]_
 
-- [ ] 2.2 Create CodePanelContainer component
+- [x] 2.2 Create CodePanelContainer component
   - File: src/components/config/CodePanelContainer.tsx
   - Extract collapsible code editor panel with useCodePanel hook
   - Purpose: Isolate code editor UI and state
