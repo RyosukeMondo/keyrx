@@ -17,7 +17,7 @@
   - _Requirements: 2.1, TR-1, TR-2, TR-4_
   - _Prompt: Role: React Component Developer specializing in performance optimization | Task: Implement the task for spec refactor-simulator-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Create EventList component with virtualized rendering using react-window. Accept props: { events, maxEvents, onClear, virtualizeThreshold (default 100) }. Render event list with auto-scroll to latest event. Use FixedSizeList from react-window when events > virtualizeThreshold. Format event display with timestamp, key code, event type. Extract from SimulatorPage.tsx event list section. | Restrictions: Must be ≤500 lines, all functions ≤50 lines, virtualize only when needed, auto-scroll smooth, accessible (ARIA labels) | Success: Component renders events efficiently, virtualization works at threshold, auto-scroll functions, unit tests with various event counts | After completion: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 3. Create SimulationControls component
+- [x] 3. Create SimulationControls component
   - File: src/components/simulator/SimulationControls.tsx
   - Extract start/stop/clear buttons and statistics display
   - Purpose: Group simulation controls in dedicated component
