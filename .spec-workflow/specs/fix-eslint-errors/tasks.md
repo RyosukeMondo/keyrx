@@ -22,7 +22,7 @@
   - Replace with proper types or generics
   - _Prompt: Role: TypeScript Developer | Task: Implement the task for spec fix-eslint-errors. First run spec-workflow-guide, then implement: Fix all `any` types in hooks and utils. Use generics where appropriate, proper types otherwise. Run tests. | Restrictions: Maintain hook/util APIs, tests must pass | Success: All `any` fixed, tests pass, no type errors | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [-] 5. Remove or guard console statements
+- [x] 5. Remove or guard console statements
   - Remove debug console.log, guard necessary logs
   - _Prompt: Role: Code Quality Engineer | Task: Implement the task for spec fix-eslint-errors. First run spec-workflow-guide, then implement: Fix all `no-console` violations. Remove debug logs. Wrap dev-only logs in `if (import.meta.env.DEV)`. Keep error/warn in error handlers. | Restrictions: Don't remove useful error logging | Success: No console violations, appropriate logging preserved | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
