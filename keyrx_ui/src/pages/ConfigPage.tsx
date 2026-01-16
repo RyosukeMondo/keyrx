@@ -47,7 +47,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     toggleOpen: toggleCodePanel,
   } = useCodePanel();
   const { layout: keyboardLayout } = useKeyboardLayout('ANSI_104');
-  const { syncEngine, syncStatus, setSyncStatus } =
+  const { syncEngine, syncStatus, lastSaveTime, setSyncStatus, setLastSaveTime } =
     useConfigSync(selectedProfileName);
 
   // Fetch available profiles
