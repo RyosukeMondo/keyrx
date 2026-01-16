@@ -17,7 +17,7 @@
   - _Leverage: React type definitions_
   - _Prompt: Role: React TypeScript Developer | Task: Implement the task for spec fix-eslint-errors. First run spec-workflow-guide, then implement: Fix all `any` types in src/components/. Use React.MouseEvent, React.KeyboardEvent, etc. Define proper prop interfaces. Run tests after changes. | Restrictions: Don't break component APIs, tests must pass | Success: All `any` in components replaced, tests pass, no type errors | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 4. Fix `any` types in hooks and utils
+- [x] 4. Fix `any` types in hooks and utils
   - Files: src/hooks/*.ts, src/utils/*.ts
   - Replace with proper types or generics
   - _Prompt: Role: TypeScript Developer | Task: Implement the task for spec fix-eslint-errors. First run spec-workflow-guide, then implement: Fix all `any` types in hooks and utils. Use generics where appropriate, proper types otherwise. Run tests. | Restrictions: Maintain hook/util APIs, tests must pass | Success: All `any` fixed, tests pass, no type errors | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
