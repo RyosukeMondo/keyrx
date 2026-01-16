@@ -33,7 +33,7 @@
   - _Requirements: 3.1, TR-1, TR-2_
   - _Prompt: Role: React Component Developer specializing in forms | Task: Implement the task for spec refactor-simulator-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Create EventInjectionForm component with key code input, event type selector (press/release), and inject button. Accept props: { onInjectEvent, disabled }. Validate key code (non-empty). Call onInjectEvent with validated data on submit. Extract from SimulatorPage.tsx injection form section. | Restrictions: Must be ≤200 lines, all functions ≤50 lines, validate inputs before submission, accessible form labels, disabled prop disables all inputs | Success: Form renders inputs, validation prevents invalid submission, onInjectEvent called with correct data, unit tests cover validation | After completion: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 5. Write tests for useSimulation hook
+- [-] 5. Write tests for useSimulation hook
   - File: src/hooks/useSimulation.test.ts
   - Comprehensive tests for hook state management and WebSocket
   - Purpose: Ensure hook reliability
