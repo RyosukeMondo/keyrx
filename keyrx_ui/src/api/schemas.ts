@@ -8,7 +8,15 @@ import { z } from 'zod';
  */
 
 // JSON value type for serde_json::Value compatibility
-export const ValueSchema: z.ZodType<any> = z.lazy(() =>
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JsonValue }
+  | JsonValue[];
+
+export const ValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
   z.union([
     z.string(),
     z.number(),
@@ -348,7 +356,7 @@ export function validateApiResponse<T>(
 export function validateRpcMessage(
   data: unknown,
   direction: 'client' | 'server'
-): any {
+): z.infer<typeof ClientMessageSchema> | z.infer<typeof ServerMessageSchema> {
   const schema =
     direction === 'client' ? ClientMessageSchema : ServerMessageSchema;
   const result = schema.safeParse(data);

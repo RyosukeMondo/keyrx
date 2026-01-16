@@ -43,6 +43,7 @@ import {
   ProfileRpcInfoSchema,
   DeviceRpcInfoSchema,
 } from './schemas';
+import type { z } from 'zod';
 
 /**
  * Type-safe RPC client for daemon communication.
@@ -145,7 +146,7 @@ export class RpcClient {
    * @throws Error if profile does not exist
    */
   async getProfileConfig(name: string): Promise<ProfileConfig> {
-    const response = await this.api.query<any>('get_profile_config', { name });
+    const response = await this.api.query<z.infer<typeof ProfileConfigRpcSchema>>('get_profile_config', { name });
     const validated = validateApiResponse(
       ProfileConfigRpcSchema,
       response,
@@ -166,7 +167,7 @@ export class RpcClient {
    * @throws Error if profile does not exist or source is invalid
    */
   async setProfileConfig(name: string, source: string): Promise<void> {
-    const response = await this.api.command<any>('set_profile_config', {
+    const response = await this.api.command<void>('set_profile_config', {
       name,
       source,
     });
