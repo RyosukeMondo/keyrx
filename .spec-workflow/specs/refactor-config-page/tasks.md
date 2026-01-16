@@ -155,7 +155,7 @@
   - _Requirements: TR-2, TR-3_
   - _Prompt: Role: QA Engineer specializing in integration testing | Task: Implement the task for spec refactor-config-page. First run spec-workflow-guide to get the workflow guide, then implement the task: Update ConfigPage.test.tsx to test refactored component. Mock ProfileSelector, ConfigurationLayout, KeyboardVisualizerContainer, ConfigurationPanel, CodePanelContainer. Test composition and prop passing. Verify all integration scenarios work. Maintain or improve coverage. | Restrictions: Test integration not implementation details, mock child components, verify data flow through props/callbacks, maintain existing test scenarios | Success: ConfigPage tests updated and passing, coverage maintained/improved, integration scenarios verified, no failing tests | After completion: 1) Mark [-], 2) log-implementation with artifacts, 3) Mark [x]_
 
-- [ ] 5.2 Run full test suite and fix failures
+- [-] 5.2 Run full test suite and fix failures
   - Run npm test and fix any failures
   - Purpose: Ensure no regressions introduced
   - _Leverage: all test files, debugging tools_

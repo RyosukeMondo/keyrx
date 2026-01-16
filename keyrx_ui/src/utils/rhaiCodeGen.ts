@@ -108,8 +108,9 @@ export function generateRhaiScript(ast: RhaiAST, options?: FormatOptions): strin
     lines.push('device_end();');
 
     // Add blank lines after global mappings if there are device blocks
+    // Use blankLinesBetweenDevices since global mappings are now a device block
     if (ast.deviceBlocks.length > 0) {
-      for (let i = 0; i < opts.blankLinesBetweenSections; i++) {
+      for (let i = 0; i < opts.blankLinesBetweenDevices; i++) {
         lines.push('');
       }
     }
