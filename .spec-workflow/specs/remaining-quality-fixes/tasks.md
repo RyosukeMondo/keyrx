@@ -62,7 +62,7 @@
   - _Requirements: 1.2, TR-1, TR-3_
   - _Prompt: Role: React Refactoring Specialist | Task: Implement the task for spec remaining-quality-fixes. First run spec-workflow-guide, then implement: Refactor KeyConfigPanel.tsx to use shared components. Import MappingTypeSelector, KeySelectionTabs, MappingConfigForm. Replace mapping type selection UI with <MappingTypeSelector supportedTypes={['simple', 'tap_hold']}>. Replace key selection tabs with <KeySelectionTabs>. Replace configuration forms with <MappingConfigForm>. Keep inline panel wrapper, save/clear handlers. Remove replaced code. Target <500 lines. | Restrictions: No behavior changes, maintain all functionality, existing tests must pass, preserve inline panel UX, simplified types (only simple + tap_hold) | Success: KeyConfigPanel uses shared components, behavior unchanged, <500 lines, all functions ≤50 lines, tests pass, ESLint passes | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [-] 3.2 Update KeyConfigPanel tests
+- [x] 3.2 Update KeyConfigPanel tests
   - File: src/components/KeyConfigPanel.test.tsx
   - Update tests to match new structure
   - Purpose: Ensure KeyConfigPanel integration tests pass
