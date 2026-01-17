@@ -122,7 +122,7 @@
   - _Requirements: 3.1, TR-1, TR-3_
   - _Prompt: Role: React Refactoring Specialist | Task: Implement the task for spec remaining-quality-fixes. First run spec-workflow-guide, then implement: Refactor MetricsPage.tsx to use extracted components. Import MetricsStatsCards, LatencyChart, EventLogList, StateSnapshot. Replace metrics cards section with <MetricsStatsCards latencyStats={latencyStats} eventCount={storeEventLog.length} connected={connected}>. Replace chart with <LatencyChart data={latencyHistory}>. Replace event log with <EventLogList events={storeEventLog}>. Replace state display with <StateSnapshot state={storeState}>. Keep WebSocket subscription logic, latency history state management. Remove replaced JSX. Target <500 lines. | Restrictions: No behavior changes, maintain all functionality, existing tests must pass, preserve WebSocket logic, latency history updates unchanged | Success: MetricsPage uses all components, behavior unchanged, <500 lines, all functions ≤50 lines, tests pass, ESLint passes | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 5.2 Update MetricsPage tests
+- [x] 5.2 Update MetricsPage tests
   - File: src/pages/MetricsPage.test.tsx
   - Update tests to match new component structure
   - Purpose: Ensure MetricsPage integration tests pass
