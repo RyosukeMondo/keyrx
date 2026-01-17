@@ -88,7 +88,7 @@
   - _Requirements: 2.2, TR-1_
   - _Prompt: Role: React Component Developer specializing in data visualization | Task: Implement the task for spec remaining-quality-fixes. First run spec-workflow-guide, then implement: Create LatencyChart component wrapping recharts LineChart. Extract from MetricsPage.tsx chart section. Accept props: { data: LatencyDataPoint[], maxDataPoints?: number (default 60) }. Render ResponsiveContainer with LineChart, XAxis (time), YAxis (latency ms), Line, CartesianGrid, Tooltip. Format timestamps on X axis. Show units on Y axis. | Restrictions: Must be ≤250 lines, all functions ≤50 lines, responsive (adapts to container), handle empty data, memoize expensive operations | Success: Chart renders with data, responsive, axes formatted, tooltip works, handles empty state, unit tests with mock data >80% coverage | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [-] 4.3 Create EventLogList component
+- [x] 4.3 Create EventLogList component
   - File: src/components/metrics/EventLogList.tsx
   - Virtualized event log list with react-window
   - Purpose: Extract event log from MetricsPage
