@@ -92,9 +92,7 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      expect(
-        screen.getByLabelText('Latency statistics')
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Latency statistics')).toBeInTheDocument();
     });
   });
 

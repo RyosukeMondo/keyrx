@@ -77,7 +77,6 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
     return data.slice(-maxDataPoints);
   }, [data, maxDataPoints]);
 
-
   // Handle empty data case
   if (chartData.length === 0) {
     return (
@@ -93,11 +92,7 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
   }
 
   return (
-    <ResponsiveContainer
-      width="100%"
-      height={height}
-      className="md:h-[300px]"
-    >
+    <ResponsiveContainer width="100%" height={height} className="md:h-[300px]">
       <LineChart data={chartData}>
         <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
         <XAxis

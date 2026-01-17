@@ -9,7 +9,13 @@ import {
 
 // Mock recharts to avoid rendering issues in tests
 vi.mock('recharts', () => ({
-  LineChart: ({ children, data }: { children: React.ReactNode; data: LatencyDataPoint[] }) => (
+  LineChart: ({
+    children,
+    data,
+  }: {
+    children: React.ReactNode;
+    data: LatencyDataPoint[];
+  }) => (
     <div data-testid="line-chart" data-chart-data={JSON.stringify(data)}>
       {children}
     </div>
@@ -17,21 +23,45 @@ vi.mock('recharts', () => ({
   Line: ({ dataKey, stroke }: { dataKey: string; stroke: string }) => (
     <div data-testid="line" data-key={dataKey} data-stroke={stroke} />
   ),
-  XAxis: ({ dataKey, tickFormatter }: { dataKey: string; tickFormatter?: (value: number) => string }) => (
-    <div data-testid="x-axis" data-key={dataKey} data-formatter={tickFormatter ? 'true' : 'false'} />
+  XAxis: ({
+    dataKey,
+    tickFormatter,
+  }: {
+    dataKey: string;
+    tickFormatter?: (value: number) => string;
+  }) => (
+    <div
+      data-testid="x-axis"
+      data-key={dataKey}
+      data-formatter={tickFormatter ? 'true' : 'false'}
+    />
   ),
   YAxis: ({ label }: { label?: { value: string } }) => (
     <div data-testid="y-axis" data-label={label?.value} />
   ),
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
-  Tooltip: ({ labelFormatter, formatter }: { labelFormatter?: (value: number) => string; formatter?: (value: number) => [string, string] }) => (
+  Tooltip: ({
+    labelFormatter,
+    formatter,
+  }: {
+    labelFormatter?: (value: number) => string;
+    formatter?: (value: number) => [string, string];
+  }) => (
     <div
       data-testid="tooltip"
       data-label-formatter={labelFormatter ? 'true' : 'false'}
       data-formatter={formatter ? 'true' : 'false'}
     />
   ),
-  ResponsiveContainer: ({ children, width, height }: { children: React.ReactNode; width: string | number; height: number }) => (
+  ResponsiveContainer: ({
+    children,
+    width,
+    height,
+  }: {
+    children: React.ReactNode;
+    width: string | number;
+    height: number;
+  }) => (
     <div
       data-testid="responsive-container"
       data-width={width}
@@ -48,7 +78,7 @@ describe('LatencyChart', () => {
     { timestamp: 1609459200000, latency: 1.23 }, // 2021-01-01 00:00:00
     { timestamp: 1609459201000, latency: 1.45 }, // 2021-01-01 00:00:01
     { timestamp: 1609459202000, latency: 0.98 }, // 2021-01-01 00:00:02
-    { timestamp: 1609459203000, latency: 2.10 }, // 2021-01-01 00:00:03
+    { timestamp: 1609459203000, latency: 2.1 }, // 2021-01-01 00:00:03
     { timestamp: 1609459204000, latency: 1.67 }, // 2021-01-01 00:00:04
   ];
 
@@ -107,7 +137,9 @@ describe('LatencyChart', () => {
       render(<LatencyChart data={mockData} maxDataPoints={60} />);
 
       const chart = screen.getByTestId('line-chart');
-      const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
+      const chartData = JSON.parse(
+        chart.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData).toHaveLength(5);
       expect(chartData[0]).toEqual(mockData[0]);
       expect(chartData[4]).toEqual(mockData[4]);
@@ -122,7 +154,9 @@ describe('LatencyChart', () => {
       render(<LatencyChart data={largeDataset} maxDataPoints={60} />);
 
       const chart = screen.getByTestId('line-chart');
-      const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
+      const chartData = JSON.parse(
+        chart.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData).toHaveLength(60);
       // Should keep the most recent 60 points
       expect(chartData[0]).toEqual(largeDataset[40]); // 100 - 60 = 40
@@ -138,7 +172,9 @@ describe('LatencyChart', () => {
       render(<LatencyChart data={largeDataset} />);
 
       const chart = screen.getByTestId('line-chart');
-      const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
+      const chartData = JSON.parse(
+        chart.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData).toHaveLength(60);
     });
 
@@ -151,7 +187,9 @@ describe('LatencyChart', () => {
       render(<LatencyChart data={largeDataset} maxDataPoints={30} />);
 
       const chart = screen.getByTestId('line-chart');
-      const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
+      const chartData = JSON.parse(
+        chart.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData).toHaveLength(30);
       expect(chartData[0]).toEqual(largeDataset[20]); // 50 - 30 = 20
     });
@@ -175,7 +213,9 @@ describe('LatencyChart', () => {
       const { rerender } = render(<LatencyChart data={mockData} />);
 
       const chart1 = screen.getByTestId('line-chart');
-      const chartData1 = JSON.parse(chart1.getAttribute('data-chart-data') || '[]');
+      const chartData1 = JSON.parse(
+        chart1.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData1).toHaveLength(5);
 
       const newData = [
@@ -186,7 +226,9 @@ describe('LatencyChart', () => {
       rerender(<LatencyChart data={newData} />);
 
       const chart2 = screen.getByTestId('line-chart');
-      const chartData2 = JSON.parse(chart2.getAttribute('data-chart-data') || '[]');
+      const chartData2 = JSON.parse(
+        chart2.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData2).toHaveLength(6);
     });
   });
@@ -211,7 +253,10 @@ describe('LatencyChart', () => {
 
       const emptyState = screen.getByText('No data available').closest('div');
       expect(emptyState).toHaveAttribute('role', 'img');
-      expect(emptyState).toHaveAttribute('aria-label', 'No latency data available');
+      expect(emptyState).toHaveAttribute(
+        'aria-label',
+        'No latency data available'
+      );
     });
   });
 
@@ -221,7 +266,9 @@ describe('LatencyChart', () => {
       render(<LatencyChart data={singlePoint} />);
 
       const chart = screen.getByTestId('line-chart');
-      const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
+      const chartData = JSON.parse(
+        chart.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData).toHaveLength(1);
       expect(chartData[0]).toEqual(singlePoint[0]);
     });
@@ -229,14 +276,16 @@ describe('LatencyChart', () => {
     it('handles very large latency values', () => {
       const largeLatencyData = [
         { timestamp: 1609459200000, latency: 999.99 },
-        { timestamp: 1609459201000, latency: 1000.50 },
+        { timestamp: 1609459201000, latency: 1000.5 },
       ];
       render(<LatencyChart data={largeLatencyData} />);
 
       const chart = screen.getByTestId('line-chart');
-      const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
+      const chartData = JSON.parse(
+        chart.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData[0].latency).toBe(999.99);
-      expect(chartData[1].latency).toBe(1000.50);
+      expect(chartData[1].latency).toBe(1000.5);
     });
 
     it('handles very small latency values', () => {
@@ -247,7 +296,9 @@ describe('LatencyChart', () => {
       render(<LatencyChart data={smallLatencyData} />);
 
       const chart = screen.getByTestId('line-chart');
-      const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
+      const chartData = JSON.parse(
+        chart.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData[0].latency).toBe(0.01);
       expect(chartData[1].latency).toBe(0.001);
     });
@@ -260,7 +311,9 @@ describe('LatencyChart', () => {
       render(<LatencyChart data={zeroLatencyData} />);
 
       const chart = screen.getByTestId('line-chart');
-      const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
+      const chartData = JSON.parse(
+        chart.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData[0].latency).toBe(0);
     });
 
@@ -268,7 +321,9 @@ describe('LatencyChart', () => {
       render(<LatencyChart data={mockData} maxDataPoints={1} />);
 
       const chart = screen.getByTestId('line-chart');
-      const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
+      const chartData = JSON.parse(
+        chart.getAttribute('data-chart-data') || '[]'
+      );
       expect(chartData).toHaveLength(1);
       expect(chartData[0]).toEqual(mockData[4]); // Most recent point
     });
@@ -309,7 +364,9 @@ describe('Integration', () => {
       { timestamp: Date.now() - 3000, latency: 0.98 },
     ];
 
-    const { rerender } = render(<LatencyChart data={testData} height={300} maxDataPoints={10} />);
+    const { rerender } = render(
+      <LatencyChart data={testData} height={300} maxDataPoints={10} />
+    );
 
     // Verify chart is rendered
     expect(screen.getByTestId('responsive-container')).toBeInTheDocument();

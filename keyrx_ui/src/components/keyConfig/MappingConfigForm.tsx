@@ -71,9 +71,7 @@ export function MappingConfigForm({
   // UI state
   const [useKeyboard, setUseKeyboard] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [listeningFor, setListeningFor] = useState<'tap' | 'hold' | null>(
-    null
-  );
+  const [listeningFor, setListeningFor] = useState<'tap' | 'hold' | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Update form when currentConfig changes
@@ -484,7 +482,9 @@ export function MappingConfigForm({
             compact
             onKeySelect={(key) => handleLockKeyChange(key.id)}
             selectedKey={
-              lockKey ? { id: lockKey, label: lockKey, category: 'special' } : null
+              lockKey
+                ? { id: lockKey, label: lockKey, category: 'special' }
+                : null
             }
           />
         </div>
@@ -532,7 +532,9 @@ export function MappingConfigForm({
               }`}
             >
               <Radio className="w-3.5 h-3.5" />
-              {isListening && listeningFor === 'tap' ? 'Listening...' : 'Listen'}
+              {isListening && listeningFor === 'tap'
+                ? 'Listening...'
+                : 'Listen'}
             </button>
           </div>
         </div>
@@ -560,9 +562,7 @@ export function MappingConfigForm({
             <label className="text-sm font-medium text-slate-300">
               Hold Action (modifier)
             </label>
-            <p className="text-xs text-slate-400 mt-1">
-              Select modifier 0-255
-            </p>
+            <p className="text-xs text-slate-400 mt-1">Select modifier 0-255</p>
           </div>
           {holdAction && (
             <div className="flex items-center gap-2">
@@ -586,9 +586,7 @@ export function MappingConfigForm({
             type="number"
             min="0"
             max="255"
-            value={
-              holdAction ? parseInt(holdAction.replace('MD_', ''), 16) : 0
-            }
+            value={holdAction ? parseInt(holdAction.replace('MD_', ''), 16) : 0}
             onChange={(e) => {
               const val = Math.max(
                 0,

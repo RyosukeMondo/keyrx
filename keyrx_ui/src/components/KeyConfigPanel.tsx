@@ -45,9 +45,9 @@ export function KeyConfigPanel({
   // Determine initial mapping type
   const initialMappingType = useMemo(() => {
     if (!currentMapping) return 'simple' as MappingType;
-    return (currentMapping.type === 'tap_hold'
-      ? 'tap_hold'
-      : 'simple') as MappingType;
+    return (
+      currentMapping.type === 'tap_hold' ? 'tap_hold' : 'simple'
+    ) as MappingType;
   }, [currentMapping]);
 
   const [mappingType, setMappingType] =

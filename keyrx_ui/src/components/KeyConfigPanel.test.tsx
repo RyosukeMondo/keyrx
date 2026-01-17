@@ -127,7 +127,9 @@ describe('KeyConfigPanel', () => {
 
       expect(screen.getByTestId('mapping-type-selector')).toBeInTheDocument();
       expect(screen.getByTestId('key-selection-tabs')).toBeInTheDocument();
-      expect(screen.getByTestId('current-mappings-summary')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('current-mappings-summary')
+      ).toBeInTheDocument();
     });
 
     it('displays key info header when physical key selected', () => {
@@ -145,7 +147,9 @@ describe('KeyConfigPanel', () => {
 
       render(<KeyConfigPanel {...defaultProps} keyMappings={keyMappings} />);
 
-      expect(screen.getByText('Current Mappings (2 mappings)')).toBeInTheDocument();
+      expect(
+        screen.getByText('Current Mappings (2 mappings)')
+      ).toBeInTheDocument();
       expect(screen.getByText('Mappings: 2')).toBeInTheDocument();
     });
 
@@ -334,7 +338,9 @@ describe('KeyConfigPanel', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Select modifier 0-255')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('Enter value 0-255')).toBeInTheDocument();
+        expect(
+          screen.getByPlaceholderText('Enter value 0-255')
+        ).toBeInTheDocument();
       });
     });
 
@@ -634,11 +640,11 @@ describe('KeyConfigPanel', () => {
     });
 
     it('handles empty keyMappings', () => {
-      render(
-        <KeyConfigPanel {...defaultProps} keyMappings={new Map()} />
-      );
+      render(<KeyConfigPanel {...defaultProps} keyMappings={new Map()} />);
 
-      expect(screen.getByText('Current Mappings (0 mappings)')).toBeInTheDocument();
+      expect(
+        screen.getByText('Current Mappings (0 mappings)')
+      ).toBeInTheDocument();
     });
 
     it('handles active layer with hyphens', () => {

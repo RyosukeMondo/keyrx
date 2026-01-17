@@ -9,106 +9,109 @@ import { MetricsPage } from './MetricsPage';
 
 // Mock the extracted metrics components
 vi.mock('../components/metrics/MetricsStatsCards', () => ({
-  MetricsStatsCards: vi.fn(
-    ({ latencyStats, eventCount, connected }: any) => (
-      <div data-testid="metrics-stats-cards">
-        <div data-testid="latency-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {latencyStats ? (
-            <>
-              <div>
-                <span>Current</span>
-                <span>{(latencyStats.current / 1000).toFixed(2)}ms</span>
-              </div>
-              <div>
-                <span>Average</span>
-                <span>{(latencyStats.avg / 1000).toFixed(2)}ms</span>
-              </div>
-              <div>
-                <span>Min</span>
-                <span>{(latencyStats.min / 1000).toFixed(2)}ms</span>
-              </div>
-              <div>
-                <span>Max</span>
-                <span>{(latencyStats.max / 1000).toFixed(2)}ms</span>
-              </div>
-            </>
-          ) : (
-            <div>No latency data</div>
-          )}
-        </div>
-        <div data-testid="event-count">{eventCount}</div>
-        <div data-testid="connection-status">{connected ? 'Connected' : 'Disconnected'}</div>
+  MetricsStatsCards: vi.fn(({ latencyStats, eventCount, connected }: any) => (
+    <div data-testid="metrics-stats-cards">
+      <div
+        data-testid="latency-stats"
+        className="grid grid-cols-2 md:grid-cols-4 gap-4"
+      >
+        {latencyStats ? (
+          <>
+            <div>
+              <span>Current</span>
+              <span>{(latencyStats.current / 1000).toFixed(2)}ms</span>
+            </div>
+            <div>
+              <span>Average</span>
+              <span>{(latencyStats.avg / 1000).toFixed(2)}ms</span>
+            </div>
+            <div>
+              <span>Min</span>
+              <span>{(latencyStats.min / 1000).toFixed(2)}ms</span>
+            </div>
+            <div>
+              <span>Max</span>
+              <span>{(latencyStats.max / 1000).toFixed(2)}ms</span>
+            </div>
+          </>
+        ) : (
+          <div>No latency data</div>
+        )}
       </div>
-    )
-  ),
+      <div data-testid="event-count">{eventCount}</div>
+      <div data-testid="connection-status">
+        {connected ? 'Connected' : 'Disconnected'}
+      </div>
+    </div>
+  )),
 }));
 
 vi.mock('../components/metrics/LatencyChart', () => ({
-  LatencyChart: vi.fn(
-    ({ data, maxDataPoints, height }: any) => (
-      <div data-testid="latency-chart">
-        <div data-testid="chart-data-points">{data.length}</div>
-        <div data-testid="chart-max-points">{maxDataPoints}</div>
-        <div data-testid="chart-height">{height}</div>
-        {data.length === 0 ? (
-          <div>No data available</div>
-        ) : (
-          <div>Latency Over Time</div>
-        )}
-      </div>
-    )
-  ),
+  LatencyChart: vi.fn(({ data, maxDataPoints, height }: any) => (
+    <div data-testid="latency-chart">
+      <div data-testid="chart-data-points">{data.length}</div>
+      <div data-testid="chart-max-points">{maxDataPoints}</div>
+      <div data-testid="chart-height">{height}</div>
+      {data.length === 0 ? (
+        <div>No data available</div>
+      ) : (
+        <div>Latency Over Time</div>
+      )}
+    </div>
+  )),
 }));
 
 vi.mock('../components/metrics/EventLogList', () => ({
-  EventLogList: vi.fn(
-    ({ events, height, autoScroll }: any) => (
-      <div data-testid="event-log-list">
-        <div data-testid="virtual-list">
-          {events.slice(0, 10).map((event: any) => (
-            <div key={event.id} data-testid="event-entry">
-              <span className={event.type === 'press' ? 'text-green-400' : 'text-red-400'}>
-                {event.type}
-              </span>
-              <span>{event.keyCode}</span>
-              <span>{event.latency.toFixed(2)}ms</span>
-            </div>
-          ))}
-        </div>
-        <div data-testid="event-list-height">{height}</div>
-        <div data-testid="event-auto-scroll">{autoScroll ? 'true' : 'false'}</div>
+  EventLogList: vi.fn(({ events, height, autoScroll }: any) => (
+    <div data-testid="event-log-list">
+      <div data-testid="virtual-list">
+        {events.slice(0, 10).map((event: any) => (
+          <div key={event.id} data-testid="event-entry">
+            <span
+              className={
+                event.type === 'press' ? 'text-green-400' : 'text-red-400'
+              }
+            >
+              {event.type}
+            </span>
+            <span>{event.keyCode}</span>
+            <span>{event.latency.toFixed(2)}ms</span>
+          </div>
+        ))}
       </div>
-    )
-  ),
+      <div data-testid="event-list-height">{height}</div>
+      <div data-testid="event-auto-scroll">{autoScroll ? 'true' : 'false'}</div>
+    </div>
+  )),
 }));
 
 vi.mock('../components/metrics/StateSnapshot', () => ({
-  StateSnapshot: vi.fn(
-    ({ state }: any) => (
-      <div data-testid="state-snapshot">
-        <div>
-          <span>Active Layer</span>
-          <span>{state.activeLayer}</span>
-        </div>
-        <div>
-          <span>Tap/Hold Timers</span>
-          <span>{state.tapHoldTimers} active</span>
-        </div>
-        <div>
-          <span>Active Modifiers</span>
-          <span>{state.modifiers.length > 0 ? state.modifiers.join(', ') : 'None'}</span>
-        </div>
-        <div>
-          <span>Active Locks</span>
-          <span>{state.locks.length > 0 ? state.locks.join(', ') : 'None'}</span>
-        </div>
-        <div>
-          <span>Queued Events</span>
-          <span>{state.queuedEvents}</span>
-        </div>
+  StateSnapshot: vi.fn(({ state }: any) => (
+    <div data-testid="state-snapshot">
+      <div>
+        <span>Active Layer</span>
+        <span>{state.activeLayer}</span>
       </div>
-    )
-  ),
+      <div>
+        <span>Tap/Hold Timers</span>
+        <span>{state.tapHoldTimers} active</span>
+      </div>
+      <div>
+        <span>Active Modifiers</span>
+        <span>
+          {state.modifiers.length > 0 ? state.modifiers.join(', ') : 'None'}
+        </span>
+      </div>
+      <div>
+        <span>Active Locks</span>
+        <span>{state.locks.length > 0 ? state.locks.join(', ') : 'None'}</span>
+      </div>
+      <div>
+        <span>Queued Events</span>
+        <span>{state.queuedEvents}</span>
+      </div>
+    </div>
+  )),
 }));
 
 describe('MetricsPage', () => {
@@ -330,7 +333,9 @@ describe('MetricsPage', () => {
     renderWithProviders(<MetricsPage />);
 
     // The heading should show the count of events
-    expect(screen.getByText(/Recent keyboard events \(\d+ total\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Recent keyboard events \(\d+ total\)/)
+    ).toBeInTheDocument();
   });
 
   it('passes correct event count to MetricsStatsCards', () => {

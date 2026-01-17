@@ -6,8 +6,14 @@ import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { useMetricsStore } from '../stores/metricsStore';
 import { useActiveProfile } from '../hooks/useProfiles';
 import { MetricsStatsCards } from '../components/metrics/MetricsStatsCards';
-import { LatencyChart, type LatencyDataPoint } from '../components/metrics/LatencyChart';
-import { EventLogList, type EventLogEntry } from '../components/metrics/EventLogList';
+import {
+  LatencyChart,
+  type LatencyDataPoint,
+} from '../components/metrics/LatencyChart';
+import {
+  EventLogList,
+  type EventLogEntry,
+} from '../components/metrics/EventLogList';
 import { StateSnapshot } from '../components/metrics/StateSnapshot';
 
 // Types are now imported from components

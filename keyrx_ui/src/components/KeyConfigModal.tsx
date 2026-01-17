@@ -81,11 +81,9 @@ export function KeyConfigModal({
         if (!config.tapAction && !config.holdAction) {
           return 'Configure tap and hold actions';
         }
-        return `Quick tap: ${physicalKey} → ${
-          config.tapAction || '?'
-        }\nHold ${config.threshold || 200}ms: ${physicalKey} → ${
-          config.holdAction || '?'
-        }`;
+        return `Quick tap: ${physicalKey} → ${config.tapAction || '?'}\nHold ${
+          config.threshold || 200
+        }ms: ${physicalKey} → ${config.holdAction || '?'}`;
       case 'layer_active':
         return config.targetLayer
           ? `${physicalKey} activates ${config.targetLayer} layer`
@@ -124,7 +122,13 @@ export function KeyConfigModal({
         <MappingTypeSelector
           selectedType={mappingType}
           onChange={setMappingType}
-          supportedTypes={['simple', 'modifier', 'lock', 'tap_hold', 'layer_active']}
+          supportedTypes={[
+            'simple',
+            'modifier',
+            'lock',
+            'tap_hold',
+            'layer_active',
+          ]}
         />
 
         {/* Key Info Header - Compact row layout */}

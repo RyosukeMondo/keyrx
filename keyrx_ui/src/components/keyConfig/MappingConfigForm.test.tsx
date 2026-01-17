@@ -27,45 +27,61 @@ vi.mock('../SVGKeyboard', () => ({
 }));
 
 vi.mock('../KeyPalette', () => ({
-  KeyPalette: vi.fn(({
-    onKeySelect,
-    selectedKey,
-  }: {
-    onKeySelect: (key: { id: string; label: string; category: string }) => void;
-    selectedKey: { id: string; label: string; category: string } | null;
-  }) => (
-    <div data-testid="key-palette">
-      <button
-        onClick={() => {
-          onKeySelect({ id: 'VK_ENTER', label: 'Enter', category: 'basic' });
-        }}
-      >
-        Select Enter
-      </button>
-      <button
-        onClick={() => {
-          onKeySelect({ id: 'VK_LCTRL', label: 'LCtrl', category: 'modifiers' });
-        }}
-      >
-        Select LCtrl
-      </button>
-      <button
-        onClick={() => {
-          onKeySelect({ id: 'LK_00', label: 'CapsLock', category: 'special' });
-        }}
-      >
-        Select CapsLock
-      </button>
-      <button
-        onClick={() => {
-          onKeySelect({ id: 'MO(1)', label: 'MO(1)', category: 'layers' });
-        }}
-      >
-        Select MO(1)
-      </button>
-      {selectedKey && <div data-testid="selected-key">Selected: {selectedKey.id}</div>}
-    </div>
-  )),
+  KeyPalette: vi.fn(
+    ({
+      onKeySelect,
+      selectedKey,
+    }: {
+      onKeySelect: (key: {
+        id: string;
+        label: string;
+        category: string;
+      }) => void;
+      selectedKey: { id: string; label: string; category: string } | null;
+    }) => (
+      <div data-testid="key-palette">
+        <button
+          onClick={() => {
+            onKeySelect({ id: 'VK_ENTER', label: 'Enter', category: 'basic' });
+          }}
+        >
+          Select Enter
+        </button>
+        <button
+          onClick={() => {
+            onKeySelect({
+              id: 'VK_LCTRL',
+              label: 'LCtrl',
+              category: 'modifiers',
+            });
+          }}
+        >
+          Select LCtrl
+        </button>
+        <button
+          onClick={() => {
+            onKeySelect({
+              id: 'LK_00',
+              label: 'CapsLock',
+              category: 'special',
+            });
+          }}
+        >
+          Select CapsLock
+        </button>
+        <button
+          onClick={() => {
+            onKeySelect({ id: 'MO(1)', label: 'MO(1)', category: 'layers' });
+          }}
+        >
+          Select MO(1)
+        </button>
+        {selectedKey && (
+          <div data-testid="selected-key">Selected: {selectedKey.id}</div>
+        )}
+      </div>
+    )
+  ),
 }));
 
 describe('MappingConfigForm', () => {
@@ -415,7 +431,9 @@ describe('MappingConfigForm', () => {
       // Get all sliders and check the threshold one exists
       const sliders = screen.getAllByRole('slider');
       expect(sliders.length).toBeGreaterThan(0);
-      expect(screen.getByText(/Hold Threshold \(ms\): 200/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Hold Threshold \(ms\): 200/)
+      ).toBeInTheDocument();
     });
 
     it('shows Listen buttons for tap and hold actions', () => {

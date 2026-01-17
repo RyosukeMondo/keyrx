@@ -111,11 +111,7 @@ describe('MappingTypeSelector', () => {
 
     it('calls onChange for each type when clicked in sequence', async () => {
       const user = userEvent.setup();
-      const supportedTypes: MappingType[] = [
-        'simple',
-        'modifier',
-        'tap_hold',
-      ];
+      const supportedTypes: MappingType[] = ['simple', 'modifier', 'tap_hold'];
       render(
         <MappingTypeSelector
           selectedType="simple"
