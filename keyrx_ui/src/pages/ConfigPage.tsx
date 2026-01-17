@@ -162,7 +162,9 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   // Track code changes to update sync status
   useEffect(() => {
     // Mark as unsaved when code changes (except during save)
-    // Note: syncStatus is intentionally NOT in deps to prevent infinite re-render
+    // Note: syncStatus is intentionally NOT in deps to prevent infinite re-render.
+    // This effect should only run when syncEngine.state or profileConfig changes,
+    // not when syncStatus itself changes (which would create a loop).
     if (syncStatus === 'saved' && syncEngine.state === 'idle') {
       const currentCode = syncEngine.getCode();
       const originalCode = profileConfig?.source || '';
@@ -171,7 +173,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncEngine, profileConfig?.source, setSyncStatus]);
+  }, [syncEngine.state, syncEngine.getCode, profileConfig?.source, setSyncStatus]);
 
 
   // Sync visual editor state from parsed AST - LAYER-AWARE VERSION
