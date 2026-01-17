@@ -156,7 +156,7 @@
   - _Requirements: TR-1_
   - _Prompt: Role: Code Quality Auditor | Task: Implement the task for spec remaining-quality-fixes. First run spec-workflow-guide, then implement: Verify all refactored files meet code quality metrics. Check KeyConfigModal.tsx ≤500 lines (target from 641). Check KeyConfigPanel.tsx ≤500 lines (target from 634). Check MetricsPage.tsx ≤500 lines (target from 532). Check all new component files ≤500 lines. Check all functions ≤50 lines. Count code lines (exclude comments/blanks). Create metrics report. | Restrictions: Count code only, identify any violations, document all metrics | Success: All 3 main files ≤500 lines, all new files ≤500 lines, all functions ≤50 lines, metrics documented in report | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 6.5 Update documentation
+- [x] 6.5 Update documentation
   - Add JSDoc comments to new components, update README
   - Purpose: Ensure maintainability
   - _Requirements: TR-1_
