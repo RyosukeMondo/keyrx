@@ -96,7 +96,7 @@
   - _Requirements: 2.3, TR-1_
   - _Prompt: Role: React Component Developer specializing in virtualization | Task: Implement the task for spec remaining-quality-fixes. First run spec-workflow-guide, then implement: Create EventLogList component with virtualized list. Extract from MetricsPage.tsx event log section. Accept props: { events: EventLogEntry[], maxEvents?: number }. Use FixedSizeList from react-window for performance. Render event rows with timestamp, type, keyCode, latency, device. Format timestamps. Color-code event types. Auto-scroll to latest. | Restrictions: Must be ≤300 lines, all functions ≤50 lines, virtualize for 1000+ events, accessible (ARIA labels), auto-scroll smooth | Success: List renders events, virtualization works efficiently, formatting correct, auto-scroll functions, handles large lists, unit tests >80% coverage | After: 1) Mark [-], 2) log-implementation, 3) Mark [x]_
 
-- [ ] 4.4 Create StateSnapshot component
+- [x] 4.4 Create StateSnapshot component
   - File: src/components/metrics/StateSnapshot.tsx
   - Display current daemon state (layer, modifiers, locks)
   - Purpose: Extract state display from MetricsPage
