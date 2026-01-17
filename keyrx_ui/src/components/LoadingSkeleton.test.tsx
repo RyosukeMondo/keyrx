@@ -19,45 +19,63 @@ describe('LoadingSkeleton', () => {
   });
 
   it('renders text variant', () => {
-    const { container } = renderWithProviders(<LoadingSkeleton variant="text" />);
+    const { container } = renderWithProviders(
+      <LoadingSkeleton variant="text" />
+    );
     const skeleton = container.querySelector('[aria-busy="true"]');
     expect(skeleton).toHaveClass('rounded', 'h-4');
   });
 
   it('renders circular variant', () => {
-    const { container } = renderWithProviders(<LoadingSkeleton variant="circular" />);
+    const { container } = renderWithProviders(
+      <LoadingSkeleton variant="circular" />
+    );
     const skeleton = container.querySelector('[aria-busy="true"]');
     expect(skeleton).toHaveClass('rounded-full');
   });
 
   it('renders rectangular variant', () => {
-    const { container } = renderWithProviders(<LoadingSkeleton variant="rectangular" />);
+    const { container } = renderWithProviders(
+      <LoadingSkeleton variant="rectangular" />
+    );
     const skeleton = container.querySelector('[aria-busy="true"]');
     expect(skeleton).toHaveClass('rounded-md');
   });
 
   it('renders card variant', () => {
-    const { container } = renderWithProviders(<LoadingSkeleton variant="card" />);
+    const { container } = renderWithProviders(
+      <LoadingSkeleton variant="card" />
+    );
     const skeleton = container.querySelector('[aria-busy="true"]');
     expect(skeleton).toHaveClass('rounded-lg');
   });
 
   it('applies custom width and height', () => {
-    const { container } = renderWithProviders(<LoadingSkeleton width="200px" height="50px" />);
-    const skeleton = container.querySelector('[aria-busy="true"]') as HTMLElement;
+    const { container } = renderWithProviders(
+      <LoadingSkeleton width="200px" height="50px" />
+    );
+    const skeleton = container.querySelector(
+      '[aria-busy="true"]'
+    ) as HTMLElement;
     expect(skeleton?.style.width).toBe('200px');
     expect(skeleton?.style.height).toBe('50px');
   });
 
   it('applies numeric width and height', () => {
-    const { container } = renderWithProviders(<LoadingSkeleton width={200} height={50} />);
-    const skeleton = container.querySelector('[aria-busy="true"]') as HTMLElement;
+    const { container } = renderWithProviders(
+      <LoadingSkeleton width={200} height={50} />
+    );
+    const skeleton = container.querySelector(
+      '[aria-busy="true"]'
+    ) as HTMLElement;
     expect(skeleton?.style.width).toBe('200px');
     expect(skeleton?.style.height).toBe('50px');
   });
 
   it('applies custom className', () => {
-    const { container } = renderWithProviders(<LoadingSkeleton className="my-custom-class" />);
+    const { container } = renderWithProviders(
+      <LoadingSkeleton className="my-custom-class" />
+    );
     const skeleton = container.querySelector('[aria-busy="true"]');
     expect(skeleton).toHaveClass('my-custom-class');
   });
@@ -85,7 +103,9 @@ describe('SkeletonCard', () => {
   });
 
   it('applies custom className to wrapper', () => {
-    const { container } = renderWithProviders(<SkeletonCard className="my-card" />);
+    const { container } = renderWithProviders(
+      <SkeletonCard className="my-card" />
+    );
     const wrapper = container.querySelector('.my-card');
     expect(wrapper).toBeInTheDocument();
   });
@@ -107,7 +127,9 @@ describe('SkeletonTable', () => {
   });
 
   it('applies custom className to wrapper', () => {
-    const { container } = renderWithProviders(<SkeletonTable className="my-table" />);
+    const { container } = renderWithProviders(
+      <SkeletonTable className="my-table" />
+    );
     const wrapper = container.querySelector('.my-table');
     expect(wrapper).toBeInTheDocument();
   });
@@ -122,7 +144,9 @@ describe('SkeletonProfile', () => {
   });
 
   it('applies custom className to wrapper', () => {
-    const { container } = renderWithProviders(<SkeletonProfile className="my-profile" />);
+    const { container } = renderWithProviders(
+      <SkeletonProfile className="my-profile" />
+    );
     const wrapper = container.querySelector('.my-profile');
     expect(wrapper).toBeInTheDocument();
   });
@@ -136,7 +160,9 @@ describe('SkeletonButton', () => {
   });
 
   it('applies custom className', () => {
-    const { container } = renderWithProviders(<SkeletonButton className="my-button" />);
+    const { container } = renderWithProviders(
+      <SkeletonButton className="my-button" />
+    );
     const skeleton = container.querySelector('[aria-busy="true"]');
     expect(skeleton).toHaveClass('my-button');
   });

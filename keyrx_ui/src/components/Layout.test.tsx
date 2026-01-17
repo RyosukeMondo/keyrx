@@ -189,7 +189,11 @@ describe('Layout', () => {
     );
 
     const menuButton = screen.getByLabelText('Toggle navigation menu');
-    expect(menuButton).toHaveClass('focus:outline', 'focus:outline-2', 'focus:outline-primary-500');
+    expect(menuButton).toHaveClass(
+      'focus:outline',
+      'focus:outline-2',
+      'focus:outline-primary-500'
+    );
   });
 
   it('has minimum height for full viewport', () => {

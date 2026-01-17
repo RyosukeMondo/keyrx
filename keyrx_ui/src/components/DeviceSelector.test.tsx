@@ -81,7 +81,9 @@ describe('DeviceSelector', () => {
       renderPure(<DeviceSelector {...defaultProps} devices={[]} />);
 
       expect(
-        screen.getByText('No devices detected. Connect a keyboard to get started.')
+        screen.getByText(
+          'No devices detected. Connect a keyboard to get started.'
+        )
       ).toBeInTheDocument();
     });
 
@@ -98,7 +100,9 @@ describe('DeviceSelector', () => {
     it('renders single-select info text when multiSelect is false', () => {
       renderPure(<DeviceSelector {...defaultProps} multiSelect={false} />);
 
-      expect(screen.getByText('Select a device to configure.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Select a device to configure.')
+      ).toBeInTheDocument();
     });
   });
 
@@ -283,7 +287,11 @@ describe('DeviceSelector', () => {
       const onSelectionChange = vi.fn();
 
       renderPure(
-        <DeviceSelector {...defaultProps} globalSelected={true} onSelectionChange={onSelectionChange} />
+        <DeviceSelector
+          {...defaultProps}
+          globalSelected={true}
+          onSelectionChange={onSelectionChange}
+        />
       );
 
       const globalCheckbox = screen.getByLabelText(
@@ -308,25 +316,35 @@ describe('DeviceSelector', () => {
     it('renders edit button when onEditDevice is provided', () => {
       const onEditDevice = vi.fn();
 
-      renderPure(<DeviceSelector {...defaultProps} onEditDevice={onEditDevice} />);
+      renderPure(
+        <DeviceSelector {...defaultProps} onEditDevice={onEditDevice} />
+      );
 
-      const editButtons = screen.getAllByRole('button', { name: /Edit device/ });
+      const editButtons = screen.getAllByRole('button', {
+        name: /Edit device/,
+      });
       expect(editButtons).toHaveLength(3); // One for each device
     });
 
     it('does not render edit button when onEditDevice is not provided', () => {
       renderPure(<DeviceSelector {...defaultProps} />);
 
-      expect(screen.queryByRole('button', { name: /Edit device/ })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Edit device/ })
+      ).not.toBeInTheDocument();
     });
 
     it('calls onEditDevice with correct device ID when edit clicked', async () => {
       const user = userEvent.setup();
       const onEditDevice = vi.fn();
 
-      renderPure(<DeviceSelector {...defaultProps} onEditDevice={onEditDevice} />);
+      renderPure(
+        <DeviceSelector {...defaultProps} onEditDevice={onEditDevice} />
+      );
 
-      const editButton1 = screen.getByRole('button', { name: 'Edit device Keyboard 1' });
+      const editButton1 = screen.getByRole('button', {
+        name: 'Edit device Keyboard 1',
+      });
       await user.click(editButton1);
 
       expect(onEditDevice).toHaveBeenCalledWith('device-1');
@@ -345,7 +363,9 @@ describe('DeviceSelector', () => {
         />
       );
 
-      const editButton = screen.getByRole('button', { name: 'Edit device Keyboard 1' });
+      const editButton = screen.getByRole('button', {
+        name: 'Edit device Keyboard 1',
+      });
       await user.click(editButton);
 
       // Only edit should be called, not selection change
@@ -361,9 +381,15 @@ describe('DeviceSelector', () => {
       expect(
         screen.getByLabelText('Apply configuration globally to all devices')
       ).toBeInTheDocument();
-      expect(screen.getByLabelText('Select device Keyboard 1')).toBeInTheDocument();
-      expect(screen.getByLabelText('Select device Keyboard 2')).toBeInTheDocument();
-      expect(screen.getByLabelText('Select device Keyboard 3')).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('Select device Keyboard 1')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('Select device Keyboard 2')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('Select device Keyboard 3')
+      ).toBeInTheDocument();
     });
 
     it('has proper ARIA labels for connection badges', () => {
@@ -378,11 +404,19 @@ describe('DeviceSelector', () => {
 
     it('has proper ARIA labels for edit buttons', () => {
       const onEditDevice = vi.fn();
-      renderPure(<DeviceSelector {...defaultProps} onEditDevice={onEditDevice} />);
+      renderPure(
+        <DeviceSelector {...defaultProps} onEditDevice={onEditDevice} />
+      );
 
-      expect(screen.getByLabelText('Edit device Keyboard 1')).toBeInTheDocument();
-      expect(screen.getByLabelText('Edit device Keyboard 2')).toBeInTheDocument();
-      expect(screen.getByLabelText('Edit device Keyboard 3')).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('Edit device Keyboard 1')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('Edit device Keyboard 2')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('Edit device Keyboard 3')
+      ).toBeInTheDocument();
     });
 
     it('warning has proper alert role and aria-live', () => {
@@ -420,7 +454,10 @@ describe('DeviceSelector', () => {
       const onSelectionChange = vi.fn();
 
       renderPure(
-        <DeviceSelector {...defaultProps} onSelectionChange={onSelectionChange} />
+        <DeviceSelector
+          {...defaultProps}
+          onSelectionChange={onSelectionChange}
+        />
       );
 
       const checkbox = screen.getByLabelText('Select device Keyboard 1');
@@ -471,7 +508,9 @@ describe('DeviceSelector', () => {
         },
       ] as Device[];
 
-      renderPure(<DeviceSelector {...defaultProps} devices={devicesWithScope} />);
+      renderPure(
+        <DeviceSelector {...defaultProps} devices={devicesWithScope} />
+      );
 
       // Should render normally, ignoring scope
       expect(screen.getByText('Keyboard 1')).toBeInTheDocument();
@@ -486,14 +525,18 @@ describe('DeviceSelector', () => {
         { id: 'device-2', name: 'Keyboard 2', connected: false },
       ];
 
-      renderPure(<DeviceSelector {...defaultProps} devices={disconnectedDevices} />);
+      renderPure(
+        <DeviceSelector {...defaultProps} devices={disconnectedDevices} />
+      );
 
       const disconnectedBadges = screen.getAllByText('Disconnected');
       expect(disconnectedBadges).toHaveLength(2);
     });
 
     it('handles device with minimal properties', () => {
-      const minimalDevices: Device[] = [{ id: 'device-1', name: 'Minimal Device' }];
+      const minimalDevices: Device[] = [
+        { id: 'device-1', name: 'Minimal Device' },
+      ];
 
       renderPure(<DeviceSelector {...defaultProps} devices={minimalDevices} />);
 
@@ -512,7 +555,9 @@ describe('DeviceSelector', () => {
         },
       ];
 
-      renderPure(<DeviceSelector {...defaultProps} devices={longNameDevices} />);
+      renderPure(
+        <DeviceSelector {...defaultProps} devices={longNameDevices} />
+      );
 
       const deviceName = screen.getByText(
         'This is a very long device name that should be truncated properly in the UI'
@@ -549,7 +594,9 @@ describe('DeviceSelector', () => {
     it('applies hover styles to device items', () => {
       renderPure(<DeviceSelector {...defaultProps} />);
 
-      const deviceLabels = screen.getAllByRole('checkbox').map((cb) => cb.closest('label'));
+      const deviceLabels = screen
+        .getAllByRole('checkbox')
+        .map((cb) => cb.closest('label'));
       deviceLabels.forEach((label) => {
         expect(label).toHaveClass('hover:bg-slate-700');
       });

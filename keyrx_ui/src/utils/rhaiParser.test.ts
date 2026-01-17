@@ -59,7 +59,9 @@ describe('rhaiParser', () => {
 
         expect(result.success).toBe(true);
         expect(result.ast!.deviceBlocks[0].mappings).toHaveLength(2);
-        expect(result.ast!.deviceBlocks[0].mappings[0].targetKey).toBe('with_ctrl("VK_C")');
+        expect(result.ast!.deviceBlocks[0].mappings[0].targetKey).toBe(
+          'with_ctrl("VK_C")'
+        );
       });
     });
 
@@ -98,7 +100,9 @@ describe('rhaiParser', () => {
 
         expect(result.success).toBe(true);
         expect(result.ast!.deviceBlocks[0].mappings).toHaveLength(3);
-        expect(result.ast!.deviceBlocks[0].mappings[2].tapHold!.thresholdMs).toBe(150);
+        expect(
+          result.ast!.deviceBlocks[0].mappings[2].tapHold!.thresholdMs
+        ).toBe(150);
       });
     });
 
@@ -367,7 +371,9 @@ device_end();`;
         const result = parseRhaiScript(script);
 
         expect(result.success).toBe(false);
-        expect(result.error!.message).toContain('device_end() without matching device_start()');
+        expect(result.error!.message).toContain(
+          'device_end() without matching device_start()'
+        );
       });
 
       it('should detect unclosed device block', () => {
@@ -410,7 +416,9 @@ device_end();`;
         const result = parseRhaiScript(script);
 
         expect(result.success).toBe(false);
-        expect(result.error!.message).toContain('when_end() without matching when_start()');
+        expect(result.error!.message).toContain(
+          'when_end() without matching when_start()'
+        );
       });
 
       it('should detect unclosed when block', () => {

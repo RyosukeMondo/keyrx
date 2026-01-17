@@ -72,7 +72,8 @@ describe('WASM FFI Type Verification', () => {
       expect(wasmModule.load_config.length).toBe(1); // One parameter
 
       // Type assertion: this will fail at compile time if signature changes
-      const loadConfig: (rhai_source: string) => ConfigHandle = wasmModule.load_config;
+      const loadConfig: (rhai_source: string) => ConfigHandle =
+        wasmModule.load_config;
       expect(loadConfig).toBeDefined();
     });
 
@@ -86,7 +87,8 @@ describe('WASM FFI Type Verification', () => {
       expect(wasmModule.validate_config.length).toBe(1); // One parameter
 
       // Type assertion: this will fail at compile time if signature changes
-      const validateConfig: (rhai_source: string) => unknown = wasmModule.validate_config;
+      const validateConfig: (rhai_source: string) => unknown =
+        wasmModule.validate_config;
       expect(validateConfig).toBeDefined();
     });
 
@@ -289,7 +291,11 @@ device("*") {
       const simulationInput = {
         events: [
           { keycode: 'A', event_type: 'press' as const, timestamp_us: 0 },
-          { keycode: 'A', event_type: 'release' as const, timestamp_us: 100000 },
+          {
+            keycode: 'A',
+            event_type: 'release' as const,
+            timestamp_us: 100000,
+          },
         ],
       };
 

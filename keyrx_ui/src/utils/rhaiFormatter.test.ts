@@ -24,7 +24,9 @@ describe('rhaiFormatter', () => {
     it('formats simple mapping with consistent spacing', () => {
       const unformatted = 'map("VK_A","VK_B");';
       const formatted = formatRhaiScript(unformatted);
-      expect(formatted).toBe('map("VK_A", "VK_B");');
+      expect(formatted).toBe(
+        'device_start("*");\n    map("VK_A", "VK_B");\ndevice_end();'
+      );
     });
 
     it('formats device blocks with proper indentation', () => {
@@ -89,11 +91,12 @@ map("VK_C","VK_D");
 device_end();`;
 
       const formatted = formatRhaiScript(unformatted, {
-        blankLinesBetweenSections: 3,
+        blankLinesBetweenDevices: 3,
       });
 
-      // Should have 3 blank lines between global and device sections
-      expect(formatted).toMatch(/VK_B"\);\n\n\n\ndevice_start/);
+      // Global mappings are now wrapped in device_start("*"), so both become device blocks
+      // Should have 3 blank lines between the two device blocks
+      expect(formatted).toMatch(/device_end\(\);\n\n\n\ndevice_start/);
     });
 
     it('throws error for invalid syntax with line number', () => {
@@ -115,12 +118,15 @@ device_start("*");`;
     it('formats tap_hold mappings correctly', () => {
       const script = 'tap_hold("VK_ESCAPE","VK_ESCAPE","VK_LCTRL",200);';
       const formatted = formatRhaiScript(script);
-      expect(formatted).toContain('tap_hold("VK_ESCAPE", "VK_ESCAPE", "VK_LCTRL", 200);');
+      expect(formatted).toContain(
+        'tap_hold("VK_ESCAPE", "VK_ESCAPE", "VK_LCTRL", 200);'
+      );
     });
 
     it('handles unsupported mapping types (macro) gracefully', () => {
       // Parser doesn't support macro yet - it will be silently ignored
-      const script = 'macro("VK_F1",["VK_LCTRL","VK_C"],50);\nmap("VK_A", "VK_B");';
+      const script =
+        'macro("VK_F1",["VK_LCTRL","VK_C"],50);\nmap("VK_A", "VK_B");';
       const formatted = formatRhaiScript(script);
       // Should format supported mappings, ignore unsupported ones
       expect(formatted).toContain('map("VK_A", "VK_B");');
@@ -130,7 +136,8 @@ device_start("*");`;
 
     it('handles unsupported mapping types (layer_switch) gracefully', () => {
       // Parser doesn't support layer_switch yet - it will be silently ignored
-      const script = 'layer_switch("VK_CAPSLOCK","layer1","toggle");\nmap("VK_C", "VK_D");';
+      const script =
+        'layer_switch("VK_CAPSLOCK","layer1","toggle");\nmap("VK_C", "VK_D");';
       const formatted = formatRhaiScript(script);
       // Should format supported mappings, ignore unsupported ones
       expect(formatted).toContain('map("VK_C", "VK_D");');
@@ -206,10 +213,13 @@ map("VK_E","VK_F");`;
 
       const formatted = formatRhaiScript(script);
       const lines = formatted.split('\n');
-      expect(lines).toHaveLength(3);
-      expect(lines[0]).toBe('map("VK_A", "VK_B");');
-      expect(lines[1]).toBe('map("VK_C", "VK_D");');
-      expect(lines[2]).toBe('map("VK_E", "VK_F");');
+      // With device_start("*") wrapper: device_start, 3 mappings (indented), device_end = 5 lines
+      expect(lines).toHaveLength(5);
+      expect(lines[0]).toBe('device_start("*");');
+      expect(lines[1]).toBe('    map("VK_A", "VK_B");');
+      expect(lines[2]).toBe('    map("VK_C", "VK_D");');
+      expect(lines[3]).toBe('    map("VK_E", "VK_F");');
+      expect(lines[4]).toBe('device_end();');
     });
 
     it('formats complex nested structures', () => {
@@ -415,7 +425,9 @@ device_end();`;
       const script = 'map("VK_A", "VK_B");   \n   ';
       const formatted = formatRhaiScript(script);
 
-      expect(formatted).toBe('map("VK_A", "VK_B");');
+      expect(formatted).toBe(
+        'device_start("*");\n    map("VK_A", "VK_B");\ndevice_end();'
+      );
     });
 
     it('formats script with Windows line endings', () => {
@@ -427,11 +439,13 @@ device_end();`;
     });
 
     it('formats script with mixed line endings', () => {
-      const script = 'map("VK_A", "VK_B");\r\nmap("VK_C", "VK_D");\nmap("VK_E", "VK_F");';
+      const script =
+        'map("VK_A", "VK_B");\r\nmap("VK_C", "VK_D");\nmap("VK_E", "VK_F");';
       const formatted = formatRhaiScript(script);
 
       const lines = formatted.split('\n');
-      expect(lines).toHaveLength(3);
+      // With device_start("*") wrapper: device_start, 3 mappings, device_end = 5 lines
+      expect(lines).toHaveLength(5);
     });
 
     it('handles very long key names gracefully', () => {

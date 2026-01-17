@@ -1,3 +1,4 @@
+/* eslint-disable local-rules/test-naming-convention */
 /// <reference types="vitest" />
 import type { UserConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';

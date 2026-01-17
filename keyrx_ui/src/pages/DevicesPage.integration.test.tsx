@@ -281,7 +281,9 @@ describe('DevicesPage - Integration Tests', () => {
       });
 
       // Rename first device
-      const renameButton1 = screen.getByLabelText('Rename device Main Keyboard');
+      const renameButton1 = screen.getByLabelText(
+        'Rename device Main Keyboard'
+      );
       await user.click(renameButton1);
 
       const input1 = screen.getByRole('textbox', { name: 'Device name' });

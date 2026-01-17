@@ -5,7 +5,6 @@ import userEvent from '@testing-library/user-event';
 import { Tooltip } from './Tooltip';
 
 describe('Tooltip', () => {
-
   it('renders children correctly', () => {
     renderWithProviders(
       <Tooltip content="Tooltip text">
@@ -13,7 +12,9 @@ describe('Tooltip', () => {
       </Tooltip>
     );
 
-    expect(screen.getByRole('button', { name: /hover me/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /hover me/i })
+    ).toBeInTheDocument();
   });
 
   it('shows tooltip after delay on hover', async () => {
@@ -110,7 +111,7 @@ describe('Tooltip', () => {
     await user.hover(trigger);
 
     // Wait a bit to ensure tooltip doesn't appear
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
@@ -151,7 +152,7 @@ describe('Tooltip', () => {
     unmount();
 
     // Wait to ensure tooltip doesn't appear (no memory leak)
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
@@ -168,12 +169,12 @@ describe('Tooltip', () => {
     await user.hover(trigger);
 
     // Wait less than the delay
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     await user.unhover(trigger);
 
     // Wait past the original delay time
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     // Tooltip should not appear
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
@@ -218,7 +219,9 @@ describe('Tooltip', () => {
     await waitFor(() => {
       const tooltip = screen.getByRole('tooltip');
       expect(tooltip.querySelector('strong')).toHaveTextContent('Bold text');
-      expect(tooltip.querySelector('span')).toHaveTextContent('and regular text');
+      expect(tooltip.querySelector('span')).toHaveTextContent(
+        'and regular text'
+      );
     });
   });
 

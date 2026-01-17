@@ -16,13 +16,17 @@ describe('Card', () => {
   });
 
   it('applies elevated variant styles', () => {
-    const { container } = renderWithProviders(<Card variant="elevated">Content</Card>);
+    const { container } = renderWithProviders(
+      <Card variant="elevated">Content</Card>
+    );
     const card = container.firstChild as HTMLElement;
     expect(card.className).toContain('shadow-xl');
   });
 
   it('applies sm padding', () => {
-    const { container } = renderWithProviders(<Card padding="sm">Content</Card>);
+    const { container } = renderWithProviders(
+      <Card padding="sm">Content</Card>
+    );
     const contentDiv = container.querySelector('.p-sm');
     expect(contentDiv).toBeInTheDocument();
   });
@@ -34,7 +38,9 @@ describe('Card', () => {
   });
 
   it('applies lg padding', () => {
-    const { container } = renderWithProviders(<Card padding="lg">Content</Card>);
+    const { container } = renderWithProviders(
+      <Card padding="lg">Content</Card>
+    );
     const contentDiv = container.querySelector('.p-lg');
     expect(contentDiv).toBeInTheDocument();
   });
@@ -61,10 +67,7 @@ describe('Card', () => {
 
   it('renders both header and footer', () => {
     renderWithProviders(
-      <Card
-        header={<div>Header</div>}
-        footer={<div>Footer</div>}
-      >
+      <Card header={<div>Header</div>} footer={<div>Footer</div>}>
         <div>Content</div>
       </Card>
     );

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { SkipToContent } from './SkipToContent';
-import { useKeyboardShortcuts, CommonShortcuts } from '../hooks/useKeyboardShortcuts';
+import {
+  useKeyboardShortcuts,
+  CommonShortcuts,
+} from '../hooks/useKeyboardShortcuts';
 
 interface AppShellProps {
   children?: React.ReactNode;
@@ -15,9 +18,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   };
 
   // Register global keyboard shortcuts
-  useKeyboardShortcuts([
-    CommonShortcuts.toggleSidebar(toggleSidebar),
-  ]);
+  useKeyboardShortcuts([CommonShortcuts.toggleSidebar(toggleSidebar)]);
 
   return (
     <div className="app-shell min-h-screen bg-slate-900 text-slate-100">
@@ -128,9 +129,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         `}
         aria-label="Main content"
       >
-        <div className="h-full">
-          {children || <Outlet />}
-        </div>
+        <div className="h-full">{children || <Outlet />}</div>
       </main>
 
       {/* Mobile Bottom Navigation - hidden on tablet/desktop */}

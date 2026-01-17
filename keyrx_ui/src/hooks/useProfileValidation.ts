@@ -51,7 +51,9 @@ export interface ValidationResult {
  * @returns Validation result with { valid: boolean, errors: ValidationError[] }
  */
 async function validateProfile(profileName: string): Promise<ValidationResult> {
-  return apiClient.post<ValidationResult>(`/api/profiles/${profileName}/validate`);
+  return apiClient.post<ValidationResult>(
+    `/api/profiles/${profileName}/validate`
+  );
 }
 
 /**

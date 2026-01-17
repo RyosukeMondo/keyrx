@@ -7,7 +7,11 @@ import { Modal } from '../components/Modal';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { useUpdateDevice } from '../hooks/useUpdateDevice';
-import { useDevices, useSetDeviceEnabled, useForgetDevice } from '../hooks/useDevices';
+import {
+  useDevices,
+  useSetDeviceEnabled,
+  useForgetDevice,
+} from '../hooks/useDevices';
 import { getErrorMessage } from '../utils/errorUtils';
 import { LAYOUT_OPTIONS } from '../contexts/LayoutPreviewContext';
 import type { DeviceEntry } from '../types';
@@ -25,19 +29,9 @@ interface Device {
   lastSeen?: string;
 }
 
-interface ApiDevice {
-  id: string;
-  name: string;
-  path: string;
-  layout?: string;
-  active: boolean;
-  serial?: string;
-}
-
 interface DevicesPageProps {
   className?: string;
 }
-
 
 /**
  * DeviceRow Component
@@ -72,25 +66,32 @@ const DeviceRow: React.FC<DeviceRowProps> = ({
   const [localLayout, setLocalLayout] = useState(device.layout);
   const serverLayoutRef = React.useRef(device.layout);
   const [hasUserChanges, setHasUserChanges] = useState(false);
-  const { mutate: updateDevice, isPending: isUpdating, error: updateError } = useUpdateDevice();
+  const {
+    mutate: updateDevice,
+    isPending: isUpdating,
+    error: updateError,
+  } = useUpdateDevice();
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
-  const saveLayout = React.useCallback(async (layout: string) => {
-    await new Promise<void>((resolve, reject) => {
-      updateDevice(
-        { id: device.id, layout },
-        {
-          onSuccess: () => {
-            serverLayoutRef.current = layout;
-            setLastSavedAt(new Date());
-            setHasUserChanges(false);
-            resolve();
-          },
-          onError: (error) => reject(error),
-        }
-      );
-    });
-  }, [device.id, updateDevice]);
+  const saveLayout = React.useCallback(
+    async (layout: string) => {
+      await new Promise<void>((resolve, reject) => {
+        updateDevice(
+          { id: device.id, layout },
+          {
+            onSuccess: () => {
+              serverLayoutRef.current = layout;
+              setLastSavedAt(new Date());
+              setHasUserChanges(false);
+              resolve();
+            },
+            onError: (error) => reject(error),
+          }
+        );
+      });
+    },
+    [device.id, updateDevice]
+  );
 
   const { isSaving: isSavingLayout, error: layoutSaveError } = useAutoSave(
     localLayout,
@@ -124,7 +125,9 @@ const DeviceRow: React.FC<DeviceRowProps> = ({
     >
       {/* Status indicator */}
       <div
-        className={`w-2 h-2 rounded-full flex-shrink-0 ${device.active ? 'bg-green-500' : 'bg-slate-500'}`}
+        className={`w-2 h-2 rounded-full flex-shrink-0 ${
+          device.active ? 'bg-green-500' : 'bg-slate-500'
+        }`}
         title={device.active ? 'Connected' : 'Disconnected'}
         aria-label={device.active ? 'Connected' : 'Disconnected'}
       />
@@ -148,10 +151,20 @@ const DeviceRow: React.FC<DeviceRowProps> = ({
               aria-label="Device name"
               className="!py-1 !text-sm"
             />
-            <Button variant="primary" size="sm" onClick={() => onRenameSave(device.id)} aria-label="Save">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => onRenameSave(device.id)}
+              aria-label="Save"
+            >
               ✓
             </Button>
-            <Button variant="ghost" size="sm" onClick={onRenameCancel} aria-label="Cancel">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRenameCancel}
+              aria-label="Cancel"
+            >
               ✕
             </Button>
           </div>
@@ -196,7 +209,14 @@ const DeviceRow: React.FC<DeviceRowProps> = ({
           <span className="text-green-500 text-xs">✓</span>
         )}
         {saveError && (
-          <span className="text-red-500 text-xs" title={saveError instanceof Error ? saveError.message : String(saveError)}>✗</span>
+          <span
+            className="text-red-500 text-xs"
+            title={
+              saveError instanceof Error ? saveError.message : String(saveError)
+            }
+          >
+            ✗
+          </span>
         )}
       </div>
 
@@ -262,7 +282,11 @@ const DeviceRow: React.FC<DeviceRowProps> = ({
  */
 export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   // Fetch devices using React Query
-  const { data: deviceEntries = [], isLoading: loading, error: fetchError } = useDevices();
+  const {
+    data: deviceEntries = [],
+    isLoading: loading,
+    error: fetchError,
+  } = useDevices();
   const { mutate: setDeviceEnabledMutation } = useSetDeviceEnabled();
   const { mutate: forgetDeviceMutation } = useForgetDevice();
 
@@ -280,13 +304,19 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     lastSeen: 'Just now',
   }));
 
-  const error = fetchError ? getErrorMessage(fetchError, 'Failed to fetch devices') : null;
+  const error = fetchError
+    ? getErrorMessage(fetchError, 'Failed to fetch devices')
+    : null;
 
   // Global layout state
   const [globalLayout, setGlobalLayout] = useState<string>('ANSI_104');
   const [isSavingGlobalLayout, setIsSavingGlobalLayout] = useState(false);
-  const [globalLayoutError, setGlobalLayoutError] = useState<string | null>(null);
-  const [globalLayoutSavedAt, setGlobalLayoutSavedAt] = useState<Date | null>(null);
+  const [globalLayoutError, setGlobalLayoutError] = useState<string | null>(
+    null
+  );
+  const [globalLayoutSavedAt, setGlobalLayoutSavedAt] = useState<Date | null>(
+    null
+  );
 
   // Fetch global layout on mount
   React.useEffect(() => {
@@ -323,7 +353,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     setNameError('');
   };
 
-  const handleRenameSave = (deviceId: string) => {
+  const handleRenameSave = (_deviceId: string) => {
     // Validate name
     if (!editingName.trim()) {
       setNameError('Device name cannot be empty');
@@ -338,7 +368,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     // TODO: Call API to rename device
     // For now, just update local state
     // setDevices((prev) =>
-    //   prev.map((d) => (d.id === deviceId ? { ...d, name: editingName } : d))
+    //   prev.map((d) => (d.id === _deviceId ? { ...d, name: editingName } : d))
     // );
 
     // Reset editing state
@@ -350,7 +380,6 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   const handleToggleEnabled = (deviceId: string, enabled: boolean) => {
     setDeviceEnabledMutation({ id: deviceId, enabled });
   };
-
 
   const handleGlobalLayoutChange = async (newLayout: string) => {
     setGlobalLayout(newLayout);
@@ -378,7 +407,9 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
       }, 3000);
     } catch (err) {
       console.error('Failed to save global layout:', err);
-      setGlobalLayoutError(getErrorMessage(err, 'Failed to save global layout'));
+      setGlobalLayoutError(
+        getErrorMessage(err, 'Failed to save global layout')
+      );
     } finally {
       setIsSavingGlobalLayout(false);
     }
@@ -395,7 +426,9 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
 
   if (loading) {
     return (
-      <div className={`flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8 ${className}`}>
+      <div
+        className={`flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8 ${className}`}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <LoadingSkeleton variant="text" width="150px" height="32px" />
           <LoadingSkeleton variant="rectangular" width="100px" height="36px" />
@@ -415,7 +448,9 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   }
 
   return (
-    <div className={`flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8 ${className}`}>
+    <div
+      className={`flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8 ${className}`}
+    >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-slate-100">
           Devices
@@ -445,7 +480,9 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
       <Card variant="elevated" className="bg-slate-800">
         <div className="flex flex-col gap-md">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-100">Global Settings</h2>
+            <h2 className="text-lg font-semibold text-slate-100">
+              Global Settings
+            </h2>
             {isSavingGlobalLayout && (
               <span className="text-xs text-slate-400 flex items-center gap-1">
                 <span className="animate-spin h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full" />
@@ -458,7 +495,10 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
               </span>
             )}
             {globalLayoutError && (
-              <span className="text-xs text-red-500 flex items-center gap-1" title={globalLayoutError}>
+              <span
+                className="text-xs text-red-500 flex items-center gap-1"
+                title={globalLayoutError}
+              >
                 ✗ Error
               </span>
             )}
@@ -469,7 +509,8 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
               Default Keyboard Layout
             </label>
             <p className="text-xs text-slate-400">
-              New devices will inherit this layout by default. You can override it for specific devices below.
+              New devices will inherit this layout by default. You can override
+              it for specific devices below.
             </p>
             <LayoutDropdown
               options={LAYOUT_OPTIONS}
@@ -530,11 +571,14 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
         <div className="flex flex-col gap-lg">
           <p className="text-sm text-slate-300">
             Are you sure you want to forget device{' '}
-            <span className="font-semibold text-slate-100">{forgetDevice?.name}</span>?
+            <span className="font-semibold text-slate-100">
+              {forgetDevice?.name}
+            </span>
+            ?
           </p>
           <p className="text-sm text-slate-400">
-            This will remove all device-specific configuration and mappings. This action cannot be
-            undone.
+            This will remove all device-specific configuration and mappings.
+            This action cannot be undone.
           </p>
           <div className="flex justify-end gap-sm">
             <Button

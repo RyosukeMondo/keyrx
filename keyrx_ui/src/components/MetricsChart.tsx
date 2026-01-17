@@ -11,7 +11,7 @@
  * ```
  */
 
-import React, { useMemo } from "react";
+import React, { useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -22,8 +22,8 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine,
-} from "recharts";
-import type { LatencyMetrics } from "../types/rpc";
+} from 'recharts';
+import type { LatencyMetrics } from '../types/rpc';
 
 interface MetricsChartProps {
   /** Array of latency metrics to display */
@@ -59,18 +59,20 @@ export function MetricsChart({ data }: MetricsChartProps) {
 
   // Dark theme colors matching TailwindCSS slate palette
   const colors = {
-    grid: "#334155", // slate-700
-    text: "#cbd5e1", // slate-300
-    avg: "#3b82f6", // blue-500
-    p95: "#f97316", // orange-500
-    p99: "#ef4444", // red-500
-    target: "#dc2626", // red-600
-    background: "#1e293b", // slate-800
+    grid: '#334155', // slate-700
+    text: '#cbd5e1', // slate-300
+    avg: '#3b82f6', // blue-500
+    p95: '#f97316', // orange-500
+    p99: '#ef4444', // red-500
+    target: '#dc2626', // red-600
+    background: '#1e293b', // slate-800
   };
 
   return (
     <div className="rounded-lg bg-slate-800 p-4" data-testid="metrics-chart">
-      <h3 className="mb-4 text-lg font-semibold text-slate-200">Latency Metrics</h3>
+      <h3 className="mb-4 text-lg font-semibold text-slate-200">
+        Latency Metrics
+      </h3>
       {data.length === 0 ? (
         <div className="flex h-[300px] items-center justify-center">
           <p className="text-slate-400">No latency data available yet...</p>
@@ -86,18 +88,28 @@ export function MetricsChart({ data }: MetricsChartProps) {
               dataKey="index"
               stroke={colors.text}
               tick={{ fill: colors.text }}
-              label={{ value: "Time", position: "insideBottom", offset: -5, fill: colors.text }}
+              label={{
+                value: 'Time',
+                position: 'insideBottom',
+                offset: -5,
+                fill: colors.text,
+              }}
             />
             <YAxis
               stroke={colors.text}
               tick={{ fill: colors.text }}
-              label={{ value: "Latency (ms)", angle: -90, position: "insideLeft", fill: colors.text }}
+              label={{
+                value: 'Latency (ms)',
+                angle: -90,
+                position: 'insideLeft',
+                fill: colors.text,
+              }}
             />
             <Tooltip
               contentStyle={{
                 backgroundColor: colors.background,
                 border: `1px solid ${colors.grid}`,
-                borderRadius: "0.5rem",
+                borderRadius: '0.5rem',
                 color: colors.text,
               }}
               formatter={(value: number) => `${value.toFixed(2)} ms`}
@@ -108,8 +120,8 @@ export function MetricsChart({ data }: MetricsChartProps) {
               stroke={colors.target}
               strokeDasharray="3 3"
               label={{
-                value: "Target (5ms)",
-                position: "right",
+                value: 'Target (5ms)',
+                position: 'right',
                 fill: colors.target,
                 fontSize: 12,
               }}

@@ -32,20 +32,30 @@ describe('AppShell', () => {
 
   it('has mobile bottom navigation with 5 items', () => {
     renderWithRouter(<AppShell />);
-    const bottomNav = screen.getByRole('navigation', { name: /mobile navigation/i });
+    const bottomNav = screen.getByRole('navigation', {
+      name: /mobile navigation/i,
+    });
     expect(bottomNav).toBeInTheDocument();
 
     // Check for navigation items
     expect(screen.getByRole('button', { name: /home/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /devices/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /profiles/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /devices/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /profiles/i })
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /config/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /metrics/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /metrics/i })
+    ).toBeInTheDocument();
   });
 
   it('has desktop sidebar navigation', () => {
     renderWithRouter(<AppShell />);
-    const sidebarNav = screen.getAllByRole('complementary', { name: /main navigation/i });
+    const sidebarNav = screen.getAllByRole('complementary', {
+      name: /main navigation/i,
+    });
     expect(sidebarNav.length).toBeGreaterThan(0);
   });
 
@@ -53,7 +63,9 @@ describe('AppShell', () => {
     const user = userEvent.setup();
     renderWithRouter(<AppShell />);
 
-    const toggleButton = screen.getByRole('button', { name: /toggle navigation menu/i });
+    const toggleButton = screen.getByRole('button', {
+      name: /toggle navigation menu/i,
+    });
     expect(toggleButton).toBeInTheDocument();
 
     // Click to open
@@ -68,8 +80,12 @@ describe('AppShell', () => {
     renderWithRouter(<AppShell />);
 
     expect(screen.getByRole('main')).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: /mobile navigation/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /toggle navigation menu/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: /mobile navigation/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /toggle navigation menu/i })
+    ).toBeInTheDocument();
   });
 
   it('displays all navigation items with icons and labels', () => {
@@ -77,7 +93,9 @@ describe('AppShell', () => {
 
     const navItems = ['Home', 'Devices', 'Profiles', 'Config', 'Metrics'];
     navItems.forEach((item) => {
-      const button = screen.getByRole('button', { name: new RegExp(item, 'i') });
+      const button = screen.getByRole('button', {
+        name: new RegExp(item, 'i'),
+      });
       expect(button).toBeInTheDocument();
 
       // Check for icon (svg) and text label

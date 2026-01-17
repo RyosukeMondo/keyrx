@@ -84,7 +84,9 @@ export const useMetricsStore = create<MetricsStore>((set, get) => ({
             const payload = message.payload;
 
             const eventRecord: EventRecord = {
-              id: `evt-${payload.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+              id: `evt-${payload.timestamp}-${Math.random()
+                .toString(36)
+                .slice(2, 8)}`,
               timestamp: new Date(payload.timestamp / 1000).toISOString(), // Convert microseconds to ISO string
               type: payload.eventType === 'press' ? 'press' : 'release',
               keyCode: payload.keyCode.replace(/^KEY_/, ''), // Remove KEY_ prefix for display

@@ -99,15 +99,16 @@ export const InlineEdit = React.memo<InlineEditProps>(
     const showPlaceholder = !editValue;
 
     if (isEditing) {
+      const baseClassName = `${className} bg-slate-700 border border-blue-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500`;
       const commonProps = {
-        ref: inputRef as any,
+        ref: inputRef,
         value: editValue,
-        onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-          setEditValue(e.target.value),
+        onChange: (
+          e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        ) => setEditValue(e.target.value),
         onBlur: handleBlur,
         onKeyDown: handleKeyDown,
         maxLength,
-        className: `${className} bg-slate-700 border border-blue-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500`,
         'aria-label': ariaLabel,
       };
 
@@ -116,17 +117,25 @@ export const InlineEdit = React.memo<InlineEditProps>(
           <textarea
             {...commonProps}
             rows={3}
-            className={`${commonProps.className} resize-none w-full`}
+            className={`${baseClassName} resize-none w-full`}
           />
         );
       }
 
-      return <input type="text" {...commonProps} className={`${commonProps.className} w-full`} />;
+      return (
+        <input
+          type="text"
+          {...commonProps}
+          className={`${baseClassName} w-full`}
+        />
+      );
     }
 
     return (
       <div
-        className={`relative group ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} pr-6`}
+        className={`relative group ${
+          disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+        } pr-6`}
         onClick={handleClick}
         onMouseEnter={() => !disabled && setShowPencil(true)}
         onMouseLeave={() => setShowPencil(false)}
@@ -140,7 +149,11 @@ export const InlineEdit = React.memo<InlineEditProps>(
         }}
         aria-label={ariaLabel || `Edit ${value || 'text'}`}
       >
-        <span className={`${className} ${showPlaceholder ? 'text-slate-500 italic' : ''}`}>
+        <span
+          className={`${className} ${
+            showPlaceholder ? 'text-slate-500 italic' : ''
+          }`}
+        >
           {displayValue}
         </span>
         {!disabled && (

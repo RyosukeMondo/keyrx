@@ -322,6 +322,337 @@ idle ──(visual change)──> generating ──> syncing ──> idle
 
 ## Component Documentation
 
+### Shared KeyConfig Components
+
+Reusable components extracted from KeyConfigModal and KeyConfigPanel for DRY code organization.
+
+**Location**: `src/components/keyConfig/`
+
+#### MappingTypeSelector
+
+Radio button/tab selector for choosing mapping types.
+
+**Location**: `src/components/keyConfig/MappingTypeSelector.tsx`
+
+**Props**:
+- `selectedType: MappingType` - Currently selected type
+- `onChange: (type: MappingType) => void` - Callback when type changes
+- `supportedTypes: MappingType[]` - Available types (default: all 5 types)
+- `layout?: 'horizontal' | 'vertical'` - Display layout (default: horizontal)
+
+**Usage**:
+```typescript
+import { MappingTypeSelector } from '@/components/keyConfig/MappingTypeSelector';
+
+<MappingTypeSelector
+  selectedType="simple"
+  onChange={(type) => setMappingType(type)}
+  supportedTypes={['simple', 'tap_hold']}
+  layout="horizontal"
+/>
+```
+
+#### KeySelectionTabs
+
+Tabbed interface for key selection (keyboard, modifier, lock, layer).
+
+**Location**: `src/components/keyConfig/KeySelectionTabs.tsx`
+
+**Props**:
+- `activeTab: string` - Currently active tab
+- `onTabChange: (tab: string) => void` - Callback when tab changes
+- `availableTabs: string[]` - Tabs to display
+- `onKeySelect: (keyCode: string) => void` - Callback when key is selected
+- `layoutKeys?: SVGKey[]` - Optional keyboard layout keys
+
+**Usage**:
+```typescript
+import { KeySelectionTabs } from '@/components/keyConfig/KeySelectionTabs';
+
+<KeySelectionTabs
+  activeTab="keyboard"
+  onTabChange={setActiveTab}
+  availableTabs={['keyboard', 'modifier', 'lock']}
+  onKeySelect={handleKeySelect}
+  layoutKeys={keyboardLayout}
+/>
+```
+
+#### MappingConfigForm
+
+Dynamic form that renders fields based on mapping type.
+
+**Location**: `src/components/keyConfig/MappingConfigForm.tsx`
+
+**Props**:
+- `mappingType: MappingType` - Type of mapping being configured
+- `currentConfig?: MappingConfig` - Current configuration values
+- `onChange: (config: MappingConfig) => void` - Callback when config changes
+- `onValidate?: (config: MappingConfig) => ValidationResult` - Optional validation
+- `layoutKeys?: SVGKey[]` - Optional keyboard layout
+- `enableKeyboardView?: boolean` - Enable keyboard/palette toggle (default: true)
+
+**Mapping Types**:
+- `simple`: Target key selection
+- `modifier`: Modifier key selection
+- `lock`: Lock key selection
+- `tap_hold`: Tap key, hold key, and threshold input
+- `layer_active`: Layer number input
+
+**Usage**:
+```typescript
+import { MappingConfigForm } from '@/components/keyConfig/MappingConfigForm';
+
+<MappingConfigForm
+  mappingType="tap_hold"
+  currentConfig={{ tapAction: 'Escape', holdAction: 'LCtrl', threshold: 200 }}
+  onChange={handleConfigChange}
+  onValidate={validateConfig}
+/>
+```
+
+### Shared Metrics Components
+
+Reusable components extracted from MetricsPage for modular metrics display.
+
+**Location**: `src/components/metrics/`
+
+#### MetricsStatsCards
+
+Displays 4 stat cards (latency, throughput, CPU, memory).
+
+**Location**: `src/components/metrics/MetricsStatsCards.tsx`
+
+**Props**:
+- `latencyStats: LatencyStats` - Latency statistics (avg, min, max, p95, p99)
+- `eventCount: number` - Total events processed
+- `connected: boolean` - Connection status
+
+**Usage**:
+```typescript
+import { MetricsStatsCards } from '@/components/metrics/MetricsStatsCards';
+
+<MetricsStatsCards
+  latencyStats={{ avgUs: 1234, minUs: 500, maxUs: 5000, p95Us: 2000, p99Us: 3000 }}
+  eventCount={42}
+  connected={true}
+/>
+```
+
+#### LatencyChart
+
+Line chart for latency over time using Recharts.
+
+**Location**: `src/components/metrics/LatencyChart.tsx`
+
+**Props**:
+- `data: LatencyDataPoint[]` - Array of {timestamp, latencyUs} data points
+- `maxDataPoints?: number` - Maximum points to display (default: 60)
+
+**Usage**:
+```typescript
+import { LatencyChart } from '@/components/metrics/LatencyChart';
+
+<LatencyChart
+  data={latencyHistory}
+  maxDataPoints={100}
+/>
+```
+
+#### EventLogList
+
+Virtualized event log list using react-window.
+
+**Location**: `src/components/metrics/EventLogList.tsx`
+
+**Props**:
+- `events: EventLogEntry[]` - Array of event log entries
+- `maxEvents?: number` - Maximum events to display
+
+**Usage**:
+```typescript
+import { EventLogList } from '@/components/metrics/EventLogList';
+
+<EventLogList
+  events={eventLog}
+  maxEvents={1000}
+/>
+```
+
+#### StateSnapshot
+
+Displays current daemon state (layer, modifiers, locks).
+
+**Location**: `src/components/metrics/StateSnapshot.tsx`
+
+**Props**:
+- `state: StateSnapshot` - Current state snapshot from daemon
+
+**Usage**:
+```typescript
+import { StateSnapshot } from '@/components/metrics/StateSnapshot';
+
+<StateSnapshot
+  state={{
+    activeLayer: 'base',
+    activeModifiers: ['Ctrl', 'Shift'],
+    activeLocks: [],
+    tapHoldTimers: 2,
+    queuedEvents: 0
+  }}
+/>
+```
+
+### Refactored ConfigPage Components (Custom Hooks & Containers)
+
+The ConfigPage has been refactored to use custom hooks and container components for better separation of concerns and reusability.
+
+#### Custom Hooks
+
+**useProfileSelection** - Profile selection with fallback priority
+- **Location**: `src/hooks/useProfileSelection.ts`
+- **Purpose**: Centralizes profile selection logic with automatic fallback
+- **Priority**: manual > prop > route > query > active > 'Default'
+- **Returns**: `{ selectedProfileName, setSelectedProfileName }`
+
+```typescript
+import { useProfileSelection } from '@/hooks/useProfileSelection';
+
+const { selectedProfileName, setSelectedProfileName } = useProfileSelection();
+```
+
+**useCodePanel** - Code panel state with localStorage persistence
+- **Location**: `src/hooks/useCodePanel.ts`
+- **Purpose**: Manages collapsible code panel UI state and height
+- **Persists**: Panel height to localStorage ('codePanel.height')
+- **Returns**: `{ isOpen, height, toggleOpen, setHeight }`
+
+```typescript
+import { useCodePanel } from '@/hooks/useCodePanel';
+
+const { isOpen, height, toggleOpen } = useCodePanel();
+```
+
+**useKeyboardLayout** - Keyboard layout state with memoized keys
+- **Location**: `src/hooks/useKeyboardLayout.ts`
+- **Purpose**: Manages layout selection and provides memoized parsed layout keys
+- **Memoization**: Layout keys recalculate only when layout changes
+- **Returns**: `{ layout, setLayout, layoutKeys }`
+
+```typescript
+import { useKeyboardLayout } from '@/hooks/useKeyboardLayout';
+
+const { layout, setLayout, layoutKeys } = useKeyboardLayout('ANSI_104');
+```
+
+**useConfigSync** - RhaiSyncEngine initialization and sync status
+- **Location**: `src/hooks/useConfigSync.ts`
+- **Purpose**: Encapsulates config synchronization logic
+- **Debounce**: 500ms for code editor changes
+- **Returns**: `{ syncEngine, syncStatus, lastSaveTime, setSyncStatus, setLastSaveTime }`
+
+```typescript
+import { useConfigSync } from '@/hooks/useConfigSync';
+
+const { syncEngine, syncStatus, setSyncStatus } = useConfigSync(profileName);
+```
+
+#### Container Components
+
+**KeyboardVisualizerContainer** - Keyboard visualization with layout selector
+- **Location**: `src/components/config/KeyboardVisualizerContainer.tsx`
+- **Purpose**: Wraps KeyboardVisualizer with layout management
+- **Features**: Layout dropdown, key click handling, mapping display
+
+```typescript
+import { KeyboardVisualizerContainer } from '@/components/config/KeyboardVisualizerContainer';
+
+<KeyboardVisualizerContainer
+  profileName={profileName}
+  activeLayer={activeLayer}
+  mappings={keyMappings}
+  onKeyClick={handleKeyClick}
+  selectedKeyCode={selectedKey}
+  initialLayout="ANSI_104"
+/>
+```
+
+**CodePanelContainer** - Collapsible code editor panel
+- **Location**: `src/components/config/CodePanelContainer.tsx`
+- **Purpose**: Collapsible panel with draggable resize handle
+- **Features**: Toggle button, height persistence, sync status indicators, parse error display
+
+```typescript
+import { CodePanelContainer } from '@/components/config/CodePanelContainer';
+
+<CodePanelContainer
+  profileName={profileName}
+  rhaiCode={code}
+  onChange={handleCodeChange}
+  syncEngine={syncEngine}
+/>
+```
+
+**ConfigurationPanel** - Unified configuration controls
+- **Location**: `src/components/config/ConfigurationPanel.tsx`
+- **Purpose**: Composes configuration UI components into unified panel
+- **Contains**: DeviceSelector, LayerSwitcher, KeyPalette, KeyConfigPanel, CurrentMappingsSummary
+
+```typescript
+import { ConfigurationPanel } from '@/components/config/ConfigurationPanel';
+
+<ConfigurationPanel
+  profileName={profileName}
+  selectedPhysicalKey={selectedKey}
+  selectedPaletteKey={paletteKey}
+  onPaletteKeySelect={handlePaletteSelect}
+  onSaveMapping={handleSave}
+  onClearMapping={handleClear}
+  activeLayer={activeLayer}
+  availableLayers={layers}
+  onLayerChange={handleLayerChange}
+  devices={devices}
+  selectedDevices={selectedDevices}
+  globalSelected={globalSelected}
+  onDeviceSelectionChange={handleDeviceChange}
+  keyMappings={mappings}
+  onEditMapping={handleEdit}
+  layoutKeys={layoutKeys}
+/>
+```
+
+**ProfileSelector** - Profile selection dropdown with create button
+- **Location**: `src/components/config/ProfileSelector.tsx`
+- **Purpose**: Profile dropdown with loading states and creation
+- **Features**: Profile dropdown, loading indicator, create profile button
+
+```typescript
+import { ProfileSelector } from '@/components/config/ProfileSelector';
+
+<ProfileSelector
+  value={selectedProfileName}
+  onChange={handleProfileChange}
+  profiles={profiles}
+  isLoading={isLoadingProfiles}
+  disabled={!connected}
+/>
+```
+
+**ConfigurationLayout** - Responsive grid layout container
+- **Location**: `src/components/config/ConfigurationLayout.tsx`
+- **Purpose**: Provides responsive layout structure for config page
+- **Features**: CSS Grid layout, responsive breakpoints, resizable panels
+
+```typescript
+import { ConfigurationLayout } from '@/components/config/ConfigurationLayout';
+
+<ConfigurationLayout profileName={profileName}>
+  <KeyboardVisualizerContainer {...props} />
+  <ConfigurationPanel {...props} />
+  <CodePanelContainer {...props} />
+</ConfigurationLayout>
+```
+
 ### DeviceSelector
 
 Multi-device selector with global and device-specific checkboxes.

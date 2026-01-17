@@ -139,13 +139,14 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
   clearError: () => set({ error: null }),
 
   // Reset store to initial state
-  reset: () => set({
-    currentProfile: null,
-    activeLayer: 'base',
-    layerMappings: new Map([['base', new Map()]]),
-    globalSelected: true,
-    selectedDevices: [],
-    loading: false,
-    error: null,
-  }),
+  reset: () =>
+    set({
+      currentProfile: null,
+      activeLayer: 'base',
+      layerMappings: new Map([['base', new Map()]]),
+      globalSelected: true,
+      selectedDevices: [],
+      loading: false,
+      error: null,
+    }),
 }));

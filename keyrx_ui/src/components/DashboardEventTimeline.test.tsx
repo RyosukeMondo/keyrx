@@ -5,8 +5,25 @@ import { DashboardEventTimeline } from './DashboardEventTimeline';
 import type { KeyEvent } from '../types/rpc';
 
 // Mock react-window
+interface FixedSizeListProps {
+  children: (props: {
+    index: number;
+    style: Record<string, unknown>;
+  }) => React.ReactNode;
+  itemCount: number;
+  height: number;
+  itemSize: number;
+  className?: string;
+}
+
 vi.mock('react-window', () => ({
-  FixedSizeList: ({ children, itemCount, height, itemSize, className }: any) => (
+  FixedSizeList: ({
+    children,
+    itemCount,
+    height,
+    itemSize,
+    className,
+  }: FixedSizeListProps) => (
     <div
       data-testid="virtualized-list"
       data-item-count={itemCount}
@@ -224,7 +241,9 @@ describe('DashboardEventTimeline', () => {
     );
 
     // Find first event row by looking for the relative positioning div
-    const eventRow = container.querySelector('.relative.flex.items-center') as HTMLElement;
+    const eventRow = container.querySelector(
+      '.relative.flex.items-center'
+    ) as HTMLElement;
     expect(eventRow).toBeTruthy();
 
     // Trigger hover
@@ -244,7 +263,9 @@ describe('DashboardEventTimeline', () => {
       />
     );
 
-    const eventRow = container.querySelector('.relative.flex.items-center') as HTMLElement;
+    const eventRow = container.querySelector(
+      '.relative.flex.items-center'
+    ) as HTMLElement;
 
     // Show tooltip
     fireEvent.mouseEnter(eventRow);
@@ -265,7 +286,9 @@ describe('DashboardEventTimeline', () => {
       />
     );
 
-    const eventRow = container.querySelector('.relative.flex.items-center') as HTMLElement;
+    const eventRow = container.querySelector(
+      '.relative.flex.items-center'
+    ) as HTMLElement;
     fireEvent.mouseEnter(eventRow);
 
     // Check for all tooltip fields

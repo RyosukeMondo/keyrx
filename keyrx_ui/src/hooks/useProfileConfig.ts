@@ -60,7 +60,10 @@ export function useSetProfileConfig() {
     onError: (_error, { name }, context) => {
       // Rollback to previous value on error
       if (context?.previousConfig) {
-        queryClient.setQueryData(queryKeys.config(name), context.previousConfig);
+        queryClient.setQueryData(
+          queryKeys.config(name),
+          context.previousConfig
+        );
       }
     },
 

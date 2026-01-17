@@ -41,7 +41,9 @@ describe('KeyMappingDialog', () => {
 
     it('should default to simple mapping type', () => {
       render(<KeyMappingDialog {...defaultProps} />);
-      const simpleButton = screen.getByRole('button', { name: /Select Simple Mapping/i });
+      const simpleButton = screen.getByRole('button', {
+        name: /Select Simple Mapping/i,
+      });
       expect(simpleButton).toHaveAttribute('aria-pressed', 'true');
     });
   });
@@ -50,7 +52,9 @@ describe('KeyMappingDialog', () => {
     it('should display simple action input', () => {
       render(<KeyMappingDialog {...defaultProps} />);
       expect(screen.getByLabelText('Simple action')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText(/VK_A, VK_ENTER/i)).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(/VK_A, VK_ENTER/i)
+      ).toBeInTheDocument();
     });
 
     it('should update simple action value', async () => {
@@ -71,7 +75,9 @@ describe('KeyMappingDialog', () => {
       await user.click(saveButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Simple action is required')).toBeInTheDocument();
+        expect(
+          screen.getByText('Simple action is required')
+        ).toBeInTheDocument();
       });
       expect(mockOnSave).not.toHaveBeenCalled();
     });
@@ -112,7 +118,9 @@ describe('KeyMappingDialog', () => {
     it('should display tap-hold form fields', () => {
       expect(screen.getByLabelText('Tap action')).toBeInTheDocument();
       expect(screen.getByLabelText('Hold action')).toBeInTheDocument();
-      expect(screen.getByLabelText('Timeout in milliseconds')).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('Timeout in milliseconds')
+      ).toBeInTheDocument();
     });
 
     it('should validate tap action is required', async () => {
@@ -157,19 +165,25 @@ describe('KeyMappingDialog', () => {
       await user.click(saveButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Timeout must be between 100-500ms')).toBeInTheDocument();
+        expect(
+          screen.getByText('Timeout must be between 100-500ms')
+        ).toBeInTheDocument();
       });
     });
 
     it('should update timeout with slider', async () => {
       const { fireEvent } = await import('@testing-library/react');
 
-      const slider = screen.getByLabelText('Timeout slider') as HTMLInputElement;
+      const slider = screen.getByLabelText(
+        'Timeout slider'
+      ) as HTMLInputElement;
 
       // Use fireEvent for range input as userEvent doesn't support it well
       fireEvent.change(slider, { target: { value: '350' } });
 
-      const timeoutInput = screen.getByLabelText('Timeout in milliseconds') as HTMLInputElement;
+      const timeoutInput = screen.getByLabelText(
+        'Timeout in milliseconds'
+      ) as HTMLInputElement;
       expect(timeoutInput.value).toBe('350');
     });
 
@@ -229,7 +243,9 @@ describe('KeyMappingDialog', () => {
       await user.click(saveButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Macro sequence is required')).toBeInTheDocument();
+        expect(
+          screen.getByText('Macro sequence is required')
+        ).toBeInTheDocument();
       });
     });
 
@@ -327,7 +343,9 @@ describe('KeyMappingDialog', () => {
         simple: 'VK_A',
       };
 
-      render(<KeyMappingDialog {...defaultProps} currentMapping={currentMapping} />);
+      render(
+        <KeyMappingDialog {...defaultProps} currentMapping={currentMapping} />
+      );
 
       const input = screen.getByLabelText('Simple action');
       expect(input).toHaveValue('VK_A');
@@ -344,12 +362,16 @@ describe('KeyMappingDialog', () => {
         },
       };
 
-      render(<KeyMappingDialog {...defaultProps} currentMapping={currentMapping} />);
+      render(
+        <KeyMappingDialog {...defaultProps} currentMapping={currentMapping} />
+      );
 
       expect(screen.getByLabelText('Tap action')).toHaveValue('VK_ESCAPE');
       expect(screen.getByLabelText('Hold action')).toHaveValue('MD_CTRL');
       // Number input returns string value
-      const timeoutInput = screen.getByLabelText('Timeout in milliseconds') as HTMLInputElement;
+      const timeoutInput = screen.getByLabelText(
+        'Timeout in milliseconds'
+      ) as HTMLInputElement;
       expect(timeoutInput.value).toBe('300');
     });
 
@@ -360,7 +382,9 @@ describe('KeyMappingDialog', () => {
         macro: ['VK_H', 'VK_I'],
       };
 
-      render(<KeyMappingDialog {...defaultProps} currentMapping={currentMapping} />);
+      render(
+        <KeyMappingDialog {...defaultProps} currentMapping={currentMapping} />
+      );
 
       const input = screen.getByLabelText('Macro sequence');
       expect(input).toHaveValue('VK_H, VK_I');
@@ -373,7 +397,9 @@ describe('KeyMappingDialog', () => {
         layer: 'nav',
       };
 
-      render(<KeyMappingDialog {...defaultProps} currentMapping={currentMapping} />);
+      render(
+        <KeyMappingDialog {...defaultProps} currentMapping={currentMapping} />
+      );
 
       const input = screen.getByLabelText('Layer name');
       expect(input).toHaveValue('nav');
@@ -437,7 +463,9 @@ describe('KeyMappingDialog', () => {
 
     it('should disable buttons during save', async () => {
       const user = userEvent.setup();
-      mockOnSave.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
+      mockOnSave.mockImplementation(
+        () => new Promise((resolve) => setTimeout(resolve, 100))
+      );
 
       render(<KeyMappingDialog {...defaultProps} />);
 
@@ -464,21 +492,33 @@ describe('KeyMappingDialog', () => {
     it('should have accessible button labels', () => {
       render(<KeyMappingDialog {...defaultProps} />);
 
-      expect(screen.getByRole('button', { name: /Select Simple Mapping/i })).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /Select Tap-Hold \(Dual Function\)/i })
+        screen.getByRole('button', { name: /Select Simple Mapping/i })
       ).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Select Macro Sequence/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Select Layer Switch/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', {
+          name: /Select Tap-Hold \(Dual Function\)/i,
+        })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Select Macro Sequence/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /Select Layer Switch/i })
+      ).toBeInTheDocument();
     });
 
     it('should have aria-pressed on mapping type buttons', () => {
       render(<KeyMappingDialog {...defaultProps} />);
 
-      const simpleButton = screen.getByRole('button', { name: /Select Simple Mapping/i });
+      const simpleButton = screen.getByRole('button', {
+        name: /Select Simple Mapping/i,
+      });
       expect(simpleButton).toHaveAttribute('aria-pressed', 'true');
 
-      const tapHoldButton = screen.getByRole('button', { name: /Select Tap-Hold/i });
+      const tapHoldButton = screen.getByRole('button', {
+        name: /Select Tap-Hold/i,
+      });
       expect(tapHoldButton).toHaveAttribute('aria-pressed', 'false');
     });
 
@@ -494,7 +534,9 @@ describe('KeyMappingDialog', () => {
       await user.tab();
       await user.tab();
       await user.tab();
-      expect(screen.getByRole('dialog')).toContainElement(document.activeElement);
+      expect(screen.getByRole('dialog')).toContainElement(
+        document.activeElement
+      );
     });
   });
 });

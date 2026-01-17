@@ -130,7 +130,9 @@ export function DeviceSelector({
                           : 'bg-gray-700/30 text-gray-400 border border-gray-600/50'
                       }`}
                       aria-label={
-                        device.connected ? 'Device connected' : 'Device disconnected'
+                        device.connected
+                          ? 'Device connected'
+                          : 'Device disconnected'
                       }
                     >
                       {device.connected ? 'Connected' : 'Disconnected'}

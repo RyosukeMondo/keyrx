@@ -35,12 +35,14 @@ export function MonacoEditor({
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [currentErrorIndex, setCurrentErrorIndex] = useState(0);
   const [errors, setErrors] = useState<ValidationError[]>([]);
-  const [validationStatus, setValidationStatus] = useState<string>('Initializing...');
+  const [validationStatus, setValidationStatus] =
+    useState<string>('Initializing...');
 
   const { isWasmReady, isLoading, validateConfig } = useWasmContext();
 
   // Update status when WASM loading state changes
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (isLoading) {
       setValidationStatus('⏳ Loading WASM validator...');
     } else if (isWasmReady) {
@@ -48,6 +50,7 @@ export function MonacoEditor({
     } else {
       setValidationStatus('⚠ WASM unavailable');
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isLoading, isWasmReady]);
 
   /**
@@ -62,28 +65,82 @@ export function MonacoEditor({
     // Define Rhai syntax highlighting rules using Monarch tokenizer
     monaco.languages.setMonarchTokensProvider('rhai', {
       keywords: [
-        'let', 'const', 'if', 'else', 'while', 'for', 'loop',
-        'break', 'continue', 'return', 'fn', 'true', 'false',
-        'import', 'export', 'as', 'private', 'this', 'in',
+        'let',
+        'const',
+        'if',
+        'else',
+        'while',
+        'for',
+        'loop',
+        'break',
+        'continue',
+        'return',
+        'fn',
+        'true',
+        'false',
+        'import',
+        'export',
+        'as',
+        'private',
+        'this',
+        'in',
       ],
       operators: [
-        '=', '>', '<', '!', '~', '?', ':', '==', '<=', '>=', '!=',
-        '&&', '||', '++', '--', '+', '-', '*', '/', '&', '|', '^',
-        '%', '<<', '>>', '>>>', '+=', '-=', '*=', '/=', '&=', '|=',
-        '^=', '%=', '<<=', '>>=', '>>>=', '=>',
+        '=',
+        '>',
+        '<',
+        '!',
+        '~',
+        '?',
+        ':',
+        '==',
+        '<=',
+        '>=',
+        '!=',
+        '&&',
+        '||',
+        '++',
+        '--',
+        '+',
+        '-',
+        '*',
+        '/',
+        '&',
+        '|',
+        '^',
+        '%',
+        '<<',
+        '>>',
+        '>>>',
+        '+=',
+        '-=',
+        '*=',
+        '/=',
+        '&=',
+        '|=',
+        '^=',
+        '%=',
+        '<<=',
+        '>>=',
+        '>>>=',
+        '=>',
       ],
       symbols: /[=><!~?:&|+\-*/^%]+/,
-      escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
+      escapes:
+        /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
 
       tokenizer: {
         root: [
           // Identifiers and keywords
-          [/[a-zA-Z_]\w*/, {
-            cases: {
-              '@keywords': 'keyword',
-              '@default': 'identifier',
+          [
+            /[a-zA-Z_]\w*/,
+            {
+              cases: {
+                '@keywords': 'keyword',
+                '@default': 'identifier',
+              },
             },
-          }],
+          ],
 
           // Whitespace
           { include: '@whitespace' },
@@ -91,12 +148,15 @@ export function MonacoEditor({
           // Delimiters and operators
           [/[{}()[\]]/, '@brackets'],
           [/[<>](?!@symbols)/, '@brackets'],
-          [/@symbols/, {
-            cases: {
-              '@operators': 'operator',
-              '@default': '',
+          [
+            /@symbols/,
+            {
+              cases: {
+                '@operators': 'operator',
+                '@default': '',
+              },
             },
-          }],
+          ],
 
           // Numbers
           [/\d*\.\d+([eE][-+]?\d+)?/, 'number.float'],
@@ -189,6 +249,7 @@ export function MonacoEditor({
   /**
    * Jump to next error and center the line
    */
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const jumpToNextError = useCallback(() => {
     if (!editorRef.current || !monacoRef.current || errors.length === 0) {
       return;
@@ -231,7 +292,11 @@ export function MonacoEditor({
         if (validationErrors.length === 0) {
           setValidationStatus('✓ No errors');
         } else {
-          setValidationStatus(`✗ ${validationErrors.length} error${validationErrors.length > 1 ? 's' : ''}`);
+          setValidationStatus(
+            `✗ ${validationErrors.length} error${
+              validationErrors.length > 1 ? 's' : ''
+            }`
+          );
         }
 
         // Call onValidate callback
@@ -293,6 +358,7 @@ export function MonacoEditor({
    */
   useEffect(() => {
     if (value && isWasmReady) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       runValidation(value);
     }
   }, [value, isWasmReady, runValidation]);
@@ -317,8 +383,8 @@ export function MonacoEditor({
             validationStatus.startsWith('✓')
               ? 'text-green-400'
               : validationStatus.startsWith('✗')
-              ? 'text-red-400'
-              : 'text-slate-400'
+                ? 'text-red-400'
+                : 'text-slate-400'
           }`}
         >
           {validationStatus}

@@ -115,7 +115,7 @@ describe('ActiveProfileCard', () => {
         activeProfile: 'Gaming',
         layer: 'base',
         modifiers: [],
-        locks: []
+        locks: [],
       });
 
       // Wait a bit to ensure broadcast happens
@@ -144,7 +144,7 @@ describe('ActiveProfileCard', () => {
       setDaemonState({
         layer: 'fn',
         modifiers: ['MD_00'],
-        locks: []
+        locks: [],
       });
 
       await waitFor(() => {

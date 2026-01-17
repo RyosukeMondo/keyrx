@@ -1,0 +1,181 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StateSnapshot > Snapshot > matches snapshot with empty state 1`] = `
+<div
+  aria-label="Daemon state information"
+  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
+  role="group"
+>
+  <div
+    aria-label="Active layer: Base"
+    class="bg-slate-800 rounded-lg p-4"
+    role="status"
+  >
+    <h3
+      class="text-sm font-semibold text-slate-300 mb-2"
+    >
+      Active Layer
+    </h3>
+    <p
+      class="text-lg font-mono text-blue-400"
+    >
+      Base
+    </p>
+  </div>
+  <div
+    aria-label="0 active tap/hold timers"
+    class="bg-slate-800 rounded-lg p-4"
+    role="status"
+  >
+    <h3
+      class="text-sm font-semibold text-slate-300 mb-2"
+    >
+      Tap/Hold Timers
+    </h3>
+    <p
+      class="text-lg font-mono text-yellow-400"
+    >
+      0
+       active
+    </p>
+  </div>
+  <div
+    aria-label="Active modifiers: None"
+    class="bg-slate-800 rounded-lg p-4"
+    role="status"
+  >
+    <h3
+      class="text-sm font-semibold text-slate-300 mb-2"
+    >
+      Active Modifiers
+    </h3>
+    <p
+      class="text-lg font-mono text-green-400"
+    >
+      None
+    </p>
+  </div>
+  <div
+    aria-label="Active locks: None"
+    class="bg-slate-800 rounded-lg p-4"
+    role="status"
+  >
+    <h3
+      class="text-sm font-semibold text-slate-300 mb-2"
+    >
+      Active Locks
+    </h3>
+    <p
+      class="text-lg font-mono text-purple-400"
+    >
+      None
+    </p>
+  </div>
+  <div
+    aria-label="0 queued events"
+    class="bg-slate-800 rounded-lg p-4"
+    role="status"
+  >
+    <h3
+      class="text-sm font-semibold text-slate-300 mb-2"
+    >
+      Queued Events
+    </h3>
+    <p
+      class="text-lg font-mono text-red-400"
+    >
+      0
+    </p>
+  </div>
+</div>
+`;
+
+exports[`StateSnapshot > Snapshot > matches snapshot with full state 1`] = `
+<div
+  aria-label="Daemon state information"
+  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
+  role="group"
+>
+  <div
+    aria-label="Active layer: Navigation"
+    class="bg-slate-800 rounded-lg p-4"
+    role="status"
+  >
+    <h3
+      class="text-sm font-semibold text-slate-300 mb-2"
+    >
+      Active Layer
+    </h3>
+    <p
+      class="text-lg font-mono text-blue-400"
+    >
+      Navigation
+    </p>
+  </div>
+  <div
+    aria-label="3 active tap/hold timers"
+    class="bg-slate-800 rounded-lg p-4"
+    role="status"
+  >
+    <h3
+      class="text-sm font-semibold text-slate-300 mb-2"
+    >
+      Tap/Hold Timers
+    </h3>
+    <p
+      class="text-lg font-mono text-yellow-400"
+    >
+      3
+       active
+    </p>
+  </div>
+  <div
+    aria-label="Active modifiers: Ctrl, Shift"
+    class="bg-slate-800 rounded-lg p-4"
+    role="status"
+  >
+    <h3
+      class="text-sm font-semibold text-slate-300 mb-2"
+    >
+      Active Modifiers
+    </h3>
+    <p
+      class="text-lg font-mono text-green-400"
+    >
+      Ctrl, Shift
+    </p>
+  </div>
+  <div
+    aria-label="Active locks: CapsLock, NumLock"
+    class="bg-slate-800 rounded-lg p-4"
+    role="status"
+  >
+    <h3
+      class="text-sm font-semibold text-slate-300 mb-2"
+    >
+      Active Locks
+    </h3>
+    <p
+      class="text-lg font-mono text-purple-400"
+    >
+      CapsLock, NumLock
+    </p>
+  </div>
+  <div
+    aria-label="10 queued events"
+    class="bg-slate-800 rounded-lg p-4"
+    role="status"
+  >
+    <h3
+      class="text-sm font-semibold text-slate-300 mb-2"
+    >
+      Queued Events
+    </h3>
+    <p
+      class="text-lg font-mono text-red-400"
+    >
+      10
+    </p>
+  </div>
+</div>
+`;

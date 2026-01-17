@@ -60,7 +60,7 @@ export const LayerSelector: React.FC<LayerSelectorProps> = ({
   className = '',
 }) => {
   // Convert layers to dropdown options
-  const layerOptions = layers.map(layer => ({
+  const layerOptions = layers.map((layer) => ({
     value: layer.id,
     label: layer.name,
   }));

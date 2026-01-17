@@ -71,7 +71,8 @@ export const Input = React.memo<InputProps>(
         : 'border-slate-700 hover:border-slate-600';
 
     // Focus outline
-    const focusClasses = 'focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2';
+    const focusClasses =
+      'focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2';
 
     // Disabled state
     const disabledClasses = disabled
@@ -99,7 +100,10 @@ export const Input = React.memo<InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={id} className="block text-sm font-medium text-slate-300 mb-2">
+          <label
+            htmlFor={id}
+            className="block text-sm font-medium text-slate-300 mb-2"
+          >
             {label}
           </label>
         )}
@@ -114,7 +118,9 @@ export const Input = React.memo<InputProps>(
           placeholder={placeholder}
           aria-label={ariaLabel || label}
           aria-invalid={!!error}
-          aria-describedby={error ? `${id}-error` : helpText ? `${id}-help` : undefined}
+          aria-describedby={
+            error ? `${id}-error` : helpText ? `${id}-help` : undefined
+          }
           id={id}
           name={name}
           className={inputClasses}

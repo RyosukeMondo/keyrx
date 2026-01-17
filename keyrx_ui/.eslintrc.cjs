@@ -16,6 +16,11 @@ module.exports = {
   rules: {
     'no-console': ['error', { allow: ['warn', 'error'] }],
     '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/no-unused-vars': ['error', {
+      argsIgnorePattern: '^_',
+      varsIgnorePattern: '^_',
+      caughtErrorsIgnorePattern: '^_'
+    }],
     // Enable custom test naming convention rule as warning
     'local-rules/test-naming-convention': 'warn',
   },

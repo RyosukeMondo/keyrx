@@ -18,7 +18,11 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { parseRhaiScript, type RhaiAST, type ParseError } from '../utils/rhaiParser';
+import {
+  parseRhaiScript,
+  type RhaiAST,
+  type ParseError,
+} from '../utils/rhaiParser';
 import { generateRhaiScript } from '../utils/rhaiCodeGen';
 
 /**
@@ -101,7 +105,9 @@ export interface RhaiSyncEngineResult {
  * }
  * ```
  */
-export function useRhaiSyncEngine(options: RhaiSyncEngineOptions): RhaiSyncEngineResult {
+export function useRhaiSyncEngine(
+  options: RhaiSyncEngineOptions
+): RhaiSyncEngineResult {
   const {
     storageKey,
     debounceMs = 500,
@@ -127,10 +133,13 @@ export function useRhaiSyncEngine(options: RhaiSyncEngineOptions): RhaiSyncEngin
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Update state and notify
-  const updateState = useCallback((newState: SyncState) => {
-    setState(newState);
-    onStateChange?.(newState);
-  }, [onStateChange]);
+  const updateState = useCallback(
+    (newState: SyncState) => {
+      setState(newState);
+      onStateChange?.(newState);
+    },
+    [onStateChange]
+  );
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -148,6 +157,7 @@ export function useRhaiSyncEngine(options: RhaiSyncEngineOptions): RhaiSyncEngin
           const result = parseRhaiScript(code);
           if (result.success && result.ast) {
             astRef.current = result.ast;
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLastValidAST(result.ast);
           }
         } else {
@@ -161,21 +171,24 @@ export function useRhaiSyncEngine(options: RhaiSyncEngineOptions): RhaiSyncEngin
   }, [storageKey, enablePersistence]);
 
   // Save to localStorage
-  const persistToStorage = useCallback((code: string) => {
-    if (!enablePersistence) return;
+  const persistToStorage = useCallback(
+    (code: string) => {
+      if (!enablePersistence) return;
 
-    try {
-      localStorage.setItem(
-        `rhai-sync-${storageKey}`,
-        JSON.stringify({
-          code,
-          timestamp: Date.now(),
-        })
-      );
-    } catch (err) {
-      console.warn('Failed to save to localStorage:', err);
-    }
-  }, [storageKey, enablePersistence]);
+      try {
+        localStorage.setItem(
+          `rhai-sync-${storageKey}`,
+          JSON.stringify({
+            code,
+            timestamp: Date.now(),
+          })
+        );
+      } catch (err) {
+        console.warn('Failed to save to localStorage:', err);
+      }
+    },
+    [storageKey, enablePersistence]
+  );
 
   // Cleanup on unmount
   useEffect(() => {
@@ -207,149 +220,163 @@ export function useRhaiSyncEngine(options: RhaiSyncEngineOptions): RhaiSyncEngin
   }, []);
 
   // Parse code and update AST (code → visual)
-  const parseCode = useCallback((code: string) => {
-    if (!isMountedRef.current || syncLockRef.current) return;
+  const parseCode = useCallback(
+    (code: string) => {
+      if (!isMountedRef.current || syncLockRef.current) return;
 
-    syncLockRef.current = true;
+      syncLockRef.current = true;
 
-    // Only update state if mounted
-    if (isMountedRef.current) {
-      updateState('parsing');
-      setDirection('code-to-visual');
-    }
-
-    // Clear any existing parse timeout
-    if (parseTimeoutRef.current) {
-      clearTimeout(parseTimeoutRef.current);
-    }
-
-    // Small delay to allow UI to update
-    parseTimeoutRef.current = setTimeout(() => {
-      // Check if component is still mounted
-      if (!isMountedRef.current) {
-        syncLockRef.current = false;
-        return;
+      // Only update state if mounted
+      if (isMountedRef.current) {
+        updateState('parsing');
+        setDirection('code-to-visual');
       }
 
-      try {
-        const result = parseRhaiScript(code);
+      // Clear any existing parse timeout
+      if (parseTimeoutRef.current) {
+        clearTimeout(parseTimeoutRef.current);
+      }
 
-        if (result.success && result.ast) {
-          // Success: update AST and last valid state
-          astRef.current = result.ast;
+      // Small delay to allow UI to update
+      parseTimeoutRef.current = setTimeout(() => {
+        // Check if component is still mounted
+        if (!isMountedRef.current) {
+          syncLockRef.current = false;
+          return;
+        }
+
+        try {
+          const result = parseRhaiScript(code);
+
+          if (result.success && result.ast) {
+            // Success: update AST and last valid state
+            astRef.current = result.ast;
+            if (isMountedRef.current) {
+              setLastValidAST(result.ast);
+              setError(null);
+              updateState('idle');
+              setDirection('none');
+            }
+          } else if (result.error) {
+            // Error: preserve last valid AST, show error
+            if (isMountedRef.current) {
+              setError(result.error);
+              updateState('error');
+              onError?.(result.error, 'code-to-visual');
+            }
+          }
+        } catch (err) {
+          // Handle unexpected errors from parseRhaiScript
           if (isMountedRef.current) {
-            setLastValidAST(result.ast);
+            const unknownErr = err as { line?: number; column?: number };
+            const error: ParseError = {
+              line: unknownErr.line ?? 0,
+              column: unknownErr.column ?? 0,
+              message: err instanceof Error ? err.message : 'Parse failed',
+              suggestion: 'Check your Rhai script syntax',
+            };
+            setError(error);
+            updateState('error');
+            onError?.(error, 'code-to-visual');
+          }
+        }
+
+        syncLockRef.current = false;
+        parseTimeoutRef.current = null;
+      }, 10);
+    },
+    [updateState, onError]
+  );
+
+  // Generate code from AST (visual → code)
+  const generateCode = useCallback(
+    (ast: RhaiAST) => {
+      if (!isMountedRef.current || syncLockRef.current) return;
+
+      syncLockRef.current = true;
+
+      // Only update state if mounted
+      if (isMountedRef.current) {
+        updateState('generating');
+        setDirection('visual-to-code');
+      }
+
+      // Clear any existing generate timeout
+      if (generateTimeoutRef.current) {
+        clearTimeout(generateTimeoutRef.current);
+      }
+
+      // Small delay to allow UI to update
+      generateTimeoutRef.current = setTimeout(() => {
+        // Check if component is still mounted
+        if (!isMountedRef.current) {
+          syncLockRef.current = false;
+          return;
+        }
+
+        try {
+          const code = generateRhaiScript(ast);
+          codeRef.current = code;
+          astRef.current = ast;
+
+          if (isMountedRef.current) {
+            setLastValidAST(ast);
+            persistToStorage(code);
             setError(null);
             updateState('idle');
             setDirection('none');
           }
-        } else if (result.error) {
-          // Error: preserve last valid AST, show error
+        } catch (err) {
           if (isMountedRef.current) {
-            setError(result.error);
+            const error: ParseError = {
+              line: 0,
+              column: 0,
+              message:
+                err instanceof Error ? err.message : 'Code generation failed',
+              suggestion: 'Check visual editor state for invalid mappings',
+            };
+            setError(error);
             updateState('error');
-            onError?.(result.error, 'code-to-visual');
+            onError?.(error, 'visual-to-code');
           }
         }
-      } catch (err) {
-        // Handle unexpected errors from parseRhaiScript
-        if (isMountedRef.current) {
-          const error: ParseError = {
-            line: (err as any).line ?? 0,
-            column: (err as any).column ?? 0,
-            message: err instanceof Error ? err.message : 'Parse failed',
-            suggestion: 'Check your Rhai script syntax',
-          };
-          setError(error);
-          updateState('error');
-          onError?.(error, 'code-to-visual');
-        }
-      }
 
-      syncLockRef.current = false;
-      parseTimeoutRef.current = null;
-    }, 10);
-  }, [updateState, onError]);
-
-  // Generate code from AST (visual → code)
-  const generateCode = useCallback((ast: RhaiAST) => {
-    if (!isMountedRef.current || syncLockRef.current) return;
-
-    syncLockRef.current = true;
-
-    // Only update state if mounted
-    if (isMountedRef.current) {
-      updateState('generating');
-      setDirection('visual-to-code');
-    }
-
-    // Clear any existing generate timeout
-    if (generateTimeoutRef.current) {
-      clearTimeout(generateTimeoutRef.current);
-    }
-
-    // Small delay to allow UI to update
-    generateTimeoutRef.current = setTimeout(() => {
-      // Check if component is still mounted
-      if (!isMountedRef.current) {
         syncLockRef.current = false;
-        return;
-      }
-
-      try {
-        const code = generateRhaiScript(ast);
-        codeRef.current = code;
-        astRef.current = ast;
-
-        if (isMountedRef.current) {
-          setLastValidAST(ast);
-          persistToStorage(code);
-          setError(null);
-          updateState('idle');
-          setDirection('none');
-        }
-      } catch (err) {
-        if (isMountedRef.current) {
-          const error: ParseError = {
-            line: 0,
-            column: 0,
-            message: err instanceof Error ? err.message : 'Code generation failed',
-            suggestion: 'Check visual editor state for invalid mappings',
-          };
-          setError(error);
-          updateState('error');
-          onError?.(error, 'visual-to-code');
-        }
-      }
-
-      syncLockRef.current = false;
-      generateTimeoutRef.current = null;
-    }, 10);
-  }, [updateState, onError, persistToStorage]);
+        generateTimeoutRef.current = null;
+      }, 10);
+    },
+    [updateState, onError, persistToStorage]
+  );
 
   // Handle code editor changes (debounced)
-  const onCodeChange = useCallback((code: string) => {
-    if (!isMountedRef.current) return;
+  const onCodeChange = useCallback(
+    (code: string) => {
+      if (!isMountedRef.current) return;
 
-    codeRef.current = code;
-    persistToStorage(code);
+      codeRef.current = code;
+      persistToStorage(code);
 
-    // Clear existing debounce timer
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
+      // Clear existing debounce timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
 
-    // Set new debounce timer
-    debounceTimerRef.current = setTimeout(() => {
-      parseCode(code);
-    }, debounceMs);
-  }, [debounceMs, parseCode, persistToStorage]);
+      // Set new debounce timer
+      debounceTimerRef.current = setTimeout(() => {
+        parseCode(code);
+      }, debounceMs);
+    },
+    [debounceMs, parseCode, persistToStorage]
+  );
 
   // Handle visual editor changes (immediate)
-  const onVisualChange = useCallback((ast: RhaiAST) => {
-    if (!isMountedRef.current) return;
-    generateCode(ast);
-  }, [generateCode]);
+  const onVisualChange = useCallback(
+    (ast: RhaiAST) => {
+      if (!isMountedRef.current) return;
+      generateCode(ast);
+    },
+    [generateCode]
+  );
 
   // Get current code
   const getCode = useCallback(() => codeRef.current, []);
@@ -365,13 +392,16 @@ export function useRhaiSyncEngine(options: RhaiSyncEngineOptions): RhaiSyncEngin
   }, [updateState]);
 
   // Force sync in a specific direction
-  const forceSync = useCallback((syncDirection: SyncDirection) => {
-    if (syncDirection === 'code-to-visual') {
-      parseCode(codeRef.current);
-    } else if (syncDirection === 'visual-to-code' && astRef.current) {
-      generateCode(astRef.current);
-    }
-  }, [parseCode, generateCode]);
+  const forceSync = useCallback(
+    (syncDirection: SyncDirection) => {
+      if (syncDirection === 'code-to-visual') {
+        parseCode(codeRef.current);
+      } else if (syncDirection === 'visual-to-code' && astRef.current) {
+        generateCode(astRef.current);
+      }
+    },
+    [parseCode, generateCode]
+  );
 
   return {
     state,

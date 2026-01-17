@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/react';
-import { renderWithProviders, setupMockWebSocket, cleanupMockWebSocket } from '../../tests/testUtils';
+import {
+  renderWithProviders,
+  setupMockWebSocket,
+  cleanupMockWebSocket,
+} from '../../tests/testUtils';
 import { BrowserRouter } from 'react-router-dom';
 import { HomePage } from './HomePage';
 

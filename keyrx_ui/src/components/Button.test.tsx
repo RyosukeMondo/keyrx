@@ -160,7 +160,11 @@ describe('Button', () => {
 
   it('accepts custom className', () => {
     renderWithProviders(
-      <Button onClick={vi.fn()} aria-label="Test button" className="custom-class">
+      <Button
+        onClick={vi.fn()}
+        aria-label="Test button"
+        className="custom-class"
+      >
         Click me
       </Button>
     );

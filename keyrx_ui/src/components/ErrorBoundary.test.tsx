@@ -41,7 +41,9 @@ describe('ErrorBoundary', () => {
     );
 
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-    expect(screen.getByText('An unexpected error occurred in the application.')).toBeInTheDocument();
+    expect(
+      screen.getByText('An unexpected error occurred in the application.')
+    ).toBeInTheDocument();
   });
 
   it('displays error message in details', () => {
@@ -122,13 +124,17 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
 
-    expect(screen.getByText('Custom error: Test error message')).toBeInTheDocument();
+    expect(
+      screen.getByText('Custom error: Test error message')
+    ).toBeInTheDocument();
     expect(screen.getByText('Custom Reset')).toBeInTheDocument();
     expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
   });
 
   it('calls console.error when error is caught', () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
 
     renderWithProviders(
       <ErrorBoundary>

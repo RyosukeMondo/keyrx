@@ -11,7 +11,7 @@ import type { KeyMapping } from '@/types';
 // Constants for SVG rendering
 const UNIT_SIZE = 54; // pixels per key unit (1u)
 const KEY_GAP = 2; // gap between keys
-const KEY_PADDING = 2; // padding inside key
+const _KEY_PADDING = 2; // padding inside key
 const KEY_RADIUS = 6; // border radius
 const KEY_INSET = 3; // 3D effect inset
 
@@ -48,7 +48,12 @@ interface KeySVGProps {
  * Generate SVG path for ISO Enter key (L-shaped)
  * The ISO Enter spans 2 rows with different widths
  */
-function generateISOEnterPath(x: number, y: number, w: number, h: number): string {
+function generateISOEnterPath(
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): string {
   const px = x * UNIT_SIZE;
   const py = y * UNIT_SIZE;
   const topWidth = 1.5 * UNIT_SIZE - KEY_GAP; // Top part is 1.5u
@@ -65,11 +70,17 @@ function generateISOEnterPath(x: number, y: number, w: number, h: number): strin
     L ${px + topWidth - r} ${py}
     Q ${px + topWidth} ${py} ${px + topWidth} ${py + r}
     L ${px + topWidth} ${py + h * UNIT_SIZE - KEY_GAP - r}
-    Q ${px + topWidth} ${py + h * UNIT_SIZE - KEY_GAP} ${px + topWidth - r} ${py + h * UNIT_SIZE - KEY_GAP}
+    Q ${px + topWidth} ${py + h * UNIT_SIZE - KEY_GAP} ${px + topWidth - r} ${
+      py + h * UNIT_SIZE - KEY_GAP
+    }
     L ${px + leftOffset + r} ${py + h * UNIT_SIZE - KEY_GAP}
-    Q ${px + leftOffset} ${py + h * UNIT_SIZE - KEY_GAP} ${px + leftOffset} ${py + h * UNIT_SIZE - KEY_GAP - r}
+    Q ${px + leftOffset} ${py + h * UNIT_SIZE - KEY_GAP} ${px + leftOffset} ${
+      py + h * UNIT_SIZE - KEY_GAP - r
+    }
     L ${px + leftOffset} ${py + halfHeight + r}
-    Q ${px + leftOffset} ${py + halfHeight} ${px + leftOffset - r} ${py + halfHeight}
+    Q ${px + leftOffset} ${py + halfHeight} ${px + leftOffset - r} ${
+      py + halfHeight
+    }
     L ${px + r} ${py + halfHeight}
     Q ${px} ${py + halfHeight} ${px} ${py + halfHeight - r}
     L ${px} ${py + r}
@@ -118,11 +129,23 @@ function getMappingStyle(mapping?: KeyMapping) {
     case 'simple':
       return { fill: '#334155', stroke: '#22c55e', strokeDasharray: 'none' }; // green-500
     case 'tap_hold':
-      return { fill: 'rgba(127, 29, 29, 0.15)', stroke: '#ef4444', strokeDasharray: 'none' }; // red-500
+      return {
+        fill: 'rgba(127, 29, 29, 0.15)',
+        stroke: '#ef4444',
+        strokeDasharray: 'none',
+      }; // red-500
     case 'macro':
-      return { fill: 'rgba(88, 28, 135, 0.15)', stroke: '#a855f7', strokeDasharray: 'none' }; // purple-500
+      return {
+        fill: 'rgba(88, 28, 135, 0.15)',
+        stroke: '#a855f7',
+        strokeDasharray: 'none',
+      }; // purple-500
     case 'layer_switch':
-      return { fill: 'rgba(113, 63, 18, 0.15)', stroke: '#eab308', strokeDasharray: 'none' }; // yellow-500
+      return {
+        fill: 'rgba(113, 63, 18, 0.15)',
+        stroke: '#eab308',
+        strokeDasharray: 'none',
+      }; // yellow-500
     default:
       return { fill: '#334155', stroke: '#475569', strokeDasharray: 'none' };
   }
@@ -139,20 +162,35 @@ function formatKeyLabel(key: string): string {
   if (withMatch) {
     const [, modifier, innerKey] = withMatch;
     const modSymbols: Record<string, string> = {
-      shift: '⇧', ctrl: '⌃', alt: '⌥', meta: '⌘', gui: '⌘',
+      shift: '⇧',
+      ctrl: '⌃',
+      alt: '⌥',
+      meta: '⌘',
+      gui: '⌘',
     };
-    const modSymbol = modSymbols[modifier.toLowerCase()] || modifier.charAt(0).toUpperCase();
+    const modSymbol =
+      modSymbols[modifier.toLowerCase()] || modifier.charAt(0).toUpperCase();
     return `${modSymbol}${innerKey.replace(/^VK_/, '')}`;
   }
 
-  let clean = key.replace(/^VK_/, '');
+  const clean = key.replace(/^VK_/, '');
   const shortNames: Record<string, string> = {
-    BACKSPACE: 'BS', CAPSLOCK: 'Caps', ESCAPE: 'Esc', DELETE: 'Del',
-    INSERT: 'Ins', PAGEUP: 'PgUp', PAGEDOWN: 'PgDn',
-    LEFTSHIFT: 'LShft', RIGHTSHIFT: 'RShft',
-    LEFTCONTROL: 'LCtrl', RIGHTCONTROL: 'RCtrl',
-    LEFTALT: 'LAlt', RIGHTALT: 'RAlt',
-    NUMLOCK: 'Num', SCROLLLOCK: 'Scrl', PRINTSCREEN: 'PrtSc',
+    BACKSPACE: 'BS',
+    CAPSLOCK: 'Caps',
+    ESCAPE: 'Esc',
+    DELETE: 'Del',
+    INSERT: 'Ins',
+    PAGEUP: 'PgUp',
+    PAGEDOWN: 'PgDn',
+    LEFTSHIFT: 'LShft',
+    RIGHTSHIFT: 'RShft',
+    LEFTCONTROL: 'LCtrl',
+    RIGHTCONTROL: 'RCtrl',
+    LEFTALT: 'LAlt',
+    RIGHTALT: 'RAlt',
+    NUMLOCK: 'Num',
+    SCROLLLOCK: 'Scrl',
+    PRINTSCREEN: 'PrtSc',
   };
 
   const upper = clean.toUpperCase();
@@ -189,115 +227,135 @@ function getRemapText(mapping?: KeyMapping): string {
  */
 function getMappingIcon(type?: string): string {
   switch (type) {
-    case 'simple': return '→';
-    case 'tap_hold': return '↕';
-    case 'macro': return '⚡';
-    case 'layer_switch': return '⇄';
-    default: return '';
+    case 'simple':
+      return '→';
+    case 'tap_hold':
+      return '↕';
+    case 'macro':
+      return '⚡';
+    case 'layer_switch':
+      return '⇄';
+    default:
+      return '';
   }
 }
 
 function getMappingIconColor(type?: string): string {
   switch (type) {
-    case 'simple': return '#4ade80'; // green-400
-    case 'tap_hold': return '#f87171'; // red-400
-    case 'macro': return '#c084fc'; // purple-400
-    case 'layer_switch': return '#facc15'; // yellow-400
-    default: return '#94a3b8'; // slate-400
+    case 'simple':
+      return '#4ade80'; // green-400
+    case 'tap_hold':
+      return '#f87171'; // red-400
+    case 'macro':
+      return '#c084fc'; // purple-400
+    case 'layer_switch':
+      return '#facc15'; // yellow-400
+    default:
+      return '#94a3b8'; // slate-400
   }
 }
 
 /**
  * Individual key SVG component
  */
-const KeySVG: React.FC<KeySVGProps> = React.memo(({ keyData, mapping, isPressed, onClick, simulatorMode = false }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isClicked, setIsClicked] = useState(false);
+const KeySVG: React.FC<KeySVGProps> = React.memo(
+  ({ keyData, mapping, isPressed, onClick, simulatorMode = false }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const [isClicked, setIsClicked] = useState(false);
 
-  const { code, label, x, y, w, h, shape } = keyData;
-  const style = getMappingStyle(mapping);
-  const remapText = getRemapText(mapping);
-  const icon = getMappingIcon(mapping?.type);
-  const iconColor = getMappingIconColor(mapping?.type);
+    const { code, label, x, y, w, h, shape } = keyData;
+    const style = getMappingStyle(mapping);
+    const remapText = getRemapText(mapping);
+    const icon = getMappingIcon(mapping?.type);
+    const iconColor = getMappingIconColor(mapping?.type);
 
-  // Generate path based on shape
-  const path = shape === 'iso-enter'
-    ? generateISOEnterPath(x, y, w, h)
-    : generateRectPath(x, y, w, h);
+    // Generate path based on shape
+    const path =
+      shape === 'iso-enter'
+        ? generateISOEnterPath(x, y, w, h)
+        : generateRectPath(x, y, w, h);
 
-  // Calculate center position for text
-  const centerX = x * UNIT_SIZE + (w * UNIT_SIZE - KEY_GAP) / 2;
-  const centerY = y * UNIT_SIZE + (h * UNIT_SIZE - KEY_GAP) / 2;
+    // Calculate center position for text
+    const centerX = x * UNIT_SIZE + (w * UNIT_SIZE - KEY_GAP) / 2;
+    const centerY = y * UNIT_SIZE + (h * UNIT_SIZE - KEY_GAP) / 2;
 
-  // Icon position (top-right)
-  const iconX = x * UNIT_SIZE + w * UNIT_SIZE - KEY_GAP - 12;
-  const iconY = y * UNIT_SIZE + 12;
+    // Icon position (top-right)
+    const iconX = x * UNIT_SIZE + w * UNIT_SIZE - KEY_GAP - 12;
+    const iconY = y * UNIT_SIZE + 12;
 
-  const handleClick = useCallback(() => {
-    setIsClicked(true);
-    setTimeout(() => setIsClicked(false), 150);
-    onClick();
-  }, [onClick]);
+    const handleClick = useCallback(() => {
+      setIsClicked(true);
+      setTimeout(() => setIsClicked(false), 150);
+      onClick();
+    }, [onClick]);
 
-  const tooltipContent = useMemo(() => {
-    if (!mapping) return `${code} (Default)`;
-    switch (mapping.type) {
-      case 'simple':
-        return `${code} → ${mapping.tapAction}`;
-      case 'tap_hold':
-        return `${code} → Tap: ${mapping.tapAction}, Hold: ${mapping.holdAction} (${mapping.threshold}ms)`;
-      case 'macro':
-        return `${code} → Macro (${mapping.macroSteps?.length || 0} steps)`;
-      case 'layer_switch':
-        return `${code} → Layer: ${mapping.targetLayer}`;
-      default:
-        return `${code} (Default)`;
-    }
-  }, [code, mapping]);
+    const tooltipContent = useMemo(() => {
+      if (!mapping) return `${code} (Default)`;
+      switch (mapping.type) {
+        case 'simple':
+          return `${code} → ${mapping.tapAction}`;
+        case 'tap_hold':
+          return `${code} → Tap: ${mapping.tapAction}, Hold: ${mapping.holdAction} (${mapping.threshold}ms)`;
+        case 'macro':
+          return `${code} → Macro (${mapping.macroSteps?.length || 0} steps)`;
+        case 'layer_switch':
+          return `${code} → Layer: ${mapping.targetLayer}`;
+        default:
+          return `${code} (Default)`;
+      }
+    }, [code, mapping]);
 
-  // Colors
-  const fillColor = isPressed ? '#22c55e' : isClicked ? '#3b82f6' : style.fill;
-  const strokeColor = isPressed ? '#4ade80' : style.stroke;
-  const brightness = isHovered ? 1.15 : 1;
+    // Colors
+    const fillColor = isPressed
+      ? '#22c55e'
+      : isClicked
+        ? '#3b82f6'
+        : style.fill;
+    const strokeColor = isPressed ? '#4ade80' : style.stroke;
+    const brightness = isHovered ? 1.15 : 1;
 
-  // Build className for simulator mode
-  const className = simulatorMode ? 'key-group opacity-50 cursor-not-allowed' : 'key-group';
+    // Build className for simulator mode
+    const className = simulatorMode
+      ? 'key-group opacity-50 cursor-not-allowed'
+      : 'key-group';
 
-  return (
-    <g
-      className={className}
-      style={{ cursor: simulatorMode ? 'not-allowed' : 'pointer' }}
-      onClick={handleClick}
-      onMouseEnter={() => !simulatorMode && setIsHovered(true)}
-      onMouseLeave={() => !simulatorMode && setIsHovered(false)}
-      role="button"
-      tabIndex={0}
-      aria-label={`Key ${code}. ${tooltipContent}. ${simulatorMode ? 'Simulator mode active.' : 'Click to configure.'}`}
-      onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-    >
-      {/* Native SVG tooltip */}
-      <title>{tooltipContent}</title>
+    return (
+      <g
+        className={className}
+        style={{ cursor: simulatorMode ? 'not-allowed' : 'pointer' }}
+        onClick={handleClick}
+        onMouseEnter={() => !simulatorMode && setIsHovered(true)}
+        onMouseLeave={() => !simulatorMode && setIsHovered(false)}
+        role="button"
+        tabIndex={0}
+        aria-label={`Key ${code}. ${tooltipContent}. ${
+          simulatorMode ? 'Simulator mode active.' : 'Click to configure.'
+        }`}
+        onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+      >
+        {/* Native SVG tooltip */}
+        <title>{tooltipContent}</title>
 
-      {/* Key shadow/depth effect */}
-      <path
-        d={path}
-        fill="#1e293b"
-        transform={`translate(0, ${KEY_INSET})`}
-      />
+        {/* Key shadow/depth effect */}
+        <path
+          d={path}
+          fill="#1e293b"
+          transform={`translate(0, ${KEY_INSET})`}
+        />
 
-      {/* Main key surface */}
-      <path
-        d={path}
-        fill={fillColor}
-        stroke={strokeColor}
-        strokeWidth={2}
-        strokeDasharray={style.strokeDasharray}
-        style={{
-          filter: `brightness(${brightness})`,
-          transition: 'all 0.15s ease',
-          transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
-        }}
-      />
+        {/* Main key surface */}
+        <path
+          d={path}
+          fill={fillColor}
+          stroke={strokeColor}
+          strokeWidth={2}
+          strokeDasharray={style.strokeDasharray}
+          style={{
+            filter: `brightness(${brightness})`,
+            transition: 'all 0.15s ease',
+            transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
+          }}
+        />
 
         {/* Key label (original key) */}
         <text
@@ -342,9 +400,10 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(({ keyData, mapping, isPressed,
             {icon}
           </text>
         )}
-    </g>
-  );
-});
+      </g>
+    );
+  }
+);
 
 KeySVG.displayName = 'KeySVG';
 
@@ -379,13 +438,13 @@ function normalizeKeyCode(code: string): string {
 
   // Handle special numpad keys
   const numpadMap: Record<string, string> = {
-    'KC_NLCK': 'VK_NumLock',
-    'KC_PSLS': 'VK_NumpadDivide',
-    'KC_PAST': 'VK_NumpadMultiply',
-    'KC_PMNS': 'VK_NumpadSubtract',
-    'KC_PPLS': 'VK_NumpadAdd',
-    'KC_PENT': 'VK_NumpadEnter',
-    'KC_PDOT': 'VK_NumpadDecimal',
+    KC_NLCK: 'VK_NumLock',
+    KC_PSLS: 'VK_NumpadDivide',
+    KC_PAST: 'VK_NumpadMultiply',
+    KC_PMNS: 'VK_NumpadSubtract',
+    KC_PPLS: 'VK_NumpadAdd',
+    KC_PENT: 'VK_NumpadEnter',
+    KC_PDOT: 'VK_NumpadDecimal',
   };
 
   if (numpadMap[code]) {
@@ -416,8 +475,8 @@ export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
     if (keys.length === 0) {
       return { width: 800, height: 300 }; // Default fallback
     }
-    const maxX = Math.max(...keys.map(k => k.x + k.w));
-    const maxY = Math.max(...keys.map(k => k.y + k.h));
+    const maxX = Math.max(...keys.map((k) => k.x + k.w));
+    const maxY = Math.max(...keys.map((k) => k.y + k.h));
     return {
       width: maxX * UNIT_SIZE + 16, // padding
       height: maxY * UNIT_SIZE + 16,
@@ -438,7 +497,9 @@ export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
         display: 'block',
       }}
       role="group"
-      aria-label={`${layoutName} keyboard layout${simulatorMode ? ' (simulator mode)' : ''}. Click keys to configure.`}
+      aria-label={`${layoutName} keyboard layout${
+        simulatorMode ? ' (simulator mode)' : ''
+      }. Click keys to configure.`}
     >
       <g transform="translate(8, 8)">
         {keys.map((key) => {
@@ -448,7 +509,9 @@ export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
               key={key.code}
               keyData={key}
               mapping={keyMappings.get(normalizedCode)}
-              isPressed={pressedKeys.has(key.code) || pressedKeys.has(normalizedCode)}
+              isPressed={
+                pressedKeys.has(key.code) || pressedKeys.has(normalizedCode)
+              }
               onClick={() => !simulatorMode && onKeyClick(normalizedCode)}
               simulatorMode={simulatorMode}
             />

@@ -5,7 +5,6 @@ import * as metricsApi from '../api/metrics';
 import type {
   LatencyStats,
   EventRecord,
-  DaemonState,
   WSMessage,
   KeyEventPayload,
 } from '../types';
@@ -68,7 +67,10 @@ export function useWebSocketMetrics() {
     const websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
-      console.log('WebSocket connected');
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.log('WebSocket connected');
+      }
     };
 
     websocket.onmessage = (event) => {
@@ -122,7 +124,10 @@ export function useWebSocketMetrics() {
     };
 
     websocket.onclose = () => {
-      console.log('WebSocket disconnected');
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.log('WebSocket disconnected');
+      }
     };
 
     // Cleanup on unmount

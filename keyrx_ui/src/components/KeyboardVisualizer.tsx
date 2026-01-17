@@ -46,7 +46,16 @@ interface KeyboardVisualizerProps {
   className?: string;
 }
 
-const layoutData: Record<LayoutType, { name: string; keys: any[] }> = {
+interface KeyLayout {
+  code: string;
+  label: string;
+  x: number;
+  y: number;
+  w: number;
+  h?: number;
+}
+
+const layoutData: Record<LayoutType, { name: string; keys: KeyLayout[] }> = {
   ANSI_104,
   ANSI_87,
   ISO_105,

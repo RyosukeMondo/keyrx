@@ -37,11 +37,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
   const { x, y, refs, strategy } = useFloating({
     placement,
-    middleware: [
-      offset(8),
-      flip(),
-      shift({ padding: 8 }),
-    ],
+    middleware: [offset(8), flip(), shift({ padding: 8 })],
     whileElementsMounted: autoUpdate,
   });
 
@@ -85,7 +81,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
       {isVisible && !disabled && (
         <div
-          ref={refs.setFloating}
+          ref={refs.setFloating} // eslint-disable-line react-hooks/refs
           id={tooltipId}
           role="tooltip"
           className={cn(

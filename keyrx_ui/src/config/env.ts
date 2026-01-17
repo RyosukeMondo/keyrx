@@ -3,20 +3,6 @@
  * Type-safe access to Vite environment variables
  */
 
-interface ImportMetaEnv {
-  readonly VITE_API_URL: string;
-  readonly VITE_WS_URL: string;
-  readonly VITE_DEBUG: string;
-  readonly VITE_ENV: string;
-  readonly MODE: string;
-  readonly DEV: boolean;
-  readonly PROD: boolean;
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
-
 /**
  * Get the API base URL
  * In production, uses relative URL (same origin)
@@ -79,7 +65,8 @@ export const env = {
 } as const;
 
 // Log configuration in debug mode
-if (isDebugMode()) {
+if (import.meta.env.DEV && isDebugMode()) {
+  // eslint-disable-next-line no-console
   console.log('[ENV] Configuration:', {
     apiUrl: env.apiUrl,
     wsUrl: env.wsUrl,

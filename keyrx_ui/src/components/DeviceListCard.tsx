@@ -5,7 +5,6 @@ import { Button } from './Button';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { ErrorState } from './ErrorState';
 import { useDevices } from '../hooks/useDevices';
-import type { DeviceEntry } from '../types';
 
 interface DeviceListCardProps {
   className?: string;
@@ -44,7 +43,11 @@ export const DeviceListCard: React.FC<DeviceListCardProps> = ({
           </h2>
           <ErrorState
             title="Failed to load devices"
-            message={error instanceof Error ? error.message : 'An error occurred while fetching devices'}
+            message={
+              error instanceof Error
+                ? error.message
+                : 'An error occurred while fetching devices'
+            }
             onRetry={() => refetch()}
             retryLabel="Retry"
           />
@@ -60,7 +63,11 @@ export const DeviceListCard: React.FC<DeviceListCardProps> = ({
         <div className="flex flex-col gap-md">
           <div className="flex items-center justify-between">
             <LoadingSkeleton variant="text" width="180px" height="24px" />
-            <LoadingSkeleton variant="rectangular" width="140px" height="36px" />
+            <LoadingSkeleton
+              variant="rectangular"
+              width="140px"
+              height="36px"
+            />
           </div>
           <div className="flex flex-col gap-md">
             <LoadingSkeleton variant="rectangular" height="80px" />
@@ -129,7 +136,14 @@ export const DeviceListCard: React.FC<DeviceListCardProps> = ({
                 </div>
 
                 <div className="mt-sm flex flex-wrap items-center gap-md text-xs text-slate-400">
-                  <span>Scope: {device.scope === 'global' ? 'Global' : device.scope === 'device-specific' ? 'Device-Specific' : 'Not Set'}</span>
+                  <span>
+                    Scope:{' '}
+                    {device.scope === 'global'
+                      ? 'Global'
+                      : device.scope === 'device-specific'
+                        ? 'Device-Specific'
+                        : 'Not Set'}
+                  </span>
                   <span>•</span>
                   <span>Layout: {device.layout || 'Not Set'}</span>
                 </div>

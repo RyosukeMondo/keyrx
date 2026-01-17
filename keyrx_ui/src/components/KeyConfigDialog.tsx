@@ -52,9 +52,7 @@ export const KeyConfigDialog: React.FC<KeyConfigDialogProps> = ({
   const [holdAction, setHoldAction] = useState(
     currentMapping?.holdAction || ''
   );
-  const [threshold, setThreshold] = useState(
-    currentMapping?.threshold || 200
-  );
+  const [threshold, setThreshold] = useState(currentMapping?.threshold || 200);
   const [targetLayer, setTargetLayer] = useState(
     currentMapping?.targetLayer || ''
   );
@@ -110,14 +108,14 @@ export const KeyConfigDialog: React.FC<KeyConfigDialogProps> = ({
   const getPreviewText = (): string => {
     switch (actionType) {
       case 'simple':
-        return tapAction
-          ? `${keyCode} → ${tapAction}`
-          : 'Select an output key';
+        return tapAction ? `${keyCode} → ${tapAction}` : 'Select an output key';
       case 'tap_hold':
         if (!tapAction && !holdAction) {
           return 'Configure tap and hold actions';
         }
-        return `Quick tap: ${keyCode} → ${tapAction || '?'}\nHold ${threshold}ms: ${keyCode} → ${holdAction || '?'}`;
+        return `Quick tap: ${keyCode} → ${
+          tapAction || '?'
+        }\nHold ${threshold}ms: ${keyCode} → ${holdAction || '?'}`;
       case 'macro':
         return macroSteps.length > 0
           ? `Macro: ${macroSteps.length} step(s)`
@@ -150,11 +148,7 @@ export const KeyConfigDialog: React.FC<KeyConfigDialogProps> = ({
   };
 
   return (
-    <Modal
-      open={isOpen}
-      onClose={onClose}
-      title={`Configure Key: ${keyCode}`}
-    >
+    <Modal open={isOpen} onClose={onClose} title={`Configure Key: ${keyCode}`}>
       <div className="space-y-6">
         {/* Action Type Selector */}
         <div>

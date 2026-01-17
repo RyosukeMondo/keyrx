@@ -14,23 +14,28 @@ interface KeyButtonProps {
 
 // Mapping type icons (using simple SVG shapes for performance)
 const MappingTypeIcon: React.FC<{ type: string }> = ({ type }) => {
-  const iconColor = {
-    simple: 'text-green-400',
-    tap_hold: 'text-red-400',
-    macro: 'text-purple-400',
-    layer_switch: 'text-yellow-400',
-  }[type] || 'text-slate-400';
+  const iconColor =
+    {
+      simple: 'text-green-400',
+      tap_hold: 'text-red-400',
+      macro: 'text-purple-400',
+      layer_switch: 'text-yellow-400',
+    }[type] || 'text-slate-400';
 
-  const icon = {
-    simple: '→',
-    tap_hold: '↕',
-    macro: '⚡',
-    layer_switch: '⇄',
-  }[type] || '';
+  const icon =
+    {
+      simple: '→',
+      tap_hold: '↕',
+      macro: '⚡',
+      layer_switch: '⇄',
+    }[type] || '';
 
   return (
     <span
-      className={cn('absolute top-0.5 right-0.5 text-[10px] font-bold', iconColor)}
+      className={cn(
+        'absolute top-0.5 right-0.5 text-[10px] font-bold',
+        iconColor
+      )}
       aria-hidden="true"
     >
       {icon}
@@ -59,7 +64,9 @@ export const KeyButton = React.memo<KeyButtonProps>(
         case 'tap_hold':
           return `${keyCode} → Tap: ${mapping.tapAction}, Hold: ${mapping.holdAction} (${mapping.threshold}ms)`;
         case 'macro':
-          return `${keyCode} → Macro (${mapping.macroSteps?.length || 0} steps)`;
+          return `${keyCode} → Macro (${
+            mapping.macroSteps?.length || 0
+          } steps)`;
         case 'layer_switch':
           return `${keyCode} → Layer: ${mapping.targetLayer}`;
         default:
@@ -68,67 +75,69 @@ export const KeyButton = React.memo<KeyButtonProps>(
     }, [keyCode, mapping]);
 
     /**
-   * Format a key label for display on keycap
-   * Handles: VK_ prefixes, with_* functions, long names
-   */
-  const formatKeyLabel = (key: string): string => {
-    if (!key) return '';
+     * Format a key label for display on keycap
+     * Handles: VK_ prefixes, with_* functions, long names
+     */
+    const formatKeyLabel = (key: string): string => {
+      if (!key) return '';
 
-    // Handle with_* helper functions: with_shift(VK_A) -> ⇧A
-    const withMatch = key.match(/^with_(\w+)\(["']?(\w+)["']?\)$/);
-    if (withMatch) {
-      const [, modifier, innerKey] = withMatch;
-      const modSymbols: Record<string, string> = {
-        shift: '⇧',
-        ctrl: '⌃',
-        alt: '⌥',
-        meta: '⌘',
-        gui: '⌘',
+      // Handle with_* helper functions: with_shift(VK_A) -> ⇧A
+      const withMatch = key.match(/^with_(\w+)\(["']?(\w+)["']?\)$/);
+      if (withMatch) {
+        const [, modifier, innerKey] = withMatch;
+        const modSymbols: Record<string, string> = {
+          shift: '⇧',
+          ctrl: '⌃',
+          alt: '⌥',
+          meta: '⌘',
+          gui: '⌘',
+        };
+        const modSymbol =
+          modSymbols[modifier.toLowerCase()] ||
+          modifier.charAt(0).toUpperCase();
+        const cleanKey = innerKey.replace(/^VK_/, '');
+        return `${modSymbol}${cleanKey}`;
+      }
+
+      // Remove VK_ prefix for cleaner display
+      const clean = key.replace(/^VK_/, '');
+
+      // Shorten common keys
+      const shortNames: Record<string, string> = {
+        BACKSPACE: 'BS',
+        CAPSLOCK: 'Caps',
+        ESCAPE: 'Esc',
+        DELETE: 'Del',
+        INSERT: 'Ins',
+        PAGEUP: 'PgUp',
+        PAGEDOWN: 'PgDn',
+        LEFTSHIFT: 'LShft',
+        RIGHTSHIFT: 'RShft',
+        LEFTCONTROL: 'LCtrl',
+        RIGHTCONTROL: 'RCtrl',
+        LEFTALT: 'LAlt',
+        RIGHTALT: 'RAlt',
+        LEFTMETA: 'LMeta',
+        RIGHTMETA: 'RMeta',
+        NUMLOCK: 'Num',
+        SCROLLLOCK: 'Scrl',
+        PRINTSCREEN: 'PrtSc',
       };
-      const modSymbol = modSymbols[modifier.toLowerCase()] || modifier.charAt(0).toUpperCase();
-      const cleanKey = innerKey.replace(/^VK_/, '');
-      return `${modSymbol}${cleanKey}`;
-    }
 
-    // Remove VK_ prefix for cleaner display
-    let clean = key.replace(/^VK_/, '');
+      const upper = clean.toUpperCase();
+      if (shortNames[upper]) {
+        return shortNames[upper];
+      }
 
-    // Shorten common keys
-    const shortNames: Record<string, string> = {
-      BACKSPACE: 'BS',
-      CAPSLOCK: 'Caps',
-      ESCAPE: 'Esc',
-      DELETE: 'Del',
-      INSERT: 'Ins',
-      PAGEUP: 'PgUp',
-      PAGEDOWN: 'PgDn',
-      LEFTSHIFT: 'LShft',
-      RIGHTSHIFT: 'RShft',
-      LEFTCONTROL: 'LCtrl',
-      RIGHTCONTROL: 'RCtrl',
-      LEFTALT: 'LAlt',
-      RIGHTALT: 'RAlt',
-      LEFTMETA: 'LMeta',
-      RIGHTMETA: 'RMeta',
-      NUMLOCK: 'Num',
-      SCROLLLOCK: 'Scrl',
-      PRINTSCREEN: 'PrtSc',
+      // Truncate if still too long (max 5 chars for display)
+      if (clean.length > 5) {
+        return clean.slice(0, 4) + '…';
+      }
+
+      return clean;
     };
 
-    const upper = clean.toUpperCase();
-    if (shortNames[upper]) {
-      return shortNames[upper];
-    }
-
-    // Truncate if still too long (max 5 chars for display)
-    if (clean.length > 5) {
-      return clean.slice(0, 4) + '…';
-    }
-
-    return clean;
-  };
-
-  // Get remap display text
+    // Get remap display text
     const remapText = useMemo(() => {
       if (!mapping) return '';
 
@@ -151,10 +160,11 @@ export const KeyButton = React.memo<KeyButtonProps>(
 
     // Determine border and background color based on mapping type
     const getKeyStyle = () => {
-      if (!mapping) return {
-        border: 'border-dashed border-slate-600',
-        bg: 'bg-slate-700/50',
-      };
+      if (!mapping)
+        return {
+          border: 'border-dashed border-slate-600',
+          bg: 'bg-slate-700/50',
+        };
 
       switch (mapping.type) {
         case 'simple':
@@ -212,9 +222,7 @@ export const KeyButton = React.memo<KeyButtonProps>(
           {hasMapping && mapping && <MappingTypeIcon type={mapping.type} />}
 
           {/* Original key label (small, gray) */}
-          <span className="text-[10px] text-slate-400 font-mono">
-            {label}
-          </span>
+          <span className="text-[10px] text-slate-400 font-mono">{label}</span>
 
           {/* Remap label (bold, yellow) - truncated to fit keycap */}
           {hasMapping && (

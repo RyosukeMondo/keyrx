@@ -57,7 +57,9 @@ describe('KeyPalette', () => {
         </>
       );
 
-      expect(screen.getByText(/star keys to add favorites/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/star keys to add favorites/i)
+      ).toBeInTheDocument();
     });
   });
 
@@ -95,7 +97,6 @@ describe('KeyPalette', () => {
         expect(screen.getByText('navigation')).toBeInTheDocument();
       });
     });
-
   });
 
   describe('Search Functionality', () => {
@@ -241,7 +242,8 @@ describe('KeyPalette', () => {
 
       for (const aText of aKeys) {
         const aKey = aText.closest('button');
-        if (aKey && aKey.offsetParent !== null) { // Check if visible
+        if (aKey && aKey.offsetParent !== null) {
+          // Check if visible
           await user.click(aKey);
           clicked = true;
           break;
@@ -250,18 +252,24 @@ describe('KeyPalette', () => {
 
       if (clicked) {
         // Should call onKeySelect
-        await waitFor(() => {
-          expect(onKeySelect).toHaveBeenCalled();
-        }, { timeout: 3000 });
+        await waitFor(
+          () => {
+            expect(onKeySelect).toHaveBeenCalled();
+          },
+          { timeout: 3000 }
+        );
 
         // Check localStorage for recent keys (may not be set immediately)
-        await waitFor(() => {
-          const stored = localStorage.getItem('keyrx_recent_keys');
-          if (stored) {
-            const recentKeys = JSON.parse(stored);
-            expect(Array.isArray(recentKeys)).toBe(true);
-          }
-        }, { timeout: 3000 });
+        await waitFor(
+          () => {
+            const stored = localStorage.getItem('keyrx_recent_keys');
+            if (stored) {
+              const recentKeys = JSON.parse(stored);
+              expect(Array.isArray(recentKeys)).toBe(true);
+            }
+          },
+          { timeout: 3000 }
+        );
       }
     });
   });
@@ -335,7 +343,8 @@ describe('KeyPalette', () => {
       await user.click(anyTab);
 
       // Try to find custom input field
-      const customInput = screen.queryByPlaceholderText(/keycode|custom|enter/i);
+      const customInput =
+        screen.queryByPlaceholderText(/keycode|custom|enter/i);
       if (customInput) {
         await user.type(customInput, 'MO(1)');
 
@@ -395,6 +404,4 @@ describe('KeyPalette', () => {
       expect(searchInput).toBeInTheDocument();
     });
   });
-
 });
-

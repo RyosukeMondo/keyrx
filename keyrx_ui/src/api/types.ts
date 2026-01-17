@@ -26,7 +26,7 @@ export interface Device {
   serial: string;
   vendorId: string;
   productId: string;
-  scope: "global" | "profile";
+  scope: 'global' | 'profile';
   isConnected: boolean;
 }
 
@@ -45,14 +45,14 @@ export interface Layer {
 export interface SimulationInput {
   timestamp: number;
   keyCode: string;
-  eventType: "press" | "release";
+  eventType: 'press' | 'release';
 }
 
 export interface SimulationResult {
   input: SimulationInput;
   output: {
     keyCode: string;
-    eventType: "press" | "release";
+    eventType: 'press' | 'release';
   };
   latency: number;
   layer: string;
@@ -63,7 +63,7 @@ export interface PaginatedEvents {
   events: Array<{
     timestamp: number;
     keyCode: string;
-    eventType: "press" | "release";
+    eventType: 'press' | 'release';
     input: string;
     output: string;
     latency: number;

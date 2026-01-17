@@ -150,7 +150,9 @@ describe('useRhaiSyncEngine', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
         throw new Error('localStorage error');
       });
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
 
       const { result } = renderHook(() =>
         useRhaiSyncEngine({ storageKey: 'test-profile' })
@@ -458,7 +460,9 @@ describe('useRhaiSyncEngine', () => {
 
       const ast: RhaiAST = {
         imports: [],
-        globalMappings: [{ type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 1 }],
+        globalMappings: [
+          { type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 1 },
+        ],
         deviceBlocks: [],
         comments: [],
       };
@@ -525,7 +529,9 @@ describe('useRhaiSyncEngine', () => {
 
       const ast: RhaiAST = {
         imports: [],
-        globalMappings: [{ type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 1 }],
+        globalMappings: [
+          { type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 1 },
+        ],
         deviceBlocks: [],
         comments: [],
       };
@@ -587,7 +593,9 @@ describe('useRhaiSyncEngine', () => {
 
       const ast: RhaiAST = {
         imports: [],
-        globalMappings: [{ type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 1 }],
+        globalMappings: [
+          { type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 1 },
+        ],
         deviceBlocks: [],
         comments: [],
       };
@@ -618,7 +626,10 @@ describe('useRhaiSyncEngine', () => {
   describe('persistence options', () => {
     it('should not persist when enablePersistence is false', async () => {
       const { result } = renderHook(() =>
-        useRhaiSyncEngine({ storageKey: 'test-profile', enablePersistence: false })
+        useRhaiSyncEngine({
+          storageKey: 'test-profile',
+          enablePersistence: false,
+        })
       );
 
       act(() => {

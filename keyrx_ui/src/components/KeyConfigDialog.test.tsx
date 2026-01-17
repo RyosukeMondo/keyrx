@@ -24,9 +24,7 @@ describe('KeyConfigDialog', () => {
   describe('Rendering', () => {
     it('should render with correct title', () => {
       renderWithProviders(<KeyConfigDialog {...defaultProps} />);
-      expect(
-        screen.getByText('Configure Key: CapsLock')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Configure Key: CapsLock')).toBeInTheDocument();
     });
 
     it('should render all action type buttons', () => {
@@ -172,9 +170,7 @@ describe('KeyConfigDialog', () => {
       });
       await user.click(macroButton);
 
-      expect(
-        screen.getByText(/No macro steps defined/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/No macro steps defined/i)).toBeInTheDocument();
     });
 
     it('should add macro step when clicking add button', async () => {
@@ -191,9 +187,7 @@ describe('KeyConfigDialog', () => {
       });
       await user.click(addButton);
 
-      expect(
-        screen.getByLabelText(/Macro step 1 type/i)
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText(/Macro step 1 type/i)).toBeInTheDocument();
     });
 
     it('should remove macro step when clicking remove button', async () => {
@@ -273,9 +267,7 @@ describe('KeyConfigDialog', () => {
       await user.click(layerButton);
 
       expect(screen.getByText('Target Layer')).toBeInTheDocument();
-      expect(
-        screen.getByLabelText(/Select target layer/i)
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText(/Select target layer/i)).toBeInTheDocument();
     });
 
     it('should show correct preview for layer switch', async () => {
@@ -411,9 +403,7 @@ describe('KeyConfigDialog', () => {
         <KeyConfigDialog {...defaultProps} currentMapping={currentMapping} />
       );
 
-      expect(
-        screen.getByText(/Threshold: 300 ms/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Threshold: 300 ms/i)).toBeInTheDocument();
     });
 
     it('should populate simple remap form', async () => {

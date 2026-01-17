@@ -8,129 +8,176 @@ describe('KeyboardVisualizer Layout Integration', () => {
   const mockOnKeyClick = () => {};
 
   const layouts = [
-    { layout: 'ANSI_104' as const, expectedKeyCount: 104, description: 'ANSI 104 full-size layout' },
-    { layout: 'ANSI_87' as const, expectedKeyCount: 87, description: 'ANSI 87 TKL layout' },
-    { layout: 'ISO_105' as const, expectedKeyCount: 105, description: 'ISO 105 full-size layout' },
-    { layout: 'ISO_88' as const, expectedKeyCount: 88, description: 'ISO 88 TKL layout' },
-    { layout: 'JIS_109' as const, expectedKeyCount: 109, description: 'JIS 109 Japanese layout' },
-    { layout: 'COMPACT_60' as const, expectedKeyCount: 61, description: '60% compact layout' },
-    { layout: 'COMPACT_65' as const, expectedKeyCount: 67, description: '65% compact layout' },
-    { layout: 'COMPACT_75' as const, expectedKeyCount: 82, description: '75% compact layout' },
-    { layout: 'COMPACT_96' as const, expectedKeyCount: 100, description: '96% compact layout' },
-    { layout: 'HHKB' as const, expectedKeyCount: 60, description: 'HHKB layout' },
-    { layout: 'NUMPAD' as const, expectedKeyCount: 17, description: 'Standalone numpad layout' },
+    {
+      layout: 'ANSI_104' as const,
+      expectedKeyCount: 104,
+      description: 'ANSI 104 full-size layout',
+    },
+    {
+      layout: 'ANSI_87' as const,
+      expectedKeyCount: 87,
+      description: 'ANSI 87 TKL layout',
+    },
+    {
+      layout: 'ISO_105' as const,
+      expectedKeyCount: 105,
+      description: 'ISO 105 full-size layout',
+    },
+    {
+      layout: 'ISO_88' as const,
+      expectedKeyCount: 88,
+      description: 'ISO 88 TKL layout',
+    },
+    {
+      layout: 'JIS_109' as const,
+      expectedKeyCount: 109,
+      description: 'JIS 109 Japanese layout',
+    },
+    {
+      layout: 'COMPACT_60' as const,
+      expectedKeyCount: 61,
+      description: '60% compact layout',
+    },
+    {
+      layout: 'COMPACT_65' as const,
+      expectedKeyCount: 67,
+      description: '65% compact layout',
+    },
+    {
+      layout: 'COMPACT_75' as const,
+      expectedKeyCount: 82,
+      description: '75% compact layout',
+    },
+    {
+      layout: 'COMPACT_96' as const,
+      expectedKeyCount: 100,
+      description: '96% compact layout',
+    },
+    {
+      layout: 'HHKB' as const,
+      expectedKeyCount: 60,
+      description: 'HHKB layout',
+    },
+    {
+      layout: 'NUMPAD' as const,
+      expectedKeyCount: 17,
+      description: 'Standalone numpad layout',
+    },
   ];
 
-  describe.each(layouts)('$description', ({ layout, expectedKeyCount, description }) => {
-    it('should render without errors', () => {
-      const { container } = renderWithProviders(
-        <KeyboardVisualizer
-          layout={layout}
-          keyMappings={mockKeyMappings}
-          onKeyClick={mockOnKeyClick}
-        />,
-        { wrapWithWasm: false }
-      );
+  describe.each(layouts)(
+    '$description',
+    ({ layout, expectedKeyCount, description }) => {
+      it('should render without errors', () => {
+        const { container } = renderWithProviders(
+          <KeyboardVisualizer
+            layout={layout}
+            keyMappings={mockKeyMappings}
+            onKeyClick={mockOnKeyClick}
+          />,
+          { wrapWithWasm: false }
+        );
 
-      expect(container).toBeInTheDocument();
-    });
+        expect(container).toBeInTheDocument();
+      });
 
-    it('should render keyboard visualizer container with correct aria-label', () => {
-      renderWithProviders(
-        <KeyboardVisualizer
-          layout={layout}
-          keyMappings={mockKeyMappings}
-          onKeyClick={mockOnKeyClick}
-        />,
-        { wrapWithWasm: false }
-      );
+      it('should render keyboard visualizer container with correct aria-label', () => {
+        renderWithProviders(
+          <KeyboardVisualizer
+            layout={layout}
+            keyMappings={mockKeyMappings}
+            onKeyClick={mockOnKeyClick}
+          />,
+          { wrapWithWasm: false }
+        );
 
-      const visualizer = screen.getByTestId('keyboard-visualizer');
-      expect(visualizer).toBeInTheDocument();
-      expect(visualizer).toHaveAttribute('aria-label');
-      expect(visualizer.getAttribute('aria-label')).toContain(layout);
-    });
+        const visualizer = screen.getByTestId('keyboard-visualizer');
+        expect(visualizer).toBeInTheDocument();
+        expect(visualizer).toHaveAttribute('aria-label');
+        expect(visualizer.getAttribute('aria-label')).toContain(layout);
+      });
 
-    it(`should render exactly ${expectedKeyCount} key buttons`, () => {
-      renderWithProviders(
-        <KeyboardVisualizer
-          layout={layout}
-          keyMappings={mockKeyMappings}
-          onKeyClick={mockOnKeyClick}
-        />,
-        { wrapWithWasm: false }
-      );
+      it(`should render exactly ${expectedKeyCount} key buttons`, () => {
+        renderWithProviders(
+          <KeyboardVisualizer
+            layout={layout}
+            keyMappings={mockKeyMappings}
+            onKeyClick={mockOnKeyClick}
+          />,
+          { wrapWithWasm: false }
+        );
 
-      // Each key is rendered as a button element
-      const keyButtons = screen.getAllByRole('button');
-      expect(keyButtons).toHaveLength(expectedKeyCount);
-    });
+        // Each key is rendered as a button element
+        const keyButtons = screen.getAllByRole('button');
+        expect(keyButtons).toHaveLength(expectedKeyCount);
+      });
 
-    it('should render with correct CSS grid structure', () => {
-      renderWithProviders(
-        <KeyboardVisualizer
-          layout={layout}
-          keyMappings={mockKeyMappings}
-          onKeyClick={mockOnKeyClick}
-        />,
-        { wrapWithWasm: false }
-      );
+      it('should render with correct CSS grid structure', () => {
+        renderWithProviders(
+          <KeyboardVisualizer
+            layout={layout}
+            keyMappings={mockKeyMappings}
+            onKeyClick={mockOnKeyClick}
+          />,
+          { wrapWithWasm: false }
+        );
 
-      const visualizer = screen.getByTestId('keyboard-visualizer');
-      const style = window.getComputedStyle(visualizer);
+        const visualizer = screen.getByTestId('keyboard-visualizer');
+        const style = window.getComputedStyle(visualizer);
 
-      // Verify grid display
-      expect(style.display).toBe('grid');
-    });
+        // Verify grid display
+        expect(style.display).toBe('grid');
+      });
 
-    it('should have accessible keyboard navigation', () => {
-      renderWithProviders(
-        <KeyboardVisualizer
-          layout={layout}
-          keyMappings={mockKeyMappings}
-          onKeyClick={mockOnKeyClick}
-        />,
-        { wrapWithWasm: false }
-      );
+      it('should have accessible keyboard navigation', () => {
+        renderWithProviders(
+          <KeyboardVisualizer
+            layout={layout}
+            keyMappings={mockKeyMappings}
+            onKeyClick={mockOnKeyClick}
+          />,
+          { wrapWithWasm: false }
+        );
 
-      const visualizer = screen.getByTestId('keyboard-visualizer');
-      expect(visualizer).toHaveAttribute('role', 'group');
+        const visualizer = screen.getByTestId('keyboard-visualizer');
+        expect(visualizer).toHaveAttribute('role', 'group');
 
-      // Verify aria-label provides navigation instructions
-      const ariaLabel = visualizer.getAttribute('aria-label') || '';
-      expect(ariaLabel).toContain('arrow keys');
-      expect(ariaLabel).toContain('Enter');
-    });
+        // Verify aria-label provides navigation instructions
+        const ariaLabel = visualizer.getAttribute('aria-label') || '';
+        expect(ariaLabel).toContain('arrow keys');
+        expect(ariaLabel).toContain('Enter');
+      });
 
-    it('should call onKeyClick when a key is clicked', async () => {
-      let clickedKeyCode: string | null = null;
-      const handleKeyClick = (keyCode: string) => {
-        clickedKeyCode = keyCode;
-      };
+      it('should call onKeyClick when a key is clicked', async () => {
+        let clickedKeyCode: string | null = null;
+        const handleKeyClick = (keyCode: string) => {
+          clickedKeyCode = keyCode;
+        };
 
-      renderWithProviders(
-        <KeyboardVisualizer
-          layout={layout}
-          keyMappings={mockKeyMappings}
-          onKeyClick={handleKeyClick}
-        />,
-        { wrapWithWasm: false }
-      );
+        renderWithProviders(
+          <KeyboardVisualizer
+            layout={layout}
+            keyMappings={mockKeyMappings}
+            onKeyClick={handleKeyClick}
+          />,
+          { wrapWithWasm: false }
+        );
 
-      const user = userEvent.setup();
-      const keyButtons = screen.getAllByRole('button');
-      expect(keyButtons.length).toBeGreaterThan(0);
+        const user = userEvent.setup();
+        const keyButtons = screen.getAllByRole('button');
+        expect(keyButtons.length).toBeGreaterThan(0);
 
-      // Click the first key
-      await user.click(keyButtons[0]);
+        // Click the first key
+        await user.click(keyButtons[0]);
 
-      // Verify callback was invoked with a key code
-      expect(clickedKeyCode).not.toBeNull();
-      expect(typeof clickedKeyCode).toBe('string');
-      // Should be normalized to VK_ format for consistency with mappings
-      expect(clickedKeyCode).toMatch(/^VK_/);
-    });
-  });
+        // Verify callback was invoked with a key code
+        expect(clickedKeyCode).not.toBeNull();
+        expect(typeof clickedKeyCode).toBe('string');
+        // Should be normalized to VK_ format for consistency with mappings
+        expect(clickedKeyCode).toMatch(/^VK_/);
+      });
+    }
+  );
 
   describe('Layout switching', () => {
     it('should update rendered keys when layout prop changes', () => {
@@ -269,7 +316,7 @@ describe('KeyboardVisualizer Layout Integration', () => {
       );
 
       // Initially KC_A is pressed
-      let aButton = screen.getByRole('button', { name: /Key KC_A\./ });
+      const aButton = screen.getByRole('button', { name: /Key KC_A\./ });
       expect(aButton).toBeInTheDocument();
 
       // Update to press KC_B instead

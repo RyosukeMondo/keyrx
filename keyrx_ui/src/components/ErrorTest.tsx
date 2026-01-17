@@ -22,7 +22,9 @@ export const ErrorTest: React.FC = () => {
 
   // This will trigger the ErrorBoundary
   if (throwError) {
-    throw new Error('Test error thrown intentionally to demonstrate ErrorBoundary');
+    throw new Error(
+      'Test error thrown intentionally to demonstrate ErrorBoundary'
+    );
   }
 
   return (
@@ -39,7 +41,8 @@ export const ErrorTest: React.FC = () => {
               ErrorState Component (API Errors)
             </h2>
             <p className="text-slate-400 text-sm mb-4">
-              This demonstrates how failed API calls are displayed with a retry option.
+              This demonstrates how failed API calls are displayed with a retry
+              option.
             </p>
 
             {showApiError ? (
@@ -72,14 +75,14 @@ export const ErrorTest: React.FC = () => {
               ErrorBoundary Component (React Errors)
             </h2>
             <p className="text-slate-400 text-sm mb-4">
-              This demonstrates how JavaScript errors in components are caught to
-              prevent the entire app from crashing.
+              This demonstrates how JavaScript errors in components are caught
+              to prevent the entire app from crashing.
             </p>
             <div className="bg-red-500/10 border border-red-500/20 rounded p-4 mb-4">
               <p className="text-red-400 text-sm">
-                <strong>Warning:</strong> Clicking this button will throw an error
-                and trigger the ErrorBoundary. The entire app will show the error
-                fallback UI.
+                <strong>Warning:</strong> Clicking this button will throw an
+                error and trigger the ErrorBoundary. The entire app will show
+                the error fallback UI.
               </p>
             </div>
             <Button

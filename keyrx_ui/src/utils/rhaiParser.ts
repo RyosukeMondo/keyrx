@@ -246,7 +246,9 @@ export function parseRhaiScript(script: string): ParseResult {
       }
 
       // Parse import statements
-      const importMatch = trimmed.match(/^import\s+"([^"]+)"(?:\s+as\s+(\w+))?/);
+      const importMatch = trimmed.match(
+        /^import\s+"([^"]+)"(?:\s+as\s+(\w+))?/
+      );
       if (importMatch) {
         ast.imports.push({
           path: importMatch[1],
@@ -257,7 +259,9 @@ export function parseRhaiScript(script: string): ParseResult {
       }
 
       // Parse device_start
-      const deviceStartMatch = trimmed.match(/^device_start\s*\(\s*"([^"]+)"\s*\)/);
+      const deviceStartMatch = trimmed.match(
+        /^device_start\s*\(\s*"([^"]+)"\s*\)/
+      );
       if (deviceStartMatch) {
         if (currentDeviceBlock) {
           return {
@@ -266,7 +270,8 @@ export function parseRhaiScript(script: string): ParseResult {
               message: 'Nested device blocks are not allowed',
               line: lineNumber,
               column: 0,
-              suggestion: 'Close previous device block with device_end() before starting a new one',
+              suggestion:
+                'Close previous device block with device_end() before starting a new one',
             },
           };
         }
@@ -300,7 +305,9 @@ export function parseRhaiScript(script: string): ParseResult {
       }
 
       // Parse when_start (modifier layers)
-      const whenStartMatch = trimmed.match(/^when_start\s*\(\s*(?:"([^"]+)"|\[([^\]]+)\])\s*\)/);
+      const whenStartMatch = trimmed.match(
+        /^when_start\s*\(\s*(?:"([^"]+)"|\[([^\]]+)\])\s*\)/
+      );
       if (whenStartMatch) {
         if (currentModifierLayer) {
           return {
@@ -309,7 +316,8 @@ export function parseRhaiScript(script: string): ParseResult {
               message: 'Nested when blocks are not allowed',
               line: lineNumber,
               column: 0,
-              suggestion: 'Close previous when block with when_end() before starting a new one',
+              suggestion:
+                'Close previous when block with when_end() before starting a new one',
             },
           };
         }
@@ -323,7 +331,7 @@ export function parseRhaiScript(script: string): ParseResult {
           // Array of modifiers
           modifiers = whenStartMatch[2]
             .split(',')
-            .map(m => m.trim().replace(/["']/g, ''));
+            .map((m) => m.trim().replace(/["']/g, ''));
         }
 
         currentModifierLayer = {
@@ -359,7 +367,9 @@ export function parseRhaiScript(script: string): ParseResult {
       }
 
       // Parse map() - simple mapping
-      const mapMatch = trimmed.match(/^map\s*\(\s*"([^"]+)"\s*,\s*"?([^")]+)"?\s*\)/);
+      const mapMatch = trimmed.match(
+        /^map\s*\(\s*"([^"]+)"\s*,\s*"?([^")]+)"?\s*\)/
+      );
       if (mapMatch) {
         const mapping: KeyMapping = {
           type: 'simple',
@@ -407,7 +417,9 @@ export function parseRhaiScript(script: string): ParseResult {
       }
 
       // Parse helper functions like with_ctrl(), with_shift(), etc.
-      const withModMatch = trimmed.match(/^map\s*\(\s*"([^"]+)"\s*,\s*(with_\w+\([^)]+\))\s*\)/);
+      const withModMatch = trimmed.match(
+        /^map\s*\(\s*"([^"]+)"\s*,\s*(with_\w+\([^)]+\))\s*\)/
+      );
       if (withModMatch) {
         const mapping: KeyMapping = {
           type: 'simple',
@@ -481,7 +493,7 @@ export function parseRhaiScript(script: string): ParseResult {
  * @returns Array of device serial patterns
  */
 export function extractDevicePatterns(ast: RhaiAST): string[] {
-  return ast.deviceBlocks.map(block => block.pattern);
+  return ast.deviceBlocks.map((block) => block.pattern);
 }
 
 /**
@@ -501,8 +513,13 @@ export function hasGlobalMappings(ast: RhaiAST): boolean {
  * @param pattern - Device pattern to search for
  * @returns Array of key mappings for the device, or undefined if not found
  */
-export function getMappingsForDevice(ast: RhaiAST, pattern: string): KeyMapping[] | undefined {
-  const deviceBlock = ast.deviceBlocks.find(block => block.pattern === pattern);
+export function getMappingsForDevice(
+  ast: RhaiAST,
+  pattern: string
+): KeyMapping[] | undefined {
+  const deviceBlock = ast.deviceBlocks.find(
+    (block) => block.pattern === pattern
+  );
   if (!deviceBlock) return undefined;
 
   // Flatten device mappings and layer mappings
@@ -520,7 +537,10 @@ export function getMappingsForDevice(ast: RhaiAST, pattern: string): KeyMapping[
  * @param ast - Parsed AST to validate
  * @returns Validation result with any errors found
  */
-export function validateAST(ast: RhaiAST): { valid: boolean; errors: string[] } {
+export function validateAST(ast: RhaiAST): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   // Check for duplicate device patterns
@@ -535,9 +555,9 @@ export function validateAST(ast: RhaiAST): { valid: boolean; errors: string[] } 
   // Validate tap_hold thresholds
   const allMappings = [
     ...ast.globalMappings,
-    ...ast.deviceBlocks.flatMap(block => [
+    ...ast.deviceBlocks.flatMap((block) => [
       ...block.mappings,
-      ...block.layers.flatMap(layer => layer.mappings),
+      ...block.layers.flatMap((layer) => layer.mappings),
     ]),
   ];
 
@@ -545,10 +565,14 @@ export function validateAST(ast: RhaiAST): { valid: boolean; errors: string[] } 
     if (mapping.type === 'tap_hold' && mapping.tapHold) {
       const threshold = mapping.tapHold.thresholdMs;
       if (threshold < 50) {
-        errors.push(`Tap-hold threshold too low (${threshold}ms) at line ${mapping.line}. Minimum: 50ms`);
+        errors.push(
+          `Tap-hold threshold too low (${threshold}ms) at line ${mapping.line}. Minimum: 50ms`
+        );
       }
       if (threshold > 1000) {
-        errors.push(`Tap-hold threshold too high (${threshold}ms) at line ${mapping.line}. Maximum: 1000ms`);
+        errors.push(
+          `Tap-hold threshold too high (${threshold}ms) at line ${mapping.line}. Maximum: 1000ms`
+        );
       }
     }
   }

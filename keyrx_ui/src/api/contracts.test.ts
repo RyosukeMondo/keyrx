@@ -116,7 +116,9 @@ describe('Device API Contracts', () => {
     });
 
     it('passes through unexpected fields with warning', () => {
-      const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+      const consoleDebugSpy = vi
+        .spyOn(console, 'debug')
+        .mockImplementation(() => {});
 
       const responseWithExtra = {
         devices: [
@@ -189,7 +191,11 @@ describe('Device API Contracts', () => {
       };
 
       expect(() => {
-        validateApiResponse(DeviceRpcInfoSchema, invalidResponse, 'PATCH /api/devices/:id');
+        validateApiResponse(
+          DeviceRpcInfoSchema,
+          invalidResponse,
+          'PATCH /api/devices/:id'
+        );
       }).toThrow('API validation failed');
     });
   });
@@ -603,7 +609,11 @@ describe('Validation Error Handling', () => {
     const invalidData = { invalid: 'structure' };
 
     try {
-      validateApiResponse(DeviceListResponseSchema, invalidData, 'GET /api/devices');
+      validateApiResponse(
+        DeviceListResponseSchema,
+        invalidData,
+        'GET /api/devices'
+      );
       expect.fail('Should have thrown');
     } catch (error) {
       expect((error as Error).message).toContain('GET /api/devices');
@@ -612,12 +622,18 @@ describe('Validation Error Handling', () => {
   });
 
   it('logs structured error on validation failure', () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
 
     const invalidData = { devices: 'not an array' };
 
     try {
-      validateApiResponse(DeviceListResponseSchema, invalidData, 'GET /api/devices');
+      validateApiResponse(
+        DeviceListResponseSchema,
+        invalidData,
+        'GET /api/devices'
+      );
     } catch {
       // Expected to throw
     }
@@ -725,7 +741,17 @@ describe('Schema Completeness', () => {
 
   it('validates all required profile fields are enforced', () => {
     // ProfileRpcInfoSchema required fields
-    const requiredFields = ['name', 'rhaiPath', 'krxPath', 'modifiedAt', 'createdAt', 'layerCount', 'deviceCount', 'keyCount', 'isActive'];
+    const requiredFields = [
+      'name',
+      'rhaiPath',
+      'krxPath',
+      'modifiedAt',
+      'createdAt',
+      'layerCount',
+      'deviceCount',
+      'keyCount',
+      'isActive',
+    ];
 
     for (const field of requiredFields) {
       const incompleteProfile: any = {

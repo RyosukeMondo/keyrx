@@ -15,7 +15,12 @@ export interface DeviceEntry {
 
 export type DeviceScope = 'global' | 'device-specific';
 
-export type LayoutPreset = 'ANSI_104' | 'ISO_105' | 'JIS_109' | 'HHKB' | 'NUMPAD';
+export type LayoutPreset =
+  | 'ANSI_104'
+  | 'ISO_105'
+  | 'JIS_109'
+  | 'HHKB'
+  | 'NUMPAD';
 
 // Profile Management Types
 export interface ProfileMetadata {
@@ -29,7 +34,12 @@ export interface ProfileMetadata {
   isActive: boolean;
 }
 
-export type Template = 'blank' | 'simple_remap' | 'capslock_escape' | 'vim_navigation' | 'gaming';
+export type Template =
+  | 'blank'
+  | 'simple_remap'
+  | 'capslock_escape'
+  | 'vim_navigation'
+  | 'gaming';
 
 export interface ActivationResult {
   success: boolean;
@@ -41,7 +51,14 @@ export interface ActivationResult {
 
 // Configuration Types
 export interface KeyMapping {
-  type: 'simple' | 'modifier' | 'lock' | 'tap_hold' | 'layer_active' | 'macro' | 'layer_switch';
+  type:
+    | 'simple'
+    | 'modifier'
+    | 'lock'
+    | 'tap_hold'
+    | 'layer_active'
+    | 'macro'
+    | 'layer_switch';
   tapAction?: string;
   holdAction?: string;
   threshold?: number;
@@ -72,7 +89,15 @@ export interface LatencyStats {
 export interface EventRecord {
   id: string;
   timestamp: string;
-  type: 'key_press' | 'key_release' | 'press' | 'release' | 'tap' | 'hold' | 'macro' | 'layer_switch';
+  type:
+    | 'key_press'
+    | 'key_release'
+    | 'press'
+    | 'release'
+    | 'tap'
+    | 'hold'
+    | 'macro'
+    | 'layer_switch';
   keyCode: string;
   layer: string;
   latencyUs: number;

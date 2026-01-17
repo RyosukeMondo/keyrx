@@ -22,17 +22,25 @@ describe('ErrorTest', () => {
 
   it('renders ErrorState demo section', () => {
     renderWithProviders(<ErrorTest />);
-    expect(screen.getByText('ErrorState Component (API Errors)')).toBeInTheDocument();
+    expect(
+      screen.getByText('ErrorState Component (API Errors)')
+    ).toBeInTheDocument();
   });
 
   it('renders ErrorBoundary demo section', () => {
     renderWithProviders(<ErrorTest />);
-    expect(screen.getByText('ErrorBoundary Component (React Errors)')).toBeInTheDocument();
+    expect(
+      screen.getByText('ErrorBoundary Component (React Errors)')
+    ).toBeInTheDocument();
   });
 
   it('initially shows success state for API', () => {
     renderWithProviders(<ErrorTest />);
-    expect(screen.getByText('API request successful. Click below to simulate a failure.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'API request successful. Click below to simulate a failure.'
+      )
+    ).toBeInTheDocument();
   });
 
   it('shows ErrorState when API error button is clicked', async () => {
@@ -44,7 +52,9 @@ describe('ErrorTest', () => {
 
     expect(screen.getByText('Failed to Load Data')).toBeInTheDocument();
     expect(
-      screen.getByText('Unable to fetch data from the server. Please check your connection and try again.')
+      screen.getByText(
+        'Unable to fetch data from the server. Please check your connection and try again.'
+      )
     ).toBeInTheDocument();
   });
 
@@ -69,20 +79,28 @@ describe('ErrorTest', () => {
     await user.click(screen.getByLabelText('Retry Request'));
 
     // Should show success state again
-    expect(screen.getByText('API request successful. Click below to simulate a failure.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'API request successful. Click below to simulate a failure.'
+      )
+    ).toBeInTheDocument();
   });
 
   it('renders warning about ErrorBoundary test', () => {
     renderWithProviders(<ErrorTest />);
     expect(screen.getByText(/Warning:/)).toBeInTheDocument();
     expect(
-      screen.getByText(/Clicking this button will throw an error and trigger the ErrorBoundary/)
+      screen.getByText(
+        /Clicking this button will throw an error and trigger the ErrorBoundary/
+      )
     ).toBeInTheDocument();
   });
 
   it('renders throw error button', () => {
     renderWithProviders(<ErrorTest />);
-    expect(screen.getByLabelText('Throw error to test ErrorBoundary')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Throw error to test ErrorBoundary')
+    ).toBeInTheDocument();
   });
 
   it('has proper structure and styling classes', () => {

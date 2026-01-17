@@ -46,8 +46,14 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
     <div
       className={cn(baseClasses, variantClasses[variant], className)}
       style={{
-        width: typeof computedWidth === 'number' ? `${computedWidth}px` : computedWidth,
-        height: typeof computedHeight === 'number' ? `${computedHeight}px` : computedHeight,
+        width:
+          typeof computedWidth === 'number'
+            ? `${computedWidth}px`
+            : computedWidth,
+        height:
+          typeof computedHeight === 'number'
+            ? `${computedHeight}px`
+            : computedHeight,
       }}
       role="status"
       aria-busy="true"
@@ -63,16 +69,16 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
   return (
     <>
       {Array.from({ length: count }).map((_, index) => (
-        <React.Fragment key={index}>
-          {skeletonElement}
-        </React.Fragment>
+        <React.Fragment key={index}>{skeletonElement}</React.Fragment>
       ))}
     </>
   );
 };
 
 // Preset skeleton components for common patterns
-export const SkeletonCard: React.FC<{ className?: string }> = ({ className }) => (
+export const SkeletonCard: React.FC<{ className?: string }> = ({
+  className,
+}) => (
   <div className={cn('p-6 bg-slate-800 rounded-lg', className)}>
     <LoadingSkeleton variant="text" width="60%" className="mb-4" />
     <LoadingSkeleton variant="text" width="100%" className="mb-2" />
@@ -83,7 +89,7 @@ export const SkeletonCard: React.FC<{ className?: string }> = ({ className }) =>
 
 export const SkeletonTable: React.FC<{ rows?: number; className?: string }> = ({
   rows = 5,
-  className
+  className,
 }) => (
   <div className={cn('space-y-3', className)}>
     <LoadingSkeleton variant="rectangular" height="48px" />
@@ -93,7 +99,9 @@ export const SkeletonTable: React.FC<{ rows?: number; className?: string }> = ({
   </div>
 );
 
-export const SkeletonProfile: React.FC<{ className?: string }> = ({ className }) => (
+export const SkeletonProfile: React.FC<{ className?: string }> = ({
+  className,
+}) => (
   <div className={cn('flex items-center gap-4', className)}>
     <LoadingSkeleton variant="circular" width="48px" height="48px" />
     <div className="flex-1">
@@ -103,7 +111,9 @@ export const SkeletonProfile: React.FC<{ className?: string }> = ({ className })
   </div>
 );
 
-export const SkeletonButton: React.FC<{ className?: string }> = ({ className }) => (
+export const SkeletonButton: React.FC<{ className?: string }> = ({
+  className,
+}) => (
   <LoadingSkeleton
     variant="rectangular"
     width="120px"

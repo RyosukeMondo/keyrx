@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
-import { renderWithProviders, setupMockWebSocket, cleanupMockWebSocket } from '../../tests/testUtils';
+import {
+  renderWithProviders,
+  setupMockWebSocket,
+  cleanupMockWebSocket,
+} from '../../tests/testUtils';
 import userEvent from '@testing-library/user-event';
 import { DevicesPage } from './DevicesPage';
 import { http, HttpResponse } from 'msw';
@@ -33,7 +37,9 @@ describe('DevicesPage - Integration Tests', () => {
         expect(screen.getByText('Global Settings')).toBeInTheDocument();
       });
 
-      const globalSettingsCard = screen.getByText('Global Settings').closest('div[class*="bg-slate-800"]');
+      const globalSettingsCard = screen
+        .getByText('Global Settings')
+        .closest('div[class*="bg-slate-800"]');
       expect(globalSettingsCard).toBeInTheDocument();
       expect(screen.getByText('Default Keyboard Layout')).toBeInTheDocument();
     });
@@ -48,7 +54,9 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        const layoutDropdown = screen.getByLabelText('Select default keyboard layout');
+        const layoutDropdown = screen.getByLabelText(
+          'Select default keyboard layout'
+        );
         expect(layoutDropdown).toHaveTextContent('ISO 105 (Full)');
       });
     });
@@ -71,7 +79,9 @@ describe('DevicesPage - Integration Tests', () => {
         expect(screen.getByText('Global Settings')).toBeInTheDocument();
       });
 
-      const layoutDropdown = screen.getByLabelText('Select default keyboard layout');
+      const layoutDropdown = screen.getByLabelText(
+        'Select default keyboard layout'
+      );
       await user.click(layoutDropdown);
 
       const isoOption = screen.getByText('ISO 105 (Full)');
@@ -99,7 +109,9 @@ describe('DevicesPage - Integration Tests', () => {
         expect(screen.getByText('Global Settings')).toBeInTheDocument();
       });
 
-      const layoutDropdown = screen.getByLabelText('Select default keyboard layout');
+      const layoutDropdown = screen.getByLabelText(
+        'Select default keyboard layout'
+      );
       await user.click(layoutDropdown);
       await user.click(screen.getByText('JIS 109 (Full)'));
 
@@ -118,7 +130,9 @@ describe('DevicesPage - Integration Tests', () => {
         expect(screen.getByText('Global Settings')).toBeInTheDocument();
       });
 
-      const layoutDropdown = screen.getByLabelText('Select default keyboard layout');
+      const layoutDropdown = screen.getByLabelText(
+        'Select default keyboard layout'
+      );
       await user.click(layoutDropdown);
       await user.click(screen.getByText('HHKB'));
 
@@ -132,7 +146,10 @@ describe('DevicesPage - Integration Tests', () => {
 
       server.use(
         http.put('/api/settings/global-layout', () => {
-          return HttpResponse.json({ error: 'Database error' }, { status: 500 });
+          return HttpResponse.json(
+            { error: 'Database error' },
+            { status: 500 }
+          );
         })
       );
 
@@ -142,7 +159,9 @@ describe('DevicesPage - Integration Tests', () => {
         expect(screen.getByText('Global Settings')).toBeInTheDocument();
       });
 
-      const layoutDropdown = screen.getByLabelText('Select default keyboard layout');
+      const layoutDropdown = screen.getByLabelText(
+        'Select default keyboard layout'
+      );
       await user.click(layoutDropdown);
       await user.click(screen.getByText('Numpad'));
 
@@ -165,7 +184,9 @@ describe('DevicesPage - Integration Tests', () => {
         expect(screen.getByText('Global Settings')).toBeInTheDocument();
       });
 
-      const layoutDropdown = screen.getByLabelText('Select default keyboard layout');
+      const layoutDropdown = screen.getByLabelText(
+        'Select default keyboard layout'
+      );
       expect(layoutDropdown).toHaveTextContent('ANSI 104');
     });
   });
@@ -181,7 +202,9 @@ describe('DevicesPage - Integration Tests', () => {
         expect(screen.getByText('Devices')).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Device List \(2 connected\)/)
+      ).toBeInTheDocument();
       expect(screen.getAllByText('Test Keyboard 1').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Test Keyboard 2').length).toBeGreaterThan(0);
     });
@@ -218,7 +241,9 @@ describe('DevicesPage - Integration Tests', () => {
 
       // Wait for device data to load
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // Check that device names are displayed
@@ -229,374 +254,439 @@ describe('DevicesPage - Integration Tests', () => {
       const layoutSelectors = screen.getAllByLabelText('Layout');
       expect(layoutSelectors.length).toBeGreaterThanOrEqual(2);
     });
-
   });
 
   describe('Device Editing', () => {
     it('enters rename mode when Rename button is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
 
-    // Wait for devices to load
-    const renameButton = await screen.findByLabelText('Rename Test Keyboard 1');
-    await user.click(renameButton);
+      // Wait for devices to load
+      const renameButton = await screen.findByLabelText(
+        'Rename Test Keyboard 1'
+      );
+      await user.click(renameButton);
 
-    // Input should appear with current name
-    const input = screen.getByRole('textbox', { name: 'Device name' });
-    expect(input).toBeInTheDocument();
-    expect(input).toHaveValue('Test Keyboard 1');
+      // Input should appear with current name
+      const input = screen.getByRole('textbox', { name: 'Device name' });
+      expect(input).toBeInTheDocument();
+      expect(input).toHaveValue('Test Keyboard 1');
 
-    // Save and Cancel buttons should appear
-    expect(screen.getByLabelText('Save')).toBeInTheDocument();
-    expect(screen.getByLabelText('Cancel')).toBeInTheDocument();
-  });
-
-  it('saves new name when Save button is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
-
-    // Wait for devices to load
-    const renameButton = await screen.findByLabelText('Rename Test Keyboard 1');
-    await user.click(renameButton);
-
-    const input = screen.getByRole('textbox', { name: 'Device name' });
-    await user.clear(input);
-    await user.type(input, 'New Keyboard Name');
-
-    const saveButton = screen.getByLabelText('Save');
-    await user.click(saveButton);
-
-    // Input should disappear (exits edit mode)
-    expect(screen.queryByRole('textbox', { name: 'Device name' })).not.toBeInTheDocument();
-
-    // TODO: Once rename API is implemented, verify name actually changes
-    // For now, rename just exits edit mode without persisting
-  });
-
-  it('saves new name when Enter key is pressed', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
-
-    // Wait for devices to load
-    const renameButton = await screen.findByLabelText('Rename Test Keyboard 1');
-    await user.click(renameButton);
-
-    const input = screen.getByRole('textbox', { name: 'Device name' });
-    await user.clear(input);
-    await user.type(input, 'Renamed via Enter{Enter}');
-
-    await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: 'Device name' })).not.toBeInTheDocument();
+      // Save and Cancel buttons should appear
+      expect(screen.getByLabelText('Save')).toBeInTheDocument();
+      expect(screen.getByLabelText('Cancel')).toBeInTheDocument();
     });
 
-    // TODO: Once rename API is implemented, verify name actually changes
-    // For now, rename just exits edit mode without persisting
-  });
+    it('saves new name when Save button is clicked', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
 
-  it('cancels rename when Cancel button is clicked', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
+      // Wait for devices to load
+      const renameButton = await screen.findByLabelText(
+        'Rename Test Keyboard 1'
+      );
+      await user.click(renameButton);
 
-    // Wait for devices to load
-    const renameButton = await screen.findByLabelText('Rename Test Keyboard 1');
-    await user.click(renameButton);
+      const input = screen.getByRole('textbox', { name: 'Device name' });
+      await user.clear(input);
+      await user.type(input, 'New Keyboard Name');
 
-    const input = screen.getByRole('textbox', { name: 'Device name' });
-    await user.clear(input);
-    await user.type(input, 'This should not be saved');
+      const saveButton = screen.getByLabelText('Save');
+      await user.click(saveButton);
 
-    const cancelButton = screen.getByLabelText('Cancel');
-    await user.click(cancelButton);
+      // Input should disappear (exits edit mode)
+      expect(
+        screen.queryByRole('textbox', { name: 'Device name' })
+      ).not.toBeInTheDocument();
 
-    // Input should disappear
-    expect(screen.queryByRole('textbox', { name: 'Device name' })).not.toBeInTheDocument();
-
-    // Original name should still be displayed
-    expect(screen.getAllByText('Test Keyboard 1').length).toBeGreaterThan(0);
-    expect(screen.queryByText('This should not be saved')).not.toBeInTheDocument();
-  });
-
-  it('cancels rename when Escape key is pressed', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
-
-    // Wait for devices to load
-    const renameButton = await screen.findByLabelText('Rename Test Keyboard 1');
-    await user.click(renameButton);
-
-    const input = screen.getByRole('textbox', { name: 'Device name' });
-    await user.clear(input);
-    await user.type(input, 'This should not be saved{Escape}');
-
-    await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: 'Device name' })).not.toBeInTheDocument();
+      // TODO: Once rename API is implemented, verify name actually changes
+      // For now, rename just exits edit mode without persisting
     });
 
-    expect(screen.getAllByText('Test Keyboard 1').length).toBeGreaterThan(0);
-  });
+    it('saves new name when Enter key is pressed', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
 
-  it('shows error when trying to save empty name', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
+      // Wait for devices to load
+      const renameButton = await screen.findByLabelText(
+        'Rename Test Keyboard 1'
+      );
+      await user.click(renameButton);
 
-    // Wait for devices to load
-    const renameButton = await screen.findByLabelText('Rename Test Keyboard 1');
-    await user.click(renameButton);
+      const input = screen.getByRole('textbox', { name: 'Device name' });
+      await user.clear(input);
+      await user.type(input, 'Renamed via Enter{Enter}');
 
-    const input = screen.getByRole('textbox', { name: 'Device name' });
-    await user.clear(input);
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('textbox', { name: 'Device name' })
+        ).not.toBeInTheDocument();
+      });
 
-    const saveButton = screen.getByLabelText('Save');
-    await user.click(saveButton);
-
-    // Error message should appear
-    expect(screen.getByText('Device name cannot be empty')).toBeInTheDocument();
-
-    // Input should still be visible
-    expect(input).toBeInTheDocument();
-  });
-
-  it('shows character counter when maxLength is set', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
-
-    // Wait for devices to load
-    const renameButton = await screen.findByLabelText('Rename Test Keyboard 1');
-    await user.click(renameButton);
-
-    const input = screen.getByRole('textbox', { name: 'Device name' });
-    await user.clear(input);
-    await user.type(input, 'This is a name');
-
-    // Character counter should be visible (Input component shows it when maxLength is set)
-    expect(screen.getByText(/\/ 64/)).toBeInTheDocument();
-  });
-
-  it('persists device name changes', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
-
-    const renameButton = await screen.findByLabelText('Rename Test Keyboard 1');
-    await user.click(renameButton);
-
-    const input = screen.getByRole('textbox', { name: 'Device name' });
-    await user.clear(input);
-    await user.type(input, 'My Custom Keyboard');
-    await user.click(screen.getByLabelText('Save'));
-
-    await waitFor(() => {
-      expect(screen.queryByRole('textbox', { name: 'Device name' })).not.toBeInTheDocument();
+      // TODO: Once rename API is implemented, verify name actually changes
+      // For now, rename just exits edit mode without persisting
     });
 
-    // TODO: Once rename API is implemented, verify name persists
-    // For now, rename just exits edit mode without persisting
-  });
+    it('cancels rename when Cancel button is clicked', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
 
-  it('persists device layout changes with auto-save', async () => {
-    const user = userEvent.setup();
-    let savedLayout = '';
+      // Wait for devices to load
+      const renameButton = await screen.findByLabelText(
+        'Rename Test Keyboard 1'
+      );
+      await user.click(renameButton);
 
-    server.use(
-      http.patch('/api/devices/:id', async ({ request, params }) => {
-        const body = (await request.json()) as { layout?: string };
-        if (body.layout) {
-          savedLayout = body.layout;
-        }
-        return HttpResponse.json({ success: true });
-      })
-    );
+      const input = screen.getByRole('textbox', { name: 'Device name' });
+      await user.clear(input);
+      await user.type(input, 'This should not be saved');
 
-    renderWithProviders(<DevicesPage />);
+      const cancelButton = screen.getByLabelText('Cancel');
+      await user.click(cancelButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Devices')).toBeInTheDocument();
+      // Input should disappear
+      expect(
+        screen.queryByRole('textbox', { name: 'Device name' })
+      ).not.toBeInTheDocument();
+
+      // Original name should still be displayed
+      expect(screen.getAllByText('Test Keyboard 1').length).toBeGreaterThan(0);
+      expect(
+        screen.queryByText('This should not be saved')
+      ).not.toBeInTheDocument();
     });
 
-    const layoutDropdowns = screen.getAllByLabelText('Layout');
-    const firstDropdown = layoutDropdowns[0];
+    it('cancels rename when Escape key is pressed', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
 
-    await user.click(firstDropdown);
-    await user.click(screen.getByText('JIS 109 (Full)'));
+      // Wait for devices to load
+      const renameButton = await screen.findByLabelText(
+        'Rename Test Keyboard 1'
+      );
+      await user.click(renameButton);
 
-    // Wait for auto-save to trigger
-    await waitFor(
-      () => {
-        expect(savedLayout).toBe('JIS_109');
-      },
-      { timeout: 2000 }
-    );
-  });
+      const input = screen.getByRole('textbox', { name: 'Device name' });
+      await user.clear(input);
+      await user.type(input, 'This should not be saved{Escape}');
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('textbox', { name: 'Device name' })
+        ).not.toBeInTheDocument();
+      });
+
+      expect(screen.getAllByText('Test Keyboard 1').length).toBeGreaterThan(0);
+    });
+
+    it('shows error when trying to save empty name', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
+
+      // Wait for devices to load
+      const renameButton = await screen.findByLabelText(
+        'Rename Test Keyboard 1'
+      );
+      await user.click(renameButton);
+
+      const input = screen.getByRole('textbox', { name: 'Device name' });
+      await user.clear(input);
+
+      const saveButton = screen.getByLabelText('Save');
+      await user.click(saveButton);
+
+      // Error message should appear
+      expect(
+        screen.getByText('Device name cannot be empty')
+      ).toBeInTheDocument();
+
+      // Input should still be visible
+      expect(input).toBeInTheDocument();
+    });
+
+    it('shows character counter when maxLength is set', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
+
+      // Wait for devices to load
+      const renameButton = await screen.findByLabelText(
+        'Rename Test Keyboard 1'
+      );
+      await user.click(renameButton);
+
+      const input = screen.getByRole('textbox', { name: 'Device name' });
+      await user.clear(input);
+      await user.type(input, 'This is a name');
+
+      // Character counter should be visible (Input component shows it when maxLength is set)
+      expect(screen.getByText(/\/ 64/)).toBeInTheDocument();
+    });
+
+    it('persists device name changes', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
+
+      const renameButton = await screen.findByLabelText(
+        'Rename Test Keyboard 1'
+      );
+      await user.click(renameButton);
+
+      const input = screen.getByRole('textbox', { name: 'Device name' });
+      await user.clear(input);
+      await user.type(input, 'My Custom Keyboard');
+      await user.click(screen.getByLabelText('Save'));
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('textbox', { name: 'Device name' })
+        ).not.toBeInTheDocument();
+      });
+
+      // TODO: Once rename API is implemented, verify name persists
+      // For now, rename just exits edit mode without persisting
+    });
+
+    it('persists device layout changes with auto-save', async () => {
+      const user = userEvent.setup();
+      let savedLayout = '';
+
+      server.use(
+        http.patch('/api/devices/:id', async ({ request, params }) => {
+          const body = (await request.json()) as { layout?: string };
+          if (body.layout) {
+            savedLayout = body.layout;
+          }
+          return HttpResponse.json({ success: true });
+        })
+      );
+
+      renderWithProviders(<DevicesPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Devices')).toBeInTheDocument();
+      });
+
+      const layoutDropdowns = screen.getAllByLabelText('Layout');
+      const firstDropdown = layoutDropdowns[0];
+
+      await user.click(firstDropdown);
+      await user.click(screen.getByText('JIS 109 (Full)'));
+
+      // Wait for auto-save to trigger
+      await waitFor(
+        () => {
+          expect(savedLayout).toBe('JIS_109');
+        },
+        { timeout: 2000 }
+      );
+    });
   });
 
   describe('Device Layout Selection', () => {
     it('changes layout via dropdown', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
 
-    // Wait for devices to load
-    await screen.findByText('Devices');
+      // Wait for devices to load
+      await screen.findByText('Devices');
 
-    await waitFor(() => {
+      await waitFor(() => {
+        const layoutDropdowns = screen.getAllByLabelText('Layout');
+        expect(layoutDropdowns.length).toBeGreaterThan(0);
+      });
+
+      // Find the first layout dropdown
       const layoutDropdowns = screen.getAllByLabelText('Layout');
-      expect(layoutDropdowns.length).toBeGreaterThan(0);
+      const dropdown = layoutDropdowns[0];
+
+      // Open dropdown
+      await user.click(dropdown);
+
+      // Select ISO 105 option
+      const isoOption = screen.getByText('ISO 105 (Full)');
+      await user.click(isoOption);
+
+      // Verify the selection (implementation-dependent)
+      // This test assumes the Dropdown component displays the selected value
     });
 
-    // Find the first layout dropdown
-    const layoutDropdowns = screen.getAllByLabelText('Layout');
-    const dropdown = layoutDropdowns[0];
+    it('shows auto-save feedback for layout changes', async () => {
+      const user = userEvent.setup();
 
-    // Open dropdown
-    await user.click(dropdown);
+      server.use(
+        http.patch('/api/devices/:id', async () => {
+          // Simulate slow save
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return HttpResponse.json({ success: true });
+        })
+      );
 
-    // Select ISO 105 option
-    const isoOption = screen.getByText('ISO 105 (Full)');
-    await user.click(isoOption);
+      renderWithProviders(<DevicesPage />);
 
-    // Verify the selection (implementation-dependent)
-    // This test assumes the Dropdown component displays the selected value
-  });
+      await waitFor(() => {
+        expect(screen.getByText('Devices')).toBeInTheDocument();
+      });
 
-  it('shows auto-save feedback for layout changes', async () => {
-    const user = userEvent.setup();
+      const layoutDropdowns = screen.getAllByLabelText('Layout');
+      await user.click(layoutDropdowns[0]);
+      await user.click(screen.getByText('ISO 105 (Full)'));
 
-    server.use(
-      http.patch('/api/devices/:id', async () => {
-        // Simulate slow save
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        return HttpResponse.json({ success: true });
-      })
-    );
-
-    renderWithProviders(<DevicesPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Devices')).toBeInTheDocument();
+      // Should show saving feedback (checkmark after save completes)
+      // Device rows show a spinner (no "Saving..." text) followed by a checkmark
+      await waitFor(
+        () => {
+          expect(screen.getByText('✓')).toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
     });
-
-    const layoutDropdowns = screen.getAllByLabelText('Layout');
-    await user.click(layoutDropdowns[0]);
-    await user.click(screen.getByText('ISO 105 (Full)'));
-
-    // Should show saving feedback (checkmark after save completes)
-    // Device rows show a spinner (no "Saving..." text) followed by a checkmark
-    await waitFor(
-      () => {
-        expect(screen.getByText('✓')).toBeInTheDocument();
-      },
-      { timeout: 2000 }
-    );
-  });
   });
 
   describe('Forget Device', () => {
     it('opens forget device confirmation modal', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
 
-    // Wait for devices to load
-    const forgetButton = await screen.findByLabelText('Permanently forget Test Keyboard 1');
-    await user.click(forgetButton);
+      // Wait for devices to load
+      const forgetButton = await screen.findByLabelText(
+        'Permanently forget Test Keyboard 1'
+      );
+      await user.click(forgetButton);
 
-    // Modal should appear with confirmation message
-    expect(screen.getByRole('dialog', { name: 'Forget Device' })).toBeInTheDocument();
-    expect(screen.getByText(/Are you sure you want to forget device/)).toBeInTheDocument();
-  });
-
-  it('cancels forget device when Cancel is clicked in modal', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
-
-    // Wait for devices to load
-    const forgetButton = await screen.findByLabelText('Permanently forget Test Keyboard 1');
-    await user.click(forgetButton);
-
-    const cancelButton = screen.getByLabelText('Cancel forget device');
-    await user.click(cancelButton);
-
-    // Modal should close
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Forget Device' })).not.toBeInTheDocument();
+      // Modal should appear with confirmation message
+      expect(
+        screen.getByRole('dialog', { name: 'Forget Device' })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/Are you sure you want to forget device/)
+      ).toBeInTheDocument();
     });
 
-    // Device should still be in the list
-    expect(screen.getAllByText('Test Keyboard 1').length).toBeGreaterThan(0);
-  });
+    it('cancels forget device when Cancel is clicked in modal', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
 
-  it('removes device when Forget Device is confirmed', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
+      // Wait for devices to load
+      const forgetButton = await screen.findByLabelText(
+        'Permanently forget Test Keyboard 1'
+      );
+      await user.click(forgetButton);
 
-    // Wait for devices to load
-    const forgetButton = await screen.findByLabelText('Permanently forget Test Keyboard 1');
-    await user.click(forgetButton);
+      const cancelButton = screen.getByLabelText('Cancel forget device');
+      await user.click(cancelButton);
 
-    const confirmButton = screen.getByLabelText('Confirm forget device');
-    await user.click(confirmButton);
+      // Modal should close
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('dialog', { name: 'Forget Device' })
+        ).not.toBeInTheDocument();
+      });
 
-    // Modal should close
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Forget Device' })).not.toBeInTheDocument();
+      // Device should still be in the list
+      expect(screen.getAllByText('Test Keyboard 1').length).toBeGreaterThan(0);
     });
 
-    // Device should be removed from the list - check that it's gone from the page
-    await waitFor(() => {
-      expect(screen.queryByLabelText('Permanently forget Test Keyboard 1')).not.toBeInTheDocument();
+    it('removes device when Forget Device is confirmed', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
+
+      // Wait for devices to load
+      const forgetButton = await screen.findByLabelText(
+        'Permanently forget Test Keyboard 1'
+      );
+      await user.click(forgetButton);
+
+      const confirmButton = screen.getByLabelText('Confirm forget device');
+      await user.click(confirmButton);
+
+      // Modal should close
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('dialog', { name: 'Forget Device' })
+        ).not.toBeInTheDocument();
+      });
+
+      // Device should be removed from the list - check that it's gone from the page
+      await waitFor(() => {
+        expect(
+          screen.queryByLabelText('Permanently forget Test Keyboard 1')
+        ).not.toBeInTheDocument();
+      });
+
+      // Device count should update
+      expect(
+        screen.getByText(/Device List \(1 connected\)/)
+      ).toBeInTheDocument();
     });
 
-    // Device count should update
-    expect(screen.getByText(/Device List \(1 connected\)/)).toBeInTheDocument();
-  });
+    it('shows empty state when no devices are connected', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<DevicesPage />);
 
-  it('shows empty state when no devices are connected', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<DevicesPage />);
+      // Wait for devices to load
+      await screen.findByText('Devices');
 
-    // Wait for devices to load
-    await screen.findByText('Devices');
+      // Remove first device
+      const forgetButton1 = screen.getByLabelText(
+        'Permanently forget Test Keyboard 1'
+      );
+      await user.click(forgetButton1);
+      const confirmButton1 = screen.getByLabelText('Confirm forget device');
+      await user.click(confirmButton1);
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('dialog', { name: 'Forget Device' })
+        ).not.toBeInTheDocument();
+      });
 
-    // Remove first device
-    const forgetButton1 = screen.getByLabelText('Permanently forget Test Keyboard 1');
-    await user.click(forgetButton1);
-    const confirmButton1 = screen.getByLabelText('Confirm forget device');
-    await user.click(confirmButton1);
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Forget Device' })).not.toBeInTheDocument();
+      // Remove second device
+      const forgetButton2 = screen.getByLabelText(
+        'Permanently forget Test Keyboard 2'
+      );
+      await user.click(forgetButton2);
+      const confirmButton2 = screen.getByLabelText('Confirm forget device');
+      await user.click(confirmButton2);
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('dialog', { name: 'Forget Device' })
+        ).not.toBeInTheDocument();
+      });
+
+      // Empty state should appear
+      expect(
+        screen.getByText(
+          'No devices connected. Connect a keyboard to get started.'
+        )
+      ).toBeInTheDocument();
     });
 
-    // Remove second device
-    const forgetButton2 = screen.getByLabelText('Permanently forget Test Keyboard 2');
-    await user.click(forgetButton2);
-    const confirmButton2 = screen.getByLabelText('Confirm forget device');
-    await user.click(confirmButton2);
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Forget Device' })).not.toBeInTheDocument();
+    it('has accessible labels for all interactive elements', async () => {
+      renderWithProviders(<DevicesPage />);
+
+      // Wait for devices to load
+      await screen.findByText('Devices');
+
+      await waitFor(() => {
+        // Rename buttons
+        expect(
+          screen.getByLabelText('Rename Test Keyboard 1')
+        ).toBeInTheDocument();
+        expect(
+          screen.getByLabelText('Rename Test Keyboard 2')
+        ).toBeInTheDocument();
+      });
+
+      // Layout dropdowns
+      expect(screen.getAllByLabelText('Layout').length).toBeGreaterThan(0);
+
+      // Forget buttons
+      expect(
+        screen.getByLabelText('Permanently forget Test Keyboard 1')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('Permanently forget Test Keyboard 2')
+      ).toBeInTheDocument();
     });
-
-    // Empty state should appear
-    expect(
-      screen.getByText('No devices connected. Connect a keyboard to get started.')
-    ).toBeInTheDocument();
-  });
-
-  it('has accessible labels for all interactive elements', async () => {
-    renderWithProviders(<DevicesPage />);
-
-    // Wait for devices to load
-    await screen.findByText('Devices');
-
-    await waitFor(() => {
-      // Rename buttons
-      expect(screen.getByLabelText('Rename Test Keyboard 1')).toBeInTheDocument();
-      expect(screen.getByLabelText('Rename Test Keyboard 2')).toBeInTheDocument();
-    });
-
-    // Layout dropdowns
-    expect(screen.getAllByLabelText('Layout').length).toBeGreaterThan(0);
-
-    // Forget buttons
-    expect(screen.getByLabelText('Permanently forget Test Keyboard 1')).toBeInTheDocument();
-    expect(screen.getByLabelText('Permanently forget Test Keyboard 2')).toBeInTheDocument();
-  });
   });
 
   // ========================================================================
@@ -639,7 +729,9 @@ describe('DevicesPage - Integration Tests', () => {
 
       // Wait for devices to load
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // Check that page uses flex-col for responsive layout
@@ -662,8 +754,12 @@ describe('DevicesPage - Integration Tests', () => {
       // Should NOT have global/device-specific toggle buttons
       expect(screen.queryByText('Global')).not.toBeInTheDocument();
       expect(screen.queryByText('Device-Specific')).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /global/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /device-specific/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /global/i })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /device-specific/i })
+      ).not.toBeInTheDocument();
     });
 
     it('does NOT send scope in device update API calls', async () => {
@@ -708,7 +804,9 @@ describe('DevicesPage - Integration Tests', () => {
 
       // Wait for devices to load
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // Check that the entire page does not contain the word "scope"
@@ -738,7 +836,10 @@ describe('DevicesPage - Integration Tests', () => {
     it.skip('displays error message when API fetch fails', async () => {
       server.use(
         http.get('/api/devices', () => {
-          return HttpResponse.json({ error: 'Internal server error' }, { status: 500 });
+          return HttpResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+          );
         })
       );
 
@@ -759,11 +860,15 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Device List (0 connected)')).toBeInTheDocument();
+        expect(
+          screen.getByText('Device List (0 connected)')
+        ).toBeInTheDocument();
       });
 
       expect(
-        screen.getByText('No devices connected. Connect a keyboard to get started.')
+        screen.getByText(
+          'No devices connected. Connect a keyboard to get started.'
+        )
       ).toBeInTheDocument();
     });
 
@@ -776,7 +881,9 @@ describe('DevicesPage - Integration Tests', () => {
 
       // Wait for devices to load
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // Verify devices are shown
@@ -814,7 +921,9 @@ describe('DevicesPage - Integration Tests', () => {
 
       // Wait for devices to load
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // Find all toggle switches (role="switch")
@@ -822,18 +931,26 @@ describe('DevicesPage - Integration Tests', () => {
       expect(toggles.length).toBeGreaterThanOrEqual(2);
 
       // Verify toggle labels
-      expect(screen.getByLabelText(/Disable Test Keyboard 1/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Disable Test Keyboard 2/)).toBeInTheDocument();
+      expect(
+        screen.getByLabelText(/Disable Test Keyboard 1/)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText(/Disable Test Keyboard 2/)
+      ).toBeInTheDocument();
     });
 
     it('toggle switch is checked when device is enabled', async () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
-      const toggle1 = screen.getByLabelText(/Disable Test Keyboard 1/) as HTMLInputElement;
+      const toggle1 = screen.getByLabelText(
+        /Disable Test Keyboard 1/
+      ) as HTMLInputElement;
       expect(toggle1).toHaveAttribute('aria-checked', 'true');
     });
 
@@ -843,7 +960,9 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       const toggle = screen.getByLabelText('Disable Test Keyboard 1');
@@ -892,15 +1011,20 @@ describe('DevicesPage - Integration Tests', () => {
       );
 
       // Set localStorage to match the disabled state
-      localStorage.setItem('keyrx:device:enabled', JSON.stringify({
-        'device-1': false,
-        'device-2': true,
-      }));
+      localStorage.setItem(
+        'keyrx:device:enabled',
+        JSON.stringify({
+          'device-1': false,
+          'device-2': true,
+        })
+      );
 
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // Find device cards by test-id
@@ -941,15 +1065,20 @@ describe('DevicesPage - Integration Tests', () => {
       );
 
       // Set localStorage to match the disabled state
-      localStorage.setItem('keyrx:device:enabled', JSON.stringify({
-        'device-1': false,
-        'device-2': true,
-      }));
+      localStorage.setItem(
+        'keyrx:device:enabled',
+        JSON.stringify({
+          'device-1': false,
+          'device-2': true,
+        })
+      );
 
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // First device should show "Disabled" badge
@@ -965,7 +1094,9 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // Wait for toggle to be present
@@ -988,7 +1119,9 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // Wait for toggle and verify label
@@ -997,7 +1130,9 @@ describe('DevicesPage - Integration Tests', () => {
 
       // After disabling - label should say "Enable"
       await waitFor(() => {
-        expect(screen.getByLabelText('Enable Test Keyboard 1')).toBeInTheDocument();
+        expect(
+          screen.getByLabelText('Enable Test Keyboard 1')
+        ).toBeInTheDocument();
       });
     });
 
@@ -1007,7 +1142,9 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       const toggle = await screen.findByLabelText('Disable Test Keyboard 1');
@@ -1054,15 +1191,20 @@ describe('DevicesPage - Integration Tests', () => {
       );
 
       // Simulate persisted disabled state in localStorage
-      localStorage.setItem('keyrx:device:enabled', JSON.stringify({
-        'device-1': false,
-        'device-2': true,
-      }));
+      localStorage.setItem(
+        'keyrx:device:enabled',
+        JSON.stringify({
+          'device-1': false,
+          'device-2': true,
+        })
+      );
 
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // Verify disabled state persists
@@ -1096,16 +1238,22 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(1 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(1 connected\)/)
+        ).toBeInTheDocument();
       });
 
       // Should be able to forget disabled device
-      const forgetButton = screen.getByLabelText(/Permanently forget Test Keyboard 1/);
+      const forgetButton = screen.getByLabelText(
+        /Permanently forget Test Keyboard 1/
+      );
       expect(forgetButton).toBeInTheDocument();
       await user.click(forgetButton);
 
       // Confirmation modal should appear
-      expect(screen.getByRole('dialog', { name: 'Forget Device' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('dialog', { name: 'Forget Device' })
+      ).toBeInTheDocument();
     });
 
     it('toggle is keyboard accessible', async () => {
@@ -1114,7 +1262,9 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Device List \(2 connected\)/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Device List \(2 connected\)/)
+        ).toBeInTheDocument();
       });
 
       const toggle = await screen.findByLabelText('Disable Test Keyboard 1');
@@ -1144,7 +1294,10 @@ describe('DevicesPage - Integration Tests', () => {
 
       server.use(
         http.patch('/api/devices/:id', async ({ request }) => {
-          const body = (await request.json()) as { name?: string; layout?: string };
+          const body = (await request.json()) as {
+            name?: string;
+            layout?: string;
+          };
           if (body.name) savedName = body.name;
           if (body.layout) savedLayout = body.layout;
           return HttpResponse.json({ success: true });
@@ -1167,7 +1320,9 @@ describe('DevicesPage - Integration Tests', () => {
       await user.click(screen.getByLabelText('Save'));
 
       await waitFor(() => {
-        expect(screen.getAllByText('Gaming Keyboard').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Gaming Keyboard').length).toBeGreaterThan(
+          0
+        );
       });
 
       // Step 2: Change layout
@@ -1203,7 +1358,9 @@ describe('DevicesPage - Integration Tests', () => {
       });
 
       // Select new global layout
-      const globalLayoutDropdown = screen.getByLabelText('Select default keyboard layout');
+      const globalLayoutDropdown = screen.getByLabelText(
+        'Select default keyboard layout'
+      );
       await user.click(globalLayoutDropdown);
       await user.click(screen.getByText('HHKB'));
 
@@ -1236,7 +1393,9 @@ describe('DevicesPage - Integration Tests', () => {
       await user.click(screen.getByLabelText('Save'));
 
       await waitFor(() => {
-        expect(screen.queryByRole('textbox', { name: 'Device name' })).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole('textbox', { name: 'Device name' })
+        ).not.toBeInTheDocument();
       });
 
       // Rename second device

@@ -3,7 +3,11 @@
  */
 
 import { apiClient } from './client';
-import { validateApiResponse, DeviceListResponseSchema, DeviceEntrySchema } from './schemas';
+import {
+  validateApiResponse,
+  DeviceListResponseSchema,
+  DeviceEntrySchema,
+} from './schemas';
 import type { DeviceEntry, DeviceScope } from '../types';
 import * as deviceStorage from '../utils/deviceStorage';
 
@@ -28,7 +32,11 @@ interface DevicesListResponse {
  */
 export async function fetchDevices(): Promise<DeviceEntry[]> {
   const response = await apiClient.get<DevicesListResponse>('/api/devices');
-  const validated = validateApiResponse(DeviceListResponseSchema, response, 'GET /api/devices');
+  const validated = validateApiResponse(
+    DeviceListResponseSchema,
+    response,
+    'GET /api/devices'
+  );
 
   // Map validated response to DeviceEntry format
   // The REST API returns DeviceRpcInfo format (id, name, path, serial, active, scope?, layout?)
@@ -38,8 +46,12 @@ export async function fetchDevices(): Promise<DeviceEntry[]> {
     path: device.path,
     serial: device.serial || null,
     active: device.active,
-    scope: device.scope === 'DeviceSpecific' ? 'device-specific' :
-           device.scope === 'Global' ? 'global' : 'global', // Default to global if unset
+    scope:
+      device.scope === 'DeviceSpecific'
+        ? 'device-specific'
+        : device.scope === 'Global'
+          ? 'global'
+          : 'global', // Default to global if unset
     layout: device.layout || null,
     isVirtual: device.name.toLowerCase().startsWith('keyrx'), // Virtual if name starts with "keyrx" (daemon's uinput device)
     enabled: deviceStorage.isDeviceEnabled(device.id), // Load enabled state from localStorage
@@ -54,9 +66,16 @@ export async function renameDevice(
   name: string
 ): Promise<DeviceResponse> {
   const request: RenameDeviceRequest = { name };
-  const response = await apiClient.put<DeviceEntry>(`/api/devices/${id}/name`, request);
+  const response = await apiClient.put<DeviceEntry>(
+    `/api/devices/${id}/name`,
+    request
+  );
   // Validate the returned device entry
-  validateApiResponse(DeviceEntrySchema, response, `PUT /api/devices/${id}/name`);
+  validateApiResponse(
+    DeviceEntrySchema,
+    response,
+    `PUT /api/devices/${id}/name`
+  );
   return { success: true };
 }
 
@@ -68,9 +87,16 @@ export async function setDeviceScope(
   scope: DeviceScope
 ): Promise<DeviceResponse> {
   const request: SetScopeRequest = { scope };
-  const response = await apiClient.put<DeviceEntry>(`/api/devices/${id}/scope`, request);
+  const response = await apiClient.put<DeviceEntry>(
+    `/api/devices/${id}/scope`,
+    request
+  );
   // Validate the returned device entry
-  validateApiResponse(DeviceEntrySchema, response, `PUT /api/devices/${id}/scope`);
+  validateApiResponse(
+    DeviceEntrySchema,
+    response,
+    `PUT /api/devices/${id}/scope`
+  );
   return { success: true };
 }
 

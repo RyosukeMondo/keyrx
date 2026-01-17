@@ -8,7 +8,13 @@
  * - Resource cleanup
  */
 
-import type { WSMessage, EventRecord, DaemonState, LatencyStats, KeyEventPayload } from '../types';
+import type {
+  WSMessage,
+  EventRecord,
+  DaemonState,
+  LatencyStats,
+  KeyEventPayload,
+} from '../types';
 
 /**
  * Transform daemon's KeyEventPayload to frontend's EventRecord
@@ -31,7 +37,11 @@ function transformKeyEvent(payload: KeyEventPayload): EventRecord {
   };
 }
 
-export type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error';
+export type ConnectionState =
+  | 'connecting'
+  | 'connected'
+  | 'disconnected'
+  | 'error';
 
 export interface WebSocketConfig {
   url?: string;
@@ -71,7 +81,10 @@ export class WebSocketManager {
   private connectionState: ConnectionState = 'disconnected';
   private isClosed = false;
 
-  constructor(config: WebSocketConfig = {}, callbacks: WebSocketCallbacks = {}) {
+  constructor(
+    config: WebSocketConfig = {},
+    callbacks: WebSocketCallbacks = {}
+  ) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.callbacks = callbacks;
     this.currentReconnectInterval = this.config.reconnectInterval;
@@ -186,7 +199,10 @@ export class WebSocketManager {
    * Handle WebSocket open event
    */
   private handleOpen(): void {
-    console.log('WebSocketManager: Connected');
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log('WebSocketManager: Connected');
+    }
     this.reconnectAttempts = 0;
     this.currentReconnectInterval = this.config.reconnectInterval;
     this.setConnectionState('connected');
@@ -251,7 +267,10 @@ export class WebSocketManager {
    * Handle WebSocket close event
    */
   private handleClose(): void {
-    console.log('WebSocketManager: Connection closed');
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log('WebSocketManager: Connection closed');
+    }
     this.setConnectionState('disconnected');
 
     if (this.callbacks.onClose) {
@@ -283,9 +302,12 @@ export class WebSocketManager {
     this.reconnectAttempts++;
     const delay = this.currentReconnectInterval;
 
-    console.log(
-      `WebSocketManager: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`
-    );
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `WebSocketManager: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`
+      );
+    }
 
     this.reconnectTimeoutId = window.setTimeout(() => {
       this.connect();

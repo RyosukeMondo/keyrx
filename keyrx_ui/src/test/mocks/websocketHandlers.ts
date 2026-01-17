@@ -115,7 +115,9 @@ function handleSubscribe(
 ): void {
   const conn = connections.get(connectionId);
   if (!conn) {
-    console.warn(`[MSW WebSocket] Connection ${connectionId} not found for subscribe`);
+    console.warn(
+      `[MSW WebSocket] Connection ${connectionId} not found for subscribe`
+    );
     return;
   }
 
@@ -161,7 +163,9 @@ function handleUnsubscribe(
 ): void {
   const conn = connections.get(connectionId);
   if (!conn) {
-    console.warn(`[MSW WebSocket] Connection ${connectionId} not found for unsubscribe`);
+    console.warn(
+      `[MSW WebSocket] Connection ${connectionId} not found for unsubscribe`
+    );
     return;
   }
 
@@ -179,7 +183,12 @@ function handleUnsubscribe(
 /**
  * Handle query message (read-only RPC)
  */
-function handleQuery(id: string, method: RpcMethod, params: unknown, client: any): void {
+function handleQuery(
+  id: string,
+  method: RpcMethod,
+  params: unknown,
+  client: any
+): void {
   console.debug(`[MSW WebSocket] Received query: ${method}`, params);
   let result: unknown;
 
@@ -257,7 +266,12 @@ function handleQuery(id: string, method: RpcMethod, params: unknown, client: any
 /**
  * Handle command message (state-modifying RPC)
  */
-function handleCommand(id: string, method: RpcMethod, params: unknown, client: any): void {
+function handleCommand(
+  id: string,
+  method: RpcMethod,
+  params: unknown,
+  client: any
+): void {
   let result: unknown;
 
   switch (method) {
@@ -348,14 +362,20 @@ function broadcastToConnection(
   try {
     conn.client.send(JSON.stringify(event));
   } catch (error) {
-    console.debug(`[MSW WebSocket] Failed to send to connection ${connectionId}:`, error);
+    console.debug(
+      `[MSW WebSocket] Failed to send to connection ${connectionId}:`,
+      error
+    );
   }
 }
 
 /**
  * Broadcast event to all subscribed connections
  */
-export function broadcastEvent(channel: SubscriptionChannel, data: unknown): void {
+export function broadcastEvent(
+  channel: SubscriptionChannel,
+  data: unknown
+): void {
   connections.forEach((conn, connectionId) => {
     if (conn.subscriptions.has(channel)) {
       broadcastToConnection(connectionId, channel, data);
@@ -421,62 +441,83 @@ export function resetWebSocketState(): void {
  */
 export function createWebSocketHandlers() {
   return [
-    ws.link('ws://localhost:9867/ws-rpc').addEventListener('connection', ({ client }) => {
-      const connectionId = generateConnectionId();
-      console.debug(`[MSW WebSocket] Connection opened: ${connectionId}`);
+    ws
+      .link('ws://localhost:9867/ws-rpc')
+      .addEventListener('connection', ({ client }) => {
+        const connectionId = generateConnectionId();
+        console.debug(`[MSW WebSocket] Connection opened: ${connectionId}`);
 
-      // Register connection
-      connections.set(connectionId, {
-        client,
-        subscriptions: new Set(),
-      });
+        // Register connection
+        connections.set(connectionId, {
+          client,
+          subscriptions: new Set(),
+        });
 
-      // Send connected handshake immediately
-      const connectedMessage: ServerMessage = {
-        type: 'connected',
-        version: '1.0.0',
-        timestamp: Date.now() * 1000,
-      };
-      client.send(JSON.stringify(connectedMessage));
+        // Send connected handshake immediately
+        const connectedMessage: ServerMessage = {
+          type: 'connected',
+          version: '1.0.0',
+          timestamp: Date.now() * 1000,
+        };
+        client.send(JSON.stringify(connectedMessage));
 
-      // Handle incoming messages
-      client.addEventListener('message', (event: MessageEvent) => {
-        console.debug('[MSW WebSocket] Received message:', event.data);
-        try {
-          const message: ClientMessage = JSON.parse(event.data);
-          console.debug('[MSW WebSocket] Parsed message:', message);
+        // Handle incoming messages
+        client.addEventListener('message', (event: MessageEvent) => {
+          console.debug('[MSW WebSocket] Received message:', event.data);
+          try {
+            const message: ClientMessage = JSON.parse(event.data);
+            console.debug('[MSW WebSocket] Parsed message:', message);
 
-          switch (message.type) {
-            case 'subscribe':
-              handleSubscribe(connectionId, message.id, message.channel, client);
-              break;
+            switch (message.type) {
+              case 'subscribe':
+                handleSubscribe(
+                  connectionId,
+                  message.id,
+                  message.channel,
+                  client
+                );
+                break;
 
-            case 'unsubscribe':
-              handleUnsubscribe(connectionId, message.id, message.channel, client);
-              break;
+              case 'unsubscribe':
+                handleUnsubscribe(
+                  connectionId,
+                  message.id,
+                  message.channel,
+                  client
+                );
+                break;
 
-            case 'query':
-              handleQuery(message.id, message.method, message.params, client);
-              break;
+              case 'query':
+                handleQuery(message.id, message.method, message.params, client);
+                break;
 
-            case 'command':
-              handleCommand(message.id, message.method, message.params, client);
-              break;
+              case 'command':
+                handleCommand(
+                  message.id,
+                  message.method,
+                  message.params,
+                  client
+                );
+                break;
 
-            default:
-              console.warn('[MSW WebSocket] Unknown message type:', message);
+              default:
+                console.warn('[MSW WebSocket] Unknown message type:', message);
+            }
+          } catch (error) {
+            console.debug(
+              '[MSW WebSocket] Failed to parse message:',
+              event.data,
+              error
+            );
+            // Silently ignore non-JSON messages
           }
-        } catch (error) {
-          console.debug('[MSW WebSocket] Failed to parse message:', event.data, error);
-          // Silently ignore non-JSON messages
-        }
-      });
+        });
 
-      // Handle client disconnect
-      client.addEventListener('close', () => {
-        console.debug(`[MSW WebSocket] Connection closed: ${connectionId}`);
-        connections.delete(connectionId);
-      });
-    }),
+        // Handle client disconnect
+        client.addEventListener('close', () => {
+          console.debug(`[MSW WebSocket] Connection closed: ${connectionId}`);
+          connections.delete(connectionId);
+        });
+      }),
   ];
 }

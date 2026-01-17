@@ -32,15 +32,26 @@ export const HomePage: React.FC = () => {
   }, [profiles]);
 
   return (
-    <main className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8" role="main" aria-label="Dashboard">
+    <main
+      className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8"
+      role="main"
+      aria-label="Dashboard"
+    >
       <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-slate-100">
         Dashboard
       </h1>
 
       {/* Cards stack vertically on mobile, can be side-by-side on larger screens */}
-      <div className="flex flex-col gap-4 md:gap-6" role="region" aria-label="Dashboard overview">
+      <div
+        className="flex flex-col gap-4 md:gap-6"
+        role="region"
+        aria-label="Dashboard overview"
+      >
         {/* Active Profile Card */}
-        <ActiveProfileCard profile={activeProfileData} loading={profilesLoading} />
+        <ActiveProfileCard
+          profile={activeProfileData}
+          loading={profilesLoading}
+        />
 
         {/* Connected Devices Card */}
         <DeviceListCard />

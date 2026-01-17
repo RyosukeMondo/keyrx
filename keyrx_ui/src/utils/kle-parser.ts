@@ -70,7 +70,10 @@ export function parseKLEJson(kleData: KLEData): KeyButton[] {
  * Detect if a key should be rendered as ISO Enter
  * ISO Enter: height=2, specific codes (KC_ENT in ISO layouts)
  */
-function detectKeyShape(key: KLEKey, layoutName: string): 'iso-enter' | 'standard' {
+function detectKeyShape(
+  key: KLEKey,
+  layoutName: string
+): 'iso-enter' | 'standard' {
   const isISOLayout = layoutName.includes('ISO');
   const isEnterKey = key.code === 'KC_ENT' || key.code === 'KC_ENTER';
   const isTallKey = (key.h || 1) >= 2;

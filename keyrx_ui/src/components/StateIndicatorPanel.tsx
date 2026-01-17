@@ -33,11 +33,17 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
   }
 
   return (
-    <div className="p-4 bg-slate-800 rounded-lg" data-testid="state-indicator-panel">
+    <div
+      className="p-4 bg-slate-800 rounded-lg"
+      data-testid="state-indicator-panel"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Modifiers Section */}
         <div>
-          <h3 className="text-sm font-medium text-slate-300 mb-2" aria-label="Active Modifiers">
+          <h3
+            className="text-sm font-medium text-slate-300 mb-2"
+            aria-label="Active Modifiers"
+          >
             Modifiers
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -52,7 +58,10 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
                 </span>
               ))
             ) : (
-              <span className="text-slate-500 text-sm" aria-label="No modifiers active">
+              <span
+                className="text-slate-500 text-sm"
+                aria-label="No modifiers active"
+              >
                 None
               </span>
             )}
@@ -61,7 +70,10 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
 
         {/* Locks Section */}
         <div>
-          <h3 className="text-sm font-medium text-slate-300 mb-2" aria-label="Active Locks">
+          <h3
+            className="text-sm font-medium text-slate-300 mb-2"
+            aria-label="Active Locks"
+          >
             Locks
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -76,7 +88,10 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
                 </span>
               ))
             ) : (
-              <span className="text-slate-500 text-sm" aria-label="No locks active">
+              <span
+                className="text-slate-500 text-sm"
+                aria-label="No locks active"
+              >
                 None
               </span>
             )}
@@ -85,7 +100,10 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
 
         {/* Layer Section */}
         <div>
-          <h3 className="text-sm font-medium text-slate-300 mb-2" aria-label="Current Layer">
+          <h3
+            className="text-sm font-medium text-slate-300 mb-2"
+            aria-label="Current Layer"
+          >
             Layer
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -100,12 +118,18 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
 
         {/* Devices Section */}
         <div>
-          <h3 className="text-sm font-medium text-slate-300 mb-2" aria-label="Connected Devices">
+          <h3
+            className="text-sm font-medium text-slate-300 mb-2"
+            aria-label="Connected Devices"
+          >
             Devices
           </h3>
           <div className="flex flex-wrap gap-2">
             {devicesLoading ? (
-              <span className="text-slate-500 text-sm" aria-label="Loading devices">
+              <span
+                className="text-slate-500 text-sm"
+                aria-label="Loading devices"
+              >
                 Loading...
               </span>
             ) : devices && devices.length > 0 ? (
@@ -115,7 +139,9 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
                   <div
                     key={device.id}
                     className="flex items-center gap-1.5 px-3 py-1 bg-slate-700 text-white text-sm rounded-full font-medium"
-                    aria-label={`Device ${device.name} - ${device.isVirtual ? 'Virtual' : 'Hardware'}`}
+                    aria-label={`Device ${device.name} - ${
+                      device.isVirtual ? 'Virtual' : 'Hardware'
+                    }`}
                   >
                     {device.isVirtual ? (
                       <svg
@@ -148,12 +174,18 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
                         />
                       </svg>
                     )}
-                    <span className={device.isVirtual ? 'text-purple-300' : 'text-slate-300'}>
+                    <span
+                      className={
+                        device.isVirtual ? 'text-purple-300' : 'text-slate-300'
+                      }
+                    >
                       {device.name}
                     </span>
                     <span
                       className={`px-2 py-0.5 text-xs rounded ${
-                        device.isVirtual ? 'bg-purple-600 text-white' : 'bg-slate-600 text-slate-200'
+                        device.isVirtual
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-slate-600 text-slate-200'
                       }`}
                     >
                       {device.isVirtual ? 'Virtual' : 'Hardware'}
@@ -161,7 +193,10 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
                   </div>
                 ))
             ) : (
-              <span className="text-slate-500 text-sm" aria-label="No devices connected">
+              <span
+                className="text-slate-500 text-sm"
+                aria-label="No devices connected"
+              >
                 None
               </span>
             )}

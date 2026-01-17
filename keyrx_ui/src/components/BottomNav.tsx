@@ -1,6 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Smartphone, User, Settings, BarChart3, Play } from 'lucide-react';
+import {
+  Home,
+  Smartphone,
+  User,
+  Settings,
+  BarChart3,
+  Play,
+} from 'lucide-react';
 
 interface BottomNavProps {
   className?: string;

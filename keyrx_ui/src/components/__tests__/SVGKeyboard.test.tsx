@@ -33,12 +33,16 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should show the mapping text (Enter)
       const texts = container.querySelectorAll('text');
-      const mappingText = Array.from(texts).find(t => t.textContent === 'Enter');
+      const mappingText = Array.from(texts).find(
+        (t) => t.textContent === 'Enter'
+      );
       expect(mappingText).toBeTruthy();
 
       // Should have green stroke for simple mapping
       const paths = container.querySelectorAll('path');
-      const greenStroke = Array.from(paths).find(p => p.getAttribute('stroke') === '#22c55e');
+      const greenStroke = Array.from(paths).find(
+        (p) => p.getAttribute('stroke') === '#22c55e'
+      );
       expect(greenStroke).toBeTruthy();
     });
 
@@ -48,12 +52,15 @@ describe('SVGKeyboard - Key Code Normalization', () => {
       ];
 
       const keyMappings = new Map<string, KeyMapping>([
-        ['VK_V', {
-          type: 'tap_hold',
-          tapAction: 'VK_Delete',
-          holdAction: 'MD_01',
-          threshold: 200,
-        }],
+        [
+          'VK_V',
+          {
+            type: 'tap_hold',
+            tapAction: 'VK_Delete',
+            holdAction: 'MD_01',
+            threshold: 200,
+          },
+        ],
       ]);
 
       const { container } = render(
@@ -66,12 +73,16 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should show tap/hold text (Delete/L01 format)
       const texts = container.querySelectorAll('text');
-      const mappingText = Array.from(texts).find(t => t.textContent?.includes('Del'));
+      const mappingText = Array.from(texts).find(
+        (t) => t.textContent?.includes('Del')
+      );
       expect(mappingText).toBeTruthy();
 
       // Should have red stroke for tap_hold mapping
       const paths = container.querySelectorAll('path');
-      const redStroke = Array.from(paths).find(p => p.getAttribute('stroke') === '#ef4444');
+      const redStroke = Array.from(paths).find(
+        (p) => p.getAttribute('stroke') === '#ef4444'
+      );
       expect(redStroke).toBeTruthy();
     });
 
@@ -81,13 +92,16 @@ describe('SVGKeyboard - Key Code Normalization', () => {
       ];
 
       const keyMappings = new Map<string, KeyMapping>([
-        ['VK_M', {
-          type: 'macro',
-          macroSteps: [
-            { type: 'press', key: 'VK_H' },
-            { type: 'press', key: 'VK_I' },
-          ],
-        }],
+        [
+          'VK_M',
+          {
+            type: 'macro',
+            macroSteps: [
+              { type: 'press', key: 'VK_H' },
+              { type: 'press', key: 'VK_I' },
+            ],
+          },
+        ],
       ]);
 
       const { container } = render(
@@ -100,12 +114,14 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should show macro icon (⚡)
       const texts = container.querySelectorAll('text');
-      const macroIcon = Array.from(texts).find(t => t.textContent === '⚡');
+      const macroIcon = Array.from(texts).find((t) => t.textContent === '⚡');
       expect(macroIcon).toBeTruthy();
 
       // Should have purple stroke for macro mapping
       const paths = container.querySelectorAll('path');
-      const purpleStroke = Array.from(paths).find(p => p.getAttribute('stroke') === '#a855f7');
+      const purpleStroke = Array.from(paths).find(
+        (p) => p.getAttribute('stroke') === '#a855f7'
+      );
       expect(purpleStroke).toBeTruthy();
     });
 
@@ -115,10 +131,13 @@ describe('SVGKeyboard - Key Code Normalization', () => {
       ];
 
       const keyMappings = new Map<string, KeyMapping>([
-        ['VK_SPACE', {
-          type: 'layer_switch',
-          targetLayer: 'MD_00',
-        }],
+        [
+          'VK_SPACE',
+          {
+            type: 'layer_switch',
+            targetLayer: 'MD_00',
+          },
+        ],
       ]);
 
       const { container } = render(
@@ -131,12 +150,14 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should show layer text (L00)
       const texts = container.querySelectorAll('text');
-      const layerText = Array.from(texts).find(t => t.textContent === 'L00');
+      const layerText = Array.from(texts).find((t) => t.textContent === 'L00');
       expect(layerText).toBeTruthy();
 
       // Should have yellow stroke for layer_switch mapping
       const paths = container.querySelectorAll('path');
-      const yellowStroke = Array.from(paths).find(p => p.getAttribute('stroke') === '#eab308');
+      const yellowStroke = Array.from(paths).find(
+        (p) => p.getAttribute('stroke') === '#eab308'
+      );
       expect(yellowStroke).toBeTruthy();
     });
 
@@ -157,7 +178,9 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should have dashed stroke for unmapped key
       const paths = container.querySelectorAll('path');
-      const dashedStroke = Array.from(paths).find(p => p.getAttribute('stroke-dasharray') === '4 2');
+      const dashedStroke = Array.from(paths).find(
+        (p) => p.getAttribute('stroke-dasharray') === '4 2'
+      );
       expect(dashedStroke).toBeTruthy();
     });
 
@@ -209,7 +232,9 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // All three should show green borders (simple mappings)
       const paths = container.querySelectorAll('path');
-      const greenStrokes = Array.from(paths).filter(p => p.getAttribute('stroke') === '#22c55e');
+      const greenStrokes = Array.from(paths).filter(
+        (p) => p.getAttribute('stroke') === '#22c55e'
+      );
       expect(greenStrokes.length).toBeGreaterThanOrEqual(3);
     });
 
@@ -236,7 +261,9 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should show pressed state (green fill #22c55e)
       const paths = container.querySelectorAll('path');
-      const pressedPath = Array.from(paths).find(p => p.getAttribute('fill') === '#22c55e');
+      const pressedPath = Array.from(paths).find(
+        (p) => p.getAttribute('fill') === '#22c55e'
+      );
       expect(pressedPath).toBeTruthy();
     });
 
@@ -246,12 +273,15 @@ describe('SVGKeyboard - Key Code Normalization', () => {
       ];
 
       const keyMappings = new Map<string, KeyMapping>([
-        ['VK_B', {
-          type: 'tap_hold',
-          tapAction: 'VK_Enter',
-          holdAction: 'MD_00',
-          threshold: 200,
-        }],
+        [
+          'VK_B',
+          {
+            type: 'tap_hold',
+            tapAction: 'VK_Enter',
+            holdAction: 'MD_00',
+            threshold: 200,
+          },
+        ],
       ]);
 
       render(
@@ -300,7 +330,7 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should render ISO Enter shape and show mapping
       const texts = container.querySelectorAll('text');
-      const mappingText = Array.from(texts).find(t => t.textContent === 'BS');
+      const mappingText = Array.from(texts).find((t) => t.textContent === 'BS');
       expect(mappingText).toBeTruthy();
     });
   });
@@ -325,14 +355,12 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should normalize 'A' to 'VK_A' and show mapping
       const texts = container.querySelectorAll('text');
-      const mappingText = Array.from(texts).find(t => t.textContent === 'B');
+      const mappingText = Array.from(texts).find((t) => t.textContent === 'B');
       expect(mappingText).toBeTruthy();
     });
 
     it('handles empty key code', () => {
-      const keys: SVGKey[] = [
-        { code: '', label: '', x: 0, y: 0, w: 1, h: 1 },
-      ];
+      const keys: SVGKey[] = [{ code: '', label: '', x: 0, y: 0, w: 1, h: 1 }];
 
       const keyMappings = new Map<string, KeyMapping>();
 
@@ -386,24 +414,33 @@ describe('SVGKeyboard - Key Code Normalization', () => {
       ];
 
       const keyMappings = new Map<string, KeyMapping>([
-        ['VK_B', {
-          type: 'tap_hold',
-          tapAction: 'VK_Enter',
-          holdAction: 'MD_00',
-          threshold: 200,
-        }],
-        ['VK_V', {
-          type: 'tap_hold',
-          tapAction: 'VK_Delete',
-          holdAction: 'MD_01',
-          threshold: 200,
-        }],
-        ['VK_M', {
-          type: 'tap_hold',
-          tapAction: 'VK_Backspace',
-          holdAction: 'MD_02',
-          threshold: 200,
-        }],
+        [
+          'VK_B',
+          {
+            type: 'tap_hold',
+            tapAction: 'VK_Enter',
+            holdAction: 'MD_00',
+            threshold: 200,
+          },
+        ],
+        [
+          'VK_V',
+          {
+            type: 'tap_hold',
+            tapAction: 'VK_Delete',
+            holdAction: 'MD_01',
+            threshold: 200,
+          },
+        ],
+        [
+          'VK_M',
+          {
+            type: 'tap_hold',
+            tapAction: 'VK_Backspace',
+            holdAction: 'MD_02',
+            threshold: 200,
+          },
+        ],
         ['VK_A', { type: 'simple', tapAction: 'VK_Space' }],
       ]);
 
@@ -417,9 +454,12 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // All mapped keys should have colored borders (not dashed)
       const paths = container.querySelectorAll('path');
-      const coloredStrokes = Array.from(paths).filter(p => {
+      const coloredStrokes = Array.from(paths).filter((p) => {
         const stroke = p.getAttribute('stroke');
-        return stroke && ['#22c55e', '#ef4444', '#a855f7', '#eab308'].includes(stroke);
+        return (
+          stroke &&
+          ['#22c55e', '#ef4444', '#a855f7', '#eab308'].includes(stroke)
+        );
       });
 
       expect(coloredStrokes.length).toBeGreaterThanOrEqual(4); // At least 4 mapped keys
@@ -456,16 +496,28 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should show mapping text for arrows
       const texts = container.querySelectorAll('text');
-      const hasLeftMapping = Array.from(texts).some(t => t.textContent?.includes('Left'));
-      const hasRightMapping = Array.from(texts).some(t => t.textContent?.includes('Right'));
-      const hasDownMapping = Array.from(texts).some(t => t.textContent?.includes('Down'));
-      const hasUpMapping = Array.from(texts).some(t => t.textContent?.includes('Up'));
+      const hasLeftMapping = Array.from(texts).some(
+        (t) => t.textContent?.includes('Left')
+      );
+      const hasRightMapping = Array.from(texts).some(
+        (t) => t.textContent?.includes('Right')
+      );
+      const hasDownMapping = Array.from(texts).some(
+        (t) => t.textContent?.includes('Down')
+      );
+      const hasUpMapping = Array.from(texts).some(
+        (t) => t.textContent?.includes('Up')
+      );
 
-      expect(hasLeftMapping || hasRightMapping || hasDownMapping || hasUpMapping).toBe(true);
+      expect(
+        hasLeftMapping || hasRightMapping || hasDownMapping || hasUpMapping
+      ).toBe(true);
 
       // Should have green strokes for simple mappings
       const paths = container.querySelectorAll('path');
-      const greenStrokes = Array.from(paths).filter(p => p.getAttribute('stroke') === '#22c55e');
+      const greenStrokes = Array.from(paths).filter(
+        (p) => p.getAttribute('stroke') === '#22c55e'
+      );
       expect(greenStrokes.length).toBeGreaterThan(0);
     });
 
@@ -492,7 +544,9 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should have green strokes for all mapped keys
       const paths = container.querySelectorAll('path');
-      const greenStrokes = Array.from(paths).filter(p => p.getAttribute('stroke') === '#22c55e');
+      const greenStrokes = Array.from(paths).filter(
+        (p) => p.getAttribute('stroke') === '#22c55e'
+      );
       expect(greenStrokes.length).toBeGreaterThanOrEqual(3);
     });
 
@@ -527,7 +581,9 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should have green strokes for all mapped keys
       const paths = container.querySelectorAll('path');
-      const greenStrokes = Array.from(paths).filter(p => p.getAttribute('stroke') === '#22c55e');
+      const greenStrokes = Array.from(paths).filter(
+        (p) => p.getAttribute('stroke') === '#22c55e'
+      );
       expect(greenStrokes.length).toBeGreaterThanOrEqual(7);
     });
 
@@ -559,13 +615,13 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
     it('correctly distinguishes top row numbers (VK_Num*) from numpad numbers (VK_Numpad*)', () => {
       const keys: SVGKey[] = [
-        { code: 'KC_2', label: '2', x: 0, y: 0, w: 1, h: 1 },  // Top row
+        { code: 'KC_2', label: '2', x: 0, y: 0, w: 1, h: 1 }, // Top row
         { code: 'KC_P2', label: '2', x: 1, y: 0, w: 1, h: 1 }, // Numpad
       ];
 
       const keyMappings = new Map<string, KeyMapping>([
-        ['VK_Num2', { type: 'simple', tapAction: 'VK_A' }],     // Top row
-        ['VK_Numpad2', { type: 'simple', tapAction: 'VK_B' }],  // Numpad
+        ['VK_Num2', { type: 'simple', tapAction: 'VK_A' }], // Top row
+        ['VK_Numpad2', { type: 'simple', tapAction: 'VK_B' }], // Numpad
       ]);
 
       const { container } = render(
@@ -578,7 +634,9 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Both should show green borders (both mapped)
       const paths = container.querySelectorAll('path');
-      const greenStrokes = Array.from(paths).filter(p => p.getAttribute('stroke') === '#22c55e');
+      const greenStrokes = Array.from(paths).filter(
+        (p) => p.getAttribute('stroke') === '#22c55e'
+      );
       expect(greenStrokes.length).toBeGreaterThanOrEqual(2);
     });
   });

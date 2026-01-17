@@ -3,7 +3,14 @@ import { Card } from './Card';
 import { Button } from './Button';
 import { Tooltip } from './Tooltip';
 import { InlineEdit } from './InlineEdit';
-import { Check, AlertTriangle, CheckCircle2, FileCode, Copy, CheckCheck } from 'lucide-react';
+import {
+  Check,
+  AlertTriangle,
+  CheckCircle2,
+  FileCode,
+  Copy,
+  CheckCheck,
+} from 'lucide-react';
 import { useProfileValidation } from '../hooks/useProfileValidation';
 import { truncatePath } from '../utils/pathUtils';
 
@@ -49,7 +56,8 @@ export const ProfileCard = React.memo<ProfileCardProps>(
     onUpdateDescription,
   }) => {
     // Fetch validation status for this profile
-    const { data: validationResult, isLoading: isValidating } = useProfileValidation(name);
+    const { data: validationResult, isLoading: isValidating } =
+      useProfileValidation(name);
 
     // Determine if profile is valid
     const isValid = validationResult?.valid ?? true; // Default to valid if not yet loaded
@@ -171,9 +179,13 @@ export const ProfileCard = React.memo<ProfileCardProps>(
                 content={
                   firstError ? (
                     <div className="space-y-1">
-                      <div className="text-yellow-300 font-bold text-sm">Configuration Error:</div>
+                      <div className="text-yellow-300 font-bold text-sm">
+                        Configuration Error:
+                      </div>
                       <div className="text-white">
-                        <span className="text-yellow-400 font-semibold">Line {firstError.line}:</span>{' '}
+                        <span className="text-yellow-400 font-semibold">
+                          Line {firstError.line}:
+                        </span>{' '}
                         {firstError.message}
                       </div>
                       <div className="text-xs text-slate-400 mt-2">
@@ -191,10 +203,18 @@ export const ProfileCard = React.memo<ProfileCardProps>(
                   className="inline-flex items-center gap-2 bg-yellow-500/20 text-yellow-200 border-2 border-yellow-500/60 px-3 py-1.5 rounded-md text-sm font-semibold cursor-pointer shadow-sm hover:bg-yellow-500/30 transition-colors"
                   aria-label={`Copy error: Line ${firstError?.line}: ${firstError?.message}`}
                 >
-                  <AlertTriangle size={16} className="flex-shrink-0" aria-hidden="true" />
+                  <AlertTriangle
+                    size={16}
+                    className="flex-shrink-0"
+                    aria-hidden="true"
+                  />
                   <span>Invalid Configuration</span>
                   {copied ? (
-                    <CheckCheck size={14} className="text-green-400" aria-hidden="true" />
+                    <CheckCheck
+                      size={14}
+                      className="text-green-400"
+                      aria-hidden="true"
+                    />
                   ) : (
                     <Copy size={14} className="opacity-50" aria-hidden="true" />
                   )}
@@ -223,8 +243,8 @@ export const ProfileCard = React.memo<ProfileCardProps>(
                 isActivating
                   ? 'Activating profile...'
                   : !isValid
-                  ? `Cannot activate invalid profile ${name}`
-                  : `Activate profile ${name}`
+                    ? `Cannot activate invalid profile ${name}`
+                    : `Activate profile ${name}`
               }
             >
               {isActivating ? 'Activating...' : 'Activate'}

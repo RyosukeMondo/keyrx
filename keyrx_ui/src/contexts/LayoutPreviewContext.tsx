@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useMemo } from 'react';
-import { parseKLEJson, type KeyButton, type KLEData } from '../utils/kle-parser';
+import {
+  parseKLEJson,
+  type KeyButton,
+  type KLEData,
+} from '../utils/kle-parser';
 
 // Import all layout data
 import ANSI_104 from '../data/layouts/ANSI_104.json';
@@ -15,11 +19,17 @@ import HHKB from '../data/layouts/HHKB.json';
 import NUMPAD from '../data/layouts/NUMPAD.json';
 
 export type LayoutType =
-  | 'ANSI_104' | 'ANSI_87'
-  | 'ISO_105' | 'ISO_88'
+  | 'ANSI_104'
+  | 'ANSI_87'
+  | 'ISO_105'
+  | 'ISO_88'
   | 'JIS_109'
-  | 'COMPACT_60' | 'COMPACT_65' | 'COMPACT_75' | 'COMPACT_96'
-  | 'HHKB' | 'NUMPAD';
+  | 'COMPACT_60'
+  | 'COMPACT_65'
+  | 'COMPACT_75'
+  | 'COMPACT_96'
+  | 'HHKB'
+  | 'NUMPAD';
 
 export interface LayoutDropdownOption {
   value: LayoutType;
@@ -75,7 +85,9 @@ export const LAYOUT_OPTIONS: LayoutDropdownOption[] = [
   { value: 'NUMPAD', label: 'Numpad', category: 'specialized' },
 ];
 
-const LayoutPreviewContext = createContext<LayoutPreviewContextValue | null>(null);
+const LayoutPreviewContext = createContext<LayoutPreviewContextValue | null>(
+  null
+);
 
 // Cache for parsed layout data
 const layoutCache = new Map<LayoutType, ParsedLayoutData>();
@@ -88,8 +100,10 @@ function parseAndCacheLayout(layout: LayoutType): ParsedLayoutData {
   const keys = parseKLEJson(rawData as KLEData);
 
   // Calculate dimensions
-  const rows = Math.max(...keys.map(k => k.gridRow));
-  const cols = Math.max(...keys.map(k => k.gridColumn + k.gridColumnSpan - 1));
+  const rows = Math.max(...keys.map((k) => k.gridRow));
+  const cols = Math.max(
+    ...keys.map((k) => k.gridColumn + k.gridColumnSpan - 1)
+  );
 
   const parsed: ParsedLayoutData = {
     name: (rawData as { name: string }).name,
@@ -105,13 +119,19 @@ interface LayoutPreviewProviderProps {
   children: React.ReactNode;
 }
 
-export const LayoutPreviewProvider: React.FC<LayoutPreviewProviderProps> = ({ children }) => {
-  const value = useMemo<LayoutPreviewContextValue>(() => ({
-    getLayoutData: parseAndCacheLayout,
-    getLayoutDimensions: (layout: LayoutType) => parseAndCacheLayout(layout).dimensions,
-    layoutOptions: LAYOUT_OPTIONS,
-    rawLayouts: rawLayoutData,
-  }), []);
+export const LayoutPreviewProvider: React.FC<LayoutPreviewProviderProps> = ({
+  children,
+}) => {
+  const value = useMemo<LayoutPreviewContextValue>(
+    () => ({
+      getLayoutData: parseAndCacheLayout,
+      getLayoutDimensions: (layout: LayoutType) =>
+        parseAndCacheLayout(layout).dimensions,
+      layoutOptions: LAYOUT_OPTIONS,
+      rawLayouts: rawLayoutData,
+    }),
+    []
+  );
 
   return (
     <LayoutPreviewContext.Provider value={value}>
@@ -123,7 +143,9 @@ export const LayoutPreviewProvider: React.FC<LayoutPreviewProviderProps> = ({ ch
 export function useLayoutPreview(): LayoutPreviewContextValue {
   const context = useContext(LayoutPreviewContext);
   if (!context) {
-    throw new Error('useLayoutPreview must be used within a LayoutPreviewProvider');
+    throw new Error(
+      'useLayoutPreview must be used within a LayoutPreviewProvider'
+    );
   }
   return context;
 }

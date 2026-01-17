@@ -5,22 +5,48 @@ import { MetricsChart } from './MetricsChart';
 import type { LatencyMetrics } from '../types/rpc';
 
 // Mock Recharts components
+interface ResponsiveContainerProps {
+  children: React.ReactNode;
+}
+
+interface LineChartProps {
+  children: React.ReactNode;
+  data: unknown;
+}
+
+interface LineProps {
+  dataKey: string;
+  stroke: string;
+  name: string;
+}
+
+interface ReferenceLineProps {
+  y: number;
+  label?: { value: string };
+}
+
 vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
-  LineChart: ({ children, data }: any) => (
+  ResponsiveContainer: ({ children }: ResponsiveContainerProps) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  LineChart: ({ children, data }: LineChartProps) => (
     <div data-testid="line-chart" data-chart-data={JSON.stringify(data)}>
       {children}
     </div>
   ),
-  Line: ({ dataKey, stroke, name }: any) => (
-    <div data-testid={`line-${dataKey}`} data-stroke={stroke} data-name={name} />
+  Line: ({ dataKey, stroke, name }: LineProps) => (
+    <div
+      data-testid={`line-${dataKey}`}
+      data-stroke={stroke}
+      data-name={name}
+    />
   ),
   XAxis: () => <div data-testid="x-axis" />,
   YAxis: () => <div data-testid="y-axis" />,
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
   Tooltip: () => <div data-testid="tooltip" />,
   Legend: () => <div data-testid="legend" />,
-  ReferenceLine: ({ y, label }: any) => (
+  ReferenceLine: ({ y, label }: ReferenceLineProps) => (
     <div data-testid="reference-line" data-y={y} data-label={label?.value} />
   ),
 }));
@@ -28,12 +54,22 @@ vi.mock('recharts', () => ({
 describe('MetricsChart', () => {
   it('renders empty state when data is empty', () => {
     renderWithProviders(<MetricsChart data={[]} />);
-    expect(screen.getByText('No latency data available yet...')).toBeInTheDocument();
+    expect(
+      screen.getByText('No latency data available yet...')
+    ).toBeInTheDocument();
   });
 
   it('renders chart title', () => {
     const data: LatencyMetrics[] = [
-      { min: 1000, avg: 2000, max: 3000, p50: 1500, p95: 2500, p99: 2900, count: 10 },
+      {
+        min: 1000,
+        avg: 2000,
+        max: 3000,
+        p50: 1500,
+        p95: 2500,
+        p99: 2900,
+        count: 10,
+      },
     ];
 
     renderWithProviders(<MetricsChart data={data} />);
@@ -42,7 +78,15 @@ describe('MetricsChart', () => {
 
   it('renders chart components when data is provided', () => {
     const data: LatencyMetrics[] = [
-      { min: 1000, avg: 2000, max: 3000, p50: 1500, p95: 2500, p99: 2900, count: 10 },
+      {
+        min: 1000,
+        avg: 2000,
+        max: 3000,
+        p50: 1500,
+        p95: 2500,
+        p99: 2900,
+        count: 10,
+      },
     ];
 
     renderWithProviders(<MetricsChart data={data} />);
@@ -58,7 +102,15 @@ describe('MetricsChart', () => {
 
   it('renders three lines for avg, p95, and p99', () => {
     const data: LatencyMetrics[] = [
-      { min: 1000, avg: 2000, max: 3000, p50: 1500, p95: 2500, p99: 2900, count: 10 },
+      {
+        min: 1000,
+        avg: 2000,
+        max: 3000,
+        p50: 1500,
+        p95: 2500,
+        p99: 2900,
+        count: 10,
+      },
     ];
 
     renderWithProviders(<MetricsChart data={data} />);
@@ -70,7 +122,15 @@ describe('MetricsChart', () => {
 
   it('renders reference line at 5ms', () => {
     const data: LatencyMetrics[] = [
-      { min: 1000, avg: 2000, max: 3000, p50: 1500, p95: 2500, p99: 2900, count: 10 },
+      {
+        min: 1000,
+        avg: 2000,
+        max: 3000,
+        p50: 1500,
+        p95: 2500,
+        p99: 2900,
+        count: 10,
+      },
     ];
 
     renderWithProviders(<MetricsChart data={data} />);
@@ -83,14 +143,32 @@ describe('MetricsChart', () => {
 
   it('converts microseconds to milliseconds', () => {
     const data: LatencyMetrics[] = [
-      { min: 1000, avg: 2000, max: 3000, p50: 1500, p95: 2500, p99: 2900, count: 10 },
-      { min: 2000, avg: 4000, max: 5000, p50: 3000, p95: 4500, p99: 4800, count: 20 },
+      {
+        min: 1000,
+        avg: 2000,
+        max: 3000,
+        p50: 1500,
+        p95: 2500,
+        p99: 2900,
+        count: 10,
+      },
+      {
+        min: 2000,
+        avg: 4000,
+        max: 5000,
+        p50: 3000,
+        p95: 4500,
+        p99: 4800,
+        count: 20,
+      },
     ];
 
     renderWithProviders(<MetricsChart data={data} />);
 
     const lineChart = screen.getByTestId('line-chart');
-    const chartData = JSON.parse(lineChart.getAttribute('data-chart-data') || '[]');
+    const chartData = JSON.parse(
+      lineChart.getAttribute('data-chart-data') || '[]'
+    );
 
     // Verify conversion from microseconds to milliseconds
     expect(chartData[0].avg).toBe(2); // 2000 μs -> 2 ms
@@ -104,15 +182,41 @@ describe('MetricsChart', () => {
 
   it('includes index in transformed data', () => {
     const data: LatencyMetrics[] = [
-      { min: 1000, avg: 2000, max: 3000, p50: 1500, p95: 2500, p99: 2900, count: 10 },
-      { min: 2000, avg: 4000, max: 5000, p50: 3000, p95: 4500, p99: 4800, count: 20 },
-      { min: 3000, avg: 5000, max: 6000, p50: 4000, p95: 5500, p99: 5900, count: 30 },
+      {
+        min: 1000,
+        avg: 2000,
+        max: 3000,
+        p50: 1500,
+        p95: 2500,
+        p99: 2900,
+        count: 10,
+      },
+      {
+        min: 2000,
+        avg: 4000,
+        max: 5000,
+        p50: 3000,
+        p95: 4500,
+        p99: 4800,
+        count: 20,
+      },
+      {
+        min: 3000,
+        avg: 5000,
+        max: 6000,
+        p50: 4000,
+        p95: 5500,
+        p99: 5900,
+        count: 30,
+      },
     ];
 
     renderWithProviders(<MetricsChart data={data} />);
 
     const lineChart = screen.getByTestId('line-chart');
-    const chartData = JSON.parse(lineChart.getAttribute('data-chart-data') || '[]');
+    const chartData = JSON.parse(
+      lineChart.getAttribute('data-chart-data') || '[]'
+    );
 
     expect(chartData[0].index).toBe(0);
     expect(chartData[1].index).toBe(1);
@@ -121,7 +225,15 @@ describe('MetricsChart', () => {
 
   it('uses correct colors for lines', () => {
     const data: LatencyMetrics[] = [
-      { min: 1000, avg: 2000, max: 3000, p50: 1500, p95: 2500, p99: 2900, count: 10 },
+      {
+        min: 1000,
+        avg: 2000,
+        max: 3000,
+        p50: 1500,
+        p95: 2500,
+        p99: 2900,
+        count: 10,
+      },
     ];
 
     renderWithProviders(<MetricsChart data={data} />);
@@ -137,7 +249,15 @@ describe('MetricsChart', () => {
 
   it('uses correct names for lines', () => {
     const data: LatencyMetrics[] = [
-      { min: 1000, avg: 2000, max: 3000, p50: 1500, p95: 2500, p99: 2900, count: 10 },
+      {
+        min: 1000,
+        avg: 2000,
+        max: 3000,
+        p50: 1500,
+        p95: 2500,
+        p99: 2900,
+        count: 10,
+      },
     ];
 
     renderWithProviders(<MetricsChart data={data} />);
@@ -153,13 +273,23 @@ describe('MetricsChart', () => {
 
   it('handles single data point', () => {
     const data: LatencyMetrics[] = [
-      { min: 1000, avg: 2000, max: 3000, p50: 1500, p95: 2500, p99: 2900, count: 10 },
+      {
+        min: 1000,
+        avg: 2000,
+        max: 3000,
+        p50: 1500,
+        p95: 2500,
+        p99: 2900,
+        count: 10,
+      },
     ];
 
     renderWithProviders(<MetricsChart data={data} />);
 
     const lineChart = screen.getByTestId('line-chart');
-    const chartData = JSON.parse(lineChart.getAttribute('data-chart-data') || '[]');
+    const chartData = JSON.parse(
+      lineChart.getAttribute('data-chart-data') || '[]'
+    );
 
     expect(chartData.length).toBe(1);
     expect(chartData[0]).toEqual({
@@ -184,7 +314,9 @@ describe('MetricsChart', () => {
     renderWithProviders(<MetricsChart data={data} />);
 
     const lineChart = screen.getByTestId('line-chart');
-    const chartData = JSON.parse(lineChart.getAttribute('data-chart-data') || '[]');
+    const chartData = JSON.parse(
+      lineChart.getAttribute('data-chart-data') || '[]'
+    );
 
     expect(chartData.length).toBe(60);
     expect(chartData[0].index).toBe(0);
@@ -193,7 +325,15 @@ describe('MetricsChart', () => {
 
   it('uses responsive container', () => {
     const data: LatencyMetrics[] = [
-      { min: 1000, avg: 2000, max: 3000, p50: 1500, p95: 2500, p99: 2900, count: 10 },
+      {
+        min: 1000,
+        avg: 2000,
+        max: 3000,
+        p50: 1500,
+        p95: 2500,
+        p99: 2900,
+        count: 10,
+      },
     ];
 
     renderWithProviders(<MetricsChart data={data} />);

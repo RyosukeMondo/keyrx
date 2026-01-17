@@ -97,20 +97,22 @@ export function useUpdateDevice() {
       );
 
       // Optimistically update cache
-      queryClient.setQueryData<DeviceEntry[]>(queryKeys.devices, (old) =>
-        old?.map((device) => {
-          if (device.id !== id) return device;
+      queryClient.setQueryData<DeviceEntry[]>(
+        queryKeys.devices,
+        (old) =>
+          old?.map((device) => {
+            if (device.id !== id) return device;
 
-          // Update only the fields that were provided
-          const updated = { ...device };
-          if (layout !== undefined) {
-            updated.layout = layout;
-          }
-          if (scope !== undefined) {
-            updated.scope = scope;
-          }
-          return updated;
-        })
+            // Update only the fields that were provided
+            const updated = { ...device };
+            if (layout !== undefined) {
+              updated.layout = layout;
+            }
+            if (scope !== undefined) {
+              updated.scope = scope;
+            }
+            return updated;
+          })
       );
 
       // Return context for rollback

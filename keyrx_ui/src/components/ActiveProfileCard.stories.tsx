@@ -5,7 +5,7 @@
  * using faker-js factories for consistency.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ActiveProfileCard } from './ActiveProfileCard';
 import { createActiveProfile, seed } from '../../tests/factories';
 

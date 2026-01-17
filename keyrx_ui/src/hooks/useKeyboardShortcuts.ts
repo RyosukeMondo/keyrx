@@ -29,16 +29,13 @@ function matchesShortcut(
   event: KeyboardEvent,
   shortcut: KeyboardShortcut
 ): boolean {
-  const keyMatches =
-    event.key.toLowerCase() === shortcut.key.toLowerCase();
+  const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
   const ctrlMatches = !!event.ctrlKey === !!shortcut.ctrlKey;
   const shiftMatches = !!event.shiftKey === !!shortcut.shiftKey;
   const altMatches = !!event.altKey === !!shortcut.altKey;
   const metaMatches = !!event.metaKey === !!shortcut.metaKey;
 
-  return (
-    keyMatches && ctrlMatches && shiftMatches && altMatches && metaMatches
-  );
+  return keyMatches && ctrlMatches && shiftMatches && altMatches && metaMatches;
 }
 
 /**
@@ -104,7 +101,8 @@ export function formatShortcut(shortcut: KeyboardShortcut): string {
   }
 
   // Capitalize key for display
-  const key = shortcut.key.length === 1 ? shortcut.key.toUpperCase() : shortcut.key;
+  const key =
+    shortcut.key.length === 1 ? shortcut.key.toUpperCase() : shortcut.key;
   parts.push(key);
 
   return parts.join('+');

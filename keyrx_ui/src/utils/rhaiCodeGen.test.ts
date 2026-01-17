@@ -60,7 +60,9 @@ describe('rhaiCodeGen', () => {
       };
 
       const result = generateKeyMapping(mapping);
-      expect(result).toBe('tap_hold("VK_CAPSLOCK", "VK_ESCAPE", "VK_LCTRL", 200);');
+      expect(result).toBe(
+        'tap_hold("VK_CAPSLOCK", "VK_ESCAPE", "VK_LCTRL", 200);'
+      );
     });
 
     it('should generate macro mapping without delay', () => {
@@ -74,7 +76,9 @@ describe('rhaiCodeGen', () => {
       };
 
       const result = generateKeyMapping(mapping);
-      expect(result).toBe('macro("VK_F1", ["VK_H", "VK_E", "VK_L", "VK_L", "VK_O"]);');
+      expect(result).toBe(
+        'macro("VK_F1", ["VK_H", "VK_E", "VK_L", "VK_L", "VK_O"]);'
+      );
     });
 
     it('should generate macro mapping with delay', () => {
@@ -89,7 +93,9 @@ describe('rhaiCodeGen', () => {
       };
 
       const result = generateKeyMapping(mapping);
-      expect(result).toBe('macro("VK_F1", ["VK_H", "VK_E", "VK_L", "VK_L", "VK_O"], 50);');
+      expect(result).toBe(
+        'macro("VK_F1", ["VK_H", "VK_E", "VK_L", "VK_L", "VK_O"], 50);'
+      );
     });
 
     it('should generate layer switch mapping without mode', () => {
@@ -143,7 +149,9 @@ describe('rhaiCodeGen', () => {
         line: 1,
       };
 
-      expect(() => generateKeyMapping(mapping)).toThrow('Simple mapping missing targetKey');
+      expect(() => generateKeyMapping(mapping)).toThrow(
+        'Simple mapping missing targetKey'
+      );
     });
 
     it('should throw error for tap-hold mapping without config', () => {
@@ -153,7 +161,9 @@ describe('rhaiCodeGen', () => {
         line: 1,
       };
 
-      expect(() => generateKeyMapping(mapping)).toThrow('Tap-hold mapping missing tapHold config');
+      expect(() => generateKeyMapping(mapping)).toThrow(
+        'Tap-hold mapping missing tapHold config'
+      );
     });
 
     it('should throw error for macro mapping without config', () => {
@@ -163,7 +173,9 @@ describe('rhaiCodeGen', () => {
         line: 1,
       };
 
-      expect(() => generateKeyMapping(mapping)).toThrow('Macro mapping missing macro config');
+      expect(() => generateKeyMapping(mapping)).toThrow(
+        'Macro mapping missing macro config'
+      );
     });
 
     it('should throw error for layer switch mapping without config', () => {
@@ -173,7 +185,9 @@ describe('rhaiCodeGen', () => {
         line: 1,
       };
 
-      expect(() => generateKeyMapping(mapping)).toThrow('Layer switch mapping missing layerSwitch config');
+      expect(() => generateKeyMapping(mapping)).toThrow(
+        'Layer switch mapping missing layerSwitch config'
+      );
     });
   });
 
@@ -301,10 +315,7 @@ describe('rhaiCodeGen', () => {
       };
 
       const result = generateDeviceBlock(deviceBlock);
-      expect(result).toEqual([
-        'device_start("*");',
-        'device_end();',
-      ]);
+      expect(result).toEqual(['device_start("*");', 'device_end();']);
     });
   });
 
@@ -321,7 +332,9 @@ describe('rhaiCodeGen', () => {
       };
 
       const result = generateRhaiScript(ast);
-      expect(result).toBe('map("VK_A", "VK_B");\nmap("VK_C", "VK_D");');
+      expect(result).toBe(
+        'device_start("*");\n    map("VK_A", "VK_B");\n    map("VK_C", "VK_D");\ndevice_end();'
+      );
     });
 
     it('should generate script with import statements', () => {
@@ -343,7 +356,9 @@ describe('rhaiCodeGen', () => {
       expect(lines[1]).toBe('import "helpers.rhai" as h;');
       expect(lines[2]).toBe('');
       expect(lines[3]).toBe('');
-      expect(lines[4]).toBe('map("VK_A", "VK_B");');
+      expect(lines[4]).toBe('device_start("*");');
+      expect(lines[5]).toBe('    map("VK_A", "VK_B");');
+      expect(lines[6]).toBe('device_end();');
     });
 
     it('should generate script with device blocks', () => {
@@ -406,12 +421,13 @@ describe('rhaiCodeGen', () => {
 
       const result = generateRhaiScript(ast);
       const lines = result.split('\n');
-      expect(lines[0]).toBe('map("VK_A", "VK_B");');
-      expect(lines[1]).toBe('');
-      expect(lines[2]).toBe('');
-      expect(lines[3]).toBe('device_start("*");');
-      expect(lines[4]).toBe('    map("VK_C", "VK_D");');
-      expect(lines[5]).toBe('device_end();');
+      expect(lines[0]).toBe('device_start("*");');
+      expect(lines[1]).toBe('    map("VK_A", "VK_B");');
+      expect(lines[2]).toBe('device_end();');
+      expect(lines[3]).toBe(''); // Only 1 blank line (blankLinesBetweenDevices default)
+      expect(lines[4]).toBe('device_start("*");');
+      expect(lines[5]).toBe('    map("VK_C", "VK_D");');
+      expect(lines[6]).toBe('device_end();');
     });
 
     it('should generate script with comments', () => {
@@ -421,15 +437,15 @@ describe('rhaiCodeGen', () => {
           { type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 2 },
         ],
         deviceBlocks: [],
-        comments: [
-          { text: 'Global mappings', line: 1, type: 'line' },
-        ],
+        comments: [{ text: 'Global mappings', line: 1, type: 'line' }],
       };
 
       const result = generateRhaiScript(ast);
       const lines = result.split('\n');
       expect(lines[0]).toBe('// Global mappings');
-      expect(lines[1]).toBe('map("VK_A", "VK_B");');
+      expect(lines[1]).toBe('device_start("*");');
+      expect(lines[2]).toBe('    map("VK_A", "VK_B");');
+      expect(lines[3]).toBe('device_end();');
     });
 
     it('should generate script with block comments', () => {
@@ -439,15 +455,15 @@ describe('rhaiCodeGen', () => {
           { type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 2 },
         ],
         deviceBlocks: [],
-        comments: [
-          { text: 'Important note', line: 1, type: 'block' },
-        ],
+        comments: [{ text: 'Important note', line: 1, type: 'block' }],
       };
 
       const result = generateRhaiScript(ast);
       const lines = result.split('\n');
       expect(lines[0]).toBe('/* Important note */');
-      expect(lines[1]).toBe('map("VK_A", "VK_B");');
+      expect(lines[1]).toBe('device_start("*");');
+      expect(lines[2]).toBe('    map("VK_A", "VK_B");');
+      expect(lines[3]).toBe('device_end();');
     });
 
     it('should generate empty script for empty AST', () => {
@@ -515,11 +531,23 @@ describe('rhaiCodeGen', () => {
       const parseResult2 = parseRhaiScript(generated);
       expect(parseResult2.success).toBe(true);
 
-      expect(parseResult2.ast!.globalMappings).toHaveLength(2);
-      expect(parseResult2.ast!.globalMappings[0].sourceKey).toBe('VK_A');
-      expect(parseResult2.ast!.globalMappings[0].targetKey).toBe('VK_B');
-      expect(parseResult2.ast!.globalMappings[1].sourceKey).toBe('VK_C');
-      expect(parseResult2.ast!.globalMappings[1].targetKey).toBe('VK_D');
+      // After generation, global mappings are wrapped in device_start("*") block
+      // So they become device block mappings instead of global mappings
+      expect(parseResult2.ast!.deviceBlocks).toHaveLength(1);
+      expect(parseResult2.ast!.deviceBlocks[0].pattern).toBe('*');
+      expect(parseResult2.ast!.deviceBlocks[0].mappings).toHaveLength(2);
+      expect(parseResult2.ast!.deviceBlocks[0].mappings[0].sourceKey).toBe(
+        'VK_A'
+      );
+      expect(parseResult2.ast!.deviceBlocks[0].mappings[0].targetKey).toBe(
+        'VK_B'
+      );
+      expect(parseResult2.ast!.deviceBlocks[0].mappings[1].sourceKey).toBe(
+        'VK_C'
+      );
+      expect(parseResult2.ast!.deviceBlocks[0].mappings[1].targetKey).toBe(
+        'VK_D'
+      );
     });
 
     it('should preserve tap-hold mappings through round-trip', () => {
@@ -532,8 +560,11 @@ describe('rhaiCodeGen', () => {
       const parseResult2 = parseRhaiScript(generated);
       expect(parseResult2.success).toBe(true);
 
-      expect(parseResult2.ast!.globalMappings).toHaveLength(1);
-      const mapping = parseResult2.ast!.globalMappings[0];
+      // After generation, global mappings are wrapped in device_start("*") block
+      expect(parseResult2.ast!.deviceBlocks).toHaveLength(1);
+      expect(parseResult2.ast!.deviceBlocks[0].pattern).toBe('*');
+      expect(parseResult2.ast!.deviceBlocks[0].mappings).toHaveLength(1);
+      const mapping = parseResult2.ast!.deviceBlocks[0].mappings[0];
       expect(mapping.type).toBe('tap_hold');
       expect(mapping.tapHold?.tapAction).toBe('VK_ESCAPE');
       expect(mapping.tapHold?.holdAction).toBe('VK_LCTRL');
@@ -574,8 +605,12 @@ device_end();`;
 
       expect(parseResult2.ast!.deviceBlocks).toHaveLength(1);
       expect(parseResult2.ast!.deviceBlocks[0].layers).toHaveLength(1);
-      expect(parseResult2.ast!.deviceBlocks[0].layers[0].modifiers).toBe('MD_00');
-      expect(parseResult2.ast!.deviceBlocks[0].layers[0].mappings).toHaveLength(2);
+      expect(parseResult2.ast!.deviceBlocks[0].layers[0].modifiers).toBe(
+        'MD_00'
+      );
+      expect(parseResult2.ast!.deviceBlocks[0].layers[0].mappings).toHaveLength(
+        2
+      );
     });
 
     it('should preserve complex script with all features through round-trip', () => {
@@ -600,11 +635,14 @@ device_end();`;
       expect(parseResult2.success).toBe(true);
 
       // Verify structure is preserved
+      // After generation, global mappings are wrapped in device_start("*") block
       expect(parseResult2.ast!.imports).toHaveLength(1);
-      expect(parseResult2.ast!.globalMappings).toHaveLength(2);
-      expect(parseResult2.ast!.deviceBlocks).toHaveLength(1);
-      expect(parseResult2.ast!.deviceBlocks[0].mappings).toHaveLength(1);
-      expect(parseResult2.ast!.deviceBlocks[0].layers).toHaveLength(1);
+      expect(parseResult2.ast!.deviceBlocks).toHaveLength(2); // Now 2 device blocks: "*" and "*Keychron*"
+      expect(parseResult2.ast!.deviceBlocks[0].pattern).toBe('*');
+      expect(parseResult2.ast!.deviceBlocks[0].mappings).toHaveLength(2); // The 2 global mappings
+      expect(parseResult2.ast!.deviceBlocks[1].pattern).toBe('*Keychron*');
+      expect(parseResult2.ast!.deviceBlocks[1].mappings).toHaveLength(1);
+      expect(parseResult2.ast!.deviceBlocks[1].layers).toHaveLength(1);
     });
 
     it('should handle edge case: 1000 mappings within 50ms', () => {
@@ -632,7 +670,8 @@ device_end();`;
 
       const duration = endTime - startTime;
       expect(duration).toBeLessThan(50); // Must complete within 50ms
-      expect(generated.split('\n')).toHaveLength(1000);
+      // With device_start("*") wrapper, we have 1000 mappings + device_start + device_end = 1002 lines
+      expect(generated.split('\n')).toHaveLength(1002);
     });
 
     it('should preserve helper functions through round-trip', () => {
@@ -642,11 +681,17 @@ device_end();`;
       expect(parseResult1.success).toBe(true);
 
       const generated = generateRhaiScript(parseResult1.ast!);
-      expect(generated).toBe('map("VK_A", with_ctrl("VK_B"));');
+      expect(generated).toBe(
+        'device_start("*");\n    map("VK_A", with_ctrl("VK_B"));\ndevice_end();'
+      );
 
       const parseResult2 = parseRhaiScript(generated);
       expect(parseResult2.success).toBe(true);
-      expect(parseResult2.ast!.globalMappings[0].targetKey).toBe('with_ctrl("VK_B")');
+      // After generation, global mappings are wrapped in device_start("*") block
+      expect(parseResult2.ast!.deviceBlocks).toHaveLength(1);
+      expect(parseResult2.ast!.deviceBlocks[0].mappings[0].targetKey).toBe(
+        'with_ctrl("VK_B")'
+      );
     });
   });
 
@@ -672,7 +717,7 @@ device_end();`;
       const result = generateRhaiScript(ast);
       const lines = result.split('\n');
       // Check that the mapping line starts with exactly 4 spaces
-      expect(lines[1]).toMatch(/^    map/);
+      expect(lines[1]).toMatch(/^ {4}map/);
     });
 
     it('should add 1 blank line between device blocks by default', () => {
@@ -706,9 +751,7 @@ device_end();`;
 
     it('should add 2 blank lines between sections by default', () => {
       const ast: RhaiAST = {
-        imports: [
-          { path: 'common.rhai', line: 1 },
-        ],
+        imports: [{ path: 'common.rhai', line: 1 }],
         globalMappings: [
           { type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 3 },
         ],
@@ -718,10 +761,12 @@ device_end();`;
 
       const result = generateRhaiScript(ast);
       const lines = result.split('\n');
-      // Should be: import, blank, blank, mapping
+      // Should be: import, blank, blank, device_start, mapping, device_end
       expect(lines[1]).toBe('');
       expect(lines[2]).toBe('');
-      expect(lines[3]).toBe('map("VK_A", "VK_B");');
+      expect(lines[3]).toBe('device_start("*");');
+      expect(lines[4]).toBe('    map("VK_A", "VK_B");');
+      expect(lines[5]).toBe('device_end();');
     });
   });
 });

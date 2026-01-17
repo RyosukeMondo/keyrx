@@ -5,10 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { Sidebar } from './Sidebar';
 
-const renderWithRouter = (
-  ui: React.ReactElement,
-  { route = '/' } = {}
-) => {
+const renderWithRouter = (ui: React.ReactElement, { route = '/' } = {}) => {
   window.history.pushState({}, 'Test page', route);
   return renderWithProviders(ui, { wrapper: BrowserRouter });
 };
@@ -28,9 +25,7 @@ describe('Sidebar', () => {
   it('has proper ARIA labels on navigation items', () => {
     renderWithRouter(<Sidebar />);
 
-    expect(
-      screen.getByLabelText('Navigate to Home page')
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Navigate to Home page')).toBeInTheDocument();
     expect(
       screen.getByLabelText('Navigate to Devices page')
     ).toBeInTheDocument();
@@ -77,7 +72,9 @@ describe('Sidebar', () => {
 
     const configLink = screen.getByLabelText('Navigate to Configuration page');
     // Active indicator is a white rounded bar
-    expect(configLink.querySelector('.bg-white.rounded-full')).toBeInTheDocument();
+    expect(
+      configLink.querySelector('.bg-white.rounded-full')
+    ).toBeInTheDocument();
   });
 
   it('calls onClose when navigation item is clicked', async () => {
@@ -221,7 +218,9 @@ describe('Sidebar', () => {
     const configLink = screen.getByLabelText('Navigate to Configuration page');
     expect(configLink).toHaveClass('bg-primary-600');
     expect(configLink).toHaveClass('text-white');
-    expect(configLink.querySelector('.bg-white.rounded-full')).toBeInTheDocument();
+    expect(
+      configLink.querySelector('.bg-white.rounded-full')
+    ).toBeInTheDocument();
   });
 
   it('highlights Config when on /profiles/:name/config route with different profile names', () => {

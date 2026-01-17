@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
-import { WebSocketManager, getWebSocketInstance, closeWebSocketInstance } from './websocket';
+import {
+  WebSocketManager,
+  getWebSocketInstance,
+  closeWebSocketInstance,
+} from './websocket';
 import type { EventRecord, DaemonState, LatencyStats } from '../types';
 import {
   setupMockWebSocket,
@@ -191,7 +195,9 @@ describe('WebSocketManager', () => {
     });
 
     it('should handle invalid JSON gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       wsManager = new WebSocketManager({ url: WS_URL });
 
       wsManager.connect();
@@ -303,7 +309,10 @@ describe('WebSocketManager', () => {
 
     it('should not reconnect if disabled', async () => {
       const onConnectionStateChange = vi.fn();
-      wsManager = new WebSocketManager({ url: WS_URL, reconnect: false }, { onConnectionStateChange });
+      wsManager = new WebSocketManager(
+        { url: WS_URL, reconnect: false },
+        { onConnectionStateChange }
+      );
 
       wsManager.connect();
       const server = getMockWebSocket();
@@ -355,7 +364,10 @@ describe('WebSocketManager', () => {
       const onConnectionStateChange = vi.fn((state) => states.push(state));
       const onOpen = vi.fn();
 
-      wsManager = new WebSocketManager({ url: WS_URL }, { onConnectionStateChange, onOpen });
+      wsManager = new WebSocketManager(
+        { url: WS_URL },
+        { onConnectionStateChange, onOpen }
+      );
 
       wsManager.connect();
       const server = getMockWebSocket();
@@ -416,7 +428,9 @@ describe('WebSocketManager', () => {
 
       wsManager.send('test');
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Cannot send message'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Cannot send message')
+      );
       consoleSpy.mockRestore();
     });
   });

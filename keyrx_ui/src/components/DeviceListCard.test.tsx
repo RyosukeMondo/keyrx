@@ -72,9 +72,7 @@ describe('DeviceListCard', () => {
 
     renderWithRouter(<DeviceListCard />);
     expect(screen.getByText('Connected Devices (0)')).toBeInTheDocument();
-    expect(
-      screen.getByText(/No devices connected/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/No devices connected/)).toBeInTheDocument();
   });
 
   it('renders correct device count', () => {

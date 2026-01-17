@@ -145,7 +145,9 @@ describe('StateIndicatorPanel', () => {
       layer: 0,
     };
 
-    const { container } = renderWithProviders(<StateIndicatorPanel state={state} />);
+    const { container } = renderWithProviders(
+      <StateIndicatorPanel state={state} />
+    );
     const grid = container.querySelector('.grid');
 
     expect(grid).toHaveClass('grid-cols-1');

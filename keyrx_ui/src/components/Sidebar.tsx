@@ -85,11 +85,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Profiles should NOT be active when on /config page (fix dual-highlight bug)
   const isRouteActive = (path: string): boolean => {
     if (path === '/config') {
-      return location.pathname === '/config' || (location.pathname.startsWith('/profiles/') && location.pathname.endsWith('/config'));
+      return (
+        location.pathname === '/config' ||
+        (location.pathname.startsWith('/profiles/') &&
+          location.pathname.endsWith('/config'))
+      );
     }
     if (path === '/profiles') {
       // Profiles should NOT be active when on /config page
-      return location.pathname === '/profiles' || (location.pathname.startsWith('/profiles/') && !location.pathname.includes('/config'));
+      return (
+        location.pathname === '/profiles' ||
+        (location.pathname.startsWith('/profiles/') &&
+          !location.pathname.includes('/config'))
+      );
     }
     return false;
   };
@@ -111,7 +119,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {navItems.map((item) => {
             const Icon = item.icon;
             // For Config and Profiles routes, use custom active state check
-            const customIsActive = (item.to === '/config' || item.to === '/profiles') ? isRouteActive(item.to) : undefined;
+            const customIsActive =
+              item.to === '/config' || item.to === '/profiles'
+                ? isRouteActive(item.to)
+                : undefined;
 
             return (
               <li key={item.to}>
@@ -121,7 +132,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   aria-label={item.ariaLabel}
                   className={({ isActive }) => {
                     // Override isActive for Config route
-                    const actuallyActive = customIsActive !== undefined ? customIsActive : isActive;
+                    const actuallyActive =
+                      customIsActive !== undefined ? customIsActive : isActive;
                     return `
                     flex items-center gap-3 rounded-md
                     text-sm font-medium
@@ -139,11 +151,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   {({ isActive }) => {
                     // Override isActive for Config route
-                    const actuallyActive = customIsActive !== undefined ? customIsActive : isActive;
+                    const actuallyActive =
+                      customIsActive !== undefined ? customIsActive : isActive;
                     return (
                       <>
                         <Icon
-                          className={`w-5 h-5 ${actuallyActive ? 'text-white' : 'text-slate-400'} ${isCollapsed ? 'mx-auto' : ''}`}
+                          className={`w-5 h-5 ${
+                            actuallyActive ? 'text-white' : 'text-slate-400'
+                          } ${isCollapsed ? 'mx-auto' : ''}`}
                           aria-hidden="true"
                         />
                         {!isCollapsed && (
@@ -179,7 +194,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
-              className={`flex items-center justify-center px-2 py-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors ${isCollapsed ? 'w-full' : ''}`}
+              className={`flex items-center justify-center px-2 py-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors ${
+                isCollapsed ? 'w-full' : ''
+              }`}
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
