@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/Card';
 import { type Device } from '@/components/DeviceSelector';
@@ -116,8 +116,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     ) {
       setSelectedProfileName(profiles[0].name);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profiles, selectedProfileName]);
+  }, [profiles, selectedProfileName, setSelectedProfileName]);
 
   // Check if selected profile exists
   const profileExists = profiles?.some((p) => p.name === selectedProfileName);
@@ -126,15 +125,24 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   const configMissing =
     !isLoading && !error && profileExists && !profileConfig?.source;
 
+  // Track last loaded profile to prevent unnecessary re-initialization
+  const lastProfileRef = useRef<string>(selectedProfileName);
+
   // Update sync engine when profile config loads
   useEffect(() => {
-    if (profileConfig?.source) {
-      // Initialize sync engine with loaded config
-      syncEngine.onCodeChange(profileConfig.source);
-      setSyncStatus('saved');
-    } else if (configMissing) {
-      // Default config template when config file doesn't exist
-      const defaultTemplate = `// Configuration for profile: ${selectedProfileName}
+    // Only update if profile changed or config loaded for first time
+    const profileChanged = lastProfileRef.current !== selectedProfileName;
+
+    if (profileChanged) {
+      lastProfileRef.current = selectedProfileName;
+
+      if (profileConfig?.source) {
+        // Initialize sync engine with loaded config
+        syncEngine.onCodeChange(profileConfig.source);
+        setSyncStatus('saved');
+      } else if (configMissing) {
+        // Default config template when config file doesn't exist
+        const defaultTemplate = `// Configuration for profile: ${selectedProfileName}
 // This is a new configuration file
 
 // Example: Simple key remapping
@@ -145,11 +153,11 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
 
 // Add your key mappings here...
 `;
-      syncEngine.onCodeChange(defaultTemplate);
-      setSyncStatus('unsaved');
+        syncEngine.onCodeChange(defaultTemplate);
+        setSyncStatus('unsaved');
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileConfig, configMissing, selectedProfileName]);
+  }, [profileConfig, configMissing, selectedProfileName, syncEngine, setSyncStatus]);
 
   // Track code changes to update sync status
   useEffect(() => {
@@ -161,8 +169,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
         setSyncStatus('unsaved');
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncEngine.state, syncEngine.getCode()]);
+  }, [syncEngine.state, profileConfig?.source]);
 
 
   // Sync visual editor state from parsed AST - LAYER-AWARE VERSION
