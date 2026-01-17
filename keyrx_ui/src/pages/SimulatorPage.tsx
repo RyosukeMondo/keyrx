@@ -16,25 +16,15 @@ import { WasmProvider } from '../contexts/WasmContext';
 import { useProfiles } from '../hooks/useProfiles';
 import { useGetProfileConfig } from '../hooks/useProfileConfig';
 import { useWasm, type SimulationInput } from '../hooks/useWasm';
+import { useProfileConfigLoader } from '../hooks/useProfileConfigLoader';
+import { useMockKeyMappings } from '../hooks/useMockKeyMappings';
 import { getErrorMessage } from '../utils/errorUtils';
-import type { DaemonState, KeyEvent } from '../types/rpc';
+import type { DaemonState, KeyEvent, SimulatorState } from '../types/rpc';
 import type { ValidationError } from '../hooks/useWasm';
 import { EventList } from '../components/simulator/EventList';
-
-interface SimulatorState {
-  activeLayer: string;
-  modifiers: {
-    ctrl: boolean;
-    shift: boolean;
-    alt: boolean;
-    gui: boolean;
-  };
-  locks: {
-    capsLock: boolean;
-    numLock: boolean;
-    scrollLock: boolean;
-  };
-}
+import { ConfigurationModeCard } from '../components/simulator/ConfigurationModeCard';
+import { SimulatorHeader } from '../components/simulator/SimulatorHeader';
+import { StateInspectorCard } from '../components/simulator/StateInspectorCard';
 
 const MAX_EVENTS = 1000;
 const AUTO_PAUSE_TIMEOUT = 60000; // 60 seconds
@@ -90,8 +80,11 @@ export const SimulatorPage: React.FC = () => {
     validateConfig,
     runSimulation,
   } = useWasm();
-  const [configLoadError, setConfigLoadError] = useState<string | null>(null);
-  const [isUsingProfileConfig, setIsUsingProfileConfig] = useState(false);
+  const { isUsingProfileConfig, configLoadError } = useProfileConfigLoader({
+    profileConfig,
+    isWasmReady,
+    validateConfig,
+  });
   const [wasmState, setWasmState] = useState<DaemonState | null>(null);
 
   // Custom code editor mode
@@ -103,65 +96,9 @@ export const SimulatorPage: React.FC = () => {
     []
   );
 
-  // Validate and load profile config when it changes
-  useEffect(() => {
-    async function loadProfileConfig() {
-      if (!profileConfig || !isWasmReady) {
-        setIsUsingProfileConfig(false);
-        setConfigLoadError(null);
-        return;
-      }
-
-      try {
-        // Validate the config
-        const errors = await validateConfig(profileConfig.source);
-        if (errors.length > 0) {
-          const errorMsg = errors
-            .map((e) => `Line ${e.line}: ${e.message}`)
-            .join('; ');
-          setConfigLoadError(errorMsg);
-          setIsUsingProfileConfig(false);
-          console.error('Profile config validation failed:', errorMsg);
-        } else {
-          setConfigLoadError(null);
-          setIsUsingProfileConfig(true);
-        }
-      } catch (err) {
-        const errorMsg = getErrorMessage(err, 'Failed to load profile config');
-        setConfigLoadError(errorMsg);
-        setIsUsingProfileConfig(false);
-        console.error('Failed to load profile config:', err);
-      }
-    }
-
-    loadProfileConfig();
-  }, [profileConfig, isWasmReady, validateConfig]);
 
   // Mock key mappings for demonstration
-  const keyMappings = useMemo(
-    () =>
-      new Map<string, KeyMapping>([
-        [
-          'CAPS',
-          {
-            type: 'tap_hold',
-            tapAction: 'Escape',
-            holdAction: 'Ctrl',
-            threshold: 200,
-          },
-        ],
-        [
-          'SPACE',
-          {
-            type: 'tap_hold',
-            tapAction: 'Space',
-            holdAction: 'Layer_1',
-            threshold: 150,
-          },
-        ],
-      ]),
-    []
-  );
+  const keyMappings = useMockKeyMappings();
 
   const addEvent = useCallback(
     (
@@ -516,185 +453,34 @@ export const SimulatorPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
-              Keyboard Simulator
-            </h1>
-            <WasmStatusBadge
-              isLoading={isLoadingWasm}
-              isReady={isWasmReady}
-              error={error}
-              className="shrink-0"
-            />
-          </div>
-          <p className="text-sm md:text-base text-slate-400 mt-2">
-            Test your configuration by clicking keys or typing. Changes are not
-            saved to your keyboard.
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={handleCopyLog}
-            aria-label="Copy event log to clipboard"
-            disabled={events.length === 0}
-            className="w-full sm:w-auto min-h-[44px] sm:min-h-0"
-          >
-            Copy Event Log
-          </Button>
-          <Button
-            variant="danger"
-            size="md"
-            onClick={handleReset}
-            aria-label="Reset simulator state"
-            className="w-full sm:w-auto min-h-[44px] sm:min-h-0"
-          >
-            Reset Simulator
-          </Button>
-        </div>
-      </div>
+      <SimulatorHeader
+        isLoadingWasm={isLoadingWasm}
+        isWasmReady={isWasmReady}
+        error={error}
+        eventCount={events.length}
+        onCopyLog={handleCopyLog}
+        onReset={handleReset}
+      />
 
       {/* Configuration Mode Toggle */}
-      <Card aria-label="Configuration mode selector">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-slate-300">
-              Configuration Mode:
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setUseCustomCode(false)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  !useCustomCode
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                Use Profile
-              </button>
-              <button
-                onClick={() => setUseCustomCode(true)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  useCustomCode
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                Edit Code (WASM)
-              </button>
-            </div>
-          </div>
-
-          {!useCustomCode ? (
-            // Profile selector mode
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <label
-                htmlFor="profile-selector"
-                className="text-sm font-medium text-slate-300 shrink-0"
-              >
-                Select Profile:
-              </label>
-              <div className="flex-1">
-                <select
-                  id="profile-selector"
-                  value={effectiveProfile}
-                  onChange={(e) => setSelectedProfile(e.target.value)}
-                  disabled={
-                    isLoadingProfiles || !profiles || profiles.length === 0
-                  }
-                  className="w-full sm:w-auto min-w-[200px] px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="Select profile for simulation"
-                >
-                  {isLoadingProfiles ? (
-                    <option>Loading profiles...</option>
-                  ) : profiles && profiles.length > 0 ? (
-                    profiles.map((profile) => (
-                      <option key={profile.name} value={profile.name}>
-                        {profile.name}
-                        {profile.isActive ? ' [Active]' : ''}
-                      </option>
-                    ))
-                  ) : (
-                    <option>No profiles available</option>
-                  )}
-                </select>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                {isLoadingConfig && (
-                  <span className="flex items-center gap-1">
-                    <svg
-                      className="animate-spin h-4 w-4"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Loading config...
-                  </span>
-                )}
-                {!isLoadingConfig && isUsingProfileConfig && (
-                  <span className="text-green-400 font-medium">
-                    ✓ WASM Simulator Active
-                  </span>
-                )}
-                {!isLoadingConfig &&
-                  profileConfig &&
-                  !isUsingProfileConfig &&
-                  !configLoadError && (
-                    <span className="text-yellow-400">
-                      ⚠ Using mock simulation (WASM not ready)
-                    </span>
-                  )}
-                {!isWasmReady && !isLoadingWasm && (
-                  <span className="text-yellow-400">
-                    ⚠ WASM not available (run build:wasm)
-                  </span>
-                )}
-              </div>
-            </div>
-          ) : (
-            // Custom code editor mode
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-slate-400">
-                  Edit Rhai configuration and test with WASM compilation +
-                  simulation
-                </p>
-                {validationErrors.length > 0 && (
-                  <span className="text-xs text-red-400">
-                    {validationErrors.length} error
-                    {validationErrors.length > 1 ? 's' : ''}
-                  </span>
-                )}
-              </div>
-              <div className="h-[400px]">
-                <MonacoEditor
-                  value={customCode}
-                  onChange={(value) => setCustomCode(value)}
-                  onValidate={setValidationErrors}
-                  height="400px"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
+      <ConfigurationModeCard
+        useCustomCode={useCustomCode}
+        onToggleMode={setUseCustomCode}
+        effectiveProfile={effectiveProfile}
+        onProfileChange={setSelectedProfile}
+        profiles={profiles}
+        isLoadingProfiles={isLoadingProfiles}
+        isLoadingConfig={isLoadingConfig}
+        isUsingProfileConfig={isUsingProfileConfig}
+        isWasmReady={isWasmReady}
+        isLoadingWasm={isLoadingWasm}
+        profileConfig={profileConfig}
+        configLoadError={configLoadError}
+        customCode={customCode}
+        onCustomCodeChange={setCustomCode}
+        validationErrors={validationErrors}
+        onValidate={setValidationErrors}
+      />
 
       {/* Config Load Error */}
       {configLoadError && (
@@ -728,87 +514,11 @@ export const SimulatorPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* State Display */}
-        <Card
-          className="lg:col-span-1"
-          aria-labelledby="simulator-state-heading"
-        >
-          <h2
-            id="simulator-state-heading"
-            className="text-base md:text-lg font-semibold text-slate-100 mb-3"
-          >
-            State Inspector
-          </h2>
-          {isUsingProfileConfig && wasmState ? (
-            <StateIndicatorPanel state={wasmState} />
-          ) : (
-            <div className="space-y-3 md:space-y-4">
-              <div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-400">
-                      Active Layer:
-                    </span>
-                    <span className="text-sm font-mono text-slate-100">
-                      {state.activeLayer}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-slate-300 mb-2">
-                  Modifiers
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(state.modifiers).map(([key, active]) => (
-                    <div
-                      key={key}
-                      className={`px-3 py-2 rounded text-xs font-mono text-center transition-colors ${
-                        active
-                          ? 'bg-green-500 text-white'
-                          : 'bg-slate-700 text-slate-400'
-                      }`}
-                    >
-                      {key.charAt(0).toUpperCase() + key.slice(1)}{' '}
-                      {active ? '✓' : ''}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-slate-300 mb-2">
-                  Locks
-                </h3>
-                <div className="grid grid-cols-1 gap-2">
-                  {Object.entries(state.locks).map(([key, active]) => (
-                    <div
-                      key={key}
-                      className={`px-3 py-2 rounded text-xs font-mono text-center transition-colors ${
-                        active
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-slate-700 text-slate-400'
-                      }`}
-                    >
-                      {key
-                        .replace(/([A-Z])/g, ' $1')
-                        .trim()
-                        .split(' ')
-                        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                        .join(' ')}{' '}
-                      {active ? '✓' : ''}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {!isUsingProfileConfig && (
-                <p className="text-xs text-slate-500 mt-2">
-                  Using mock state. Select a valid profile to see WASM state.
-                </p>
-              )}
-            </div>
-          )}
-        </Card>
+        <StateInspectorCard
+          isUsingProfileConfig={isUsingProfileConfig}
+          wasmState={wasmState}
+          state={state}
+        />
 
         {/* Event Log */}
         <Card

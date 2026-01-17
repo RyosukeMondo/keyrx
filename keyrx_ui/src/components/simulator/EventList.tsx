@@ -158,9 +158,8 @@ export const EventList: React.FC<EventListProps> = ({
       {/* Event list container */}
       <div
         className="bg-slate-900 rounded-md p-3 md:p-4 flex-1 min-h-0"
-        role="table"
+        role="region"
         aria-label="Key event log"
-        aria-rowcount={events.length}
       >
         {events.length === 0 ? (
           // Empty state

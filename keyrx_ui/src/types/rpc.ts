@@ -178,6 +178,24 @@ export interface DaemonState {
 }
 
 /**
+ * Simulator state for mock simulation (used when WASM is not active)
+ */
+export interface SimulatorState {
+  activeLayer: string;
+  modifiers: {
+    ctrl: boolean;
+    shift: boolean;
+    alt: boolean;
+    gui: boolean;
+  };
+  locks: {
+    capsLock: boolean;
+    numLock: boolean;
+    scrollLock: boolean;
+  };
+}
+
+/**
  * Individual key event data.
  * Broadcast on "events" channel for each key press/release.
  */

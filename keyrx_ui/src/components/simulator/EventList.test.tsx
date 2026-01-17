@@ -199,15 +199,14 @@ describe('EventList', () => {
   });
 
   describe('Accessibility', () => {
-    it('has proper ARIA labels for table structure', () => {
+    it('has proper ARIA labels for event log region', () => {
       const events = createMockEvents(5);
       render(
         <EventList events={events} maxEvents={1000} onClear={mockOnClear} />
       );
 
-      const table = screen.getByRole('table', { name: /key event log/i });
-      expect(table).toBeInTheDocument();
-      expect(table).toHaveAttribute('aria-rowcount', '5');
+      const eventLog = screen.getByRole('region', { name: /key event log/i });
+      expect(eventLog).toBeInTheDocument();
     });
 
     it('has proper ARIA label for clear button', () => {
