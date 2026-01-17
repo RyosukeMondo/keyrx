@@ -54,7 +54,7 @@
 
 ## Phase 3: Refactor KeyConfigPanel
 
-- [ ] 3.1 Refactor KeyConfigPanel to use shared components
+- [x] 3.1 Refactor KeyConfigPanel to use shared components
   - File: src/components/KeyConfigPanel.tsx
   - Replace inline UI with shared components (same as Modal)
   - Purpose: Reduce KeyConfigPanel from 634 to <500 lines
