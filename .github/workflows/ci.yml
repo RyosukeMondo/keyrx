@@ -103,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -188,6 +188,16 @@ jobs:
           cargo build --release -p keyrx_daemon
         shell: powershell
 
+      - name: Install wasm-pack (macOS)
+        if: matrix.os == 'macos-latest'
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build Project (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          chmod +x scripts/build.sh
+          scripts/build.sh
+
       - name: Run Backend Verification (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -260,6 +270,17 @@ jobs:
           cargo fmt --check
           cargo clippy --workspace -- -D warnings
           cargo test --workspace
+
+      - name: Run Verification (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          # Run basic verification for macOS (skip E2E tests requiring Accessibility)
+          cargo fmt --check
+          cargo clippy --workspace -- -D warnings
+          # Run unit and integration tests, but skip any that require Accessibility permissions
+          cargo test --workspace --lib
+          cargo test --workspace --bins
+          cargo test --workspace --tests
 
       - name: Upload Backend Quality Reports (Ubuntu)
         if: matrix.os == 'ubuntu-latest' && always()
