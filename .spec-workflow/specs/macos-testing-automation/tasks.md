@@ -99,7 +99,7 @@
 
 ## Layer 3: Automated Test Runner Script
 
-- [ ] 3.1 Create permission checker script
+- [x] 3.1 Create permission checker script
   - File: scripts/check_macos_permission.sh (new file)
   - Build minimal test binary that checks Accessibility permission
   - Return exit code 0 if granted, 1 if denied
