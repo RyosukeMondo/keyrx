@@ -10,6 +10,7 @@ repository.workspace = true
 default = []
 linux = []
 windows = []
+macos = []
 
 [dependencies]
 keyrx_core = { path = "../keyrx_core" }
@@ -62,6 +63,13 @@ image = "0.25"
 [target.'cfg(target_os = "macos")'.dependencies]
 nix = { version = "0.29", features = [] }
 crossbeam-channel = "0.5"
+rdev = "0.5.3"
+enigo = "0.6"
+IOKit-sys = "0.1"
+objc2 = "0.6"
+accessibility-sys = "0.2"
+tray-icon = "0.19"
+image = "0.25"
 
 # Windows-specific dependencies
 [target.'cfg(target_os = "windows")'.dependencies]

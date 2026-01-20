@@ -1,6 +1,6 @@
 # Tasks Document
 
-- [ ] 1. Add macOS dependencies to Cargo.toml
+- [x] 1. Add macOS dependencies to Cargo.toml
   - File: keyrx_daemon/Cargo.toml
   - Add macOS target-specific dependencies: rdev, enigo, iokit-sys, objc2, accessibility-sys
   - Purpose: Enable macOS-specific crate dependencies
