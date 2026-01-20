@@ -109,7 +109,7 @@
   - _Requirements: 3.2_
   - _Prompt: Implement the task for spec macos-testing-automation, first run mcp__spec-workflow__spec-workflow-guide to get the workflow guide then implement the task: Role: Shell Script Engineer specializing in build automation and process management | Task: Create permission checker script scripts/check_macos_permission.sh that builds minimal binary and checks Accessibility permission per requirement 3.2, returning appropriate exit codes and executing in <1 second | Restrictions: Must be POSIX-compliant bash, no dependencies beyond cargo/rustc, suppress build output (redirect to /dev/null), handle missing toolchain gracefully, do not block or hang | Success: Script returns 0 if permission granted, 1 if denied, executes in <1s, build errors handled gracefully, script is idempotent. After completion: (1) Edit tasks.md to mark this task [-] as in-progress, (2) Use log-implementation tool with script behavior and exit codes documented, (3) Edit tasks.md to mark [x] as completed_
 
-- [ ] 3.2 Create main test runner script
+- [x] 3.2 Create main test runner script
   - File: scripts/test_macos_full.sh (new file)
   - Orchestrate full test suite: mock tests → permission check → E2E tests → benchmarks
   - Print clear progress indicators (✅, ⚠️, ❌) for each phase
