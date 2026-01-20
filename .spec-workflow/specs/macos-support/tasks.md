@@ -56,7 +56,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Role: Systems Developer | Task: Implement MacosOutputInjector with new() creating Enigo and inject() converting KeyEvent to enigo::Key | Restrictions: Safe Rust, proper error propagation, <1ms latency | Success: Injection works, error handling robust, latency <1ms_
 
-- [ ] 8. Implement IOKit device enumeration
+- [x] 8. Implement IOKit device enumeration
   - File: keyrx_daemon/src/platform/macos/device_discovery.rs
   - Implement list_keyboard_devices() using iokit-sys with RAII wrappers
   - Purpose: Enumerate USB keyboards for device-specific configs
