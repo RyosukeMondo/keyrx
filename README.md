@@ -4,6 +4,7 @@
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![Platform: Linux](https://img.shields.io/badge/Linux-Supported-green.svg)](docs/user-guide/linux-setup.md)
 [![Platform: Windows](https://img.shields.io/badge/Windows-Supported-green.svg)](docs/user-guide/windows-setup.md)
+[![Platform: macOS](https://img.shields.io/badge/macOS-Supported-green.svg)](docs/user-guide/macos-setup.md)
 
 **Advanced keyboard remapping with layer support, tap-hold behavior, and conditional mappings.**
 
@@ -27,7 +28,7 @@ KeyRx2 is a Rust-based workspace with four crates:
 
 - **keyrx_core**: Platform-agnostic remapping logic (no_std, WASM-compatible)
 - **keyrx_compiler**: Rhai DSL → .krx binary compiler (CLI tool)
-- **keyrx_daemon**: OS-level keyboard interception daemon (Linux, Windows)
+- **keyrx_daemon**: OS-level keyboard interception daemon (Linux, Windows, macOS)
 - **keyrx_ui**: React + WASM web interface for configuration testing
 
 ## Quickstart
@@ -168,6 +169,7 @@ Then open http://localhost:5173 and load your `.krx` file.
 - **[DSL Manual](docs/user-guide/dsl-manual.md)** - Complete reference for the KeyRx DSL with syntax, functions, and examples
 - **[Linux Setup Guide](docs/user-guide/linux-setup.md)** - Linux installation, permissions, and systemd integration
 - **[Windows Setup Guide](docs/user-guide/windows-setup.md)** - Windows installation, tray icon usage, and troubleshooting
+- **[macOS Setup Guide](docs/user-guide/macos-setup.md)** - macOS installation, Accessibility permissions, and Launch Agent setup
 - **[Windows VM Setup (Vagrant)](docs/development/windows-vm-setup.md)** - Setting up a Windows development environment on Linux
 - **[Examples](examples/)** - Six example configurations from basic to advanced
 - **[Compiler README](keyrx_compiler/README.md)** - CLI commands and usage
@@ -469,6 +471,7 @@ Modified events
    - OS-level keyboard event interception
    - Linux: evdev/uinput
    - Windows: Low-level keyboard hooks
+   - macOS: CGEventTap/CGEventPost (via rdev/enigo)
    - Embedded web server for UI
 
 4. **UI** (`keyrx_ui`):
@@ -491,9 +494,15 @@ Modified events
 - Comprehensive setup guide: [docs/user-guide/windows-setup.md](docs/user-guide/windows-setup.md)
 - Tested on Windows 10 and Windows 11
 
-### macOS ❌ Not Planned
-- Not currently on the roadmap
-- Contributions welcome if there's community interest
+### macOS ✅ Supported
+- **CGEventTap** (via rdev) for input capture
+- **CGEventPost** (via enigo) for output injection
+- **IOKit** for device enumeration
+- **Menu Bar Icon** for daemon control
+- **Accessibility permission** required for keyboard access
+- Comprehensive setup guide: [docs/user-guide/macos-setup.md](docs/user-guide/macos-setup.md)
+- Tested on macOS 12+ (Monterey, Ventura, Sonoma)
+- Supports both Intel (x86_64) and Apple Silicon (ARM64)
 
 ## License
 

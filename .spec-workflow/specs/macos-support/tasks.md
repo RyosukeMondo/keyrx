@@ -112,7 +112,7 @@
   - _Requirements: REQ-5, REQ-7_
   - _Prompt: Role: Technical Writer | Task: Document installation, Accessibility permission grant (with screenshots), troubleshooting, building from source | Restrictions: Beginner-friendly, include screenshots or placeholders | Success: Clear setup instructions, comprehensive troubleshooting_
 
-- [ ] 15. Update README
+- [x] 15. Update README
   - File: README.md
   - Add macOS to supported platforms
   - Purpose: Inform users of macOS support
