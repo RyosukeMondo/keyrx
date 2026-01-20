@@ -146,14 +146,10 @@ mod exit_codes {
     /// Configuration error (file not found, parse error).
     pub const CONFIG_ERROR: i32 = 1;
     /// Permission error (cannot access devices, cannot create uinput).
-    #[cfg(target_os = "linux")]
-    pub const PERMISSION_ERROR: i32 = 2;
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
     pub const PERMISSION_ERROR: i32 = 2;
     /// Runtime error (device disconnected with no fallback).
-    #[cfg(target_os = "linux")]
-    pub const RUNTIME_ERROR: i32 = 3;
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
     pub const RUNTIME_ERROR: i32 = 3;
 }
 
