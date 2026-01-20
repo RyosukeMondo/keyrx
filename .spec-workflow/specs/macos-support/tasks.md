@@ -32,7 +32,7 @@
   - _Requirements: REQ-5_
   - _Prompt: Role: macOS Developer | Task: Create check_accessibility_permission() using unsafe AXIsProcessTrusted() and get_permission_error_message() with step-by-step setup instructions | Restrictions: Minimal unsafe code, user-friendly error message | Success: Permission check works, error message actionable_
 
-- [ ] 5. Implement CGKeyCode mapping
+- [x] 5. Implement CGKeyCode mapping
   - File: keyrx_daemon/src/platform/macos/keycode_map.rs
   - Create bidirectional CGKeyCode ↔ KeyCode mapping and rdev/enigo conversions
   - Purpose: Enable keycode translation for input/output
