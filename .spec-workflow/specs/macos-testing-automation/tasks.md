@@ -55,7 +55,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.7_
   - _Prompt: Implement the task for spec macos-testing-automation, first run mcp__spec-workflow__spec-workflow-guide to get the workflow guide then implement the task: Role: Systems Test Engineer specializing in process management and E2E test infrastructure | Task: Create MacosE2EHarness in e2e_macos_harness.rs for spawning daemon subprocesses and managing test lifecycle per requirements 2.1, 2.2, 2.3, 2.7, reusing E2EError/E2EConfig patterns from e2e_harness.rs, integrating config compilation and implementing graceful shutdown with 5s timeout | Restrictions: Must use #[cfg(target_os = "macos")] guard, do not create virtual devices (macOS has no uinput), ensure daemon processes never orphaned, implement Drop trait for cleanup, follow existing E2E harness patterns | Success: Harness can spawn daemon with compiled config, graceful shutdown works (SIGTERM → SIGKILL), temp files cleaned up on Drop, permission checks integrated, matches e2e_harness.rs patterns. After completion: (1) Edit tasks.md to mark this task [-] as in-progress, (2) Use log-implementation tool with classes created (MacosE2EHarness, setup/teardown methods) and process management verified, (3) Edit tasks.md to mark [x] as completed_
 
-- [ ] 2.2 Implement basic E2E tests
+- [x] 2.2 Implement basic E2E tests
   - File: keyrx_daemon/tests/e2e_macos_basic.rs (new file)
   - Create test_macos_e2e_basic_remap with A → B remapping
   - Add permission check at test level (skip if no permission)
