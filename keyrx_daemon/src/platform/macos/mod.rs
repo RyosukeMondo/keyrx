@@ -50,11 +50,18 @@ pub struct MacosPlatform {
 #[cfg(target_os = "macos")]
 impl MacosPlatform {
     /// Creates a new macOS platform instance.
+    ///
+    /// # Panics
+    ///
+    /// Panics if output injector creation fails (e.g., missing Accessibility permissions).
+    /// This is checked explicitly in the `initialize()` method, so this should not panic
+    /// in normal usage.
     pub fn new() -> Self {
         let (sender, receiver) = unbounded();
         Self {
             input: MacosInputCapture::new(receiver, sender),
-            output: MacosOutputInjector::new(),
+            output: MacosOutputInjector::new()
+                .expect("Failed to create output injector - check Accessibility permissions"),
             initialized: Arc::new(Mutex::new(false)),
         }
     }

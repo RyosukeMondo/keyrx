@@ -48,7 +48,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Role: Concurrent Systems Developer | Task: Implement MacosInputCapture with new() spawning rdev::listen thread and next_event() blocking on channel recv | Restrictions: Safe Rust only, thread-safe channels, <1ms latency | Success: Events captured correctly, thread-safe, latency <1ms_
 
-- [ ] 7. Implement output injection
+- [x] 7. Implement output injection
   - File: keyrx_daemon/src/platform/macos/output_injection.rs
   - Create MacosOutputInjector using enigo::Enigo
   - Purpose: Inject remapped keyboard events
