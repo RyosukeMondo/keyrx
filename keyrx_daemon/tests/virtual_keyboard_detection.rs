@@ -1,4 +1,4 @@
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod test_virtual_keyboard_detection {
     use keyrx_daemon::device_manager::enumerate_keyboards;
     use keyrx_daemon::test_utils::VirtualKeyboard;
