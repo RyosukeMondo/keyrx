@@ -120,7 +120,7 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.6_
   - _Prompt: Implement the task for spec macos-testing-automation, first run mcp__spec-workflow__spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer specializing in test automation and shell scripting | Task: Create comprehensive test runner script scripts/test_macos_full.sh orchestrating mock tests, permission checks, E2E tests, and benchmarks per requirements 3.1, 3.2, 3.3, 3.4, 3.6, using check_macos_permission.sh and providing clear progress reporting | Restrictions: Must be POSIX-compliant bash, use set -euo pipefail for safety, handle interruption (Ctrl+C) gracefully, provide clear visual feedback, exit codes must be meaningful (0=success, 1=failure), mock test failure must stop execution | Success: Script runs all test phases in order, permission warning is non-blocking, progress indicators are clear, Ctrl+C cleanup works, exit codes are correct, script documented with usage examples. After completion: (1) Edit tasks.md to mark this task [-] as in-progress, (2) Use log-implementation tool with script structure and phase orchestration documented, (3) Edit tasks.md to mark [x] as completed_
 
-- [-] 3.3 Add interactive manual test prompt
+- [x] 3.3 Add interactive manual test prompt
   - File: scripts/test_macos_full.sh (continue from 3.2)
   - Detect interactive terminal with [ -t 0 ] check
   - Prompt user to run manual tests with y/N option
