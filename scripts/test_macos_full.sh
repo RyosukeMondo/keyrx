@@ -94,7 +94,7 @@ if cargo test --package keyrx_daemon --test macos_mock_tests -- --test-threads=1
     print_success "Mock tests passed"
     MOCK_TESTS_PASSED=true
     # Extract test count from output (e.g., "test result: ok. 15 passed")
-    MOCK_TEST_COUNT=$(grep -E "test result: ok\." "$MOCK_TEST_OUTPUT" | sed -n 's/.* \([0-9]\+\) passed.*/\1/p' | head -n1)
+    MOCK_TEST_COUNT=$(grep -E "test result: ok\." "$MOCK_TEST_OUTPUT" | sed -n 's/.* \([0-9][0-9]*\) passed.*/\1/p' | head -n1)
     MOCK_TEST_COUNT=${MOCK_TEST_COUNT:-0}
 else
     print_error "Mock tests failed"
@@ -144,7 +144,7 @@ if [ "$HAS_PERMISSION" = true ]; then
         print_success "E2E tests passed"
         E2E_TESTS_PASSED=true
         # Extract test count from output
-        E2E_TEST_COUNT=$(grep -E "test result: ok\." "$E2E_TEST_OUTPUT" | sed -n 's/.* \([0-9]\+\) passed.*/\1/p' | head -n1)
+        E2E_TEST_COUNT=$(grep -E "test result: ok\." "$E2E_TEST_OUTPUT" | sed -n 's/.* \([0-9][0-9]*\) passed.*/\1/p' | head -n1)
         E2E_TEST_COUNT=${E2E_TEST_COUNT:-0}
     else
         print_error "E2E tests failed"
