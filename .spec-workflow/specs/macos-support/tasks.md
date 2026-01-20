@@ -144,7 +144,7 @@
   - _Requirements: REQ-1, REQ-2, REQ-6_
   - _Prompt: Role: Performance Engineer | Task: Benchmark input capture, output injection, full pipeline latency with criterion | Restrictions: Run on real hardware, measure actual system latency | Success: p95 latency <1ms verified_
 
-- [ ] 19. Cross-platform verification
+- [x] 19. Cross-platform verification
   - Files: All macOS platform files
   - Test identical .krx on Linux, Windows, macOS
   - Purpose: Ensure cross-platform compatibility
