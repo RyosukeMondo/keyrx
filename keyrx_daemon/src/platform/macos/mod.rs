@@ -31,7 +31,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use keyrx_core::runtime::KeyEvent;
 
-use crate::platform::{DeviceInfo, Platform, PlatformError, PlatformResult};
+use crate::platform::{DeviceInfo, InputDevice, OutputDevice, Platform, PlatformError, PlatformResult};
 
 pub use input_capture::MacosInputCapture;
 pub use output_injection::MacosOutputInjector;
@@ -44,7 +44,9 @@ pub use output_injection::MacosOutputInjector;
 pub struct MacosPlatform {
     input: MacosInputCapture,
     output: MacosOutputInjector,
+    #[allow(dead_code)] // Will be used for rdev::listen in task 6
     sender: Sender<KeyEvent>,
+    #[allow(dead_code)] // Will be used for rdev::listen in task 6
     receiver: Receiver<KeyEvent>,
     initialized: Arc<Mutex<bool>>,
 }
@@ -68,6 +70,118 @@ impl MacosPlatform {
 impl Default for MacosPlatform {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl Platform for MacosPlatform {
+    fn initialize(&mut self) -> PlatformResult<()> {
+        log::info!("Initializing macOS platform");
+
+        // Check Accessibility permission
+        if !permissions::check_accessibility_permission() {
+            let error_message = permissions::get_permission_error_message();
+            log::error!("Accessibility permission not granted");
+            return Err(PlatformError::PermissionDenied(error_message));
+        }
+
+        // Mark as initialized
+        {
+            let mut initialized = self.initialized.lock().map_err(|e| {
+                PlatformError::InitializationFailed {
+                    reason: format!("Failed to acquire initialization lock: {}", e),
+                }
+            })?;
+            *initialized = true;
+        }
+
+        log::info!("macOS platform initialized successfully");
+        Ok(())
+    }
+
+    fn capture_input(&mut self) -> PlatformResult<KeyEvent> {
+        // Verify initialization
+        {
+            let initialized = self.initialized.lock().map_err(|e| {
+                PlatformError::InitializationFailed {
+                    reason: format!("Failed to check initialization state: {}", e),
+                }
+            })?;
+            if !*initialized {
+                return Err(PlatformError::InitializationFailed {
+                    reason: "Platform not initialized".to_string(),
+                });
+            }
+        }
+
+        // Delegate to input capture
+        self.input
+            .next_event()
+            .map_err(|e| match e {
+                crate::platform::DeviceError::EndOfStream => {
+                    PlatformError::DeviceNotFound("No events available".to_string())
+                }
+                crate::platform::DeviceError::Io(io_err) => PlatformError::Io(io_err),
+                crate::platform::DeviceError::PermissionDenied(msg) => {
+                    PlatformError::PermissionDenied(msg)
+                }
+                _ => PlatformError::Io(std::io::Error::other(format!("Input error: {}", e))),
+            })
+    }
+
+    fn inject_output(&mut self, event: KeyEvent) -> PlatformResult<()> {
+        // Verify initialization
+        {
+            let initialized = self.initialized.lock().map_err(|e| {
+                PlatformError::InitializationFailed {
+                    reason: format!("Failed to check initialization state: {}", e),
+                }
+            })?;
+            if !*initialized {
+                return Err(PlatformError::InitializationFailed {
+                    reason: "Platform not initialized".to_string(),
+                });
+            }
+        }
+
+        // Delegate to output injector
+        self.output
+            .inject_event(event)
+            .map_err(|e| match e {
+                crate::platform::DeviceError::InjectionFailed(msg) => {
+                    PlatformError::InjectionFailed {
+                        reason: msg,
+                        suggestion: "Check macOS Accessibility permissions and event structure"
+                            .to_string(),
+                    }
+                }
+                crate::platform::DeviceError::Io(io_err) => PlatformError::Io(io_err),
+                _ => PlatformError::Io(std::io::Error::other(format!("Injection error: {}", e))),
+            })
+    }
+
+    fn list_devices(&self) -> PlatformResult<Vec<DeviceInfo>> {
+        // Delegate to device discovery
+        device_discovery::list_keyboard_devices().map_err(|e| PlatformError::Io(
+            std::io::Error::other(format!("Failed to enumerate devices: {}", e)),
+        ))
+    }
+
+    fn shutdown(&mut self) -> PlatformResult<()> {
+        log::info!("Shutting down macOS platform");
+
+        // Mark as uninitialized
+        {
+            let mut initialized = self.initialized.lock().map_err(|e| {
+                PlatformError::InitializationFailed {
+                    reason: format!("Failed to acquire shutdown lock: {}", e),
+                }
+            })?;
+            *initialized = false;
+        }
+
+        log::info!("macOS platform shutdown complete");
+        Ok(())
     }
 }
 
