@@ -88,7 +88,7 @@
   - _Requirements: REQ-7, REQ-8_
   - _Prompt: Role: DevOps Engineer | Task: Add macos-latest to os matrix with build and test steps, skip E2E tests requiring Accessibility | Restrictions: Follow existing pattern, use matrix strategy | Success: macOS CI runs, unit/integration tests pass_
 
-- [ ] 12. Create keycode mapping tests
+- [x] 12. Create keycode mapping tests
   - File: keyrx_daemon/src/platform/macos/keycode_map.rs
   - Add comprehensive unit tests and property-based tests
   - Purpose: Ensure mapping correctness

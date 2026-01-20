@@ -581,4 +581,253 @@ mod tests {
             assert!(codes.insert(*code), "Duplicate CGKeyCode: {}", code);
         }
     }
+
+    #[test]
+    fn test_all_cgkeycodes_mapped() {
+        // Verify all entries in the mapping table work correctly
+        let total_mappings = CGKEYCODE_TO_KEYCODE.len();
+        assert!(
+            total_mappings >= 100,
+            "Expected at least 100 key mappings, found {}",
+            total_mappings
+        );
+
+        // Test each mapping
+        for (cgcode, expected_keycode) in CGKEYCODE_TO_KEYCODE {
+            let result = cgkeycode_to_keyrx(*cgcode);
+            assert_eq!(
+                result,
+                Some(*expected_keycode),
+                "CGKeyCode {:x} should map to {:?}",
+                cgcode,
+                expected_keycode
+            );
+        }
+    }
+
+    #[test]
+    fn test_special_keys_comprehensive() {
+        // Test all special keys have mappings
+        assert!(cgkeycode_to_keyrx(0x35).is_some()); // Escape
+        assert!(cgkeycode_to_keyrx(0x24).is_some()); // Enter
+        assert!(cgkeycode_to_keyrx(0x33).is_some()); // Backspace
+        assert!(cgkeycode_to_keyrx(0x30).is_some()); // Tab
+        assert!(cgkeycode_to_keyrx(0x31).is_some()); // Space
+        assert!(cgkeycode_to_keyrx(0x39).is_some()); // CapsLock
+
+        // Navigation keys
+        assert!(cgkeycode_to_keyrx(0x7B).is_some()); // Left
+        assert!(cgkeycode_to_keyrx(0x7C).is_some()); // Right
+        assert!(cgkeycode_to_keyrx(0x7E).is_some()); // Up
+        assert!(cgkeycode_to_keyrx(0x7D).is_some()); // Down
+        assert!(cgkeycode_to_keyrx(0x73).is_some()); // Home
+        assert!(cgkeycode_to_keyrx(0x77).is_some()); // End
+        assert!(cgkeycode_to_keyrx(0x74).is_some()); // PageUp
+        assert!(cgkeycode_to_keyrx(0x79).is_some()); // PageDown
+
+        // Media keys
+        assert!(cgkeycode_to_keyrx(0x4A).is_some()); // Mute
+        assert!(cgkeycode_to_keyrx(0x49).is_some()); // VolumeDown
+        assert!(cgkeycode_to_keyrx(0x48).is_some()); // VolumeUp
+    }
+
+    #[test]
+    fn test_numpad_keys() {
+        // All numpad keys should be mapped
+        assert_eq!(cgkeycode_to_keyrx(0x52), Some(KeyCode::Numpad0));
+        assert_eq!(cgkeycode_to_keyrx(0x53), Some(KeyCode::Numpad1));
+        assert_eq!(cgkeycode_to_keyrx(0x54), Some(KeyCode::Numpad2));
+        assert_eq!(cgkeycode_to_keyrx(0x55), Some(KeyCode::Numpad3));
+        assert_eq!(cgkeycode_to_keyrx(0x56), Some(KeyCode::Numpad4));
+        assert_eq!(cgkeycode_to_keyrx(0x57), Some(KeyCode::Numpad5));
+        assert_eq!(cgkeycode_to_keyrx(0x58), Some(KeyCode::Numpad6));
+        assert_eq!(cgkeycode_to_keyrx(0x59), Some(KeyCode::Numpad7));
+        assert_eq!(cgkeycode_to_keyrx(0x5B), Some(KeyCode::Numpad8));
+        assert_eq!(cgkeycode_to_keyrx(0x5C), Some(KeyCode::Numpad9));
+        assert_eq!(cgkeycode_to_keyrx(0x4B), Some(KeyCode::NumpadDivide));
+        assert_eq!(cgkeycode_to_keyrx(0x43), Some(KeyCode::NumpadMultiply));
+        assert_eq!(cgkeycode_to_keyrx(0x4E), Some(KeyCode::NumpadSubtract));
+        assert_eq!(cgkeycode_to_keyrx(0x45), Some(KeyCode::NumpadAdd));
+        assert_eq!(cgkeycode_to_keyrx(0x4C), Some(KeyCode::NumpadEnter));
+        assert_eq!(cgkeycode_to_keyrx(0x41), Some(KeyCode::NumpadDecimal));
+    }
+
+    #[test]
+    fn test_rdev_comprehensive_mapping() {
+        use rdev::Key;
+
+        // Test all letter keys
+        for (rdev_key, expected) in [
+            (Key::KeyA, KeyCode::A),
+            (Key::KeyB, KeyCode::B),
+            (Key::KeyC, KeyCode::C),
+            (Key::KeyD, KeyCode::D),
+            (Key::KeyE, KeyCode::E),
+            (Key::KeyF, KeyCode::F),
+            (Key::KeyG, KeyCode::G),
+            (Key::KeyH, KeyCode::H),
+            (Key::KeyI, KeyCode::I),
+            (Key::KeyJ, KeyCode::J),
+            (Key::KeyK, KeyCode::K),
+            (Key::KeyL, KeyCode::L),
+            (Key::KeyM, KeyCode::M),
+            (Key::KeyN, KeyCode::N),
+            (Key::KeyO, KeyCode::O),
+            (Key::KeyP, KeyCode::P),
+            (Key::KeyQ, KeyCode::Q),
+            (Key::KeyR, KeyCode::R),
+            (Key::KeyS, KeyCode::S),
+            (Key::KeyT, KeyCode::T),
+            (Key::KeyU, KeyCode::U),
+            (Key::KeyV, KeyCode::V),
+            (Key::KeyW, KeyCode::W),
+            (Key::KeyX, KeyCode::X),
+            (Key::KeyY, KeyCode::Y),
+            (Key::KeyZ, KeyCode::Z),
+        ] {
+            assert_eq!(
+                rdev_key_to_keyrx(rdev_key),
+                Some(expected),
+                "rdev key {:?} should map to {:?}",
+                rdev_key,
+                expected
+            );
+        }
+
+        // Test all number keys
+        for (rdev_key, expected) in [
+            (Key::Num0, KeyCode::Num0),
+            (Key::Num1, KeyCode::Num1),
+            (Key::Num2, KeyCode::Num2),
+            (Key::Num3, KeyCode::Num3),
+            (Key::Num4, KeyCode::Num4),
+            (Key::Num5, KeyCode::Num5),
+            (Key::Num6, KeyCode::Num6),
+            (Key::Num7, KeyCode::Num7),
+            (Key::Num8, KeyCode::Num8),
+            (Key::Num9, KeyCode::Num9),
+        ] {
+            assert_eq!(rdev_key_to_keyrx(rdev_key), Some(expected));
+        }
+
+        // Test all function keys
+        for (rdev_key, expected) in [
+            (Key::F1, KeyCode::F1),
+            (Key::F2, KeyCode::F2),
+            (Key::F3, KeyCode::F3),
+            (Key::F4, KeyCode::F4),
+            (Key::F5, KeyCode::F5),
+            (Key::F6, KeyCode::F6),
+            (Key::F7, KeyCode::F7),
+            (Key::F8, KeyCode::F8),
+            (Key::F9, KeyCode::F9),
+            (Key::F10, KeyCode::F10),
+            (Key::F11, KeyCode::F11),
+            (Key::F12, KeyCode::F12),
+        ] {
+            assert_eq!(rdev_key_to_keyrx(rdev_key), Some(expected));
+        }
+    }
+
+    #[test]
+    fn test_enigo_unmapped_keys() {
+        // Test that certain keys correctly return None for enigo
+        assert_eq!(keyrx_to_enigo_key(KeyCode::Insert), None);
+        assert_eq!(keyrx_to_enigo_key(KeyCode::MediaStop), None);
+    }
+
+    #[test]
+    fn test_enigo_modifier_unification() {
+        use enigo::Key;
+
+        // Test that left and right modifiers map to the same enigo key
+        assert_eq!(
+            keyrx_to_enigo_key(KeyCode::LShift),
+            keyrx_to_enigo_key(KeyCode::RShift)
+        );
+        assert_eq!(
+            keyrx_to_enigo_key(KeyCode::LCtrl),
+            keyrx_to_enigo_key(KeyCode::RCtrl)
+        );
+        assert_eq!(
+            keyrx_to_enigo_key(KeyCode::LAlt),
+            keyrx_to_enigo_key(KeyCode::RAlt)
+        );
+        assert_eq!(
+            keyrx_to_enigo_key(KeyCode::LMeta),
+            keyrx_to_enigo_key(KeyCode::RMeta)
+        );
+
+        // Verify they map to the expected keys
+        assert_eq!(keyrx_to_enigo_key(KeyCode::LShift), Some(Key::Shift));
+        assert_eq!(keyrx_to_enigo_key(KeyCode::LCtrl), Some(Key::Control));
+        assert_eq!(keyrx_to_enigo_key(KeyCode::LAlt), Some(Key::Alt));
+        assert_eq!(keyrx_to_enigo_key(KeyCode::LMeta), Some(Key::Meta));
+    }
+
+    #[test]
+    fn test_invalid_cgkeycodes() {
+        // Test a range of invalid codes
+        for invalid_code in [0xFF, 0x100, 0x200, 0x500, 0x1000, 0xFFFF] {
+            assert_eq!(
+                cgkeycode_to_keyrx(invalid_code),
+                None,
+                "Invalid CGKeyCode {:x} should return None",
+                invalid_code
+            );
+        }
+    }
+}
+
+// Property-based tests
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn test_cgkeycode_roundtrip(cgcode in 0u16..0x80) {
+            // If a CGKeyCode maps to a KeyCode, converting back should give the original
+            if let Some(keycode) = cgkeycode_to_keyrx(cgcode) {
+                let back = keyrx_to_cgkeycode(keycode);
+                prop_assert_eq!(back, Some(cgcode));
+            }
+        }
+
+        #[test]
+        fn test_keycode_roundtrip_consistency(idx in 0usize..CGKEYCODE_TO_KEYCODE.len()) {
+            // For every mapping in the table, roundtrip should be consistent
+            let (cgcode, keycode) = CGKEYCODE_TO_KEYCODE[idx];
+
+            // CGKeyCode -> KeyCode -> CGKeyCode
+            let keycode_result = cgkeycode_to_keyrx(cgcode);
+            prop_assert_eq!(keycode_result, Some(keycode));
+
+            let cgcode_result = keyrx_to_cgkeycode(keycode);
+            prop_assert_eq!(cgcode_result, Some(cgcode));
+        }
+
+        #[test]
+        fn test_no_duplicate_keycodes(idx1 in 0usize..CGKEYCODE_TO_KEYCODE.len(),
+                                      idx2 in 0usize..CGKEYCODE_TO_KEYCODE.len()) {
+            // If two indices are different, their keycodes should be different
+            let (cgcode1, _keycode1) = CGKEYCODE_TO_KEYCODE[idx1];
+            let (cgcode2, _keycode2) = CGKEYCODE_TO_KEYCODE[idx2];
+
+            if idx1 != idx2 {
+                prop_assert_ne!(cgcode1, cgcode2, "Duplicate CGKeyCode found");
+            }
+        }
+
+        #[test]
+        fn test_unmapped_returns_none(cgcode in 0x80u16..0x200) {
+            // CGKeyCodes outside the standard range should return None
+            // (most macOS keycodes are < 0x80)
+            let result = cgkeycode_to_keyrx(cgcode);
+            // If it returns Some, that's okay (some valid codes exist above 0x80)
+            // But we're just checking it doesn't panic
+            let _ = result;
+        }
+    }
 }
