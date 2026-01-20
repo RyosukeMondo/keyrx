@@ -52,6 +52,9 @@ pub mod linux;
 #[cfg(target_os = "windows")]
 pub mod windows;
 
+#[cfg(target_os = "macos")]
+pub mod macos;
+
 pub mod mock;
 
 #[cfg(target_os = "linux")]
@@ -60,6 +63,9 @@ pub use linux::{EvdevInput, LinuxPlatform, LinuxSystemTray, UinputOutput};
 
 #[cfg(target_os = "windows")]
 pub use windows::WindowsPlatform;
+
+#[cfg(target_os = "macos")]
+pub use macos::MacosPlatform;
 
 #[allow(unused_imports)] // Will be used in tasks #17-20
 pub use mock::{MockInput, MockOutput};
