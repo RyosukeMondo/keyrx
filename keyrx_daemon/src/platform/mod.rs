@@ -65,7 +65,7 @@ pub use linux::{EvdevInput, LinuxPlatform, LinuxSystemTray, UinputOutput};
 pub use windows::WindowsPlatform;
 
 #[cfg(target_os = "macos")]
-pub use macos::MacosPlatform;
+pub use macos::{MacosPlatform, MacosSystemTray};
 
 #[allow(unused_imports)] // Will be used in tasks #17-20
 pub use mock::{MockInput, MockOutput};

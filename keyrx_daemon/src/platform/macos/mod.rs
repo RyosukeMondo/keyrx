@@ -35,6 +35,7 @@ use crate::platform::{DeviceInfo, InputDevice, OutputDevice, Platform, PlatformE
 
 pub use input_capture::MacosInputCapture;
 pub use output_injection::MacosOutputInjector;
+pub use tray::MacosSystemTray;
 
 /// macOS platform implementation.
 ///
