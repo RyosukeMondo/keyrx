@@ -4,6 +4,23 @@
 
 - **uat-ui-fixes**: Dashboard virtual/physical indicator, device enable/disable toggle, profile inline edit + active indicator, config RPC fix, 256-layer display, key dropdown population. See `.spec-workflow/specs/uat-ui-fixes/tasks.md`
 
+## macOS Testing (Three-Layer Strategy)
+
+**Quick Start:**
+```bash
+./scripts/test_macos_full.sh                    # Automated test runner (all layers)
+cargo test -p keyrx_daemon --test macos_mock_tests  # Mock tests only (no permissions)
+cargo test -p keyrx_daemon --test e2e_macos_basic   # E2E tests (requires Accessibility)
+./scripts/check_macos_permission.sh             # Check Accessibility permission
+```
+
+**Three Layers:**
+1. **Mock Tests** - No permissions required (CI-friendly)
+2. **E2E Tests** - Requires Accessibility permission (auto-skip in CI)
+3. **Automated Runner** - Orchestrates all layers with intelligent handling
+
+**Details:** `docs/development/MACOS_TESTING_GUIDE.md`
+
 ## Windows Testing on Linux (Vagrant VM)
 
 **Quick Start:**
@@ -324,6 +341,8 @@ Never log: secrets, PII, full request/response bodies
 ## References
 
 - **Script Docs**: `scripts/CLAUDE.md`
+- **macOS Testing Guide**: `docs/development/MACOS_TESTING_GUIDE.md`
+- **Windows VM Setup**: `docs/development/windows-vm-setup.md`
 - **Steering Docs**: `.spec-workflow/specs/ai-dev-foundation/`
 - **Project Structure**: `.spec-workflow/steering/structure.md`
 - **CI/CD**: `.github/workflows/`

@@ -163,7 +163,7 @@
   - _Requirements: 3.1, 4.1_
   - _Prompt: Implement the task for spec macos-testing-automation, first run mcp__spec-workflow__spec-workflow-guide to get the workflow guide then implement the task: Role: CI/CD Engineer specializing in GitHub Actions and workflow optimization | Task: Update .github/workflows/ci.yml to add macOS test job using test_macos_full.sh per requirements 3.1, 4.1, following existing Linux/Windows test job patterns | Restrictions: Must run on macos-latest runner, must not cache Accessibility permissions (none available), keep job fast (<10 min), propagate test failures correctly, add job to required checks | Success: macOS test job runs in CI, E2E tests skip gracefully, mock tests execute successfully, job failure fails build, job performance is acceptable (<10 min). After completion: (1) Edit tasks.md to mark this task [-] as in-progress, (2) Use log-implementation tool with CI integration details, (3) Edit tasks.md to mark [x] as completed_
 
-- [ ] 4.2 Create macOS testing documentation
+- [x] 4.2 Create macOS testing documentation
   - File: docs/development/MACOS_TESTING_GUIDE.md (new file)
   - Document three-layer testing strategy
   - Explain Accessibility permission requirements
