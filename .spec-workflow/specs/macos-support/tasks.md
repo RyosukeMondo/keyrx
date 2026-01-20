@@ -120,7 +120,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Role: Technical Writer | Task: Add macOS to supported platforms section and feature comparison table with links to setup docs | Restrictions: Maintain existing style, concise (link to details) | Success: macOS listed prominently, feature table updated_
 
-- [ ] 16. Add release workflow
+- [x] 16. Add release workflow
   - File: .github/workflows/release.yml
   - Add macOS binary builds (x86_64 and ARM64)
   - Purpose: Enable automated releases
