@@ -104,7 +104,7 @@
   - _Requirements: REQ-8_
   - _Prompt: Role: Integration Test Engineer | Task: Create integration tests with mocked rdev/enigo/IOKit to avoid Accessibility requirement | Restrictions: No Accessibility dependency, test integration not implementation | Success: Tests pass in CI, component interactions verified_
 
-- [ ] 14. Create setup documentation
+- [x] 14. Create setup documentation
   - File: docs/setup/macos.md
   - Write setup guide with Accessibility permission instructions
   - Purpose: Help users set up keyrx on macOS
