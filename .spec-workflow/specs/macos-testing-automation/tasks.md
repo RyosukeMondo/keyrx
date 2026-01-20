@@ -196,7 +196,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec macos-testing-automation, first run mcp__spec-workflow__spec-workflow-guide to get the workflow guide then implement the task: Role: QA Lead specializing in end-to-end validation and quality assurance | Task: Execute complete test suite locally with Accessibility permissions enabled, running test_macos_full.sh multiple times to detect flakiness and validate cleanup behavior per all requirements | Restrictions: Must test on real macOS hardware (not VM), verify all three layers execute, check process cleanup with ps/lsof, run at least 3 iterations, document any issues found | Success: All test layers pass consistently (3/3 runs), no flaky tests detected, cleanup verified (no orphaned processes or temp files), benchmarks meet <1ms requirement, summary report is accurate. After completion: (1) Edit tasks.md to mark this task [-] as in-progress, (2) Use log-implementation tool with validation results and any issues discovered, (3) Edit tasks.md to mark [x] as completed_
 
-- [ ] 5.2 Run test suite in CI without permissions
+- [-] 5.2 Run test suite in CI without permissions
   - Action: Trigger GitHub Actions CI workflow for macOS
   - Verify E2E tests skip gracefully (not fail)
   - Verify mock tests pass
