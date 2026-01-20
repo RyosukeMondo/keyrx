@@ -130,7 +130,7 @@
   - _Requirements: 3.5_
   - _Prompt: Implement the task for spec macos-testing-automation, first run mcp__spec-workflow__spec-workflow-guide to get the workflow guide then implement the task: Role: UX Engineer specializing in command-line interfaces and user interaction | Task: Add interactive manual test prompt to test_macos_full.sh detecting terminal mode and prompting user per requirement 3.5, ensuring graceful behavior in non-interactive CI environments | Restrictions: Must not block in CI (use [ -t 0 ] check), prompt must be clear and concise, default to No (safety), handle EOF gracefully, respect user's choice immediately | Success: Prompt appears only in interactive terminals, CI skips prompt automatically, y/N options work correctly, user experience is smooth, manual test documentation included. After completion: (1) Edit tasks.md to mark this task [-] as in-progress, (2) Use log-implementation tool with interactive behavior validated, (3) Edit tasks.md to mark [x] as completed_
 
-- [ ] 3.4 Add test summary reporting
+- [x] 3.4 Add test summary reporting
   - File: scripts/test_macos_full.sh (continue from 3.3)
   - Print summary after all tests complete
   - Include: tests run, coverage %, benchmark results, manual test recommendations
