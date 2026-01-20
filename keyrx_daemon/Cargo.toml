@@ -108,6 +108,10 @@ reqwest = { version = "0.12", features = ["json"] }
 name = "input_latency"
 harness = false
 
+[[bench]]
+name = "macos_latency"
+harness = false
+
 [build-dependencies]
 chrono = "0.4"
 

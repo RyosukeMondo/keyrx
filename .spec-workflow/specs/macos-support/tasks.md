@@ -136,7 +136,7 @@
   - _Requirements: REQ-8_
   - _Prompt: Role: QA Engineer | Task: Create checklist covering latency, memory, CPU, device enumeration, cross-device modifiers, permission flow | Restrictions: Include measurement methods and tools | Success: Comprehensive checklist, clear pass/fail criteria_
 
-- [ ] 18. Performance benchmarking
+- [x] 18. Performance benchmarking
   - File: keyrx_daemon/benches/macos_latency.rs
   - Create latency benchmarks using criterion
   - Purpose: Verify <1ms latency requirement
