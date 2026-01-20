@@ -128,7 +128,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Role: Release Engineer | Task: Add macOS build job for both Intel and ARM64 with optional code signing/notarization | Restrictions: Build both architectures, signing optional | Success: macOS binaries built and uploaded to releases_
 
-- [ ] 17. Create E2E test checklist
+- [x] 17. Create E2E test checklist
   - File: docs/testing/macos-e2e-checklist.md
   - Document manual testing procedures
   - Purpose: Ensure thorough pre-release testing
