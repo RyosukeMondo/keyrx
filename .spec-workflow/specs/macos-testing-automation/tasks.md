@@ -32,7 +32,7 @@
   - _Requirements: 1.3, 1.4, 1.5_
   - _Prompt: Implement the task for spec macos-testing-automation, first run mcp__spec-workflow__spec-workflow-guide to get the workflow guide then implement the task: Role: Platform Test Engineer specializing in device enumeration and IOKit testing | Task: Implement device discovery mock tests in macos_mock_tests.rs covering edge cases (0 devices, multiple devices, invalid serials, USB/Bluetooth) per requirements 1.3, 1.4, 1.5, testing device_discovery.rs enumeration logic with mock IOKit responses | Restrictions: Do not require real USB/Bluetooth devices, mock all IOKit calls, test only enumeration logic not actual hardware interaction, ensure tests are isolated and repeatable | Success: All edge cases tested (0, 1, 10 devices), serial number extraction validated, USB vs Bluetooth discrimination works, tests are deterministic and fast (<1s). After completion: (1) Edit tasks.md to mark this task [-] as in-progress, (2) Use log-implementation tool with edge cases covered and test utilities created, (3) Edit tasks.md to mark [x] as completed_
 
-- [ ] 1.4 Verify mock test coverage
+- [x] 1.4 Verify mock test coverage
   - Files: Run coverage analysis on platform/macos/ modules
   - Use cargo tarpaulin or similar to measure line coverage
   - Ensure ≥90% coverage of platform/macos/*.rs files
