@@ -153,7 +153,7 @@
 
 ## Documentation and Integration
 
-- [ ] 4.1 Update CI workflow for macOS testing
+- [x] 4.1 Update CI workflow for macOS testing
   - File: .github/workflows/ci.yml (modify existing)
   - Add macOS test job using test_macos_full.sh
   - Verify job runs on macos-latest runner
