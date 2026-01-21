@@ -462,7 +462,7 @@ Before marking spec complete:
 
 - [x] Run `npm install` - succeeds without errors
 - [ ] Run `npx tsx scripts/automated-e2e-test.ts --daemon-path target/release/keyrx_daemon` - all 83 tests pass
-  - **Current Status**: ~40/83 passing (48%) - Progress made on assertion fixes
+  - **Current Status**: 54/83 passing (65%) - Major progress on config/profile test fixes
   - **Recent Progress** (2026-01-22):
     - ✅ Fixed assertion pattern: Executor now passes full response object (status, data, headers) to assert functions
     - ✅ Added extractData() helper to safely extract data field from response
@@ -473,12 +473,18 @@ Before marking spec complete:
     - ✅ Fixed profile cleanup tracking mechanism - prevents "profile limit exceeded" errors
     - ✅ Created cleanup script for manual profile removal (scripts/cleanup-test-profiles.ts)
     - ✅ Verified cleanup now works correctly (0 test profiles left after run)
+    - ✅ **MAJOR FIX**: Added device blocks to all profile config updates (config-layers.tests.ts, api-tests.ts, workflows.tests.ts)
+    - ✅ Fixed PUT /api/config test to include proper device_start()/device_end() structure
+    - ✅ Fixed profiles-010 test to include device block when updating profile configuration
+    - ✅ Fixed workflow-003 to use correct DSL syntax instead of old TOML-style config
+    - ✅ Fixed workflow-007 to properly create profile then update config
+    - ✅ Added setup for workflow-005 to ensure active profile exists before adding key mappings
   - **Remaining Issues**:
     - WebSocket event tests timeout (5s wait) - events not being broadcast
     - SOCKET_NOT_CONNECTED errors on metrics/events endpoints
-    - Config/layer tests fail with GENERATOR_ERROR (Device block not found)
-    - Profile API validation - some tests create profiles without proper setup
+    - Some profile tests fail due to test ordering/state contamination from earlier tests
     - Device validation tests pass when they should fail (API not rejecting invalid inputs)
+    - Workflow tests that depend on specific API behaviors need investigation
 - [ ] Run tests 10 consecutive times - 0 flaky failures
 - [ ] Check execution time - < 3 minutes
 - [ ] Verify all 40+ endpoints covered - generate coverage report
