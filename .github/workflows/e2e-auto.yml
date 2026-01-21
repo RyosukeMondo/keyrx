@@ -1,0 +1,230 @@
+name: E2E API Tests with Auto-Fix
+
+on:
+  pull_request:
+    branches: ['main', 'develop']
+    paths:
+      - 'keyrx_daemon/**'
+      - 'keyrx_core/**'
+      - 'keyrx_ui/**'
+      - 'scripts/**'
+      - '.github/workflows/e2e-auto.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-api-tests:
+    name: API E2E Tests with Auto-Fix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: keyrx_ui/package-lock.json
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-
+
+      - name: Build daemon (release)
+        run: |
+          echo "Building daemon in release mode..."
+          cargo build --release -p keyrx_daemon
+          echo "✓ Daemon built successfully"
+
+      - name: Install frontend dependencies
+        run: |
+          cd keyrx_ui
+          npm ci
+
+      - name: Run automated API E2E tests
+        id: e2e-tests
+        run: |
+          cd keyrx_ui
+          npm run test:e2e:api:report
+        continue-on-error: true
+
+      - name: Generate HTML report
+        if: always()
+        run: |
+          cd keyrx_ui
+          if [ -f test-results.json ]; then
+            npm run test:e2e:api:html
+            echo "✓ HTML report generated"
+          else
+            echo "⚠️  No test results found, skipping HTML report"
+          fi
+
+      - name: Upload test results (JSON)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results-json
+          path: keyrx_ui/test-results.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload test results (HTML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results-html
+          path: keyrx_ui/test-report.html
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload daemon logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daemon-logs
+          path: scripts/logs/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Parse test results
+        if: always()
+        id: parse-results
+        run: |
+          if [ ! -f keyrx_ui/test-results.json ]; then
+            echo "No test results found"
+            echo "summary=❌ Tests failed to run" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Extract key metrics from JSON
+          TOTAL=$(jq -r '.testSuite.total' keyrx_ui/test-results.json)
+          PASSED=$(jq -r '.testSuite.passed' keyrx_ui/test-results.json)
+          FAILED=$(jq -r '.testSuite.failed' keyrx_ui/test-results.json)
+          ERRORS=$(jq -r '.testSuite.errors' keyrx_ui/test-results.json)
+          DURATION=$(jq -r '.duration' keyrx_ui/test-results.json)
+          FIXED=$(jq -r '.fixResults.fixedTests // 0' keyrx_ui/test-results.json)
+          UNFIXED=$(jq -r '.fixResults.unfixedTests // 0' keyrx_ui/test-results.json)
+
+          # Calculate duration in seconds
+          DURATION_SEC=$(echo "scale=1; $DURATION / 1000" | bc)
+
+          # Create summary
+          if [ "$FAILED" -eq 0 ] && [ "$ERRORS" -eq 0 ]; then
+            EMOJI="✅"
+            STATUS="All tests passed"
+          else
+            EMOJI="❌"
+            STATUS="Some tests failed"
+          fi
+
+          SUMMARY="${EMOJI} **${STATUS}** | ${PASSED}/${TOTAL} passed"
+          if [ "$FIXED" -gt 0 ]; then
+            SUMMARY="${SUMMARY} | ${FIXED} auto-fixed"
+          fi
+          SUMMARY="${SUMMARY} | ${DURATION_SEC}s"
+
+          echo "summary=${SUMMARY}" >> $GITHUB_OUTPUT
+          echo "total=${TOTAL}" >> $GITHUB_OUTPUT
+          echo "passed=${PASSED}" >> $GITHUB_OUTPUT
+          echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+          echo "errors=${ERRORS}" >> $GITHUB_OUTPUT
+          echo "fixed=${FIXED}" >> $GITHUB_OUTPUT
+          echo "unfixed=${UNFIXED}" >> $GITHUB_OUTPUT
+          echo "duration=${DURATION_SEC}" >> $GITHUB_OUTPUT
+
+      - name: Comment PR with test results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = '${{ steps.parse-results.outputs.summary }}';
+            const total = '${{ steps.parse-results.outputs.total }}';
+            const passed = '${{ steps.parse-results.outputs.passed }}';
+            const failed = '${{ steps.parse-results.outputs.failed }}';
+            const errors = '${{ steps.parse-results.outputs.errors }}';
+            const fixed = '${{ steps.parse-results.outputs.fixed }}';
+            const unfixed = '${{ steps.parse-results.outputs.unfixed }}';
+            const duration = '${{ steps.parse-results.outputs.duration }}';
+
+            let body = `## API E2E Test Results\n\n${summary}\n\n`;
+
+            if (total > 0) {
+              body += `### Summary\n\n`;
+              body += `| Metric | Count |\n`;
+              body += `|--------|-------|\n`;
+              body += `| Total Tests | ${total} |\n`;
+              body += `| ✅ Passed | ${passed} |\n`;
+              body += `| ❌ Failed | ${failed} |\n`;
+              body += `| ⚠️ Errors | ${errors} |\n`;
+
+              if (fixed > 0) {
+                body += `| 🔧 Auto-Fixed | ${fixed} |\n`;
+              }
+
+              if (unfixed > 0) {
+                body += `| 🔴 Unfixed | ${unfixed} |\n`;
+              }
+
+              body += `| ⏱️ Duration | ${duration}s |\n\n`;
+
+              body += `### Artifacts\n\n`;
+              body += `- 📊 [HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
+              body += `- 📋 [JSON Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
+            } else {
+              body += `⚠️ No test results available. Tests may have failed to run.\n\n`;
+              body += `Check the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\n`;
+            }
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('API E2E Test Results')
+            );
+
+            // Create or update comment
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      - name: Fail workflow if tests failed
+        if: always() && steps.e2e-tests.outcome == 'failure'
+        run: |
+          echo "❌ E2E tests failed"
+          exit 1
