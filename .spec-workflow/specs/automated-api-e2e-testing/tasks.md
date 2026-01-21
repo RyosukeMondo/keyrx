@@ -246,7 +246,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Contribution guide_
   - _Prompt: Role: Developer Advocate | Task: Create DEV_GUIDE.md with sections: Adding Test Cases (TestCase interface, example), Updating Expected Results (when/how to update expected-results.json), Writing Fix Strategies (FixStrategy interface, example implementation), Running Tests Locally (commands, debugging), Best Practices (test isolation, determinism, performance). Include step-by-step tutorials. | Restrictions: Use concrete examples, keep pragmatic (not academic), max 1500 words | Success: Developers can add tests and fix strategies_
 
-- [ ] 7.3 Create example test case
+- [x] 7.3 Create example test case
   - File: `scripts/automated-e2e-testing/examples/example-test.ts`
   - Complete example test case with setup/execute/assert
   - Demonstrates best practices
