@@ -94,7 +94,7 @@ Report Failure  Iterate (max 3 attempts)
 ## Phase 3: Result Comparison & Validation
 
 ### Task 3: Create Result Comparator
-- [ ] 3.1 Create response comparator
+- [x] 3.1 Create response comparator
   - File: `scripts/comparator/response-comparator.ts`
   - Deep equality check with diff output
   - Ignore fields (timestamps, IDs)
