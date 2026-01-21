@@ -23,7 +23,7 @@ Report Failure  Iterate (max 3 attempts)
 ## Phase 1: Test Infrastructure
 
 ### Task 1: Create Test Runner Framework
-- [ ] 1.1 Create test runner script
+- [x] 1.1 Create test runner script
   - File: `scripts/automated-e2e-test.ts`
   - CLI interface with options: `--daemon-path`, `--port`, `--max-iterations`, `--fix`, `--report-json`
   - Daemon lifecycle management (start/stop/restart)
@@ -33,7 +33,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Automated test execution, daemon management_
   - _Prompt: Role: Test Infrastructure Engineer | Task: Create automated-e2e-test.ts CLI tool that starts daemon, runs test suite, manages lifecycle. Options: --daemon-path (default: target/release/keyrx_daemon), --port (default: 9867), --max-iterations (default: 3), --fix (enable auto-fix), --report-json (output JSON report). Use child_process to spawn daemon, wait for /api/status ready, handle cleanup on exit. | Restrictions: Must handle Windows/Linux daemon paths, timeout daemon startup after 30s, ensure cleanup on SIGINT/SIGTERM | Success: CLI runs, starts daemon, executes tests, outputs results_
 
-- [ ] 1.2 Create daemon fixture with health checks
+- [x] 1.2 Create daemon fixture with health checks
   - File: `scripts/fixtures/daemon-fixture.ts`
   - Start daemon with test profile
   - Health check polling (GET /api/status)
@@ -44,7 +44,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Robust daemon management_
   - _Prompt: Role: Test Infrastructure Developer | Task: Create DaemonFixture class with methods: start(config), waitUntilReady(timeout), stop(), getLogs(). Start spawns daemon subprocess, waitUntilReady polls /api/status every 100ms up to timeout, stop sends SIGTERM then SIGKILL after 5s, getLogs reads stderr/stdout. | Restrictions: Handle port conflicts (retry with next port), capture all daemon output, work on Windows (use taskkill) and Linux (SIGTERM) | Success: Can reliably start/stop daemon, passes health checks_
 
-- [ ] 1.3 Create test result database schema
+- [x] 1.3 Create test result database schema
   - File: `scripts/fixtures/expected-results.json`
   - JSON schema for expected API responses
   - Versioned by API contract version
@@ -59,7 +59,7 @@ Report Failure  Iterate (max 3 attempts)
 ## Phase 2: API Test Suite
 
 ### Task 2: Create API Client Library
-- [ ] 2.1 Create typed API client
+- [x] 2.1 Create typed API client
   - File: `scripts/api-client/client.ts`
   - Type-safe functions for all REST endpoints
   - Request/response validation using Zod schemas
@@ -69,7 +69,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Type-safe API access_
   - _Prompt: Role: API Client Developer | Task: Create ApiClient class with methods for all endpoints: getStatus(), getDevices(), getProfiles(), createProfile(name), activateProfile(name), deleteProfile(name), patchDevice(id, updates), getMetrics(), getLayouts(), setProfileConfig(name, config). Use axios or fetch with typed responses. Import Zod schemas from keyrx_ui/src/api/schemas.ts. Auto-retry on network errors (3 attempts, exponential backoff). | Restrictions: Validate all responses against Zod schemas, throw typed errors on validation failure, timeout requests after 5s | Success: All API endpoints accessible via typed methods_
 
-- [ ] 2.2 Create API test case definitions
+- [x] 2.2 Create API test case definitions
   - File: `scripts/test-cases/api-tests.ts`
   - Test case definitions for each endpoint
   - Arrange-Act-Assert pattern
@@ -79,7 +79,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Complete API coverage_
   - _Prompt: Role: QA Test Engineer | Task: Create TestCase interface and array of test cases: { id: string, name: string, endpoint: string, scenario: string, setup: () => Promise<void>, execute: (client: ApiClient) => Promise<Response>, assert: (response, expected) => ValidationResult }. Define tests for all endpoints: GET /api/status (healthy, starting), GET /api/devices (empty, multiple), GET /api/profiles (default, multiple), POST /api/profiles (create, duplicate), DELETE /api/profiles/:name (existing, not-found), PATCH /api/devices/:id (valid, invalid), GET /api/metrics/latency, GET /api/layouts. | Restrictions: Each test must be isolated (cleanup after), use descriptive names, follow AAA pattern | Success: 30+ test cases covering all endpoints and scenarios_
 
-- [ ] 2.3 Create test executor
+- [x] 2.3 Create test executor
   - File: `scripts/test-executor/executor.ts`
   - Execute test suite sequentially
   - Collect results with timing
@@ -94,7 +94,7 @@ Report Failure  Iterate (max 3 attempts)
 ## Phase 3: Result Comparison & Validation
 
 ### Task 3: Create Result Comparator
-- [ ] 3.1 Create response comparator
+- [x] 3.1 Create response comparator
   - File: `scripts/comparator/response-comparator.ts`
   - Deep equality check with diff output
   - Ignore fields (timestamps, IDs)
@@ -104,7 +104,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Robust comparison logic_
   - _Prompt: Role: Test Validation Engineer | Task: Create ResponseComparator class with method: compare(actual, expected, options?): ComparisonResult. ComparisonResult { matches: boolean, diff?: Diff[], ignoredFields: string[] }. Use deep-diff or jest-diff for object comparison. Options: ignoreFields (e.g., ['timestamp', 'id']), ignoreArrayOrder (semantic comparison), ignoreWhitespace. Return detailed diff on mismatch with path to differing field. | Restrictions: Handle nested objects, arrays, null/undefined, circular references, special JSON types (Date) | Success: Accurately compares responses, provides actionable diffs_
 
-- [ ] 3.2 Create validation reporter
+- [x] 3.2 Create validation reporter
   - File: `scripts/comparator/validation-reporter.ts`
   - Format comparison results for humans
   - Generate JSON report for machines
@@ -119,7 +119,7 @@ Report Failure  Iterate (max 3 attempts)
 ## Phase 4: Auto-Fix Engine
 
 ### Task 4: Create Auto-Fix System
-- [ ] 4.1 Create issue classifier
+- [x] 4.1 Create issue classifier
   - File: `scripts/auto-fix/issue-classifier.ts`
   - Classify failure types (network, validation, logic, data)
   - Extract fixable patterns (timeout, missing field, wrong type)
@@ -129,7 +129,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Intelligent issue detection_
   - _Prompt: Role: Issue Analysis Engineer | Task: Create IssueClassifier class with method: classify(testResult): Issue[]. Issue { type: 'network'|'validation'|'logic'|'data', fixable: boolean, priority: number, description: string, suggestedFix?: string }. Analyze test failure patterns: network errors (ECONNREFUSED, timeout) → retry/restart daemon, validation errors (wrong type, missing field) → schema mismatch, logic errors (wrong value) → business logic bug, data errors (empty array) → fixture issue. Priority: 1 (auto-fixable), 2 (needs hint), 3 (manual). | Restrictions: Don't guess fixes for complex logic bugs, only suggest fixes for patterns you can detect | Success: Classifies failures into actionable categories_
 
-- [ ] 4.2 Create auto-fix strategies
+- [x] 4.2 Create auto-fix strategies
   - File: `scripts/auto-fix/fix-strategies.ts`
   - Strategy pattern for different fix types
   - Network fixes (restart daemon, wait longer)
@@ -140,7 +140,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Automated fixes for common issues_
   - _Prompt: Role: Auto-Fix Engineer | Task: Create FixStrategy interface { canFix(issue): boolean, apply(issue, context): Promise<FixResult> } and implementations: RestartDaemonStrategy (network errors), UpdateExpectedResultStrategy (schema mismatches), ReseedFixtureStrategy (data issues), RetryTestStrategy (transient failures). FixResult { success: boolean, message: string, retry: boolean }. Context includes daemon fixture, API client, test case. | Restrictions: Each strategy must be idempotent (safe to apply multiple times), log all actions, never modify code (only config/fixtures) | Success: Strategies can fix network, schema, and data issues_
 
-- [ ] 4.3 Create fix orchestrator
+- [x] 4.3 Create fix orchestrator
   - File: `scripts/auto-fix/fix-orchestrator.ts`
   - Apply fixes in priority order
   - Retry tests after each fix
@@ -155,7 +155,7 @@ Report Failure  Iterate (max 3 attempts)
 ## Phase 5: Integration & Reporting
 
 ### Task 5: Integrate Components
-- [ ] 5.1 Wire up test runner with auto-fix
+- [x] 5.1 Wire up test runner with auto-fix
   - File: `scripts/automated-e2e-test.ts` (update)
   - Connect test executor → comparator → auto-fix → retry loop
   - Command-line flags for fix behavior
@@ -165,7 +165,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Complete integration_
   - _Prompt: Role: Integration Engineer | Task: Update automated-e2e-test.ts to integrate all components. Flow: startDaemon() → executeTests() → compareResults() → if failures and --fix flag: classifyIssues() → applyFixes() → retryTests() → repeat. Add progress logging: "Starting daemon...", "Running 30 tests...", "15 passed, 5 failed", "Applying fixes...", "Retry 1/3: 3 tests fixed, 2 remaining". Output final report via ValidationReporter. | Restrictions: Handle Ctrl+C gracefully (stop daemon, save partial results), stream progress to stdout (don't buffer), respect --max-iterations flag | Success: Complete flow from daemon start to final report with auto-fix_
 
-- [ ] 5.2 Create HTML test report generator
+- [x] 5.2 Create HTML test report generator
   - File: `scripts/reporters/html-reporter.ts`
   - Generate visual HTML report
   - Test results with pass/fail indicators
@@ -176,7 +176,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Human-friendly visual reports_
   - _Prompt: Role: Reporting Engineer | Task: Create HtmlReporter class with method: generate(testResults, outputPath). HTML structure: summary card (total/passed/failed), test list (filterable by status), detail view per test (request/response/expected/actual/diff with syntax highlighting), fix attempt history. Use template HTML with embedded JSON data + client-side JS for interactivity. Style with simple CSS (no framework). Export standalone HTML file. | Restrictions: No external dependencies in HTML (must work offline), keep file size < 500KB, use syntax highlighting for JSON (highlight.js via CDN) | Success: Generates standalone HTML report with test results and diffs_
 
-- [ ] 5.3 Add npm script and Makefile target
+- [x] 5.3 Add npm script and Makefile target
   - File: `package.json` (keyrx_ui), `Makefile` (root)
   - Add `test:e2e:auto` script
   - Add `make e2e-auto` target
@@ -190,7 +190,7 @@ Report Failure  Iterate (max 3 attempts)
 ## Phase 6: CI Integration & Monitoring
 
 ### Task 6: CI Integration
-- [ ] 6.1 Create GitHub Actions workflow
+- [x] 6.1 Create GitHub Actions workflow
   - File: `.github/workflows/e2e-auto.yml`
   - Run automated e2e tests on PR
   - Upload test reports as artifacts
@@ -298,14 +298,14 @@ Phase 7 (Documentation)
 2. ✅ Response validation using Zod schemas (type-safe)
 3. ✅ Fix success rate > 60% for fixable issues
 4. ✅ Test execution time < 2 minutes (30 tests)
-5. ✅ Dashboard shows test health trends
+5. ⏳ Dashboard shows test health trends (pending Task 6.3)
 
 ### Developer Experience
 1. ✅ One command to run: `npm run test:e2e:auto`
 2. ✅ Clear failure messages with actionable diffs
 3. ✅ HTML report for visual inspection
-4. ✅ Easy to add new tests (template provided)
-5. ✅ Documentation complete and clear
+4. ⏳ Easy to add new tests (template provided - pending Task 7.3)
+5. ⏳ Documentation complete and clear (pending Tasks 7.1, 7.2)
 
 ## Technical Debt Prevention
 
