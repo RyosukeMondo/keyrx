@@ -8,10 +8,10 @@
 
 **Quick Start:**
 ```bash
-./scripts/test_macos_full.sh                    # Automated test runner (all layers)
+./scripts/platform/macos/test_full.sh                    # Automated test runner (all layers)
 cargo test -p keyrx_daemon --test macos_mock_tests  # Mock tests only (no permissions)
 cargo test -p keyrx_daemon --test e2e_macos_basic   # E2E tests (requires Accessibility)
-./scripts/check_macos_permission.sh             # Check Accessibility permission
+./scripts/platform/macos/check_permission.sh             # Check Accessibility permission
 ```
 
 **Three Layers:**
@@ -25,7 +25,7 @@ cargo test -p keyrx_daemon --test e2e_macos_basic   # E2E tests (requires Access
 
 **Quick Start:**
 ```bash
-./scripts/windows_test_vm.sh                    # Automated testing
+./scripts/platform/windows/test_vm.sh                    # Automated testing
 cd vagrant/windows && vagrant up                # Manual control
 vagrant winrm -c 'cd C:\vagrant_project; cargo test -p keyrx_daemon --features windows'
 vagrant snapshot restore provisioned            # Restore clean state

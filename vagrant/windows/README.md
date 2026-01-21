@@ -28,10 +28,10 @@ Use the provided script from project root:
 
 ```bash
 cd /home/rmondo/repos/keyrx2
-./scripts/windows_test_vm.sh
+./scripts/platform/windows/test_vm.sh
 
 # Run with UAT
-./scripts/windows_test_vm.sh --uat
+./scripts/platform/windows/test_vm.sh --uat
 ```
 
 ### From Inside VM (Manual)
@@ -214,7 +214,7 @@ vagrant snapshot restore <name> # Restore snapshot
 
 ```bash
 # From project root
-./scripts/windows_test_vm.sh
+./scripts/platform/windows/test_vm.sh
 ```
 
 This script automatically:
@@ -236,7 +236,7 @@ The VM can be used for local Windows testing before pushing to CI:
 
 ```bash
 # Test locally before push
-./scripts/windows_test_vm.sh
+./scripts/platform/windows/test_vm.sh
 
 # If tests pass, commit and push
 git add .

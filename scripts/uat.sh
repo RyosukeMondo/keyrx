@@ -175,45 +175,75 @@ stop_daemon() {
     return 0
 }
 
-# Check Linux prerequisites
+# Check platform prerequisites
 check_prerequisites() {
     log_info "Checking prerequisites..."
 
-    # Check if user is in input group
-    if ! groups | grep -q "input"; then
-        log_error "User not in 'input' group"
-        log_error "Fix: sudo usermod -aG input \$USER && logout"
-        return 1
-    fi
-    log_info "User in 'input' group"
+    case "$OSTYPE" in
+        darwin*)
+            log_info "macOS detected - checking Accessibility permission..."
 
-    # Check if uinput group exists and user is in it
-    if getent group uinput > /dev/null; then
-        if ! groups | grep -q "uinput"; then
-            log_warn "User not in 'uinput' group (may cause permission errors)"
-            log_warn "Fix: sudo usermod -aG uinput \$USER && logout"
-        else
-            log_info "User in 'uinput' group"
-        fi
-    fi
+            # Check Accessibility permission
+            if ! "$SCRIPT_DIR/platform/macos/check_permission.sh" 2>/dev/null; then
+                log_warn "Accessibility permission not granted"
+                log_warn "Device enumeration may not work without permission"
+                log_info ""
+                log_info "To grant permission:"
+                log_info "  1. Open System Settings > Privacy & Security > Accessibility"
+                log_info "  2. Grant permission to Terminal (or your IDE)"
+                log_info "  3. Re-run this script"
+                log_info ""
+                log_info "Interactive setup: $SCRIPT_DIR/platform/macos/setup_accessibility.sh"
+                # Don't fail - allow UAT to continue as some features may still work
+            else
+                log_info "Accessibility permission granted"
+            fi
+            ;;
+        linux*)
+            log_info "Linux detected - checking groups and modules..."
 
-    # Check if udev rules are installed
-    if [[ ! -f "/etc/udev/rules.d/99-keyrx.rules" ]]; then
-        log_warn "udev rules not installed"
-        log_warn "Fix: sudo cp keyrx_daemon/udev/99-keyrx.rules /etc/udev/rules.d/"
-    fi
+            # Check if user is in input group
+            if ! groups | grep -q "input"; then
+                log_error "User not in 'input' group"
+                log_error "Fix: sudo usermod -aG input \$USER && logout"
+                return 1
+            fi
+            log_info "User in 'input' group"
 
-    # Check if uinput module is loaded
-    if ! lsmod | grep -q "uinput"; then
-        log_warn "uinput module not loaded, attempting to load..."
-        if sudo modprobe uinput 2>/dev/null; then
+            # Check if uinput group exists and user is in it
+            if getent group uinput > /dev/null; then
+                if ! groups | grep -q "uinput"; then
+                    log_warn "User not in 'uinput' group (may cause permission errors)"
+                    log_warn "Fix: sudo usermod -aG uinput \$USER && logout"
+                else
+                    log_info "User in 'uinput' group"
+                fi
+            fi
+
+            # Check if udev rules are installed
+            if [[ ! -f "/etc/udev/rules.d/99-keyrx.rules" ]]; then
+                log_warn "udev rules not installed"
+                log_warn "Fix: sudo cp keyrx_daemon/udev/99-keyrx.rules /etc/udev/rules.d/"
+            fi
+
+            # Check if uinput module is loaded
+            if ! lsmod | grep -q "uinput"; then
+                log_warn "uinput module not loaded, attempting to load..."
+                if sudo modprobe uinput 2>/dev/null; then
+                    log_info "uinput module loaded"
+                else
+                    log_error "Failed to load uinput module"
+                    return 1
+                fi
+            fi
             log_info "uinput module loaded"
-        else
-            log_error "Failed to load uinput module"
+            ;;
+        *)
+            log_error "Unsupported OS: $OSTYPE"
+            log_error "KeyRX supports Linux and macOS only"
             return 1
-        fi
-    fi
-    log_info "uinput module loaded"
+            ;;
+    esac
 
     log_info "Prerequisites OK"
     return 0

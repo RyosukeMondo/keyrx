@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Track test results
 MOCK_TESTS_PASSED=false
@@ -116,7 +116,7 @@ rm -f "$MOCK_TEST_OUTPUT"
 print_section "Phase 2: Accessibility Permission Check"
 print_step "Checking Accessibility permission..."
 
-if "$SCRIPT_DIR/check_macos_permission.sh"; then
+if "$SCRIPT_DIR/check_permission.sh"; then
     print_success "Accessibility permission granted"
     HAS_PERMISSION=true
 else

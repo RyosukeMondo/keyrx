@@ -183,7 +183,7 @@ macOS achieves equivalent test coverage through a **three-layer testing strategy
    - Tap-hold timing validation
    - **Auto-skip**: Gracefully skips without Accessibility permission
 
-3. **Layer 3: Automated Runner** (`test_macos_full.sh`)
+3. **Layer 3: Automated Runner** (`platform/macos/test_full.sh`)
    - Orchestrates all test layers
    - Permission checking
    - Progress reporting

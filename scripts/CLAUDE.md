@@ -31,11 +31,24 @@ This directory contains automation scripts for building, testing, verifying, and
 | `check-types.sh` | TypeScript/Rust type sync verification |
 | `fix_doc_tests.sh` | Fix and run documentation tests |
 | `test_docs.sh` | Verify documentation examples compile |
-| `windows_test_vm.sh` | Run tests in Windows VM |
-| `deploy_windows.sh` | Windows deployment |
 | `validate_performance.sh` | Run performance benchmarks |
 | `verify_file_sizes.sh` | Check file size limits (uses tokei) |
 | `audit_test_failures.sh` | Categorize test failures |
+| `compare_platform_coverage.sh` | Compare test coverage across platforms |
+
+### Platform-Specific Scripts
+
+| Script | Purpose | Platform |
+|--------|---------|----------|
+| `platform/macos/check_permission.sh` | Check Accessibility permission | macOS |
+| `platform/macos/test_full.sh` | Comprehensive test runner | macOS |
+| `platform/macos/setup_accessibility.sh` | Interactive permission setup | macOS |
+| `platform/macos/install_launchd.sh` | Install LaunchAgent | macOS |
+| `platform/windows/test_vm.sh` | Run tests in Windows VM | Windows |
+| `platform/windows/deploy.sh` | Deploy to Windows PC | Windows |
+| `platform/windows/*.ps1` | Windows build/install scripts | Windows |
+
+See `platform/README.md` for detailed documentation of platform-specific scripts.
 
 ### Library Scripts (Internal)
 
@@ -59,6 +72,7 @@ This directory contains automation scripts for building, testing, verifying, and
 ./scripts/setup.sh           # Full environment setup
 ./scripts/setup.sh --check   # Check setup status
 ./scripts/setup.sh --linux   # Linux-only setup
+./scripts/setup.sh --macos   # macOS-only setup
 
 # UAT modes
 ./scripts/uat.sh             # Full UAT with UI build
@@ -66,6 +80,44 @@ This directory contains automation scripts for building, testing, verifying, and
 ./scripts/uat.sh --verify    # Verify running daemon
 ./scripts/uat.sh --stop      # Stop daemon
 ```
+
+## Platform Support
+
+KeyRx supports Linux and macOS. Core scripts automatically detect the platform and adjust behavior.
+
+| Script | Linux | macOS | Windows | Notes |
+|--------|-------|-------|---------|-------|
+| `build.sh` | ✅ | ✅ | ✅ | Cross-platform |
+| `test.sh` | ✅ | ✅ | ✅ | Cross-platform |
+| `verify.sh` | ✅ | ✅ | ✅ | Cross-platform |
+| `dev.sh` | ✅ | ✅ | ✅ | Cross-platform |
+| `launch.sh` | ✅ | ✅ | ✅ | Cross-platform |
+| `setup.sh` | ✅ | ✅ | ❌ | Platform-specific logic |
+| `uat.sh` | ✅ | ✅ | ❌ | Platform-specific logic |
+| `install.sh` | ✅ | ✅ | ❌ | Platform-specific logic |
+
+**Platform-Specific Differences:**
+
+- **Linux**: Uses udev rules, systemd, desktop integration, input/uinput groups
+- **macOS**: Uses Accessibility permissions, LaunchAgents, native window system
+- **Windows**: Tested via Vagrant VM (see `platform/windows/`)
+
+**Platform-Specific Scripts:**
+
+For platform-specific utilities, see the `scripts/platform/` directory:
+
+```bash
+# macOS
+./scripts/platform/macos/check_permission.sh      # Check Accessibility permission
+./scripts/platform/macos/test_full.sh             # Run all macOS tests
+./scripts/platform/macos/setup_accessibility.sh   # Interactive permission guide
+
+# Windows (from Linux)
+./scripts/platform/windows/test_vm.sh             # Test in Windows VM
+./scripts/platform/windows/deploy.sh              # Deploy to Windows PC
+```
+
+See `scripts/platform/README.md` for complete documentation.
 
 ## Common Flags (All Scripts)
 

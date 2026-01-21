@@ -63,10 +63,10 @@ USE_RSYNC=false
 
 ```bash
 # Source configuration and deploy
-source .deploy.env && ./scripts/deploy_windows.sh
+source .deploy.env && ./scripts/platform/windows/deploy.sh
 
 # Or use flags directly
-./scripts/deploy_windows.sh --host 192.168.1.100 --user developer
+./scripts/platform/windows/deploy.sh --host 192.168.1.100 --user developer
 ```
 
 ## Deployment Options
@@ -83,7 +83,7 @@ source .deploy.env && ./scripts/deploy_windows.sh
 
 **Usage:**
 ```bash
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER
 ```
 
 ### Option 2: Rsync (Incremental Sync) - **Recommended for Development**
@@ -103,7 +103,7 @@ source .deploy.env && ./scripts/deploy_windows.sh
 
 **Usage:**
 ```bash
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER --use-rsync
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER --use-rsync
 ```
 
 ### Option 3: SMB Network Share - **Alternative Approach**
@@ -177,7 +177,7 @@ Uses the existing Vagrant Windows VM to build native Windows binaries.
 
 **Usage:**
 ```bash
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER
 # (default behavior, BUILD_IN_VM=true)
 ```
 
@@ -205,7 +205,7 @@ rustup target add x86_64-pc-windows-gnu
 
 **Usage:**
 ```bash
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER --no-vm-build
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER --no-vm-build
 ```
 
 ## Script Usage
@@ -214,37 +214,37 @@ rustup target add x86_64-pc-windows-gnu
 
 ```bash
 # Deploy to Windows client
-./scripts/deploy_windows.sh --host 192.168.1.100 --user developer
+./scripts/platform/windows/deploy.sh --host 192.168.1.100 --user developer
 
 # Using environment variables
 export WINDOWS_CLIENT_HOST=192.168.1.100
 export WINDOWS_CLIENT_USER=developer
-./scripts/deploy_windows.sh
+./scripts/platform/windows/deploy.sh
 ```
 
 ### Advanced Options
 
 ```bash
 # Skip building, deploy existing binaries
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER --skip-build
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER --skip-build
 
 # Deploy only installer package
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER --installer-only
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER --installer-only
 
 # Deploy and run installer
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER --run-installer
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER --run-installer
 
 # Use rsync for faster repeated deployments
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER --use-rsync
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER --use-rsync
 
 # Custom deployment directory
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER --deploy-dir D:/projects/keyrx
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER --deploy-dir D:/projects/keyrx
 
 # Quiet mode (minimal output)
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER --quiet
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER --quiet
 
 # JSON output (for automation)
-./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER --json
+./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER --json
 ```
 
 ### Complete Workflow Examples
@@ -256,16 +256,16 @@ cp .deploy.env.example .deploy.env
 # Edit .deploy.env with your settings
 
 # First deployment
-source .deploy.env && ./scripts/deploy_windows.sh
+source .deploy.env && ./scripts/platform/windows/deploy.sh
 
 # After code changes, fast incremental deployment
-source .deploy.env && ./scripts/deploy_windows.sh --use-rsync
+source .deploy.env && ./scripts/platform/windows/deploy.sh --use-rsync
 ```
 
 **CI/CD workflow:**
 ```bash
 # Build in VM, deploy, run installer
-./scripts/deploy_windows.sh \
+./scripts/platform/windows/deploy.sh \
     --host $CI_WINDOWS_HOST \
     --user $CI_WINDOWS_USER \
     --run-installer \
@@ -353,7 +353,7 @@ source .deploy.env && ./scripts/deploy_windows.sh --use-rsync
 2. Or install WSL and rsync package
 3. Or fall back to SCP:
    ```bash
-   ./scripts/deploy_windows.sh --host WIN_HOST --user WIN_USER
+   ./scripts/platform/windows/deploy.sh --host WIN_HOST --user WIN_USER
    # (without --use-rsync flag)
    ```
 
@@ -425,7 +425,7 @@ Use environment variables in CI/CD instead of files:
 # In CI/CD environment
 export WINDOWS_CLIENT_HOST=$CI_SECRET_WIN_HOST
 export WINDOWS_CLIENT_USER=$CI_SECRET_WIN_USER
-./scripts/deploy_windows.sh
+./scripts/platform/windows/deploy.sh
 ```
 
 ### Firewall Configuration
@@ -453,7 +453,7 @@ set -e
 
 # Deploy
 source .deploy.env
-./scripts/deploy_windows.sh --use-rsync
+./scripts/platform/windows/deploy.sh --use-rsync
 
 # Run tests on Windows client
 ssh $WINDOWS_CLIENT_USER@$WINDOWS_CLIENT_HOST \
@@ -474,7 +474,7 @@ Run deployment after successful commits:
 if [ "$(git branch --show-current)" = "deploy-dev" ]; then
     echo "Deploying to Windows client..."
     source .deploy.env
-    ./scripts/deploy_windows.sh --use-rsync --quiet
+    ./scripts/platform/windows/deploy.sh --use-rsync --quiet
 fi
 ```
 

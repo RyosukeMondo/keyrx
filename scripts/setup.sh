@@ -27,6 +27,7 @@ source "$SCRIPT_DIR/lib/common.sh"
 CHECK_ONLY=false
 DEV_TOOLS_ONLY=false
 LINUX_ONLY=false
+MACOS_ONLY=false
 HOOKS_ONLY=false
 DESKTOP_ONLY=false
 WINDOWS_VM_ONLY=false
@@ -42,6 +43,7 @@ OPTIONS:
     --check         Check current setup status (don't install anything)
     --dev-tools     Install development tools only (cargo tools, npm)
     --linux         Linux environment setup only (groups, udev, uinput)
+    --macos         macOS environment setup only (Accessibility permission check)
     --hooks         Git hooks setup only
     --desktop       Desktop integration only (.desktop file, icons)
     --windows-vm    Windows VM setup only (Vagrant + libvirt)
@@ -53,10 +55,11 @@ OPTIONS:
 
 COMPONENTS:
     1. Dev Tools   - cargo-watch, cargo-llvm-cov, wasm-pack, npm packages
-    2. Linux       - User groups (input, uinput), udev rules, kernel modules
-    3. Git Hooks   - Pre-commit hook for verification
-    4. Desktop     - .desktop file, application icons
-    5. Windows VM  - Vagrant + libvirt for Windows testing
+    2. Linux       - User groups (input, uinput), udev rules, kernel modules (Linux only)
+    3. macOS       - Accessibility permission check, dev environment (macOS only)
+    4. Git Hooks   - Pre-commit hook for verification
+    5. Desktop     - .desktop file, application icons (Linux only)
+    6. Windows VM  - Vagrant + libvirt for Windows testing (Linux only)
 
 EXAMPLES:
     $(basename "$0")                 # Full setup
@@ -95,6 +98,10 @@ parse_args() {
                 ;;
             --linux)
                 LINUX_ONLY=true
+                shift
+                ;;
+            --macos)
+                MACOS_ONLY=true
                 shift
                 ;;
             --hooks)
@@ -233,6 +240,37 @@ check_linux_status() {
     fi
 }
 
+check_macos_status() {
+    log_info "Checking macOS environment..."
+
+    local all_ok=true
+
+    # Check Accessibility permission
+    if "$SCRIPT_DIR/platform/macos/check_permission.sh" 2>/dev/null; then
+        log_info "  Accessibility permission: GRANTED"
+    else
+        log_warn "  Accessibility permission: NOT GRANTED"
+        log_info "    Grant permission: System Settings > Privacy & Security > Accessibility"
+        all_ok=false
+    fi
+
+    # Check if dev tools are macOS compatible
+    if command_exists cargo && command_exists rustc; then
+        log_info "  Rust toolchain: INSTALLED"
+    else
+        log_warn "  Rust toolchain: NOT INSTALLED"
+        all_ok=false
+    fi
+
+    if [[ "$all_ok" == "true" ]]; then
+        log_info "macOS environment: OK"
+        return 0
+    else
+        log_warn "macOS environment: INCOMPLETE"
+        return 1
+    fi
+}
+
 check_hooks_status() {
     log_info "Checking Git hooks..."
 
@@ -282,27 +320,59 @@ check_all_status() {
     separator
 
     local dev_ok=true
-    local linux_ok=true
+    local platform_ok=true
     local hooks_ok=true
     local desktop_ok=true
 
     check_dev_tools_status || dev_ok=false
     separator
-    check_linux_status || linux_ok=false
+
+    # Check platform-specific components
+    case "$OSTYPE" in
+        darwin*)
+            check_macos_status || platform_ok=false
+            ;;
+        linux*)
+            check_linux_status || platform_ok=false
+            separator
+            check_desktop_status || desktop_ok=false
+            ;;
+        *)
+            log_warn "Unsupported OS: $OSTYPE"
+            platform_ok=false
+            ;;
+    esac
     separator
+
     check_hooks_status || hooks_ok=false
-    separator
-    check_desktop_status || desktop_ok=false
     separator
 
     # Summary
     log_info "Setup Status Summary:"
     [[ "$dev_ok" == "true" ]] && log_info "  Dev Tools: OK" || log_warn "  Dev Tools: INCOMPLETE"
-    [[ "$linux_ok" == "true" ]] && log_info "  Linux: OK" || log_warn "  Linux: INCOMPLETE"
-    [[ "$hooks_ok" == "true" ]] && log_info "  Git Hooks: OK" || log_warn "  Git Hooks: INCOMPLETE"
-    [[ "$desktop_ok" == "true" ]] && log_info "  Desktop: OK" || log_warn "  Desktop: INCOMPLETE"
 
-    if [[ "$dev_ok" == "true" && "$linux_ok" == "true" && "$hooks_ok" == "true" && "$desktop_ok" == "true" ]]; then
+    case "$OSTYPE" in
+        darwin*)
+            [[ "$platform_ok" == "true" ]] && log_info "  macOS: OK" || log_warn "  macOS: INCOMPLETE"
+            ;;
+        linux*)
+            [[ "$platform_ok" == "true" ]] && log_info "  Linux: OK" || log_warn "  Linux: INCOMPLETE"
+            [[ "$desktop_ok" == "true" ]] && log_info "  Desktop: OK" || log_warn "  Desktop: INCOMPLETE"
+            ;;
+    esac
+
+    [[ "$hooks_ok" == "true" ]] && log_info "  Git Hooks: OK" || log_warn "  Git Hooks: INCOMPLETE"
+
+    # Determine overall success
+    local all_ok=true
+    [[ "$dev_ok" == "false" ]] && all_ok=false
+    [[ "$platform_ok" == "false" ]] && all_ok=false
+    [[ "$hooks_ok" == "false" ]] && all_ok=false
+    if [[ "$OSTYPE" == "linux"* ]] && [[ "$desktop_ok" == "false" ]]; then
+        all_ok=false
+    fi
+
+    if [[ "$all_ok" == "true" ]]; then
         log_accomplished
         return 0
     else
@@ -406,6 +476,37 @@ setup_linux() {
     fi
 
     log_info "Linux setup complete"
+    return 0
+}
+
+setup_macos() {
+    log_info "Setting up macOS environment..."
+
+    # Check Accessibility permission
+    if "$SCRIPT_DIR/platform/macos/check_permission.sh" 2>/dev/null; then
+        log_info "Accessibility permission already granted"
+    else
+        log_warn "Accessibility permission not granted"
+        log_info ""
+        log_info "To grant Accessibility permission:"
+        log_info "  1. Open System Settings"
+        log_info "  2. Go to Privacy & Security > Accessibility"
+        log_info "  3. Click the lock icon and enter your password"
+        log_info "  4. Add Terminal (or your IDE) to the list"
+        log_info "  5. Toggle the switch ON"
+        log_info ""
+        log_info "You can also use the interactive setup script:"
+        log_info "  $SCRIPT_DIR/platform/macos/setup_accessibility.sh"
+        log_info ""
+    fi
+
+    # Install dev tools (already cross-platform)
+    install_dev_tools
+
+    # Setup git hooks (already cross-platform)
+    setup_hooks
+
+    log_info "macOS setup complete"
     return 0
 }
 
@@ -539,38 +640,65 @@ setup_windows_vm() {
 
 run_full_setup() {
     log_info "Running full environment setup..."
+    log_info "Detected OS: $OSTYPE"
     separator
 
     local exit_code=0
 
-    # Dev tools
-    log_info "Component 1/4: Development Tools"
+    # Dev tools (cross-platform)
+    log_info "Component 1: Development Tools"
     if ! install_dev_tools; then
         log_warn "Dev tools setup incomplete"
         exit_code=1
     fi
     separator
 
-    # Linux
-    log_info "Component 2/4: Linux Environment"
-    if ! setup_linux; then
-        log_warn "Linux setup incomplete"
-        exit_code=1
-    fi
+    # Platform-specific setup
+    case "$OSTYPE" in
+        darwin*)
+            log_info "Component 2: macOS Environment"
+            # Note: setup_macos calls install_dev_tools and setup_hooks internally
+            # but we've already done dev tools above, so just check permission
+            if "$SCRIPT_DIR/platform/macos/check_permission.sh" 2>/dev/null; then
+                log_info "Accessibility permission already granted"
+            else
+                log_warn "Accessibility permission not granted"
+                log_info ""
+                log_info "To grant Accessibility permission:"
+                log_info "  1. Open System Settings"
+                log_info "  2. Go to Privacy & Security > Accessibility"
+                log_info "  3. Add Terminal (or your IDE) to the list"
+                log_info ""
+                log_info "Interactive setup: $SCRIPT_DIR/platform/macos/setup_accessibility.sh"
+                exit_code=1
+            fi
+            ;;
+        linux*)
+            log_info "Component 2: Linux Environment"
+            if ! setup_linux; then
+                log_warn "Linux setup incomplete"
+                exit_code=1
+            fi
+            separator
+
+            log_info "Component 3: Desktop Integration"
+            if ! setup_desktop; then
+                log_warn "Desktop setup incomplete"
+                exit_code=1
+            fi
+            ;;
+        *)
+            log_error "Unsupported OS: $OSTYPE"
+            log_error "KeyRX supports Linux and macOS only"
+            return 1
+            ;;
+    esac
     separator
 
-    # Hooks
-    log_info "Component 3/4: Git Hooks"
+    # Hooks (cross-platform)
+    log_info "Component (final): Git Hooks"
     if ! setup_hooks; then
         log_warn "Git hooks setup incomplete"
-        exit_code=1
-    fi
-    separator
-
-    # Desktop
-    log_info "Component 4/4: Desktop Integration"
-    if ! setup_desktop; then
-        log_warn "Desktop setup incomplete"
         exit_code=1
     fi
     separator
@@ -578,7 +706,9 @@ run_full_setup() {
     if [[ $exit_code -eq 0 ]]; then
         log_accomplished
         log_info "Full setup complete!"
-        log_warn "You may need to log out and back in for group changes to take effect"
+        if [[ "$OSTYPE" == "linux"* ]]; then
+            log_warn "You may need to log out and back in for group changes to take effect"
+        fi
     else
         log_warning_marker
         log_info "Setup completed with warnings"
@@ -612,6 +742,9 @@ main() {
         exit_code=$?
     elif [[ "$LINUX_ONLY" == "true" ]]; then
         setup_linux
+        exit_code=$?
+    elif [[ "$MACOS_ONLY" == "true" ]]; then
+        setup_macos
         exit_code=$?
     elif [[ "$HOOKS_ONLY" == "true" ]]; then
         setup_hooks

@@ -16,7 +16,7 @@ KeyRx implements a three-layer testing strategy for macOS to maximize test cover
 
 ```bash
 # From project root
-./scripts/test_macos_full.sh
+./scripts/platform/macos/test_full.sh
 ```
 
 This script automatically:
@@ -36,7 +36,7 @@ cargo test --package keyrx_daemon --test macos_mock_tests
 cargo test --package keyrx_daemon --test e2e_macos_basic --test e2e_macos_multidevice
 
 # Check permission status
-./scripts/check_macos_permission.sh
+./scripts/platform/macos/check_permission.sh
 echo "Exit code: $?"  # 0 = granted, 1 = denied
 ```
 
@@ -156,7 +156,7 @@ The test runner script orchestrates all test layers, provides clear progress rep
 
 ### Script
 
-`scripts/test_macos_full.sh`
+`scripts/platform/macos/test_full.sh`
 
 ### Features
 
@@ -171,10 +171,10 @@ The test runner script orchestrates all test layers, provides clear progress rep
 
 ```bash
 # Standard run (all phases)
-./scripts/test_macos_full.sh
+./scripts/platform/macos/test_full.sh
 
 # In CI (non-interactive)
-./scripts/test_macos_full.sh  # Prompts auto-skip
+./scripts/platform/macos/test_full.sh  # Prompts auto-skip
 
 # Check exit code
 echo $?  # 0 = success, 1 = failure
@@ -279,7 +279,7 @@ To run E2E tests on your developer machine:
 **Verification:**
 
 ```bash
-./scripts/check_macos_permission.sh
+./scripts/platform/macos/check_permission.sh
 echo $?  # Should print: 0
 ```
 
@@ -292,7 +292,7 @@ If you see exit code 1, permission was not granted correctly.
 cd /path/to/keyrx
 
 # Run complete test suite
-./scripts/test_macos_full.sh
+./scripts/platform/macos/test_full.sh
 
 # Expected result: All tests pass
 ```
@@ -309,7 +309,7 @@ vim keyrx_daemon/src/platform/macos/keycode_map.rs
 cargo test --package keyrx_daemon --test macos_mock_tests
 
 # 3. Run full test suite (if mock tests pass)
-./scripts/test_macos_full.sh
+./scripts/platform/macos/test_full.sh
 
 # 4. Commit if all tests pass
 git add .
@@ -383,7 +383,7 @@ cargo build --package keyrx_daemon
 **Solution:**
 ```bash
 # 1. Verify permission with check script
-./scripts/check_macos_permission.sh
+./scripts/platform/macos/check_permission.sh
 echo $?  # Should be 0
 
 # 2. Restart terminal application
@@ -393,7 +393,7 @@ echo $?  # Should be 0
 # Ensure your terminal app is listed and enabled
 
 # 4. Try running check script with explicit path
-/usr/bin/env bash ./scripts/check_macos_permission.sh
+/usr/bin/env bash ./scripts/platform/macos/check_permission.sh
 ```
 
 ### E2E Tests Hang
@@ -427,14 +427,14 @@ grep -A 10 "impl Drop for MacosE2EHarness" keyrx_daemon/tests/e2e_macos_harness.
 **Solution:**
 ```bash
 # 1. Check script permissions
-ls -la scripts/test_macos_full.sh
-chmod +x scripts/test_macos_full.sh  # If not executable
+ls -la scripts/platform/macos/test_full.sh
+chmod +x scripts/platform/macos/test_full.sh  # If not executable
 
 # 2. Run with debug output
-bash -x ./scripts/test_macos_full.sh
+bash -x ./scripts/platform/macos/test_full.sh
 
 # 3. Check for syntax errors
-shellcheck scripts/test_macos_full.sh  # If shellcheck installed
+shellcheck scripts/platform/macos/test_full.sh  # If shellcheck installed
 
 # 4. Verify dependencies
 which cargo  # Should print: /path/to/cargo
@@ -684,8 +684,8 @@ test-macos:
 - **Mock Tests**: `keyrx_daemon/tests/macos_mock_tests.rs`
 - **E2E Tests**: `keyrx_daemon/tests/e2e_macos_*.rs`
 - **Test Harness**: `keyrx_daemon/tests/e2e_macos_harness.rs`
-- **Test Runner**: `scripts/test_macos_full.sh`
-- **Permission Checker**: `scripts/check_macos_permission.sh`
+- **Test Runner**: `scripts/platform/macos/test_full.sh`
+- **Permission Checker**: `scripts/platform/macos/check_permission.sh`
 - **Platform Code**: `keyrx_daemon/src/platform/macos/`
 
 ### Spec Documents

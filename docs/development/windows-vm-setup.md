@@ -36,10 +36,10 @@ From project root:
 
 ```bash
 # Run tests on Windows
-./scripts/windows_test_vm.sh
+./scripts/platform/windows/test_vm.sh
 
 # Run tests + UAT
-./scripts/windows_test_vm.sh --uat
+./scripts/platform/windows/test_vm.sh --uat
 ```
 
 The script automatically:
@@ -113,7 +113,7 @@ virt-manager  # Find "keyrx2-win-test" VM
 
 ```bash
 # From project root
-./scripts/windows_test_vm.sh
+./scripts/platform/windows/test_vm.sh
 ```
 
 ## File Syncing
@@ -186,10 +186,10 @@ cargo build --release
 
 ```bash
 # Basic tests
-./scripts/windows_test_vm.sh
+./scripts/platform/windows/test_vm.sh
 
 # With UAT
-./scripts/windows_test_vm.sh --uat
+./scripts/platform/windows/test_vm.sh --uat
 ```
 
 ## VM Management
@@ -331,7 +331,7 @@ Test locally before pushing:
 
 ```bash
 # Run Windows tests locally
-./scripts/windows_test_vm.sh
+./scripts/platform/windows/test_vm.sh
 
 # If tests pass, commit
 git add .

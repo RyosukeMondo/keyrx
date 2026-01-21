@@ -1,22 +1,30 @@
 #!/usr/bin/env bash
 # install.sh - Install KeyRx daemon and desktop integration
 #
-# This script installs the KeyRx keyboard remapping daemon with full
-# Linux desktop integration including:
+# This script installs the KeyRx keyboard remapping daemon with platform-specific
+# integration:
+#
+# Linux:
 # - Binary installation
 # - Desktop application launcher
 # - System tray icon
 # - Autostart on login
 # - Systemd user service
+# - udev rules and groups
+#
+# macOS:
+# - Binary installation
+# - LaunchAgent for autostart
+# - Config directory setup
 #
 # Usage:
 #   ./install.sh [--user|--system] [--no-autostart] [--no-udev]
 #
 # Options:
 #   --user         Install for current user only (default)
-#   --system       Install system-wide (requires sudo)
+#   --system       Install system-wide (requires sudo, Linux only)
 #   --no-autostart Skip autostart installation
-#   --no-udev      Skip udev rules installation
+#   --no-udev      Skip udev rules installation (Linux only)
 #   --help         Show this help message
 
 set -euo pipefail
@@ -85,12 +93,6 @@ error() {
     echo -e "${RED}[ERROR]${NC} $*"
 }
 
-# Check if running on Linux
-if [[ "$(uname -s)" != "Linux" ]]; then
-    error "This script is for Linux only. Detected: $(uname -s)"
-    exit 1
-fi
-
 # Check if binaries exist
 DAEMON_BIN="$PROJECT_ROOT/target/release/keyrx_daemon"
 COMPILER_BIN="$PROJECT_ROOT/target/release/keyrx_compiler"
@@ -129,19 +131,147 @@ fi
 # Autostart directory (always user-specific)
 AUTOSTART_DIR="$HOME/.config/autostart"
 
-# Config directory (always user-specific)
-CONFIG_DIR="$HOME/.config/keyrx"
+# Config directory (platform-specific)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    CONFIG_DIR="$HOME/Library/Application Support/keyrx"
+else
+    CONFIG_DIR="$HOME/.config/keyrx"
+fi
 
-echo ""
-echo "========================================="
-echo "  KeyRx Installation"
-echo "========================================="
-echo ""
-info "Installation mode: $INSTALL_MODE"
-info "Binary directory: $BIN_DIR"
-info "Applications directory: $APPLICATIONS_DIR"
-info "Systemd directory: $SYSTEMD_DIR"
-echo ""
+# Installation functions
+install_macos() {
+    echo ""
+    echo "========================================="
+    echo "  KeyRx Installation (macOS)"
+    echo "========================================="
+    echo ""
+
+    local install_dir="$HOME/.local/bin"
+    local config_dir="$HOME/Library/Application Support/keyrx"
+
+    info "Installation mode: user"
+    info "Binary directory: $install_dir"
+    info "Config directory: $config_dir"
+    echo ""
+
+    # Create directories
+    info "Creating installation directories..."
+    mkdir -p "$install_dir"
+    mkdir -p "$config_dir"
+
+    # Install binaries
+    info "Installing binaries..."
+    install -m 755 "$DAEMON_BIN" "$install_dir/keyrx_daemon"
+    success "Installed keyrx_daemon to $install_dir"
+
+    if [[ -f "$COMPILER_BIN" ]]; then
+        install -m 755 "$COMPILER_BIN" "$install_dir/keyrx_compiler"
+        success "Installed keyrx_compiler to $install_dir"
+    fi
+
+    # Create LaunchAgent if autostart is requested
+    if [[ "$INSTALL_AUTOSTART" == true ]]; then
+        local plist_path="$HOME/Library/LaunchAgents/com.keyrx.daemon.plist"
+        info "Creating LaunchAgent for autostart..."
+
+        cat > "$plist_path" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.keyrx.daemon</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$install_dir/keyrx_daemon</string>
+        <string>run</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>$HOME/Library/Logs/keyrx-daemon.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/Library/Logs/keyrx-daemon-error.log</string>
+</dict>
+</plist>
+EOF
+        success "Created LaunchAgent at $plist_path"
+    fi
+
+    # Create example config
+    local example_config="$config_dir/example.rhai"
+    if [[ ! -f "$example_config" ]]; then
+        info "Creating example configuration..."
+        cat > "$example_config" <<'EOF'
+// KeyRx Example Configuration
+// Save as: ~/Library/Application Support/keyrx/config.rhai
+
+// Example: Swap Caps Lock and Escape
+// Uncomment to enable:
+// map(KEY_CAPSLOCK, KEY_ESC)
+// map(KEY_ESC, KEY_CAPSLOCK)
+
+// Example: Make Caps Lock a Ctrl when held
+// tap_hold(KEY_CAPSLOCK, KEY_ESC, KEY_LEFTCTRL)
+
+info("KeyRx configuration loaded successfully!");
+info("Edit this file to customize your keyboard remapping");
+EOF
+        success "Created example configuration at $example_config"
+    fi
+
+    # Summary
+    echo ""
+    echo "========================================="
+    echo "  Installation Complete!"
+    echo "========================================="
+    echo ""
+
+    success "KeyRx has been installed successfully"
+    echo ""
+    info "Next steps:"
+    echo ""
+    echo "  1. Grant Accessibility permission:"
+    echo "     System Settings > Privacy & Security > Accessibility"
+    echo "     Add Terminal (or keyrx_daemon) to the list"
+    echo ""
+    echo "  2. Configure your key mappings:"
+    echo "     \$ nano \"$config_dir/example.rhai\""
+    echo ""
+    echo "  3. Compile your configuration:"
+    echo "     \$ keyrx_compiler \"$config_dir/example.rhai\" -o \"$config_dir/config.krx\""
+    echo ""
+
+    if [[ "$INSTALL_AUTOSTART" == true ]]; then
+        echo "  4. Start the daemon (will auto-start on login):"
+        echo "     \$ launchctl load \"$HOME/Library/LaunchAgents/com.keyrx.daemon.plist\""
+        echo ""
+        echo "  5. Stop the daemon:"
+        echo "     \$ launchctl unload \"$HOME/Library/LaunchAgents/com.keyrx.daemon.plist\""
+    else
+        echo "  4. Start the daemon manually:"
+        echo "     \$ keyrx_daemon run"
+    fi
+
+    echo ""
+    info "You can also use the interactive setup script:"
+    info "  $SCRIPT_DIR/platform/macos/setup_accessibility.sh"
+    echo ""
+}
+
+install_linux() {
+    echo ""
+    echo "========================================="
+    echo "  KeyRx Installation (Linux)"
+    echo "========================================="
+    echo ""
+    info "Installation mode: $INSTALL_MODE"
+    info "Binary directory: $BIN_DIR"
+    info "Applications directory: $APPLICATIONS_DIR"
+    info "Systemd directory: $SYSTEMD_DIR"
+    echo ""
 
 # Create necessary directories
 info "Creating installation directories..."
@@ -381,3 +511,30 @@ info "The daemon will appear in your application launcher and system tray"
 info "You can also configure it to start automatically on login"
 
 echo ""
+}
+
+# Main installation flow
+case "$OSTYPE" in
+    darwin*)
+        # macOS doesn't support system-wide installation
+        if [[ "$INSTALL_MODE" == "system" ]]; then
+            warning "System-wide installation not supported on macOS, using user installation"
+            INSTALL_MODE="user"
+        fi
+
+        # Udev rules don't apply to macOS
+        if [[ "$INSTALL_UDEV" == true ]]; then
+            INSTALL_UDEV=false
+        fi
+
+        install_macos
+        ;;
+    linux*)
+        install_linux
+        ;;
+    *)
+        error "Unsupported operating system: $OSTYPE"
+        error "KeyRx supports Linux and macOS only"
+        exit 1
+        ;;
+esac

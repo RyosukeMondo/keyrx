@@ -914,15 +914,15 @@ jobs:
 
       - name: Make scripts executable
         run: |
-          chmod +x scripts/test_macos_full.sh
-          chmod +x scripts/check_macos_permission.sh
+          chmod +x scripts/platform/macos/test_full.sh
+          chmod +x scripts/platform/macos/check_permission.sh
 
       - name: Run comprehensive macOS test suite
         id: macos-tests
         run: |
           # Run the comprehensive test suite
           # E2E tests will auto-skip gracefully without Accessibility permission
-          scripts/test_macos_full.sh 2>&1 | tee macos-test-output.log
+          scripts/platform/macos/test_full.sh 2>&1 | tee macos-test-output.log
         continue-on-error: false
 
       - name: Upload test logs

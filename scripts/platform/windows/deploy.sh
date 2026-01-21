@@ -6,8 +6,8 @@ set -e
 
 # Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/common.sh
-source "$SCRIPT_DIR/lib/common.sh"
+# shellcheck source=../../lib/common.sh
+source "$SCRIPT_DIR/../../lib/common.sh"
 
 # Configuration (can be overridden by environment variables or flags)
 WINDOWS_CLIENT_HOST="${WINDOWS_CLIENT_HOST:-}"
