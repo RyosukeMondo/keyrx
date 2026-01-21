@@ -1,0 +1,490 @@
+# Tasks: REST API Comprehensive E2E Testing
+
+## Overview
+
+Comprehensive REST API testing that exercises ALL daemon features via JSON-based endpoints. Fix existing broken tests, add missing endpoint coverage, validate feature workflows end-to-end.
+
+**Total Tasks:** 24 across 6 phases
+**Estimated Time:** 3-4 days
+
+---
+
+## Phase 1: Fix Existing Infrastructure
+
+### Task 1.1: Fix Dependency Issues
+- [x] 1.1.1 Add `zod` dependency to root package.json or scripts directory
+  - File: `package.json` (root) or `scripts/package.json`
+  - Add: `"zod": "^3.22.0"` to dependencies
+  - Purpose: Fix "Cannot find module 'zod'" error
+  - Verification: `npm install && npm run test:e2e:auto` should not throw import errors
+
+- [x] 1.1.2 Add missing TypeScript type dependencies
+  - File: `package.json`
+  - Add: `"@types/node": "^20.0.0"`, `"@types/ws": "^8.5.0"`
+  - Purpose: Type definitions for Node.js and WebSocket
+  - Verification: No TypeScript compilation errors
+
+- [x] 1.1.3 Install additional required dependencies
+  - File: `package.json`
+  - Add: `"axios": "^1.6.0"`, `"ws": "^8.14.0"`, `"deep-diff": "^1.0.2"`, `"commander": "^11.0.0"`
+  - Purpose: HTTP client, WebSocket, diff library, CLI parsing
+  - Verification: All imports resolve correctly
+
+### Task 1.2: Fix Existing Test Assertions
+- [x] 1.2.1 Strengthen profile test assertions
+  - File: `scripts/test-cases/api-tests.ts`
+  - Fix: Validate all response fields, not just existence
+  - Lines: 290-320 (profiles-003, profiles-004)
+  - Example: Check `response.profile.name === 'test-profile-create'` instead of `typeof response.message === 'string'`
+  - Purpose: Catch schema mismatches
+
+- [x] 1.2.2 Add proper error code validation
+  - File: `scripts/test-cases/api-tests.ts`
+  - Fix: Validate error codes match expected values (PROFILE_NOT_FOUND, DEVICE_NOT_FOUND, etc.)
+  - Lines: 320-435 (error test cases)
+  - Purpose: Ensure API returns correct error codes
+
+- [x] 1.2.3 Fix route typo in profile config endpoint
+  - File: `keyrx_daemon/src/web/api/profiles.rs`
+  - Fix: Change `/profiles:name/config` to `/profiles/:name/config` (missing slash)
+  - Line: 23
+  - Purpose: Fix 404 errors on profile config endpoint
+  - Verification: `GET /api/profiles/:name/config` returns 200, not 404
+
+### Task 1.3: Improve Test Reliability
+- [x] 1.3.1 Add proper cleanup to all tests
+  - File: `scripts/test-cases/api-tests.ts`
+  - Fix: Ensure cleanup runs even on test failure (use finally blocks)
+  - Purpose: Prevent test state leakage
+
+- [x] 1.3.2 Fix daemon startup race conditions
+  - File: `scripts/fixtures/daemon-fixture.ts`
+  - Fix: Increase health check timeout from 5s to 30s
+  - Add exponential backoff for health check polling
+  - Purpose: Handle slow daemon startup on CI
+
+- [x] 1.3.3 Add test isolation guards
+  - File: `scripts/test-executor/executor.ts`
+  - Add: Verify daemon state before each test (GET /api/status)
+  - Purpose: Detect state leakage between tests
+
+---
+
+## Phase 2: Add Missing Endpoint Tests
+
+### Task 2.1: Health & Metrics Tests (7 endpoints)
+- [ ] 2.1.1 Add GET /api/daemon/state test
+  - File: `scripts/test-cases/health-metrics.tests.ts` (new file)
+  - Test ID: `health-007`
+  - Endpoint: GET /api/daemon/state
+  - Scenarios: Validate full daemon state structure
+  - Purpose: Test comprehensive daemon state endpoint
+
+- [ ] 2.1.2 Add GET /api/metrics/events test
+  - File: `scripts/test-cases/health-metrics.tests.ts`
+  - Test ID: `metrics-002`
+  - Endpoint: GET /api/metrics/events
+  - Scenarios: Empty log, with events, with filtering (limit, offset)
+  - Purpose: Test event log retrieval with pagination
+
+- [ ] 2.1.3 Add DELETE /api/metrics/events test
+  - File: `scripts/test-cases/health-metrics.tests.ts`
+  - Test ID: `metrics-003`
+  - Endpoint: DELETE /api/metrics/events
+  - Scenarios: Clear log, verify empty after clear
+  - Purpose: Test event log clearing
+
+### Task 2.2: Device Management Tests (7 endpoints)
+- [ ] 2.2.1 Add PUT /api/devices/:id/name test
+  - File: `scripts/test-cases/device-management.tests.ts` (new file)
+  - Test ID: `devices-004`
+  - Endpoint: PUT /api/devices/:id/name
+  - Scenarios: Success rename, not found, invalid name (empty, too long)
+  - Purpose: Test device renaming
+
+- [ ] 2.2.2 Add PUT /api/devices/:id/layout test
+  - File: `scripts/test-cases/device-management.tests.ts`
+  - Test ID: `devices-005`
+  - Endpoint: PUT /api/devices/:id/layout
+  - Scenarios: Success set layout, not found device, invalid layout name
+  - Purpose: Test device layout assignment
+
+- [ ] 2.2.3 Add GET /api/devices/:id/layout test
+  - File: `scripts/test-cases/device-management.tests.ts`
+  - Test ID: `devices-006`
+  - Endpoint: GET /api/devices/:id/layout
+  - Scenarios: Get layout, default layout, not found device
+  - Purpose: Test device layout retrieval
+
+- [ ] 2.2.4 Add DELETE /api/devices/:id test
+  - File: `scripts/test-cases/device-management.tests.ts`
+  - Test ID: `devices-007`
+  - Endpoint: DELETE /api/devices/:id
+  - Scenarios: Success forget, not found, cannot forget only device
+  - Purpose: Test device removal
+
+### Task 2.3: Profile Management Tests (10 endpoints)
+- [ ] 2.3.1 Add POST /api/profiles/:name/duplicate test
+  - File: `scripts/test-cases/profile-management.tests.ts` (new file)
+  - Test ID: `profiles-011`
+  - Endpoint: POST /api/profiles/:name/duplicate
+  - Scenarios: Success duplicate, not found source, duplicate name conflict
+  - Purpose: Test profile cloning
+
+- [ ] 2.3.2 Add PUT /api/profiles/:name/rename test
+  - File: `scripts/test-cases/profile-management.tests.ts`
+  - Test ID: `profiles-012`
+  - Endpoint: PUT /api/profiles/:name/rename
+  - Scenarios: Success rename, not found, invalid name, name conflict
+  - Purpose: Test profile renaming
+
+- [ ] 2.3.3 Add POST /api/profiles/:name/validate test
+  - File: `scripts/test-cases/profile-management.tests.ts`
+  - Test ID: `profiles-013`
+  - Endpoint: POST /api/profiles/:name/validate
+  - Scenarios: Valid profile, syntax error, not found profile
+  - Purpose: Test profile validation
+
+### Task 2.4: Config & Layers Tests (5 endpoints)
+- [ ] 2.4.1 Add GET /api/config test
+  - File: `scripts/test-cases/config-layers.tests.ts` (new file)
+  - Test ID: `config-001`
+  - Endpoint: GET /api/config
+  - Scenarios: Get full config, empty config
+  - Purpose: Test configuration retrieval
+
+- [ ] 2.4.2 Add PUT /api/config test
+  - File: `scripts/test-cases/config-layers.tests.ts`
+  - Test ID: `config-002`
+  - Endpoint: PUT /api/config
+  - Scenarios: Update config, invalid syntax, validation errors
+  - Purpose: Test configuration updates
+
+- [ ] 2.4.3 Add POST /api/config/key-mappings test
+  - File: `scripts/test-cases/config-layers.tests.ts`
+  - Test ID: `config-003`
+  - Endpoint: POST /api/config/key-mappings
+  - Scenarios: Add mapping, invalid keys, duplicate mapping
+  - Purpose: Test adding key mappings
+
+- [ ] 2.4.4 Add DELETE /api/config/key-mappings/:id test
+  - File: `scripts/test-cases/config-layers.tests.ts`
+  - Test ID: `config-004`
+  - Endpoint: DELETE /api/config/key-mappings/:id
+  - Scenarios: Delete mapping, not found, invalid ID
+  - Purpose: Test removing key mappings
+
+- [ ] 2.4.5 Add GET /api/layers test
+  - File: `scripts/test-cases/config-layers.tests.ts`
+  - Test ID: `config-005`
+  - Endpoint: GET /api/layers
+  - Scenarios: List layers, empty layers, multiple layers
+  - Purpose: Test layer listing
+
+### Task 2.5: Layouts Tests (2 endpoints)
+- [ ] 2.5.1 Add GET /api/layouts/:name test
+  - File: `scripts/test-cases/layouts.tests.ts` (new file)
+  - Test ID: `layouts-002`
+  - Endpoint: GET /api/layouts/:name
+  - Scenarios: Get layout details, not found layout
+  - Purpose: Test specific layout retrieval
+
+### Task 2.6: Macro Recorder Tests (4 endpoints) - NEW FEATURE
+- [ ] 2.6.1 Add POST /api/macros/start-recording test
+  - File: `scripts/test-cases/macros.tests.ts` (new file)
+  - Test ID: `macros-001`
+  - Endpoint: POST /api/macros/start-recording
+  - Scenarios: Start recording, already recording (conflict)
+  - Purpose: Test macro recording start
+
+- [ ] 2.6.2 Add POST /api/macros/stop-recording test
+  - File: `scripts/test-cases/macros.tests.ts`
+  - Test ID: `macros-002`
+  - Endpoint: POST /api/macros/stop-recording
+  - Scenarios: Stop recording, not recording (error)
+  - Purpose: Test macro recording stop
+
+- [ ] 2.6.3 Add GET /api/macros/recorded-events test
+  - File: `scripts/test-cases/macros.tests.ts`
+  - Test ID: `macros-003`
+  - Endpoint: GET /api/macros/recorded-events
+  - Scenarios: Get events, empty events, events with timing
+  - Purpose: Test recorded event retrieval
+
+- [ ] 2.6.4 Add POST /api/macros/clear test
+  - File: `scripts/test-cases/macros.tests.ts`
+  - Test ID: `macros-004`
+  - Endpoint: POST /api/macros/clear
+  - Scenarios: Clear events, verify empty
+  - Purpose: Test clearing recorded events
+
+### Task 2.7: Simulator Tests (2 endpoints) - NEW FEATURE
+- [ ] 2.7.1 Add POST /api/simulator/events test
+  - File: `scripts/test-cases/simulator.tests.ts` (new file)
+  - Test ID: `simulator-001`
+  - Endpoint: POST /api/simulator/events
+  - Scenarios: Simulate single key, key sequence, invalid events
+  - Purpose: Test event simulation
+
+- [ ] 2.7.2 Add POST /api/simulator/reset test
+  - File: `scripts/test-cases/simulator.tests.ts`
+  - Test ID: `simulator-002`
+  - Endpoint: POST /api/simulator/reset
+  - Scenarios: Reset state, verify cleared
+  - Purpose: Test simulator reset
+
+---
+
+## Phase 3: Add Feature Workflow Tests
+
+### Task 3.1: Profile Lifecycle Workflows
+- [ ] 3.1.1 Test profile duplicate → rename → activate workflow
+  - File: `scripts/test-cases/workflows.tests.ts` (new file)
+  - Test ID: `workflow-002`
+  - Flow: Create profile → Duplicate → Rename copy → Activate copy → Delete both
+  - Purpose: Validate complex profile management workflow
+
+- [ ] 3.1.2 Test profile validation → fix → activate workflow
+  - File: `scripts/test-cases/workflows.tests.ts`
+  - Test ID: `workflow-003`
+  - Flow: Create profile with invalid syntax → Validate (fail) → Fix syntax → Validate (pass) → Activate
+  - Purpose: Validate error correction workflow
+
+### Task 3.2: Device Management Workflows
+- [ ] 3.2.1 Test device rename → layout change → disable workflow
+  - File: `scripts/test-cases/workflows.tests.ts`
+  - Test ID: `workflow-004`
+  - Flow: List devices → Rename device → Change layout → Disable → Verify not receiving events
+  - Purpose: Validate device configuration workflow
+
+### Task 3.3: Config & Mapping Workflows
+- [ ] 3.3.1 Test config update → add mappings → verify layers workflow
+  - File: `scripts/test-cases/workflows.tests.ts`
+  - Test ID: `workflow-005`
+  - Flow: Get config → Add key mapping → Add layer → Get layers → Verify structure → Delete mapping
+  - Purpose: Validate configuration management workflow
+
+### Task 3.4: Macro Recording Workflows
+- [ ] 3.4.1 Test macro record → simulate → playback workflow
+  - File: `scripts/test-cases/workflows.tests.ts`
+  - Test ID: `workflow-006`
+  - Flow: Start recording → Simulate events → Stop recording → Get events → Verify timing → Clear
+  - Purpose: Validate macro recording feature end-to-end
+
+### Task 3.5: Simulator Workflows
+- [ ] 3.5.1 Test simulator event → mapping → output workflow
+  - File: `scripts/test-cases/workflows.tests.ts`
+  - Test ID: `workflow-007`
+  - Flow: Set up mapping (a→b) → Simulate 'a' press → Verify 'b' output → Reset simulator
+  - Purpose: Validate key remapping via simulator
+
+---
+
+## Phase 4: Add WebSocket Testing
+
+### Task 4.1: WebSocket Client Implementation
+- [ ] 4.1.1 Create WebSocket client utility
+  - File: `scripts/api-client/websocket-client.ts` (new file)
+  - Class: `WebSocketClient`
+  - Methods: `connect()`, `subscribe(channel)`, `waitForEvent(predicate, timeout)`, `disconnect()`
+  - Purpose: WebSocket connection management for tests
+  - Lines: ~250
+
+- [ ] 4.1.2 Add WebSocket connection test
+  - File: `scripts/test-cases/websocket.tests.ts` (new file)
+  - Test ID: `websocket-001`
+  - Scenario: Connect → Verify open → Disconnect → Verify closed
+  - Purpose: Test basic WebSocket connectivity
+
+- [ ] 4.1.3 Add WebSocket subscription test
+  - File: `scripts/test-cases/websocket.tests.ts`
+  - Test ID: `websocket-002`
+  - Scenario: Connect → Subscribe to channel → Verify subscription acknowledged
+  - Purpose: Test channel subscription
+
+### Task 4.2: WebSocket Event Tests
+- [ ] 4.2.1 Add device event test
+  - File: `scripts/test-cases/websocket.tests.ts`
+  - Test ID: `websocket-003`
+  - Scenario: Subscribe to 'devices' → Update device via REST → Receive WebSocket event
+  - Purpose: Validate device change notifications
+
+- [ ] 4.2.2 Add profile event test
+  - File: `scripts/test-cases/websocket.tests.ts`
+  - Test ID: `websocket-004`
+  - Scenario: Subscribe to 'profiles' → Activate profile via REST → Receive WebSocket event
+  - Purpose: Validate profile change notifications
+
+### Task 4.3: WebSocket Resilience Tests
+- [ ] 4.3.1 Add reconnection test
+  - File: `scripts/test-cases/websocket.tests.ts`
+  - Test ID: `websocket-005`
+  - Scenario: Connect → Disconnect → Reconnect → Verify subscriptions restored
+  - Purpose: Test connection resilience
+
+---
+
+## Phase 5: CI Integration & Reporting
+
+### Task 5.1: Update CI Workflow
+- [ ] 5.1.1 Update GitHub Actions workflow for new tests
+  - File: `.github/workflows/e2e-auto.yml`
+  - Changes:
+    - Install all dependencies (zod, axios, ws, etc.)
+    - Run full test suite (65+ tests)
+    - Upload JSON report as artifact
+    - Upload HTML report as artifact
+    - Comment test summary on PR
+  - Purpose: Automate testing in CI
+
+- [ ] 5.1.2 Add test failure notifications
+  - File: `.github/workflows/e2e-auto.yml`
+  - Add: GitHub Actions step to post comment on PR with failure details
+  - Purpose: Immediate visibility of test failures
+
+### Task 5.2: Enhance Reporting
+- [ ] 5.2.1 Add test category breakdown to console reporter
+  - File: `scripts/comparator/validation-reporter.ts`
+  - Add: Print summary per category (Health: 7/7 passed, Devices: 10/10 passed, etc.)
+  - Purpose: Better visibility into test coverage
+
+- [ ] 5.2.2 Add execution time tracking per category
+  - File: `scripts/test-executor/executor.ts`
+  - Add: Track and report duration per category
+  - Purpose: Identify slow test categories
+
+---
+
+## Phase 6: Documentation & Polish
+
+### Task 6.1: Update Documentation
+- [ ] 6.1.1 Update README with new endpoints
+  - File: `scripts/automated-e2e-testing/README.md`
+  - Add: Document all 40+ endpoints, test categories, examples
+  - Purpose: Complete documentation
+
+- [ ] 6.1.2 Update developer guide
+  - File: `scripts/automated-e2e-testing/DEV_GUIDE.md`
+  - Add: How to add WebSocket tests, workflow tests, new endpoint tests
+  - Purpose: Enable contributors
+
+- [ ] 6.1.3 Add troubleshooting guide
+  - File: `scripts/automated-e2e-testing/TROUBLESHOOTING.md` (new)
+  - Content: Common errors (zod not found, daemon timeout, port conflicts), solutions
+  - Purpose: Self-service debugging
+
+### Task 6.2: Create Example Tests
+- [ ] 6.2.1 Add comprehensive example for each test type
+  - File: `scripts/automated-e2e-testing/examples/` (new directory)
+  - Examples:
+    - `simple-endpoint.example.ts` - Basic GET test
+    - `crud-endpoint.example.ts` - POST/PUT/DELETE test
+    - `workflow.example.ts` - Multi-step workflow
+    - `websocket.example.ts` - WebSocket event test
+  - Purpose: Reference implementations
+
+### Task 6.3: Code Quality & Cleanup
+- [ ] 6.3.1 Run linter and formatter on all test files
+  - Command: `npm run lint:fix && npm run format`
+  - Purpose: Consistent code style
+
+- [ ] 6.3.2 Add JSDoc comments to all test utilities
+  - Files: `api-client/*.ts`, `fixtures/*.ts`, `executor/*.ts`, `comparator/*.ts`
+  - Purpose: Clear documentation
+
+- [ ] 6.3.3 Verify all files < 500 lines
+  - Command: `tokei` or manual check
+  - Purpose: Comply with code quality standards
+
+---
+
+## Task Dependencies
+
+```
+Phase 1 (Fix Infrastructure) - BLOCKING
+  1.1 → 1.2 → 1.3
+       ↓
+Phase 2 (Add Missing Tests) - CAN START AFTER 1.1
+  2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7 (parallel)
+       ↓
+Phase 3 (Workflow Tests) - DEPENDS ON PHASE 2
+  3.1 → 3.2 → 3.3 → 3.4 → 3.5 (sequential)
+       ↓
+Phase 4 (WebSocket Tests) - CAN START AFTER 1.1
+  4.1 → 4.2 → 4.3
+       ↓
+Phase 5 (CI & Reporting) - DEPENDS ON ALL ABOVE
+  5.1 → 5.2
+       ↓
+Phase 6 (Documentation) - CAN START ANYTIME
+  6.1 → 6.2 → 6.3
+```
+
+---
+
+## Success Criteria
+
+### Functional
+1. ✅ All 40+ REST endpoints have at least 1 test case
+2. ✅ Minimum 65 test cases total (currently 20, need 45 more)
+3. ✅ All tests pass on clean daemon (100% pass rate)
+4. ✅ WebSocket connection and events tested
+5. ✅ Feature workflows validated end-to-end
+
+### Quality
+1. ✅ Zero dependency errors (`npm install` succeeds)
+2. ✅ Zero import errors (all modules resolve)
+3. ✅ Zero flaky tests (deterministic execution)
+4. ✅ Test suite completes in < 3 minutes
+5. ✅ All files < 500 lines
+
+### CI/CD
+1. ✅ Tests run on GitHub Actions
+2. ✅ Test results uploaded as artifacts
+3. ✅ PR comments show test summary
+4. ✅ Workflow fails if tests fail
+
+### Documentation
+1. ✅ README updated with all endpoints
+2. ✅ Developer guide updated
+3. ✅ Troubleshooting guide created
+4. ✅ Example tests provided
+
+---
+
+## Verification Checklist
+
+Before marking spec complete:
+
+- [ ] Run `npm install` - succeeds without errors
+- [ ] Run `npm run test:e2e:auto` - all 65+ tests pass
+- [ ] Run tests 10 consecutive times - 0 flaky failures
+- [ ] Check execution time - < 3 minutes
+- [ ] Verify all 40+ endpoints covered - generate coverage report
+- [ ] Check CI workflow - passes on GitHub Actions
+- [ ] Review HTML report - all tests documented
+- [ ] Verify file sizes - all < 500 lines
+- [ ] Check documentation - README, DEV_GUIDE, TROUBLESHOOTING complete
+- [ ] Run `make verify` - all quality gates pass
+
+---
+
+## Notes
+
+- **Priority**: Fix Phase 1 first (blocking all other work)
+- **Parallelization**: Phase 2 tasks can be done in parallel (independent endpoints)
+- **Testing**: Test each endpoint immediately after implementation (don't batch)
+- **Cleanup**: Always clean up test data (profiles, devices) to avoid state leakage
+- **Documentation**: Update documentation as you go (don't defer to end)
+
+## Total Effort Estimate
+
+| Phase | Tasks | Estimated Time |
+|-------|-------|----------------|
+| Phase 1 | 3 tasks | 2-3 hours |
+| Phase 2 | 8 tasks | 1-2 days |
+| Phase 3 | 5 tasks | 1 day |
+| Phase 4 | 3 tasks | 4-6 hours |
+| Phase 5 | 2 tasks | 2-3 hours |
+| Phase 6 | 3 tasks | 2-3 hours |
+| **Total** | **24 tasks** | **3-4 days** |

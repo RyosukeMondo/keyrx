@@ -99,12 +99,40 @@ export class TestExecutor {
   }
 
   /**
+   * Verify daemon state before test execution
+   * Throws if daemon is in an unexpected state
+   */
+  private async verifyDaemonState(client: ApiClient): Promise<void> {
+    try {
+      const statusResponse = await client.getStatus();
+
+      // Verify daemon is responsive
+      if (!statusResponse.data) {
+        throw new Error('Daemon status response is empty');
+      }
+
+      // Log state for debugging if verbose
+      if (this.verbose) {
+        this.log(`  [Isolation] Daemon state verified: running=${statusResponse.data.running}`);
+      }
+    } catch (error) {
+      throw new Error(`Daemon state verification failed: ${error instanceof Error ? error.message : 'unknown error'}`);
+    }
+  }
+
+  /**
    * Run a single test case with timeout and error handling
    */
   async runSingle(client: ApiClient, testCase: TestCase): Promise<TestExecutionResult> {
     const startMs = Date.now();
 
     try {
+      // Verify daemon state before test (isolation guard)
+      if (this.verbose) {
+        this.log(`  [Isolation] Verifying daemon state`);
+      }
+      await this.verifyDaemonState(client);
+
       // Execute test with timeout
       const result = await this.executeWithTimeout(client, testCase);
       const duration = Date.now() - startMs;
