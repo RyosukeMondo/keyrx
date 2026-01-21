@@ -28,6 +28,7 @@ import { spawn, ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as process from 'process';
+import { DaemonFixture, findAvailablePort } from './fixtures/daemon-fixture';
 
 interface CliOptions {
   daemonPath: string;
