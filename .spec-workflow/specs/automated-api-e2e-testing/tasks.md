@@ -140,7 +140,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Automated fixes for common issues_
   - _Prompt: Role: Auto-Fix Engineer | Task: Create FixStrategy interface { canFix(issue): boolean, apply(issue, context): Promise<FixResult> } and implementations: RestartDaemonStrategy (network errors), UpdateExpectedResultStrategy (schema mismatches), ReseedFixtureStrategy (data issues), RetryTestStrategy (transient failures). FixResult { success: boolean, message: string, retry: boolean }. Context includes daemon fixture, API client, test case. | Restrictions: Each strategy must be idempotent (safe to apply multiple times), log all actions, never modify code (only config/fixtures) | Success: Strategies can fix network, schema, and data issues_
 
-- [ ] 4.3 Create fix orchestrator
+- [x] 4.3 Create fix orchestrator
   - File: `scripts/auto-fix/fix-orchestrator.ts`
   - Apply fixes in priority order
   - Retry tests after each fix
