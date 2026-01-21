@@ -56,6 +56,8 @@
     "test:quarantine": "RUN_QUARANTINE=true vitest run --config vitest.unit.config.ts",
     "test:quarantine:watch": "RUN_QUARANTINE=true vitest --config vitest.unit.config.ts",
     "test:quarantine:status": "node -r esbuild-register tests/quarantine-manager.ts",
+    "test:e2e:auto": "npx tsx ../scripts/automated-e2e-test.ts --daemon-path ../target/release/keyrx_daemon --fix --report-json test-results.json",
+    "test:e2e:auto:report": "npx tsx ../scripts/reporters/html-reporter.ts test-results.json report.html",
     "validate:contracts": "npx tsx scripts/validate-api-contracts.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

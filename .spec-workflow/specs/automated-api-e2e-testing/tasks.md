@@ -176,7 +176,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Human-friendly visual reports_
   - _Prompt: Role: Reporting Engineer | Task: Create HtmlReporter class with method: generate(testResults, outputPath). HTML structure: summary card (total/passed/failed), test list (filterable by status), detail view per test (request/response/expected/actual/diff with syntax highlighting), fix attempt history. Use template HTML with embedded JSON data + client-side JS for interactivity. Style with simple CSS (no framework). Export standalone HTML file. | Restrictions: No external dependencies in HTML (must work offline), keep file size < 500KB, use syntax highlighting for JSON (highlight.js via CDN) | Success: Generates standalone HTML report with test results and diffs_
 
-- [ ] 5.3 Add npm script and Makefile target
+- [x] 5.3 Add npm script and Makefile target
   - File: `package.json` (keyrx_ui), `Makefile` (root)
   - Add `test:e2e:auto` script
   - Add `make e2e-auto` target
