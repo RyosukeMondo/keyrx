@@ -73,7 +73,7 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
 ## Phase 2: Add Missing Endpoint Tests
 
 ### Task 2.1: Health & Metrics Tests (7 endpoints)
-- [ ] 2.1.1 Add GET /api/daemon/state test
+- [x] 2.1.1 Add GET /api/daemon/state test
   - File: `scripts/test-cases/health-metrics.tests.ts` (new file)
   - Test ID: `health-007`
   - Endpoint: GET /api/daemon/state

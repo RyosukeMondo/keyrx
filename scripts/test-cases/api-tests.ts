@@ -10,6 +10,7 @@
 
 import { ApiClient } from '../api-client/client.js';
 import type { ExpectedResults, ScenarioDefinition } from './types.js';
+import { healthMetricsTestCases } from './health-metrics.tests.js';
 
 /**
  * Test case execution result
@@ -949,7 +950,7 @@ export function getTestCaseById(id: string): TestCase | undefined {
  * Get all test cases
  */
 export function getAllTestCases(): TestCase[] {
-  return apiTestCases;
+  return [...apiTestCases, ...healthMetricsTestCases];
 }
 
 /**
