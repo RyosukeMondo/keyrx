@@ -358,7 +358,7 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
 ## Phase 6: Documentation & Polish
 
 ### Task 6.1: Update Documentation
-- [ ] 6.1.1 Update README with new endpoints
+- [x] 6.1.1 Update README with new endpoints
   - File: `scripts/automated-e2e-testing/README.md`
   - Add: Document all 40+ endpoints, test categories, examples
   - Purpose: Complete documentation
