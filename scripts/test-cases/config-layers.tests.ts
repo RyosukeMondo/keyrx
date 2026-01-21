@@ -407,17 +407,21 @@ map_key("base", "A", remap("B";
         );
         return response;
       } catch (error: unknown) {
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as { response: { status: number; data: unknown } };
-          return axiosError.response;
+        if (error instanceof Error && 'statusCode' in error) {
+          const apiError = error as { statusCode: number; response: unknown };
+          return {
+            status: apiError.statusCode,
+            data: apiError.response,
+          };
         }
         throw error;
       }
     },
     assert: (actual, expected) => {
-      const actualData = actual as { error?: { code?: string; message?: string }; success?: boolean };
+      const result = actual as { status?: number; data?: unknown };
+      const actualData = result.data as { error?: { code?: string; message?: string }; success?: boolean };
 
-      if (!actualData.error || actualData.success !== false) {
+      if (!actualData || !actualData.error || actualData.success !== false) {
         return {
           passed: false,
           actual,
@@ -458,17 +462,21 @@ map_key("base", "A", remap("B";
         );
         return response;
       } catch (error: unknown) {
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as { response: { status: number; data: unknown } };
-          return axiosError.response;
+        if (error instanceof Error && 'statusCode' in error) {
+          const apiError = error as { statusCode: number; response: unknown };
+          return {
+            status: apiError.statusCode,
+            data: apiError.response,
+          };
         }
         throw error;
       }
     },
     assert: (actual, expected) => {
-      const actualData = actual as { error?: { code?: string; message?: string }; success?: boolean };
+      const result = actual as { status?: number; data?: unknown };
+      const actualData = result.data as { error?: { code?: string; message?: string }; success?: boolean };
 
-      if (!actualData.error || actualData.success !== false) {
+      if (!actualData || !actualData.error || actualData.success !== false) {
         return {
           passed: false,
           actual,
@@ -559,17 +567,21 @@ map_key("base", "A", remap("B";
         );
         return response;
       } catch (error: unknown) {
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as { response: { status: number; data: unknown } };
-          return axiosError.response;
+        if (error instanceof Error && 'statusCode' in error) {
+          const apiError = error as { statusCode: number; response: unknown };
+          return {
+            status: apiError.statusCode,
+            data: apiError.response,
+          };
         }
         throw error;
       }
     },
     assert: (actual, expected) => {
-      const actualData = actual as { error?: { code?: string; message?: string }; success?: boolean };
+      const result = actual as { status?: number; data?: unknown };
+      const actualData = result.data as { error?: { code?: string; message?: string }; success?: boolean };
 
-      if (!actualData.error || actualData.success !== false) {
+      if (!actualData || !actualData.error || actualData.success !== false) {
         return {
           passed: false,
           actual,
@@ -604,18 +616,22 @@ map_key("base", "A", remap("B";
         );
         return response;
       } catch (error: unknown) {
-        if (error instanceof Error && 'response' in error) {
-          const axiosError = error as { response: { status: number; data: unknown } };
-          return axiosError.response;
+        if (error instanceof Error && 'statusCode' in error) {
+          const apiError = error as { statusCode: number; response: unknown };
+          return {
+            status: apiError.statusCode,
+            data: apiError.response,
+          };
         }
         throw error;
       }
     },
     assert: (actual, expected) => {
-      const actualData = actual as { error?: { code?: string; message?: string }; success?: boolean };
+      const result = actual as { status?: number; data?: unknown };
+      const actualData = result.data as { error?: { code?: string; message?: string }; success?: boolean };
 
       // Should return an error for non-existent mapping
-      if (!actualData.error || actualData.success !== false) {
+      if (!actualData || !actualData.error || actualData.success !== false) {
         return {
           passed: false,
           actual,
