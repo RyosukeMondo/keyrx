@@ -28,7 +28,14 @@ import { spawn, ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as process from 'process';
-import { DaemonFixture, findAvailablePort } from './fixtures/daemon-fixture';
+import { DaemonFixture } from './fixtures/daemon-fixture';
+import { ApiClient } from './api-client/client';
+import { createExecutor, TestSuiteResult, TestResult } from './test-executor/executor';
+import { getAllTestCases } from './test-cases/api-tests';
+import { createReporter } from './comparator/validation-reporter';
+import { createOrchestrator } from './auto-fix/fix-orchestrator';
+import { createClassifier } from './auto-fix/issue-classifier';
+import { createFixRegistry } from './auto-fix/fix-strategies';
 
 interface CliOptions {
   daemonPath: string;
@@ -36,24 +43,6 @@ interface CliOptions {
   maxIterations: number;
   enableFix: boolean;
   reportJsonPath?: string;
-}
-
-interface TestSuiteResult {
-  total: number;
-  passed: number;
-  failed: number;
-  duration: number;
-  results: TestResult[];
-}
-
-interface TestResult {
-  id: string;
-  name: string;
-  status: 'pass' | 'fail';
-  duration: number;
-  error?: string;
-  actual?: unknown;
-  expected?: unknown;
 }
 
 /**
@@ -200,48 +189,128 @@ async function main(): Promise<void> {
   // Verify daemon exists
   checkDaemonExists(options.daemonPath);
 
-  // TODO: Phase 1 - Start daemon and wait for health check
+  // Phase 1: Start daemon and wait for health check
   console.log('⏳ Starting daemon...');
-  // Implementation will use DaemonFixture class from task 1.2
+  const daemon = new DaemonFixture({
+    daemonPath: options.daemonPath,
+    port: options.port,
+    debug: false,
+  });
 
-  // TODO: Phase 2 - Execute test suite
-  console.log('⏳ Running test suite...');
-  // Implementation will use TestExecutor from task 2.3
+  globalDaemon = daemon; // Set for signal handler cleanup
+  let daemonStarted = false;
 
-  // TODO: Phase 3 - Compare results
-  console.log('⏳ Comparing results...');
-  // Implementation will use ResponseComparator from task 3.1
+  try {
+    await daemon.start();
+    await daemon.waitUntilReady(30000);
+    daemonStarted = true;
+    console.log('✓ Daemon started and ready\n');
 
-  // TODO: Phase 4 - Apply auto-fix if enabled
-  if (options.enableFix) {
-    console.log('⏳ Applying auto-fixes...');
-    // Implementation will use FixOrchestrator from task 4.3
+    // Phase 2: Execute test suite
+    console.log('⏳ Running test suite...');
+    const apiClient = new ApiClient({
+      baseUrl: `http://localhost:${options.port}`,
+    });
+
+    const testCases = getAllTestCases();
+    const executor = createExecutor({ verbose: true });
+
+    console.log(`Found ${testCases.length} test cases\n`);
+    let testResults = await executor.runAll(apiClient, testCases);
+
+    console.log(`\nInitial results: ${testResults.passed}/${testResults.total} passed\n`);
+
+    // Phase 4: Apply auto-fix if enabled and tests failed
+    if (options.enableFix && testResults.failed > 0) {
+      console.log('⏳ Applying auto-fixes...\n');
+
+      const orchestrator = createOrchestrator({
+        maxIterations: options.maxIterations,
+        maxTotalTime: 5 * 60 * 1000, // 5 minutes
+        daemon,
+        apiClient,
+        testCases,
+        executor,
+      });
+
+      const fixResults = await orchestrator.fixAndRetry(testResults.results);
+
+      console.log(`\n✓ Auto-fix complete: ${fixResults.fixedTests} test(s) fixed\n`);
+
+      // Re-run all tests to get final results
+      console.log('⏳ Running final test suite...\n');
+      testResults = await executor.runAll(apiClient, testCases);
+    }
+
+    // Phase 5: Generate reports
+    console.log('\n⏳ Generating reports...\n');
+    const reporter = createReporter();
+
+    // Print human-readable report
+    console.log(reporter.formatHuman(testResults));
+
+    // Save JSON report if requested
+    if (options.reportJsonPath) {
+      const jsonReport = reporter.formatJson(testResults);
+      fs.writeFileSync(options.reportJsonPath, jsonReport, 'utf-8');
+      console.log(`✓ JSON report saved: ${options.reportJsonPath}\n`);
+    }
+
+    // Exit with appropriate code
+    if (testResults.failed === 0 && testResults.errors === 0) {
+      console.log('✅ All tests passed!');
+      await daemon.stop();
+      process.exit(0);
+    } else {
+      console.log(`❌ ${testResults.failed + testResults.errors} test(s) failed`);
+      await daemon.stop();
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error('\n❌ Error during test execution:', error);
+
+    if (daemonStarted) {
+      console.log('⏳ Stopping daemon...');
+      await daemon.stop();
+    }
+
+    if (error instanceof Error && error.message.includes('failed to become ready')) {
+      console.error('\nDaemon failed to start. Check logs above for details.');
+      process.exit(2);
+    }
+
+    process.exit(1);
   }
-
-  // TODO: Phase 5 - Generate reports
-  console.log('⏳ Generating reports...');
-  // Implementation will use ValidationReporter from task 3.2
-
-  // Placeholder: Report success
-  console.log('\n✅ Test runner framework initialized');
-  console.log('Note: Full implementation requires completion of phases 1-5');
 }
 
+// Global daemon reference for cleanup
+let globalDaemon: DaemonFixture | null = null;
+
 // Handle cleanup on exit
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('\n\n⚠️  Interrupted by user');
-  // TODO: Cleanup daemon process
+  if (globalDaemon) {
+    console.log('⏳ Stopping daemon...');
+    await globalDaemon.stop();
+  }
   process.exit(130);
 });
 
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('\n\n⚠️  Terminated');
-  // TODO: Cleanup daemon process
+  if (globalDaemon) {
+    console.log('⏳ Stopping daemon...');
+    await globalDaemon.stop();
+  }
   process.exit(143);
 });
 
 // Run main function
 main().catch((error) => {
   console.error('\n❌ Unexpected error:', error);
-  process.exit(1);
+  if (globalDaemon) {
+    globalDaemon.stop().then(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
 });
