@@ -185,14 +185,14 @@ export const macrosTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
-      const result = actual as { status: number; data: any };
+      const result = actual as { success: boolean; error?: { code: string; message: string } };
 
-      if (result.status !== 400) {
+      if (result.success !== false || result.error?.code !== 'BAD_REQUEST') {
         return {
           passed: false,
           actual,
           expected: expected.body,
-          error: `Expected status 400 (Bad Request), got ${result.status}`,
+          error: `Expected error with BAD_REQUEST code, got ${JSON.stringify(result)}`,
         };
       }
 
@@ -332,14 +332,14 @@ export const macrosTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
-      const result = actual as { status: number; data: any };
+      const result = actual as { success: boolean; error?: { code: string; message: string } };
 
-      if (result.status !== 400) {
+      if (result.success !== false || result.error?.code !== 'BAD_REQUEST') {
         return {
           passed: false,
           actual,
           expected: expected.body,
-          error: `Expected status 400 (Bad Request), got ${result.status}`,
+          error: `Expected error with BAD_REQUEST code, got ${JSON.stringify(result)}`,
         };
       }
 

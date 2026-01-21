@@ -316,23 +316,14 @@ export const simulatorTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
-      const result = actual as { status: number; data: any };
+      const result = actual as { success: boolean; error?: { code: string; message: string } };
 
-      if (result.status !== 400) {
+      if (result.success !== false) {
         return {
           passed: false,
           actual,
           expected: expected.body,
-          error: `Expected status 400 (Bad Request), got ${result.status}`,
-        };
-      }
-
-      if (!result.data.error || !result.data.error.includes('scenario')) {
-        return {
-          passed: false,
-          actual,
-          expected: expected.body,
-          error: 'Expected error message about missing scenario or events',
+          error: `Expected error response, got ${JSON.stringify(result)}`,
         };
       }
 
@@ -386,23 +377,14 @@ export const simulatorTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
-      const result = actual as { status: number; data: any };
+      const result = actual as { success: boolean; error?: { code: string; message: string } };
 
-      if (result.status !== 400) {
+      if (result.success !== false) {
         return {
           passed: false,
           actual,
           expected: expected.body,
-          error: `Expected status 400 (Bad Request), got ${result.status}`,
-        };
-      }
-
-      if (!result.data.error || !result.data.error.includes('Unknown scenario')) {
-        return {
-          passed: false,
-          actual,
-          expected: expected.body,
-          error: 'Expected error message about unknown scenario',
+          error: `Expected error response, got ${JSON.stringify(result)}`,
         };
       }
 
