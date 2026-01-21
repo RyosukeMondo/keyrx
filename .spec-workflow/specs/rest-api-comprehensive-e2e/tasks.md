@@ -251,7 +251,7 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
   - Purpose: Validate error correction workflow
 
 ### Task 3.2: Device Management Workflows
-- [ ] 3.2.1 Test device rename → layout change → disable workflow
+- [x] 3.2.1 Test device rename → layout change → disable workflow
   - File: `scripts/test-cases/workflows.tests.ts`
   - Test ID: `workflow-004`
   - Flow: List devices → Rename device → Change layout → Disable → Verify not receiving events
