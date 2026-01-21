@@ -17,6 +17,7 @@ import { configLayersTestCases } from './config-layers.tests.js';
 import { layoutsTestCases } from './layouts.tests.js';
 import { macrosTestCases } from './macros.tests.js';
 import { simulatorTestCases } from './simulator.tests.js';
+import { workflowTestCases } from './workflows.tests.js';
 
 /**
  * Test case execution result
@@ -965,6 +966,7 @@ export function getAllTestCases(): TestCase[] {
     ...layoutsTestCases,
     ...macrosTestCases,
     ...simulatorTestCases,
+    ...workflowTestCases,
   ];
 }
 

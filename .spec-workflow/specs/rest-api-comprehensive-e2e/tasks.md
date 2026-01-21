@@ -238,7 +238,7 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
 ## Phase 3: Add Feature Workflow Tests
 
 ### Task 3.1: Profile Lifecycle Workflows
-- [ ] 3.1.1 Test profile duplicate → rename → activate workflow
+- [x] 3.1.1 Test profile duplicate → rename → activate workflow
   - File: `scripts/test-cases/workflows.tests.ts` (new file)
   - Test ID: `workflow-002`
   - Flow: Create profile → Duplicate → Rename copy → Activate copy → Delete both
