@@ -154,10 +154,11 @@ export const layoutsTestCases: TestCase[] = [
         };
       } catch (error: any) {
         // Expected to fail with 404
-        if (error.response?.status === 404) {
+        if (error instanceof Error && 'statusCode' in error) {
+          const apiError = error as { statusCode: number; response: unknown };
           return {
-            status: 404,
-            data: error.response.data,
+            status: apiError.statusCode,
+            data: apiError.response,
           };
         }
         throw error;

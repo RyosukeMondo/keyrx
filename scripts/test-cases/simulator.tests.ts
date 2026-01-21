@@ -302,9 +302,16 @@ export const simulatorTestCases: TestCase[] = [
           data: response.data,
         };
       } catch (error: any) {
+        if (error instanceof Error && 'statusCode' in error) {
+          const apiError = error as { statusCode: number; response: unknown };
+          return {
+            status: apiError.statusCode,
+            data: apiError.response,
+          };
+        }
         return {
-          status: error.response?.status || 500,
-          data: error.response?.data || { error: error.message },
+          status: 500,
+          data: { error: error.message },
         };
       }
     },
@@ -365,9 +372,16 @@ export const simulatorTestCases: TestCase[] = [
           data: response.data,
         };
       } catch (error: any) {
+        if (error instanceof Error && 'statusCode' in error) {
+          const apiError = error as { statusCode: number; response: unknown };
+          return {
+            status: apiError.statusCode,
+            data: apiError.response,
+          };
+        }
         return {
-          status: error.response?.status || 500,
-          data: error.response?.data || { error: error.message },
+          status: 500,
+          data: { error: error.message },
         };
       }
     },
