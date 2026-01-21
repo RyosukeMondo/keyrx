@@ -10,8 +10,9 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 use validator::Validate;
 
-use crate::config::device_registry::{DeviceEntry, DeviceRegistry};
+use crate::config::device_registry::{DeviceEntry, DeviceRegistry, DeviceValidationError};
 use crate::error::DaemonError;
+use crate::web::api::error::ApiError;
 use crate::web::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
@@ -96,26 +97,26 @@ struct RenameDeviceRequest {
 async fn rename_device(
     Path(id): Path<String>,
     Json(payload): Json<RenameDeviceRequest>,
-) -> Result<Json<Value>, DaemonError> {
+) -> Result<Json<Value>, ApiError> {
     // Validate input parameters
-    payload.validate().map_err(|e| {
-        use crate::error::WebError;
-        WebError::InvalidRequest {
-            reason: format!("Validation failed: {}", e),
-        }
-    })?;
+    payload
+        .validate()
+        .map_err(|e| ApiError::BadRequest(format!("Validation failed: {}", e)))?;
 
-    let config_dir = get_config_dir()?;
+    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
     let registry_path = config_dir.join("devices.json");
 
-    let mut registry = DeviceRegistry::load(&registry_path)?;
+    let mut registry =
+        DeviceRegistry::load(&registry_path).map_err(|e| ApiError::InternalError(e.to_string()))?;
 
-    registry.rename(&id, &payload.name).map_err(|e| {
-        use crate::error::RegistryError;
-        RegistryError::CorruptedRegistry(e.to_string())
+    registry.rename(&id, &payload.name).map_err(|e| match e {
+        DeviceValidationError::DeviceNotFound(msg) => ApiError::NotFound(msg),
+        _ => ApiError::BadRequest(e.to_string()),
     })?;
 
-    registry.save()?;
+    registry
+        .save()
+        .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
     Ok(Json(json!({ "success": true })))
 }
@@ -130,26 +131,28 @@ struct SetDeviceLayoutRequest {
 async fn set_device_layout(
     Path(id): Path<String>,
     Json(payload): Json<SetDeviceLayoutRequest>,
-) -> Result<Json<Value>, DaemonError> {
+) -> Result<Json<Value>, ApiError> {
     // Validate input parameters
-    payload.validate().map_err(|e| {
-        use crate::error::WebError;
-        WebError::InvalidRequest {
-            reason: format!("Validation failed: {}", e),
-        }
-    })?;
+    payload
+        .validate()
+        .map_err(|e| ApiError::BadRequest(format!("Validation failed: {}", e)))?;
 
-    let config_dir = get_config_dir()?;
+    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
     let registry_path = config_dir.join("devices.json");
 
-    let mut registry = DeviceRegistry::load(&registry_path)?;
+    let mut registry =
+        DeviceRegistry::load(&registry_path).map_err(|e| ApiError::InternalError(e.to_string()))?;
 
-    registry.set_layout(&id, &payload.layout).map_err(|e| {
-        use crate::error::RegistryError;
-        RegistryError::CorruptedRegistry(e.to_string())
-    })?;
+    registry
+        .set_layout(&id, &payload.layout)
+        .map_err(|e| match e {
+            DeviceValidationError::DeviceNotFound(msg) => ApiError::NotFound(msg),
+            _ => ApiError::BadRequest(e.to_string()),
+        })?;
 
-    registry.save()?;
+    registry
+        .save()
+        .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
     Ok(Json(json!({ "success": true })))
 }
@@ -162,17 +165,16 @@ struct GetDeviceLayoutResponse {
 
 async fn get_device_layout(
     Path(id): Path<String>,
-) -> Result<Json<GetDeviceLayoutResponse>, DaemonError> {
-    use crate::error::RegistryError;
-
-    let config_dir = get_config_dir()?;
+) -> Result<Json<GetDeviceLayoutResponse>, ApiError> {
+    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
     let registry_path = config_dir.join("devices.json");
 
-    let registry = DeviceRegistry::load(&registry_path)?;
+    let registry =
+        DeviceRegistry::load(&registry_path).map_err(|e| ApiError::InternalError(e.to_string()))?;
 
     let device = registry
         .get(&id)
-        .ok_or_else(|| RegistryError::CorruptedRegistry(format!("Device not found: {}", id)))?;
+        .ok_or_else(|| ApiError::NotFound(format!("Device not found: {}", id)))?;
 
     Ok(Json(GetDeviceLayoutResponse {
         layout: device.layout.clone(),
@@ -246,18 +248,21 @@ async fn update_device_config(
 }
 
 /// DELETE /api/devices/:id - Forget device
-async fn forget_device(Path(id): Path<String>) -> Result<Json<Value>, DaemonError> {
-    let config_dir = get_config_dir()?;
+async fn forget_device(Path(id): Path<String>) -> Result<Json<Value>, ApiError> {
+    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
     let registry_path = config_dir.join("devices.json");
 
-    let mut registry = DeviceRegistry::load(&registry_path)?;
+    let mut registry =
+        DeviceRegistry::load(&registry_path).map_err(|e| ApiError::InternalError(e.to_string()))?;
 
-    registry.forget(&id).map_err(|e| {
-        use crate::error::RegistryError;
-        RegistryError::CorruptedRegistry(e.to_string())
+    registry.forget(&id).map_err(|e| match e {
+        DeviceValidationError::DeviceNotFound(msg) => ApiError::NotFound(msg),
+        _ => ApiError::InternalError(e.to_string()),
     })?;
 
-    registry.save()?;
+    registry
+        .save()
+        .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
     Ok(Json(json!({ "success": true })))
 }

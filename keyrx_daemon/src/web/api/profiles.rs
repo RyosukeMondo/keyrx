@@ -10,8 +10,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-use crate::config::profile_manager::{ProfileManager, ProfileTemplate};
+use crate::config::profile_manager::{ProfileError, ProfileManager, ProfileTemplate};
 use crate::error::DaemonError;
+use crate::web::api::error::ApiError;
 use crate::web::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
@@ -58,6 +59,21 @@ where
     use serde::Serialize;
     let datetime: DateTime<Utc> = (*time).into();
     datetime.to_rfc3339().serialize(serializer)
+}
+
+/// Convert ProfileError to ApiError with proper HTTP status codes
+fn profile_error_to_api_error(err: ProfileError) -> ApiError {
+    match err {
+        ProfileError::NotFound(msg) => ApiError::NotFound(msg),
+        ProfileError::InvalidName(msg) => ApiError::BadRequest(format!("Invalid name: {}", msg)),
+        ProfileError::AlreadyExists(msg) => {
+            ApiError::BadRequest(format!("Profile already exists: {}", msg))
+        }
+        ProfileError::ProfileLimitExceeded => {
+            ApiError::BadRequest("Profile limit exceeded".to_string())
+        }
+        _ => ApiError::InternalError(err.to_string()),
+    }
 }
 
 #[derive(Serialize)]
@@ -193,16 +209,13 @@ struct DuplicateProfileRequest {
 async fn duplicate_profile(
     Path(name): Path<String>,
     Json(payload): Json<DuplicateProfileRequest>,
-) -> Result<Json<Value>, DaemonError> {
-    use crate::error::ConfigError;
-
-    let config_dir = get_config_dir()?;
-    let mut pm =
-        ProfileManager::new(config_dir).map_err(|e| ConfigError::Profile(e.to_string()))?;
+) -> Result<Json<Value>, ApiError> {
+    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
+    let mut pm = ProfileManager::new(config_dir).map_err(profile_error_to_api_error)?;
 
     let metadata = pm
         .duplicate(&name, &payload.new_name)
-        .map_err(|e| ConfigError::Profile(e.to_string()))?;
+        .map_err(profile_error_to_api_error)?;
 
     Ok(Json(json!({
         "success": true,
@@ -222,20 +235,16 @@ struct RenameProfileRequest {
 async fn rename_profile(
     Path(name): Path<String>,
     Json(payload): Json<RenameProfileRequest>,
-) -> Result<Json<Value>, DaemonError> {
-    use crate::error::ConfigError;
-
-    let config_dir = get_config_dir()?;
-    let mut pm =
-        ProfileManager::new(config_dir).map_err(|e| ConfigError::Profile(e.to_string()))?;
+) -> Result<Json<Value>, ApiError> {
+    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
+    let mut pm = ProfileManager::new(config_dir).map_err(profile_error_to_api_error)?;
 
     // Scan profiles to ensure the profile list is up to date
-    pm.scan_profiles()
-        .map_err(|e| ConfigError::Profile(e.to_string()))?;
+    pm.scan_profiles().map_err(profile_error_to_api_error)?;
 
     let metadata = pm
         .rename(&name, &payload.new_name)
-        .map_err(|e| ConfigError::Profile(e.to_string()))?;
+        .map_err(profile_error_to_api_error)?;
 
     Ok(Json(json!({
         "success": true,
@@ -317,19 +326,16 @@ struct ValidationResponse {
     errors: Vec<ValidationError>,
 }
 
-async fn validate_profile(
-    Path(name): Path<String>,
-) -> Result<Json<ValidationResponse>, DaemonError> {
+async fn validate_profile(Path(name): Path<String>) -> Result<Json<ValidationResponse>, ApiError> {
     use crate::config::profile_compiler::ProfileCompiler;
-    use crate::error::ConfigError;
 
-    let config_dir = get_config_dir()?;
-    let pm = ProfileManager::new(config_dir).map_err(|e| ConfigError::Profile(e.to_string()))?;
+    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
+    let pm = ProfileManager::new(config_dir).map_err(profile_error_to_api_error)?;
 
     // Get profile metadata to find the .rhai file path
     let profile = pm
         .get(&name)
-        .ok_or_else(|| ConfigError::Profile(format!("Profile '{}' not found", name)))?;
+        .ok_or_else(|| ApiError::NotFound(format!("Profile '{}' not found", name)))?;
 
     // Compile the profile to validate it
     let compiler = ProfileCompiler::new();
