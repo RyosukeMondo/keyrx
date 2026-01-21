@@ -304,7 +304,7 @@ export const apiTestCases: TestCase[] = [
       await deleteTestProfile(client, 'test-profile-create');
     },
     execute: async (client) => {
-      const response = await client.createProfile('test-profile-create', 'empty');
+      const response = await client.createProfile('test-profile-create', 'blank');
       return {
         status: response.status,
         data: response.data,
@@ -605,7 +605,7 @@ export const apiTestCases: TestCase[] = [
     id: 'devices-001',
     name: 'GET /api/devices - List all devices',
     endpoint: '/api/devices',
-    scenario: 'empty',
+    scenario: 'blank',
     category: 'devices',
     priority: 1,
     setup: noOpSetup,
@@ -814,7 +814,7 @@ export const apiTestCases: TestCase[] = [
     },
     execute: async (client) => {
       // Step 1: Create profile
-      const createResponse = await client.createProfile('test-lifecycle-profile', 'empty');
+      const createResponse = await client.createProfile('test-lifecycle-profile', 'blank');
 
       // Step 2: Activate profile
       const activateResponse = await client.activateProfile('test-lifecycle-profile');

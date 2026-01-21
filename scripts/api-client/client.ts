@@ -304,13 +304,13 @@ export class ApiClient {
   }
 
   /**
-   * GET /api/profiles/:name - Get profile configuration
+   * GET /api/profiles/:name/config - Get profile configuration
    */
   async getProfileConfig(name: string): Promise<ApiResponse<z.infer<typeof ProfileConfigResponseSchema>>> {
     return this.request(
-      { method: 'GET', path: `/api/profiles/${encodeURIComponent(name)}` },
+      { method: 'GET', path: `/api/profiles/${encodeURIComponent(name)}/config` },
       ProfileConfigResponseSchema,
-      `GET /api/profiles/${name}`
+      `GET /api/profiles/${name}/config`
     );
   }
 
@@ -342,7 +342,7 @@ export class ApiClient {
   }
 
   /**
-   * PUT /api/profiles/:name - Update profile configuration
+   * PUT /api/profiles/:name/config - Update profile configuration
    */
   async setProfileConfig(
     name: string,
@@ -355,11 +355,11 @@ export class ApiClient {
     return this.request(
       {
         method: 'PUT',
-        path: `/api/profiles/${encodeURIComponent(name)}`,
+        path: `/api/profiles/${encodeURIComponent(name)}/config`,
         body: config,
       },
       schema,
-      `PUT /api/profiles/${name}`
+      `PUT /api/profiles/${name}/config`
     );
   }
 

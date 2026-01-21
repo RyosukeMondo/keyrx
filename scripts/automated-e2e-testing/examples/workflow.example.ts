@@ -200,7 +200,7 @@ export function getErrorRecoveryWorkflow(): TestCase {
       `;
 
       await client.createProfile('workflow-error-recovery', {
-        template: 'empty',
+        template: 'blank',
       });
       await client.updateProfile('workflow-error-recovery', {
         source: invalidConfig,
