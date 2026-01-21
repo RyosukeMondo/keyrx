@@ -25,32 +25,12 @@ const noOpCleanup = async (): Promise<void> => {
 };
 
 /**
- * Key definition schema for KLE JSON
+ * KLE JSON schema - raw array format
+ * KLE JSON is an array of arrays/objects representing keyboard rows
  */
-const KeySchema = z.object({
-  id: z.string(),
-  label: z.string(),
-  position: z.object({
-    x: z.number(),
-    y: z.number(),
-  }),
-  size: z.object({
-    width: z.number(),
-    height: z.number(),
-  }),
-});
+const KleJsonSchema = z.array(z.any());
 
-/**
- * Layout response schema
- */
-const LayoutSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  layout_type: z.string(),
-  keys: z.array(KeySchema),
-});
-
-type Layout = z.infer<typeof LayoutSchema>;
+type KleJson = z.infer<typeof KleJsonSchema>;
 
 /**
  * Error response schema for not found
@@ -94,11 +74,11 @@ export const layoutsTestCases: TestCase[] = [
       // Use the first available layout
       const layoutName = listResponse.data.layouts[0];
 
-      // Get the specific layout
+      // Get the specific layout - returns raw KLE JSON array
       const response = await client.customRequest(
         'GET',
         `/api/layouts/${layoutName}`,
-        LayoutSchema
+        KleJsonSchema
       );
 
       return {
@@ -108,50 +88,36 @@ export const layoutsTestCases: TestCase[] = [
       };
     },
     assert: (actual, expected) => {
-      const actualData = actual as Layout & { layoutName: string };
+      const actualData = actual as { status: number; data: any; layoutName: string };
 
-      // Validate structure
-      const hasRequiredFields =
-        typeof actualData.id === 'string' &&
-        typeof actualData.name === 'string' &&
-        typeof actualData.layout_type === 'string' &&
-        Array.isArray(actualData.keys);
-
-      if (!hasRequiredFields) {
+      // Validate that data is an array (KLE JSON format)
+      if (!Array.isArray(actualData.data)) {
         return {
           passed: false,
           actual,
           expected: expected.body,
-          error: 'Missing required layout fields (id, name, layout_type, keys)',
+          error: 'Expected KLE JSON array format',
         };
       }
 
-      // Validate that keys array has at least one key
-      if (actualData.keys.length === 0) {
+      // Validate that array is not empty
+      if (actualData.data.length === 0) {
         return {
           passed: false,
           actual,
           expected: expected.body,
-          error: 'Layout must have at least one key',
+          error: 'KLE JSON array must have at least one row',
         };
       }
 
-      // Validate key structure (check first key)
-      const firstKey = actualData.keys[0];
-      const hasValidKeyStructure =
-        typeof firstKey.id === 'string' &&
-        typeof firstKey.label === 'string' &&
-        typeof firstKey.position.x === 'number' &&
-        typeof firstKey.position.y === 'number' &&
-        typeof firstKey.size.width === 'number' &&
-        typeof firstKey.size.height === 'number';
-
-      if (!hasValidKeyStructure) {
+      // Validate that first element is an array or object (typical KLE format)
+      const firstRow = actualData.data[0];
+      if (!Array.isArray(firstRow) && typeof firstRow !== 'object') {
         return {
           passed: false,
           actual,
           expected: expected.body,
-          error: 'Invalid key structure in layout',
+          error: 'Invalid KLE JSON format - rows must be arrays or objects',
         };
       }
 

@@ -73,13 +73,13 @@ export const simulatorTestCases: TestCase[] = [
               device_id: null,
               timestamp_us: 0,
               key: 'A',
-              event_type: 'Press',
+              event_type: 'press',
             },
             {
               device_id: null,
               timestamp_us: 50000,
               key: 'A',
-              event_type: 'Release',
+              event_type: 'release',
             },
           ],
         }
@@ -159,10 +159,10 @@ export const simulatorTestCases: TestCase[] = [
         SimulateEventsSchema,
         {
           events: [
-            { device_id: null, timestamp_us: 0, key: 'Shift', event_type: 'Press' },
-            { device_id: null, timestamp_us: 10000, key: 'A', event_type: 'Press' },
-            { device_id: null, timestamp_us: 60000, key: 'A', event_type: 'Release' },
-            { device_id: null, timestamp_us: 70000, key: 'Shift', event_type: 'Release' },
+            { device_id: null, timestamp_us: 0, key: 'Shift', event_type: 'press' },
+            { device_id: null, timestamp_us: 10000, key: 'A', event_type: 'press' },
+            { device_id: null, timestamp_us: 60000, key: 'A', event_type: 'release' },
+            { device_id: null, timestamp_us: 70000, key: 'Shift', event_type: 'release' },
           ],
         }
       );
