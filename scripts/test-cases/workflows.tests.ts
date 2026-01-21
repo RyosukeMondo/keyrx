@@ -77,20 +77,13 @@ export const workflow_002: TestCase = {
   category: 'workflows',
   description: 'Profile duplicate → rename → activate workflow',
   setup: async (client: ApiClient) => {
-    // Create the initial test profile
-    const config = `
-// Test profile for workflow
-base_layer = "base";
-
-[keymap.base]
-"a" = "b"  // Simple remapping for testing
-`;
-    await client.post('/profiles/workflow-test-original', { config });
+    // Create the initial test profile using simple_remap template
+    await client.createProfile('workflow-test-original', 'simple_remap');
   },
   execute: async (client: ApiClient) => {
     // Step 1: Duplicate the profile
     const duplicateResponse = await client.post(
-      '/profiles/workflow-test-original/duplicate',
+      '/api/profiles/workflow-test-original/duplicate',
       { new_name: 'workflow-test-copy' }
     );
 
@@ -107,7 +100,7 @@ base_layer = "base";
 
     // Step 2: Rename the duplicated profile
     const renameResponse = await client.put(
-      '/profiles/workflow-test-copy/rename',
+      '/api/profiles/workflow-test-copy/rename',
       { new_name: 'workflow-test-renamed' }
     );
 
@@ -123,23 +116,15 @@ base_layer = "base";
     }
 
     // Step 3: Activate the renamed profile
-    const activateResponse = await client.post('/active-profile', {
-      profile_name: 'workflow-test-renamed',
-    });
+    const activateResponse = await client.activateProfile('workflow-test-renamed');
 
     // Validate activation response
-    const activateData = ActivateProfileResponseSchema.parse(activateResponse);
-    if (!activateData.success) {
+    if (!activateResponse.data.success) {
       throw new Error('Profile activation failed');
-    }
-    if (activateData.profile_name !== 'workflow-test-renamed') {
-      throw new Error(
-        `Expected active profile 'workflow-test-renamed', got '${activateData.profile_name}'`
-      );
     }
 
     // Step 4: Verify the profile is active by getting daemon state
-    const statusResponse = await client.get('/daemon/state');
+    const statusResponse = await client.get('/api/daemon/state');
     const statusData = z.object({
       success: z.boolean(),
       active_profile: z.string().nullable(),
@@ -165,12 +150,12 @@ base_layer = "base";
   cleanup: async (client: ApiClient) => {
     // Clean up both profiles
     try {
-      await client.delete('/profiles/workflow-test-original');
+      await client.deleteProfile('workflow-test-original');
     } catch (error) {
       // Profile might not exist, ignore error
     }
     try {
-      await client.delete('/profiles/workflow-test-renamed');
+      await client.deleteProfile('workflow-test-renamed');
     } catch (error) {
       // Profile might not exist, ignore error
     }
@@ -199,7 +184,9 @@ export const workflow_003: TestCase = {
   description: 'Profile validation → fix → activate workflow',
   setup: noOpSetup,
   execute: async (client: ApiClient) => {
-    // Step 1: Create a profile with invalid syntax (missing closing quote)
+    // Step 1: Create a profile and set invalid config (missing closing quote)
+    await client.createProfile('workflow-validation-test', 'blank');
+
     const invalidConfig = `
 // Test profile with syntax error
 base_layer = "base;
@@ -207,11 +194,11 @@ base_layer = "base;
 [keymap.base]
 "a" = "b"
 `;
-    await client.post('/profiles/workflow-validation-test', { config: invalidConfig });
+    await client.setProfileConfig('workflow-validation-test', { source: invalidConfig });
 
     // Step 2: Validate the profile (should fail)
     const validateFailResponse = await client.post(
-      '/profiles/workflow-validation-test/validate',
+      '/api/profiles/workflow-validation-test/validate',
       {}
     );
 
@@ -237,21 +224,17 @@ base_layer = "base";
 [keymap.base]
 "a" = "b"
 `;
-    const updateResponse = await client.put('/profiles/workflow-validation-test/config', {
-      config: validConfig,
+    const updateResponse = await client.setProfileConfig('workflow-validation-test', {
+      source: validConfig,
     });
 
-    const updateData = z.object({
-      success: z.boolean(),
-    }).parse(updateResponse);
-
-    if (!updateData.success) {
+    if (!updateResponse.data.success) {
       throw new Error('Profile config update failed');
     }
 
     // Step 4: Validate again (should pass)
     const validatePassResponse = await client.post(
-      '/profiles/workflow-validation-test/validate',
+      '/api/profiles/workflow-validation-test/validate',
       {}
     );
 
@@ -268,22 +251,14 @@ base_layer = "base";
     }
 
     // Step 5: Activate the fixed profile
-    const activateResponse = await client.post('/active-profile', {
-      profile_name: 'workflow-validation-test',
-    });
+    const activateResponse = await client.activateProfile('workflow-validation-test');
 
-    const activateData = ActivateProfileResponseSchema.parse(activateResponse);
-    if (!activateData.success) {
+    if (!activateResponse.data.success) {
       throw new Error('Profile activation failed');
-    }
-    if (activateData.profile_name !== 'workflow-validation-test') {
-      throw new Error(
-        `Expected active profile 'workflow-validation-test', got '${activateData.profile_name}'`
-      );
     }
 
     // Step 6: Verify the profile is active
-    const statusResponse = await client.get('/daemon/state');
+    const statusResponse = await client.get('/api/daemon/state');
     const statusData = z.object({
       success: z.boolean(),
       active_profile: z.string().nullable(),
@@ -310,7 +285,7 @@ base_layer = "base";
   cleanup: async (client: ApiClient) => {
     // Clean up the test profile
     try {
-      await client.delete('/profiles/workflow-validation-test');
+      await client.deleteProfile('workflow-validation-test');
     } catch (error) {
       // Profile might not exist, ignore error
     }
