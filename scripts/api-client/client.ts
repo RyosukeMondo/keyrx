@@ -454,6 +454,67 @@ export class ApiClient {
       `${method} ${path}`
     );
   }
+
+  /**
+   * Convenience method for POST requests
+   * Returns raw response data without schema validation
+   *
+   * @param path - API endpoint path
+   * @param body - Request body
+   * @returns Promise with response data
+   *
+   * @example
+   * const response = await client.post('/profiles/test/duplicate', { new_name: 'test-copy' });
+   */
+  async post(path: string, body?: unknown): Promise<any> {
+    const response = await this.customRequest(
+      'POST',
+      path,
+      z.any(),
+      body
+    );
+    return response.data;
+  }
+
+  /**
+   * Convenience method for PUT requests
+   * Returns raw response data without schema validation
+   *
+   * @param path - API endpoint path
+   * @param body - Request body
+   * @returns Promise with response data
+   *
+   * @example
+   * const response = await client.put('/profiles/test/rename', { new_name: 'test-renamed' });
+   */
+  async put(path: string, body?: unknown): Promise<any> {
+    const response = await this.customRequest(
+      'PUT',
+      path,
+      z.any(),
+      body
+    );
+    return response.data;
+  }
+
+  /**
+   * Convenience method for DELETE requests
+   * Returns raw response data without schema validation
+   *
+   * @param path - API endpoint path
+   * @returns Promise with response data
+   *
+   * @example
+   * const response = await client.delete('/profiles/test');
+   */
+  async delete(path: string): Promise<any> {
+    const response = await this.customRequest(
+      'DELETE',
+      path,
+      z.any()
+    );
+    return response.data;
+  }
 }
 
 /**
