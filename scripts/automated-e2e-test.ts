@@ -36,6 +36,8 @@ import { createReporter } from './comparator/validation-reporter';
 import { createOrchestrator, FixOrchestratorResult } from './auto-fix/fix-orchestrator';
 import { createClassifier } from './auto-fix/issue-classifier';
 import { createFixRegistry } from './auto-fix/fix-strategies';
+import { TestMetrics } from './metrics/test-metrics';
+import { execSync } from 'child_process';
 
 interface CliOptions {
   daemonPath: string;
@@ -264,6 +266,30 @@ async function main(): Promise<void> {
       const jsonReport = JSON.stringify(reportData, null, 2);
       fs.writeFileSync(options.reportJsonPath, jsonReport, 'utf-8');
       console.log(`✓ JSON report saved: ${options.reportJsonPath}\n`);
+    }
+
+    // Record metrics
+    try {
+      const metrics = new TestMetrics();
+      let gitCommit: string | undefined;
+      let gitBranch: string | undefined;
+
+      try {
+        gitCommit = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
+        gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
+      } catch {
+        // Ignore git errors (not in a git repo or git not available)
+      }
+
+      metrics.record(testResults, fixResults, {
+        gitCommit,
+        gitBranch,
+        ciRun: !!process.env.CI,
+      });
+
+      console.log('✓ Test metrics recorded\n');
+    } catch (error) {
+      console.warn('⚠️  Failed to record metrics:', error);
     }
 
     // Exit with appropriate code

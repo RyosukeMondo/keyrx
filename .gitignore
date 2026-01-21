@@ -13,6 +13,13 @@ dist/
 scripts/logs/*.log
 *.log
 
+# Test metrics and reports
+scripts/metrics/*.jsonl
+scripts/metrics/*.json
+keyrx_ui/test-results.json
+keyrx_ui/test-report.html
+keyrx_ui/metrics-export.json
+
 # OS-specific files
 .DS_Store
 Thumbs.db
