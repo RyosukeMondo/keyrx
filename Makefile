@@ -1,7 +1,7 @@
 # KeyRx2 Makefile
 # Provides simple top-level commands for common operations
 
-.PHONY: help build verify test launch clean setup msi
+.PHONY: help build verify test launch clean setup msi e2e-api e2e-api-fix
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -27,6 +27,14 @@ test: ## Run all tests
 
 test-fast: ## Run tests with nextest (faster, parallel execution)
 	@scripts/test.sh --nextest
+
+e2e-api: build ## Run automated API E2E tests (requires release daemon)
+	@echo "Running automated API E2E tests..."
+	@cd keyrx_ui && npm run test:e2e:api
+
+e2e-api-fix: build ## Run automated API E2E tests with auto-fix enabled
+	@echo "Running automated API E2E tests with auto-fix..."
+	@cd keyrx_ui && npm run test:e2e:api:fix
 
 launch: ## Launch the keyrx_daemon
 	@scripts/launch.sh
