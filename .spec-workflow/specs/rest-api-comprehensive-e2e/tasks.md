@@ -182,9 +182,9 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
   - Purpose: Test layer listing
 
 ### Task 2.5: Layouts Tests (2 endpoints)
-- [ ] 2.5.1 Add GET /api/layouts/:name test
+- [x] 2.5.1 Add GET /api/layouts/:name test
   - File: `scripts/test-cases/layouts.tests.ts` (new file)
-  - Test ID: `layouts-002`
+  - Test ID: `layouts-002`, `layouts-002b`
   - Endpoint: GET /api/layouts/:name
   - Scenarios: Get layout details, not found layout
   - Purpose: Test specific layout retrieval

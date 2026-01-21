@@ -14,6 +14,7 @@ import { healthMetricsTestCases } from './health-metrics.tests.js';
 import { deviceManagementTestCases } from './device-management.tests.js';
 import { profileManagementTestCases } from './profile-management.tests.js';
 import { configLayersTestCases } from './config-layers.tests.js';
+import { layoutsTestCases } from './layouts.tests.js';
 
 /**
  * Test case execution result
@@ -959,6 +960,7 @@ export function getAllTestCases(): TestCase[] {
     ...deviceManagementTestCases,
     ...profileManagementTestCases,
     ...configLayersTestCases,
+    ...layoutsTestCases,
   ];
 }
 
