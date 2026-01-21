@@ -258,7 +258,7 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
   - Purpose: Validate device configuration workflow
 
 ### Task 3.3: Config & Mapping Workflows
-- [-] 3.3.1 Test config update → add mappings → verify layers workflow
+- [x] 3.3.1 Test config update → add mappings → verify layers workflow
   - File: `scripts/test-cases/workflows.tests.ts`
   - Test ID: `workflow-005`
   - Flow: Get config → Add key mapping → Add layer → Get layers → Verify structure → Delete mapping
