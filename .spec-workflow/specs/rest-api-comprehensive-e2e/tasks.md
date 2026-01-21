@@ -327,7 +327,7 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
 ## Phase 5: CI Integration & Reporting
 
 ### Task 5.1: Update CI Workflow
-- [ ] 5.1.1 Update GitHub Actions workflow for new tests
+- [x] 5.1.1 Update GitHub Actions workflow for new tests
   - File: `.github/workflows/e2e-auto.yml`
   - Changes:
     - Install all dependencies (zod, axios, ws, etc.)

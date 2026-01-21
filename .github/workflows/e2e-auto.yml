@@ -107,6 +107,12 @@ jobs:
         working-directory: keyrx_ui
         run: npm ci
 
+      - name: Verify dependencies installed
+        working-directory: keyrx_ui
+        run: |
+          echo "Verifying test dependencies..."
+          npm list zod ws @types/ws @types/node || echo "Some dependencies missing - will be resolved by npm ci"
+
       - name: Setup test profile
         run: |
           mkdir -p ~/.config/keyrx/profiles
@@ -190,6 +196,21 @@ jobs:
               summary += `${emoji} **Results**: ${passed}/${total} tests passed (${passRate}%)\n`;
               summary += `⏱️ **Duration**: ${duration}s\n\n`;
 
+              // Add category breakdown if available
+              if (results.categories && Object.keys(results.categories).length > 0) {
+                summary += `### 📊 Test Categories\n\n`;
+                summary += `| Category | Passed | Total | Pass Rate |\n`;
+                summary += `|----------|--------|-------|----------|\n`;
+                Object.entries(results.categories).forEach(([category, stats]) => {
+                  const catPassed = stats.passed || 0;
+                  const catTotal = stats.total || 0;
+                  const catRate = catTotal > 0 ? ((catPassed / catTotal) * 100).toFixed(1) : '0.0';
+                  const catEmoji = catPassed === catTotal ? '✅' : '⚠️';
+                  summary += `| ${catEmoji} ${category} | ${catPassed} | ${catTotal} | ${catRate}% |\n`;
+                });
+                summary += `\n`;
+              }
+
               if (failed > 0) {
                 summary += `### ❌ Failed Tests (${failed})\n\n`;
                 const failedTests = results.results?.filter(r => r.status === 'fail') || [];
@@ -210,6 +231,22 @@ jobs:
                   const icon = attempt.success ? '✅' : '❌';
                   summary += `${icon} ${attempt.testId}: ${attempt.strategy} - ${attempt.message}\n`;
                 });
+              }
+
+              // Add slowest tests if available
+              if (results.results && results.results.length > 0) {
+                const sortedByDuration = [...results.results]
+                  .filter(r => r.duration)
+                  .sort((a, b) => (b.duration || 0) - (a.duration || 0))
+                  .slice(0, 5);
+
+                if (sortedByDuration.length > 0) {
+                  summary += `\n### ⏱️ Slowest Tests\n\n`;
+                  sortedByDuration.forEach(test => {
+                    const testDuration = ((test.duration || 0) / 1000).toFixed(2);
+                    summary += `- ${test.name} (${test.id}): ${testDuration}s\n`;
+                  });
+                }
               }
 
               summary += `\n---\n`;
