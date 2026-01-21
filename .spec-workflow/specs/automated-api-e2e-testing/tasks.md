@@ -44,7 +44,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Robust daemon management_
   - _Prompt: Role: Test Infrastructure Developer | Task: Create DaemonFixture class with methods: start(config), waitUntilReady(timeout), stop(), getLogs(). Start spawns daemon subprocess, waitUntilReady polls /api/status every 100ms up to timeout, stop sends SIGTERM then SIGKILL after 5s, getLogs reads stderr/stdout. | Restrictions: Handle port conflicts (retry with next port), capture all daemon output, work on Windows (use taskkill) and Linux (SIGTERM) | Success: Can reliably start/stop daemon, passes health checks_
 
-- [ ] 1.3 Create test result database schema
+- [x] 1.3 Create test result database schema
   - File: `scripts/fixtures/expected-results.json`
   - JSON schema for expected API responses
   - Versioned by API contract version
