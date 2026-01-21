@@ -462,8 +462,8 @@ Before marking spec complete:
 
 - [x] Run `npm install` - succeeds without errors
 - [ ] Run `npx tsx scripts/automated-e2e-test.ts --daemon-path target/release/keyrx_daemon` - all 83 tests pass
-  - **Current Status**: 60/83 passing (72.3%) - Major progress on config tests and workflow-005
-  - **Recent Progress** (2026-01-22 evening):
+  - **Current Status**: 62/85 passing (72.9%) - Profile 404 tests now passing
+  - **Recent Progress** (2026-01-22 late evening):
     - ✅ Fixed assertion pattern: Executor now passes full response object (status, data, headers) to assert functions
     - ✅ Added extractData() helper to safely extract data field from response
     - ✅ Updated all test files to use extractData() in assert functions
@@ -484,6 +484,11 @@ Before marking spec complete:
     - ✅ **NEW**: Fixed workflow-005 - proper config/layers schema, device block setup
     - ✅ **NEW**: Fixed key names throughout tests to use VK_ prefix
     - ✅ **NEW**: Use PUT /api/config instead of setProfileConfig for proper recompilation
+    - ✅ **NEW (2026-01-22 23:xx)**: Implemented proper 404 handling for profile endpoints
+    - ✅ **NEW**: Added profile_error_to_api_error helper to map ProfileError types to HTTP status codes
+    - ✅ **NEW**: Updated duplicate_profile, rename_profile, validate_profile to return ApiError with 404
+    - ✅ **NEW**: Profile 404 tests now passing (profiles-011b, 012b, 013b)
+    - ⚠️  **IN PROGRESS**: Device 404 tests - code updated but still failing (needs investigation)
   - **Category Breakdown**:
     - ✅ Config: 11/11 (100%) - COMPLETE
     - ✅ Health: 3/3 (100%) - COMPLETE
@@ -491,13 +496,14 @@ Before marking spec complete:
     - ✅ Macros: 8/8 (100%) - COMPLETE
     - ✅ Metrics: 4/4 (100%) - COMPLETE
     - ✅ Simulator: 7/7 (100%) - COMPLETE
-    - ⚠️  Devices: 8/15 (53.3%) - 7 failures (mostly 404 validation tests)
-    - ⚠️  Profiles: 12/20 (60.0%) - 8 failures (404 validation, SOCKET_NOT_CONNECTED)
+    - ⚠️  Devices: 8/15 (53.3%) - 7 failures (404 validation tests for nonexistent devices)
+    - ⚠️  Profiles: 15/20 (75.0%) - 5 failures (SOCKET_NOT_CONNECTED errors, now 3 more 404 tests passing!)
     - ⚠️  Workflows: 1/6 (16.7%) - 5 failures (profile state, event parsing, WebSocket)
     - ⚠️  Websocket: 3/5 (60.0%) - 2 failures (event notifications timeout)
     - ❌ Status: 0/1 (0.0%) - 1 failure (daemon state check)
   - **Remaining Issues**:
-    - **404 Tests**: API not properly returning 404 for nonexistent resources (devices, profiles)
+    - **Device 404 Tests**: Device endpoints still returning 200 instead of 404 despite code changes (devices-004b, 005b, 006b, 007b) - needs investigation why DeviceRegistry operations succeed for nonexistent devices
+    - **Profile 404 Tests**: ✅ FIXED - Now properly returning 404 for nonexistent profiles
     - **WebSocket Events**: Timeout waiting for device/profile event notifications
     - **Workflow State**: Profile state contamination between tests (workflow-002, 003, 007)
     - **Event Parsing**: workflow-006 macro test has invalid event_type format
