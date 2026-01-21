@@ -187,7 +187,7 @@ export const macrosTestCases: TestCase[] = [
     },
     assert: (actual, expected) => {
       const actualData = extractData(actual);
-      const result = actual as { success: boolean; error?: { code: string; message: string } };
+      const result = actualData as { success: boolean; error?: { code: string; message: string } };
 
       if (result.success !== false || result.error?.code !== 'BAD_REQUEST') {
         return {
@@ -335,7 +335,7 @@ export const macrosTestCases: TestCase[] = [
     },
     assert: (actual, expected) => {
       const actualData = extractData(actual);
-      const result = actual as { success: boolean; error?: { code: string; message: string } };
+      const result = actualData as { success: boolean; error?: { code: string; message: string } };
 
       if (result.success !== false || result.error?.code !== 'BAD_REQUEST') {
         return {

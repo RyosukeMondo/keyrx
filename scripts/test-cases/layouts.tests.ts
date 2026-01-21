@@ -165,7 +165,7 @@ export const layoutsTestCases: TestCase[] = [
     },
     assert: (actual, expected) => {
       const actualData = extractData(actual);
-      const result = actual as { success?: boolean; error?: { code: string; message: string } };
+      const result = actualData as { success?: boolean; error?: { code: string; message: string } };
 
       // Should have error structure
       if (!result.error || typeof result.error !== 'object' || !result.error.message) {
