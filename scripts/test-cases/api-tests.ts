@@ -13,6 +13,7 @@ import type { ExpectedResults, ScenarioDefinition } from './types.js';
 import { healthMetricsTestCases } from './health-metrics.tests.js';
 import { deviceManagementTestCases } from './device-management.tests.js';
 import { profileManagementTestCases } from './profile-management.tests.js';
+import { configLayersTestCases } from './config-layers.tests.js';
 
 /**
  * Test case execution result
@@ -38,7 +39,7 @@ export interface TestCase {
   /** Test scenario name (matches expected-results.json) */
   scenario: string;
   /** Test category for organization */
-  category: 'health' | 'profiles' | 'devices' | 'metrics' | 'layouts' | 'status';
+  category: 'health' | 'profiles' | 'devices' | 'metrics' | 'layouts' | 'status' | 'config';
   /** Test priority (1 = critical, 2 = important, 3 = nice-to-have) */
   priority: 1 | 2 | 3;
   /** Setup function - prepare test environment */
@@ -952,7 +953,13 @@ export function getTestCaseById(id: string): TestCase | undefined {
  * Get all test cases
  */
 export function getAllTestCases(): TestCase[] {
-  return [...apiTestCases, ...healthMetricsTestCases, ...deviceManagementTestCases, ...profileManagementTestCases];
+  return [
+    ...apiTestCases,
+    ...healthMetricsTestCases,
+    ...deviceManagementTestCases,
+    ...profileManagementTestCases,
+    ...configLayersTestCases,
+  ];
 }
 
 /**

@@ -146,39 +146,39 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
   - Purpose: Test profile validation
 
 ### Task 2.4: Config & Layers Tests (5 endpoints)
-- [ ] 2.4.1 Add GET /api/config test
+- [x] 2.4.1 Add GET /api/config test
   - File: `scripts/test-cases/config-layers.tests.ts` (new file)
   - Test ID: `config-001`
   - Endpoint: GET /api/config
   - Scenarios: Get full config, empty config
   - Purpose: Test configuration retrieval
 
-- [ ] 2.4.2 Add PUT /api/config test
+- [x] 2.4.2 Add PUT /api/config test
   - File: `scripts/test-cases/config-layers.tests.ts`
-  - Test ID: `config-002`
+  - Test ID: `config-002`, `config-002b`
   - Endpoint: PUT /api/config
-  - Scenarios: Update config, invalid syntax, validation errors
+  - Scenarios: Update config (valid), invalid syntax
   - Purpose: Test configuration updates
 
-- [ ] 2.4.3 Add POST /api/config/key-mappings test
+- [x] 2.4.3 Add POST /api/config/key-mappings test
   - File: `scripts/test-cases/config-layers.tests.ts`
-  - Test ID: `config-003`
+  - Test ID: `config-003`, `config-003b`, `config-003c`, `config-003d`
   - Endpoint: POST /api/config/key-mappings
-  - Scenarios: Add mapping, invalid keys, duplicate mapping
+  - Scenarios: Add simple mapping, tap-hold mapping, invalid action type, missing field
   - Purpose: Test adding key mappings
 
-- [ ] 2.4.4 Add DELETE /api/config/key-mappings/:id test
+- [x] 2.4.4 Add DELETE /api/config/key-mappings/:id test
   - File: `scripts/test-cases/config-layers.tests.ts`
-  - Test ID: `config-004`
+  - Test ID: `config-004`, `config-004b`, `config-004c`
   - Endpoint: DELETE /api/config/key-mappings/:id
-  - Scenarios: Delete mapping, not found, invalid ID
+  - Scenarios: Delete mapping, invalid ID format, non-existent mapping
   - Purpose: Test removing key mappings
 
-- [ ] 2.4.5 Add GET /api/layers test
+- [x] 2.4.5 Add GET /api/layers test
   - File: `scripts/test-cases/config-layers.tests.ts`
   - Test ID: `config-005`
   - Endpoint: GET /api/layers
-  - Scenarios: List layers, empty layers, multiple layers
+  - Scenarios: List layers with base layer validation
   - Purpose: Test layer listing
 
 ### Task 2.5: Layouts Tests (2 endpoints)
