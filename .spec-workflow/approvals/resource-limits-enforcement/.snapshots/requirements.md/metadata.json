@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/resource-limits-enforcement/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:42:04.050Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764772923982_fxfc4hl3u",
+      "approvalTitle": "Requirements: Resource Limits Enforcement"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:51:26.003Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764772923982_fxfc4hl3u",
+      "approvalTitle": "Requirements: Resource Limits Enforcement"
+    }
+  ]
+}

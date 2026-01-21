@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774173254_snt46culv",
+  "approvalId": "approval_1764774173213_hlup8glcm",
+  "approvalTitle": "Requirements: Advanced Profiling Flamegraph Support",
+  "version": 1,
+  "timestamp": "2025-12-03T15:02:53.254Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nCurrent performance monitoring is basic, limited to pass/fail threshold checks. There's no flame graph generation for detailed stack analysis, no allocation profiling, and no visual tools for identifying performance bottlenecks in complex scripts.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Performance**: Deep bottleneck analysis\n- **Optimization**: Data-driven improvements\n- **Developer Experience**: Professional profiling tools\n\n## Requirements\n\n### Requirement 1: Flame Graph Generation\n\n**User Story:** As a developer, I want flame graphs, so that I can visualize where time is spent.\n\n#### Acceptance Criteria\n\n1. WHEN profiling enabled THEN stack samples SHALL be collected\n2. IF flame graph requested THEN SVG SHALL be generated\n3. WHEN interactive mode used THEN zoom/pan SHALL work\n4. IF comparison mode used THEN diff flame graph SHALL be generated\n\n### Requirement 2: Allocation Profiling\n\n**User Story:** As a developer, I want allocation tracking, so that I can optimize memory usage.\n\n#### Acceptance Criteria\n\n1. WHEN allocation profiling enabled THEN allocations SHALL be tracked\n2. IF hot spots detected THEN they SHALL be highlighted\n3. WHEN report generated THEN allocation sites SHALL be listed\n4. IF threshold exceeded THEN warning SHALL be generated\n\n### Requirement 3: Integration\n\n**User Story:** As a developer, I want CLI access, so that I can profile easily.\n\n#### Acceptance Criteria\n\n1. WHEN bench command run THEN profiling SHALL be available\n2. IF --flamegraph flag used THEN SVG SHALL be output\n3. WHEN --allocations flag used THEN memory report SHALL be generated\n4. IF UI integration exists THEN visualization SHALL be embedded\n\n## Non-Functional Requirements\n\n### Performance\n- Profiling overhead SHALL be < 10%\n- Flame graph generation SHALL be < 5 seconds for 1M samples\n- Memory tracking SHALL be opt-in to avoid overhead\n",
+  "fileStats": {
+    "size": 1951,
+    "lines": 55,
+    "lastModified": "2025-12-03T15:02:10.460Z"
+  },
+  "comments": []
+}

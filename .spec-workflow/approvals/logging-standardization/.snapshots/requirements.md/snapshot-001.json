@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764770439311_k0kc6pngd",
+  "approvalId": "approval_1764770439261_l0dlbr6v6",
+  "approvalTitle": "Logging Standardization Requirements",
+  "version": 1,
+  "timestamp": "2025-12-03T14:00:39.311Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nKeyRx has 201 raw println/eprintln calls mixed with structured tracing. Logging is inconsistent, making debugging difficult. There's no centralized metrics collection, and FFI has no observability bridge to Flutter. This spec standardizes logging and adds a metrics bridge.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Debuggability**: Consistent, searchable logs\n- **Observability**: Metrics visible in UI\n- **Reliability**: Issues are detectable\n\nPer tech.md: \"Structured logging: JSON format with timestamp, level, service, event, context\"\n\n## Requirements\n\n### Requirement 1: Structured Logging\n\n**User Story:** As a developer, I want structured logs, so that I can search and filter effectively.\n\n#### Acceptance Criteria\n\n1. WHEN logging occurs THEN structured format SHALL be used\n2. IF println exists THEN it SHALL be replaced with tracing\n3. WHEN log entry created THEN it SHALL have timestamp, level, context\n4. IF JSON output enabled THEN logs SHALL be valid JSON\n\n### Requirement 2: Log Levels\n\n**User Story:** As a developer, I want consistent log levels, so that I can filter by severity.\n\n#### Acceptance Criteria\n\n1. WHEN log level is set THEN it SHALL filter appropriately\n2. IF error occurs THEN error level SHALL be used\n3. WHEN warning needed THEN warn level SHALL be used\n4. IF debug info needed THEN debug/trace levels SHALL be used\n\n### Requirement 3: Metrics Collection\n\n**User Story:** As a user, I want metrics visible, so that I can see engine health.\n\n#### Acceptance Criteria\n\n1. WHEN engine runs THEN metrics SHALL be collected\n2. IF latency measured THEN histogram SHALL be used\n3. WHEN metrics requested THEN snapshot SHALL be available\n4. IF metrics change THEN subscribers SHALL be notified\n\n### Requirement 4: FFI Observability Bridge\n\n**User Story:** As a Flutter developer, I want metrics in UI, so that users see engine status.\n\n#### Acceptance Criteria\n\n1. WHEN metrics collected THEN FFI export SHALL be available\n2. IF logs emitted THEN callback to Flutter SHALL be optional\n3. WHEN errors occur THEN Flutter SHALL be notified\n4. IF subscription requested THEN real-time updates SHALL work\n\n## Non-Functional Requirements\n\n### Code Architecture and Modularity\n- **Single Logging Pattern**: All code uses tracing\n- **Centralized Metrics**: One metrics collector\n- **Observable FFI**: Metrics bridge to Flutter\n\n### Performance\n- Logging overhead SHALL be < 1 microsecond when disabled\n- Metrics collection SHALL be < 10 microseconds\n- FFI bridge SHALL not block engine\n\n### Maintainability\n- Log format SHALL be documented\n- Metrics SHALL be documented\n- Adding new metrics SHALL be simple\n",
+  "fileStats": {
+    "size": 2716,
+    "lines": 78,
+    "lastModified": "2025-12-03T13:58:42.611Z"
+  },
+  "comments": []
+}

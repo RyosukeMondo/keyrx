@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774708985_j1sin9l0i",
+  "approvalId": "approval_1764774189528_tvoekirmx",
+  "approvalTitle": "Design: Hardware-Specific Profile Optimization",
+  "version": 2,
+  "timestamp": "2025-12-03T15:11:48.985Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design adds hardware-specific timing profiles with automatic detection, a profile database, and interactive calibration tools. Profiles are keyed by vendor ID and product ID, with fallback to device class.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Detection\"\n        DEV[Device] --> DETECT[Hardware Detector]\n        DETECT --> VID[Vendor ID]\n        DETECT --> PID[Product ID]\n        DETECT --> CLASS[Device Class]\n    end\n\n    subgraph \"Profile Lookup\"\n        VID --> LOOKUP[Profile Lookup]\n        PID --> LOOKUP\n        CLASS --> LOOKUP\n        LOOKUP --> DB[Profile Database]\n        LOOKUP --> CLOUD[Cloud Profiles]\n    end\n\n    subgraph \"Calibration\"\n        CAL[Calibration Tool] --> TEST[Test Sequence]\n        TEST --> MEASURE[Latency Measurement]\n        MEASURE --> OPTIMIZE[Optimizer]\n        OPTIMIZE --> PROFILE[Custom Profile]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: HardwareDetector\n\n```rust\npub struct HardwareDetector;\n\npub struct HardwareInfo {\n    pub vendor_id: u16,\n    pub product_id: u16,\n    pub vendor_name: Option<String>,\n    pub product_name: Option<String>,\n    pub device_class: DeviceClass,\n}\n\npub enum DeviceClass {\n    MechanicalKeyboard,\n    MembraneKeyboard,\n    LaptopKeyboard,\n    VirtualKeyboard,\n    Unknown,\n}\n\nimpl HardwareDetector {\n    pub fn detect(device: &Device) -> HardwareInfo;\n    pub fn detect_all() -> Vec<HardwareInfo>;\n}\n```\n\n### Component 2: HardwareProfile\n\n```rust\n#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct HardwareProfile {\n    pub vendor_id: u16,\n    pub product_id: u16,\n    pub name: String,\n    pub timing: TimingConfig,\n    pub source: ProfileSource,\n}\n\npub struct TimingConfig {\n    pub debounce_ms: u32,\n    pub repeat_delay_ms: u32,\n    pub repeat_rate_ms: u32,\n    pub scan_interval_us: u32,\n}\n\npub enum ProfileSource {\n    Builtin,\n    Community,\n    Calibrated,\n    Custom,\n}\n```\n\n### Component 3: Calibrator\n\n```rust\npub struct Calibrator {\n    config: CalibrationConfig,\n}\n\npub struct CalibrationResult {\n    pub measured_latency: Duration,\n    pub optimal_timing: TimingConfig,\n    pub confidence: f64,\n}\n\nimpl Calibrator {\n    pub fn new(config: CalibrationConfig) -> Self;\n    pub async fn run(&self, device: &Device) -> CalibrationResult;\n    pub fn compare(&self, before: &TimingConfig, after: &TimingConfig) -> Comparison;\n}\n```\n\n## Testing Strategy\n\n- Unit tests for hardware detection\n- Integration tests for profile application\n- User testing for calibration accuracy\n",
+  "fileStats": {
+    "size": 2536,
+    "lines": 115,
+    "lastModified": "2025-12-03T15:02:14.989Z"
+  },
+  "comments": []
+}

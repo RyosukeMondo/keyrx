@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1766157054722_joz6wdcqd",
+  "approvalId": "approval_1766157054659_cgc8ul1ct",
+  "approvalTitle": "Design for Refactoring Device Registry",
+  "version": 1,
+  "timestamp": "2025-12-19T15:10:54.722Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThe `DeviceRegistryService` will be moved from `ui/lib/services` to `packages/core_logic/lib/services`. It will switch from `SharedPreferences` (Flutter-specific) to `dart:io` JSON file storage. This ensures that both the Flutter UI and the Dart CLI can access and modify the same device configuration (Virtual Devices, User Labels).\n\n## Steering Document Alignment\n\n### Technical Standards (tech.md)\nAdheres to the \"Headless Dart Harness Strategy\" by centralizing logic in `core_logic`. Uses `Freezed` models for serialization.\n\n### Project Structure (structure.md)\n- `packages/core_logic/lib/services/`: New location for the shared service.\n- `packages/core_logic/lib/repositories/`: New location for the JSON file repository.\n\n## Architecture\n\n```mermaid\ngraph TD\n    CLI[Dart CLI] -->|Uses| Service[Shared DeviceRegistryService]\n    UI[Flutter App] -->|Uses| Service\n    Service -->|Uses| Repo[DeviceConfigRepository]\n    Repo -->|Reads/Writes| File[~/.config/keyrx/devices.json]\n    Service -->|Uses| FFI[KeyrxBridge]\n```\n\n## Components and Interfaces\n\n### DeviceConfigRepository\n- **Purpose:** Persist device metadata (virtual devices list, user labels) to a JSON file.\n- **Location:** `packages/core_logic/lib/repositories/device_config_repository.dart`\n- **Interface:**\n  - `Future<DeviceConfig> load()`\n  - `Future<void> save(DeviceConfig config)`\n\n### Shared DeviceRegistryService\n- **Purpose:** Business logic for merging FFI devices with persistent config.\n- **Location:** `packages/core_logic/lib/services/device_registry_service.dart`\n- **Dependencies:** `KeyrxBridge`, `DeviceConfigRepository`.\n\n## Data Models\n\n### DeviceConfig\n```dart\n@freezed\nclass DeviceConfig with _$DeviceConfig {\n  const factory DeviceConfig({\n    @Default([]) List<DeviceIdentity> virtualDevices,\n    // We can store labels directly on the identity or separate map\n    // For simplicity, we reuse DeviceIdentity which already has userLabel\n  }) = _DeviceConfig;\n}\n```\n\n## Error Handling\n\n### File Access\n- **Scenario:** Config file is locked or unwritable.\n- **Handling:** Log error, fallback to in-memory defaults. CLI/UI should continue to function with FFI devices only.\n\n## Testing Strategy\n\n### Unit Testing\n- Test `DeviceConfigRepository` with a temporary file.\n- Test `DeviceRegistryService` with mock Bridge and Repository.\n\n### Integration Testing\n- Use the CLI to add a virtual device, then verify the JSON file content.\n",
+  "fileStats": {
+    "size": 2453,
+    "lines": 69,
+    "lastModified": "2025-12-19T15:10:54.630Z"
+  },
+  "comments": []
+}

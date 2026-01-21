@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/refactor-device-registry/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-19T15:10:54.798Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766157054729_x03obx6gz",
+      "approvalTitle": "Tasks for Refactoring Device Registry"
+    }
+  ]
+}

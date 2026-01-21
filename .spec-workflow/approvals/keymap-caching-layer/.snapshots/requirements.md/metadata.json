@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/keymap-caching-layer/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:41:40.214Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764772900163_sac3pbi3w",
+      "approvalTitle": "Requirements: Keymap Caching Layer"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:50:56.101Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764772900163_sac3pbi3w",
+      "approvalTitle": "Requirements: Keymap Caching Layer"
+    }
+  ]
+}

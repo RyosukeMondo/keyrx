@@ -1,0 +1,12 @@
+{
+  "id": "approval_1765468653864_3q7wkcbua",
+  "title": "Split Large Files - Tasks Document (30 tasks)",
+  "filePath": ".spec-workflow/specs/split-large-files/tasks.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-11T15:57:33.864Z",
+  "category": "spec",
+  "categoryName": "split-large-files",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-11T16:00:39.665Z"
+}

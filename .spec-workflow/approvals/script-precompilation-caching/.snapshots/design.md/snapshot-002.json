@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773481386_c1z4erxji",
+  "approvalId": "approval_1764772903879_ubwt0k3t0",
+  "approvalTitle": "Design: Script Precompilation Caching",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:21.386Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design adds a content-addressable cache for compiled Rhai ASTs. Scripts are identified by their content hash, and compiled ASTs are serialized to disk. On startup, the cache is checked before compilation.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Script Loading\"\n        SRC[Script Source] --> |hash| KEY[Cache Key]\n        KEY --> |lookup| CACHE[Cache]\n        CACHE --> |hit| AST[Cached AST]\n        CACHE --> |miss| COMP[Compile]\n        COMP --> |store| CACHE\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: ScriptCache\n\n```rust\npub struct ScriptCache {\n    cache_dir: PathBuf,\n    index: Mutex<CacheIndex>,\n    max_size: usize,\n}\n\nimpl ScriptCache {\n    pub fn new(cache_dir: PathBuf) -> Self;\n    pub fn get(&self, script: &str) -> Option<AST>;\n    pub fn put(&self, script: &str, ast: &AST) -> Result<()>;\n    pub fn clear(&self) -> Result<()>;\n    pub fn stats(&self) -> CacheStats;\n}\n\nstruct CacheIndex {\n    entries: HashMap<String, CacheEntry>, // hash -> entry\n}\n\nstruct CacheEntry {\n    hash: String,\n    path: PathBuf,\n    size: usize,\n    last_used: SystemTime,\n}\n```\n\n### Component 2: CacheKey\n\n```rust\npub fn cache_key(script: &str) -> String {\n    let mut hasher = blake3::Hasher::new();\n    hasher.update(script.as_bytes());\n    hasher.finalize().to_hex().to_string()\n}\n```\n\n## Testing Strategy\n\n- Unit tests for cache operations\n- Integration tests with real scripts\n- Benchmark startup improvement\n",
+  "fileStats": {
+    "size": 1478,
+    "lines": 66,
+    "lastModified": "2025-12-03T14:39:56.911Z"
+  },
+  "comments": []
+}

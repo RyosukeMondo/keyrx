@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772925759_9ary9xkey",
+  "approvalId": "approval_1764772925736_b1nhamuha",
+  "approvalTitle": "Design: Device Hotplug State Management",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:05.759Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design adds continuous device monitoring with graceful handling of connect/disconnect events. The core innovation is a `DeviceWatcher` that monitors system events (inotify on Linux, WM_DEVICECHANGE on Windows) and coordinates with the engine for seamless device transitions.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Monitoring\"\n        SYS[System Events] --> DW[DeviceWatcher]\n        DW --> |connect| ADD[Add Device]\n        DW --> |disconnect| REM[Remove Device]\n    end\n\n    subgraph \"State Management\"\n        ADD --> ENG[Engine]\n        REM --> PAUSE[Pause Session]\n        PAUSE --> |timeout| END[End Session]\n        PAUSE --> |reconnect| RESUME[Resume]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: DeviceWatcher\n\n```rust\npub struct DeviceWatcher {\n    devices: RwLock<HashMap<String, DeviceState>>,\n    event_tx: Sender<DeviceEvent>,\n}\n\npub enum DeviceEvent {\n    Connected(DeviceInfo),\n    Disconnected(String),\n    Error(String, DeviceError),\n}\n\npub enum DeviceState {\n    Active,\n    Paused { since: Instant },\n    Failed { error: DeviceError },\n}\n\nimpl DeviceWatcher {\n    pub fn new() -> Self;\n    pub fn start(&self) -> JoinHandle<()>;\n    pub fn stop(&self);\n    pub fn subscribe(&self) -> Receiver<DeviceEvent>;\n    pub fn devices(&self) -> Vec<(String, DeviceState)>;\n}\n```\n\n### Component 2: Platform Implementations\n\n```rust\n#[cfg(target_os = \"linux\")]\npub struct LinuxDeviceWatcher {\n    inotify: Inotify,\n}\n\n#[cfg(windows)]\npub struct WindowsDeviceWatcher {\n    // WM_DEVICECHANGE handler\n}\n```\n\n## Testing Strategy\n\n- Unit tests with mock devices\n- Integration tests with device simulation\n- Stress tests for rapid connect/disconnect\n",
+  "fileStats": {
+    "size": 1718,
+    "lines": 75,
+    "lastModified": "2025-12-03T14:40:05.234Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772902145_eamp2pulr",
+  "approvalId": "approval_1764772902110_w24zu2g2o",
+  "approvalTitle": "Tasks: Input Event Coalescing",
+  "version": 1,
+  "timestamp": "2025-12-03T14:41:42.145Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Core Buffer\n\n- [ ] 1. Create EventBuffer\n  - File: `core/src/engine/coalescing/buffer.rs`\n  - Implement time-based and size-based flushing\n  - Add coalescing rules for repeats\n  - Purpose: Event batching buffer\n  - _Requirements: 1.1, 1.2, 1.3_\n\n- [ ] 2. Create CoalescingConfig\n  - File: `core/src/engine/coalescing/config.rs`\n  - Configurable batch size and timeout\n  - Sensible defaults\n  - Purpose: Coalescing configuration\n  - _Requirements: 3.1, 3.2, 3.4_\n\n## Phase 2: Integration\n\n- [ ] 3. Create CoalescingEngine wrapper\n  - File: `core/src/engine/coalescing/mod.rs`\n  - Wrap engine with coalescing layer\n  - Preserve timing semantics\n  - Purpose: Engine integration\n  - _Requirements: 2.2, 2.4_\n\n- [ ] 4. Add coalescing to event loop\n  - File: `core/src/engine/event_loop.rs`\n  - Integrate buffer into main loop\n  - Handle flush triggers\n  - Purpose: Runtime integration\n  - _Requirements: 1.1, 2.3_\n",
+  "fileStats": {
+    "size": 939,
+    "lines": 34,
+    "lastModified": "2025-12-03T14:39:48.304Z"
+  },
+  "comments": []
+}

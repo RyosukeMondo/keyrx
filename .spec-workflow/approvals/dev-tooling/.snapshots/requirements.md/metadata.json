@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/dev-tooling/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-11-30T00:04:37.503Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764461077500_d8pzyy5rq",
+      "approvalTitle": "Dev-Tooling Requirements Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-11-30T00:08:47.799Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764461077500_d8pzyy5rq",
+      "approvalTitle": "Dev-Tooling Requirements Document"
+    }
+  ]
+}

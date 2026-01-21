@@ -1,0 +1,46 @@
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$ProfileSlotImpl _$$ProfileSlotImplFromJson(Map<String, dynamic> json) =>
+    _$ProfileSlotImpl(
+      id: json['id'] as String,
+      hardwareProfileId: json['hardware_profile_id'] as String,
+      keymapId: json['keymap_id'] as String,
+      active: json['active'] as bool? ?? false,
+      priority: (json['priority'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$$ProfileSlotImplToJson(_$ProfileSlotImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'hardware_profile_id': instance.hardwareProfileId,
+      'keymap_id': instance.keymapId,
+      'active': instance.active,
+      'priority': instance.priority,
+    };
+
+_$DeviceSlotsImpl _$$DeviceSlotsImplFromJson(Map<String, dynamic> json) =>
+    _$DeviceSlotsImpl(
+      device: DeviceInstanceId.fromJson(json['device'] as Map<String, dynamic>),
+      slots:
+          (json['slots'] as List<dynamic>?)
+              ?.map((e) => ProfileSlot.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <ProfileSlot>[],
+    );
+
+Map<String, dynamic> _$$DeviceSlotsImplToJson(_$DeviceSlotsImpl instance) =>
+    <String, dynamic>{'device': instance.device, 'slots': instance.slots};
+
+_$RuntimeConfigImpl _$$RuntimeConfigImplFromJson(Map<String, dynamic> json) =>
+    _$RuntimeConfigImpl(
+      devices:
+          (json['devices'] as List<dynamic>?)
+              ?.map((e) => DeviceSlots.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <DeviceSlots>[],
+    );
+
+Map<String, dynamic> _$$RuntimeConfigImplToJson(_$RuntimeConfigImpl instance) =>
+    <String, dynamic>{'devices': instance.devices};

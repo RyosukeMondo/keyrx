@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772924424_0hq51t5oj",
+  "approvalId": "approval_1764772924379_usszisvn2",
+  "approvalTitle": "Design: Resource Limits Enforcement",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:04.424Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design adds runtime resource enforcement beyond Rhai sandbox limits. The core innovation is a `ResourceEnforcer` that monitors execution time, memory, and queue depth with configurable limits and automatic recovery.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Enforcement\"\n        EXEC[Script Execution] --> |monitor| RE[ResourceEnforcer]\n        RE --> |timeout| TERM[Terminate]\n        RE --> |memory| TERM\n        RE --> |queue| DROP[Drop Events]\n    end\n\n    subgraph \"Recovery\"\n        TERM --> PASS[Passthrough]\n        DROP --> LOG[Log Warning]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: ResourceEnforcer\n\n```rust\npub struct ResourceEnforcer {\n    timeout: Duration,\n    memory_limit: usize,\n    queue_limit: usize,\n    current_memory: AtomicUsize,\n    queue_depth: AtomicUsize,\n}\n\nimpl ResourceEnforcer {\n    pub fn new(config: ResourceLimits) -> Self;\n    pub fn start_execution(&self) -> ExecutionGuard;\n    pub fn check_memory(&self) -> Result<(), ResourceExhausted>;\n    pub fn check_queue(&self) -> Result<(), ResourceExhausted>;\n    pub fn record_allocation(&self, bytes: usize);\n    pub fn record_deallocation(&self, bytes: usize);\n}\n\npub struct ExecutionGuard<'a> {\n    enforcer: &'a ResourceEnforcer,\n    start: Instant,\n}\n\nimpl Drop for ExecutionGuard<'_> {\n    fn drop(&mut self) {\n        // Check timeout, log if exceeded\n    }\n}\n```\n\n### Component 2: ResourceLimits\n\n```rust\n#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct ResourceLimits {\n    pub execution_timeout: Duration,\n    pub memory_limit: usize,\n    pub queue_limit: usize,\n}\n\nimpl Default for ResourceLimits {\n    fn default() -> Self {\n        Self {\n            execution_timeout: Duration::from_millis(100),\n            memory_limit: 10 * 1024 * 1024, // 10MB\n            queue_limit: 1000,\n        }\n    }\n}\n```\n\n## Testing Strategy\n\n- Unit tests for each limit type\n- Integration tests with limit-exceeding scripts\n- Benchmark enforcement overhead\n",
+  "fileStats": {
+    "size": 2009,
+    "lines": 84,
+    "lastModified": "2025-12-03T14:40:02.273Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,12 @@
+{
+  "id": "approval_1764767192948_vff06o9ek",
+  "title": "Test Organization - Tasks",
+  "filePath": ".spec-workflow/specs/test-organization/tasks.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-03T13:06:32.948Z",
+  "category": "spec",
+  "categoryName": "test-organization",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-03T13:23:19.611Z"
+}

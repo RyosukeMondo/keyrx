@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764770438223_qas4bp7b4",
+  "approvalId": "approval_1764770438175_aulmx7aif",
+  "approvalTitle": "Rhai Sandbox Hardening Requirements",
+  "version": 1,
+  "timestamp": "2025-12-03T14:00:38.223Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nKeyRx exposes 87 Rhai functions with minimal input validation. There's no centralized allowlist for safe_mode, no resource limits (CPU, memory, recursion), and script context can be corrupted by invalid state. The registry lookup is O(n) per keypress. This spec hardens the Rhai sandbox for production use.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Safety First**: Scripts cannot harm system or user\n- **Performance**: Script execution is bounded\n- **Reliability**: Invalid scripts fail gracefully\n\nPer tech.md: \"Security - no privilege escalation\"\n\n## Requirements\n\n### Requirement 1: Resource Limits\n\n**User Story:** As a user, I want scripts bounded, so that a bug doesn't freeze my keyboard.\n\n#### Acceptance Criteria\n\n1. WHEN script runs THEN instruction count SHALL be limited\n2. IF recursion exceeds depth THEN script SHALL terminate\n3. WHEN memory exceeds limit THEN script SHALL terminate\n4. IF timeout reached THEN script SHALL terminate\n\n### Requirement 2: Capability System\n\n**User Story:** As a developer, I want function tiers, so that safe_mode is enforced.\n\n#### Acceptance Criteria\n\n1. WHEN function is registered THEN capability tier SHALL be assigned\n2. IF safe_mode enabled THEN only safe functions SHALL be callable\n3. WHEN capability checked THEN it SHALL be O(1)\n4. IF tier violated THEN clear error SHALL be returned\n\n### Requirement 3: Input Validation\n\n**User Story:** As a user, I want input validated, so that invalid data doesn't crash the engine.\n\n#### Acceptance Criteria\n\n1. WHEN function receives input THEN it SHALL validate parameters\n2. IF validation fails THEN error SHALL describe problem\n3. WHEN types mismatch THEN conversion SHALL be attempted\n4. IF conversion fails THEN clear error SHALL be returned\n\n### Requirement 4: Registry Optimization\n\n**User Story:** As a user, I want fast script execution, so that there's no perceptible lag.\n\n#### Acceptance Criteria\n\n1. WHEN registry is queried THEN lookup SHALL be O(1)\n2. IF KeyCode maps to function THEN HashMap SHALL be used\n3. WHEN function called THEN dispatch SHALL be direct\n4. IF caching helps THEN it SHALL be implemented\n\n## Non-Functional Requirements\n\n### Code Architecture and Modularity\n- **Capability Tiers**: Clear function categorization\n- **Centralized Limits**: Single resource budget definition\n- **Validation Layer**: Input validation separate from logic\n\n### Security\n- Scripts SHALL NOT access filesystem directly\n- Scripts SHALL NOT execute shell commands\n- Scripts SHALL NOT elevate privileges\n- Resource exhaustion SHALL be prevented\n\n### Performance\n- Registry lookup SHALL be O(1)\n- Validation overhead SHALL be < 10 microseconds\n- Capability check SHALL be < 1 microsecond\n",
+  "fileStats": {
+    "size": 2781,
+    "lines": 79,
+    "lastModified": "2025-12-03T13:58:41.261Z"
+  },
+  "comments": []
+}

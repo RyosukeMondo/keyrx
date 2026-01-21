@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/flutter-web-build-support/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T15:02:52.233Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764774172163_auoex2shl",
+      "approvalTitle": "Requirements: Flutter Web Build Support"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T15:11:35.697Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764774172163_auoex2shl",
+      "approvalTitle": "Requirements: Flutter Web Build Support"
+    }
+  ]
+}

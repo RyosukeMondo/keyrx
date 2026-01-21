@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772922883_0ca9glu66",
+  "approvalId": "approval_1764772922791_y30nkxnw4",
+  "approvalTitle": "Requirements: JSON Schema Validation Framework",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:02.883Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nDevice profiles, configurations, and validation results are serialized to JSON with no schema enforcement. Manual parsing with downstream validation allows silent schema drift. This spec adds JSON Schema validation and generation from Rust types.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Reliability**: Catch config errors early\n- **Maintainability**: Schema as documentation\n- **Developer Experience**: Clear validation errors\n\nPer tech.md: \"Validate at entry, reject invalid immediately\"\n\n## Requirements\n\n### Requirement 1: Schema Generation\n\n**User Story:** As a developer, I want schemas from types, so that they stay in sync.\n\n#### Acceptance Criteria\n\n1. WHEN Rust type has JsonSchema derive THEN schema SHALL generate\n2. IF schema generated THEN it SHALL match type structure\n3. WHEN type changes THEN schema SHALL update\n4. IF schema is invalid THEN build SHALL fail\n\n### Requirement 2: Schema Validation\n\n**User Story:** As a user, I want config validation, so that errors are caught early.\n\n#### Acceptance Criteria\n\n1. WHEN config loaded THEN it SHALL validate against schema\n2. IF validation fails THEN clear error SHALL show\n3. WHEN profile loaded THEN it SHALL validate\n4. IF schema missing THEN fallback validation SHALL occur\n\n### Requirement 3: Migration Support\n\n**User Story:** As a user, I want config migration, so that upgrades don't break configs.\n\n#### Acceptance Criteria\n\n1. WHEN schema version changes THEN migration SHALL be possible\n2. IF old config loaded THEN migration SHALL be attempted\n3. WHEN migration fails THEN backup SHALL be preserved\n4. IF migration succeeds THEN new version SHALL be stored\n\n## Non-Functional Requirements\n\n### Maintainability\n- Schemas SHALL be auto-generated\n- Validation errors SHALL be actionable\n- Migration code SHALL be versioned\n",
+  "fileStats": {
+    "size": 1887,
+    "lines": 57,
+    "lastModified": "2025-12-03T14:39:59.998Z"
+  },
+  "comments": []
+}

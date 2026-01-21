@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/revolutionary-mapping/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-05T16:22:42.422Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764951762318_5pl1jsef3",
+      "approvalTitle": "Revolutionary Mapping - Requirements Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-05T16:24:18.864Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764951762318_5pl1jsef3",
+      "approvalTitle": "Revolutionary Mapping - Requirements Document"
+    }
+  ]
+}

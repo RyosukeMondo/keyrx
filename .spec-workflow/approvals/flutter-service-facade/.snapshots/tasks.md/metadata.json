@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/flutter-service-facade/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T12:39:18.431Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764765558421_t3xdkfsxg",
+      "approvalTitle": "Flutter Service Facade - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T12:41:23.661Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764765558421_t3xdkfsxg",
+      "approvalTitle": "Flutter Service Facade - Tasks"
+    }
+  ]
+}

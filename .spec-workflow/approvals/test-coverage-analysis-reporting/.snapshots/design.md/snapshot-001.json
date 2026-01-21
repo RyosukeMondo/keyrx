@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772947439_udutyk5z2",
+  "approvalId": "approval_1764772947395_cjgwnomzd",
+  "approvalTitle": "Design: Test Coverage Analysis Reporting",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:27.439Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design integrates `cargo-tarpaulin` or `llvm-cov` for coverage measurement with CI integration and HTML report generation. Coverage thresholds are enforced as CI gates.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Local Development\"\n        TEST[cargo test] --> COV[Coverage Tool]\n        COV --> RPT[HTML Report]\n    end\n\n    subgraph \"CI Pipeline\"\n        CI[CI Build] --> TEST2[cargo test]\n        TEST2 --> COV2[Coverage Tool]\n        COV2 --> CHK[Threshold Check]\n        CHK --> |pass| OK[Continue]\n        CHK --> |fail| FAIL[Fail Build]\n        COV2 --> UPLOAD[Upload Report]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: Coverage Configuration\n\n```toml\n# .cargo/config.toml or tarpaulin.toml\n[coverage]\nengine = \"llvm\"\noutput-types = [\"html\", \"json\", \"lcov\"]\nexclude-files = [\"tests/*\", \"benches/*\"]\nfail-under = 80.0\n```\n\n### Component 2: CI Workflow\n\n```yaml\n# .github/workflows/coverage.yml\ncoverage:\n  runs-on: ubuntu-latest\n  steps:\n    - uses: actions/checkout@v4\n    - name: Install coverage tool\n      run: cargo install cargo-tarpaulin\n    - name: Run coverage\n      run: cargo tarpaulin --out Html --fail-under 80\n    - name: Upload report\n      uses: actions/upload-artifact@v3\n```\n\n## Testing Strategy\n\n- Verify coverage measurement accuracy\n- Test threshold enforcement\n- Validate report generation\n",
+  "fileStats": {
+    "size": 1379,
+    "lines": 60,
+    "lastModified": "2025-12-03T14:40:13.473Z"
+  },
+  "comments": []
+}

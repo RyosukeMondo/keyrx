@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773456716_mbiu83ut2",
+  "approvalId": "approval_1764772900554_ft3zw5cn2",
+  "approvalTitle": "Design: Keymap Caching Layer",
+  "version": 2,
+  "timestamp": "2025-12-03T14:50:56.716Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design adds an LRU cache layer for keymap lookups on both Linux and Windows. The core innovation is a platform-agnostic `KeymapCache` trait with platform-specific implementations that cache scan code to key code mappings with automatic invalidation on device changes.\n\n## Steering Document Alignment\n\n### Technical Standards (tech.md)\n- **Performance**: O(1) cache lookup\n- **Memory Bounded**: Fixed-size LRU cache\n- **Platform Abstraction**: Common trait, platform impls\n\n### Project Structure (structure.md)\n- Cache in `core/src/drivers/common/cache.rs`\n- Linux impl in `core/src/drivers/linux/cache.rs`\n- Windows impl in `core/src/drivers/windows/cache.rs`\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Event Processing\"\n        EVT[Key Event] --> |lookup| KC[KeymapCache]\n        KC --> |hit| RES[Cached Result]\n        KC --> |miss| KM[Keymap Lookup]\n        KM --> |store| KC\n    end\n\n    subgraph \"Invalidation\"\n        DEV[Device Change] --> INV[Invalidate]\n        INV --> KC\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: KeymapCache Trait\n\n```rust\npub trait KeymapCache: Send + Sync {\n    fn get(&self, scan_code: u32, device_id: &str) -> Option<KeyCode>;\n    fn insert(&self, scan_code: u32, device_id: &str, key: KeyCode);\n    fn invalidate_device(&self, device_id: &str);\n    fn clear(&self);\n    fn stats(&self) -> CacheStats;\n}\n\n#[derive(Debug, Clone)]\npub struct CacheStats {\n    pub hits: u64,\n    pub misses: u64,\n    pub size: usize,\n    pub capacity: usize,\n}\n```\n\n### Component 2: LruKeymapCache\n\n```rust\npub struct LruKeymapCache {\n    cache: Mutex<LruCache<(u32, String), KeyCode>>,\n    stats: CacheStatsTracker,\n}\n\nimpl LruKeymapCache {\n    pub fn new(capacity: usize) -> Self;\n}\n```\n\n## Error Handling\n\n- Cache miss: Fall back to direct lookup\n- Cache corruption: Clear and rebuild\n- Memory pressure: LRU eviction handles automatically\n\n## Testing Strategy\n\n- Unit tests for cache operations\n- Benchmark cache hit rate\n- Integration tests with device simulation\n",
+  "fileStats": {
+    "size": 2044,
+    "lines": 82,
+    "lastModified": "2025-12-03T14:39:41.578Z"
+  },
+  "comments": []
+}

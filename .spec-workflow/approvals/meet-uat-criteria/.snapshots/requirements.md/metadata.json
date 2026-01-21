@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/meet-uat-criteria/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-02T22:11:33.128Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764713493120_8pze6ocf4",
+      "approvalTitle": "Meet UAT Criteria - Requirements Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-02T22:24:34.434Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764713493120_8pze6ocf4",
+      "approvalTitle": "Meet UAT Criteria - Requirements Document"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772948179_wplr3tzfm",
+  "approvalId": "approval_1764772948117_duttz4z0v",
+  "approvalTitle": "Requirements: Multi-Layout Simultaneous Support",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:28.179Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nThe engine switches between layouts but doesn't support simultaneous layout operation (e.g., game mode + coding mode active together). Layer system handles stacking but no cross-layout modifier coordination exists.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Power User Features**: Advanced layout capabilities\n- **Flexibility**: Support complex workflows\n- **Customization**: User-defined layout combinations\n\n## Requirements\n\n### Requirement 1: Layout Composition\n\n**User Story:** As a power user, I want multiple layouts active, so that I can blend modes.\n\n#### Acceptance Criteria\n\n1. WHEN multiple layouts enabled THEN they SHALL coexist\n2. IF layouts conflict THEN priority SHALL resolve\n3. WHEN layout added THEN it SHALL integrate smoothly\n4. IF layout removed THEN others SHALL continue\n\n### Requirement 2: Modifier Coordination\n\n**User Story:** As a user, I want shared modifiers, so that cross-layout actions work.\n\n#### Acceptance Criteria\n\n1. WHEN modifier pressed THEN all layouts SHALL see it\n2. IF modifier is layout-specific THEN it SHALL be scoped\n3. WHEN modifier released THEN all layouts SHALL be notified\n4. IF sticky modifier used THEN scope SHALL be defined\n\n### Requirement 3: Priority System\n\n**User Story:** As a user, I want layout priorities, so that conflicts resolve predictably.\n\n#### Acceptance Criteria\n\n1. WHEN layouts conflict THEN higher priority SHALL win\n2. IF priorities equal THEN most recent SHALL win\n3. WHEN priority changed THEN effect SHALL be immediate\n4. IF fallthrough enabled THEN lower priority SHALL handle\n\n## Non-Functional Requirements\n\n### Usability\n- Layout composition SHALL be intuitive\n- Conflicts SHALL have clear resolution\n- Documentation SHALL cover composition\n",
+  "fileStats": {
+    "size": 1813,
+    "lines": 55,
+    "lastModified": "2025-12-03T14:40:14.727Z"
+  },
+  "comments": []
+}

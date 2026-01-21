@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/unwrap-panic-hardening/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:00:35.685Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764770435653_zvip50s9o",
+      "approvalTitle": "Unwrap/Panic Hardening Tasks (18 tasks)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:17:23.625Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764770435653_zvip50s9o",
+      "approvalTitle": "Unwrap/Panic Hardening Tasks (18 tasks)"
+    }
+  ]
+}

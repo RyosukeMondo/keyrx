@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/live-ui-ffi-hardening/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-01T04:57:52.457Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764565072451_zzgu8cnhz",
+      "approvalTitle": "Design document for live-ui-ffi-hardening"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-01T04:58:20.332Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764565072451_zzgu8cnhz",
+      "approvalTitle": "Design document for live-ui-ffi-hardening"
+    }
+  ]
+}

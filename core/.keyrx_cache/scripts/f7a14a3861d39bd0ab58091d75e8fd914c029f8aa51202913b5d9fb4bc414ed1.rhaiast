@@ -1,0 +1,1 @@
+{"format_version":1,"core_version":"0.1.0","hash":"f7a14a3861d39bd0ab58091d75e8fd914c029f8aa51202913b5d9fb4bc414ed1","script":"\n            fn test_alpha() { let x = 1; }\n            fn test_beta() { let y = 2; }\n        \n","compile_micros":30}

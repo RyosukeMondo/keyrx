@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/fix-failing-tests/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-11T16:00:49.503Z",
+      "trigger": "initial",
+      "approvalId": "approval_1765468849438_oonwq1b73",
+      "approvalTitle": "Fix Failing Tests - Tasks Document (16 tasks)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-11T16:01:41.806Z",
+      "trigger": "approved",
+      "approvalId": "approval_1765468849438_oonwq1b73",
+      "approvalTitle": "Fix Failing Tests - Tasks Document (16 tasks)"
+    }
+  ]
+}

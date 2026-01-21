@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764768917796_angl657i1",
+  "approvalId": "approval_1764768820690_89s4od5u0",
+  "approvalTitle": "Build Optimization Requirements",
+  "version": 2,
+  "timestamp": "2025-12-03T13:35:17.796Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nThe Rust build uses tokio \"full\" feature despite only needing async runtime. There are no platform-specific feature gates, causing unnecessary compilation. Build times are longer than necessary. This spec optimizes build configuration with minimal features and proper platform gates.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Performance > Features**: Smaller binaries, faster builds\n- **Platform Focus**: Only compile what's needed per platform\n- **Developer Experience**: Faster iteration cycles\n\nPer tech.md: \"No unnecessary dependencies\"\n\n## Requirements\n\n### Requirement 1: Dependency Optimization\n\n**User Story:** As a developer, I want minimal dependencies, so that builds are fast and binaries small.\n\n#### Acceptance Criteria\n\n1. WHEN a dependency is used THEN only needed features SHALL be enabled\n2. IF a feature is not used THEN it SHALL be disabled\n3. WHEN tokio is needed THEN only required features SHALL be included\n4. IF serde is used THEN derive feature SHALL be conditional\n\n### Requirement 2: Platform Feature Gates\n\n**User Story:** As a developer, I want platform-specific code gated, so that cross-compilation works cleanly.\n\n#### Acceptance Criteria\n\n1. WHEN Windows code exists THEN it SHALL be behind #[cfg(windows)]\n2. IF Linux code exists THEN it SHALL be behind #[cfg(target_os = \"linux\")]\n3. WHEN dependencies are platform-specific THEN Cargo.toml SHALL reflect this\n4. IF a feature is platform-only THEN it SHALL be documented\n\n### Requirement 3: Build Time Optimization\n\n**User Story:** As a developer, I want fast builds, so that I can iterate quickly.\n\n#### Acceptance Criteria\n\n1. WHEN building in dev mode THEN incremental builds SHALL be fast\n2. IF unused code exists THEN it SHALL not be compiled\n3. WHEN dependencies update THEN only affected crates SHALL rebuild\n4. IF parallel compilation helps THEN it SHALL be configured\n\n### Requirement 4: Binary Size Optimization\n\n**User Story:** As a user, I want small binaries, so that downloads are fast.\n\n#### Acceptance Criteria\n\n1. WHEN releasing THEN binaries SHALL be optimized for size\n2. IF symbols are not needed THEN they SHALL be stripped\n3. WHEN LTO is beneficial THEN it SHALL be enabled for release\n4. IF dead code exists THEN it SHALL be eliminated\n\n## Non-Functional Requirements\n\n### Code Architecture and Modularity\n- **Feature Flags**: Clear feature boundaries\n- **Conditional Compilation**: Platform code isolated\n- **Dependency Management**: Minimal feature sets\n\n### Build Performance\n- Dev build time SHALL decrease by > 20%\n- Release build time SHALL not regress significantly\n- Incremental builds SHALL complete in < 10 seconds\n\n### Binary Size\n- Release binaries SHALL decrease by > 10%\n- Debug symbols SHALL be separate files\n- Unused code SHALL be eliminated\n",
+  "fileStats": {
+    "size": 2857,
+    "lines": 78,
+    "lastModified": "2025-12-03T13:33:13.535Z"
+  },
+  "comments": []
+}

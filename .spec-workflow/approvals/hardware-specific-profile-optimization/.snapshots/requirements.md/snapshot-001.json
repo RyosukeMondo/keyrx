@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774189182_g0lhxtl9m",
+  "approvalId": "approval_1764774189107_qwu8m4s74",
+  "approvalTitle": "Requirements: Hardware-Specific Profile Optimization",
+  "version": 1,
+  "timestamp": "2025-12-03T15:03:09.181Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nCurrently one timing configuration applies to all keyboard types. Mechanical and membrane keyboards have different response characteristics, but there's no hardware-specific optimization. Users with different keyboards may experience suboptimal latency or responsiveness.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Performance**: Hardware-optimized timing\n- **User Experience**: Smooth feel across keyboards\n- **Adaptability**: Auto-tuning for hardware\n\n## Requirements\n\n### Requirement 1: Hardware Detection\n\n**User Story:** As a user, I want my keyboard detected, so that optimized settings apply automatically.\n\n#### Acceptance Criteria\n\n1. WHEN device connected THEN vendor/model SHALL be identified\n2. IF known profile exists THEN it SHALL be suggested\n3. WHEN multiple devices connected THEN each SHALL be profiled\n4. IF device unknown THEN default profile SHALL apply\n\n### Requirement 2: Profile Database\n\n**User Story:** As a user, I want pre-tuned profiles, so that I don't need to configure manually.\n\n#### Acceptance Criteria\n\n1. WHEN profile database queried THEN known profiles SHALL return\n2. IF community profile available THEN it SHALL be downloadable\n3. WHEN profile updated THEN it SHALL sync automatically\n4. IF local override exists THEN it SHALL take precedence\n\n### Requirement 3: Calibration\n\n**User Story:** As a user, I want calibration tools, so that I can optimize for my specific hardware.\n\n#### Acceptance Criteria\n\n1. WHEN calibration started THEN test sequence SHALL run\n2. IF latency measured THEN optimal timing SHALL be calculated\n3. WHEN calibration complete THEN profile SHALL be saved\n4. IF comparison mode used THEN before/after SHALL be shown\n\n## Non-Functional Requirements\n\n### Performance\n- Hardware detection SHALL complete in < 500ms\n- Profile lookup SHALL complete in < 100ms\n- Calibration SHALL complete in < 60 seconds\n",
+  "fileStats": {
+    "size": 1954,
+    "lines": 55,
+    "lastModified": "2025-12-03T15:02:14.506Z"
+  },
+  "comments": []
+}

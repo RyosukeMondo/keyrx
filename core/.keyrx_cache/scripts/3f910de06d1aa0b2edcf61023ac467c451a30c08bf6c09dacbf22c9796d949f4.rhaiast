@@ -1,0 +1,1 @@
+{"format_version":1,"core_version":"0.1.0","hash":"3f910de06d1aa0b2edcf61023ac467c451a30c08bf6c09dacbf22c9796d949f4","script":"\nremap(\"A\", \"B\");\n\nfn on_init() {\n    block(\"CapsLock\");\n}\n","compile_micros":54}

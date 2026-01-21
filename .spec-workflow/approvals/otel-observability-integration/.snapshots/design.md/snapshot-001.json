@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772949716_4ymk9fygb",
+  "approvalId": "approval_1764772949671_pasbp5mls",
+  "approvalTitle": "Design: OTEL Observability Integration",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:29.716Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design implements OpenTelemetry tracing and metrics export using the `opentelemetry` and `tracing-opentelemetry` crates. Export is batched and async to minimize overhead, with configurable endpoints via environment variables.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Instrumentation\"\n        CODE[Code] --> |tracing| SPAN[Spans]\n        CODE --> |metrics| MET[Metrics]\n    end\n\n    subgraph \"OTEL Layer\"\n        SPAN --> OTEL[OTEL Exporter]\n        MET --> OTEL\n        OTEL --> |batch| EXPORT[Export]\n    end\n\n    subgraph \"Backends\"\n        EXPORT --> JAEGER[Jaeger]\n        EXPORT --> PROM[Prometheus]\n        EXPORT --> OTLP[OTLP Collector]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: OtelConfig\n\n```rust\n#[derive(Debug, Clone)]\npub struct OtelConfig {\n    pub enabled: bool,\n    pub endpoint: String,\n    pub service_name: String,\n    pub batch_size: usize,\n    pub export_interval: Duration,\n}\n\nimpl OtelConfig {\n    pub fn from_env() -> Self {\n        Self {\n            enabled: env::var(\"OTEL_ENABLED\").is_ok(),\n            endpoint: env::var(\"OTEL_EXPORTER_OTLP_ENDPOINT\")\n                .unwrap_or_else(|_| \"http://localhost:4317\".into()),\n            service_name: env::var(\"OTEL_SERVICE_NAME\")\n                .unwrap_or_else(|_| \"keyrx\".into()),\n            batch_size: 512,\n            export_interval: Duration::from_secs(5),\n        }\n    }\n}\n```\n\n### Component 2: OtelLayer\n\n```rust\npub fn init_otel(config: &OtelConfig) -> Result<(), OtelError> {\n    if !config.enabled {\n        return Ok(());\n    }\n\n    let tracer = opentelemetry_otlp::new_pipeline()\n        .tracing()\n        .with_exporter(/* ... */)\n        .install_batch(runtime::Tokio)?;\n\n    let layer = tracing_opentelemetry::layer().with_tracer(tracer);\n\n    // Add to global subscriber\n    Ok(())\n}\n```\n\n## Testing Strategy\n\n- Unit tests for configuration\n- Integration tests with mock collector\n- Benchmark overhead\n",
+  "fileStats": {
+    "size": 1965,
+    "lines": 83,
+    "lastModified": "2025-12-03T14:40:17.403Z"
+  },
+  "comments": []
+}

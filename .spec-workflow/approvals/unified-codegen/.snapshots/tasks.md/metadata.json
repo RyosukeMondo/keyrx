@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/unified-codegen/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-18T16:41:33.750Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766076093653_eu6lur7mr",
+      "approvalTitle": "Tasks for Unified FFI/IPC Codegen"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-18T16:42:39.617Z",
+      "trigger": "approved",
+      "approvalId": "approval_1766076093653_eu6lur7mr",
+      "approvalTitle": "Tasks for Unified FFI/IPC Codegen"
+    }
+  ]
+}

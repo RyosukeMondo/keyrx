@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/json-schema-validation-framework/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:42:03.280Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764772923234_siq98u7wo",
+      "approvalTitle": "Design: JSON Schema Validation Framework"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:51:23.363Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764772923234_siq98u7wo",
+      "approvalTitle": "Design: JSON Schema Validation Framework"
+    }
+  ]
+}

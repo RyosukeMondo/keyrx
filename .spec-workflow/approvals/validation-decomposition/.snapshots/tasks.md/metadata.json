@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/validation-decomposition/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T13:06:31.916Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764767191901_7lry53my6",
+      "approvalTitle": "Validation Decomposition - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T13:23:17.066Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764767191901_7lry53my6",
+      "approvalTitle": "Validation Decomposition - Tasks"
+    }
+  ]
+}

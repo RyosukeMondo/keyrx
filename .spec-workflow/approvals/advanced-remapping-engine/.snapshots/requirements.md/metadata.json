@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/advanced-remapping-engine/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-11-30T04:43:40.844Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764477820839_a2lkz2z5b",
+      "approvalTitle": "Requirements: Advanced Remapping Engine"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-11-30T04:47:36.482Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764477820839_a2lkz2z5b",
+      "approvalTitle": "Requirements: Advanced Remapping Engine"
+    }
+  ]
+}

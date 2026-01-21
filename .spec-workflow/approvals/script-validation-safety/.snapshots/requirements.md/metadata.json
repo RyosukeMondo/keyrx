@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/script-validation-safety/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T09:25:26.499Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764753926478_0c7bha213",
+      "approvalTitle": "Requirements: Script Validation & Safety"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T09:28:42.060Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764753926478_0c7bha213",
+      "approvalTitle": "Requirements: Script Validation & Safety"
+    }
+  ]
+}

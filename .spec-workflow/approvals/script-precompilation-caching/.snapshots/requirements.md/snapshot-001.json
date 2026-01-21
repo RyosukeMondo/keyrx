@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772903581_yzj91131x",
+  "approvalId": "approval_1764772903526_mczya9s5h",
+  "approvalTitle": "Requirements: Script Precompilation Caching",
+  "version": 1,
+  "timestamp": "2025-12-03T14:41:43.581Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nRhai scripts are parsed and compiled fresh on each `keyrx run` invocation without caching ASTs. For complex scripts, this adds 50-200ms to startup. Caching compiled scripts based on content hash eliminates redundant compilation.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Performance > Features**: Fast startup\n- **Developer Experience**: Quick iteration\n- **Efficiency**: Don't repeat work\n\n## Requirements\n\n### Requirement 1: Script Caching\n\n**User Story:** As a user, I want fast startup, so that I can quickly test changes.\n\n#### Acceptance Criteria\n\n1. WHEN script unchanged THEN cached AST SHALL be used\n2. IF script modified THEN recompilation SHALL occur\n3. WHEN cache hit THEN startup SHALL be < 50ms faster\n4. IF cache miss THEN normal compilation SHALL proceed\n\n### Requirement 2: Cache Validation\n\n**User Story:** As a developer, I want correct caching, so that stale scripts aren't used.\n\n#### Acceptance Criteria\n\n1. WHEN script content changes THEN cache SHALL invalidate\n2. IF file mtime changes THEN validation SHALL check content hash\n3. WHEN dependencies change THEN dependent scripts SHALL recompile\n4. IF validation fails THEN fallback to fresh compile SHALL occur\n\n### Requirement 3: Cache Management\n\n**User Story:** As a user, I want manageable cache, so that disk space is controlled.\n\n#### Acceptance Criteria\n\n1. WHEN cache directory exists THEN it SHALL be in `.keyrx_cache/`\n2. IF cache too large THEN LRU eviction SHALL occur\n3. WHEN `--no-cache` passed THEN cache SHALL be bypassed\n4. IF `--clear-cache` passed THEN cache SHALL be deleted\n\n## Non-Functional Requirements\n\n### Performance\n- Cache lookup SHALL be < 5ms\n- Cache storage SHALL be < 10MB total\n- Startup improvement SHALL be measurable (> 20%)\n",
+  "fileStats": {
+    "size": 1825,
+    "lines": 55,
+    "lastModified": "2025-12-03T14:39:55.143Z"
+  },
+  "comments": []
+}

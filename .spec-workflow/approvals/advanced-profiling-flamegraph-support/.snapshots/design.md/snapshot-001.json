@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774173586_tvh9w1noh",
+  "approvalId": "approval_1764774173573_80bv651qb",
+  "approvalTitle": "Design: Advanced Profiling Flamegraph Support",
+  "version": 1,
+  "timestamp": "2025-12-03T15:02:53.586Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design integrates stack sampling and allocation profiling with flame graph visualization. Profiling is opt-in via feature flags, with minimal overhead when disabled.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Profiling\"\n        CODE[Code] --> SAMPLE[Stack Sampler]\n        CODE --> ALLOC[Allocation Tracker]\n    end\n\n    subgraph \"Collection\"\n        SAMPLE --> STACKS[Stack Collector]\n        ALLOC --> HEAP[Heap Snapshot]\n    end\n\n    subgraph \"Generation\"\n        STACKS --> FLAME[Flame Graph]\n        HEAP --> REPORT[Allocation Report]\n        FLAME --> SVG[SVG Output]\n        REPORT --> JSON[JSON Output]\n    end\n\n    subgraph \"Visualization\"\n        SVG --> VIEW[Interactive Viewer]\n        JSON --> VIEW\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: Profiler\n\n```rust\npub struct Profiler {\n    config: ProfilerConfig,\n    sampler: Option<StackSampler>,\n    allocator: Option<AllocationTracker>,\n}\n\npub struct ProfilerConfig {\n    pub stack_sampling: bool,\n    pub sample_rate: Duration,\n    pub allocation_tracking: bool,\n    pub allocation_threshold: usize,\n}\n\nimpl Profiler {\n    pub fn new(config: ProfilerConfig) -> Self;\n    pub fn start(&mut self);\n    pub fn stop(&mut self) -> ProfileResult;\n}\n```\n\n### Component 2: FlameGraphGenerator\n\n```rust\npub struct FlameGraphGenerator {\n    config: FlameGraphConfig,\n}\n\npub struct FlameGraphConfig {\n    pub width: u32,\n    pub height: u32,\n    pub color_scheme: ColorScheme,\n    pub title: String,\n}\n\nimpl FlameGraphGenerator {\n    pub fn generate(&self, stacks: &[StackSample]) -> String; // SVG\n    pub fn generate_diff(&self, baseline: &[StackSample], current: &[StackSample]) -> String;\n}\n```\n\n### Component 3: AllocationReport\n\n```rust\npub struct AllocationReport {\n    pub total_allocated: usize,\n    pub total_freed: usize,\n    pub peak_usage: usize,\n    pub hot_spots: Vec<AllocationSite>,\n}\n\npub struct AllocationSite {\n    pub location: String,\n    pub count: u64,\n    pub total_bytes: usize,\n    pub stack_trace: Vec<String>,\n}\n```\n\n## Testing Strategy\n\n- Unit tests for flame graph generation\n- Integration tests for profiling accuracy\n- Benchmark tests for overhead measurement\n",
+  "fileStats": {
+    "size": 2209,
+    "lines": 102,
+    "lastModified": "2025-12-03T15:02:10.895Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,12 @@
+{
+  "id": "approval_1765468849172_y4hdpl68s",
+  "title": "Fix Failing Tests - Requirements Document",
+  "filePath": ".spec-workflow/specs/fix-failing-tests/requirements.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-11T16:00:49.172Z",
+  "category": "spec",
+  "categoryName": "fix-failing-tests",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-11T16:01:33.750Z"
+}

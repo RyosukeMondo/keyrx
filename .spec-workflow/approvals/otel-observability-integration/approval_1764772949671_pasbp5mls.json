@@ -1,0 +1,12 @@
+{
+  "id": "approval_1764772949671_pasbp5mls",
+  "title": "Design: OTEL Observability Integration",
+  "filePath": ".spec-workflow/specs/otel-observability-integration/design.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-03T14:42:29.671Z",
+  "category": "spec",
+  "categoryName": "otel-observability-integration",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-03T14:51:14.276Z"
+}

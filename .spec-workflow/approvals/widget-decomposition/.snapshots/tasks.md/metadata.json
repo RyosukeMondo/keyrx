@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/widget-decomposition/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T13:33:38.229Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764768818204_ya3t460lt",
+      "approvalTitle": "Widget Decomposition Tasks (16 tasks)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T13:35:10.789Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764768818204_ya3t460lt",
+      "approvalTitle": "Widget Decomposition Tasks (16 tasks)"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772900214_or0ddsz1g",
+  "approvalId": "approval_1764772900163_sac3pbi3w",
+  "approvalTitle": "Requirements: Keymap Caching Layer",
+  "version": 1,
+  "timestamp": "2025-12-03T14:41:40.214Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nDevice keymap resolution happens on every event processing cycle without caching. The Linux driver reads from evdev keymaps repeatedly, and Windows hook callbacks convert scan codes to virtual keys without memoization. With 100+ events/second, this creates unnecessary lookups costing 1-5μs each.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Performance > Features**: Reduce per-event latency\n- **Low Latency**: Sub-millisecond targets require optimization\n- **Efficiency**: Don't repeat work unnecessarily\n\nPer tech.md: \"Hook callbacks SHALL complete in < 100 microseconds\"\n\n## Requirements\n\n### Requirement 1: Keymap Caching\n\n**User Story:** As a user, I want fast key lookups, so that there's no perceptible lag.\n\n#### Acceptance Criteria\n\n1. WHEN keymap is queried THEN cached result SHALL be returned if available\n2. IF cache miss occurs THEN lookup SHALL populate cache\n3. WHEN cache is full THEN LRU eviction SHALL occur\n4. IF cache hit rate measured THEN it SHALL exceed 95%\n\n### Requirement 2: Cache Invalidation\n\n**User Story:** As a user, I want correct behavior after device changes, so that keymaps stay accurate.\n\n#### Acceptance Criteria\n\n1. WHEN device is added THEN cache SHALL be invalidated for that device\n2. IF layout changes THEN affected cache entries SHALL be cleared\n3. WHEN invalidation occurs THEN it SHALL be O(1) or O(log n)\n4. IF stale entry used THEN fallback SHALL be correct\n\n### Requirement 3: Platform Support\n\n**User Story:** As a user, I want caching on all platforms, so that performance is consistent.\n\n#### Acceptance Criteria\n\n1. WHEN on Linux THEN evdev keymap lookups SHALL be cached\n2. IF on Windows THEN scan-to-vk conversion SHALL be memoized\n3. WHEN platform differs THEN cache strategy SHALL be appropriate\n4. IF platform lacks caching THEN graceful fallback SHALL exist\n\n## Non-Functional Requirements\n\n### Performance\n- Cache lookup SHALL be O(1)\n- Cache overhead SHALL be < 100 bytes per entry\n- Cache hit rate SHALL exceed 95% in typical usage\n- Memory usage SHALL be bounded (max 10KB for cache)\n\n### Reliability\n- Cache corruption SHALL not affect correctness\n- Fallback to uncached lookup SHALL always work\n",
+  "fileStats": {
+    "size": 2249,
+    "lines": 62,
+    "lastModified": "2025-12-03T14:39:39.718Z"
+  },
+  "comments": []
+}

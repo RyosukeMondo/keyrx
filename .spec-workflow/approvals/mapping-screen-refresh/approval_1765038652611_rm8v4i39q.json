@@ -1,0 +1,21 @@
+{
+  "id": "approval_1765038652611_rm8v4i39q",
+  "title": "Design for mapping-screen-refresh",
+  "filePath": ".spec-workflow/specs/mapping-screen-refresh/design.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-12-06T16:30:52.611Z",
+  "category": "spec",
+  "categoryName": "mapping-screen-refresh",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. thanks. add wireflame ( text only ) screen preview.\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"thanks. add wireflame ( text only ) screen preview.\",\n      \"timestamp\": \"2025-12-06T16:33:21.844Z\",\n      \"id\": \"comment_1765038801844_srt4msk8p\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. thanks. add wireflame ( text only ) screen preview.\\n\\n\",\n  \"timestamp\": \"2025-12-06T16:33:23.955Z\"\n}",
+  "respondedAt": "2025-12-06T16:33:23.761Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "thanks. add wireflame ( text only ) screen preview.",
+      "timestamp": "2025-12-06T16:33:21.844Z",
+      "id": "comment_1765038801844_srt4msk8p"
+    }
+  ]
+}

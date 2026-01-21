@@ -1,0 +1,12 @@
+{
+  "id": "approval_1764772901321_t9o4ecvhr",
+  "title": "Requirements: Input Event Coalescing",
+  "filePath": ".spec-workflow/specs/input-event-coalescing/requirements.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-03T14:41:41.321Z",
+  "category": "spec",
+  "categoryName": "input-event-coalescing",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-03T14:50:59.780Z"
+}

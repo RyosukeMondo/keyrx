@@ -1,0 +1,12 @@
+{
+  "id": "approval_1764770436397_sf24crqix",
+  "title": "State Machine Audit Design",
+  "filePath": ".spec-workflow/specs/state-machine-audit/design.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-03T14:00:36.397Z",
+  "category": "spec",
+  "categoryName": "state-machine-audit",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-03T14:17:26.861Z"
+}

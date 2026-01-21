@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/platform-drivers/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-11-30T00:17:00.887Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764461820883_i3n60t0iu",
+      "approvalTitle": "Platform-Drivers Requirements Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-11-30T00:42:42.526Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1764461820883_i3n60t0iu",
+      "approvalTitle": "Platform-Drivers Requirements Document"
+    }
+  ]
+}

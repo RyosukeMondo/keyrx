@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772946301_n0704demx",
+  "approvalId": "approval_1764772946255_s42vxa2zj",
+  "approvalTitle": "Design: Session Recording Replay Optimization",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:26.301Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design optimizes session recording with gzip compression, time-based indexing, and streaming replay. The file format includes a header with index, compressed event blocks, and allows random access via block offsets.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Recording\"\n        EVT[Events] --> BUF[Block Buffer]\n        BUF --> |compress| GZ[Gzip Block]\n        GZ --> |write| FILE[File]\n        BUF --> |index| IDX[Block Index]\n    end\n\n    subgraph \"Replay\"\n        FILE --> |read header| HDR[Header + Index]\n        HDR --> |seek| BLK[Block]\n        BLK --> |decompress| STREAM[Event Stream]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: SessionRecorder\n\n```rust\npub struct SessionRecorder {\n    file: BufWriter<File>,\n    buffer: Vec<RecordedEvent>,\n    index: Vec<BlockIndex>,\n    compressor: GzEncoder<Vec<u8>>,\n}\n\nstruct BlockIndex {\n    start_time: u64,\n    end_time: u64,\n    offset: u64,\n    compressed_size: u32,\n}\n\nimpl SessionRecorder {\n    pub fn new(path: &Path) -> Result<Self>;\n    pub fn record(&mut self, event: InputEvent);\n    pub fn flush(&mut self) -> Result<()>;\n    pub fn finish(self) -> Result<SessionMetadata>;\n}\n```\n\n### Component 2: SessionPlayer\n\n```rust\npub struct SessionPlayer {\n    file: BufReader<File>,\n    index: Vec<BlockIndex>,\n    current_block: Option<DecompressedBlock>,\n}\n\nimpl SessionPlayer {\n    pub fn open(path: &Path) -> Result<Self>;\n    pub fn seek(&mut self, time: u64) -> Result<()>;\n    pub fn next(&mut self) -> Option<RecordedEvent>;\n    pub fn metadata(&self) -> &SessionMetadata;\n}\n```\n\n## Testing Strategy\n\n- Unit tests for compression/decompression\n- Integration tests with real sessions\n- Benchmark recording overhead\n",
+  "fileStats": {
+    "size": 1739,
+    "lines": 74,
+    "lastModified": "2025-12-03T14:40:11.611Z"
+  },
+  "comments": []
+}

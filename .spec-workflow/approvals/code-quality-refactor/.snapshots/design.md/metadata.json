@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/code-quality-refactor/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-11-30T03:29:13.072Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764473353068_m9tf834gb",
+      "approvalTitle": "Design: Code Quality Refactor"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-11-30T03:30:32.222Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764473353068_m9tf834gb",
+      "approvalTitle": "Design: Code Quality Refactor"
+    }
+  ]
+}

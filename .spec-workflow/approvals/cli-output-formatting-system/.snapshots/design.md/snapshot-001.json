@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772926951_cbu3l3jij",
+  "approvalId": "approval_1764772926936_5ulu1brg5",
+  "approvalTitle": "Design: CLI Output Formatting System",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:06.951Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design creates a unified output formatting system for all CLI commands. The core innovation is an `OutputFormatter` trait with implementations for JSON, table, and YAML formats, plus a global `--output-format` flag.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"CLI Command\"\n        CMD[Command] --> |result| RES[CommandResult]\n    end\n\n    subgraph \"Formatting\"\n        RES --> FMT[OutputFormatter]\n        FMT --> JSON[JSON]\n        FMT --> TBL[Table]\n        FMT --> YAML[YAML]\n    end\n\n    subgraph \"Output\"\n        JSON --> OUT[stdout]\n        TBL --> OUT\n        YAML --> OUT\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: OutputFormatter Trait\n\n```rust\npub trait OutputFormatter {\n    fn format_success<T: Serialize>(&self, data: &T) -> String;\n    fn format_error(&self, error: &CommandError) -> String;\n    fn format_table(&self, headers: &[&str], rows: &[Vec<String>]) -> String;\n}\n\npub enum OutputFormat {\n    Json,\n    Table,\n    Yaml,\n}\n\nimpl OutputFormat {\n    pub fn from_str(s: &str) -> Result<Self, FormatError>;\n    pub fn formatter(&self) -> Box<dyn OutputFormatter>;\n}\n```\n\n### Component 2: CommandResult\n\n```rust\npub enum CommandResult<T> {\n    Success(T),\n    Error(CommandError),\n}\n\n#[derive(Debug, Serialize)]\npub struct CommandError {\n    pub code: String,\n    pub message: String,\n    pub details: Option<serde_json::Value>,\n}\n\nimpl<T: Serialize> CommandResult<T> {\n    pub fn output(&self, format: OutputFormat) -> String;\n}\n```\n\n## Testing Strategy\n\n- Unit tests for each format\n- Golden tests for output comparison\n- Integration tests with real commands\n",
+  "fileStats": {
+    "size": 1639,
+    "lines": 77,
+    "lastModified": "2025-12-03T14:40:09.835Z"
+  },
+  "comments": []
+}

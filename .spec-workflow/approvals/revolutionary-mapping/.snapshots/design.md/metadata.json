@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/revolutionary-mapping/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-05T16:26:06.785Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764951966702_kscwpsj8k",
+      "approvalTitle": "Revolutionary Mapping - Design Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-05T16:30:35.358Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764951966702_kscwpsj8k",
+      "approvalTitle": "Revolutionary Mapping - Design Document"
+    }
+  ]
+}

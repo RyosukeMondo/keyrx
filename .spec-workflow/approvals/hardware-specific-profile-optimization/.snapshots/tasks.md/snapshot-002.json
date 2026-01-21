@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774709745_loi4ui0yf",
+  "approvalId": "approval_1764774189887_i9k10wrdr",
+  "approvalTitle": "Tasks: Hardware-Specific Profile Optimization",
+  "version": 2,
+  "timestamp": "2025-12-03T15:11:49.745Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Hardware Detection\n\n- [ ] 1. Create HardwareDetector\n  - File: `core/src/hardware/detector.rs`\n  - Vendor/product ID extraction\n  - Device class inference\n  - Purpose: Hardware identification\n  - _Requirements: 1.1, 1.3_\n\n- [ ] 2. Implement device classification\n  - File: `core/src/hardware/classification.rs`\n  - Mechanical vs membrane detection\n  - Heuristic-based classification\n  - Purpose: Device categorization\n  - _Requirements: 1.1_\n\n## Phase 2: Profile Database\n\n- [ ] 3. Create HardwareProfile struct\n  - File: `core/src/hardware/profile.rs`\n  - Timing configuration\n  - Profile metadata\n  - Purpose: Profile data model\n  - _Requirements: 2.1_\n\n- [ ] 4. Build profile database\n  - File: `core/src/hardware/database.rs`\n  - Builtin profiles\n  - Lookup by VID/PID\n  - Purpose: Profile storage\n  - _Requirements: 1.2, 2.1, 2.4_\n\n- [ ] 5. Add cloud profile sync\n  - File: `core/src/hardware/cloud_sync.rs`\n  - Community profile download\n  - Update checking\n  - Purpose: Profile updates\n  - _Requirements: 2.2, 2.3_\n\n## Phase 3: Calibration\n\n- [ ] 6. Create Calibrator\n  - File: `core/src/hardware/calibrator.rs`\n  - Test sequence runner\n  - Latency measurement\n  - Purpose: Hardware calibration\n  - _Requirements: 3.1, 3.2_\n\n- [ ] 7. Implement timing optimizer\n  - File: `core/src/hardware/optimizer.rs`\n  - Optimal timing calculation\n  - Confidence scoring\n  - Purpose: Profile generation\n  - _Requirements: 3.2, 3.3_\n\n## Phase 4: Integration\n\n- [ ] 8. Add CLI commands\n  - File: `core/src/cli/commands/hardware.rs`\n  - detect, calibrate, profile\n  - Purpose: CLI access\n  - _Requirements: 1.1, 3.1_\n\n- [ ] 9. Create calibration UI\n  - File: `ui/lib/pages/calibration_page.dart`\n  - Interactive calibration\n  - Before/after comparison\n  - Purpose: User interface\n  - _Requirements: 3.1, 3.4_\n",
+  "fileStats": {
+    "size": 1830,
+    "lines": 72,
+    "lastModified": "2025-12-03T15:02:15.484Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,1 @@
+{"format_version":1,"core_version":"0.1.0","hash":"a3aecf9f64e496eb2f0826e6c606e654b5788ca0b7ad54111aaa4a6f21d1183e","script":"fn test_fail() { throw \"expected failure\"; }\n","compile_micros":73}

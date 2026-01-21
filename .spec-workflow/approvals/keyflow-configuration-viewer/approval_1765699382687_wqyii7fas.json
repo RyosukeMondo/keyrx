@@ -1,0 +1,12 @@
+{
+  "id": "approval_1765699382687_wqyii7fas",
+  "title": "Re-approve requirements (added autonomous dev alignment) for keyflow-configuration-viewer",
+  "filePath": ".spec-workflow/specs/keyflow-configuration-viewer/requirements.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-14T08:03:02.688Z",
+  "category": "spec",
+  "categoryName": "keyflow-configuration-viewer",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-14T08:12:02.546Z"
+}

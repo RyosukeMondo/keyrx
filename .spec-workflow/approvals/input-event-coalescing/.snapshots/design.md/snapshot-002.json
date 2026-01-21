@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773460803_4gn67ydni",
+  "approvalId": "approval_1764772901707_pw6xj3yma",
+  "approvalTitle": "Design: Input Event Coalescing",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:00.803Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design adds an event coalescing layer between input drivers and the engine. Events are buffered and flushed based on time windows or batch size limits, reducing per-event overhead while preserving timing semantics.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Input Layer\"\n        DRV[Driver] --> |event| BUF[EventBuffer]\n    end\n\n    subgraph \"Coalescing\"\n        BUF --> |timeout/full| FLUSH[Flush]\n        FLUSH --> |batch| ENG[Engine]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: EventBuffer\n\n```rust\npub struct EventBuffer {\n    events: VecDeque<TimestampedEvent>,\n    config: CoalescingConfig,\n    last_flush: Instant,\n}\n\npub struct CoalescingConfig {\n    pub max_batch_size: usize,\n    pub flush_timeout: Duration,\n    pub coalesce_repeats: bool,\n}\n\nimpl EventBuffer {\n    pub fn push(&mut self, event: InputEvent) -> Option<Vec<InputEvent>>;\n    pub fn flush(&mut self) -> Vec<InputEvent>;\n    pub fn should_flush(&self) -> bool;\n}\n```\n\n### Component 2: CoalescingEngine\n\n```rust\npub struct CoalescingEngine<E: Engine> {\n    inner: E,\n    buffer: EventBuffer,\n}\n\nimpl<E: Engine> CoalescingEngine<E> {\n    pub fn process(&mut self, event: InputEvent) -> Vec<OutputEvent>;\n}\n```\n\n## Testing Strategy\n\n- Unit tests for coalescing rules\n- Benchmark FFI call reduction\n- Integration tests for timing preservation\n",
+  "fileStats": {
+    "size": 1375,
+    "lines": 63,
+    "lastModified": "2025-12-03T14:39:46.517Z"
+  },
+  "comments": []
+}

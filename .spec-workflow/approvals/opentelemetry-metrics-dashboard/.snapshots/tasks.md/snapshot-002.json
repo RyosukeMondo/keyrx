@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774706233_b886srxo0",
+  "approvalId": "approval_1764774188730_twbk3n1lu",
+  "approvalTitle": "Tasks: OpenTelemetry Metrics Dashboard",
+  "version": 2,
+  "timestamp": "2025-12-03T15:11:46.233Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Metrics Collection\n\n- [ ] 1. Create MetricsCollector\n  - File: `core/src/metrics/collector.rs`\n  - Counter, histogram, gauge setup\n  - OTEL integration\n  - Purpose: Metrics collection\n  - _Requirements: 1.1, 1.2, 1.3, 1.4_\n\n- [ ] 2. Instrument engine\n  - File: `core/src/engine/mod.rs`\n  - Key event counters\n  - Latency histograms\n  - Purpose: Data collection\n  - _Requirements: 1.1, 1.2_\n\n- [ ] 3. Add error metrics\n  - File: `core/src/metrics/errors.rs`\n  - Error type counters\n  - Error rate calculation\n  - Purpose: Error tracking\n  - _Requirements: 1.4_\n\n## Phase 2: Export\n\n- [ ] 4. Implement Prometheus exporter\n  - File: `core/src/metrics/prometheus.rs`\n  - /metrics endpoint\n  - Label configuration\n  - Purpose: Prometheus scraping\n  - _Requirements: 2.1_\n\n- [ ] 5. Add OTLP metrics export\n  - File: `core/src/metrics/otlp.rs`\n  - Batch export\n  - Endpoint configuration\n  - Purpose: Collector export\n  - _Requirements: 2.2_\n\n- [ ] 6. Create local metrics store\n  - File: `core/src/metrics/local_store.rs`\n  - Time-series storage\n  - Query interface\n  - Purpose: Local access\n  - _Requirements: 2.3_\n\n## Phase 3: Dashboard\n\n- [ ] 7. Create Grafana dashboard JSON\n  - File: `core/src/metrics/grafana.rs`\n  - Panel definitions\n  - Query templates\n  - Purpose: Grafana import\n  - _Requirements: 3.1_\n\n- [ ] 8. Add embedded dashboard\n  - File: `ui/lib/pages/metrics_dashboard.dart`\n  - Real-time charts\n  - Time range selection\n  - Purpose: Local visualization\n  - _Requirements: 3.2, 3.4_\n\n- [ ] 9. Implement alerting\n  - File: `core/src/metrics/alerts.rs`\n  - Threshold configuration\n  - Alert callbacks\n  - Purpose: Proactive monitoring\n  - _Requirements: 3.3_\n",
+  "fileStats": {
+    "size": 1700,
+    "lines": 71,
+    "lastModified": "2025-12-03T15:02:14.028Z"
+  },
+  "comments": []
+}

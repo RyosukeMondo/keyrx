@@ -1,0 +1,70 @@
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$KeyPositionImpl _$$KeyPositionImplFromJson(Map<String, dynamic> json) =>
+    _$KeyPositionImpl(
+      x: (json['x'] as num).toDouble(),
+      y: (json['y'] as num).toDouble(),
+    );
+
+Map<String, dynamic> _$$KeyPositionImplToJson(_$KeyPositionImpl instance) =>
+    <String, dynamic>{'x': instance.x, 'y': instance.y};
+
+_$KeySizeImpl _$$KeySizeImplFromJson(Map<String, dynamic> json) =>
+    _$KeySizeImpl(
+      width: (json['width'] as num).toDouble(),
+      height: (json['height'] as num).toDouble(),
+    );
+
+Map<String, dynamic> _$$KeySizeImplToJson(_$KeySizeImpl instance) =>
+    <String, dynamic>{'width': instance.width, 'height': instance.height};
+
+_$VirtualKeyDefImpl _$$VirtualKeyDefImplFromJson(Map<String, dynamic> json) =>
+    _$VirtualKeyDefImpl(
+      id: json['id'] as String,
+      label: json['label'] as String,
+      position: json['position'] == null
+          ? null
+          : KeyPosition.fromJson(json['position'] as Map<String, dynamic>),
+      size: json['size'] == null
+          ? null
+          : KeySize.fromJson(json['size'] as Map<String, dynamic>),
+      row: (json['row'] as num?)?.toInt(),
+      column: (json['column'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$$VirtualKeyDefImplToJson(_$VirtualKeyDefImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'label': instance.label,
+      'position': instance.position,
+      'size': instance.size,
+      'row': instance.row,
+      'column': instance.column,
+    };
+
+_$VirtualLayoutImpl _$$VirtualLayoutImplFromJson(Map<String, dynamic> json) =>
+    _$VirtualLayoutImpl(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      layoutType: $enumDecode(_$VirtualLayoutTypeEnumMap, json['layout_type']),
+      keys:
+          (json['keys'] as List<dynamic>?)
+              ?.map((e) => VirtualKeyDef.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <VirtualKeyDef>[],
+    );
+
+Map<String, dynamic> _$$VirtualLayoutImplToJson(_$VirtualLayoutImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'layout_type': _$VirtualLayoutTypeEnumMap[instance.layoutType]!,
+      'keys': instance.keys,
+    };
+
+const _$VirtualLayoutTypeEnumMap = {
+  VirtualLayoutType.matrix: 'matrix',
+  VirtualLayoutType.semantic: 'semantic',
+};

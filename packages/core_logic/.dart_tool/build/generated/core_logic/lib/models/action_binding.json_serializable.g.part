@@ -1,0 +1,57 @@
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$ActionBindingStandardKeyImpl _$$ActionBindingStandardKeyImplFromJson(
+  Map<String, dynamic> json,
+) => _$ActionBindingStandardKeyImpl(
+  value: json['value'] as String? ?? '',
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$$ActionBindingStandardKeyImplToJson(
+  _$ActionBindingStandardKeyImpl instance,
+) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
+
+_$ActionBindingMacroImpl _$$ActionBindingMacroImplFromJson(
+  Map<String, dynamic> json,
+) => _$ActionBindingMacroImpl(
+  value: json['value'] as String? ?? '',
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$$ActionBindingMacroImplToJson(
+  _$ActionBindingMacroImpl instance,
+) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
+
+_$ActionBindingLayerToggleImpl _$$ActionBindingLayerToggleImplFromJson(
+  Map<String, dynamic> json,
+) => _$ActionBindingLayerToggleImpl(
+  value: json['value'] as String? ?? '',
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$$ActionBindingLayerToggleImplToJson(
+  _$ActionBindingLayerToggleImpl instance,
+) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
+
+_$ActionBindingTapHoldImpl _$$ActionBindingTapHoldImplFromJson(
+  Map<String, dynamic> json,
+) => _$ActionBindingTapHoldImpl(
+  value:
+      (json['value'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const [],
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$$ActionBindingTapHoldImplToJson(
+  _$ActionBindingTapHoldImpl instance,
+) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
+
+_$ActionBindingTransparentImpl _$$ActionBindingTransparentImplFromJson(
+  Map<String, dynamic> json,
+) => _$ActionBindingTransparentImpl($type: json['type'] as String?);
+
+Map<String, dynamic> _$$ActionBindingTransparentImplToJson(
+  _$ActionBindingTransparentImpl instance,
+) => <String, dynamic>{'type': instance.$type};

@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772904263_gfncnbf8o",
+  "approvalId": "approval_1764772904228_kwmsaaexe",
+  "approvalTitle": "Tasks: Script Precompilation Caching",
+  "version": 1,
+  "timestamp": "2025-12-03T14:41:44.263Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Core Cache\n\n- [ ] 1. Create ScriptCache\n  - File: `core/src/scripting/cache.rs`\n  - Content-addressable storage\n  - LRU eviction\n  - Purpose: AST caching\n  - _Requirements: 1.1, 1.2, 3.2_\n\n- [ ] 2. Implement AST serialization\n  - File: `core/src/scripting/cache.rs`\n  - Serialize/deserialize Rhai AST\n  - Handle version compatibility\n  - Purpose: Persistent cache\n  - _Requirements: 1.1_\n\n## Phase 2: Integration\n\n- [ ] 3. Integrate cache into runtime\n  - File: `core/src/scripting/runtime.rs`\n  - Check cache before compile\n  - Store compiled AST\n  - Purpose: Runtime integration\n  - _Requirements: 1.1, 1.4_\n\n- [ ] 4. Add CLI cache options\n  - File: `core/src/cli/commands/run.rs`\n  - Add `--no-cache` and `--clear-cache`\n  - Purpose: User control\n  - _Requirements: 3.3, 3.4_\n\n- [ ] 5. Add cache metrics\n  - File: `core/src/scripting/cache.rs`\n  - Track hit rate, size, startup improvement\n  - Purpose: Performance validation\n  - _Requirements: Non-functional_\n",
+  "fileStats": {
+    "size": 994,
+    "lines": 39,
+    "lastModified": "2025-12-03T14:39:58.289Z"
+  },
+  "comments": []
+}

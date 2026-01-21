@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/perf-monitoring/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T13:33:39.276Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764768819250_1iz81w4bj",
+      "approvalTitle": "Performance Monitoring Tasks (18 tasks)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T13:35:13.247Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764768819250_1iz81w4bj",
+      "approvalTitle": "Performance Monitoring Tasks (18 tasks)"
+    }
+  ]
+}

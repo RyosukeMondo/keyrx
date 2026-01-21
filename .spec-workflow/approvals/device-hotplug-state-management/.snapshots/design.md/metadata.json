@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/device-hotplug-state-management/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:42:05.759Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764772925736_b1nhamuha",
+      "approvalTitle": "Design: Device Hotplug State Management"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:51:28.634Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764772925736_b1nhamuha",
+      "approvalTitle": "Design: Device Hotplug State Management"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "approval_1765468336687_a6jfc6mtr",
+  "title": "Dependency Injection - Design Document",
+  "filePath": ".spec-workflow/specs/dependency-injection/design.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-11T15:52:16.687Z",
+  "category": "spec",
+  "categoryName": "dependency-injection",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-11T15:52:58.899Z"
+}

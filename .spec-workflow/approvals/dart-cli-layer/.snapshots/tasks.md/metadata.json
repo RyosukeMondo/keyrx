@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/dart-cli-layer/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-19T11:59:36.323Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766145576286_o0y89juf3",
+      "approvalTitle": "Tasks for Dart CLI Layer"
+    }
+  ]
+}

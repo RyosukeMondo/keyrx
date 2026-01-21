@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772902849_40eieq71o",
+  "approvalId": "approval_1764772902815_nlwokcqe5",
+  "approvalTitle": "Design: State Snapshot Incremental Updates",
+  "version": 1,
+  "timestamp": "2025-12-03T14:41:42.849Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design implements a delta-based state synchronization protocol between Rust and Flutter. The core innovation is a `StateDelta` type that captures only changed fields, with version tracking for consistency and automatic fallback to full sync on mismatch.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Rust Side\"\n        ES[EngineState] --> |diff| SD[StateDelta]\n        ES --> |version| VT[VersionTracker]\n        SD --> |encode| FFI[FFI]\n    end\n\n    subgraph \"Flutter Side\"\n        FFI --> |decode| AP[Apply Delta]\n        AP --> |update| FS[Flutter State]\n        AP --> |mismatch| SYNC[Full Sync]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: StateDelta\n\n```rust\n#[derive(Debug, Clone, Serialize)]\npub struct StateDelta {\n    pub from_version: u64,\n    pub to_version: u64,\n    pub changes: Vec<StateChange>,\n}\n\n#[derive(Debug, Clone, Serialize)]\npub enum StateChange {\n    KeyPressed(KeyCode),\n    KeyReleased(KeyCode),\n    LayerActivated(LayerId),\n    LayerDeactivated(LayerId),\n    ModifierChanged { id: ModifierId, active: bool },\n    PendingAdded(PendingId),\n    PendingResolved(PendingId),\n}\n\nimpl StateDelta {\n    pub fn is_empty(&self) -> bool;\n    pub fn should_use_full_sync(&self) -> bool; // If delta > 50% of full\n}\n```\n\n### Component 2: DeltaTracker\n\n```rust\npub struct DeltaTracker {\n    current_version: AtomicU64,\n    pending_changes: Mutex<Vec<StateChange>>,\n}\n\nimpl DeltaTracker {\n    pub fn record(&self, change: StateChange);\n    pub fn take_delta(&self) -> StateDelta;\n    pub fn current_version(&self) -> u64;\n}\n```\n\n## Testing Strategy\n\n- Unit tests for delta encoding/decoding\n- Property tests for state consistency\n- Benchmark delta vs full sync\n",
+  "fileStats": {
+    "size": 1732,
+    "lines": 73,
+    "lastModified": "2025-12-03T14:39:51.698Z"
+  },
+  "comments": []
+}

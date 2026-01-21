@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774702078_jmimofaua",
+  "approvalId": "approval_1764774173919_8e9psysx2",
+  "approvalTitle": "Tasks: Advanced Profiling Flamegraph Support",
+  "version": 2,
+  "timestamp": "2025-12-03T15:11:42.078Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Stack Sampling\n\n- [ ] 1. Create Profiler struct\n  - File: `core/src/profiling/profiler.rs`\n  - Configuration\n  - Lifecycle management\n  - Purpose: Core profiling\n  - _Requirements: 1.1_\n\n- [ ] 2. Implement stack sampler\n  - File: `core/src/profiling/sampler.rs`\n  - Configurable rate\n  - Low overhead collection\n  - Purpose: Stack collection\n  - _Requirements: 1.1_\n\n## Phase 2: Flame Graph\n\n- [ ] 3. Create FlameGraphGenerator\n  - File: `core/src/profiling/flamegraph.rs`\n  - SVG generation\n  - Color schemes\n  - Purpose: Visualization\n  - _Requirements: 1.2, 1.3_\n\n- [ ] 4. Add diff flame graphs\n  - File: `core/src/profiling/flamegraph_diff.rs`\n  - Baseline comparison\n  - Regression highlighting\n  - Purpose: A/B comparison\n  - _Requirements: 1.4_\n\n## Phase 3: Allocation Tracking\n\n- [ ] 5. Implement allocation tracker\n  - File: `core/src/profiling/allocations.rs`\n  - Global allocator wrapper\n  - Site tracking\n  - Purpose: Memory profiling\n  - _Requirements: 2.1, 2.2_\n\n- [ ] 6. Create allocation report\n  - File: `core/src/profiling/alloc_report.rs`\n  - Hot spot detection\n  - JSON output\n  - Purpose: Memory analysis\n  - _Requirements: 2.3, 2.4_\n\n## Phase 4: Integration\n\n- [ ] 7. Extend bench command\n  - File: `core/src/cli/commands/bench.rs`\n  - --flamegraph flag\n  - --allocations flag\n  - Purpose: CLI access\n  - _Requirements: 3.1, 3.2, 3.3_\n\n- [ ] 8. Add UI visualization\n  - File: `ui/lib/pages/developer/profiler_page.dart`\n  - Flame graph viewer\n  - Allocation report\n  - Purpose: Visual interface\n  - _Requirements: 3.4_\n",
+  "fileStats": {
+    "size": 1571,
+    "lines": 66,
+    "lastModified": "2025-12-03T15:02:11.334Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,12 @@
+{
+  "id": "approval_1764772901707_pw6xj3yma",
+  "title": "Design: Input Event Coalescing",
+  "filePath": ".spec-workflow/specs/input-event-coalescing/design.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-03T14:41:41.707Z",
+  "category": "spec",
+  "categoryName": "input-event-coalescing",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-03T14:51:00.804Z"
+}

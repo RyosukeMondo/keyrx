@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": {
+    "core/src/ffi/contracts/all_contracts.meta": {
+      "contract_hash": "0c7594aab37ba2d298019868cf69a09fd2c1e24dbdf3ed8a2aa610febeb0ee4f",
+      "bindings_hash": "79d72da6b31a8b4a9f68e776acd212c0c2fbcae33f91c80accde31e47f0f9b93",
+      "models_hash": "2ed3c6cb0d2d2ceba4412e0ab8e569d78aa8e7c3c09a83ff43cf3c740313f8dd",
+      "last_generated": "2025-12-21T02:44:29.711522292Z"
+    }
+  }
+}

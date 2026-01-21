@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/split-large-files/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-11T15:57:33.799Z",
+      "trigger": "initial",
+      "approvalId": "approval_1765468653728_y6qrghae3",
+      "approvalTitle": "Split Large Files - Design Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-11T16:00:34.768Z",
+      "trigger": "approved",
+      "approvalId": "approval_1765468653728_y6qrghae3",
+      "approvalTitle": "Split Large Files - Design Document"
+    }
+  ]
+}

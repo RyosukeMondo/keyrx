@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773488322_7jdlozve8",
+  "approvalId": "approval_1764772925296_xyrekwkj7",
+  "approvalTitle": "Requirements: Device Hotplug State Management",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:28.322Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nDevice discovery happens on startup with no clean hot-swap handling. If a keyboard is unplugged mid-session, the FFI may deadlock waiting for input. There's no graceful reconnect or test coverage for device removal scenarios.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Reliability**: Handle device changes gracefully\n- **User Experience**: Seamless device hot-swap\n- **Safety First**: Never deadlock on device removal\n\n## Requirements\n\n### Requirement 1: Device Monitoring\n\n**User Story:** As a user, I want automatic device detection, so that I don't need to restart.\n\n#### Acceptance Criteria\n\n1. WHEN device connected THEN it SHALL be detected automatically\n2. IF device removed THEN it SHALL be handled gracefully\n3. WHEN monitoring active THEN CPU usage SHALL be minimal\n4. IF monitoring fails THEN manual refresh SHALL work\n\n### Requirement 2: Graceful Disconnection\n\n**User Story:** As a user, I want graceful handling of device removal, so that my keyboard doesn't freeze.\n\n#### Acceptance Criteria\n\n1. WHEN device removed THEN active session SHALL pause\n2. IF device returns THEN session SHALL resume\n3. WHEN removal occurs THEN state SHALL be preserved\n4. IF timeout reached THEN session SHALL end cleanly\n\n### Requirement 3: Multi-Device Support\n\n**User Story:** As a user, I want multiple devices handled, so that partial failures don't break everything.\n\n#### Acceptance Criteria\n\n1. WHEN one device fails THEN others SHALL continue\n2. IF specific device targeted THEN others SHALL be unaffected\n3. WHEN all devices fail THEN clean shutdown SHALL occur\n4. IF device restored THEN it SHALL rejoin session\n\n## Non-Functional Requirements\n\n### Reliability\n- Device change detection SHALL be < 1 second\n- No deadlocks SHALL occur on device removal\n- State recovery SHALL be automatic\n",
+  "fileStats": {
+    "size": 1881,
+    "lines": 55,
+    "lastModified": "2025-12-03T14:40:04.089Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774692514_s37spo18z",
+  "approvalId": "approval_1764774171803_mhdx0xui2",
+  "approvalTitle": "Tasks: Recording Analysis Export System",
+  "version": 2,
+  "timestamp": "2025-12-03T15:11:32.514Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Analysis Engine\n\n- [ ] 1. Create AnalysisEngine\n  - File: `core/src/analysis/engine.rs`\n  - Statistical calculations\n  - Streaming support\n  - Purpose: Core analysis\n  - _Requirements: 1.1, 1.2_\n\n- [ ] 2. Implement outlier detection\n  - File: `core/src/analysis/outliers.rs`\n  - IQR-based detection\n  - Context extraction\n  - Purpose: Anomaly detection\n  - _Requirements: 1.2, 1.4_\n\n- [ ] 3. Add comparison analysis\n  - File: `core/src/analysis/compare.rs`\n  - Session diff\n  - Regression detection\n  - Purpose: A/B comparison\n  - _Requirements: 1.3_\n\n## Phase 2: Export Formats\n\n- [ ] 4. Implement CSV exporter\n  - File: `core/src/analysis/export/csv.rs`\n  - Configurable columns\n  - Streaming write\n  - Purpose: Spreadsheet export\n  - _Requirements: 2.1_\n\n- [ ] 5. Implement JSON exporter\n  - File: `core/src/analysis/export/json.rs`\n  - Full event data\n  - Pretty/compact modes\n  - Purpose: Programmatic access\n  - _Requirements: 2.2_\n\n- [ ] 6. Implement Parquet exporter\n  - File: `core/src/analysis/export/parquet.rs`\n  - Columnar format\n  - Compression options\n  - Purpose: Data science\n  - _Requirements: 2.3_\n\n## Phase 3: Visualization\n\n- [ ] 7. Create heatmap generator\n  - File: `core/src/analysis/viz/heatmap.rs`\n  - SVG output\n  - Key frequency coloring\n  - Purpose: Usage visualization\n  - _Requirements: 3.1_\n\n- [ ] 8. Create timeline generator\n  - File: `core/src/analysis/viz/timeline.rs`\n  - Latency over time\n  - Event markers\n  - Purpose: Temporal analysis\n  - _Requirements: 3.2_\n\n## Phase 4: CLI Integration\n\n- [ ] 9. Add analyze CLI command\n  - File: `core/src/cli/commands/analyze.rs`\n  - Subcommands: stats, export, viz\n  - Batch processing\n  - Purpose: User access\n  - _Requirements: 1.1, 2.4_\n",
+  "fileStats": {
+    "size": 1749,
+    "lines": 73,
+    "lastModified": "2025-12-03T15:02:08.727Z"
+  },
+  "comments": []
+}

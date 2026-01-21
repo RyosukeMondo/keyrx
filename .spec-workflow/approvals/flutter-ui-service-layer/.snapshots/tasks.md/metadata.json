@@ -1,0 +1,30 @@
+{
+  "filePath": ".spec-workflow/specs/flutter-ui-service-layer/tasks.md",
+  "currentVersion": 3,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-11-30T21:46:52.860Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764539212852_6oqkhr7v2",
+      "approvalTitle": "Approve tasks for flutter-ui-service-layer"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-11-30T21:52:32.317Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764539212852_6oqkhr7v2",
+      "approvalTitle": "Approve tasks for flutter-ui-service-layer"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2025-12-01T04:56:01.752Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764548950500_0t2zr5pto",
+      "approvalTitle": "Update tasks for flutter-ui-service-layer with FFI wiring and UI refactors"
+    }
+  ]
+}

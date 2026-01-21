@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772947063_ove9jop6y",
+  "approvalId": "approval_1764772946998_95tgdmv3s",
+  "approvalTitle": "Requirements: Test Coverage Analysis Reporting",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:27.063Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nThe codebase has 6k+ LOC tests but no coverage measurement. Coverage metrics are unknown, and some critical paths may lack test depth. There's no CI gate on minimum coverage thresholds.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Reliability**: Ensure test coverage for critical paths\n- **Quality**: Measurable code quality\n- **Maintainability**: Identify untested code\n\nPer tech.md: \"80% test coverage minimum (90% for critical paths)\"\n\n## Requirements\n\n### Requirement 1: Coverage Measurement\n\n**User Story:** As a developer, I want coverage reports, so that I know what's tested.\n\n#### Acceptance Criteria\n\n1. WHEN tests run THEN coverage SHALL be measured\n2. IF report generated THEN line coverage SHALL be shown\n3. WHEN branch coverage available THEN it SHALL be included\n4. IF function coverage available THEN it SHALL be included\n\n### Requirement 2: CI Integration\n\n**User Story:** As a team, I want CI coverage gates, so that coverage doesn't regress.\n\n#### Acceptance Criteria\n\n1. WHEN CI runs THEN coverage SHALL be measured\n2. IF coverage below threshold THEN build SHALL fail\n3. WHEN coverage changes THEN diff SHALL be reported\n4. IF threshold is 80% THEN it SHALL be enforced\n\n### Requirement 3: Reporting\n\n**User Story:** As a developer, I want readable reports, so that I can find gaps.\n\n#### Acceptance Criteria\n\n1. WHEN report generated THEN HTML format SHALL be available\n2. IF file uncovered THEN it SHALL be highlighted\n3. WHEN function uncovered THEN it SHALL be listed\n4. IF coverage excellent THEN badge SHALL reflect it\n\n## Non-Functional Requirements\n\n### Quality\n- Coverage measurement SHALL be accurate\n- Reports SHALL be generated in < 5 minutes\n- Historical tracking SHALL be available\n",
+  "fileStats": {
+    "size": 1803,
+    "lines": 57,
+    "lastModified": "2025-12-03T14:40:12.843Z"
+  },
+  "comments": []
+}

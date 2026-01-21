@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/engine-state-unification/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T13:06:33.639Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764767193630_0lpw5vatl",
+      "approvalTitle": "Engine State Unification - Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T13:23:21.161Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764767193630_0lpw5vatl",
+      "approvalTitle": "Engine State Unification - Design"
+    }
+  ]
+}

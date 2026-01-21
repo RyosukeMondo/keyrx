@@ -101,8 +101,8 @@ export class DaemonFixture {
       }
     }
 
-    // Build command arguments
-    const args = ['--port', this.config.port.toString()];
+    // Build command arguments - use 'run' subcommand
+    const args = ['run'];
 
     // Merge environment variables
     const env = {

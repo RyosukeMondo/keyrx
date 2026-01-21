@@ -1,0 +1,12 @@
+{
+  "id": "approval_1764770438546_sp5e12k8b",
+  "title": "Rhai Sandbox Hardening Design",
+  "filePath": ".spec-workflow/specs/rhai-sandbox-hardening/design.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-03T14:00:38.546Z",
+  "category": "spec",
+  "categoryName": "rhai-sandbox-hardening",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-03T14:17:33.280Z"
+}

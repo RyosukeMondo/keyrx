@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774188038_avktma6ps",
+  "approvalId": "approval_1764774187962_2yn35v5fu",
+  "approvalTitle": "Requirements: OpenTelemetry Metrics Dashboard",
+  "version": 1,
+  "timestamp": "2025-12-03T15:03:08.038Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nThe existing OpenTelemetry feature provides basic tracing but lacks metrics collection. There's no dashboard for visualizing system behavior, no counter/histogram metrics for key events, and no integration with monitoring tools like Grafana.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Observability**: Complete monitoring visibility\n- **Operations**: Production deployment support\n- **Reliability**: Performance regression detection\n\n## Requirements\n\n### Requirement 1: Metrics Collection\n\n**User Story:** As an operator, I want metrics collected, so that I can monitor system health.\n\n#### Acceptance Criteria\n\n1. WHEN key processed THEN counter SHALL increment\n2. IF latency measured THEN histogram SHALL record\n3. WHEN session active THEN gauge SHALL reflect state\n4. IF error occurs THEN error counter SHALL increment\n\n### Requirement 2: Metrics Export\n\n**User Story:** As an operator, I want metrics exported, so that I can use monitoring tools.\n\n#### Acceptance Criteria\n\n1. WHEN Prometheus endpoint enabled THEN metrics SHALL be scrapable\n2. IF OTLP configured THEN metrics SHALL export to collector\n3. WHEN local mode used THEN metrics SHALL be queryable\n4. IF aggregation configured THEN rollups SHALL occur\n\n### Requirement 3: Dashboard\n\n**User Story:** As an operator, I want a dashboard, so that I can visualize metrics.\n\n#### Acceptance Criteria\n\n1. WHEN Grafana JSON exported THEN dashboard SHALL be importable\n2. IF embedded dashboard used THEN it SHALL show key metrics\n3. WHEN alerts configured THEN thresholds SHALL trigger\n4. IF comparison mode used THEN time ranges SHALL be selectable\n\n## Non-Functional Requirements\n\n### Performance\n- Metrics collection overhead SHALL be < 1%\n- Prometheus endpoint SHALL respond in < 100ms\n- Dashboard refresh SHALL be < 1 second\n",
+  "fileStats": {
+    "size": 1874,
+    "lines": 55,
+    "lastModified": "2025-12-03T15:02:13.115Z"
+  },
+  "comments": []
+}

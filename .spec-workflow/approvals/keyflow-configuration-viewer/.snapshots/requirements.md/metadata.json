@@ -1,0 +1,38 @@
+{
+  "filePath": ".spec-workflow/specs/keyflow-configuration-viewer/requirements.md",
+  "currentVersion": 4,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-14T07:46:54.972Z",
+      "trigger": "initial",
+      "approvalId": "approval_1765698414844_mr1dh5c6i",
+      "approvalTitle": "Approve requirements for keyflow-configuration-viewer"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-14T07:50:10.949Z",
+      "trigger": "approved",
+      "approvalId": "approval_1765698414844_mr1dh5c6i",
+      "approvalTitle": "Approve requirements for keyflow-configuration-viewer"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2025-12-14T08:12:02.545Z",
+      "trigger": "approved",
+      "approvalId": "approval_1765699382687_wqyii7fas",
+      "approvalTitle": "Re-approve requirements (added autonomous dev alignment) for keyflow-configuration-viewer"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2025-12-14T08:14:57.520Z",
+      "trigger": "approved",
+      "approvalId": "approval_1765700088541_k8dl0taq1",
+      "approvalTitle": "Re-approve requirements (iteration speed) for keyflow-configuration-viewer"
+    }
+  ]
+}

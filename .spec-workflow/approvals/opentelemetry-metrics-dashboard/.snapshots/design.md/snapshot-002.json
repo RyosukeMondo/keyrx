@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774705977_2mo6dmwlq",
+  "approvalId": "approval_1764774188366_a38j6fcec",
+  "approvalTitle": "Design: OpenTelemetry Metrics Dashboard",
+  "version": 2,
+  "timestamp": "2025-12-03T15:11:45.977Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design extends OpenTelemetry integration with metrics collection (counters, histograms, gauges), Prometheus export, and pre-built Grafana dashboards. Local visualization is available via embedded dashboard.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Instrumentation\"\n        ENGINE[Engine] --> COUNTER[Counters]\n        ENGINE --> HIST[Histograms]\n        ENGINE --> GAUGE[Gauges]\n    end\n\n    subgraph \"Collection\"\n        COUNTER --> OTEL[OTEL Metrics]\n        HIST --> OTEL\n        GAUGE --> OTEL\n    end\n\n    subgraph \"Export\"\n        OTEL --> PROM[Prometheus /metrics]\n        OTEL --> OTLP[OTLP Exporter]\n        OTEL --> LOCAL[Local Storage]\n    end\n\n    subgraph \"Visualization\"\n        PROM --> GRAFANA[Grafana]\n        LOCAL --> EMBED[Embedded Dashboard]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: MetricsCollector\n\n```rust\npub struct MetricsCollector {\n    meter: Meter,\n\n    // Counters\n    key_events_total: Counter<u64>,\n    errors_total: Counter<u64>,\n\n    // Histograms\n    processing_latency: Histogram<f64>,\n    script_execution_time: Histogram<f64>,\n\n    // Gauges\n    active_sessions: UpDownCounter<i64>,\n    active_devices: UpDownCounter<i64>,\n}\n\nimpl MetricsCollector {\n    pub fn record_key_event(&self, key_code: u32, action: &str);\n    pub fn record_latency(&self, duration: Duration);\n    pub fn record_error(&self, error_type: &str);\n    pub fn set_active_sessions(&self, count: i64);\n}\n```\n\n### Component 2: PrometheusExporter\n\n```rust\npub struct PrometheusExporter {\n    registry: Registry,\n    endpoint: String,\n}\n\nimpl PrometheusExporter {\n    pub fn new(config: PrometheusConfig) -> Self;\n    pub fn start(&self) -> JoinHandle<()>;\n    pub fn metrics_handler(&self) -> impl Fn(Request) -> Response;\n}\n```\n\n### Component 3: GrafanaDashboard\n\n```rust\npub struct GrafanaDashboard;\n\nimpl GrafanaDashboard {\n    pub fn generate_json() -> String;\n    pub fn panels() -> Vec<Panel>;\n}\n\npub struct Panel {\n    pub title: String,\n    pub panel_type: PanelType,\n    pub query: String,\n}\n\npub enum PanelType {\n    Graph,\n    Gauge,\n    Table,\n    Heatmap,\n}\n```\n\n## Testing Strategy\n\n- Unit tests for metrics recording\n- Integration tests for Prometheus export\n- Dashboard validation tests\n",
+  "fileStats": {
+    "size": 2274,
+    "lines": 108,
+    "lastModified": "2025-12-03T15:02:13.548Z"
+  },
+  "comments": []
+}

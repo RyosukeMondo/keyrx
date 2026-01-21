@@ -1,0 +1,12 @@
+{
+  "id": "approval_1764770436771_v7igd5okd",
+  "title": "State Machine Audit Tasks (17 tasks)",
+  "filePath": ".spec-workflow/specs/state-machine-audit/tasks.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-03T14:00:36.771Z",
+  "category": "spec",
+  "categoryName": "state-machine-audit",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-03T14:17:27.149Z"
+}

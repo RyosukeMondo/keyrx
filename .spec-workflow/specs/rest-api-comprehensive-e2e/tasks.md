@@ -219,18 +219,18 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
   - Purpose: Test clearing recorded events
 
 ### Task 2.7: Simulator Tests (2 endpoints) - NEW FEATURE
-- [ ] 2.7.1 Add POST /api/simulator/events test
+- [x] 2.7.1 Add POST /api/simulator/events test
   - File: `scripts/test-cases/simulator.tests.ts` (new file)
-  - Test ID: `simulator-001`
+  - Test ID: `simulator-001`, `simulator-001b`, `simulator-001c`, `simulator-001d`, `simulator-001e`
   - Endpoint: POST /api/simulator/events
-  - Scenarios: Simulate single key, key sequence, invalid events
+  - Scenarios: Simulate single key, key sequence, built-in scenario, missing params, unknown scenario
   - Purpose: Test event simulation
 
-- [ ] 2.7.2 Add POST /api/simulator/reset test
+- [x] 2.7.2 Add POST /api/simulator/reset test
   - File: `scripts/test-cases/simulator.tests.ts`
-  - Test ID: `simulator-002`
+  - Test ID: `simulator-002`, `simulator-002b`
   - Endpoint: POST /api/simulator/reset
-  - Scenarios: Reset state, verify cleared
+  - Scenarios: Reset state, verify idempotency
   - Purpose: Test simulator reset
 
 ---

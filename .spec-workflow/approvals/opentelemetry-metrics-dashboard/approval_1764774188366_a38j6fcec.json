@@ -1,0 +1,12 @@
+{
+  "id": "approval_1764774188366_a38j6fcec",
+  "title": "Design: OpenTelemetry Metrics Dashboard",
+  "filePath": ".spec-workflow/specs/opentelemetry-metrics-dashboard/design.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-03T15:03:08.366Z",
+  "category": "spec",
+  "categoryName": "opentelemetry-metrics-dashboard",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-03T15:11:45.978Z"
+}

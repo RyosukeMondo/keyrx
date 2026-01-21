@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/unwrap-panic-hardening/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:00:35.006Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764770434941_9hlh6aczv",
+      "approvalTitle": "Unwrap/Panic Hardening Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:17:22.622Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764770434941_9hlh6aczv",
+      "approvalTitle": "Unwrap/Panic Hardening Requirements"
+    }
+  ]
+}

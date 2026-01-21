@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773486770_1qf1anxhg",
+  "approvalId": "approval_1764772924890_2cghesh4v",
+  "approvalTitle": "Tasks: Resource Limits Enforcement",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:26.770Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Core Enforcement\n\n- [ ] 1. Create ResourceEnforcer\n  - File: `core/src/engine/limits/enforcer.rs`\n  - Timeout, memory, queue tracking\n  - Atomic counters for thread safety\n  - Purpose: Resource monitoring\n  - _Requirements: 1.1, 2.1, 3.1_\n\n- [ ] 2. Create ResourceLimits config\n  - File: `core/src/engine/limits/config.rs`\n  - Configurable limits with defaults\n  - Serialize/deserialize support\n  - Purpose: Limit configuration\n  - _Requirements: 1.3, 2.3, 3.3_\n\n## Phase 2: Integration\n\n- [ ] 3. Add timeout enforcement\n  - File: `core/src/engine/event_loop.rs`\n  - ExecutionGuard for script calls\n  - Async interrupt on timeout\n  - Purpose: Timeout enforcement\n  - _Requirements: 1.1, 1.2, 1.4_\n\n- [ ] 4. Add memory tracking\n  - File: `core/src/scripting/runtime.rs`\n  - Track allocations in scripts\n  - Terminate on limit\n  - Purpose: Memory enforcement\n  - _Requirements: 2.1, 2.2, 2.4_\n\n- [ ] 5. Add queue limits\n  - File: `core/src/engine/output.rs`\n  - Bound output queue\n  - Drop oldest on overflow\n  - Purpose: Queue enforcement\n  - _Requirements: 3.1, 3.2, 3.4_\n",
+  "fileStats": {
+    "size": 1102,
+    "lines": 41,
+    "lastModified": "2025-12-03T14:40:02.939Z"
+  },
+  "comments": []
+}

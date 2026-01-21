@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/perf-monitoring/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T13:33:38.914Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764768818897_qeau30sjv",
+      "approvalTitle": "Performance Monitoring Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T13:35:12.718Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764768818897_qeau30sjv",
+      "approvalTitle": "Performance Monitoring Design"
+    }
+  ]
+}

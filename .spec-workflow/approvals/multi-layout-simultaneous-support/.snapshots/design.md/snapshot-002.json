@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773496699_a5958d7b6",
+  "approvalId": "approval_1764772948487_qw41k47tw",
+  "approvalTitle": "Design: Multi-Layout Simultaneous Support",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:36.699Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design extends the layer system to support multiple simultaneous layouts with priority-based conflict resolution. Layouts become first-class entities that contain layers, with cross-layout modifier sharing.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Layout Composition\"\n        L1[Layout A] --> |priority 1| COMP[Compositor]\n        L2[Layout B] --> |priority 2| COMP\n        COMP --> |resolve| OUT[Output]\n    end\n\n    subgraph \"Modifier Sharing\"\n        MOD[Modifier] --> L1\n        MOD --> L2\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: LayoutCompositor\n\n```rust\npub struct LayoutCompositor {\n    layouts: Vec<ActiveLayout>,\n    shared_modifiers: ModifierSet,\n}\n\npub struct ActiveLayout {\n    layout: Layout,\n    priority: i32,\n    enabled: bool,\n}\n\nimpl LayoutCompositor {\n    pub fn new() -> Self;\n    pub fn add_layout(&mut self, layout: Layout, priority: i32);\n    pub fn remove_layout(&mut self, id: &str);\n    pub fn process(&mut self, event: KeyEvent) -> Vec<Action>;\n    pub fn set_priority(&mut self, id: &str, priority: i32);\n}\n```\n\n### Component 2: CrossLayoutModifier\n\n```rust\npub enum ModifierScope {\n    Global,           // Shared across all layouts\n    Layout(String),   // Specific to one layout\n    Temporary,        // Active only while held\n}\n\npub struct CrossLayoutModifier {\n    modifier: ModifierId,\n    scope: ModifierScope,\n}\n```\n\n## Testing Strategy\n\n- Unit tests for composition\n- Integration tests for modifier sharing\n- User scenario tests\n",
+  "fileStats": {
+    "size": 1534,
+    "lines": 68,
+    "lastModified": "2025-12-03T14:40:15.372Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772946672_f42qmzotx",
+  "approvalId": "approval_1764772946624_gextt13ey",
+  "approvalTitle": "Tasks: Session Recording Replay Optimization",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:26.672Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Format\n\n- [ ] 1. Design optimized file format\n  - File: `core/src/engine/recording/format.rs`\n  - Header with index, compressed blocks\n  - Version for future compatibility\n  - Purpose: File format spec\n  - _Requirements: 1.1, 3.1_\n\n- [ ] 2. Implement compression\n  - File: `core/src/engine/recording/compression.rs`\n  - Gzip block compression\n  - Streaming decompression\n  - Purpose: Size reduction\n  - _Requirements: 1.1, 1.2, 1.3, 1.4_\n\n## Phase 2: Recording\n\n- [ ] 3. Update SessionRecorder\n  - File: `core/src/engine/recording/recorder.rs`\n  - Block-based recording\n  - Index generation\n  - Purpose: Optimized recording\n  - _Requirements: 1.1, 3.1_\n\n## Phase 3: Replay\n\n- [ ] 4. Implement streaming replay\n  - File: `core/src/engine/replay.rs`\n  - Streaming decompression\n  - Block-based iteration\n  - Purpose: Memory-efficient replay\n  - _Requirements: 2.1, 2.2, 2.4_\n",
+  "fileStats": {
+    "size": 903,
+    "lines": 36,
+    "lastModified": "2025-12-03T14:40:12.238Z"
+  },
+  "comments": []
+}

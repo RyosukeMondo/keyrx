@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/wire-every-remaining-feature/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-02T23:00:20.645Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764716420634_y9au4mbik",
+      "approvalTitle": "Wire Every Remaining Feature - Tasks Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-02T23:09:13.270Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764716420634_y9au4mbik",
+      "approvalTitle": "Wire Every Remaining Feature - Tasks Document"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772927336_mmsfpwg3y",
+  "approvalId": "approval_1764772927321_dqgs776sv",
+  "approvalTitle": "Tasks: CLI Output Formatting System",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:07.336Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Core Formatter\n\n- [ ] 1. Create OutputFormatter trait\n  - File: `core/src/cli/output/formatter.rs`\n  - Define format interface\n  - Add OutputFormat enum\n  - Purpose: Format abstraction\n  - _Requirements: 1.1_\n\n- [ ] 2. Implement JSON formatter\n  - File: `core/src/cli/output/json.rs`\n  - Pretty-printed JSON output\n  - Handle all types\n  - Purpose: JSON format\n  - _Requirements: 1.2_\n\n- [ ] 3. Implement Table formatter\n  - File: `core/src/cli/output/table.rs`\n  - Aligned columns\n  - Handle variable widths\n  - Purpose: Table format\n  - _Requirements: 1.3_\n\n- [ ] 4. Implement YAML formatter\n  - File: `core/src/cli/output/yaml.rs`\n  - Valid YAML output\n  - Purpose: YAML format\n  - _Requirements: 1.4_\n\n## Phase 2: Integration\n\n- [ ] 5. Add global --output-format flag\n  - File: `core/src/cli/mod.rs`\n  - Parse format from args\n  - Pass to all commands\n  - Purpose: Consistent interface\n  - _Requirements: 2.1, 2.2, 2.3, 2.4_\n",
+  "fileStats": {
+    "size": 959,
+    "lines": 40,
+    "lastModified": "2025-12-03T14:40:10.438Z"
+  },
+  "comments": []
+}

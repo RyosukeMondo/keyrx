@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773483363_h4jviuwbv",
+  "approvalId": "approval_1764772923234_siq98u7wo",
+  "approvalTitle": "Design: JSON Schema Validation Framework",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:23.363Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design uses `schemars` to generate JSON Schemas from Rust types and `jsonschema` for validation. Schemas are generated at build time and embedded or written to files. Config loading validates against schemas with clear error messages.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Build Time\"\n        RS[Rust Types] --> |schemars| SCH[JSON Schema]\n        SCH --> |embed| BIN[Binary]\n    end\n\n    subgraph \"Runtime\"\n        CFG[Config File] --> |parse| JSON[JSON]\n        JSON --> |validate| VAL[Validator]\n        VAL --> |schema| SCH2[Embedded Schema]\n        VAL --> |ok| LOAD[Load Config]\n        VAL --> |err| ERR[Validation Error]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: SchemaRegistry\n\n```rust\npub struct SchemaRegistry {\n    schemas: HashMap<&'static str, RootSchema>,\n}\n\nimpl SchemaRegistry {\n    pub fn global() -> &'static Self;\n    pub fn get(&self, name: &str) -> Option<&RootSchema>;\n    pub fn validate(&self, name: &str, json: &Value) -> Result<(), ValidationErrors>;\n}\n\n#[derive(Debug)]\npub struct ValidationErrors {\n    pub errors: Vec<ValidationError>,\n}\n\n#[derive(Debug)]\npub struct ValidationError {\n    pub path: String,\n    pub message: String,\n    pub expected: String,\n    pub actual: String,\n}\n```\n\n### Component 2: Derive Integration\n\n```rust\nuse schemars::JsonSchema;\n\n#[derive(Serialize, Deserialize, JsonSchema)]\npub struct DeviceProfile {\n    pub name: String,\n    pub device_id: String,\n    pub layers: Vec<Layer>,\n}\n```\n\n## Testing Strategy\n\n- Unit tests for schema generation\n- Validation tests with invalid configs\n- Migration tests for version upgrades\n",
+  "fileStats": {
+    "size": 1652,
+    "lines": 72,
+    "lastModified": "2025-12-03T14:40:00.658Z"
+  },
+  "comments": []
+}

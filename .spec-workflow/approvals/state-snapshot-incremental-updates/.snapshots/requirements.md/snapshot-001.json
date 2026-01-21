@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772902513_41qht0jay",
+  "approvalId": "approval_1764772902460_m1cc9tg7v",
+  "approvalTitle": "Requirements: State Snapshot Incremental Updates",
+  "version": 1,
+  "timestamp": "2025-12-03T14:41:42.513Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nEvery FFI call to publish engine state sends the full state snapshot. The Flutter UI renders 60fps, but the entire EngineState is serialized to JSON each frame even when only one modifier changed. This creates unnecessary serialization overhead and Flutter rebuilds.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Performance > Features**: Reduce FFI bandwidth\n- **Efficiency**: Only send what changed\n- **Responsiveness**: Faster UI updates\n\n## Requirements\n\n### Requirement 1: Delta Protocol\n\n**User Story:** As a Flutter developer, I want incremental updates, so that the UI is efficient.\n\n#### Acceptance Criteria\n\n1. WHEN state changes THEN only delta SHALL be sent\n2. IF full sync needed THEN complete state SHALL be available\n3. WHEN delta applied THEN state SHALL match source\n4. IF delta corrupted THEN full sync SHALL recover\n\n### Requirement 2: Version Tracking\n\n**User Story:** As a developer, I want state versioning, so that deltas are consistent.\n\n#### Acceptance Criteria\n\n1. WHEN state changes THEN version SHALL increment\n2. IF delta received THEN version SHALL be validated\n3. WHEN versions mismatch THEN full sync SHALL trigger\n4. IF version overflows THEN wrap-around SHALL be handled\n\n### Requirement 3: Efficient Encoding\n\n**User Story:** As a developer, I want compact deltas, so that bandwidth is minimal.\n\n#### Acceptance Criteria\n\n1. WHEN delta encoded THEN size SHALL be < full state\n2. IF no changes THEN empty delta SHALL be sent\n3. WHEN many changes THEN full state MAY be more efficient\n4. IF encoding fails THEN fallback to full state SHALL occur\n\n## Non-Functional Requirements\n\n### Performance\n- Delta serialization SHALL be < 50μs\n- Delta size SHALL be < 20% of full state on average\n- Version check SHALL be O(1)\n",
+  "fileStats": {
+    "size": 1835,
+    "lines": 55,
+    "lastModified": "2025-12-03T14:39:50.139Z"
+  },
+  "comments": []
+}

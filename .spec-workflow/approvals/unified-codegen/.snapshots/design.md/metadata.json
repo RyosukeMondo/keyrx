@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/unified-codegen/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-18T16:38:29.569Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766075909499_ryijei9zm",
+      "approvalTitle": "Design for Unified FFI/IPC Codegen"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-18T16:40:28.306Z",
+      "trigger": "approved",
+      "approvalId": "approval_1766075909499_ryijei9zm",
+      "approvalTitle": "Design for Unified FFI/IPC Codegen"
+    }
+  ]
+}

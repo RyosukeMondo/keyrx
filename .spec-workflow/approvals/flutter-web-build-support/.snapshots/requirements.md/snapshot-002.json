@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774695697_eyjbezgve",
+  "approvalId": "approval_1764774172163_auoex2shl",
+  "approvalTitle": "Requirements: Flutter Web Build Support",
+  "version": 2,
+  "timestamp": "2025-12-03T15:11:35.697Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nThe Flutter UI currently targets only desktop platforms (Linux, Windows, macOS). There's no web version for remote configuration management, quick edits via browser, or collaborative features. This limits accessibility for headless systems and web-first users.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Accessibility**: Browser-based access from any device\n- **Remote Management**: Configure headless systems via web\n- **Collaboration**: Potential for shared editing features\n\n## Requirements\n\n### Requirement 1: Web Target Build\n\n**User Story:** As a user, I want a web UI, so that I can configure KeyRx from any browser.\n\n#### Acceptance Criteria\n\n1. WHEN Flutter web built THEN UI SHALL render correctly\n2. IF responsive mode used THEN layout SHALL adapt to viewport\n3. WHEN service worker enabled THEN offline editing SHALL work\n4. IF PWA installed THEN native-like experience SHALL be provided\n\n### Requirement 2: Backend Communication\n\n**User Story:** As a web user, I want to connect to the engine, so that I can see real-time state.\n\n#### Acceptance Criteria\n\n1. WHEN web UI loads THEN connection to backend SHALL be established\n2. IF WebSocket used THEN real-time updates SHALL be received\n3. WHEN HTTP API called THEN engine state SHALL be accessible\n4. IF connection lost THEN reconnection SHALL be attempted\n\n### Requirement 3: Feature Parity\n\n**User Story:** As a web user, I want full functionality, so that I don't need the desktop app.\n\n#### Acceptance Criteria\n\n1. WHEN script edited THEN validation SHALL occur\n2. IF recording viewed THEN replay SHALL be available\n3. WHEN config saved THEN it SHALL persist to server\n4. IF training mode used THEN it SHALL function in browser\n\n## Non-Functional Requirements\n\n### Performance\n- Initial load SHALL be < 3 seconds on 3G\n- Bundle size SHALL be < 2MB gzipped\n- Service worker SHALL cache assets for offline use\n",
+  "fileStats": {
+    "size": 1964,
+    "lines": 55,
+    "lastModified": "2025-12-03T15:02:09.153Z"
+  },
+  "comments": []
+}

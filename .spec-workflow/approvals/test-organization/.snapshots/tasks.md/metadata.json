@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/test-organization/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T13:06:32.966Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764767192948_vff06o9ek",
+      "approvalTitle": "Test Organization - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T13:23:19.610Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764767192948_vff06o9ek",
+      "approvalTitle": "Test Organization - Tasks"
+    }
+  ]
+}

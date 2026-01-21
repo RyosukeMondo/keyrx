@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773490713_zxg4vlpd4",
+  "approvalId": "approval_1764772926549_on083j4iv",
+  "approvalTitle": "Requirements: CLI Output Formatting System",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:30.713Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nCLI commands use inconsistent output formatting. The `bench`, `analyze`, `check`, and `uat` commands have different output styles with no `--output-format` flag for automation. This makes scripting and CI integration difficult.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Developer Experience**: Consistent, parseable output\n- **Automation**: Machine-readable formats\n- **Usability**: Clear human-readable formats\n\n## Requirements\n\n### Requirement 1: Format Support\n\n**User Story:** As a developer, I want multiple output formats, so that I can integrate with tools.\n\n#### Acceptance Criteria\n\n1. WHEN format requested THEN supported format SHALL be used\n2. IF JSON requested THEN valid JSON SHALL be output\n3. WHEN table requested THEN aligned table SHALL be output\n4. IF YAML requested THEN valid YAML SHALL be output\n\n### Requirement 2: Consistent Interface\n\n**User Story:** As a user, I want consistent flags, so that I don't have to learn per-command.\n\n#### Acceptance Criteria\n\n1. WHEN `--output-format` passed THEN all commands SHALL respect it\n2. IF `--output json` passed THEN JSON SHALL be output\n3. WHEN default used THEN human-readable table SHALL appear\n4. IF format unknown THEN error with options SHALL show\n\n### Requirement 3: Structured Errors\n\n**User Story:** As a developer, I want structured errors, so that I can parse failures.\n\n#### Acceptance Criteria\n\n1. WHEN error occurs THEN structured format SHALL be used\n2. IF JSON output THEN error SHALL be JSON\n3. WHEN error has code THEN it SHALL be included\n4. IF error has details THEN they SHALL be included\n\n## Non-Functional Requirements\n\n### Usability\n- Table output SHALL be aligned and readable\n- JSON output SHALL be valid and pretty-printed\n- Error messages SHALL be actionable\n",
+  "fileStats": {
+    "size": 1843,
+    "lines": 55,
+    "lastModified": "2025-12-03T14:40:08.814Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,12 @@
+{
+  "id": "approval_1765468849317_krwagchef",
+  "title": "Fix Failing Tests - Design Document",
+  "filePath": ".spec-workflow/specs/fix-failing-tests/design.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-11T16:00:49.317Z",
+  "category": "spec",
+  "categoryName": "fix-failing-tests",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-11T16:01:35.047Z"
+}

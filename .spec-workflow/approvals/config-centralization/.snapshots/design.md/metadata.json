@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/config-centralization/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T09:52:05.280Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764755525272_854fzfr6z",
+      "approvalTitle": "Design: Configuration Centralization"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T09:57:49.151Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764755525272_854fzfr6z",
+      "approvalTitle": "Design: Configuration Centralization"
+    }
+  ]
+}

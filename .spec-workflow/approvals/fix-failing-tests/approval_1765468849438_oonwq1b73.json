@@ -1,0 +1,12 @@
+{
+  "id": "approval_1765468849438_oonwq1b73",
+  "title": "Fix Failing Tests - Tasks Document (16 tasks)",
+  "filePath": ".spec-workflow/specs/fix-failing-tests/tasks.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-11T16:00:49.438Z",
+  "category": "spec",
+  "categoryName": "fix-failing-tests",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-11T16:01:41.807Z"
+}

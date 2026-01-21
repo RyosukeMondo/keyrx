@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/rhai-sandbox-hardening/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:00:38.223Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764770438175_aulmx7aif",
+      "approvalTitle": "Rhai Sandbox Hardening Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:17:32.767Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764770438175_aulmx7aif",
+      "approvalTitle": "Rhai Sandbox Hardening Requirements"
+    }
+  ]
+}

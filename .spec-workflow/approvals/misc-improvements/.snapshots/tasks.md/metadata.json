@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/misc-improvements/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-11T16:07:35.932Z",
+      "trigger": "initial",
+      "approvalId": "approval_1765469255874_tkpvy7g4a",
+      "approvalTitle": "Misc Improvements - Tasks Document (22 tasks)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-14T07:50:07.750Z",
+      "trigger": "approved",
+      "approvalId": "approval_1765469255874_tkpvy7g4a",
+      "approvalTitle": "Misc Improvements - Tasks Document (22 tasks)"
+    }
+  ]
+}

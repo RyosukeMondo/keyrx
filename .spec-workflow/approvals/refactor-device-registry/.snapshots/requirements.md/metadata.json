@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/refactor-device-registry/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-19T15:09:21.247Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766156961180_53mr3jn21",
+      "approvalTitle": "Requirements for Refactoring Device Registry"
+    }
+  ]
+}

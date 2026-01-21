@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773475162_zatzp8ttv",
+  "approvalId": "approval_1764772950086_swulpnztp",
+  "approvalTitle": "Tasks: OTEL Observability Integration",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:15.162Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Setup\n\n- [ ] 1. Add OTEL dependencies\n  - File: `core/Cargo.toml`\n  - Add opentelemetry, tracing-opentelemetry\n  - Feature-gated\n  - Purpose: Dependency setup\n  - _Requirements: 3.4_\n\n- [ ] 2. Create OtelConfig\n  - File: `core/src/observability/otel/config.rs`\n  - Environment-based configuration\n  - Defaults and validation\n  - Purpose: Configuration\n  - _Requirements: 3.1, 3.2_\n\n## Phase 2: Tracing\n\n- [ ] 3. Implement OTEL layer\n  - File: `core/src/observability/otel/layer.rs`\n  - Create tracer with batching\n  - Add to subscriber\n  - Purpose: Trace export\n  - _Requirements: 1.1, 1.2, 1.3, 1.4_\n\n- [ ] 4. Add span instrumentation\n  - Files: Engine, drivers\n  - Instrument key paths\n  - Add relevant attributes\n  - Purpose: Instrumentation\n  - _Requirements: 1.1, 1.4_\n\n## Phase 3: Metrics\n\n- [ ] 5. Implement metrics export\n  - File: `core/src/observability/otel/metrics.rs`\n  - Export histograms and counters\n  - Configure buckets\n  - Purpose: Metrics export\n  - _Requirements: 2.1, 2.2, 2.3, 2.4_\n",
+  "fileStats": {
+    "size": 1035,
+    "lines": 43,
+    "lastModified": "2025-12-03T14:40:18.156Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/dev-tooling/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-11-30T00:04:37.621Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764461077619_y5z0ilobb",
+      "approvalTitle": "Dev-Tooling Tasks Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-11-30T00:09:22.891Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764461077619_y5z0ilobb",
+      "approvalTitle": "Dev-Tooling Tasks Document"
+    }
+  ]
+}

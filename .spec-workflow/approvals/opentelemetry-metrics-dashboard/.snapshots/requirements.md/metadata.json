@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/opentelemetry-metrics-dashboard/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T15:03:08.038Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764774187962_2yn35v5fu",
+      "approvalTitle": "Requirements: OpenTelemetry Metrics Dashboard"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T15:11:45.674Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764774187962_2yn35v5fu",
+      "approvalTitle": "Requirements: OpenTelemetry Metrics Dashboard"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774171124_bd5ol291d",
+  "approvalId": "approval_1764774171039_mujrcx31x",
+  "approvalTitle": "Requirements: Recording Analysis Export System",
+  "version": 1,
+  "timestamp": "2025-12-03T15:02:51.124Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nSession recordings currently only support replay functionality. There's no way to analyze recordings for latency patterns, export data for external tools, or batch-process multiple sessions. This limits the ability to optimize configurations and diagnose performance issues.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Observability**: Deep insight into remapping behavior\n- **Optimization**: Data-driven configuration improvements\n- **Diagnostics**: Performance regression detection\n\n## Requirements\n\n### Requirement 1: Statistical Analysis\n\n**User Story:** As a power user, I want statistical analysis of recordings, so that I can understand performance patterns.\n\n#### Acceptance Criteria\n\n1. WHEN analysis requested THEN latency percentiles SHALL be calculated (p50, p95, p99)\n2. IF outliers detected THEN they SHALL be highlighted with context\n3. WHEN multiple recordings analyzed THEN comparison SHALL be available\n4. IF thresholds exceeded THEN warnings SHALL be generated\n\n### Requirement 2: Export Formats\n\n**User Story:** As a data analyst, I want to export recordings, so that I can use external analysis tools.\n\n#### Acceptance Criteria\n\n1. WHEN export requested THEN CSV format SHALL be available\n2. IF JSON export selected THEN full event data SHALL be included\n3. WHEN Parquet export used THEN columnar optimization SHALL apply\n4. IF batch export requested THEN all sessions SHALL be processed\n\n### Requirement 3: Visualization Export\n\n**User Story:** As a user, I want visual exports, so that I can share performance insights.\n\n#### Acceptance Criteria\n\n1. WHEN heatmap requested THEN key usage frequency SHALL be visualized\n2. IF timeline export selected THEN latency over time SHALL be shown\n3. WHEN decision tree exported THEN script branching SHALL be visualized\n4. IF comparison mode used THEN side-by-side diff SHALL be generated\n\n## Non-Functional Requirements\n\n### Performance\n- Analysis SHALL complete in < 1 second for 10,000 events\n- Export SHALL support streaming for large recordings\n- Memory usage SHALL be bounded during batch processing\n",
+  "fileStats": {
+    "size": 2156,
+    "lines": 55,
+    "lastModified": "2025-12-03T15:02:07.906Z"
+  },
+  "comments": []
+}

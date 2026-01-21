@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764770436054_jay3sk8nu",
+  "approvalId": "approval_1764770435999_ukh6c1th8",
+  "approvalTitle": "State Machine Audit Requirements",
+  "version": 1,
+  "timestamp": "2025-12-03T14:00:36.054Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nKeyRx has 15+ state-related types scattered across the codebase with overlapping responsibilities. `EngineState` is defined in multiple places, alongside `RecordingState`, `DiscoverySessionState`, `MockState`, `ReplayState`, and others. This creates confusion, bugs, and makes it impossible to reason about state transitions. This spec audits all state types and creates a unified state graph.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Reliability**: Clear state management prevents bugs\n- **Maintainability**: Single source of truth for state\n- **Debuggability**: State transitions are traceable\n\nPer tech.md: \"No Global State\" and \"Event Sourcing\"\n\n## Requirements\n\n### Requirement 1: State Inventory\n\n**User Story:** As a developer, I want to know all state types, so that I can understand the system.\n\n#### Acceptance Criteria\n\n1. WHEN auditing state THEN all state types SHALL be cataloged\n2. IF state types overlap THEN they SHALL be documented\n3. WHEN inventory is complete THEN ownership SHALL be clear\n4. IF state is duplicated THEN consolidation plan SHALL exist\n\n### Requirement 2: State Graph\n\n**User Story:** As a developer, I want a state transition graph, so that I can see valid transitions.\n\n#### Acceptance Criteria\n\n1. WHEN states exist THEN valid transitions SHALL be documented\n2. IF a transition occurs THEN it SHALL be in the graph\n3. WHEN invalid transition attempted THEN it SHALL be rejected\n4. IF transitions are documented THEN they SHALL be enforced\n\n### Requirement 3: State Validation\n\n**User Story:** As a developer, I want state invariants checked, so that bugs are caught early.\n\n#### Acceptance Criteria\n\n1. WHEN state changes THEN invariants SHALL be validated\n2. IF invariant violated THEN error SHALL be raised\n3. WHEN in debug mode THEN extra validation SHALL occur\n4. IF validation fails THEN state change SHALL be rejected\n\n### Requirement 4: State Transition Logging\n\n**User Story:** As a developer, I want transition logs, so that I can debug state issues.\n\n#### Acceptance Criteria\n\n1. WHEN state transitions THEN it SHALL be logged\n2. IF replay is needed THEN log SHALL be sufficient\n3. WHEN debugging THEN transition history SHALL be available\n4. IF logging disabled THEN overhead SHALL be zero\n\n## Non-Functional Requirements\n\n### Code Architecture and Modularity\n- **Single Source of Truth**: One canonical state representation\n- **State Ownership**: Clear ownership boundaries\n- **Transition Enforcement**: Type-system enforced transitions\n\n### Maintainability\n- State types SHALL be in dedicated module\n- Transitions SHALL be explicit enum variants\n- Overlapping types SHALL be consolidated\n\n### Debuggability\n- State snapshots SHALL be serializable\n- Transitions SHALL be replayable\n- History SHALL be queryable\n",
+  "fileStats": {
+    "size": 2852,
+    "lines": 78,
+    "lastModified": "2025-12-03T13:58:38.697Z"
+  },
+  "comments": []
+}

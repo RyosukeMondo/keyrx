@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/flutter-ui-service-layer/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-11-30T21:28:59.841Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764538139826_2aim4ii24",
+      "approvalTitle": "Approve requirements for flutter-ui-service-layer"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-11-30T21:33:09.669Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764538139826_2aim4ii24",
+      "approvalTitle": "Approve requirements for flutter-ui-service-layer"
+    }
+  ]
+}

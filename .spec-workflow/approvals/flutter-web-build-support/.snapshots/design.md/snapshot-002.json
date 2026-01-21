@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774696345_or3nkky72",
+  "approvalId": "approval_1764774172523_zkfazwoko",
+  "approvalTitle": "Design: Flutter Web Build Support",
+  "version": 2,
+  "timestamp": "2025-12-03T15:11:36.345Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design enables Flutter web builds with a REST/WebSocket backend replacing the C-ABI FFI. The backend runs as a local HTTP server or remote service, with the web UI communicating via standard web protocols.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Web Browser\"\n        UI[Flutter Web UI] --> WS[WebSocket Client]\n        UI --> HTTP[HTTP Client]\n    end\n\n    subgraph \"Backend Server\"\n        WS --> WSS[WebSocket Server]\n        HTTP --> REST[REST API]\n        WSS --> ENGINE[Engine]\n        REST --> ENGINE\n    end\n\n    subgraph \"Persistence\"\n        ENGINE --> CONFIG[Config Files]\n        ENGINE --> RECORD[Recordings]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: HTTP API\n\n```rust\npub struct WebServer {\n    engine: Arc<Mutex<Engine>>,\n    config: WebConfig,\n}\n\n// REST Endpoints\n// GET  /api/state         - Current engine state\n// POST /api/config        - Update configuration\n// GET  /api/recordings    - List recordings\n// GET  /api/recordings/:id - Get recording\n// POST /api/validate      - Validate script\n// POST /api/session/start - Start session\n// POST /api/session/stop  - Stop session\n```\n\n### Component 2: WebSocket Protocol\n\n```rust\npub enum WsMessage {\n    // Server -> Client\n    StateUpdate(EngineState),\n    KeyEvent(KeyEventInfo),\n    ValidationResult(ValidationResult),\n\n    // Client -> Server\n    Subscribe(Vec<Subscription>),\n    ExecuteAction(Action),\n    UpdateConfig(ConfigPatch),\n}\n\npub enum Subscription {\n    State,\n    KeyEvents,\n    Metrics,\n}\n```\n\n### Component 3: Flutter Platform Abstraction\n\n```dart\nabstract class EngineBridge {\n  Future<EngineState> getState();\n  Stream<KeyEvent> keyEvents();\n  Future<void> updateConfig(Config config);\n}\n\nclass FfiBridge implements EngineBridge { /* Desktop */ }\nclass WebBridge implements EngineBridge { /* Web via HTTP/WS */ }\n```\n\n## Testing Strategy\n\n- Unit tests for API endpoints\n- Integration tests for WebSocket communication\n- E2E tests with Playwright for web UI\n",
+  "fileStats": {
+    "size": 2015,
+    "lines": 89,
+    "lastModified": "2025-12-03T15:02:09.572Z"
+  },
+  "comments": []
+}

@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/config-centralization/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T09:52:05.225Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764755525209_sxopslhov",
+      "approvalTitle": "Requirements: Configuration Centralization"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T09:57:47.959Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764755525209_sxopslhov",
+      "approvalTitle": "Requirements: Configuration Centralization"
+    }
+  ]
+}

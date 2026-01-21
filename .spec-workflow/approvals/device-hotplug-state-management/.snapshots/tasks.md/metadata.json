@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/device-hotplug-state-management/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:42:06.193Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764772926172_u2ncwpd67",
+      "approvalTitle": "Tasks: Device Hotplug State Management"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:51:28.858Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764772926172_u2ncwpd67",
+      "approvalTitle": "Tasks: Device Hotplug State Management"
+    }
+  ]
+}

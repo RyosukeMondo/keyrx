@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/state-machine-audit/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:00:36.803Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764770436771_v7igd5okd",
+      "approvalTitle": "State Machine Audit Tasks (17 tasks)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:17:27.148Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764770436771_v7igd5okd",
+      "approvalTitle": "State Machine Audit Tasks (17 tasks)"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774175062_eouxvuwf4",
+  "approvalId": "approval_1764774175018_2u3pwayw0",
+  "approvalTitle": "Tasks: Multi-User Profile System",
+  "version": 1,
+  "timestamp": "2025-12-03T15:02:55.062Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Core Profile System\n\n- [ ] 1. Create Profile struct\n  - File: `core/src/profile/mod.rs`\n  - Profile definition\n  - Serialization\n  - Purpose: Data model\n  - _Requirements: 1.1_\n\n- [ ] 2. Implement ProfileManager\n  - File: `core/src/profile/manager.rs`\n  - CRUD operations\n  - Profile storage\n  - Purpose: Profile management\n  - _Requirements: 1.1, 1.3, 1.4_\n\n- [ ] 3. Add profile inheritance\n  - File: `core/src/profile/inheritance.rs`\n  - Base profile resolution\n  - Override merging\n  - Purpose: Config reuse\n  - _Requirements: 3.1_\n\n## Phase 2: Switching Mechanisms\n\n- [ ] 4. Implement profile switching\n  - File: `core/src/profile/switcher.rs`\n  - Fast activation\n  - State preservation\n  - Purpose: Profile activation\n  - _Requirements: 1.2, 2.1_\n\n- [ ] 5. Add auto-switch rules\n  - File: `core/src/profile/auto_switch.rs`\n  - Application detection\n  - Rule matching\n  - Purpose: Context awareness\n  - _Requirements: 2.4_\n\n- [ ] 6. Implement hotkey switching\n  - File: `core/src/profile/hotkeys.rs`\n  - Profile cycle hotkey\n  - Direct profile hotkeys\n  - Purpose: Quick access\n  - _Requirements: 2.2_\n\n## Phase 3: CLI Integration\n\n- [ ] 7. Add profile CLI commands\n  - File: `core/src/cli/commands/profile.rs`\n  - list, create, delete, switch\n  - export, import\n  - Purpose: CLI management\n  - _Requirements: 2.1, 3.2, 3.3_\n\n## Phase 4: Flutter UI\n\n- [ ] 8. Create profile selector widget\n  - File: `ui/lib/widgets/profile_selector.dart`\n  - Dropdown with icons\n  - Quick switch\n  - Purpose: UI switching\n  - _Requirements: 2.3, 3.4_\n\n- [ ] 9. Add profile management page\n  - File: `ui/lib/pages/profiles_page.dart`\n  - Create/edit profiles\n  - Auto-switch rules\n  - Purpose: Full management\n  - _Requirements: 1.1, 2.4_\n",
+  "fileStats": {
+    "size": 1756,
+    "lines": 73,
+    "lastModified": "2025-12-03T15:02:12.659Z"
+  },
+  "comments": []
+}

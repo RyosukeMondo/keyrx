@@ -1,0 +1,30 @@
+{
+  "filePath": ".spec-workflow/specs/device-discovery/requirements.md",
+  "currentVersion": 3,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-11-30T05:38:38.936Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764481118930_xha42tqhn",
+      "approvalTitle": "Device Discovery Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-11-30T08:30:19.150Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764481118930_xha42tqhn",
+      "approvalTitle": "Device Discovery Requirements"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2025-11-30T08:30:27.771Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764490399671_f2pv1jpiw",
+      "approvalTitle": "Requirements document for device-discovery"
+    }
+  ]
+}

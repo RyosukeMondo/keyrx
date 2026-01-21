@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774174706_blkvqvujp",
+  "approvalId": "approval_1764774174657_egefzknou",
+  "approvalTitle": "Design: Multi-User Profile System",
+  "version": 1,
+  "timestamp": "2025-12-03T15:02:54.706Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design adds a profile system for managing multiple configurations with fast switching. Profiles are stored in the config directory, with support for inheritance, auto-switching, and import/export.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Profile Storage\"\n        DIR[~/.config/keyrx/profiles/] --> P1[gaming.toml]\n        DIR --> P2[coding.toml]\n        DIR --> P3[default.toml]\n    end\n\n    subgraph \"Profile Manager\"\n        MGR[ProfileManager] --> ACTIVE[Active Profile]\n        MGR --> RULES[Auto-Switch Rules]\n        MGR --> INHERIT[Inheritance]\n    end\n\n    subgraph \"Triggers\"\n        CLI[CLI Command] --> MGR\n        HOTKEY[Hotkey] --> MGR\n        UI[UI Selector] --> MGR\n        APP[App Detection] --> MGR\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: Profile\n\n```rust\n#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct Profile {\n    pub id: String,\n    pub name: String,\n    pub icon: Option<String>,\n    pub inherits: Option<String>,\n    pub config: Config,\n    pub auto_switch: Vec<AutoSwitchRule>,\n}\n\n#[derive(Debug, Clone, Serialize, Deserialize)]\npub struct AutoSwitchRule {\n    pub application: String,       // Process name or window title\n    pub match_type: MatchType,     // Exact, Contains, Regex\n}\n\npub enum MatchType {\n    Exact,\n    Contains,\n    Regex(String),\n}\n```\n\n### Component 2: ProfileManager\n\n```rust\npub struct ProfileManager {\n    profiles_dir: PathBuf,\n    active: Option<Profile>,\n    watcher: Option<AppWatcher>,\n}\n\nimpl ProfileManager {\n    pub fn new(profiles_dir: PathBuf) -> Self;\n    pub fn list(&self) -> Vec<ProfileInfo>;\n    pub fn get(&self, id: &str) -> Option<Profile>;\n    pub fn create(&mut self, profile: Profile) -> Result<(), ProfileError>;\n    pub fn delete(&mut self, id: &str) -> Result<(), ProfileError>;\n    pub fn switch(&mut self, id: &str) -> Result<(), ProfileError>;\n    pub fn export(&self, id: &str, path: &Path) -> Result<(), ProfileError>;\n    pub fn import(&mut self, path: &Path) -> Result<String, ProfileError>;\n}\n```\n\n### Component 3: AppWatcher\n\n```rust\npub struct AppWatcher {\n    rules: Vec<(AutoSwitchRule, String)>, // (rule, profile_id)\n}\n\nimpl AppWatcher {\n    pub fn start(&mut self, callback: impl Fn(&str));\n    pub fn stop(&mut self);\n    pub fn check_active_window(&self) -> Option<String>; // Returns profile_id\n}\n```\n\n## Testing Strategy\n\n- Unit tests for profile CRUD\n- Integration tests for auto-switching\n- E2E tests for hotkey switching\n",
+  "fileStats": {
+    "size": 2498,
+    "lines": 99,
+    "lastModified": "2025-12-03T15:02:12.194Z"
+  },
+  "comments": []
+}

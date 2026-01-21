@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773488858_bf9g3rp6s",
+  "approvalId": "approval_1764772926172_u2ncwpd67",
+  "approvalTitle": "Tasks: Device Hotplug State Management",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:28.858Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Core Watcher\n\n- [ ] 1. Create DeviceWatcher trait\n  - File: `core/src/discovery/watcher.rs`\n  - Define device event interface\n  - Add DeviceState enum\n  - Purpose: Platform-agnostic interface\n  - _Requirements: 1.1, 1.2_\n\n- [ ] 2. Implement Linux device watcher\n  - File: `core/src/discovery/watcher_linux.rs`\n  - Use inotify on /dev/input\n  - Detect add/remove events\n  - Purpose: Linux hotplug support\n  - _Requirements: 1.1_\n\n- [ ] 3. Implement Windows device watcher\n  - File: `core/src/discovery/watcher_windows.rs`\n  - Handle WM_DEVICECHANGE\n  - Detect HID changes\n  - Purpose: Windows hotplug support\n  - _Requirements: 1.1_\n\n## Phase 2: State Management\n\n- [ ] 4. Add session pause/resume\n  - File: `core/src/engine/session.rs`\n  - Pause on device removal\n  - Resume on reconnection\n  - Purpose: Graceful transitions\n  - _Requirements: 2.1, 2.2, 2.3_\n\n- [ ] 5. Add multi-device coordination\n  - File: `core/src/engine/multi_device.rs`\n  - Independent device handling\n  - Partial failure support\n  - Purpose: Multi-device support\n  - _Requirements: 3.1, 3.2, 3.3, 3.4_\n",
+  "fileStats": {
+    "size": 1106,
+    "lines": 41,
+    "lastModified": "2025-12-03T14:40:06.505Z"
+  },
+  "comments": []
+}

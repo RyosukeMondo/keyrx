@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774703506_1lvg1z3e4",
+  "approvalId": "approval_1764774174274_o01pi1jpy",
+  "approvalTitle": "Requirements: Multi-User Profile System",
+  "version": 2,
+  "timestamp": "2025-12-03T15:11:43.506Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nCurrently only one configuration is active at a time. There's no way to quickly switch between profiles for different contexts (gaming, coding, writing). Users must manually swap config files, and there's no persistence of profile preferences across sessions.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Productivity**: Context-appropriate configurations\n- **User Experience**: Seamless profile switching\n- **Flexibility**: Multiple use cases supported\n\n## Requirements\n\n### Requirement 1: Profile Management\n\n**User Story:** As a user, I want multiple profiles, so that I can switch contexts quickly.\n\n#### Acceptance Criteria\n\n1. WHEN profile created THEN it SHALL be stored persistently\n2. IF profile switched THEN config SHALL change immediately\n3. WHEN profile deleted THEN it SHALL be removed completely\n4. IF profile renamed THEN references SHALL be updated\n\n### Requirement 2: Profile Switching\n\n**User Story:** As a user, I want easy switching, so that I don't lose productivity.\n\n#### Acceptance Criteria\n\n1. WHEN CLI switch command used THEN profile SHALL activate\n2. IF hotkey configured THEN profile SHALL switch on press\n3. WHEN UI selector used THEN profile SHALL change\n4. IF application rules set THEN auto-switch SHALL occur\n\n### Requirement 3: Profile Features\n\n**User Story:** As a user, I want profile features, so that I can organize my configs.\n\n#### Acceptance Criteria\n\n1. WHEN profile inherited THEN base settings SHALL apply\n2. IF profile exported THEN it SHALL be shareable\n3. WHEN profile imported THEN validation SHALL occur\n4. IF profile has icon THEN it SHALL display in UI\n\n## Non-Functional Requirements\n\n### Performance\n- Profile switch SHALL complete in < 100ms\n- Profile storage SHALL use < 1MB per profile\n- Auto-switch detection SHALL add < 5ms latency\n",
+  "fileStats": {
+    "size": 1879,
+    "lines": 55,
+    "lastModified": "2025-12-03T15:02:11.759Z"
+  },
+  "comments": []
+}

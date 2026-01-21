@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772923656_qdeqcs9xk",
+  "approvalId": "approval_1764772923609_qob7mryww",
+  "approvalTitle": "Tasks: JSON Schema Validation Framework",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:03.656Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Schema Generation\n\n- [ ] 1. Add schemars derives to config types\n  - Files: `core/src/config/*.rs`\n  - Add JsonSchema derive to all config types\n  - Purpose: Schema generation\n  - _Requirements: 1.1, 1.2_\n\n- [ ] 2. Add schemars derives to profile types\n  - Files: `core/src/discovery/types.rs`\n  - Add JsonSchema derive to profile types\n  - Purpose: Profile schema generation\n  - _Requirements: 1.1_\n\n- [ ] 3. Create SchemaRegistry\n  - File: `core/src/validation/schema.rs`\n  - Embed generated schemas\n  - Provide lookup by name\n  - Purpose: Schema storage\n  - _Requirements: 1.3_\n\n## Phase 2: Validation\n\n- [ ] 4. Add validation to config loader\n  - File: `core/src/config/loader.rs`\n  - Validate against schema before parsing\n  - Clear error messages\n  - Purpose: Config validation\n  - _Requirements: 2.1, 2.2_\n\n- [ ] 5. Add validation to profile loader\n  - File: `core/src/discovery/storage.rs`\n  - Validate profiles on load\n  - Purpose: Profile validation\n  - _Requirements: 2.3_\n\n- [ ] 6. Create migration framework\n  - File: `core/src/config/migration.rs`\n  - Version-based migration functions\n  - Backup before migration\n  - Purpose: Schema migration\n  - _Requirements: 3.1, 3.2, 3.3, 3.4_\n",
+  "fileStats": {
+    "size": 1227,
+    "lines": 45,
+    "lastModified": "2025-12-03T14:40:01.164Z"
+  },
+  "comments": []
+}

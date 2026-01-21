@@ -174,7 +174,7 @@ export class FixOrchestrator {
 
     // Calculate summary statistics
     const fixedTests = testFixResults.filter((r) => r.finalStatus === 'fixed').length;
-    const failedTests = testFixResults.filter((r) => r.finalStatus === 'failed').length;
+    const failedTestCount = testFixResults.filter((r) => r.finalStatus === 'failed').length;
     const skippedTests = testFixResults.filter((r) => r.fixAttempts.length === 0).length;
     const totalFixAttempts = testFixResults.reduce((sum, r) => sum + r.fixAttempts.length, 0);
     const successfulFixAttempts = testFixResults.reduce(
@@ -186,7 +186,7 @@ export class FixOrchestrator {
     this.log(`Auto-fix complete:`);
     this.log(`  Total tests: ${testFixResults.length}`);
     this.log(`  Fixed:       ${fixedTests}`);
-    this.log(`  Failed:      ${failedTests}`);
+    this.log(`  Failed:      ${failedTestCount}`);
     this.log(`  Skipped:     ${skippedTests}`);
     this.log(`  Fix success rate: ${totalFixAttempts > 0 ? Math.round((successfulFixAttempts / totalFixAttempts) * 100) : 0}%`);
     this.log(`  Duration:    ${duration}ms`);
@@ -195,7 +195,7 @@ export class FixOrchestrator {
     return {
       totalTests: testFixResults.length,
       fixedTests,
-      failedTests,
+      failedTests: failedTestCount,
       skippedTests,
       totalFixAttempts,
       successfulFixAttempts,

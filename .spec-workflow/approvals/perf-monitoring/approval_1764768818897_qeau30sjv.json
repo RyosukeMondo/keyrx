@@ -1,0 +1,12 @@
+{
+  "id": "approval_1764768818897_qeau30sjv",
+  "title": "Performance Monitoring Design",
+  "filePath": ".spec-workflow/specs/perf-monitoring/design.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-03T13:33:38.897Z",
+  "category": "spec",
+  "categoryName": "perf-monitoring",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-03T13:35:12.719Z"
+}

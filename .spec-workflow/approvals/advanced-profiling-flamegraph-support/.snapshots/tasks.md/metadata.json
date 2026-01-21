@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/advanced-profiling-flamegraph-support/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T15:02:53.934Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764774173919_8e9psysx2",
+      "approvalTitle": "Tasks: Advanced Profiling Flamegraph Support"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T15:11:42.078Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764774173919_8e9psysx2",
+      "approvalTitle": "Tasks: Advanced Profiling Flamegraph Support"
+    }
+  ]
+}

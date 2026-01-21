@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773497793_6lihs2anz",
+  "approvalId": "approval_1764772948868_3zufrrn4h",
+  "approvalTitle": "Tasks: Multi-Layout Simultaneous Support",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:37.793Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Tasks Document\n\n## Phase 1: Core Types\n\n- [ ] 1. Create Layout entity\n  - File: `core/src/engine/layout/mod.rs`\n  - Separate layout from layer stack\n  - Add layout metadata\n  - Purpose: Layout abstraction\n  - _Requirements: 1.1_\n\n- [ ] 2. Create LayoutCompositor\n  - File: `core/src/engine/layout/compositor.rs`\n  - Manage multiple layouts\n  - Priority-based resolution\n  - Purpose: Layout composition\n  - _Requirements: 1.1, 1.2, 1.4, 3.1, 3.2, 3.4_\n\n## Phase 2: Modifier System\n\n- [ ] 3. Implement cross-layout modifiers\n  - File: `core/src/engine/layout/modifiers.rs`\n  - Modifier scoping\n  - Shared modifier state\n  - Purpose: Modifier coordination\n  - _Requirements: 2.1, 2.2, 2.3, 2.4_\n\n## Phase 3: Integration\n\n- [ ] 4. Integrate compositor into engine\n  - File: `core/src/engine/mod.rs`\n  - Replace single layout with compositor\n  - Handle transitions\n  - Purpose: Engine integration\n  - _Requirements: 1.3_\n\n- [ ] 5. Add Rhai bindings\n  - File: `core/src/scripting/bindings.rs`\n  - Layout composition functions\n  - Priority control\n  - Purpose: Script access\n  - _Requirements: 1.1, 3.3_\n\n- [ ] 6. Update FFI and Flutter\n  - Files: FFI exports, Flutter UI\n  - Expose multi-layout state\n  - UI for layout management\n  - Purpose: Full stack integration\n  - _Requirements: 1.1_\n",
+  "fileStats": {
+    "size": 1286,
+    "lines": 50,
+    "lastModified": "2025-12-03T14:40:16.036Z"
+  },
+  "comments": []
+}

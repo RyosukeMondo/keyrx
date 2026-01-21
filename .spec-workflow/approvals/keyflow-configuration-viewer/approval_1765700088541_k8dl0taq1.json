@@ -1,0 +1,12 @@
+{
+  "id": "approval_1765700088541_k8dl0taq1",
+  "title": "Re-approve requirements (iteration speed) for keyflow-configuration-viewer",
+  "filePath": ".spec-workflow/specs/keyflow-configuration-viewer/requirements.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-14T08:14:48.541Z",
+  "category": "spec",
+  "categoryName": "keyflow-configuration-viewer",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-14T08:14:57.522Z"
+}

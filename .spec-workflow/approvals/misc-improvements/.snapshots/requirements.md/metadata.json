@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/misc-improvements/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-11T16:07:35.703Z",
+      "trigger": "initial",
+      "approvalId": "approval_1765469255632_a00ssfmsk",
+      "approvalTitle": "Misc Improvements - Requirements Document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-14T07:50:05.071Z",
+      "trigger": "approved",
+      "approvalId": "approval_1765469255632_a00ssfmsk",
+      "approvalTitle": "Misc Improvements - Requirements Document"
+    }
+  ]
+}

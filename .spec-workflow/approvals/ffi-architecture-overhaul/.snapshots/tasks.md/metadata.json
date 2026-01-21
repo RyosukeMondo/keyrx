@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/ffi-architecture-overhaul/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T12:39:17.789Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764765557779_0ggtl6slp",
+      "approvalTitle": "FFI Architecture Overhaul - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T12:41:22.100Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764765557779_0ggtl6slp",
+      "approvalTitle": "FFI Architecture Overhaul - Tasks"
+    }
+  ]
+}

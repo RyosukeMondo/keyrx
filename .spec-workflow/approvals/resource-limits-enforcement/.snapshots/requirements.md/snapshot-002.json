@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773486003_fhcmtyx5g",
+  "approvalId": "approval_1764772923982_fxfc4hl3u",
+  "approvalTitle": "Requirements: Resource Limits Enforcement",
+  "version": 2,
+  "timestamp": "2025-12-03T14:51:26.003Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nThe engine has no timeout mechanism, memory usage bounds, or output queue limits beyond Rhai's built-in limits. A malicious or buggy script could exhaust resources. This spec adds runtime resource constraints enforcement.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Safety First**: Prevent resource exhaustion\n- **Reliability**: Bounded resource usage\n- **Security**: Protect against malicious scripts\n\n## Requirements\n\n### Requirement 1: Execution Timeout\n\n**User Story:** As a user, I want script timeouts, so that runaway scripts don't freeze my keyboard.\n\n#### Acceptance Criteria\n\n1. WHEN script runs too long THEN it SHALL be terminated\n2. IF timeout occurs THEN key SHALL pass through\n3. WHEN timeout configured THEN it SHALL be respected\n4. IF default timeout THEN it SHALL be 100ms\n\n### Requirement 2: Memory Limits\n\n**User Story:** As a user, I want memory limits, so that scripts can't exhaust RAM.\n\n#### Acceptance Criteria\n\n1. WHEN memory limit reached THEN script SHALL terminate\n2. IF allocation fails THEN graceful error SHALL occur\n3. WHEN limit configured THEN it SHALL be respected\n4. IF default limit THEN it SHALL be 10MB\n\n### Requirement 3: Queue Limits\n\n**User Story:** As a developer, I want output bounds, so that event queues don't overflow.\n\n#### Acceptance Criteria\n\n1. WHEN output queue full THEN oldest events MAY be dropped\n2. IF queue limit reached THEN warning SHALL be logged\n3. WHEN limit configured THEN it SHALL be respected\n4. IF default limit THEN it SHALL be 1000 events\n\n## Non-Functional Requirements\n\n### Performance\n- Limit checks SHALL be < 1μs\n- Enforcement SHALL not impact normal operation\n- Recovery from limit SHALL be < 1ms\n",
+  "fileStats": {
+    "size": 1763,
+    "lines": 55,
+    "lastModified": "2025-12-03T14:40:01.701Z"
+  },
+  "comments": []
+}

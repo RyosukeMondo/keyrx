@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/state-machine-audit/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:00:36.436Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764770436397_sf24crqix",
+      "approvalTitle": "State Machine Audit Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:17:26.860Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764770436397_sf24crqix",
+      "approvalTitle": "State Machine Audit Design"
+    }
+  ]
+}

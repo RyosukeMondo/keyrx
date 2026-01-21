@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/test-organization/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T13:06:32.264Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764767192235_oucnebu06",
+      "approvalTitle": "Test Organization - Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T13:23:18.578Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764767192235_oucnebu06",
+      "approvalTitle": "Test Organization - Requirements"
+    }
+  ]
+}

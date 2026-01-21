@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/dart-binding-codegen/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-11T11:23:45.451Z",
+      "trigger": "initial",
+      "approvalId": "approval_1765452225418_nsxvpoiw3",
+      "approvalTitle": "Dart Binding Code Generation - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-11T11:29:57.012Z",
+      "trigger": "approved",
+      "approvalId": "approval_1765452225418_nsxvpoiw3",
+      "approvalTitle": "Dart Binding Code Generation - Tasks"
+    }
+  ]
+}

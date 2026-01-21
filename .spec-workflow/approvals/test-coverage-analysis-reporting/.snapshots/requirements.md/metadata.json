@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/test-coverage-analysis-reporting/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:42:27.063Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764772946998_95tgdmv3s",
+      "approvalTitle": "Requirements: Test Coverage Analysis Reporting"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:51:34.370Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764772946998_95tgdmv3s",
+      "approvalTitle": "Requirements: Test Coverage Analysis Reporting"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764773459779_cmiv3f1vm",
+  "approvalId": "approval_1764772901321_t9o4ecvhr",
+  "approvalTitle": "Requirements: Input Event Coalescing",
+  "version": 2,
+  "timestamp": "2025-12-03T14:50:59.779Z",
+  "trigger": "approved",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nEach individual key event creates independent FFI calls and engine invocations with no batching. With rapid key presses, this generates many small transactions. Coalescing events within a time window reduces overhead and improves throughput.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Performance > Features**: Reduce per-event overhead\n- **Efficiency**: Batch operations where possible\n- **Throughput**: Handle typing-heavy workloads\n\n## Requirements\n\n### Requirement 1: Event Batching\n\n**User Story:** As a user, I want efficient event processing, so that rapid typing doesn't lag.\n\n#### Acceptance Criteria\n\n1. WHEN events arrive rapidly THEN they SHALL be batched\n2. IF batch timeout reached THEN batch SHALL be processed\n3. WHEN batch size limit reached THEN immediate processing SHALL occur\n4. IF single event arrives THEN it SHALL process without delay\n\n### Requirement 2: Coalescing Rules\n\n**User Story:** As a developer, I want smart coalescing, so that event semantics are preserved.\n\n#### Acceptance Criteria\n\n1. WHEN repeat events occur THEN they MAY be coalesced\n2. IF down/up pair within window THEN they SHALL stay paired\n3. WHEN modifier state changes THEN batch SHALL flush\n4. IF timing matters THEN timestamps SHALL be preserved\n\n### Requirement 3: Configuration\n\n**User Story:** As a user, I want configurable batching, so that I can tune for my use case.\n\n#### Acceptance Criteria\n\n1. WHEN batch size configured THEN it SHALL be respected\n2. IF timeout configured THEN it SHALL trigger flush\n3. WHEN coalescing disabled THEN events SHALL process individually\n4. IF defaults used THEN they SHALL be sensible (5ms, 10 events)\n\n## Non-Functional Requirements\n\n### Performance\n- Batching SHALL reduce FFI calls by > 50% under load\n- Batch processing latency SHALL be < 1ms\n- Memory for batch buffer SHALL be bounded\n",
+  "fileStats": {
+    "size": 1920,
+    "lines": 55,
+    "lastModified": "2025-12-03T14:39:44.926Z"
+  },
+  "comments": []
+}

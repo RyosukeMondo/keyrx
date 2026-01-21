@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/state-snapshot-incremental-updates/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:41:42.849Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764772902815_nlwokcqe5",
+      "approvalTitle": "Design: State Snapshot Incremental Updates"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:51:05.331Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764772902815_nlwokcqe5",
+      "approvalTitle": "Design: State Snapshot Incremental Updates"
+    }
+  ]
+}

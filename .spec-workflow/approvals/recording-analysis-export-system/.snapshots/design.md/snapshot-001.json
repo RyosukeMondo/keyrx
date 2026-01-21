@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764774171505_pilest3ml",
+  "approvalId": "approval_1764774171454_pt86bxuep",
+  "approvalTitle": "Design: Recording Analysis Export System",
+  "version": 1,
+  "timestamp": "2025-12-03T15:02:51.505Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Design Document\n\n## Overview\n\nThis design extends the replay module with statistical analysis, multiple export formats, and visualization generation. Analysis is streaming-capable for large recordings, with batch processing support.\n\n## Architecture\n\n```mermaid\ngraph TD\n    subgraph \"Input\"\n        REC[Recording] --> LOAD[Loader]\n        BATCH[Batch Files] --> LOAD\n    end\n\n    subgraph \"Analysis Engine\"\n        LOAD --> STATS[Statistics]\n        LOAD --> OUTLIER[Outlier Detection]\n        LOAD --> COMPARE[Comparison]\n        STATS --> AGG[Aggregator]\n        OUTLIER --> AGG\n        COMPARE --> AGG\n    end\n\n    subgraph \"Export\"\n        AGG --> CSV[CSV Export]\n        AGG --> JSON[JSON Export]\n        AGG --> PARQUET[Parquet Export]\n        AGG --> VIZ[Visualization]\n    end\n\n    subgraph \"Visualization\"\n        VIZ --> HEAT[Heatmap]\n        VIZ --> TIMELINE[Timeline]\n        VIZ --> TREE[Decision Tree]\n    end\n```\n\n## Components and Interfaces\n\n### Component 1: AnalysisEngine\n\n```rust\npub struct AnalysisEngine {\n    config: AnalysisConfig,\n}\n\npub struct AnalysisResult {\n    pub latency: LatencyStats,\n    pub outliers: Vec<OutlierEvent>,\n    pub key_frequency: HashMap<KeyCode, u64>,\n    pub decision_paths: Vec<DecisionPath>,\n}\n\npub struct LatencyStats {\n    pub min: Duration,\n    pub max: Duration,\n    pub mean: Duration,\n    pub p50: Duration,\n    pub p95: Duration,\n    pub p99: Duration,\n    pub std_dev: Duration,\n}\n\nimpl AnalysisEngine {\n    pub fn analyze(&self, recording: &Recording) -> AnalysisResult;\n    pub fn compare(&self, a: &Recording, b: &Recording) -> ComparisonResult;\n    pub fn detect_regressions(&self, baseline: &AnalysisResult, current: &AnalysisResult) -> Vec<Regression>;\n}\n```\n\n### Component 2: Exporter\n\n```rust\npub trait Exporter {\n    fn export(&self, result: &AnalysisResult, writer: &mut dyn Write) -> Result<(), ExportError>;\n}\n\npub struct CsvExporter { pub config: CsvConfig }\npub struct JsonExporter { pub pretty: bool }\npub struct ParquetExporter { pub compression: Compression }\n\nimpl Exporter for CsvExporter { /* ... */ }\nimpl Exporter for JsonExporter { /* ... */ }\nimpl Exporter for ParquetExporter { /* ... */ }\n```\n\n### Component 3: Visualizer\n\n```rust\npub enum VisualizationType {\n    Heatmap,\n    Timeline,\n    DecisionTree,\n    Comparison,\n}\n\npub struct Visualizer;\n\nimpl Visualizer {\n    pub fn generate_svg(&self, result: &AnalysisResult, viz_type: VisualizationType) -> String;\n    pub fn generate_html(&self, result: &AnalysisResult) -> String;\n}\n```\n\n## Testing Strategy\n\n- Unit tests for statistical calculations\n- Integration tests for export format validity\n- Visual regression tests for SVG output\n",
+  "fileStats": {
+    "size": 2677,
+    "lines": 111,
+    "lastModified": "2025-12-03T15:02:08.312Z"
+  },
+  "comments": []
+}

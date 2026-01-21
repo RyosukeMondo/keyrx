@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772945926_rqbpndahy",
+  "approvalId": "approval_1764772945860_p1n8un5m9",
+  "approvalTitle": "Requirements: Session Recording Replay Optimization",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:25.926Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nEvent recording appends to files without indexing, compression, or streaming. Replay loads entire sessions into memory. For hour-long debugging sessions, files become large and replay is slow.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Performance**: Efficient recording and replay\n- **Developer Experience**: Fast debugging workflow\n- **Efficiency**: Minimal disk and memory usage\n\n## Requirements\n\n### Requirement 1: Compression\n\n**User Story:** As a user, I want compressed recordings, so that disk space is conserved.\n\n#### Acceptance Criteria\n\n1. WHEN recording THEN compression SHALL be applied\n2. IF compression enabled THEN size reduction SHALL be > 50%\n3. WHEN decompressing THEN streaming SHALL be supported\n4. IF compression fails THEN uncompressed fallback SHALL work\n\n### Requirement 2: Streaming Replay\n\n**User Story:** As a user, I want streaming replay, so that long sessions don't exhaust memory.\n\n#### Acceptance Criteria\n\n1. WHEN replaying THEN streaming SHALL be used\n2. IF large file THEN memory usage SHALL be bounded\n3. WHEN seeking THEN position SHALL be found efficiently\n4. IF stream interrupted THEN recovery SHALL be possible\n\n### Requirement 3: Indexing\n\n**User Story:** As a developer, I want indexed recordings, so that I can seek to timestamps.\n\n#### Acceptance Criteria\n\n1. WHEN recording THEN timestamp index SHALL be created\n2. IF seeking to time THEN index SHALL be used\n3. WHEN index exists THEN seek SHALL be O(log n)\n4. IF index missing THEN linear scan SHALL work\n\n## Non-Functional Requirements\n\n### Performance\n- Recording overhead SHALL be < 5%\n- Replay startup SHALL be < 100ms\n- Seek time SHALL be < 50ms\n",
+  "fileStats": {
+    "size": 1738,
+    "lines": 55,
+    "lastModified": "2025-12-03T14:40:11.021Z"
+  },
+  "comments": []
+}

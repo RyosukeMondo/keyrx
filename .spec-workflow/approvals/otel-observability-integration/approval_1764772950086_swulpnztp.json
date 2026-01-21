@@ -1,0 +1,12 @@
+{
+  "id": "approval_1764772950086_swulpnztp",
+  "title": "Tasks: OTEL Observability Integration",
+  "filePath": ".spec-workflow/specs/otel-observability-integration/tasks.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-12-03T14:42:30.086Z",
+  "category": "spec",
+  "categoryName": "otel-observability-integration",
+  "response": "ダッシュボードから承認",
+  "respondedAt": "2025-12-03T14:51:15.163Z"
+}

@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/logging-standardization/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:00:40.032Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764770440000_qbly19c5z",
+      "approvalTitle": "Logging Standardization Tasks (17 tasks)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:17:37.649Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764770440000_qbly19c5z",
+      "approvalTitle": "Logging Standardization Tasks (17 tasks)"
+    }
+  ]
+}

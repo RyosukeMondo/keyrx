@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/state-machine-audit/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:00:36.054Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764770435999_ukh6c1th8",
+      "approvalTitle": "State Machine Audit Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:17:26.500Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764770435999_ukh6c1th8",
+      "approvalTitle": "State Machine Audit Requirements"
+    }
+  ]
+}

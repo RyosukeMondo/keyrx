@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/ffi-marshaling-optimization/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-03T14:00:37.164Z",
+      "trigger": "initial",
+      "approvalId": "approval_1764770437127_1dtkq8obq",
+      "approvalTitle": "FFI Marshaling Optimization Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-03T14:17:29.619Z",
+      "trigger": "approved",
+      "approvalId": "approval_1764770437127_1dtkq8obq",
+      "approvalTitle": "FFI Marshaling Optimization Requirements"
+    }
+  ]
+}

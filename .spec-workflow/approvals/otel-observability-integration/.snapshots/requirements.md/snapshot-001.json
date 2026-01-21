@@ -1,0 +1,16 @@
+{
+  "id": "snapshot_1764772949319_cp311876z",
+  "approvalId": "approval_1764772949251_183l7uazp",
+  "approvalTitle": "Requirements: OTEL Observability Integration",
+  "version": 1,
+  "timestamp": "2025-12-03T14:42:29.319Z",
+  "trigger": "initial",
+  "status": "pending",
+  "content": "# Requirements Document\n\n## Introduction\n\nThe codebase has an `opentelemetry` optional feature in Cargo.toml but it's unused. There are no traces exported for latency analysis, no metrics exported for dashboards, only local tracing logs. This limits production monitoring capabilities.\n\n## Alignment with Product Vision\n\nThis feature supports KeyRx's product principles:\n- **Observability**: Production monitoring\n- **Reliability**: Issue detection and diagnosis\n- **Operations**: Integration with monitoring tools\n\n## Requirements\n\n### Requirement 1: Span Instrumentation\n\n**User Story:** As an operator, I want distributed traces, so that I can analyze latency.\n\n#### Acceptance Criteria\n\n1. WHEN event processed THEN span SHALL be created\n2. IF span has children THEN hierarchy SHALL be preserved\n3. WHEN span ends THEN duration SHALL be recorded\n4. IF attributes exist THEN they SHALL be included\n\n### Requirement 2: Metrics Export\n\n**User Story:** As an operator, I want metrics exported, so that I can build dashboards.\n\n#### Acceptance Criteria\n\n1. WHEN metrics collected THEN OTEL export SHALL be available\n2. IF histogram used THEN buckets SHALL be configured\n3. WHEN counter incremented THEN it SHALL be exported\n4. IF gauge updated THEN current value SHALL export\n\n### Requirement 3: Configuration\n\n**User Story:** As an operator, I want configurable endpoints, so that I can point to my backend.\n\n#### Acceptance Criteria\n\n1. WHEN OTEL enabled THEN endpoint SHALL be configurable\n2. IF env var set THEN it SHALL be used\n3. WHEN export fails THEN fallback SHALL occur\n4. IF disabled THEN overhead SHALL be zero\n\n## Non-Functional Requirements\n\n### Performance\n- OTEL overhead SHALL be < 5% when enabled\n- Export SHALL be async/batched\n- Disabled OTEL SHALL have zero overhead\n",
+  "fileStats": {
+    "size": 1787,
+    "lines": 55,
+    "lastModified": "2025-12-03T14:40:16.699Z"
+  },
+  "comments": []
+}
