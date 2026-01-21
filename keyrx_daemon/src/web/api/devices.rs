@@ -205,9 +205,20 @@ async fn update_device_config(
     // Auto-register device if it doesn't exist
     if registry.get(&id).is_none() {
         log::info!("Auto-registering device: {}", id);
+        // Sanitize device ID for use as name: replace invalid chars with dash
+        let sanitized_name = id
+            .chars()
+            .map(|c| {
+                if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' {
+                    c
+                } else {
+                    '-'
+                }
+            })
+            .collect::<String>();
         let entry = DeviceEntry::new(
             id.clone(),
-            id.clone(), // Use ID as default name
+            sanitized_name, // Use sanitized ID as default name
             None,
             None,
             std::time::SystemTime::now()
