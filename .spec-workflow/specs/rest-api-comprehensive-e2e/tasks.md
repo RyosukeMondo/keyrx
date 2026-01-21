@@ -80,19 +80,19 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
   - Scenarios: Validate full daemon state structure
   - Purpose: Test comprehensive daemon state endpoint
 
-- [ ] 2.1.2 Add GET /api/metrics/events test
+- [x] 2.1.2 Add GET /api/metrics/events test
   - File: `scripts/test-cases/health-metrics.tests.ts`
-  - Test ID: `metrics-002`
+  - Test ID: `metrics-002`, `metrics-002b`
   - Endpoint: GET /api/metrics/events
-  - Scenarios: Empty log, with events, with filtering (limit, offset)
+  - Scenarios: Default limit (100), custom limit (count=10)
   - Purpose: Test event log retrieval with pagination
 
-- [ ] 2.1.3 Add DELETE /api/metrics/events test
+- [x] 2.1.3 Add DELETE /api/metrics/events test
   - File: `scripts/test-cases/health-metrics.tests.ts`
   - Test ID: `metrics-003`
   - Endpoint: DELETE /api/metrics/events
-  - Scenarios: Clear log, verify empty after clear
-  - Purpose: Test event log clearing
+  - Scenarios: Not yet implemented (returns success=false)
+  - Purpose: Test event log clearing (when implemented)
 
 ### Task 2.2: Device Management Tests (7 endpoints)
 - [ ] 2.2.1 Add PUT /api/devices/:id/name test

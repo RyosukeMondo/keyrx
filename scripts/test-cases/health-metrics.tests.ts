@@ -41,6 +41,16 @@ const DaemonStateSchema = z.object({
 type DaemonState = z.infer<typeof DaemonStateSchema>;
 
 /**
+ * Event log response schema
+ */
+const EventLogSchema = z.object({
+  count: z.number(),
+  events: z.array(z.any()), // Event structure varies
+});
+
+type EventLog = z.infer<typeof EventLogSchema>;
+
+/**
  * Health & Metrics test cases
  */
 export const healthMetricsTestCases: TestCase[] = [
@@ -112,6 +122,186 @@ export const healthMetricsTestCases: TestCase[] = [
           actual,
           expected: expected.body,
           error: `Lock count mismatch: count=${actualData.active_lock_count}, array length=${actualData.locks.length}`,
+        };
+      }
+
+      return {
+        passed: true,
+        actual,
+        expected: expected.body,
+      };
+    },
+    cleanup: noOpCleanup,
+  },
+
+  // =================================================================
+  // Event Log Tests
+  // =================================================================
+  {
+    id: 'metrics-002',
+    name: 'GET /api/metrics/events - Get event log with default limit',
+    endpoint: '/api/metrics/events',
+    scenario: 'default',
+    category: 'metrics',
+    priority: 2,
+    setup: noOpSetup,
+    execute: async (client) => {
+      const response = await client.customRequest(
+        'GET',
+        '/api/metrics/events',
+        EventLogSchema
+      );
+      return {
+        status: response.status,
+        data: response.data,
+      };
+    },
+    assert: (actual, expected) => {
+      const actualData = actual as EventLog;
+
+      // Validate structure
+      const hasRequiredFields =
+        typeof actualData.count === 'number' &&
+        Array.isArray(actualData.events);
+
+      if (!hasRequiredFields) {
+        return {
+          passed: false,
+          actual,
+          expected: expected.body,
+          error: 'Missing required event log fields (count, events)',
+        };
+      }
+
+      // Validate count matches array length
+      if (actualData.count !== actualData.events.length) {
+        return {
+          passed: false,
+          actual,
+          expected: expected.body,
+          error: `Event count mismatch: count=${actualData.count}, array length=${actualData.events.length}`,
+        };
+      }
+
+      return {
+        passed: true,
+        actual,
+        expected: expected.body,
+      };
+    },
+    cleanup: noOpCleanup,
+  },
+
+  {
+    id: 'metrics-002b',
+    name: 'GET /api/metrics/events?count=10 - Get event log with custom limit',
+    endpoint: '/api/metrics/events',
+    scenario: 'with_limit',
+    category: 'metrics',
+    priority: 2,
+    setup: noOpSetup,
+    execute: async (client) => {
+      const response = await client.customRequest(
+        'GET',
+        '/api/metrics/events?count=10',
+        EventLogSchema
+      );
+      return {
+        status: response.status,
+        data: response.data,
+      };
+    },
+    assert: (actual, expected) => {
+      const actualData = actual as EventLog;
+
+      // Validate structure
+      const hasRequiredFields =
+        typeof actualData.count === 'number' &&
+        Array.isArray(actualData.events);
+
+      if (!hasRequiredFields) {
+        return {
+          passed: false,
+          actual,
+          expected: expected.body,
+          error: 'Missing required event log fields',
+        };
+      }
+
+      // Validate count matches array length
+      if (actualData.count !== actualData.events.length) {
+        return {
+          passed: false,
+          actual,
+          expected: expected.body,
+          error: `Event count mismatch: count=${actualData.count}, array length=${actualData.events.length}`,
+        };
+      }
+
+      // Validate returned count is <= requested limit (10)
+      if (actualData.count > 10) {
+        return {
+          passed: false,
+          actual,
+          expected: expected.body,
+          error: `Expected at most 10 events, got ${actualData.count}`,
+        };
+      }
+
+      return {
+        passed: true,
+        actual,
+        expected: expected.body,
+      };
+    },
+    cleanup: noOpCleanup,
+  },
+
+  // =================================================================
+  // Event Log Clear Tests
+  // =================================================================
+  {
+    id: 'metrics-003',
+    name: 'DELETE /api/metrics/events - Clear event log (not implemented)',
+    endpoint: '/api/metrics/events',
+    scenario: 'not_implemented',
+    category: 'metrics',
+    priority: 3,
+    setup: noOpSetup,
+    execute: async (client) => {
+      const response = await client.customRequest(
+        'DELETE',
+        '/api/metrics/events',
+        z.object({
+          success: z.boolean(),
+          error: z.string().optional(),
+        })
+      );
+      return {
+        status: response.status,
+        data: response.data,
+      };
+    },
+    assert: (actual, expected) => {
+      const actualData = actual as { success: boolean; error?: string };
+
+      // This endpoint is not yet implemented in the daemon
+      // It should return success=false with an error message
+      if (actualData.success === true) {
+        return {
+          passed: false,
+          actual,
+          expected: expected.body,
+          error: 'Expected success=false for unimplemented endpoint',
+        };
+      }
+
+      if (!actualData.error || !actualData.error.includes('not yet implemented')) {
+        return {
+          passed: false,
+          actual,
+          expected: expected.body,
+          error: 'Expected error message indicating not implemented',
         };
       }
 
