@@ -527,18 +527,33 @@ export const workflow_005: TestCase = {
   category: 'workflows',
   description: 'Config update → add mappings → verify layers workflow',
   setup: async (client: ApiClient) => {
-    // Ensure we have a profile to work with
+    // Ensure we have an active profile with device blocks
     const profiles = await client.getProfiles();
     if (profiles.data.profiles.length === 0) {
       await client.createProfile('workflow-config-test', 'blank');
       await client.activateProfile('workflow-config-test');
+      // Set valid config with device blocks
+      await client.customRequest('PUT', '/api/config', z.any(), {
+        content: `// Auto-generated config\ndevice_start("*");\ndevice_end();`,
+      });
+    } else {
+      // Ensure there's an active profile with device blocks
+      const activeProfile = await client.getActiveProfile();
+      if (!activeProfile.data.profile) {
+        await client.activateProfile(profiles.data.profiles[0].name);
+      }
+      // Ensure active profile has device blocks
+      await client.customRequest('PUT', '/api/config', z.any(), {
+        content: `// Auto-generated config\ndevice_start("*");\ndevice_end();`,
+      });
     }
   },
   execute: async (client: ApiClient) => {
     // Step 1: Get initial config
     const configSchema = z.object({
-      success: z.boolean(),
-      config: z.string().optional(),
+      profile: z.string(),
+      base_mappings: z.array(z.any()),
+      layers: z.array(z.any()),
     });
     const initialConfigResponse = await client.customRequest(
       'GET',
@@ -548,27 +563,18 @@ export const workflow_005: TestCase = {
     );
     const initialConfigData = initialConfigResponse.data;
 
-    if (!initialConfigData.success) {
-      throw new Error('Failed to get initial config');
-    }
+    const initialMappingCount = initialConfigData.base_mappings.length;
 
     // Step 2: Add a key mapping via POST /api/config/key-mappings
     const mappingToAdd = {
       layer: 'base',
-      trigger: {
-        key_code: 30, // 'a' key
-        modifiers: [],
-      },
-      action: {
-        type: 'tap',
-        key_code: 48, // 'b' key
-        modifiers: [],
-      },
+      key: 'VK_A',
+      action_type: 'simple',
+      output: 'VK_B',
     };
 
     const addMappingSchema = z.object({
       success: z.boolean(),
-      mapping_id: z.string().optional(),
     });
     const addMappingResponse = await client.customRequest(
       'POST',
@@ -582,11 +588,7 @@ export const workflow_005: TestCase = {
       throw new Error('Failed to add key mapping');
     }
 
-    if (!addMappingData.mapping_id) {
-      throw new Error('No mapping_id returned from add mapping request');
-    }
-
-    const mappingId = addMappingData.mapping_id;
+    const mappingId = `base:VK_A`; // Mapping ID format is layer:key
 
     // Step 3: Verify the mapping was added by getting the config again
     const updatedConfigResponse = await client.customRequest(
@@ -597,24 +599,17 @@ export const workflow_005: TestCase = {
     );
     const updatedConfigData = updatedConfigResponse.data;
 
-    if (!updatedConfigData.success) {
-      throw new Error('Failed to get updated config');
-    }
-
-    // The config should now contain the mapping (implementation detail)
-    // We'll verify by checking that the config has changed
-    const configChanged = updatedConfigData.config !== initialConfigData.config;
-    if (!configChanged) {
-      throw new Error('Config did not change after adding mapping');
+    // Verify mapping was added by checking the count increased
+    if (updatedConfigData.base_mappings.length !== initialMappingCount + 1) {
+      throw new Error(`Expected ${initialMappingCount + 1} mappings, got ${updatedConfigData.base_mappings.length}`);
     }
 
     // Step 4: Get layers and verify structure
     const layersSchema = z.object({
-      success: z.boolean(),
       layers: z.array(z.object({
-        name: z.string(),
-        mappings: z.array(z.any()),
-      })).optional(),
+        id: z.string(),
+        mapping_count: z.number(),
+      }).passthrough()),
     });
     const layersResponse = await client.customRequest(
       'GET',
@@ -624,16 +619,12 @@ export const workflow_005: TestCase = {
     );
     const layersData = layersResponse.data;
 
-    if (!layersData.success) {
-      throw new Error('Failed to get layers');
-    }
-
     if (!layersData.layers || layersData.layers.length === 0) {
       throw new Error('No layers returned from layers endpoint');
     }
 
     // Verify at least the base layer exists
-    const baseLayer = layersData.layers.find(layer => layer.name === 'base');
+    const baseLayer = layersData.layers.find(layer => layer.id === 'base');
     if (!baseLayer) {
       throw new Error('Base layer not found in layers response');
     }
@@ -663,12 +654,10 @@ export const workflow_005: TestCase = {
     );
     const finalConfigData = finalConfigResponse.data;
 
-    if (!finalConfigData.success) {
-      throw new Error('Failed to get final config');
+    // Verify mapping count is back to initial
+    if (finalConfigData.base_mappings.length !== initialMappingCount) {
+      throw new Error(`Expected ${initialMappingCount} mappings after delete, got ${finalConfigData.base_mappings.length}`);
     }
-
-    // The config should be back to original or close to it
-    // (There might be formatting differences, so we just check success)
 
     return {
       success: true,
