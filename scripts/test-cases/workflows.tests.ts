@@ -940,44 +940,34 @@ export const workflow_007: TestCase = {
   category: 'workflows',
   description: 'Simulator event → mapping → output workflow',
   setup: async (client: ApiClient) => {
-    // Create a test profile with a simple key mapping (a→b)
-    await client.createProfile('workflow-simulator-test', 'blank');
-
-    const config = `
-// Test profile for simulator workflow
-device_start("*");
-  map("VK_A", "VK_B");  // Remap 'a' to 'b'
-device_end();
-`;
-    await client.setProfileConfig('workflow-simulator-test', { source: config });
+    // Create a test profile (or use existing if it exists)
+    try {
+      await client.createProfile('workflow-simulator-test', 'blank');
+    } catch (error) {
+      // Profile might already exist, that's ok
+    }
   },
   execute: async (client: ApiClient) => {
-    // Step 1: Activate the profile with the mapping
-    const activateResponse = await client.activateProfile('workflow-simulator-test');
-
-    if (!activateResponse.data.success) {
-      throw new Error('Failed to activate test profile');
+    // Step 1: Activate the profile
+    const activateResult = await client.activateProfile('workflow-simulator-test');
+    if (!activateResult.data.success) {
+      throw new Error('Failed to activate workflow-simulator-test profile');
     }
 
-    // Step 2: Verify the profile is active
-    const statusSchema = z.object({
-      success: z.boolean(),
-      active_profile: z.string().nullable(),
-    });
-    const statusResponse = await client.customRequest(
-      'GET',
-      '/api/daemon/state',
-      statusSchema,
-      undefined
-    );
+    // Step 2: Set the config with mapping using PUT /api/config
+    const config = `// Test profile for simulator workflow
+device_start("*");
+  map("VK_A", "VK_B");  // Remap 'a' to 'b'
+device_end();`;
+    await client.customRequest('PUT', '/api/config', z.any(), { content: config });
 
-    if (statusResponse.data.active_profile !== 'workflow-simulator-test') {
-      throw new Error(
-        `Expected active profile to be 'workflow-simulator-test', got '${statusResponse.data.active_profile}'`
-      );
+    // Step 3: Verify the profile is active
+    const activateResponse = await client.getActiveProfile();
+    if (activateResponse.data.active_profile !== 'workflow-simulator-test') {
+      throw new Error(`Expected active profile 'workflow-simulator-test', got '${activateResponse.data.active_profile}'`);
     }
 
-    // Step 3: Simulate 'a' key press and release
+    // Step 4: Simulate 'a' key press and release
     const simulateSchema = z.object({
       success: z.boolean(),
     });
