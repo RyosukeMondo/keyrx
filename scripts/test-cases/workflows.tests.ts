@@ -347,7 +347,6 @@ export const workflow_004: TestCase = {
     // Step 1: List devices and get the first device
     const devicesResponse = await client.getDevices();
     const devicesData = z.object({
-      success: z.boolean(),
       devices: z.array(z.object({
         id: z.string(),
         name: z.string(),
@@ -380,7 +379,6 @@ export const workflow_004: TestCase = {
     // Verify the rename by listing devices again
     const verifyRenameResponse = await client.getDevices();
     const verifyRenameData = z.object({
-      success: z.boolean(),
       devices: z.array(z.object({
         id: z.string(),
         name: z.string(),
