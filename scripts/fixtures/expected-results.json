@@ -1,0 +1,403 @@
+{
+  "version": "1.0",
+  "description": "Expected API response database for automated E2E testing",
+  "updated": "2026-01-21",
+  "endpoints": {
+    "/api/status": {
+      "description": "Daemon status and health information",
+      "scenarios": {
+        "running": {
+          "status": 200,
+          "body": {
+            "status": "running",
+            "version": "0.1.0",
+            "daemon_running": true,
+            "uptime_secs": 0,
+            "active_profile": null,
+            "device_count": 0
+          },
+          "notes": "Daemon is fully started and ready. uptime_secs and device_count may vary."
+        },
+        "starting": {
+          "status": 200,
+          "body": {
+            "status": "starting",
+            "version": "0.1.0",
+            "daemon_running": false,
+            "uptime_secs": null,
+            "active_profile": null,
+            "device_count": null
+          },
+          "notes": "Daemon is still initializing"
+        },
+        "with_profile": {
+          "status": 200,
+          "body": {
+            "status": "running",
+            "version": "0.1.0",
+            "daemon_running": true,
+            "uptime_secs": 120,
+            "active_profile": "default",
+            "device_count": 2
+          },
+          "notes": "Daemon running with active profile and devices"
+        }
+      }
+    },
+    "/api/devices": {
+      "description": "List of detected input devices",
+      "scenarios": {
+        "empty": {
+          "status": 200,
+          "body": {
+            "devices": []
+          },
+          "notes": "No devices detected (common in test/VM environments)"
+        },
+        "single_device": {
+          "status": 200,
+          "body": {
+            "devices": [
+              {
+                "id": "test-keyboard-1",
+                "name": "Test Keyboard",
+                "path": "/dev/input/event0",
+                "serial": null,
+                "active": true,
+                "scope": "Global",
+                "layout": "us"
+              }
+            ]
+          },
+          "notes": "Single device detected"
+        },
+        "multiple_devices": {
+          "status": 200,
+          "body": {
+            "devices": [
+              {
+                "id": "keyboard-1",
+                "name": "Primary Keyboard",
+                "path": "/dev/input/event0",
+                "serial": "KB123456",
+                "active": true,
+                "scope": "Global",
+                "layout": "us"
+              },
+              {
+                "id": "keyboard-2",
+                "name": "Secondary Keyboard",
+                "path": "/dev/input/event1",
+                "serial": null,
+                "active": false,
+                "scope": "DeviceSpecific",
+                "layout": null
+              }
+            ]
+          },
+          "notes": "Multiple devices with different configurations"
+        }
+      }
+    },
+    "/api/profiles": {
+      "description": "List of configuration profiles",
+      "scenarios": {
+        "default_only": {
+          "status": 200,
+          "body": {
+            "profiles": [
+              {
+                "name": "default",
+                "rhaiPath": "%APPDATA%/keyrx/profiles/default.rhai",
+                "krxPath": "%APPDATA%/keyrx/profiles/default.krx",
+                "modifiedAt": "2026-01-21T00:00:00Z",
+                "createdAt": "2026-01-21T00:00:00Z",
+                "layerCount": 1,
+                "deviceCount": 0,
+                "keyCount": 0,
+                "isActive": true
+              }
+            ]
+          },
+          "notes": "Only default profile exists"
+        },
+        "multiple_profiles": {
+          "status": 200,
+          "body": {
+            "profiles": [
+              {
+                "name": "default",
+                "rhaiPath": "%APPDATA%/keyrx/profiles/default.rhai",
+                "krxPath": "%APPDATA%/keyrx/profiles/default.krx",
+                "modifiedAt": "2026-01-21T00:00:00Z",
+                "createdAt": "2026-01-21T00:00:00Z",
+                "layerCount": 1,
+                "deviceCount": 0,
+                "keyCount": 0,
+                "isActive": true
+              },
+              {
+                "name": "gaming",
+                "rhaiPath": "%APPDATA%/keyrx/profiles/gaming.rhai",
+                "krxPath": "%APPDATA%/keyrx/profiles/gaming.krx",
+                "modifiedAt": "2026-01-21T00:00:00Z",
+                "createdAt": "2026-01-21T00:00:00Z",
+                "layerCount": 3,
+                "deviceCount": 1,
+                "keyCount": 50,
+                "isActive": false
+              }
+            ]
+          },
+          "notes": "Multiple profiles with one active"
+        },
+        "empty": {
+          "status": 200,
+          "body": {
+            "profiles": []
+          },
+          "notes": "No profiles configured (fresh install)"
+        }
+      }
+    },
+    "/api/profiles/:name/config": {
+      "description": "Get profile configuration source code",
+      "scenarios": {
+        "default_profile": {
+          "status": 200,
+          "body": {
+            "name": "default",
+            "source": "// Default KeyRx configuration\n"
+          },
+          "notes": "Default profile with minimal config"
+        },
+        "complex_profile": {
+          "status": 200,
+          "body": {
+            "name": "gaming",
+            "source": "// Gaming profile\nlet base = layer(\"base\");\nbase.bind(KC_A, KC_B);\n"
+          },
+          "notes": "Profile with custom key bindings"
+        },
+        "not_found": {
+          "status": 404,
+          "body": {
+            "error": {
+              "code": 404,
+              "message": "Profile not found: nonexistent"
+            }
+          },
+          "notes": "Profile does not exist"
+        }
+      }
+    },
+    "/api/profiles": {
+      "description": "Create new profile",
+      "method": "POST",
+      "scenarios": {
+        "create_success": {
+          "status": 201,
+          "body": {
+            "success": true,
+            "name": "test-profile"
+          },
+          "notes": "Profile created successfully"
+        },
+        "duplicate_name": {
+          "status": 409,
+          "body": {
+            "error": {
+              "code": 409,
+              "message": "Profile already exists: default"
+            }
+          },
+          "notes": "Profile name already taken"
+        },
+        "invalid_name": {
+          "status": 400,
+          "body": {
+            "error": {
+              "code": 400,
+              "message": "Invalid profile name"
+            }
+          },
+          "notes": "Profile name contains invalid characters"
+        }
+      }
+    },
+    "/api/profiles/:name": {
+      "description": "Delete profile",
+      "method": "DELETE",
+      "scenarios": {
+        "delete_success": {
+          "status": 200,
+          "body": {
+            "success": true
+          },
+          "notes": "Profile deleted successfully"
+        },
+        "not_found": {
+          "status": 404,
+          "body": {
+            "error": {
+              "code": 404,
+              "message": "Profile not found"
+            }
+          },
+          "notes": "Profile does not exist"
+        },
+        "cannot_delete_active": {
+          "status": 409,
+          "body": {
+            "error": {
+              "code": 409,
+              "message": "Cannot delete active profile"
+            }
+          },
+          "notes": "Cannot delete the currently active profile"
+        }
+      }
+    },
+    "/api/profiles/:name/activate": {
+      "description": "Activate profile",
+      "method": "POST",
+      "scenarios": {
+        "activate_success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "compile_time_ms": 50,
+            "reload_time_ms": 10
+          },
+          "notes": "Profile compiled and activated"
+        },
+        "activate_with_error": {
+          "status": 500,
+          "body": {
+            "success": false,
+            "compile_time_ms": 45,
+            "reload_time_ms": 0,
+            "error": "Compilation error: syntax error on line 10"
+          },
+          "notes": "Profile has compilation errors"
+        },
+        "not_found": {
+          "status": 404,
+          "body": {
+            "error": {
+              "code": 404,
+              "message": "Profile not found"
+            }
+          },
+          "notes": "Profile does not exist"
+        }
+      }
+    },
+    "/api/devices/:id": {
+      "description": "Update device configuration",
+      "method": "PATCH",
+      "scenarios": {
+        "update_success": {
+          "status": 200,
+          "body": {
+            "success": true
+          },
+          "notes": "Device configuration updated"
+        },
+        "invalid_layout": {
+          "status": 400,
+          "body": {
+            "error": {
+              "code": 400,
+              "message": "Invalid layout"
+            }
+          },
+          "notes": "Layout value is invalid"
+        },
+        "device_not_found": {
+          "status": 404,
+          "body": {
+            "error": {
+              "code": 404,
+              "message": "Device not found"
+            }
+          },
+          "notes": "Device ID does not exist"
+        }
+      }
+    },
+    "/api/metrics/latency": {
+      "description": "Get latency statistics",
+      "scenarios": {
+        "with_data": {
+          "status": 200,
+          "body": {
+            "min_us": 50,
+            "avg_us": 120,
+            "max_us": 500,
+            "p50_us": 100,
+            "p95_us": 300,
+            "p99_us": 450,
+            "count": 1000
+          },
+          "notes": "Latency metrics after processing events"
+        },
+        "no_data": {
+          "status": 200,
+          "body": {
+            "min_us": 0,
+            "avg_us": 0,
+            "max_us": 0,
+            "p50_us": 0,
+            "p95_us": 0,
+            "p99_us": 0,
+            "count": 0
+          },
+          "notes": "No events processed yet"
+        }
+      }
+    },
+    "/api/layouts": {
+      "description": "List available keyboard layouts",
+      "scenarios": {
+        "standard_layouts": {
+          "status": 200,
+          "body": {
+            "layouts": [
+              {
+                "id": "us",
+                "name": "US QWERTY",
+                "description": "Standard US keyboard layout"
+              },
+              {
+                "id": "uk",
+                "name": "UK QWERTY",
+                "description": "UK keyboard layout"
+              },
+              {
+                "id": "dvorak",
+                "name": "Dvorak",
+                "description": "Dvorak keyboard layout"
+              }
+            ]
+          },
+          "notes": "Standard built-in layouts"
+        }
+      }
+    }
+  },
+  "validation_rules": {
+    "ignore_fields": [
+      "timestamp",
+      "uptime_secs",
+      "modifiedAt",
+      "createdAt"
+    ],
+    "notes": [
+      "Fields in ignore_fields have dynamic values and should not be strictly compared",
+      "Response bodies may contain additional fields due to passthrough() schemas",
+      "Version strings should match semantic versioning pattern",
+      "Timestamps should be ISO 8601 format or Unix microseconds"
+    ]
+  }
+}
