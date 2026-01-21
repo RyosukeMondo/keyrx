@@ -33,7 +33,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Automated test execution, daemon management_
   - _Prompt: Role: Test Infrastructure Engineer | Task: Create automated-e2e-test.ts CLI tool that starts daemon, runs test suite, manages lifecycle. Options: --daemon-path (default: target/release/keyrx_daemon), --port (default: 9867), --max-iterations (default: 3), --fix (enable auto-fix), --report-json (output JSON report). Use child_process to spawn daemon, wait for /api/status ready, handle cleanup on exit. | Restrictions: Must handle Windows/Linux daemon paths, timeout daemon startup after 30s, ensure cleanup on SIGINT/SIGTERM | Success: CLI runs, starts daemon, executes tests, outputs results_
 
-- [ ] 1.2 Create daemon fixture with health checks
+- [x] 1.2 Create daemon fixture with health checks
   - File: `scripts/fixtures/daemon-fixture.ts`
   - Start daemon with test profile
   - Health check polling (GET /api/status)

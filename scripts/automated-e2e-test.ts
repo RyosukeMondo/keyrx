@@ -18,11 +18,11 @@
  *   --help                    Show this help message
  */
 
-import { spawn, ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { DaemonFixture } from './fixtures/daemon-fixture.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -56,145 +56,8 @@ interface TestSuiteResult {
   results: TestResult[];
 }
 
-// Daemon management
-class DaemonManager {
-  private process?: ChildProcess;
-  private readonly daemonPath: string;
-  private readonly port: number;
-  private readonly logs: string[] = [];
-
-  constructor(daemonPath: string, port: number) {
-    this.daemonPath = daemonPath;
-    this.port = port;
-  }
-
-  /**
-   * Start the daemon process
-   */
-  async start(): Promise<void> {
-    console.log(`Starting daemon: ${this.daemonPath} on port ${this.port}...`);
-
-    // Check if daemon binary exists
-    if (!fs.existsSync(this.daemonPath)) {
-      throw new Error(`Daemon binary not found: ${this.daemonPath}`);
-    }
-
-    // Determine platform-specific command
-    const isWindows = process.platform === 'win32';
-    const daemonArgs = ['--port', this.port.toString()];
-
-    this.process = spawn(this.daemonPath, daemonArgs, {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        RUST_LOG: 'debug',
-      },
-    });
-
-    // Capture stdout
-    this.process.stdout?.on('data', (data) => {
-      const output = data.toString();
-      this.logs.push(output);
-      if (process.env.DEBUG) {
-        console.log('[daemon stdout]', output);
-      }
-    });
-
-    // Capture stderr
-    this.process.stderr?.on('data', (data) => {
-      const output = data.toString();
-      this.logs.push(output);
-      if (process.env.DEBUG) {
-        console.error('[daemon stderr]', output);
-      }
-    });
-
-    // Handle process exit
-    this.process.on('exit', (code, signal) => {
-      console.log(`Daemon exited with code ${code}, signal ${signal}`);
-    });
-
-    // Wait for daemon to be ready
-    await this.waitUntilReady(30000);
-    console.log('Daemon is ready');
-  }
-
-  /**
-   * Wait for daemon to be healthy
-   */
-  private async waitUntilReady(timeoutMs: number): Promise<void> {
-    const startTime = Date.now();
-    const checkInterval = 100; // ms
-
-    while (Date.now() - startTime < timeoutMs) {
-      try {
-        const response = await fetch(`http://localhost:${this.port}/api/status`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'ready' || data.running === true) {
-            return;
-          }
-        }
-      } catch (error) {
-        // Connection refused or other error - daemon not ready yet
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, checkInterval));
-    }
-
-    throw new Error(`Daemon failed to become ready within ${timeoutMs}ms`);
-  }
-
-  /**
-   * Stop the daemon gracefully
-   */
-  async stop(): Promise<void> {
-    if (!this.process) {
-      return;
-    }
-
-    console.log('Stopping daemon...');
-
-    return new Promise((resolve) => {
-      if (!this.process) {
-        resolve();
-        return;
-      }
-
-      const killTimeout = 5000; // 5 seconds
-
-      // Set up timeout to force kill
-      const forceKillTimer = setTimeout(() => {
-        if (this.process && !this.process.killed) {
-          console.warn('Daemon did not stop gracefully, force killing...');
-          this.process.kill('SIGKILL');
-        }
-      }, killTimeout);
-
-      // Handle process exit
-      this.process.once('exit', () => {
-        clearTimeout(forceKillTimer);
-        console.log('Daemon stopped');
-        resolve();
-      });
-
-      // Send termination signal
-      if (process.platform === 'win32') {
-        // Windows doesn't support SIGTERM
-        this.process.kill('SIGINT');
-      } else {
-        this.process.kill('SIGTERM');
-      }
-    });
-  }
-
-  /**
-   * Get collected logs
-   */
-  getLogs(): string[] {
-    return this.logs;
-  }
-}
+// Type alias for backward compatibility
+type DaemonManager = DaemonFixture;
 
 // Test execution (placeholder - will be implemented in later tasks)
 async function executeTests(port: number): Promise<TestSuiteResult> {
@@ -218,7 +81,7 @@ async function executeTests(port: number): Promise<TestSuiteResult> {
 // Auto-fix engine (placeholder - will be implemented in later tasks)
 async function applyAutoFixes(
   results: TestSuiteResult,
-  daemonManager: DaemonManager,
+  daemonFixture: DaemonFixture,
   port: number,
   iteration: number,
   maxIterations: number
@@ -322,7 +185,10 @@ Options:
 // Main execution
 async function main(): Promise<void> {
   const options = parseArgs();
-  const daemonManager = new DaemonManager(options.daemonPath, options.port);
+  const daemonFixture = new DaemonFixture({
+    daemonPath: options.daemonPath,
+    port: options.port,
+  });
 
   // Handle cleanup on exit
   let cleanupDone = false;
@@ -330,7 +196,7 @@ async function main(): Promise<void> {
     if (cleanupDone) return;
     cleanupDone = true;
     console.log('\nCleaning up...');
-    await daemonManager.stop();
+    await daemonFixture.stop();
   };
 
   process.on('SIGINT', cleanup);
@@ -343,10 +209,12 @@ async function main(): Promise<void> {
 
   try {
     // Start daemon
-    await daemonManager.start();
+    console.log(`Starting daemon: ${options.daemonPath} on port ${options.port}...`);
+    await daemonFixture.start();
+    console.log('Daemon is ready');
 
     // Execute tests
-    let results = await executeTests(options.port);
+    let results = await executeTests(daemonFixture.getPort());
 
     // Apply auto-fixes if enabled
     if (options.fix && results.failed > 0) {
@@ -355,8 +223,8 @@ async function main(): Promise<void> {
       for (let iteration = 1; iteration <= options.maxIterations; iteration++) {
         results = await applyAutoFixes(
           results,
-          daemonManager,
-          options.port,
+          daemonFixture,
+          daemonFixture.getPort(),
           iteration,
           options.maxIterations
         );
@@ -393,10 +261,10 @@ async function main(): Promise<void> {
     console.error('Error during test execution:', error);
 
     // Try to collect daemon logs
-    const logs = daemonManager.getLogs();
+    const logs = daemonFixture.getLogs();
     if (logs.length > 0) {
       console.error('\nDaemon logs:');
-      console.error(logs.join(''));
+      console.error(logs.join('\n'));
     }
 
     await cleanup();
@@ -413,4 +281,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 // Export for testing
-export { DaemonManager, parseArgs, executeTests, applyAutoFixes, generateReport };
+export { parseArgs, executeTests, applyAutoFixes, generateReport };
