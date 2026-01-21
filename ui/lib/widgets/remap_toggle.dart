@@ -10,8 +10,8 @@ import 'package:flutter/material.dart';
 /// Shows a Material Switch with clear ON/OFF visual indicators including
 /// labels and color-coded states. When toggled, calls the provided callback.
 class RemapToggle extends StatelessWidget {
-  const RemapToggle({required this.enabled, super.key, this.onChanged});
 
+  const RemapToggle({super.key, required this.enabled, this.onChanged});
   /// Current remap enabled state.
   final bool enabled;
 

@@ -1,0 +1,101 @@
+/// Core FFI initialization and lifecycle management.
+///
+/// Provides initialization, version, and disposal functionality
+/// for the KeyRx bridge.
+library;
+
+import 'dart:async';
+import 'dart:ffi';
+import 'dart:io';
+
+import 'package:ffi/ffi.dart';
+
+import 'bindings.dart';
+import 'debug_tools.dart';
+
+/// Mixin providing core FFI initialization and lifecycle management.
+mixin BridgeCoreMixin {
+  KeyrxBindings? get bindings;
+  bool get initialized;
+  set initialized(bool value);
+  Object? get loadFailure;
+
+  /// Load the native library based on platform.
+  static DynamicLibrary loadLibrary() {
+    if (Platform.isLinux) {
+      return DynamicLibrary.open('libkeyrx_core.so');
+    } else if (Platform.isWindows) {
+      return DynamicLibrary.open('keyrx_core.dll');
+    } else {
+      throw UnsupportedError(
+        'Platform not supported: ${Platform.operatingSystem}',
+      );
+    }
+  }
+
+  /// Initialize the KeyRx engine.
+  bool initialize() => FfiDebugTools.traceSync<bool>(
+      operation: 'core.init',
+      context: {'has_bindings': bindings != null},
+      call: () {
+        if (initialized) return true;
+        if (bindings == null || loadFailure != null) {
+          return false;
+        }
+
+        final result = bindings!.init();
+        initialized = result == 0;
+        return initialized;
+      },
+    );
+
+  /// Set the configuration root directory.
+  ///
+  /// Must be called before [initialize] to take effect for runtime initialization.
+  void setConfigRoot(String path) {
+    if (bindings == null) return;
+
+    FfiDebugTools.traceSync<void>(
+      operation: 'core.set_config_root',
+      context: {'path': path},
+      includeTimeline: false,
+      call: () {
+        final pathPtr = path.toNativeUtf8().cast<Char>();
+        try {
+          bindings!.setConfigRoot(pathPtr);
+        } finally {
+          malloc.free(pathPtr);
+        }
+      },
+    );
+  }
+
+  /// Get the core library version.
+  String get version {
+    if (bindings == null) {
+      return 'unavailable';
+    }
+
+    return FfiDebugTools.traceSync<String>(
+      operation: 'core.version',
+      includeTimeline: false,
+      call: () {
+        final ptr = bindings!.version();
+        return ptr.cast<Utf8>().toDartString();
+      },
+    );
+  }
+
+  /// Check if the engine is initialized.
+  bool get isInitialized => initialized;
+}
+
+/// Extension providing stream controller disposal.
+extension BridgeCoreDispose on BridgeCoreMixin {
+  /// Close stream controllers and reset state.
+  Future<void> disposeControllers(
+    StreamController<dynamic>? stateController,
+  ) async {
+    await stateController?.close();
+  }
+}
