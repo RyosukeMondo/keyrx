@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KeyRx E2E Test Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f5f7fa;
+      color: #2c3e50;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 500;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    input[type="file"] {
+      padding: 10px;
+      border: 2px solid #e1e8ed;
+      border-radius: 8px;
+      background: white;
+      font-size: 0.9em;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-left: 4px solid #667eea;
+    }
+
+    .stat-label {
+      font-size: 0.9em;
+      color: #7f8c8d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 2.5em;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .stat-trend {
+      font-size: 0.85em;
+      margin-top: 8px;
+      color: #95a5a6;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .chart-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .chart-card h2 {
+      margin-bottom: 20px;
+      color: #2c3e50;
+      font-size: 1.3em;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+
+    .table-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
+    .table-card h2 {
+      margin-bottom: 20px;
+      color: #2c3e50;
+      font-size: 1.3em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: #f8f9fa;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e1e8ed;
+    }
+
+    th {
+      font-weight: 600;
+      color: #7f8c8d;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tbody tr:hover {
+      background: #f8f9fa;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 60px 20px;
+      color: #95a5a6;
+    }
+
+    .no-data-icon {
+      font-size: 4em;
+      margin-bottom: 20px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #667eea;
+    }
+
+    .loading-spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error {
+      background: #fee;
+      border: 1px solid #fcc;
+      color: #c33;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .charts {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📊 E2E Test Dashboard</h1>
+      <p>Real-time monitoring of API E2E test health and performance</p>
+    </header>
+
+    <div class="controls">
+      <button class="btn" onclick="loadDefaultMetrics()">📁 Load Local Metrics</button>
+      <input type="file" id="fileInput" accept=".jsonl,.json" onchange="loadFromFile(event)">
+      <button class="btn" onclick="refreshDashboard()">🔄 Refresh</button>
+    </div>
+
+    <div id="error" class="error" style="display: none;"></div>
+
+    <div id="loading" class="loading" style="display: none;">
+      <div class="loading-spinner"></div>
+      <p>Loading metrics...</p>
+    </div>
+
+    <div id="dashboard" style="display: none;">
+      <section class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Total Runs</div>
+          <div class="stat-value" id="totalRuns">0</div>
+          <div class="stat-trend" id="runsTrend"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Average Pass Rate</div>
+          <div class="stat-value" id="avgPassRate">0%</div>
+          <div class="stat-trend" id="passRateTrend"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Average Duration</div>
+          <div class="stat-value" id="avgDuration">0s</div>
+          <div class="stat-trend" id="durationTrend"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Last Run</div>
+          <div class="stat-value" id="lastRun">-</div>
+          <div class="stat-trend" id="lastRunStatus"></div>
+        </div>
+      </section>
+
+      <section class="charts">
+        <div class="chart-card">
+          <h2>Pass Rate Trend</h2>
+          <div class="chart-container">
+            <canvas id="passRateChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h2>Duration Trend</h2>
+          <div class="chart-container">
+            <canvas id="durationChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="table-card">
+        <h2>Slowest Tests (Top 10)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Test Name</th>
+              <th>Avg Duration</th>
+              <th>Occurrences</th>
+            </tr>
+          </thead>
+          <tbody id="slowestTestsTable">
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <div id="noData" class="no-data" style="display: none;">
+      <div class="no-data-icon">📭</div>
+      <h2>No Metrics Available</h2>
+      <p>Load metrics from a file or run tests to generate data</p>
+    </div>
+  </div>
+
+  <script>
+    let metricsData = [];
+    let passRateChart = null;
+    let durationChart = null;
+
+    // Load default metrics file
+    async function loadDefaultMetrics() {
+      showLoading();
+      try {
+        const response = await fetch('../metrics/metrics.jsonl');
+        if (!response.ok) throw new Error('Metrics file not found');
+        const text = await response.text();
+        parseMetrics(text);
+        renderDashboard();
+      } catch (error) {
+        showError('Failed to load metrics: ' + error.message);
+      }
+    }
+
+    // Load from file input
+    function loadFromFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      showLoading();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target.result;
+          if (file.name.endsWith('.json')) {
+            // Regular JSON array
+            metricsData = JSON.parse(text);
+          } else {
+            // JSON Lines format
+            parseMetrics(text);
+          }
+          renderDashboard();
+        } catch (error) {
+          showError('Failed to parse file: ' + error.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Parse JSON Lines format
+    function parseMetrics(text) {
+      const lines = text.trim().split('\n').filter(line => line.length > 0);
+      metricsData = lines.map(line => JSON.parse(line));
+    }
+
+    // Render dashboard
+    function renderDashboard() {
+      if (metricsData.length === 0) {
+        showNoData();
+        return;
+      }
+
+      hideError();
+      hideLoading();
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('noData').style.display = 'none';
+
+      // Calculate stats
+      const totalRuns = metricsData.length;
+      const passRates = metricsData.map(m =>
+        m.totalTests > 0 ? (m.passedTests / m.totalTests) * 100 : 0
+      );
+      const avgPassRate = passRates.reduce((a, b) => a + b, 0) / passRates.length;
+      const avgDuration = metricsData.reduce((a, b) => a + b.duration, 0) / metricsData.length;
+      const lastRun = metricsData[metricsData.length - 1];
+
+      // Update stats
+      document.getElementById('totalRuns').textContent = totalRuns;
+      document.getElementById('avgPassRate').textContent = avgPassRate.toFixed(1) + '%';
+      document.getElementById('avgDuration').textContent = (avgDuration / 1000).toFixed(1) + 's';
+
+      const lastRunDate = new Date(lastRun.timestamp);
+      document.getElementById('lastRun').textContent = lastRunDate.toLocaleString();
+
+      const lastPassRate = lastRun.totalTests > 0
+        ? (lastRun.passedTests / lastRun.totalTests) * 100
+        : 0;
+      document.getElementById('lastRunStatus').textContent =
+        lastPassRate === 100 ? '✅ All passed' : `⚠️ ${lastPassRate.toFixed(0)}% passed`;
+
+      // Render charts
+      renderPassRateChart();
+      renderDurationChart();
+      renderSlowestTests();
+    }
+
+    // Render pass rate chart
+    function renderPassRateChart() {
+      const ctx = document.getElementById('passRateChart').getContext('2d');
+      const labels = metricsData.map(m => new Date(m.timestamp).toLocaleDateString());
+      const data = metricsData.map(m =>
+        m.totalTests > 0 ? (m.passedTests / m.totalTests) * 100 : 0
+      );
+
+      if (passRateChart) {
+        passRateChart.destroy();
+      }
+
+      passRateChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Pass Rate (%)',
+            data: data,
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(value) { return value + '%'; }
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // Render duration chart
+    function renderDurationChart() {
+      const ctx = document.getElementById('durationChart').getContext('2d');
+      const labels = metricsData.map(m => new Date(m.timestamp).toLocaleDateString());
+      const data = metricsData.map(m => m.duration / 1000);
+
+      if (durationChart) {
+        durationChart.destroy();
+      }
+
+      durationChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Duration (seconds)',
+            data: data,
+            backgroundColor: '#667eea',
+            borderColor: '#5568d3',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) { return value + 's'; }
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // Render slowest tests table
+    function renderSlowestTests() {
+      const testDurations = new Map();
+
+      for (const entry of metricsData) {
+        for (const test of entry.slowestTests || []) {
+          const existing = testDurations.get(test.name) || { total: 0, count: 0 };
+          testDurations.set(test.name, {
+            total: existing.total + test.duration,
+            count: existing.count + 1
+          });
+        }
+      }
+
+      const slowestTests = Array.from(testDurations.entries())
+        .map(([name, stats]) => ({
+          name,
+          avgDuration: stats.total / stats.count,
+          occurrences: stats.count
+        }))
+        .sort((a, b) => b.avgDuration - a.avgDuration)
+        .slice(0, 10);
+
+      const tbody = document.getElementById('slowestTestsTable');
+      tbody.innerHTML = '';
+
+      slowestTests.forEach((test, index) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = index + 1;
+        row.insertCell(1).textContent = test.name;
+        row.insertCell(2).textContent = test.avgDuration.toFixed(0) + 'ms';
+        row.insertCell(3).textContent = test.occurrences;
+      });
+    }
+
+    // UI state management
+    function showLoading() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('noData').style.display = 'none';
+    }
+
+    function hideLoading() {
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function showNoData() {
+      document.getElementById('noData').style.display = 'block';
+      document.getElementById('dashboard').style.display = 'none';
+      hideLoading();
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      hideLoading();
+      showNoData();
+    }
+
+    function hideError() {
+      document.getElementById('error').style.display = 'none';
+    }
+
+    function refreshDashboard() {
+      if (metricsData.length > 0) {
+        renderDashboard();
+      } else {
+        loadDefaultMetrics();
+      }
+    }
+
+    // Auto-load metrics on page load
+    window.onload = () => {
+      loadDefaultMetrics();
+    };
+  </script>
+</body>
+</html>
