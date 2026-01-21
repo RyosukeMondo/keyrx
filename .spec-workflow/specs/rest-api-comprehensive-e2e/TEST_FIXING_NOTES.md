@@ -1,6 +1,12 @@
 # E2E Test Fixing Notes
 
-## Current Status (2026-01-22)
+## Current Status (2026-01-22 - Latest)
+
+- **Pass Rate**: 37/83 tests passing (44.6%)
+- **Previous**: 36/83 (43.4%)
+- **Progress**: +1 test fixed
+
+## Previous Status (2026-01-22 - Earlier)
 
 - **Pass Rate**: 36/83 tests passing (43.4%)
 - **Previous**: 32/83 (38.6%)
@@ -44,12 +50,24 @@ assert: (actual, expected) => {
 
 ## Tests Fixed (2026-01-22)
 
+### Session 1 (Early morning)
 1. **macros-001b**: POST /api/macros/start-recording - Fail when already recording
 2. **macros-002b**: POST /api/macros/stop-recording - Fail when not recording
 3. **simulator-001d**: POST /api/simulator/events - Fail with no events or scenario
 4. **simulator-001e**: POST /api/simulator/events - Fail with unknown scenario
 
 All had the same issue: checking `result.status` which was undefined.
+
+### Session 2 (Current)
+1. **layouts-002**: GET /api/layouts/:name - Get layout details
+   - Fixed: Simplified response handling, return response.data directly
+2. **layouts-002b**: GET /api/layouts/:name - Not found layout
+   - Fixed: Corrected error structure check (error.message instead of error as string)
+3. **API Client**: setProfileConfig - Map 'source' to 'config' field
+   - Fixed: Client now sends { config: string } as API expects
+4. **websocket-004**: WebSocket - Receive profile event notification
+   - Fixed: Use POST instead of PUT for profile activation
+   - Fixed: Use createProfile method instead of raw customRequest with wrong schema
 
 ## Remaining Known Issues
 
