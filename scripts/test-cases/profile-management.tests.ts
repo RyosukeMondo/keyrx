@@ -12,6 +12,16 @@ import type { TestCase } from './api-tests.js';
 import { z } from 'zod';
 
 /**
+ * Generate a short test profile name (max 32 chars per API limit)
+ * Format: "prf-{prefix}-{timestamp_last6}"
+ * Example: "prf-dup-234567" (14-18 chars depending on prefix)
+ */
+function shortProfileName(prefix: string): string {
+  const timestamp = Date.now().toString().slice(-6); // Last 6 digits
+  return `prf-${prefix}-${timestamp}`;
+}
+
+/**
  * No-op setup function for tests that don't need preparation
  */
 const noOpSetup = async (): Promise<void> => {
@@ -86,14 +96,14 @@ export const profileManagementTestCases: TestCase[] = [
     priority: 2,
     setup: async (client) => {
       // Create source profile for duplication
-      const sourceName = `test-profile-source-${Date.now()}`;
+      const sourceName = shortProfileName('src');
       await client.createProfile(sourceName);
     },
     execute: async (client) => {
       // Find the source profile we just created
       const profiles = await client.getProfiles();
       const sourceProfile = profiles.data.profiles.find((p: any) =>
-        p.name.startsWith('test-profile-source-')
+        p.name.startsWith('prf-src-')
       );
 
       if (!sourceProfile) {
@@ -101,7 +111,7 @@ export const profileManagementTestCases: TestCase[] = [
       }
 
       const sourceName = sourceProfile.name;
-      const newName = `test-profile-duplicate-${Date.now()}`;
+      const newName = shortProfileName('dup');
 
       const response = await client.customRequest(
         'POST',
@@ -180,7 +190,7 @@ export const profileManagementTestCases: TestCase[] = [
     priority: 2,
     setup: noOpSetup,
     execute: async (client) => {
-      const newName = `test-profile-duplicate-${Date.now()}`;
+      const newName = shortProfileName("dup");
 
       try {
         const response = await client.customRequest(
@@ -235,8 +245,8 @@ export const profileManagementTestCases: TestCase[] = [
     priority: 2,
     setup: async (client) => {
       // Create source profile and target profile with conflicting name
-      const sourceName = `test-profile-source-${Date.now()}`;
-      const targetName = `test-profile-target-${Date.now()}`;
+      const sourceName = shortProfileName("src");
+      const targetName = shortProfileName("tgt");
       await client.createProfile(sourceName);
       await client.createProfile(targetName);
     },
@@ -244,10 +254,10 @@ export const profileManagementTestCases: TestCase[] = [
       // Find both profiles
       const profiles = await client.getProfiles();
       const sourceProfile = profiles.data.profiles.find((p: any) =>
-        p.name.startsWith('test-profile-source-')
+        p.name.startsWith('prf-src-')
       );
       const targetProfile = profiles.data.profiles.find((p: any) =>
-        p.name.startsWith('test-profile-target-')
+        p.name.startsWith('prf-tgt-')
       );
 
       if (!sourceProfile || !targetProfile) {
@@ -329,14 +339,14 @@ export const profileManagementTestCases: TestCase[] = [
     priority: 2,
     setup: async (client) => {
       // Create profile to rename
-      const originalName = `test-profile-rename-${Date.now()}`;
+      const originalName = shortProfileName("ren");
       await client.createProfile(originalName);
     },
     execute: async (client) => {
       // Find the profile we just created
       const profiles = await client.getProfiles();
       const profile = profiles.data.profiles.find((p: any) =>
-        p.name.startsWith('test-profile-rename-')
+        p.name.startsWith('prf-ren-')
       );
 
       if (!profile) {
@@ -344,7 +354,7 @@ export const profileManagementTestCases: TestCase[] = [
       }
 
       const originalName = profile.name;
-      const newName = `test-profile-renamed-${Date.now()}`;
+      const newName = shortProfileName("new");
 
       const response = await client.customRequest(
         'PUT',
@@ -437,7 +447,7 @@ export const profileManagementTestCases: TestCase[] = [
     priority: 2,
     setup: noOpSetup,
     execute: async (client) => {
-      const newName = `test-profile-renamed-${Date.now()}`;
+      const newName = shortProfileName("new");
 
       try {
         const response = await client.customRequest(
@@ -492,14 +502,14 @@ export const profileManagementTestCases: TestCase[] = [
     priority: 2,
     setup: async (client) => {
       // Create profile to rename
-      const originalName = `test-profile-rename-invalid-${Date.now()}`;
+      const originalName = shortProfileName("inv");
       await client.createProfile(originalName);
     },
     execute: async (client) => {
       // Find the profile we just created
       const profiles = await client.getProfiles();
       const profile = profiles.data.profiles.find((p: any) =>
-        p.name.startsWith('test-profile-rename-invalid-')
+        p.name.startsWith('prf-inv-')
       );
 
       if (!profile) {
@@ -575,8 +585,8 @@ export const profileManagementTestCases: TestCase[] = [
     priority: 2,
     setup: async (client) => {
       // Create two profiles
-      const sourceName = `test-profile-rename-source-${Date.now()}`;
-      const targetName = `test-profile-rename-target-${Date.now()}`;
+      const sourceName = shortProfileName("rsrc");
+      const targetName = shortProfileName("rtgt");
       await client.createProfile(sourceName);
       await client.createProfile(targetName);
     },
@@ -584,10 +594,10 @@ export const profileManagementTestCases: TestCase[] = [
       // Find both profiles
       const profiles = await client.getProfiles();
       const sourceProfile = profiles.data.profiles.find((p: any) =>
-        p.name.startsWith('test-profile-rename-source-')
+        p.name.startsWith('prf-rsrc-')
       );
       const targetProfile = profiles.data.profiles.find((p: any) =>
-        p.name.startsWith('test-profile-rename-target-')
+        p.name.startsWith('prf-rtgt-')
       );
 
       if (!sourceProfile || !targetProfile) {
@@ -669,14 +679,14 @@ export const profileManagementTestCases: TestCase[] = [
     priority: 2,
     setup: async (client) => {
       // Create a valid profile
-      const profileName = `test-profile-validate-${Date.now()}`;
+      const profileName = shortProfileName("val");
       await client.createProfile(profileName);
     },
     execute: async (client) => {
       // Find the profile we just created
       const profiles = await client.getProfiles();
       const profile = profiles.data.profiles.find((p: any) =>
-        p.name.startsWith('test-profile-validate-')
+        p.name.startsWith('prf-val-')
       );
 
       if (!profile) {

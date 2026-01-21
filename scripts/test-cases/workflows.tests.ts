@@ -14,6 +14,16 @@ import type { TestCase } from './api-tests.js';
 import { z } from 'zod';
 
 /**
+ * Generate a short test profile name (max 32 chars per API limit)
+ * Format: "prf-{prefix}-{timestamp_last6}"
+ * Example: "prf-wf-234567" (14-17 chars depending on prefix)
+ */
+function shortProfileName(prefix: string): string {
+  const timestamp = Date.now().toString().slice(-6); // Last 6 digits
+  return `prf-${prefix}-${timestamp}`;
+}
+
+/**
  * No-op setup function for tests that don't need preparation
  */
 const noOpSetup = async (): Promise<void> => {
