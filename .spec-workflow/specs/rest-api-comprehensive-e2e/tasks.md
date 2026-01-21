@@ -462,9 +462,13 @@ Before marking spec complete:
 
 - [x] Run `npm install` - succeeds without errors
 - [x] Run `npx tsx scripts/automated-e2e-test.ts --daemon-path target/release/keyrx_daemon` - REST API tests pass
-  - **Current Status**: 71/83 passing (85.5%) - continued improvements!
-  - **Recent Progress** (2026-01-23 early morning):
-    - ✅ **LATEST**: Fixed workflow tests - device workflow now passing!
+  - **Current Status**: 73/83 passing (88.0%) - continued improvements!
+  - **Recent Progress** (2026-01-22):
+    - ✅ **LATEST**: Fixed profile name conflict responses - now returns 409 Conflict instead of 400 Bad Request
+    - ✅ Added ApiError::Conflict variant for proper HTTP 409 status codes
+    - ✅ Updated profile_error_to_api_error to map ProfileError::AlreadyExists to Conflict
+    - ✅ Fixed profiles-011c (duplicate conflict) and profiles-012c (rename conflict) tests
+    - ✅ Fixed workflow tests - device workflow now passing!
     - ✅ Updated devices-002 test to use 'layout' field instead of non-existent 'enabled' field
     - ✅ Fixed integration-002 device workflow test to use layout updates
     - ✅ Device 404 tests all passing after profile_error_to_api_error fixes
@@ -509,13 +513,12 @@ Before marking spec complete:
     - ✅ Metrics: 4/4 (100%) - COMPLETE
     - ✅ Simulator: 7/7 (100%) - COMPLETE
     - ✅ Workflows: 2/6 (33.3%) - 4 failures (IPC-dependent + architectural limitations)
-    - ⚠️  Profiles: 15/20 (75.0%) - 5 failures (IPC-dependent operations)
+    - ⚠️  Profiles: 17/20 (85.0%) - 3 failures (IPC-dependent operations)
     - ⚠️  Websocket: 3/5 (60.0%) - 2 failures (event notification timeouts)
     - ❌ Status: 0/1 (0.0%) - 1 failure (IPC-dependent daemon_running field)
-  - **Remaining Issues** (12 failures):
-    - **IPC-Dependent Tests (7 failures)**: Tests require full daemon with IPC socket for profile activation, daemon status queries
+  - **Remaining Issues** (10 failures):
+    - **IPC-Dependent Tests (5 failures)**: Tests require full daemon with IPC socket for profile activation, daemon status queries
       - Status: GET /api/status (daemon_running field requires IPC)
-      - Profiles: POST duplicate + PUT rename conflict tests (2 tests - name conflict validation)
       - Workflows: Profile lifecycle, duplicate→rename→activate, validation→fix→activate (2 tests - all require profile activation via IPC)
       - Workflows: Simulator event → mapping → output (1 test - requires profile activation)
     - **WebSocket Events (2 failures)**: Event notification timeouts - WebSocket may not be properly connected to daemon event stream
