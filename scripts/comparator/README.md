@@ -1,6 +1,11 @@
-# Response Comparator
+# Response Comparator & Validation Reporter
 
-Deep equality comparison library for API test validation with detailed diff output.
+Deep equality comparison library and test result reporter for API test validation.
+
+## Components
+
+1. **ResponseComparator** - Deep equality checking with detailed diffs
+2. **ValidationReporter** - Human-readable and JSON report generation
 
 ## Features
 
@@ -216,7 +221,161 @@ const result = comparator.compare(actual, expected, {
 // ]
 ```
 
+## ValidationReporter Usage
+
+Generate formatted test reports for console output and JSON export.
+
+### Human-Readable Reports
+
+```typescript
+import { ValidationReporter } from './validation-reporter.js';
+
+const reporter = new ValidationReporter();
+
+const suiteResult = {
+  name: 'API Tests',
+  total: 10,
+  passed: 8,
+  failed: 2,
+  skipped: 0,
+  errors: 0,
+  duration: 5000,
+  results: [
+    {
+      id: 'test-1',
+      name: 'GET /api/status',
+      status: 'pass',
+      duration: 500,
+    },
+    {
+      id: 'test-2',
+      name: 'GET /api/devices',
+      status: 'fail',
+      duration: 600,
+      comparison: {
+        matches: false,
+        diffs: [
+          {
+            path: 'data.count',
+            type: 'value-mismatch',
+            expected: 5,
+            actual: 3,
+            description: 'Expected 5 but got 3'
+          }
+        ],
+        ignoredFields: []
+      },
+      expected: { data: { count: 5 } },
+      actual: { data: { count: 3 } }
+    }
+  ]
+};
+
+// Print to console
+console.log(reporter.formatHuman(suiteResult));
+
+// Output:
+// ═══════════════════════════════════════════════════════════════════════════
+//   Test Suite Results: API Tests
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Summary:
+//   Total:    10 tests
+//   ✓ Passed:  8
+//   ✗ Failed:  2
+//   Duration: 5.00s
+//   Pass Rate: 80.0%
+//
+// Test Results:
+//
+// ✓ PASS GET /api/status (500ms)
+//
+// ✗ FAIL GET /api/devices (600ms)
+//   Differences:
+//     Path: data.count
+//     Type: value-mismatch
+//     - Expected: 5
+//     + Actual:   3
+// ...
+```
+
+### JSON Reports
+
+```typescript
+// Generate JSON report
+const jsonReport = reporter.formatJson(suiteResult);
+
+console.log(JSON.stringify(jsonReport, null, 2));
+
+// Output:
+// {
+//   "version": "1.0",
+//   "timestamp": "2024-01-01T00:00:00.000Z",
+//   "suite": "API Tests",
+//   "summary": {
+//     "total": 10,
+//     "passed": 8,
+//     "failed": 2,
+//     "skipped": 0,
+//     "errors": 0,
+//     "duration": 5000,
+//     "passRate": 80.0
+//   },
+//   "results": [
+//     {
+//       "id": "test-1",
+//       "name": "GET /api/status",
+//       "status": "pass",
+//       "duration": 500
+//     },
+//     {
+//       "id": "test-2",
+//       "name": "GET /api/devices",
+//       "status": "fail",
+//       "duration": 600,
+//       "diffs": [
+//         {
+//           "path": "data.count",
+//           "type": "value-mismatch",
+//           "expected": 5,
+//           "actual": 3,
+//           "description": "Expected 5 but got 3"
+//         }
+//       ]
+//     }
+//   ]
+// }
+
+// Write to file
+await reporter.writeJsonReport(suiteResult, './test-results.json');
+```
+
+### Color Output
+
+The reporter automatically detects whether to use colors:
+
+- Disabled if `NO_COLOR` environment variable is set
+- Disabled in CI environments (unless GitHub Actions or GitLab CI)
+- Enabled if stdout is a TTY
+
+```bash
+# Disable colors
+NO_COLOR=1 node test-runner.js
+
+# Force colors in CI (if supported)
+GITHUB_ACTIONS=true node test-runner.js
+```
+
+### Test Status Types
+
+- `pass` - Test passed ✓
+- `fail` - Test failed (comparison mismatch) ✗
+- `skip` - Test skipped ○
+- `error` - Test error (exception/timeout) ⚠
+
 ## Implementation Notes
+
+### ResponseComparator
 
 - Uses `WeakSet` for circular reference detection
 - Depth limit prevents stack overflow on deeply nested structures
@@ -224,3 +383,12 @@ const result = comparator.compare(actual, expected, {
 - Array comparison can be order-dependent or order-independent
 - Handles special types: `Date`, `null`, `undefined`
 - No external dependencies for maximum portability
+
+### ValidationReporter
+
+- ANSI color codes for terminal output
+- Respects `NO_COLOR` and `CI` environment variables
+- Diff output limited to prevent excessive console spam
+- JSON reports are machine-parseable for CI integration
+- Duration formatting: ms, seconds, minutes
+- Pass rate calculation with color-coded display

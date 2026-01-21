@@ -104,7 +104,7 @@ Report Failure  Iterate (max 3 attempts)
   - _Requirements: Robust comparison logic_
   - _Prompt: Role: Test Validation Engineer | Task: Create ResponseComparator class with method: compare(actual, expected, options?): ComparisonResult. ComparisonResult { matches: boolean, diff?: Diff[], ignoredFields: string[] }. Use deep-diff or jest-diff for object comparison. Options: ignoreFields (e.g., ['timestamp', 'id']), ignoreArrayOrder (semantic comparison), ignoreWhitespace. Return detailed diff on mismatch with path to differing field. | Restrictions: Handle nested objects, arrays, null/undefined, circular references, special JSON types (Date) | Success: Accurately compares responses, provides actionable diffs_
 
-- [ ] 3.2 Create validation reporter
+- [x] 3.2 Create validation reporter
   - File: `scripts/comparator/validation-reporter.ts`
   - Format comparison results for humans
   - Generate JSON report for machines
