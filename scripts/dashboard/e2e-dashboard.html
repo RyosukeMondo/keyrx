@@ -309,6 +309,22 @@
           </tbody>
         </table>
       </section>
+
+      <section class="table-card">
+        <h2>Flakiest Tests (Top 10)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Test Name</th>
+              <th>Failure Rate</th>
+              <th>Failures / Runs</th>
+            </tr>
+          </thead>
+          <tbody id="flakiestTestsTable">
+          </tbody>
+        </table>
+      </section>
     </div>
 
     <div id="noData" class="no-data" style="display: none;">
@@ -407,6 +423,7 @@
       renderPassRateChart();
       renderDurationChart();
       renderSlowestTests();
+      renderFlakiestTests();
     }
 
     // Render pass rate chart
@@ -526,6 +543,58 @@
         row.insertCell(2).textContent = test.avgDuration.toFixed(0) + 'ms';
         row.insertCell(3).textContent = test.occurrences;
       });
+    }
+
+    // Render flakiest tests table
+    function renderFlakiestTests() {
+      const testStats = new Map();
+
+      for (const entry of metricsData) {
+        if (!entry.results) continue;
+
+        for (const result of entry.results) {
+          const testId = result.id || result.name;
+          if (!testId) continue;
+
+          const existing = testStats.get(testId) || { failures: 0, runs: 0 };
+          testStats.set(testId, {
+            failures: existing.failures + (result.status === 'fail' ? 1 : 0),
+            runs: existing.runs + 1
+          });
+        }
+      }
+
+      const flakiestTests = Array.from(testStats.entries())
+        .map(([name, stats]) => ({
+          name,
+          failureRate: stats.runs > 0 ? (stats.failures / stats.runs) * 100 : 0,
+          failures: stats.failures,
+          runs: stats.runs
+        }))
+        .filter(test => test.failures > 0)
+        .sort((a, b) => b.failureRate - a.failureRate)
+        .slice(0, 10);
+
+      const tbody = document.getElementById('flakiestTestsTable');
+      tbody.innerHTML = '';
+
+      if (flakiestTests.length === 0) {
+        const row = tbody.insertRow();
+        const cell = row.insertCell(0);
+        cell.colSpan = 4;
+        cell.style.textAlign = 'center';
+        cell.style.padding = '20px';
+        cell.style.color = '#95a5a6';
+        cell.textContent = '🎉 No flaky tests detected!';
+      } else {
+        flakiestTests.forEach((test, index) => {
+          const row = tbody.insertRow();
+          row.insertCell(0).textContent = index + 1;
+          row.insertCell(1).textContent = test.name;
+          row.insertCell(2).textContent = test.failureRate.toFixed(1) + '%';
+          row.insertCell(3).textContent = test.failures + ' / ' + test.runs;
+        });
+      }
     }
 
     // UI state management
