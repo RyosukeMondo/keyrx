@@ -462,8 +462,8 @@ Before marking spec complete:
 
 - [x] Run `npm install` - succeeds without errors
 - [ ] Run `npx tsx scripts/automated-e2e-test.ts --daemon-path target/release/keyrx_daemon` - all 83 tests pass
-  - **Current Status**: 54/83 passing (65%) - Major progress on config/profile test fixes
-  - **Recent Progress** (2026-01-22):
+  - **Current Status**: 60/83 passing (72.3%) - Major progress on config tests and workflow-005
+  - **Recent Progress** (2026-01-22 evening):
     - ✅ Fixed assertion pattern: Executor now passes full response object (status, data, headers) to assert functions
     - ✅ Added extractData() helper to safely extract data field from response
     - ✅ Updated all test files to use extractData() in assert functions
@@ -479,12 +479,30 @@ Before marking spec complete:
     - ✅ Fixed workflow-003 to use correct DSL syntax instead of old TOML-style config
     - ✅ Fixed workflow-007 to properly create profile then update config
     - ✅ Added setup for workflow-005 to ensure active profile exists before adding key mappings
+    - ✅ **NEW**: Created ensureActiveProfile() helper for config tests
+    - ✅ **NEW**: Fixed all config tests (config-001, 003, 003b, 004, 005) - now 11/11 passing (100%)
+    - ✅ **NEW**: Fixed workflow-005 - proper config/layers schema, device block setup
+    - ✅ **NEW**: Fixed key names throughout tests to use VK_ prefix
+    - ✅ **NEW**: Use PUT /api/config instead of setProfileConfig for proper recompilation
+  - **Category Breakdown**:
+    - ✅ Config: 11/11 (100%) - COMPLETE
+    - ✅ Health: 3/3 (100%) - COMPLETE
+    - ✅ Layouts: 3/3 (100%) - COMPLETE
+    - ✅ Macros: 8/8 (100%) - COMPLETE
+    - ✅ Metrics: 4/4 (100%) - COMPLETE
+    - ✅ Simulator: 7/7 (100%) - COMPLETE
+    - ⚠️  Devices: 8/15 (53.3%) - 7 failures (mostly 404 validation tests)
+    - ⚠️  Profiles: 12/20 (60.0%) - 8 failures (404 validation, SOCKET_NOT_CONNECTED)
+    - ⚠️  Workflows: 1/6 (16.7%) - 5 failures (profile state, event parsing, WebSocket)
+    - ⚠️  Websocket: 3/5 (60.0%) - 2 failures (event notifications timeout)
+    - ❌ Status: 0/1 (0.0%) - 1 failure (daemon state check)
   - **Remaining Issues**:
-    - WebSocket event tests timeout (5s wait) - events not being broadcast
-    - SOCKET_NOT_CONNECTED errors on metrics/events endpoints
-    - Some profile tests fail due to test ordering/state contamination from earlier tests
-    - Device validation tests pass when they should fail (API not rejecting invalid inputs)
-    - Workflow tests that depend on specific API behaviors need investigation
+    - **404 Tests**: API not properly returning 404 for nonexistent resources (devices, profiles)
+    - **WebSocket Events**: Timeout waiting for device/profile event notifications
+    - **Workflow State**: Profile state contamination between tests (workflow-002, 003, 007)
+    - **Event Parsing**: workflow-006 macro test has invalid event_type format
+    - **Device Workflow**: workflow-004 has response validation errors
+    - **Status Test**: status-001 expects daemon_running=true but gets unexpected response
 - [ ] Run tests 10 consecutive times - 0 flaky failures
 - [ ] Check execution time - < 3 minutes
 - [ ] Verify all 40+ endpoints covered - generate coverage report
