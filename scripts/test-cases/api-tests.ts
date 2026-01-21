@@ -361,8 +361,8 @@ export const apiTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
-      const actualData = actual as { error?: string; code?: string };
-      const passed = actualData.code === 'PROFILE_EXISTS' || actualData.error?.includes('exists');
+      const actualData = actual as { error?: { code?: string; message?: string }; code?: string };
+      const passed = actualData.code === 'PROFILE_EXISTS' || actualData.error?.code === 'PROFILE_EXISTS' || actualData.error?.message?.includes('exists');
 
       return {
         passed,
@@ -440,8 +440,8 @@ export const apiTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
-      const actualData = actual as { error?: string; code?: string };
-      const passed = actualData.code === 'PROFILE_NOT_FOUND' || actualData.error?.includes('not found');
+      const actualData = actual as { error?: { code?: string; message?: string }; code?: string };
+      const passed = actualData.code === 'PROFILE_NOT_FOUND' || actualData.error?.code === 'PROFILE_NOT_FOUND' || actualData.error?.message?.toLowerCase().includes('not found');
 
       return {
         passed,
@@ -513,8 +513,8 @@ export const apiTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
-      const actualData = actual as { error?: string; code?: string };
-      const passed = actualData.code === 'PROFILE_NOT_FOUND' || actualData.error?.includes('not found');
+      const actualData = actual as { error?: { code?: string; message?: string }; code?: string };
+      const passed = actualData.code === 'PROFILE_NOT_FOUND' || actualData.error?.code === 'PROFILE_NOT_FOUND' || actualData.error?.message?.toLowerCase().includes('not found');
 
       return {
         passed,
@@ -712,8 +712,8 @@ export const apiTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
-      const actualData = actual as { error?: string; code?: string };
-      const passed = actualData.code === 'DEVICE_NOT_FOUND' || actualData.error?.includes('not found');
+      const actualData = actual as { error?: { code?: string; message?: string }; code?: string };
+      const passed = actualData.code === 'DEVICE_NOT_FOUND' || actualData.error?.code === 'DEVICE_NOT_FOUND' || actualData.error?.message?.toLowerCase().includes('not found');
 
       return {
         passed,
