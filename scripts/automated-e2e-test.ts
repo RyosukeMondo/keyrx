@@ -207,13 +207,15 @@ async function applyAutoFixes(
 
   // Track fix attempts and successes per test
   const fixAttemptsByTest = new Map<string, { attempts: number; successes: number }>();
-  for (const fix of fixResult.fixAttempts) {
-    const existing = fixAttemptsByTest.get(fix.testId) || { attempts: 0, successes: 0 };
-    existing.attempts++;
-    if (fix.success) {
-      existing.successes++;
+  for (const testResult of fixResult.testResults) {
+    for (const fix of testResult.fixAttempts) {
+      const existing = fixAttemptsByTest.get(testResult.testId) || { attempts: 0, successes: 0 };
+      existing.attempts++;
+      if (fix.success) {
+        existing.successes++;
+      }
+      fixAttemptsByTest.set(testResult.testId, existing);
     }
-    fixAttemptsByTest.set(fix.testId, existing);
   }
 
   // Convert back to our format with fix metrics
