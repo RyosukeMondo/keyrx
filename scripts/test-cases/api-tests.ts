@@ -647,7 +647,7 @@ export const apiTestCases: TestCase[] = [
 
   {
     id: 'devices-002',
-    name: 'PATCH /api/devices/:id - Update device configuration (enabled)',
+    name: 'PATCH /api/devices/:id - Update device configuration (layout)',
     endpoint: '/api/devices/:id',
     scenario: 'update_success',
     category: 'devices',
@@ -668,15 +668,15 @@ export const apiTestCases: TestCase[] = [
         throw new Error('No device ID available');
       }
 
-      const response = await client.patchDevice(deviceId, { enabled: false });
+      const response = await client.patchDevice(deviceId, { layout: 'ansi_104' });
       return {
         status: response.status,
         data: response.data,
       };
     },
     assert: (actual, expected) => {
-      const actualData = extractData(actual) as { message?: string; device?: unknown };
-      const passed = typeof actualData.message === 'string' || actualData.device !== undefined;
+      const actualData = extractData(actual) as { success?: boolean };
+      const passed = actualData.success === true;
 
       return {
         passed,
@@ -685,18 +685,7 @@ export const apiTestCases: TestCase[] = [
         error: passed ? undefined : 'Device update failed',
       };
     },
-    cleanup: async (client) => {
-      // Restore device to enabled state
-      try {
-        const devices = await client.getDevices();
-        const deviceId = devices.data.devices[0]?.id as string;
-        if (deviceId) {
-          await client.patchDevice(deviceId, { enabled: true });
-        }
-      } catch {
-        // Ignore cleanup errors
-      }
-    },
+    cleanup: noOpCleanup,
   },
 
   {
