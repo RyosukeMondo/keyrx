@@ -33,7 +33,7 @@ import { ApiClient } from './api-client/client';
 import { createExecutor, TestSuiteResult, TestResult } from './test-executor/executor';
 import { getAllTestCases } from './test-cases/api-tests';
 import { createReporter } from './comparator/validation-reporter';
-import { createOrchestrator } from './auto-fix/fix-orchestrator';
+import { createOrchestrator, FixOrchestratorResult } from './auto-fix/fix-orchestrator';
 import { createClassifier } from './auto-fix/issue-classifier';
 import { createFixRegistry } from './auto-fix/fix-strategies';
 
@@ -216,11 +216,13 @@ async function main(): Promise<void> {
     const executor = createExecutor({ verbose: true });
 
     console.log(`Found ${testCases.length} test cases\n`);
+    const startTime = Date.now();
     let testResults = await executor.runAll(apiClient, testCases);
 
     console.log(`\nInitial results: ${testResults.passed}/${testResults.total} passed\n`);
 
     // Phase 4: Apply auto-fix if enabled and tests failed
+    let fixResults: FixOrchestratorResult | undefined;
     if (options.enableFix && testResults.failed > 0) {
       console.log('⏳ Applying auto-fixes...\n');
 
@@ -233,7 +235,7 @@ async function main(): Promise<void> {
         executor,
       });
 
-      const fixResults = await orchestrator.fixAndRetry(testResults.results);
+      fixResults = await orchestrator.fixAndRetry(testResults.results);
 
       console.log(`\n✓ Auto-fix complete: ${fixResults.fixedTests} test(s) fixed\n`);
 
@@ -242,6 +244,8 @@ async function main(): Promise<void> {
       testResults = await executor.runAll(apiClient, testCases);
     }
 
+    const totalDuration = Date.now() - startTime;
+
     // Phase 5: Generate reports
     console.log('\n⏳ Generating reports...\n');
     const reporter = createReporter();
@@ -249,9 +253,15 @@ async function main(): Promise<void> {
     // Print human-readable report
     console.log(reporter.formatHuman(testResults));
 
-    // Save JSON report if requested
+    // Save JSON report if requested (with complete data for HTML reporter)
     if (options.reportJsonPath) {
-      const jsonReport = reporter.formatJson(testResults);
+      const reportData = {
+        testSuite: testResults,
+        fixResults,
+        timestamp: new Date().toISOString(),
+        duration: totalDuration,
+      };
+      const jsonReport = JSON.stringify(reportData, null, 2);
       fs.writeFileSync(options.reportJsonPath, jsonReport, 'utf-8');
       console.log(`✓ JSON report saved: ${options.reportJsonPath}\n`);
     }

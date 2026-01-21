@@ -49,6 +49,7 @@
     "test:e2e:api": "npx tsx ../scripts/automated-e2e-test.ts --daemon-path ../target/release/keyrx_daemon",
     "test:e2e:api:fix": "npx tsx ../scripts/automated-e2e-test.ts --daemon-path ../target/release/keyrx_daemon --fix",
     "test:e2e:api:report": "npx tsx ../scripts/automated-e2e-test.ts --daemon-path ../target/release/keyrx_daemon --fix --report-json test-results.json",
+    "test:e2e:api:html": "npx tsx ../scripts/reporters/html-reporter.ts test-results.json test-report.html",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:shard": "vitest run --config vitest.unit.config.ts --shard=${SHARD_INDEX:-1}/${SHARD_COUNT:-1}",
     "test:integration:shard": "vitest run --config vitest.integration.config.ts --shard=${SHARD_INDEX:-1}/${SHARD_COUNT:-1}",
