@@ -15,6 +15,7 @@ import { deviceManagementTestCases } from './device-management.tests.js';
 import { profileManagementTestCases } from './profile-management.tests.js';
 import { configLayersTestCases } from './config-layers.tests.js';
 import { layoutsTestCases } from './layouts.tests.js';
+import { macrosTestCases } from './macros.tests.js';
 
 /**
  * Test case execution result
@@ -40,7 +41,7 @@ export interface TestCase {
   /** Test scenario name (matches expected-results.json) */
   scenario: string;
   /** Test category for organization */
-  category: 'health' | 'profiles' | 'devices' | 'metrics' | 'layouts' | 'status' | 'config';
+  category: 'health' | 'profiles' | 'devices' | 'metrics' | 'layouts' | 'status' | 'config' | 'macros';
   /** Test priority (1 = critical, 2 = important, 3 = nice-to-have) */
   priority: 1 | 2 | 3;
   /** Setup function - prepare test environment */
@@ -961,6 +962,7 @@ export function getAllTestCases(): TestCase[] {
     ...profileManagementTestCases,
     ...configLayersTestCases,
     ...layoutsTestCases,
+    ...macrosTestCases,
   ];
 }
 

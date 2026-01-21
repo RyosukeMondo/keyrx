@@ -190,32 +190,32 @@ Comprehensive REST API testing that exercises ALL daemon features via JSON-based
   - Purpose: Test specific layout retrieval
 
 ### Task 2.6: Macro Recorder Tests (4 endpoints) - NEW FEATURE
-- [ ] 2.6.1 Add POST /api/macros/start-recording test
+- [x] 2.6.1 Add POST /api/macros/start-recording test
   - File: `scripts/test-cases/macros.tests.ts` (new file)
-  - Test ID: `macros-001`
+  - Test ID: `macros-001`, `macros-001b`
   - Endpoint: POST /api/macros/start-recording
-  - Scenarios: Start recording, already recording (conflict)
+  - Scenarios: Start recording successfully, already recording (conflict)
   - Purpose: Test macro recording start
 
-- [ ] 2.6.2 Add POST /api/macros/stop-recording test
+- [x] 2.6.2 Add POST /api/macros/stop-recording test
   - File: `scripts/test-cases/macros.tests.ts`
-  - Test ID: `macros-002`
+  - Test ID: `macros-002`, `macros-002b`
   - Endpoint: POST /api/macros/stop-recording
-  - Scenarios: Stop recording, not recording (error)
+  - Scenarios: Stop recording successfully, not recording (error)
   - Purpose: Test macro recording stop
 
-- [ ] 2.6.3 Add GET /api/macros/recorded-events test
+- [x] 2.6.3 Add GET /api/macros/recorded-events test
   - File: `scripts/test-cases/macros.tests.ts`
-  - Test ID: `macros-003`
+  - Test ID: `macros-003`, `macros-003b`
   - Endpoint: GET /api/macros/recorded-events
-  - Scenarios: Get events, empty events, events with timing
+  - Scenarios: Get events while not recording, get events while recording
   - Purpose: Test recorded event retrieval
 
-- [ ] 2.6.4 Add POST /api/macros/clear test
+- [x] 2.6.4 Add POST /api/macros/clear test
   - File: `scripts/test-cases/macros.tests.ts`
-  - Test ID: `macros-004`
+  - Test ID: `macros-004`, `macros-004b`
   - Endpoint: POST /api/macros/clear
-  - Scenarios: Clear events, verify empty
+  - Scenarios: Clear events successfully, verify events are cleared
   - Purpose: Test clearing recorded events
 
 ### Task 2.7: Simulator Tests (2 endpoints) - NEW FEATURE
