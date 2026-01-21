@@ -249,6 +249,7 @@ export const profileManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 404 && status !== 500) {
@@ -338,6 +339,7 @@ export const profileManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       // Accept 409 (Conflict) or 500 (Internal Server Error with conflict message)
@@ -510,6 +512,7 @@ export const profileManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 404 && status !== 500) {
@@ -593,6 +596,7 @@ export const profileManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       // Accept 400 (Bad Request) or 500 (Internal Server Error with validation message)
@@ -683,6 +687,7 @@ export const profileManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       // Accept 409 (Conflict) or 500 (Internal Server Error with conflict message)
@@ -841,6 +846,7 @@ export const profileManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 404 && status !== 500) {

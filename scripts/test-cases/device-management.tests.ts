@@ -170,6 +170,7 @@ export const deviceManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 404) {
@@ -234,6 +235,7 @@ export const deviceManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 400) {
@@ -301,6 +303,7 @@ export const deviceManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 400) {
@@ -442,6 +445,7 @@ export const deviceManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 404 && status !== 500) {
@@ -506,6 +510,7 @@ export const deviceManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 400) {
@@ -573,6 +578,7 @@ export const deviceManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 400) {
@@ -689,6 +695,7 @@ export const deviceManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 404 && status !== 500) {
@@ -744,6 +751,7 @@ export const deviceManagementTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const status = (actual as any).status || 200;
 
       if (status !== 404 && status !== 500) {

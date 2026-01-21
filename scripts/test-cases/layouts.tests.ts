@@ -85,6 +85,7 @@ export const layoutsTestCases: TestCase[] = [
       return response.data;
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       // actual is the KLE JSON array directly
       const kleData = actual as any[];
 
@@ -163,6 +164,7 @@ export const layoutsTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const result = actual as { success?: boolean; error?: { code: string; message: string } };
 
       // Should have error structure

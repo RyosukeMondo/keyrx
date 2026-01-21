@@ -317,6 +317,7 @@ export const simulatorTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const result = actual as { success: boolean; error?: { code: string; message: string } };
 
       if (result.success !== false) {
@@ -378,6 +379,7 @@ export const simulatorTestCases: TestCase[] = [
       }
     },
     assert: (actual, expected) => {
+      const actualData = extractData(actual);
       const result = actual as { success: boolean; error?: { code: string; message: string } };
 
       if (result.success !== false) {
