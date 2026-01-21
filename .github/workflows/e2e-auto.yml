@@ -1,0 +1,234 @@
+name: Automated E2E API Tests
+
+on:
+  pull_request:
+    branches: ['**']
+    paths:
+      - 'keyrx_daemon/**'
+      - 'keyrx_core/**'
+      - 'keyrx_ui/**'
+      - 'scripts/**'
+      - '.github/workflows/e2e-auto.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Daemon
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-e2e-auto-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-e2e-auto-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-e2e-auto-
+            ${{ runner.os }}-cargo-
+
+      - name: Build daemon (release)
+        run: cargo build --release -p keyrx_daemon
+
+      - name: Build compiler (release)
+        run: cargo build --release -p keyrx_compiler
+
+      - name: Upload daemon binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: daemon-binary
+          path: target/release/keyrx_daemon
+          retention-days: 1
+
+      - name: Upload compiler binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: compiler-binary
+          path: target/release/keyrx_compiler
+          retention-days: 1
+
+  e2e-tests:
+    name: Run Automated E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: keyrx_ui/package-lock.json
+
+      - name: Cache npm
+        uses: actions/cache@v3
+        with:
+          path: keyrx_ui/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('keyrx_ui/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Download daemon binary
+        uses: actions/download-artifact@v3
+        with:
+          name: daemon-binary
+          path: target/release
+
+      - name: Download compiler binary
+        uses: actions/download-artifact@v3
+        with:
+          name: compiler-binary
+          path: target/release
+
+      - name: Make binaries executable
+        run: |
+          chmod +x target/release/keyrx_daemon
+          chmod +x target/release/keyrx_compiler
+
+      - name: Install frontend dependencies
+        working-directory: keyrx_ui
+        run: npm ci
+
+      - name: Setup test profile
+        run: |
+          mkdir -p ~/.config/keyrx/profiles
+          cat > ~/.config/keyrx/profiles/Test.rhai << 'EOF'
+          // Minimal test profile for CI
+          device_start("*");
+          device_end();
+          EOF
+          ./target/release/keyrx_compiler compile ~/.config/keyrx/profiles/Test.rhai -o ~/.config/keyrx/profiles/Test.krx
+          echo "Test profile created and compiled"
+
+      - name: Run automated E2E tests
+        id: e2e-tests
+        working-directory: keyrx_ui
+        run: |
+          npm run test:e2e:auto 2>&1 | tee ../e2e-test-output.log
+          echo "Tests completed"
+        continue-on-error: true
+
+      - name: Generate HTML report
+        if: always()
+        working-directory: keyrx_ui
+        run: |
+          if [ -f test-results.json ]; then
+            npm run test:e2e:auto:report || echo "Failed to generate HTML report"
+          else
+            echo "No test results JSON found"
+          fi
+
+      - name: Upload test results (JSON)
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-test-results
+          path: |
+            keyrx_ui/test-results.json
+            e2e-test-output.log
+          retention-days: 30
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-test-report
+          path: keyrx_ui/report.html
+          retention-days: 30
+
+      - name: Upload daemon logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: daemon-logs
+          path: |
+            /tmp/keyrx-daemon-*.log
+            ~/.config/keyrx/daemon.log
+          retention-days: 7
+
+      - name: Comment PR with results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Read test results
+            const resultsPath = path.join(process.cwd(), 'keyrx_ui', 'test-results.json');
+            let summary = '## 🤖 Automated E2E API Test Results\n\n';
+
+            if (fs.existsSync(resultsPath)) {
+              const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+
+              const passed = results.passed || 0;
+              const failed = results.failed || 0;
+              const total = results.total || 0;
+              const duration = results.duration ? (results.duration / 1000).toFixed(2) : '0.00';
+              const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : '0.0';
+
+              const emoji = failed === 0 ? '✅' : '❌';
+
+              summary += `${emoji} **Results**: ${passed}/${total} tests passed (${passRate}%)\n`;
+              summary += `⏱️ **Duration**: ${duration}s\n\n`;
+
+              if (failed > 0) {
+                summary += `### ❌ Failed Tests (${failed})\n\n`;
+                const failedTests = results.results?.filter(r => r.status === 'fail') || [];
+                failedTests.slice(0, 10).forEach(test => {
+                  summary += `- **${test.name}** (${test.id})\n`;
+                  if (test.error) {
+                    summary += `  \`\`\`\n  ${test.error.substring(0, 200)}...\n  \`\`\`\n`;
+                  }
+                });
+                if (failedTests.length > 10) {
+                  summary += `\n... and ${failedTests.length - 10} more failures\n`;
+                }
+              }
+
+              if (results.fixAttempts && results.fixAttempts.length > 0) {
+                summary += `\n### 🔧 Auto-Fix Attempts\n\n`;
+                results.fixAttempts.forEach(attempt => {
+                  const icon = attempt.success ? '✅' : '❌';
+                  summary += `${icon} ${attempt.testId}: ${attempt.strategy} - ${attempt.message}\n`;
+                });
+              }
+
+              summary += `\n---\n`;
+              summary += `📊 [View full HTML report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
+
+            } else {
+              summary += '⚠️ Test results not found. Check [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\n';
+            }
+
+            // Post comment
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+      - name: Check test results
+        if: steps.e2e-tests.outcome == 'failure'
+        run: |
+          echo "E2E tests failed. See logs and artifacts for details."
+          exit 1
