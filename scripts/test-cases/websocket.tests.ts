@@ -426,15 +426,7 @@ export const websocketTestCases: TestCase[] = [
         await wsClient.subscribe('profiles', 5000);
 
         // Create test profile
-        await client.customRequest(
-          'POST',
-          '/api/profiles',
-          z.object({ success: z.boolean() }),
-          {
-            name: testProfileName,
-            config: '// Test profile for WebSocket\nlet state = #{};\nstate',
-          }
-        );
+        await client.createProfile(testProfileName, 'blank');
 
         // Set up event listener before activating profile
         const eventPromise = wsClient.waitForEvent(

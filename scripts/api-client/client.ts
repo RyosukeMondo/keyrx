@@ -356,7 +356,7 @@ export class ApiClient {
       {
         method: 'PUT',
         path: `/api/profiles/${encodeURIComponent(name)}/config`,
-        body: config,
+        body: { config: config.source }, // Map 'source' to 'config' field
       },
       schema,
       `PUT /api/profiles/${name}/config`
