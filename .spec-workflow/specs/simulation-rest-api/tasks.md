@@ -47,7 +47,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 4.1, 4.2, 5.1_
   - _Prompt: Implement the task for spec simulation-rest-api, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust API Developer with expertise in axum | Task: Update simulator.rs to use SimulationService. Add load-profile endpoint. Update simulate_events to support scenario, dsl, and events parameters. Add scenarios/all endpoint. All handlers extract State<Arc<AppState>> and call simulation_service methods. Return proper JSON responses with success/error. | Restrictions: Maintain backward compatibility with existing response format where possible, use ApiError for errors, do not bypass service layer | Success: All endpoints return structured JSON, load-profile stores state, simulate_events works with all input types, scenarios/all returns pass/fail counts. Mark task as in-progress [-] before starting in tasks.md, log implementation with log-implementation tool after completion, then mark as complete [x]._
 
-- [ ] 6. Initialize SimulationService in main.rs
+- [x] 6. Initialize SimulationService in main.rs
   - File: keyrx_daemon/src/main.rs
   - Create SimulationService with config directory path
   - Pass Arc<SimulationService> to AppState::new()
