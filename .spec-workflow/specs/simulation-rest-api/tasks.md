@@ -1,6 +1,6 @@
 # Tasks Document: Simulation REST API
 
-- [ ] 1. Fix WASM env-shim to provide `now()` function
+- [x] 1. Fix WASM env-shim to provide `now()` function
   - File: keyrx_ui/src/wasm/env-shim.js
   - Add `now()` function that returns high-resolution timestamp in nanoseconds
   - Export as both named export and in default object
