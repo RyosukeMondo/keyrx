@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use super::error::ApiError;
 use crate::config::simulation_engine::{
-    EventSequence, OutputEvent, ScenarioResult, SimulatedEvent, SimulationError,
+    EventSequence, EventType, ScenarioResult, SimulatedEvent, SimulationError,
 };
 use crate::web::AppState;
 
@@ -67,8 +67,12 @@ struct SimulateEventsRequest {
 #[derive(Serialize)]
 struct SimulateEventsResponse {
     success: bool,
-    /// List of output events generated
-    outputs: Vec<OutputEvent>,
+    /// Number of events generated
+    event_count: usize,
+    /// List of output events as formatted strings
+    outputs: Vec<String>,
+    /// Total duration in microseconds
+    duration_us: u64,
 }
 
 #[derive(Serialize)]
@@ -124,9 +128,26 @@ async fn simulate_events(
         ));
     };
 
+    // Format outputs as strings and calculate duration
+    let event_count = outputs.len();
+    let duration_us = outputs.iter().map(|e| e.timestamp_us).max().unwrap_or(0);
+
+    let formatted_outputs: Vec<String> = outputs
+        .iter()
+        .map(|e| {
+            let event_type = match e.event_type {
+                EventType::Press => "Press",
+                EventType::Release => "Release",
+            };
+            format!("{} {} at {}μs", event_type, e.key, e.timestamp_us)
+        })
+        .collect();
+
     Ok(Json(SimulateEventsResponse {
         success: true,
-        outputs,
+        event_count,
+        outputs: formatted_outputs,
+        duration_us,
     }))
 }
 
