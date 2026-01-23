@@ -48,7 +48,7 @@ Connect simulator event output to macro recorder input, enabling macro recording
   - _Requirements: REQ-3.1.1, REQ-3.1.2, REQ-3.1.3, REQ-4.1.1, REQ-4.1.2_
   - _Prompt: Role: Systems Engineer with expertise in Rust tokio and application architecture | Task: Wire up event bus in daemon initialization following REQ-3.1.x and REQ-4.1.x, creating channel and connecting simulator to macro recorder | Restrictions: Must use bounded channel with capacity 1000, must spawn macro recorder loop, must handle task cleanup on shutdown | Success: Event bus connects simulator to macro recorder, channel capacity 1000, event loop spawned correctly_
 
-- [-] 5. Test simulator-macro integration
+- [x] 5. Test simulator-macro integration
   - File: Run existing test: scripts/test-cases/workflows.tests.ts (workflow-006)
   - Execute workflow-006 test after integration: start recording → simulate events → stop → get events
   - Verify test passes and recorded events include simulated events with correct format
