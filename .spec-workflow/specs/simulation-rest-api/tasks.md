@@ -56,7 +56,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec simulation-rest-api, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Application Developer | Task: Initialize SimulationService in main.rs with config_dir path (same as used by other services). Wrap in Arc and pass to AppState::new(). Follow existing service initialization patterns. | Restrictions: Do not modify config_dir resolution logic, maintain initialization order | Success: Daemon starts successfully, SimulationService available in handlers. Mark task as in-progress [-] before starting in tasks.md, log implementation with log-implementation tool after completion, then mark as complete [x]._
 
-- [ ] 7. Update TestApp fixture with SimulationService
+- [x] 7. Update TestApp fixture with SimulationService
   - File: keyrx_daemon/tests/common/test_app.rs
   - Create SimulationService in TestApp::new()
   - Pass to AppState::new()
