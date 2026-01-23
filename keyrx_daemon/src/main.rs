@@ -53,6 +53,13 @@ enum Commands {
         /// detailed processing information. Useful for troubleshooting.
         #[arg(short, long)]
         debug: bool,
+
+        /// Enable test mode with IPC infrastructure but without keyboard capture.
+        ///
+        /// Only available in debug builds for security. Enables full IPC
+        /// infrastructure for profile activation and daemon status queries.
+        #[arg(long)]
+        test_mode: bool,
     },
 
     /// Manage device metadata (rename, set scope, set layout).
@@ -160,8 +167,22 @@ mod exit_codes {
 fn main() {
     let cli = Cli::parse();
 
+    // Validate test mode early for release builds
+    #[cfg(not(debug_assertions))]
+    if let Commands::Run {
+        test_mode: true, ..
+    } = &cli.command
+    {
+        eprintln!("Error: Test mode is only available in debug builds");
+        process::exit(exit_codes::CONFIG_ERROR);
+    }
+
     let result = match cli.command {
-        Commands::Run { config, debug } => {
+        Commands::Run {
+            config,
+            debug,
+            test_mode,
+        } => {
             // If no config specified, use active profile from %APPDATA%\keyrx
             let config_path = match config {
                 Some(path) => path,
@@ -172,7 +193,7 @@ fn main() {
                     default_path
                 }
             };
-            handle_run(&config_path, debug)
+            handle_run(&config_path, debug, test_mode)
         }
         Commands::Devices(args) => match keyrx_daemon::cli::devices::execute(args, None) {
             Ok(()) => Ok(()),
@@ -295,13 +316,21 @@ fn open_browser(url: &str) -> Result<(), Box<dyn std::error::Error>> {
 
 /// Handles the `run` subcommand - starts the daemon.
 #[cfg(target_os = "linux")]
-fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, String)> {
+fn handle_run(
+    config_path: &std::path::Path,
+    debug: bool,
+    test_mode: bool,
+) -> Result<(), (i32, String)> {
     use keyrx_daemon::daemon::Daemon;
     use keyrx_daemon::platform::linux::LinuxSystemTray;
     use keyrx_daemon::platform::{SystemTray, TrayControlEvent};
 
     // Initialize logging
     init_logging(debug);
+
+    if test_mode {
+        log::info!("Test mode enabled - running with IPC infrastructure without keyboard capture");
+    }
 
     log::info!(
         "Starting keyrx daemon with config: {}",
@@ -569,7 +598,11 @@ fn find_available_port(start_port: u16) -> u16 {
 }
 
 #[cfg(target_os = "windows")]
-fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, String)> {
+fn handle_run(
+    config_path: &std::path::Path,
+    debug: bool,
+    test_mode: bool,
+) -> Result<(), (i32, String)> {
     use keyrx_daemon::daemon::Daemon;
     use keyrx_daemon::platform::windows::tray::TrayIconController;
     use keyrx_daemon::platform::{SystemTray, TrayControlEvent};
@@ -580,6 +613,10 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
 
     // Initialize logging
     init_logging(debug);
+
+    if test_mode {
+        log::info!("Test mode enabled - running with IPC infrastructure without keyboard capture");
+    }
 
     // Determine config directory (always use standard location for profile management)
     let config_dir = {
@@ -886,7 +923,11 @@ fn is_admin() -> bool {
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "windows")))]
-fn handle_run(_config_path: &std::path::Path, _debug: bool) -> Result<(), (i32, String)> {
+fn handle_run(
+    _config_path: &std::path::Path,
+    _debug: bool,
+    _test_mode: bool,
+) -> Result<(), (i32, String)> {
     Err((
         exit_codes::CONFIG_ERROR,
         "The 'run' command is only available on Linux and Windows. \

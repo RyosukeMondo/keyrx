@@ -9,7 +9,7 @@ Enable 5 failing IPC-dependent E2E tests by adding test mode with full IPC infra
 
 ---
 
-- [ ] 1. Add --test-mode CLI flag to daemon
+- [x] 1. Add --test-mode CLI flag to daemon
   - File: keyrx_daemon/src/cli/run.rs
   - Add `test_mode: bool` field to `RunArgs` struct with #[clap(long)] attribute
   - Add validation to ensure test mode only enabled in debug builds
