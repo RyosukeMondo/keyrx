@@ -26,7 +26,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec simulation-rest-api, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Add simulation_service module export to services/mod.rs following existing pattern. Add both `pub mod` and `pub use` statements. | Restrictions: Do not remove existing exports, maintain alphabetical ordering if present | Success: SimulationService importable from crate::services. Mark task as in-progress [-] before starting in tasks.md, log implementation with log-implementation tool after completion, then mark as complete [x]._
 
-- [ ] 4. Extend AppState with SimulationService
+- [x] 4. Extend AppState with SimulationService
   - File: keyrx_daemon/src/web/mod.rs
   - Add `simulation_service: Arc<SimulationService>` field to AppState struct
   - Update AppState::new() to accept and store SimulationService

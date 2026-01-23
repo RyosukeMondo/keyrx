@@ -17,7 +17,9 @@ use tokio_tungstenite::{connect_async, tungstenite::Message};
 async fn start_test_server() -> (u16, tokio::task::JoinHandle<()>) {
     use keyrx_daemon::config::ProfileManager;
     use keyrx_daemon::macro_recorder::MacroRecorder;
-    use keyrx_daemon::services::{ConfigService, DeviceService, ProfileService, SettingsService};
+    use keyrx_daemon::services::{
+        ConfigService, DeviceService, ProfileService, SettingsService, SimulationService,
+    };
     use keyrx_daemon::web::subscriptions::SubscriptionManager;
     use keyrx_daemon::web::AppState;
     use std::path::PathBuf;
@@ -39,6 +41,7 @@ async fn start_test_server() -> (u16, tokio::task::JoinHandle<()>) {
     let device_service = Arc::new(DeviceService::new(config_dir.clone()));
     let config_service = Arc::new(ConfigService::new(profile_manager));
     let settings_service = Arc::new(SettingsService::new(config_dir.clone()));
+    let simulation_service = Arc::new(SimulationService::new(config_dir.clone()));
     let subscription_manager = Arc::new(SubscriptionManager::new());
     let (event_broadcaster, _) = tokio::sync::broadcast::channel(1000);
 
@@ -48,6 +51,7 @@ async fn start_test_server() -> (u16, tokio::task::JoinHandle<()>) {
         device_service,
         config_service,
         settings_service,
+        simulation_service,
         subscription_manager,
         event_broadcaster,
     ));

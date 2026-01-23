@@ -417,6 +417,9 @@ fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<
     let settings_service = Arc::new(keyrx_daemon::services::SettingsService::new(
         config_dir.clone(),
     ));
+    let simulation_service = Arc::new(keyrx_daemon::services::SimulationService::new(
+        config_dir.clone(),
+    ));
     let subscription_manager =
         Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
 
@@ -429,6 +432,7 @@ fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<
         device_service,
         config_service,
         settings_service,
+        simulation_service,
         subscription_manager,
         rpc_event_tx,
         test_socket_path.clone(),
@@ -557,6 +561,9 @@ fn handle_run(
     let settings_service = std::sync::Arc::new(keyrx_daemon::services::SettingsService::new(
         config_dir.clone(),
     ));
+    let simulation_service = std::sync::Arc::new(keyrx_daemon::services::SimulationService::new(
+        config_dir.clone(),
+    ));
 
     let subscription_manager =
         std::sync::Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
@@ -570,6 +577,7 @@ fn handle_run(
         device_service,
         config_service,
         settings_service,
+        simulation_service,
         subscription_manager,
         rpc_event_tx,
     ));
@@ -814,6 +822,9 @@ fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<
     let settings_service = Arc::new(keyrx_daemon::services::SettingsService::new(
         config_dir.clone(),
     ));
+    let simulation_service = Arc::new(keyrx_daemon::services::SimulationService::new(
+        config_dir.clone(),
+    ));
     let subscription_manager =
         Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
 
@@ -826,6 +837,7 @@ fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<
         device_service,
         config_service,
         settings_service,
+        simulation_service,
         subscription_manager,
         rpc_event_tx,
         test_socket_path.clone(),
@@ -990,9 +1002,15 @@ fn handle_run(
     let settings_service = std::sync::Arc::new(keyrx_daemon::services::SettingsService::new(
         config_dir.clone(),
     ));
+    let simulation_service = std::sync::Arc::new(keyrx_daemon::services::SimulationService::new(
+        config_dir.clone(),
+    ));
 
     let subscription_manager =
         std::sync::Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
+
+    // Create RPC event broadcaster for WebSocket RPC events (device/profile updates)
+    let (rpc_event_tx, _) = tokio::sync::broadcast::channel(1000);
 
     let app_state = std::sync::Arc::new(keyrx_daemon::web::AppState::new(
         macro_recorder,
@@ -1000,7 +1018,9 @@ fn handle_run(
         device_service,
         config_service,
         settings_service.clone(),
+        simulation_service,
         subscription_manager,
+        rpc_event_tx,
     ));
 
     // Find an available port, starting with configured port

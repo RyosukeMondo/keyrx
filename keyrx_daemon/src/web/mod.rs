@@ -20,7 +20,9 @@ use tower_http::cors::{Any, CorsLayer};
 pub use events::DaemonEvent;
 
 use crate::macro_recorder::MacroRecorder;
-use crate::services::{ConfigService, DeviceService, ProfileService, SettingsService};
+use crate::services::{
+    ConfigService, DeviceService, ProfileService, SettingsService, SimulationService,
+};
 use crate::web::subscriptions::SubscriptionManager;
 
 use crate::web::rpc_types::ServerMessage;
@@ -42,6 +44,8 @@ pub struct AppState {
     pub config_service: Arc<ConfigService>,
     /// Settings service for daemon settings operations
     pub settings_service: Arc<SettingsService>,
+    /// Simulation service for event simulation operations
+    pub simulation_service: Arc<SimulationService>,
     /// Subscription manager for WebSocket pub/sub
     pub subscription_manager: Arc<SubscriptionManager>,
     /// Event broadcaster for sending events to WebSocket clients
@@ -52,12 +56,14 @@ pub struct AppState {
 
 impl AppState {
     /// Creates a new AppState with the given dependencies
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         macro_recorder: Arc<MacroRecorder>,
         profile_service: Arc<ProfileService>,
         device_service: Arc<DeviceService>,
         config_service: Arc<ConfigService>,
         settings_service: Arc<SettingsService>,
+        simulation_service: Arc<SimulationService>,
         subscription_manager: Arc<SubscriptionManager>,
         event_broadcaster: broadcast::Sender<ServerMessage>,
     ) -> Self {
@@ -67,6 +73,7 @@ impl AppState {
             device_service,
             config_service,
             settings_service,
+            simulation_service,
             subscription_manager,
             event_broadcaster,
             test_mode_socket: None,
@@ -81,6 +88,7 @@ impl AppState {
         device_service: Arc<DeviceService>,
         config_service: Arc<ConfigService>,
         settings_service: Arc<SettingsService>,
+        simulation_service: Arc<SimulationService>,
         subscription_manager: Arc<SubscriptionManager>,
         event_broadcaster: broadcast::Sender<ServerMessage>,
         test_mode_socket: std::path::PathBuf,
@@ -91,6 +99,7 @@ impl AppState {
             device_service,
             config_service,
             settings_service,
+            simulation_service,
             subscription_manager,
             event_broadcaster,
             test_mode_socket: Some(test_mode_socket),

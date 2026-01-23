@@ -66,6 +66,9 @@ impl TestApp {
         let settings_service = Arc::new(keyrx_daemon::services::SettingsService::new(
             config_path.clone(),
         ));
+        let simulation_service = Arc::new(keyrx_daemon::services::SimulationService::new(
+            config_path.clone(),
+        ));
         let macro_recorder = Arc::new(MacroRecorder::new());
         let subscription_manager =
             Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
@@ -78,6 +81,7 @@ impl TestApp {
             device_service,
             config_service,
             settings_service,
+            simulation_service,
             subscription_manager,
             event_broadcaster,
         ));
