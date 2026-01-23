@@ -40,6 +40,7 @@ async fn start_test_server() -> (u16, tokio::task::JoinHandle<()>) {
         config_dir.clone(),
     ));
     let subscription_manager = Arc::new(SubscriptionManager::new());
+    let (event_broadcaster, _) = tokio::sync::broadcast::channel(1000);
 
     let state = Arc::new(AppState::new(
         macro_recorder,
@@ -48,6 +49,7 @@ async fn start_test_server() -> (u16, tokio::task::JoinHandle<()>) {
         config_service,
         settings_service,
         subscription_manager,
+        event_broadcaster,
     ));
 
     // Create broadcast channel for daemon events

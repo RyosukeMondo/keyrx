@@ -30,6 +30,10 @@ interface CodePanelContainerProps {
   onChange: (code: string) => void;
   /** Sync engine instance for state and error management */
   syncEngine: RhaiSyncEngineResult;
+  /** Whether the panel is open (controlled from parent) */
+  isOpen: boolean;
+  /** Callback to toggle panel open/closed state */
+  onToggle: () => void;
 }
 
 /**
@@ -50,8 +54,10 @@ export const CodePanelContainer: React.FC<CodePanelContainerProps> = ({
   rhaiCode,
   onChange,
   syncEngine,
+  isOpen,
+  onToggle,
 }) => {
-  const { isOpen, height, toggleOpen, setHeight } = useCodePanel();
+  const { height, setHeight } = useCodePanel();
 
   /**
    * Handle mouse down on resize handle
@@ -93,7 +99,7 @@ export const CodePanelContainer: React.FC<CodePanelContainerProps> = ({
           Code - {profileName}
         </h3>
         <button
-          onClick={toggleOpen}
+          onClick={onToggle}
           className="px-3 py-1 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
           title="Hide code editor"
           aria-label="Hide code editor"

@@ -390,6 +390,9 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
     let subscription_manager =
         std::sync::Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
 
+    // Create RPC event broadcaster for WebSocket RPC events (device/profile updates)
+    let (rpc_event_tx, _) = tokio::sync::broadcast::channel(1000);
+
     let app_state = std::sync::Arc::new(keyrx_daemon::web::AppState::new(
         macro_recorder,
         profile_service,
@@ -397,6 +400,7 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
         config_service,
         settings_service,
         subscription_manager,
+        rpc_event_tx,
     ));
 
     // Start web server and event broadcasting in background (optional)

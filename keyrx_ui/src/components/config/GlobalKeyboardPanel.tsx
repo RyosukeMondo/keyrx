@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '@/components/Card';
 import { LayerSwitcher } from '@/components/LayerSwitcher';
 import { KeyboardVisualizerContainer } from './KeyboardVisualizerContainer';
+import type { LayoutType } from '@/components/KeyboardVisualizer';
 import type { KeyMapping } from '@/types';
 
 interface GlobalKeyboardPanelProps {
@@ -14,7 +15,7 @@ interface GlobalKeyboardPanelProps {
   keyMappings: Map<string, KeyMapping>;
   onKeyClick: (keyCode: string) => void;
   selectedKeyCode: string | null;
-  initialLayout: string;
+  initialLayout: LayoutType | undefined;
   isVisible: boolean;
 }
 

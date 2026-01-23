@@ -69,6 +69,7 @@ impl TestApp {
         let macro_recorder = Arc::new(MacroRecorder::new());
         let subscription_manager =
             Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
+        let (event_broadcaster, _) = tokio::sync::broadcast::channel(1000);
 
         // Create app state
         let state = Arc::new(AppState::new(
@@ -78,6 +79,7 @@ impl TestApp {
             config_service,
             settings_service,
             subscription_manager,
+            event_broadcaster,
         ));
 
         // Create event channel

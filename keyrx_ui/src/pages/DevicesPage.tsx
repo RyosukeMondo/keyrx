@@ -11,6 +11,7 @@ import {
   useDevices,
   useSetDeviceEnabled,
   useForgetDevice,
+  useRenameDevice,
 } from '../hooks/useDevices';
 import { getErrorMessage } from '../utils/errorUtils';
 import { LAYOUT_OPTIONS } from '../contexts/LayoutPreviewContext';
@@ -63,57 +64,25 @@ const DeviceRow: React.FC<DeviceRowProps> = ({
   onToggleEnabled,
   onForgetClick,
 }) => {
-  const [localLayout, setLocalLayout] = useState(device.layout);
-  const serverLayoutRef = React.useRef(device.layout);
-  const [hasUserChanges, setHasUserChanges] = useState(false);
   const {
     mutate: updateDevice,
-    isPending: isUpdating,
-    error: updateError,
+    isPending: isSaving,
+    error: saveError,
   } = useUpdateDevice();
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
-  const saveLayout = React.useCallback(
-    async (layout: string) => {
-      await new Promise<void>((resolve, reject) => {
-        updateDevice(
-          { id: device.id, layout },
-          {
-            onSuccess: () => {
-              serverLayoutRef.current = layout;
-              setLastSavedAt(new Date());
-              setHasUserChanges(false);
-              resolve();
-            },
-            onError: (error) => reject(error),
-          }
-        );
-      });
-    },
-    [device.id, updateDevice]
-  );
-
-  const { isSaving: isSavingLayout, error: layoutSaveError } = useAutoSave(
-    localLayout,
-    { saveFn: saveLayout, debounceMs: 500, enabled: hasUserChanges }
-  );
-
-  const isSaving = isSavingLayout || isUpdating;
-  const saveError = layoutSaveError || updateError;
-
-  React.useEffect(() => {
-    if (device.layout !== serverLayoutRef.current) {
-      serverLayoutRef.current = device.layout;
-      setLocalLayout(device.layout);
-      setHasUserChanges(false);
-    }
-  }, [device.layout]);
-
+  // Simple: save immediately on change, no auto-save complexity
   const handleLayoutChange = (newLayout: string) => {
-    setLocalLayout(newLayout);
-    if (newLayout !== serverLayoutRef.current) {
-      setHasUserChanges(true);
-    }
+    updateDevice(
+      { id: device.id, layout: newLayout },
+      {
+        onSuccess: () => {
+          setLastSavedAt(new Date());
+          // Clear success indicator after 2 seconds
+          setTimeout(() => setLastSavedAt(null), 2000);
+        },
+      }
+    );
   };
 
   return (
@@ -196,10 +165,11 @@ const DeviceRow: React.FC<DeviceRowProps> = ({
         <div className="relative">
           <LayoutDropdown
             options={LAYOUT_OPTIONS}
-            value={localLayout}
+            value={device.layout}
             onChange={handleLayoutChange}
             aria-label="Layout"
             compact
+            disabled={isSaving}
           />
         </div>
         {isSaving && (
@@ -289,6 +259,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   } = useDevices();
   const { mutate: setDeviceEnabledMutation } = useSetDeviceEnabled();
   const { mutate: forgetDeviceMutation } = useForgetDevice();
+  const { mutate: renameDeviceMutation } = useRenameDevice();
 
   // Transform DeviceEntry to Device (UI format)
   const devices: Device[] = deviceEntries.map((entry: DeviceEntry) => ({
@@ -353,7 +324,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     setNameError('');
   };
 
-  const handleRenameSave = (_deviceId: string) => {
+  const handleRenameSave = (deviceId: string) => {
     // Validate name
     if (!editingName.trim()) {
       setNameError('Device name cannot be empty');
@@ -365,16 +336,24 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
       return;
     }
 
-    // TODO: Call API to rename device
-    // For now, just update local state
-    // setDevices((prev) =>
-    //   prev.map((d) => (d.id === _deviceId ? { ...d, name: editingName } : d))
-    // );
-
-    // Reset editing state
-    setEditingDeviceId(null);
-    setEditingName('');
-    setNameError('');
+    // Call API to rename device
+    renameDeviceMutation(
+      { id: deviceId, name: editingName.trim() },
+      {
+        onSuccess: () => {
+          // Reset editing state on success
+          setEditingDeviceId(null);
+          setEditingName('');
+          setNameError('');
+        },
+        onError: (err) => {
+          // Show error message
+          setNameError(
+            getErrorMessage(err, 'Failed to rename device')
+          );
+        },
+      }
+    );
   };
 
   const handleToggleEnabled = (deviceId: string, enabled: boolean) => {

@@ -92,8 +92,8 @@ export function useConfigPageHandlers({
   );
 
   const handleSaveMapping = useCallback(
-    (mapping: KeyMapping) => {
-      configStore.setMapping(mapping.from_key, mapping);
+    (keyCode: string, mapping: KeyMapping) => {
+      configStore.setMapping(keyCode, mapping);
       syncEngine.syncToRhai();
       setSyncStatus('unsaved');
     },

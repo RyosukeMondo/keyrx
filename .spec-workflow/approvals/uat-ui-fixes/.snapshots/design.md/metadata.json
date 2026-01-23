@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/uat-ui-fixes/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-01-21T21:54:01.832Z",
+      "trigger": "initial",
+      "approvalId": "approval_1769032441689_lwek1nin1",
+      "approvalTitle": "Design Document for UAT UI Fixes"
+    }
+  ]
+}

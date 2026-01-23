@@ -23,6 +23,8 @@ use crate::macro_recorder::MacroRecorder;
 use crate::services::{ConfigService, DeviceService, ProfileService, SettingsService};
 use crate::web::subscriptions::SubscriptionManager;
 
+use crate::web::rpc_types::ServerMessage;
+
 /// Application state shared across all web handlers
 ///
 /// This struct contains all dependencies needed by the web API and is injected
@@ -42,6 +44,8 @@ pub struct AppState {
     pub settings_service: Arc<SettingsService>,
     /// Subscription manager for WebSocket pub/sub
     pub subscription_manager: Arc<SubscriptionManager>,
+    /// Event broadcaster for sending events to WebSocket clients
+    pub event_broadcaster: broadcast::Sender<ServerMessage>,
 }
 
 impl AppState {
@@ -53,6 +57,7 @@ impl AppState {
         config_service: Arc<ConfigService>,
         settings_service: Arc<SettingsService>,
         subscription_manager: Arc<SubscriptionManager>,
+        event_broadcaster: broadcast::Sender<ServerMessage>,
     ) -> Self {
         Self {
             macro_recorder,
@@ -61,6 +66,7 @@ impl AppState {
             config_service,
             settings_service,
             subscription_manager,
+            event_broadcaster,
         }
     }
 }

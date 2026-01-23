@@ -119,7 +119,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   }, [profiles, selectedProfileName, setSelectedProfileName]);
 
   // Check if selected profile exists
-  const profileExists = profiles?.some((p) => p.name === selectedProfileName);
+  const profileExists = profiles?.some((p) => p.name === selectedProfileName) ?? false;
 
   // Check if config file exists
   const configMissing =
@@ -436,6 +436,8 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
         rhaiCode={syncEngine.getCode()}
         onChange={(value) => syncEngine.onCodeChange(value)}
         syncEngine={syncEngine}
+        isOpen={isCodePanelOpen}
+        onToggle={toggleCodePanel}
       />
     </div>
   );

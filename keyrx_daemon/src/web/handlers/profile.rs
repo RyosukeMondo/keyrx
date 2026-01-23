@@ -11,7 +11,8 @@ use validator::Validate;
 
 use crate::config::ProfileTemplate;
 use crate::services::ProfileService;
-use crate::web::rpc_types::{RpcError, INTERNAL_ERROR};
+use crate::web::rpc_types::{RpcError, ServerMessage, INTERNAL_ERROR};
+use crate::web::AppState;
 
 /// Parameters for get_profiles query
 #[derive(Debug, Deserialize)]
@@ -233,10 +234,7 @@ pub async fn create_profile(
 }
 
 /// Activate a profile
-pub async fn activate_profile(
-    profile_service: &ProfileService,
-    params: Value,
-) -> Result<Value, RpcError> {
+pub async fn activate_profile(state: &AppState, params: Value) -> Result<Value, RpcError> {
     let params: ActivateProfileParams = serde_json::from_value(params)
         .map_err(|e| RpcError::invalid_params(format!("Invalid parameters: {}", e)))?;
 
@@ -251,10 +249,23 @@ pub async fn activate_profile(
     validate_profile_name(&params.name)?;
 
     // Call profile service
-    let result = profile_service
+    let result = state
+        .profile_service
         .activate_profile(&params.name)
         .await
         .map_err(|e| RpcError::new(INTERNAL_ERROR, format!("Failed to activate profile: {}", e)))?;
+
+    // Broadcast event to WebSocket subscribers
+    let event = ServerMessage::Event {
+        channel: "profiles".to_string(),
+        data: serde_json::json!({
+            "action": "activated",
+            "profile": params.name
+        }),
+    };
+    if let Err(e) = state.event_broadcaster.send(event) {
+        log::warn!("Failed to broadcast profile activated event: {}", e);
+    }
 
     // Convert to RPC format
     let rpc_result = ActivationRpcResult {

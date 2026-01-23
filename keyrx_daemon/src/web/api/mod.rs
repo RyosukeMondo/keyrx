@@ -72,6 +72,7 @@ mod tests {
         let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
         let settings_service = Arc::new(crate::services::SettingsService::new(config_dir));
         let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
+        let (event_broadcaster, _) = tokio::sync::broadcast::channel(1000);
         let state = Arc::new(AppState::new(
             Arc::new(MacroRecorder::new()),
             profile_service,
@@ -79,6 +80,7 @@ mod tests {
             config_service,
             settings_service,
             subscription_manager,
+            event_broadcaster,
         ));
         let router = create_router(state);
         assert!(std::mem::size_of_val(&router) > 0);
@@ -96,6 +98,7 @@ mod tests {
         let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
         let settings_service = Arc::new(crate::services::SettingsService::new(config_dir));
         let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
+        let (event_broadcaster, _) = tokio::sync::broadcast::channel(1000);
         let state = Arc::new(AppState::new(
             mock_recorder.clone(),
             profile_service,
@@ -103,6 +106,7 @@ mod tests {
             config_service,
             settings_service,
             subscription_manager,
+            event_broadcaster,
         ));
 
         // Verify state is accessible

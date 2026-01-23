@@ -1,15 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useDevices } from '@/hooks/useDevices';
-import { extractDevicePatterns, hasGlobalMappings } from '@/utils/rhaiParser';
+import { extractDevicePatterns, hasGlobalMappings, type RhaiAST } from '@/utils/rhaiParser';
 import type { Device } from '@/components/DeviceSelector';
 
 interface UseDeviceMergingProps {
   syncEngine: {
     state: string;
-    getAST: () => {
-      globalMappings: unknown[];
-      deviceBlocks: { pattern: string; mappings: unknown[]; layers: unknown[] }[];
-    } | null;
+    getAST: () => RhaiAST | null;
   };
   configStore: {
     setGlobalSelected: (selected: boolean) => void;
@@ -26,6 +23,10 @@ export function useDeviceMerging({
 }: UseDeviceMergingProps) {
   const { data: devicesData } = useDevices();
   const [mergedDevices, setMergedDevices] = useState<Device[]>([]);
+  // Track last processed AST to prevent infinite loops
+  const lastASTRef = useRef<RhaiAST | null>(null);
+  // Track if initial auto-selection has been done
+  const initialSelectionDoneRef = useRef(false);
 
   useEffect(() => {
     const ast = syncEngine.getAST();
@@ -114,27 +115,40 @@ export function useDeviceMerging({
 
     setMergedDevices(merged);
 
-    // Auto-populate device selector based on Rhai content
-    const hasWildcardDevice = devicePatternsInRhai.includes('*');
-    if (hasGlobalMappings(ast) || hasWildcardDevice) {
-      configStore.setGlobalSelected(true);
+    // Only auto-populate device selector once per AST change
+    // Skip if we've already processed this exact AST instance
+    if (lastASTRef.current === ast && initialSelectionDoneRef.current) {
+      return;
     }
+    lastASTRef.current = ast;
 
-    // If Rhai has device blocks, auto-select those devices (excluding "*")
-    const nonWildcardPatterns = devicePatternsInRhai.filter((p) => p !== '*');
-    if (nonWildcardPatterns.length > 0) {
-      const devicesToSelect = merged
-        .filter((device) => {
-          const pattern = device.serial || device.name;
-          return nonWildcardPatterns.includes(pattern);
-        })
-        .map((device) => device.id);
+    // Auto-populate device selector based on Rhai content (only on first load)
+    if (!initialSelectionDoneRef.current) {
+      initialSelectionDoneRef.current = true;
 
-      if (devicesToSelect.length > 0) {
-        configStore.setSelectedDevices(devicesToSelect);
+      const hasWildcardDevice = devicePatternsInRhai.includes('*');
+      if (hasGlobalMappings(ast) || hasWildcardDevice) {
+        configStore.setGlobalSelected(true);
+      }
+
+      // If Rhai has device blocks, auto-select those devices (excluding "*")
+      const nonWildcardPatterns = devicePatternsInRhai.filter((p) => p !== '*');
+      if (nonWildcardPatterns.length > 0) {
+        const devicesToSelect = merged
+          .filter((device) => {
+            const pattern = device.serial || device.name;
+            return nonWildcardPatterns.includes(pattern);
+          })
+          .map((device) => device.id);
+
+        if (devicesToSelect.length > 0) {
+          configStore.setSelectedDevices(devicesToSelect);
+        }
       }
     }
-  }, [syncEngine.state, devicesData, syncEngine, configStore]);
+    // Note: syncEngine and configStore objects excluded from deps to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncEngine.state, syncEngine.getAST, devicesData, configStore.setGlobalSelected, configStore.setSelectedDevices]);
 
   return mergedDevices;
 }

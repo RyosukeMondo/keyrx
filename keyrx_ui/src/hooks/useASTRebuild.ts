@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useDevices } from '@/hooks/useDevices';
 import type { KeyMapping } from '@/types';
-import type { KeyMapping as RhaiKeyMapping } from '@/utils/rhaiParser';
+import type { KeyMapping as RhaiKeyMapping, RhaiAST } from '@/utils/rhaiParser';
 import type { Device } from '@/components/DeviceSelector';
 
 interface UseASTRebuildProps {
@@ -10,23 +10,7 @@ interface UseASTRebuildProps {
     getLayerMappings: (layerId: string) => Map<string, KeyMapping>;
   };
   syncEngine: {
-    onVisualChange: (ast: {
-      imports: unknown[];
-      globalMappings: RhaiKeyMapping[];
-      deviceBlocks: {
-        pattern: string;
-        mappings: RhaiKeyMapping[];
-        layers: {
-          modifiers: string[];
-          mappings: RhaiKeyMapping[];
-          startLine: number;
-          endLine: number;
-        }[];
-        startLine: number;
-        endLine: number;
-      }[];
-      comments: unknown[];
-    }) => void;
+    onVisualChange: (ast: RhaiAST) => void;
   };
   globalSelected: boolean;
   selectedDevices: string[];

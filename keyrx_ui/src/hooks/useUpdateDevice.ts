@@ -83,50 +83,13 @@ export function useUpdateDevice() {
         request.scope = scope;
       }
 
-      return apiClient.patch<DeviceResponse>(`/api/devices/${id}`, request);
-    },
-
-    // Optimistic update: immediately update cache before API call
-    onMutate: async ({ id, layout, scope }) => {
-      // Cancel outgoing queries to avoid overwriting optimistic update
-      await queryClient.cancelQueries({ queryKey: queryKeys.devices });
-
-      // Snapshot previous value for rollback
-      const previousDevices = queryClient.getQueryData<DeviceEntry[]>(
-        queryKeys.devices
+      return apiClient.patch<DeviceResponse>(
+        `/api/devices/${encodeURIComponent(id)}`,
+        request
       );
-
-      // Optimistically update cache
-      queryClient.setQueryData<DeviceEntry[]>(
-        queryKeys.devices,
-        (old) =>
-          old?.map((device) => {
-            if (device.id !== id) return device;
-
-            // Update only the fields that were provided
-            const updated = { ...device };
-            if (layout !== undefined) {
-              updated.layout = layout;
-            }
-            if (scope !== undefined) {
-              updated.scope = scope;
-            }
-            return updated;
-          })
-      );
-
-      // Return context for rollback
-      return { previousDevices };
     },
 
-    // Rollback on error
-    onError: (_error, _variables, context) => {
-      if (context?.previousDevices) {
-        queryClient.setQueryData(queryKeys.devices, context.previousDevices);
-      }
-    },
-
-    // Refetch on success to ensure data consistency
+    // Simple: just refetch after success, no optimistic updates
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.devices });
     },

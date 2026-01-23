@@ -148,7 +148,7 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
       // Validate incoming server message
       let message: ServerMessage;
       try {
-        message = validateRpcMessage(parsedData, 'server');
+        message = validateRpcMessage(parsedData, 'server') as ServerMessage;
       } catch (validationError) {
         console.error(
           '[useUnifiedApi] Message validation failed:',

@@ -71,9 +71,12 @@ async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
     // Queue for outgoing messages
     let outgoing_queue = Arc::new(Mutex::new(VecDeque::<ServerMessage>::new()));
 
+    // Subscribe to broadcast events
+    let mut event_rx = state.event_broadcaster.subscribe();
+
     // Main message processing loop
     loop {
-        // Check if there are outgoing messages to send
+        // Try to send any queued messages first
         let next_message = {
             let mut queue = outgoing_queue.lock().await;
             queue.pop_front()
@@ -92,53 +95,77 @@ async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
                 log::info!("WebSocket RPC client disconnected (send failed)");
                 break;
             }
+            continue; // Check for more messages before blocking on recv
         }
 
-        // Process incoming messages
-        match socket.recv().await {
-            Some(Ok(Message::Text(text))) => {
-                log::debug!("Received WebSocket RPC message: {}", text);
+        // No queued messages, wait for events or incoming messages
+        tokio::select! {
+            // Handle broadcast events
+            Ok(event) = event_rx.recv() => {
+                log::debug!("Received broadcast event for client {}", client_id);
 
-                // Parse message
-                let client_msg: ClientMessage = match serde_json::from_str(&text) {
-                    Ok(msg) => msg,
-                    Err(e) => {
-                        log::warn!("Failed to parse message: {}", e);
-                        // Send parse error response (can't correlate to request ID)
-                        let error_response = ServerMessage::Response {
-                            id: String::new(),
-                            result: None,
-                            error: Some(RpcError::parse_error(format!("Invalid JSON: {}", e))),
-                        };
+                // Check if this is an Event message and if client is subscribed
+                if let ServerMessage::Event { ref channel, .. } = event {
+                    if state.subscription_manager.is_subscribed(client_id, channel).await {
+                        log::debug!("Forwarding event on channel '{}' to client {}", channel, client_id);
                         let mut queue = outgoing_queue.lock().await;
-                        queue.push_back(error_response);
-                        continue;
+                        queue.push_back(event);
+                    } else {
+                        log::debug!("Client {} not subscribed to channel '{}', skipping event", client_id, channel);
                     }
-                };
+                } else {
+                    // For non-Event messages, queue them directly
+                    let mut queue = outgoing_queue.lock().await;
+                    queue.push_back(event);
+                }
+            }
 
-                // Process message and queue response
-                process_client_message(
-                    client_msg,
-                    client_id,
-                    Arc::clone(&outgoing_queue),
-                    Arc::clone(&state),
-                )
-                .await;
-            }
-            Some(Ok(Message::Close(_))) => {
-                log::info!("WebSocket RPC client closed connection");
-                break;
-            }
-            Some(Ok(_)) => {
-                // Ignore binary/ping/pong messages
-            }
-            Some(Err(e)) => {
-                log::warn!("WebSocket error: {}", e);
-                break;
-            }
-            None => {
-                log::info!("WebSocket RPC client {} disconnected", client_id);
-                break;
+            // Process incoming messages
+            result = socket.recv() => match result {
+                Some(Ok(Message::Text(text))) => {
+                    log::debug!("Received WebSocket RPC message: {}", text);
+
+                    // Parse message
+                    let client_msg: ClientMessage = match serde_json::from_str(&text) {
+                        Ok(msg) => msg,
+                        Err(e) => {
+                            log::warn!("Failed to parse message: {}", e);
+                            // Send parse error response (can't correlate to request ID)
+                            let error_response = ServerMessage::Response {
+                                id: String::new(),
+                                result: None,
+                                error: Some(RpcError::parse_error(format!("Invalid JSON: {}", e))),
+                            };
+                            let mut queue = outgoing_queue.lock().await;
+                            queue.push_back(error_response);
+                            continue;
+                        }
+                    };
+
+                    // Process message and queue response
+                    process_client_message(
+                        client_msg,
+                        client_id,
+                        Arc::clone(&outgoing_queue),
+                        Arc::clone(&state),
+                    )
+                    .await;
+                }
+                Some(Ok(Message::Close(_))) => {
+                    log::info!("WebSocket RPC client closed connection");
+                    break;
+                }
+                Some(Ok(_)) => {
+                    // Ignore binary/ping/pong messages
+                }
+                Some(Err(e)) => {
+                    log::warn!("WebSocket error: {}", e);
+                    break;
+                }
+                None => {
+                    log::info!("WebSocket RPC client {} disconnected", client_id);
+                    break;
+                }
             }
         }
     }
@@ -225,12 +252,12 @@ async fn handle_command(
 
     let result = match method.as_str() {
         "create_profile" => profile::create_profile(&state.profile_service, params).await,
-        "activate_profile" => profile::activate_profile(&state.profile_service, params).await,
+        "activate_profile" => profile::activate_profile(state, params).await,
         "delete_profile" => profile::delete_profile(&state.profile_service, params).await,
         "duplicate_profile" => profile::duplicate_profile(&state.profile_service, params).await,
         "rename_profile" => profile::rename_profile(&state.profile_service, params).await,
         "set_profile_config" => profile::set_profile_config(&state.profile_service, params).await,
-        "rename_device" => device::rename_device(&state.device_service, params).await,
+        "rename_device" => device::rename_device(state, params).await,
         "forget_device" => device::forget_device(&state.device_service, params).await,
         "update_config" => config::update_config(&state.config_service, params).await,
         "set_key_mapping" => config::set_key_mapping(&state.config_service, params).await,
@@ -333,6 +360,7 @@ mod tests {
         let config_service = Arc::new(ConfigService::new(profile_manager));
         let settings_service = Arc::new(crate::services::SettingsService::new(config_dir));
         let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
+        let (event_broadcaster, _) = tokio::sync::broadcast::channel(1000);
         let state = Arc::new(AppState::new(
             Arc::new(MacroRecorder::new()),
             profile_service,
@@ -340,6 +368,7 @@ mod tests {
             config_service,
             settings_service,
             subscription_manager,
+            event_broadcaster,
         ));
         let router = create_router(state);
         assert!(std::mem::size_of_val(&router) > 0);

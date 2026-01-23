@@ -9,7 +9,8 @@ use serde_json::Value;
 use typeshare::typeshare;
 
 use crate::services::DeviceService;
-use crate::web::rpc_types::{RpcError, INTERNAL_ERROR};
+use crate::web::rpc_types::{RpcError, ServerMessage, INTERNAL_ERROR};
+use crate::web::AppState;
 
 /// Parameters for get_devices query
 #[derive(Debug, Deserialize)]
@@ -114,10 +115,7 @@ pub async fn get_devices(device_service: &DeviceService, params: Value) -> Resul
 }
 
 /// Rename a device
-pub async fn rename_device(
-    device_service: &DeviceService,
-    params: Value,
-) -> Result<Value, RpcError> {
+pub async fn rename_device(state: &AppState, params: Value) -> Result<Value, RpcError> {
     let params: RenameDeviceParams = serde_json::from_value(params)
         .map_err(|e| RpcError::invalid_params(format!("Invalid parameters: {}", e)))?;
 
@@ -129,10 +127,24 @@ pub async fn rename_device(
     // Device name validation is handled by DeviceRegistry
 
     // Call device service
-    device_service
+    state
+        .device_service
         .rename_device(&params.id, &params.name)
         .await
         .map_err(|e| RpcError::new(INTERNAL_ERROR, format!("Failed to rename device: {}", e)))?;
+
+    // Broadcast event to WebSocket subscribers
+    let event = ServerMessage::Event {
+        channel: "devices".to_string(),
+        data: serde_json::json!({
+            "action": "renamed",
+            "id": params.id,
+            "name": params.name
+        }),
+    };
+    if let Err(e) = state.event_broadcaster.send(event) {
+        log::warn!("Failed to broadcast device renamed event: {}", e);
+    }
 
     // Return success
     Ok(serde_json::json!({

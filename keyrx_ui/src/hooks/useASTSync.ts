@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDevices } from '@/hooks/useDevices';
 import type { KeyMapping } from '@/types';
 import type { KeyMapping as RhaiKeyMapping } from '@/utils/rhaiParser';
@@ -99,6 +99,8 @@ export function useASTSync({
   selectedDevices,
 }: UseASTSyncProps) {
   const { data: devicesData } = useDevices();
+  // Track last processed AST to prevent infinite loops
+  const lastASTRef = useRef<object | null>(null);
 
   useEffect(() => {
     // Only sync when state is idle (parsing complete)
@@ -106,6 +108,10 @@ export function useASTSync({
 
     const ast = syncEngine.getAST();
     if (!ast) return;
+
+    // Skip if we've already processed this exact AST instance
+    if (lastASTRef.current === ast) return;
+    lastASTRef.current = ast;
 
     // Build layer-aware mappings: Map<layerId, Map<keyCode, KeyMapping>>
     const layerMappings = new Map<string, Map<string, KeyMapping>>();
@@ -211,5 +217,8 @@ export function useASTSync({
 
     // Load into store
     configStore.loadLayerMappings(layerMappings);
-  }, [syncEngine.state, globalSelected, selectedDevices, devicesData, syncEngine, configStore]);
+    // Note: syncEngine and configStore objects are excluded from deps to prevent infinite loops
+    // We depend on syncEngine.state for timing, and getAST is a stable memoized function
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncEngine.state, syncEngine.getAST, globalSelected, selectedDevices, devicesData, configStore.loadLayerMappings]);
 }

@@ -289,7 +289,6 @@ export const EventLogList: React.FC<EventLogListProps> = ({
         itemSize={rowHeight}
         width="100%"
         className="bg-slate-900"
-        role="rowgroup"
       >
         {EventRow}
       </List>
