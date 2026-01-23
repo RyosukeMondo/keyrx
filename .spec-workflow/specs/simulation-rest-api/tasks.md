@@ -9,7 +9,7 @@
   - _Requirements: 1.1, 1.2, 1.3_
   - _Prompt: Implement the task for spec simulation-rest-api, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Developer specializing in WASM integration | Task: Fix the env-shim.js to provide a `now()` function that returns BigInt(Math.floor(performance.now() * 1_000_000)) for nanosecond precision timestamps required by Rust's Instant::now() in WASM. The current shim exports empty object and causes "env.now" import error. | Restrictions: Do not modify WASM build configuration, keep existing export default structure, use BigInt for precision | Success: WASM module loads without console errors, `wasm_init()` completes successfully, SimulatorPage renders without WASM error banner. Mark task as in-progress [-] before starting in tasks.md, log implementation with log-implementation tool after completion, then mark as complete [x]._
 
-- [ ] 2. Create SimulationService in services module
+- [x] 2. Create SimulationService in services module
   - File: keyrx_daemon/src/services/simulation_service.rs
   - Wrap SimulationEngine with service layer providing profile loading, replay, and reset
   - Use Mutex<Option<SimulationEngine>> for thread-safe state
