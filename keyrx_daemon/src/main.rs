@@ -402,6 +402,10 @@ fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<
     // Create broadcast channel for event streaming
     let (event_tx, _event_rx) = tokio::sync::broadcast::channel(1000);
 
+    // Create event bus channel for simulator-to-macro-recorder communication
+    let (macro_event_tx, macro_event_rx) =
+        tokio::sync::mpsc::channel::<keyrx_core::runtime::KeyEvent>(1000);
+
     // Create services for web API
     let macro_recorder = Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());
     // Reuse the same ProfileManager instance for IPC and REST API
@@ -419,13 +423,19 @@ fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<
     ));
     let simulation_service = Arc::new(keyrx_daemon::services::SimulationService::new(
         config_dir.clone(),
-        None,
+        Some(macro_event_tx),
     ));
     let subscription_manager =
         Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
 
     // Create RPC event broadcaster
     let (rpc_event_tx, _) = tokio::sync::broadcast::channel(1000);
+
+    // Spawn macro recorder event loop
+    let recorder_for_loop = (*macro_recorder).clone();
+    tokio::spawn(async move {
+        recorder_for_loop.run_event_loop(macro_event_rx).await;
+    });
 
     let app_state = Arc::new(keyrx_daemon::web::AppState::new_with_test_mode(
         macro_recorder,
@@ -529,6 +539,10 @@ fn handle_run(
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
 
+    // Create event bus channel for simulator-to-macro-recorder communication
+    let (macro_event_tx, macro_event_rx) =
+        tokio::sync::mpsc::channel::<keyrx_core::runtime::KeyEvent>(1000);
+
     // Create AppState with dependencies for web API
     let macro_recorder = std::sync::Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());
 
@@ -564,7 +578,7 @@ fn handle_run(
     ));
     let simulation_service = std::sync::Arc::new(keyrx_daemon::services::SimulationService::new(
         config_dir.clone(),
-        None,
+        Some(macro_event_tx),
     ));
 
     let subscription_manager =
@@ -572,6 +586,12 @@ fn handle_run(
 
     // Create RPC event broadcaster for WebSocket RPC events (device/profile updates)
     let (rpc_event_tx, _) = tokio::sync::broadcast::channel(1000);
+
+    // Spawn macro recorder event loop
+    let recorder_for_loop = (*macro_recorder).clone();
+    tokio::spawn(async move {
+        recorder_for_loop.run_event_loop(macro_event_rx).await;
+    });
 
     let app_state = std::sync::Arc::new(keyrx_daemon::web::AppState::new(
         macro_recorder,
@@ -809,6 +829,10 @@ fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<
     // Create broadcast channel for event streaming
     let (event_tx, _event_rx) = tokio::sync::broadcast::channel(1000);
 
+    // Create event bus channel for simulator-to-macro-recorder communication
+    let (macro_event_tx, macro_event_rx) =
+        tokio::sync::mpsc::channel::<keyrx_core::runtime::KeyEvent>(1000);
+
     // Create services for web API
     let macro_recorder = Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());
     // Reuse the same ProfileManager instance for IPC and REST API
@@ -826,13 +850,19 @@ fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<
     ));
     let simulation_service = Arc::new(keyrx_daemon::services::SimulationService::new(
         config_dir.clone(),
-        None,
+        Some(macro_event_tx),
     ));
     let subscription_manager =
         Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
 
     // Create RPC event broadcaster
     let (rpc_event_tx, _) = tokio::sync::broadcast::channel(1000);
+
+    // Spawn macro recorder event loop
+    let recorder_for_loop = (*macro_recorder).clone();
+    tokio::spawn(async move {
+        recorder_for_loop.run_event_loop(macro_event_rx).await;
+    });
 
     let app_state = Arc::new(keyrx_daemon::web::AppState::new_with_test_mode(
         macro_recorder,
@@ -979,6 +1009,10 @@ fn handle_run(
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
 
+    // Create event bus channel for simulator-to-macro-recorder communication
+    let (macro_event_tx, macro_event_rx) =
+        tokio::sync::mpsc::channel::<keyrx_core::runtime::KeyEvent>(1000);
+
     // Start web server in background
     let macro_recorder = std::sync::Arc::new(keyrx_daemon::macro_recorder::MacroRecorder::new());
 
@@ -1007,7 +1041,7 @@ fn handle_run(
     ));
     let simulation_service = std::sync::Arc::new(keyrx_daemon::services::SimulationService::new(
         config_dir.clone(),
-        None,
+        Some(macro_event_tx),
     ));
 
     let subscription_manager =
@@ -1015,6 +1049,12 @@ fn handle_run(
 
     // Create RPC event broadcaster for WebSocket RPC events (device/profile updates)
     let (rpc_event_tx, _) = tokio::sync::broadcast::channel(1000);
+
+    // Spawn macro recorder event loop
+    let recorder_for_loop = (*macro_recorder).clone();
+    tokio::spawn(async move {
+        recorder_for_loop.run_event_loop(macro_event_rx).await;
+    });
 
     let app_state = std::sync::Arc::new(keyrx_daemon::web::AppState::new(
         macro_recorder,

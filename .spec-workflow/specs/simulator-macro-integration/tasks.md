@@ -37,7 +37,7 @@ Connect simulator event output to macro recorder input, enabling macro recording
   - _Requirements: REQ-3.1.2, REQ-3.1.3, REQ-3.3.1_
   - _Prompt: Role: Rust Async Developer with expertise in tokio and event processing | Task: Add event loop to macro recorder that receives from event bus following REQ-3.1.x and REQ-3.3.1, only recording when recording flag active | Restrictions: Must check is_recording() before recording, must not block event loop, must handle channel closure gracefully | Success: Macro recorder receives events from bus, only records when active, event loop runs efficiently_
 
-- [ ] 4. Wire up event bus in daemon initialization
+- [x] 4. Wire up event bus in daemon initialization
   - File: keyrx_daemon/src/daemon/mod.rs, keyrx_daemon/src/cli/run.rs
   - Create event bus channel (mpsc) at daemon startup
   - Pass event_tx to SimulatorService constructor
