@@ -56,7 +56,7 @@ Enable 5 failing IPC-dependent E2E tests by adding test mode with full IPC infra
   - _Requirements: REQ-3.2.4, REQ-3.3.2, REQ-4.1.1_
   - _Prompt: Role: Backend Developer with expertise in Rust state management and IPC | Task: Implement daemon status IPC command handler following REQ-3.2.4 and REQ-3.3.2, querying daemon running state with < 50ms latency | Restrictions: Must return accurate daemon state, must handle concurrent queries, must include all required status fields | Success: Status query works via IPC, daemon_running field populated correctly, latency < 50ms_
 
-- [-] 6. Integrate IPC with REST API handlers
+- [x] 6. Integrate IPC with REST API handlers
   - File: keyrx_daemon/src/web/api/profiles.rs, keyrx_daemon/src/web/api/metrics.rs
   - Update activate_profile handler to use IPC in test mode
   - Update get_status handler to query IPC for daemon_running field in test mode
