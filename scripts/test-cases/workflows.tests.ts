@@ -758,11 +758,17 @@ export const workflow_006: TestCase = {
     // Step 4: Get recorded events
     const getEventsSchema = z.object({
       success: z.boolean(),
+      recording: z.boolean(),
+      event_count: z.number(),
       events: z.array(z.object({
-        key_code: z.number(),
-        event_type: z.number(),
-        timestamp_micros: z.number().optional(),
-      })).optional(),
+        event: z.object({
+          event_type: z.string(), // "Press" or "Release"
+          keycode: z.string(), // "A", "B", etc.
+          timestamp_us: z.number(),
+          device_id: z.string().nullable(),
+        }),
+        relative_timestamp_us: z.number(),
+      })),
     });
     const eventsResponse = await client.customRequest(
       'GET',
@@ -789,30 +795,27 @@ export const workflow_006: TestCase = {
 
     // Verify the first event is a press
     const pressEvent = events[0];
-    if (pressEvent.key_code !== 30) {
-      throw new Error(`Expected first event key_code to be 30, got ${pressEvent.key_code}`);
+    if (pressEvent.event.keycode !== 'A') {
+      throw new Error(`Expected first event keycode to be 'A', got ${pressEvent.event.keycode}`);
     }
-    if (pressEvent.event_type !== 0) {
-      throw new Error(`Expected first event to be press (0), got ${pressEvent.event_type}`);
+    if (pressEvent.event.event_type !== 'Press') {
+      throw new Error(`Expected first event to be Press, got ${pressEvent.event.event_type}`);
     }
 
     // Verify the second event is a release
     const releaseEvent = events[1];
-    if (releaseEvent.key_code !== 30) {
-      throw new Error(`Expected second event key_code to be 30, got ${releaseEvent.key_code}`);
+    if (releaseEvent.event.keycode !== 'A') {
+      throw new Error(`Expected second event keycode to be 'A', got ${releaseEvent.event.keycode}`);
     }
-    if (releaseEvent.event_type !== 1) {
-      throw new Error(`Expected second event to be release (1), got ${releaseEvent.event_type}`);
+    if (releaseEvent.event.event_type !== 'Release') {
+      throw new Error(`Expected second event to be Release, got ${releaseEvent.event.event_type}`);
     }
 
-    // Step 6: Verify timing (if timestamps are provided)
-    if (pressEvent.timestamp_micros && releaseEvent.timestamp_micros) {
-      const timeDiff = releaseEvent.timestamp_micros - pressEvent.timestamp_micros;
-      if (timeDiff < 0) {
-        throw new Error(
-          `Release event timestamp should be after press event, got diff ${timeDiff}`
-        );
-      }
+    // Step 6: Verify timing - second event should have later relative timestamp
+    if (releaseEvent.relative_timestamp_us <= pressEvent.relative_timestamp_us) {
+      throw new Error(
+        `Release event timestamp should be after press event: press=${pressEvent.relative_timestamp_us}, release=${releaseEvent.relative_timestamp_us}`
+      );
     }
 
     // Step 7: Clear recorded events

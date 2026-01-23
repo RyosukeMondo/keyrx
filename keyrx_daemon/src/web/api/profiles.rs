@@ -192,6 +192,12 @@ async fn activate_profile(
 
         match response {
             IpcResponse::ProfileActivated { name: profile_name } => {
+                // Reload simulation service with the new profile
+                if let Err(e) = state.simulation_service.load_profile(&profile_name) {
+                    log::warn!("Failed to load profile into simulation service: {}", e);
+                    // Don't fail the activation if simulation service load fails - it's not critical
+                }
+
                 // Broadcast event to WebSocket subscribers
                 use crate::web::rpc_types::ServerMessage;
                 let event = ServerMessage::Event {
@@ -234,6 +240,12 @@ async fn activate_profile(
                 reason: result.error.unwrap_or_else(|| "Unknown error".to_string()),
             }
             .into());
+        }
+
+        // Reload simulation service with the new profile
+        if let Err(e) = state.simulation_service.load_profile(&name) {
+            log::warn!("Failed to load profile into simulation service: {}", e);
+            // Don't fail the activation if simulation service load fails - it's not critical
         }
 
         // Broadcast event to WebSocket subscribers
