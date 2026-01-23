@@ -110,14 +110,14 @@ async fn simulate_events(
     } else if let Some(dsl) = payload.dsl {
         // Use DSL
         let seed = payload.seed.unwrap_or(0);
-        state.simulation_service.replay_dsl(&dsl, seed)?
+        state.simulation_service.replay_dsl(&dsl, seed).await?
     } else if let Some(events) = payload.events {
         // Use custom event sequence
         let sequence = EventSequence {
             events,
             seed: payload.seed.unwrap_or(0),
         };
-        state.simulation_service.replay(&sequence)?
+        state.simulation_service.replay(&sequence).await?
     } else {
         return Err(ApiError::BadRequest(
             "Must provide either 'scenario', 'dsl', or 'events'".to_string(),

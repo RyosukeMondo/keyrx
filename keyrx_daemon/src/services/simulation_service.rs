@@ -24,12 +24,15 @@
 
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 
+use keyrx_core::config::KeyCode;
 use keyrx_core::runtime::KeyEvent;
 use tokio::sync::mpsc;
 
 use crate::config::simulation_engine::{
-    BuiltinScenario, EventSequence, OutputEvent, ScenarioResult, SimulationEngine, SimulationError,
+    BuiltinScenario, EventSequence, EventType, OutputEvent, ScenarioResult, SimulationEngine,
+    SimulationError,
 };
 
 /// Service for simulation operations.
@@ -47,7 +50,6 @@ pub struct SimulationService {
     /// Optional simulation engine (created when profile is loaded)
     engine: Mutex<Option<SimulationEngine>>,
     /// Event bus sender for routing simulated events to macro recorder
-    #[allow(dead_code)] // Will be used in task 2
     event_tx: Option<mpsc::Sender<KeyEvent>>,
 }
 
@@ -101,6 +103,84 @@ impl SimulationService {
     /// # Ok(())
     /// # }
     /// ```
+    /// Helper method to convert OutputEvent to KeyEvent and send to event bus
+    ///
+    /// This is an async method that sends the event to the event bus channel.
+    /// It converts the OutputEvent format to KeyEvent format with:
+    /// - Lowercase event_type ("press", "release")
+    /// - Current timestamp in microseconds
+    /// - Key as string
+    async fn send_to_event_bus(&self, output: &OutputEvent) -> Result<(), SimulationError> {
+        if let Some(event_tx) = &self.event_tx {
+            // Convert string key to KeyCode
+            // For now, we'll parse common keys - this matches the key format from simulator
+            let key_str = output.key.as_str();
+            let keycode = match key_str {
+                "A" => KeyCode::A,
+                "B" => KeyCode::B,
+                "C" => KeyCode::C,
+                "D" => KeyCode::D,
+                "E" => KeyCode::E,
+                "F" => KeyCode::F,
+                "G" => KeyCode::G,
+                "H" => KeyCode::H,
+                "I" => KeyCode::I,
+                "J" => KeyCode::J,
+                "K" => KeyCode::K,
+                "L" => KeyCode::L,
+                "M" => KeyCode::M,
+                "N" => KeyCode::N,
+                "O" => KeyCode::O,
+                "P" => KeyCode::P,
+                "Q" => KeyCode::Q,
+                "R" => KeyCode::R,
+                "S" => KeyCode::S,
+                "T" => KeyCode::T,
+                "U" => KeyCode::U,
+                "V" => KeyCode::V,
+                "W" => KeyCode::W,
+                "X" => KeyCode::X,
+                "Y" => KeyCode::Y,
+                "Z" => KeyCode::Z,
+                "CapsLock" => KeyCode::CapsLock,
+                "Shift" => KeyCode::LShift,
+                "Ctrl" => KeyCode::LCtrl,
+                "Alt" => KeyCode::LAlt,
+                "Space" => KeyCode::Space,
+                "Enter" => KeyCode::Enter,
+                _ => {
+                    log::warn!("Unknown key '{}', defaulting to A", key_str);
+                    KeyCode::A
+                }
+            };
+
+            // Get current timestamp
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_micros() as u64;
+
+            // Create KeyEvent based on event type
+            let key_event = match output.event_type {
+                EventType::Press => KeyEvent::press(keycode).with_timestamp(timestamp),
+                EventType::Release => KeyEvent::release(keycode).with_timestamp(timestamp),
+            };
+
+            // Send to event bus
+            if let Err(e) = event_tx.send(key_event).await {
+                log::error!("Failed to send event to event bus: {}", e);
+                return Err(SimulationError::IoError(std::io::Error::new(
+                    std::io::ErrorKind::BrokenPipe,
+                    format!("Event bus send failed: {}", e),
+                )));
+            }
+
+            log::debug!("Sent event to bus: {:?} {}", output.event_type, output.key);
+        }
+
+        Ok(())
+    }
+
     pub fn load_profile(&self, profile_name: &str) -> Result<(), SimulationError> {
         log::debug!("Loading profile: {}", profile_name);
 
@@ -130,18 +210,30 @@ impl SimulationService {
     /// # Errors
     ///
     /// Returns error if no profile is loaded or replay fails.
-    pub fn replay(&self, sequence: &EventSequence) -> Result<Vec<OutputEvent>, SimulationError> {
+    pub async fn replay(
+        &self,
+        sequence: &EventSequence,
+    ) -> Result<Vec<OutputEvent>, SimulationError> {
         log::debug!(
             "Replaying event sequence with {} events",
             sequence.events.len()
         );
 
-        let mut guard = self.engine.lock().unwrap();
-        let engine = guard
-            .as_mut()
-            .ok_or_else(|| SimulationError::LoadError("No profile loaded".to_string()))?;
+        let outputs = {
+            let mut guard = self.engine.lock().unwrap();
+            let engine = guard
+                .as_mut()
+                .ok_or_else(|| SimulationError::LoadError("No profile loaded".to_string()))?;
 
-        engine.replay(sequence)
+            engine.replay(sequence)?
+        };
+
+        // Send each output event to the event bus
+        for output in &outputs {
+            self.send_to_event_bus(output).await?;
+        }
+
+        Ok(outputs)
     }
 
     /// Runs a built-in test scenario by name.
@@ -217,11 +309,15 @@ impl SimulationService {
     /// # Errors
     ///
     /// Returns error if no profile is loaded, DSL is invalid, or replay fails.
-    pub fn replay_dsl(&self, dsl: &str, seed: u64) -> Result<Vec<OutputEvent>, SimulationError> {
+    pub async fn replay_dsl(
+        &self,
+        dsl: &str,
+        seed: u64,
+    ) -> Result<Vec<OutputEvent>, SimulationError> {
         log::debug!("Replaying DSL: {} (seed: {})", dsl, seed);
 
         let sequence = SimulationEngine::parse_event_dsl(dsl, seed)?;
-        self.replay(&sequence)
+        self.replay(&sequence).await
     }
 
     /// Resets the simulation state by clearing the loaded engine.
@@ -280,8 +376,8 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_replay_without_profile() {
+    #[tokio::test]
+    async fn test_replay_without_profile() {
         let dir = TempDir::new().unwrap();
         let service = SimulationService::new(dir.path().to_path_buf(), None);
 
@@ -290,7 +386,7 @@ mod tests {
             seed: 0,
         };
 
-        let result = service.replay(&sequence);
+        let result = service.replay(&sequence).await;
         assert!(result.is_err());
     }
 
@@ -335,15 +431,15 @@ mod tests {
         assert!(results.iter().all(|r| r.passed));
     }
 
-    #[test]
-    fn test_replay_dsl() {
+    #[tokio::test]
+    async fn test_replay_dsl() {
         let dir = TempDir::new().unwrap();
         create_test_profile(&dir, "test");
 
         let service = SimulationService::new(dir.path().to_path_buf(), None);
         service.load_profile("test").unwrap();
 
-        let result = service.replay_dsl("press:A,wait:50,release:A", 42);
+        let result = service.replay_dsl("press:A,wait:50,release:A", 42).await;
         assert!(result.is_ok());
 
         let output = result.unwrap();
