@@ -35,7 +35,7 @@
   - _Requirements: 2.1, 2.2_
   - _Prompt: Implement the task for spec simulation-rest-api, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Backend Developer with expertise in dependency injection | Task: Add simulation_service field to AppState struct, update constructor to accept Arc<SimulationService>, update all call sites. Follow existing pattern with Arc-wrapped services like profile_service, device_service. | Restrictions: Do not change existing fields, maintain constructor parameter order consistency | Success: AppState compiles with new field, simulation_service accessible from handlers. Mark task as in-progress [-] before starting in tasks.md, log implementation with log-implementation tool after completion, then mark as complete [x]._
 
-- [ ] 5. Update simulator.rs endpoints to use SimulationService
+- [x] 5. Update simulator.rs endpoints to use SimulationService
   - File: keyrx_daemon/src/web/api/simulator.rs
   - Add State<Arc<AppState>> extraction to handlers
   - Add POST /api/simulator/load-profile endpoint
