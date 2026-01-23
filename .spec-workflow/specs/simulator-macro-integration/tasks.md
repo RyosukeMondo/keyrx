@@ -83,14 +83,14 @@ Connect simulator event output to macro recorder input, enabling macro recording
 
 ## Verification Checklist
 
-- [ ] Run `cargo build --release` - compiles without errors
-- [ ] Start daemon and macro recording
-- [ ] POST /api/simulator/events with test events
-- [ ] GET /api/macros/recorded-events - returns simulated events
-- [ ] Run `npx tsx scripts/automated-e2e-test.ts --filter=workflow-006` - test passes
-- [ ] Run test 10 consecutive times - zero failures
-- [ ] Verify event format: {key: string, event_type: string, timestamp_us: number}
-- [ ] Check event_type values are lowercase ('press', 'release')
+- [x] Run `cargo build --release` - compiles without errors
+- [x] Start daemon and macro recording
+- [x] POST /api/simulator/events with test events
+- [x] GET /api/macros/recorded-events - returns simulated events
+- [x] Run `npx tsx scripts/automated-e2e-test.ts --filter=workflow-006` - test passes
+- [x] Run test 10 consecutive times - zero failures
+- [x] Verify event format: {key: string, event_type: string, timestamp_us: number}
+- [x] Check event_type values are lowercase ('press', 'release')
 
 ## Notes
 
