@@ -12,6 +12,7 @@ import * as net from 'net';
 export interface DaemonConfig {
   daemonPath: string;
   port?: number;
+  testMode?: boolean;
   env?: Record<string, string>;
   healthCheckPath?: string;
   startupTimeout?: number;
@@ -39,6 +40,7 @@ export class DaemonFixture {
     this.config = {
       daemonPath: config.daemonPath,
       port: config.port ?? this.findAvailablePort(9867),
+      testMode: config.testMode ?? false,
       env: config.env ?? {},
       healthCheckPath: config.healthCheckPath ?? '/api/status',
       startupTimeout: config.startupTimeout ?? 30000,
@@ -103,6 +105,11 @@ export class DaemonFixture {
 
     // Build command arguments - use 'run' subcommand
     const args = ['run'];
+
+    // Add test mode flag if enabled
+    if (this.config.testMode) {
+      args.push('--test-mode');
+    }
 
     // Merge environment variables
     const env = {

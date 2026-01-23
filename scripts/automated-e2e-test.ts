@@ -14,6 +14,7 @@
  *   --port <number>           Port for daemon API (default: 9867)
  *   --max-iterations <number> Max auto-fix iterations (default: 3)
  *   --fix                     Enable auto-fix mode
+ *   --test-mode               Run daemon in test mode (enables IPC)
  *   --report-json <path>      Output JSON report to file
  *   --help                    Show this help message
  */
@@ -41,6 +42,7 @@ interface CliOptions {
   port: number;
   maxIterations: number;
   fix: boolean;
+  testMode: boolean;
   reportJson?: string;
   metricsFile?: string;
 }
@@ -313,6 +315,7 @@ function parseArgs(): CliOptions {
     port: 9867,
     maxIterations: 3,
     fix: false,
+    testMode: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -329,6 +332,7 @@ Options:
   --port <number>           Port for daemon API (default: 9867)
   --max-iterations <number> Max auto-fix iterations (default: 3)
   --fix                     Enable auto-fix mode
+  --test-mode               Run daemon in test mode (enables IPC)
   --report-json <path>      Output JSON report to file
   --metrics-file <path>     Path to metrics JSONL file (default: metrics.jsonl)
   --help                    Show this help message
@@ -342,6 +346,8 @@ Options:
       options.maxIterations = parseInt(args[++i], 10);
     } else if (arg === '--fix') {
       options.fix = true;
+    } else if (arg === '--test-mode') {
+      options.testMode = true;
     } else if (arg === '--report-json') {
       options.reportJson = args[++i];
     } else if (arg === '--metrics-file') {
@@ -363,6 +369,7 @@ async function main(): Promise<void> {
   const daemonFixture = new DaemonFixture({
     daemonPath: options.daemonPath,
     port: options.port,
+    testMode: options.testMode,
   });
 
   // Handle cleanup on exit
@@ -388,6 +395,7 @@ async function main(): Promise<void> {
     console.log('═'.repeat(80));
     console.log(`Daemon:    ${options.daemonPath}`);
     console.log(`Port:      ${options.port}`);
+    console.log(`Test mode: ${options.testMode ? 'enabled' : 'disabled'}`);
     console.log(`Auto-fix:  ${options.fix ? 'enabled' : 'disabled'}`);
     if (options.fix) {
       console.log(`Max iterations: ${options.maxIterations}`);
