@@ -77,7 +77,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 4.1, 4.2, 5.1, 5.2_
   - _Prompt: Implement the task for spec simulation-rest-api, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Create comprehensive integration tests for simulation endpoints. Use TestApp fixture. Create test profile before testing. Test all endpoints: load-profile, simulate_events (scenario/dsl/events), scenarios/all, reset. Verify deterministic results with same seed. Test error responses. Use #[tokio::test] and #[serial_test::serial] attributes. | Restrictions: Use existing test patterns, do not modify TestApp public interface, clean up test profiles | Success: All tests pass, cover success and error scenarios, verify response structures. Mark task as in-progress [-] before starting in tasks.md, log implementation with log-implementation tool after completion, then mark as complete [x]._
 
-- [ ] 9. Extend ApiHelpers with simulation methods
+- [x] 9. Extend ApiHelpers with simulation methods
   - File: keyrx_ui/tests/e2e/fixtures/api.ts
   - Add TypeScript interfaces for simulation types
   - Add loadSimulatorProfile method

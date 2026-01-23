@@ -20,6 +20,67 @@ import type {
 } from '../../../src/types';
 
 /**
+ * Simulation-related type definitions
+ */
+
+/** Event type for simulation */
+export type EventType = 'press' | 'release';
+
+/** Output event from simulation */
+export interface OutputEvent {
+  /** Output key identifier */
+  key: string;
+  /** Event type (press or release) */
+  event_type: EventType;
+  /** Timestamp when event was generated (microseconds) */
+  timestamp_us: number;
+}
+
+/** Response from simulation endpoints */
+export interface SimulationResponse {
+  success: boolean;
+  outputs: OutputEvent[];
+}
+
+/** Response from load-profile endpoint */
+export interface SimulationLoadResponse {
+  success: boolean;
+  message: string;
+}
+
+/** Result for a single scenario */
+export interface ScenarioResult {
+  /** Scenario name */
+  scenario: string;
+  /** Whether the scenario passed */
+  passed: boolean;
+  /** Input events */
+  input: Array<{
+    device_id?: string | null;
+    timestamp_us: number;
+    key: string;
+    event_type: EventType;
+  }>;
+  /** Output events generated */
+  output: OutputEvent[];
+  /** Optional error message if failed */
+  error?: string | null;
+}
+
+/** Response from all scenarios endpoint */
+export interface AllScenariosResponse {
+  success: boolean;
+  /** Results for all scenarios */
+  scenarios: ScenarioResult[];
+  /** Total number of scenarios */
+  total: number;
+  /** Number of passed scenarios */
+  passed: number;
+  /** Number of failed scenarios */
+  failed: number;
+}
+
+/**
  * API helper class for E2E tests
  * Uses Playwright's APIRequestContext for HTTP requests
  */
@@ -429,6 +490,56 @@ export class ApiHelpers {
     const response = await this.request.post(`${this.baseUrl}/api/simulator/reset`);
     if (!response.ok()) {
       throw new Error(`POST /api/simulator/reset failed: ${response.status()} ${response.statusText()}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * POST /api/simulator/load-profile - Load a profile for simulation
+   */
+  async loadSimulatorProfile(name: string): Promise<SimulationLoadResponse> {
+    const response = await this.request.post(`${this.baseUrl}/api/simulator/load-profile`, {
+      data: { name },
+    });
+    if (!response.ok()) {
+      throw new Error(`POST /api/simulator/load-profile failed: ${response.status()} ${response.statusText()}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * POST /api/simulator/events - Simulate events with DSL
+   */
+  async simulateEventsDsl(dsl: string, seed?: number): Promise<SimulationResponse> {
+    const response = await this.request.post(`${this.baseUrl}/api/simulator/events`, {
+      data: { dsl, seed },
+    });
+    if (!response.ok()) {
+      throw new Error(`POST /api/simulator/events (dsl) failed: ${response.status()} ${response.statusText()}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * POST /api/simulator/events - Simulate events with scenario
+   */
+  async simulateScenario(scenario: string): Promise<SimulationResponse> {
+    const response = await this.request.post(`${this.baseUrl}/api/simulator/events`, {
+      data: { scenario },
+    });
+    if (!response.ok()) {
+      throw new Error(`POST /api/simulator/events (scenario) failed: ${response.status()} ${response.statusText()}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * POST /api/simulator/scenarios/all - Run all built-in scenarios
+   */
+  async runAllScenarios(): Promise<AllScenariosResponse> {
+    const response = await this.request.post(`${this.baseUrl}/api/simulator/scenarios/all`);
+    if (!response.ok()) {
+      throw new Error(`POST /api/simulator/scenarios/all failed: ${response.status()} ${response.statusText()}`);
     }
     return response.json();
   }
