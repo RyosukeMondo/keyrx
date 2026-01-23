@@ -41,7 +41,7 @@ async fn start_test_server() -> (u16, tokio::task::JoinHandle<()>) {
     let device_service = Arc::new(DeviceService::new(config_dir.clone()));
     let config_service = Arc::new(ConfigService::new(profile_manager));
     let settings_service = Arc::new(SettingsService::new(config_dir.clone()));
-    let simulation_service = Arc::new(SimulationService::new(config_dir.clone()));
+    let simulation_service = Arc::new(SimulationService::new(config_dir.clone(), None));
     let subscription_manager = Arc::new(SubscriptionManager::new());
     let (event_broadcaster, _) = tokio::sync::broadcast::channel(1000);
 

@@ -419,6 +419,7 @@ fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<
     ));
     let simulation_service = Arc::new(keyrx_daemon::services::SimulationService::new(
         config_dir.clone(),
+        None,
     ));
     let subscription_manager =
         Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
@@ -563,6 +564,7 @@ fn handle_run(
     ));
     let simulation_service = std::sync::Arc::new(keyrx_daemon::services::SimulationService::new(
         config_dir.clone(),
+        None,
     ));
 
     let subscription_manager =
@@ -824,6 +826,7 @@ fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<
     ));
     let simulation_service = Arc::new(keyrx_daemon::services::SimulationService::new(
         config_dir.clone(),
+        None,
     ));
     let subscription_manager =
         Arc::new(keyrx_daemon::web::subscriptions::SubscriptionManager::new());
@@ -1004,6 +1007,7 @@ fn handle_run(
     ));
     let simulation_service = std::sync::Arc::new(keyrx_daemon::services::SimulationService::new(
         config_dir.clone(),
+        None,
     ));
 
     let subscription_manager =

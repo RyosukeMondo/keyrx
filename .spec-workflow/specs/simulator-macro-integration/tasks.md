@@ -9,7 +9,7 @@ Connect simulator event output to macro recorder input, enabling macro recording
 
 ---
 
-- [ ] 1. Add event bus sender to SimulatorService
+- [x] 1. Add event bus sender to SimulatorService
   - File: keyrx_daemon/src/services/simulator_service.rs
   - Add `event_tx: mpsc::Sender<KeyEvent>` field to SimulatorService struct
   - Update constructor to accept event_tx parameter
@@ -18,7 +18,7 @@ Connect simulator event output to macro recorder input, enabling macro recording
   - _Requirements: REQ-3.1.1_
   - _Prompt: Role: Rust Backend Developer with expertise in async channels and event-driven architecture | Task: Add event bus sender field to SimulatorService struct following REQ-3.1.1, using tokio mpsc channel pattern from daemon initialization | Restrictions: Must use existing event bus type, must not block on channel send, must handle send errors gracefully | Success: SimulatorService has event_tx field, constructor accepts event_tx, compiles without errors_
 
-- [ ] 2. Send simulated events to event bus
+- [-] 2. Send simulated events to event bus
   - File: keyrx_daemon/src/services/simulator_service.rs
   - Update simulate_events() method to send KeyEvent to event_tx after generating events
   - Add timestamp to each event (microseconds since epoch)

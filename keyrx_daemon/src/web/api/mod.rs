@@ -71,8 +71,10 @@ mod tests {
         let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
         let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
         let settings_service = Arc::new(crate::services::SettingsService::new(config_dir.clone()));
-        let simulation_service =
-            Arc::new(crate::services::SimulationService::new(config_dir.clone()));
+        let simulation_service = Arc::new(crate::services::SimulationService::new(
+            config_dir.clone(),
+            None,
+        ));
         let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
         let (event_broadcaster, _) = tokio::sync::broadcast::channel(1000);
         let state = Arc::new(AppState::new(
@@ -100,8 +102,10 @@ mod tests {
         let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
         let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
         let settings_service = Arc::new(crate::services::SettingsService::new(config_dir.clone()));
-        let simulation_service =
-            Arc::new(crate::services::SimulationService::new(config_dir.clone()));
+        let simulation_service = Arc::new(crate::services::SimulationService::new(
+            config_dir.clone(),
+            None,
+        ));
         let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
         let (event_broadcaster, _) = tokio::sync::broadcast::channel(1000);
         let state = Arc::new(AppState::new(

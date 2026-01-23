@@ -68,6 +68,7 @@ impl TestApp {
         ));
         let simulation_service = Arc::new(keyrx_daemon::services::SimulationService::new(
             config_path.clone(),
+            None,
         ));
         let macro_recorder = Arc::new(MacroRecorder::new());
         let subscription_manager =

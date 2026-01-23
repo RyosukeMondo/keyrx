@@ -25,6 +25,9 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use keyrx_core::runtime::KeyEvent;
+use tokio::sync::mpsc;
+
 use crate::config::simulation_engine::{
     BuiltinScenario, EventSequence, OutputEvent, ScenarioResult, SimulationEngine, SimulationError,
 };
@@ -43,6 +46,9 @@ pub struct SimulationService {
     config_dir: PathBuf,
     /// Optional simulation engine (created when profile is loaded)
     engine: Mutex<Option<SimulationEngine>>,
+    /// Event bus sender for routing simulated events to macro recorder
+    #[allow(dead_code)] // Will be used in task 2
+    event_tx: Option<mpsc::Sender<KeyEvent>>,
 }
 
 impl SimulationService {
@@ -51,6 +57,7 @@ impl SimulationService {
     /// # Arguments
     ///
     /// * `config_dir` - Path to configuration directory containing .krx profiles
+    /// * `event_tx` - Optional event bus sender for routing simulated events
     ///
     /// # Examples
     ///
@@ -58,16 +65,18 @@ impl SimulationService {
     /// use std::path::PathBuf;
     /// use keyrx_daemon::services::SimulationService;
     ///
-    /// let service = SimulationService::new(PathBuf::from("./config"));
+    /// let service = SimulationService::new(PathBuf::from("./config"), None);
     /// ```
-    pub fn new(config_dir: PathBuf) -> Self {
+    pub fn new(config_dir: PathBuf, event_tx: Option<mpsc::Sender<KeyEvent>>) -> Self {
         log::debug!(
-            "SimulationService initialized with config_dir: {:?}",
-            config_dir
+            "SimulationService initialized with config_dir: {:?}, event_tx: {}",
+            config_dir,
+            event_tx.is_some()
         );
         Self {
             config_dir,
             engine: Mutex::new(None),
+            event_tx,
         }
     }
 
@@ -244,7 +253,7 @@ mod tests {
     #[test]
     fn test_new() {
         let dir = TempDir::new().unwrap();
-        let service = SimulationService::new(dir.path().to_path_buf());
+        let service = SimulationService::new(dir.path().to_path_buf(), None);
 
         // Should have no engine initially
         assert!(service.engine.lock().unwrap().is_none());
@@ -255,7 +264,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         create_test_profile(&dir, "test");
 
-        let service = SimulationService::new(dir.path().to_path_buf());
+        let service = SimulationService::new(dir.path().to_path_buf(), None);
         let result = service.load_profile("test");
 
         assert!(result.is_ok());
@@ -265,7 +274,7 @@ mod tests {
     #[test]
     fn test_load_profile_not_found() {
         let dir = TempDir::new().unwrap();
-        let service = SimulationService::new(dir.path().to_path_buf());
+        let service = SimulationService::new(dir.path().to_path_buf(), None);
 
         let result = service.load_profile("nonexistent");
         assert!(result.is_err());
@@ -274,7 +283,7 @@ mod tests {
     #[test]
     fn test_replay_without_profile() {
         let dir = TempDir::new().unwrap();
-        let service = SimulationService::new(dir.path().to_path_buf());
+        let service = SimulationService::new(dir.path().to_path_buf(), None);
 
         let sequence = EventSequence {
             events: vec![],
@@ -290,7 +299,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         create_test_profile(&dir, "test");
 
-        let service = SimulationService::new(dir.path().to_path_buf());
+        let service = SimulationService::new(dir.path().to_path_buf(), None);
         service.load_profile("test").unwrap();
 
         let result = service.run_scenario("tap-hold-under-threshold");
@@ -306,7 +315,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         create_test_profile(&dir, "test");
 
-        let service = SimulationService::new(dir.path().to_path_buf());
+        let service = SimulationService::new(dir.path().to_path_buf(), None);
         service.load_profile("test").unwrap();
 
         let result = service.run_scenario("unknown-scenario");
@@ -318,7 +327,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         create_test_profile(&dir, "test");
 
-        let service = SimulationService::new(dir.path().to_path_buf());
+        let service = SimulationService::new(dir.path().to_path_buf(), None);
         service.load_profile("test").unwrap();
 
         let results = service.run_all_scenarios().unwrap();
@@ -331,7 +340,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         create_test_profile(&dir, "test");
 
-        let service = SimulationService::new(dir.path().to_path_buf());
+        let service = SimulationService::new(dir.path().to_path_buf(), None);
         service.load_profile("test").unwrap();
 
         let result = service.replay_dsl("press:A,wait:50,release:A", 42);
@@ -346,7 +355,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         create_test_profile(&dir, "test");
 
-        let service = SimulationService::new(dir.path().to_path_buf());
+        let service = SimulationService::new(dir.path().to_path_buf(), None);
         service.load_profile("test").unwrap();
 
         assert!(service.engine.lock().unwrap().is_some());
