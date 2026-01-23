@@ -89,7 +89,7 @@
   - _Requirements: 6.1, 6.2_
   - _Prompt: Implement the task for spec simulation-rest-api, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript Developer specializing in Playwright E2E testing | Task: Extend ApiHelpers class with simulation methods. Add interfaces: SimulationResponse, OutputEvent, AllScenariosResponse, ScenarioResult. Add methods: loadSimulatorProfile(name), simulateEventsDsl(dsl, seed?), simulateScenario(name), runAllScenarios(). Follow existing method patterns with proper error handling. | Restrictions: Do not modify existing methods, maintain consistent error handling patterns | Success: All methods compile, return typed responses, handle errors consistently. Mark task as in-progress [-] before starting in tasks.md, log implementation with log-implementation tool after completion, then mark as complete [x]._
 
-- [ ] 10. Create Playwright E2E tests for simulation API
+- [x] 10. Create Playwright E2E tests for simulation API
   - File: keyrx_ui/tests/e2e/api/simulator.spec.ts
   - Test load profile endpoint
   - Test built-in scenarios (tap-hold under/over threshold)
