@@ -128,21 +128,32 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   // Track last loaded profile to prevent unnecessary re-initialization
   const lastProfileRef = useRef<string>(selectedProfileName);
 
+  // Track if config has been loaded for current profile
+  const configLoadedRef = useRef<boolean>(false);
+
   // Update sync engine when profile config loads
   useEffect(() => {
-    // Only update if profile changed or config loaded for first time
     const profileChanged = lastProfileRef.current !== selectedProfileName;
 
+    // Reset configLoaded flag when profile changes
     if (profileChanged) {
       lastProfileRef.current = selectedProfileName;
+      configLoadedRef.current = false;
+    }
 
-      if (profileConfig?.source) {
-        // Initialize sync engine with loaded config
-        syncEngine.onCodeChange(profileConfig.source);
-        setSyncStatus('saved');
-      } else if (configMissing) {
-        // Default config template when config file doesn't exist
-        const defaultTemplate = `// Configuration for profile: ${selectedProfileName}
+    // Load config when:
+    // 1. Profile changed and config is available, OR
+    // 2. Config just became available for current profile (first load)
+    const shouldLoadConfig = profileConfig?.source && !configLoadedRef.current;
+
+    if (shouldLoadConfig) {
+      // Initialize sync engine with loaded config
+      syncEngine.onCodeChange(profileConfig.source);
+      setSyncStatus('saved');
+      configLoadedRef.current = true;
+    } else if (profileChanged && configMissing) {
+      // Default config template when config file doesn't exist
+      const defaultTemplate = `// Configuration for profile: ${selectedProfileName}
 // This is a new configuration file
 
 // Example: Simple key remapping
@@ -153,9 +164,9 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
 
 // Add your key mappings here...
 `;
-        syncEngine.onCodeChange(defaultTemplate);
-        setSyncStatus('unsaved');
-      }
+      syncEngine.onCodeChange(defaultTemplate);
+      setSyncStatus('unsaved');
+      configLoadedRef.current = true;
     }
   }, [profileConfig, configMissing, selectedProfileName, syncEngine, setSyncStatus]);
 

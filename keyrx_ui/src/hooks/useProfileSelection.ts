@@ -37,15 +37,16 @@ export function useProfileSelection(propProfileName?: string) {
   // Track user's manual selection separately from the computed default
   const [manualSelection, setManualSelection] = useState<string | null>(null);
 
-  // Effective profile: manual selection > explicit URL/prop > active profile > 'Default'
+  // Effective profile: manual selection > explicit URL/prop > active profile > 'default'
   // Use || instead of ?? to treat empty strings as falsy
+  // Note: fallback is 'default' (lowercase) to match actual profile name in the system
   const selectedProfileName =
     manualSelection ||
     propProfileName ||
     profileNameFromRoute ||
     profileNameFromQuery ||
     activeProfileName ||
-    'Default';
+    'default';
 
   /**
    * Set the selected profile name (tracks manual selection)
