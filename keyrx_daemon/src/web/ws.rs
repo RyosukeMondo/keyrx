@@ -16,7 +16,7 @@ use serde_json::json;
 use tokio::sync::broadcast;
 use tokio::time::{interval, Duration};
 
-use crate::web::events::DaemonEvent;
+use crate::web::events::{DaemonEvent};
 
 pub fn create_router(event_tx: broadcast::Sender<DaemonEvent>) -> Router {
     Router::new()
@@ -34,10 +34,11 @@ async fn websocket_handler(
 
 /// Handle WebSocket connection
 async fn handle_websocket(mut socket: WebSocket, event_tx: broadcast::Sender<DaemonEvent>) {
-    log::info!("WebSocket client connected");
+    log::info!("WebSocket client connected (active senders: {})", event_tx.receiver_count());
 
     // Subscribe to daemon events
     let mut event_rx = event_tx.subscribe();
+    log::info!("WebSocket subscribed to daemon events (total receivers: {})", event_tx.receiver_count());
 
     // Send welcome message
     let welcome = json!({
@@ -67,6 +68,14 @@ async fn handle_websocket(mut socket: WebSocket, event_tx: broadcast::Sender<Dae
         tokio::select! {
             // Forward daemon events to client
             Ok(event) = event_rx.recv() => {
+                log::debug!("WebSocket received daemon event: {:?}",
+                    match &event {
+                        DaemonEvent::KeyEvent(e) => format!("KeyEvent({:?})", e.key_code),
+                        DaemonEvent::State(_) => "State".to_string(),
+                        DaemonEvent::Latency(_) => "Latency".to_string(),
+                    }
+                );
+
                 let json_msg = match serde_json::to_string(&event) {
                     Ok(json) => json,
                     Err(e) => {
@@ -79,6 +88,7 @@ async fn handle_websocket(mut socket: WebSocket, event_tx: broadcast::Sender<Dae
                     log::info!("WebSocket client disconnected (send failed)");
                     break;
                 }
+                log::debug!("WebSocket successfully sent event to client");
             }
 
             // Send heartbeat

@@ -27,8 +27,10 @@
     </Feature>
 
     <!-- Custom icon for Add/Remove Programs -->
+    <!-- Note: Relative path from project root when running build script -->
     <Icon Id="ProductIcon" SourceFile="keyrx_daemon\assets\icon.ico" />
     <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/RyosukeMondo/keyrx" />
 
     <!-- Add to PATH -->
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />

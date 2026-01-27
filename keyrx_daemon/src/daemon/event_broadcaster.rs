@@ -37,8 +37,16 @@ impl EventBroadcaster {
     ///
     /// This should be called after each key event is processed.
     pub fn broadcast_key_event(&self, event: KeyEventData) {
-        if let Err(e) = self.event_tx.send(DaemonEvent::KeyEvent(event)) {
-            log::warn!("Failed to broadcast key event: {}", e);
+        let subscribers = self.event_tx.receiver_count();
+        log::debug!("Broadcasting key event (subscribers: {}): {:?}", subscribers, event.key_code);
+
+        match self.event_tx.send(DaemonEvent::KeyEvent(event)) {
+            Ok(receiver_count) => {
+                log::debug!("Successfully broadcast key event to {} receivers", receiver_count);
+            }
+            Err(e) => {
+                log::warn!("Failed to broadcast key event (no subscribers?): {}", e);
+            }
         }
     }
 

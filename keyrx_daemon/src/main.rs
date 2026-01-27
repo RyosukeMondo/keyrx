@@ -183,14 +183,71 @@ fn main() {
             debug,
             test_mode,
         } => {
-            // If no config specified, use active profile from %APPDATA%\keyrx
+            // If no config specified, try to use active profile or create default
             let config_path = match config {
                 Some(path) => path,
                 None => {
-                    let mut default_path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-                    default_path.push("keyrx");
-                    default_path.push("default.krx");
-                    default_path
+                    // Get config directory
+                    let mut config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+                    config_dir.push("keyrx");
+
+                    // Try to initialize ProfileManager and get/create default profile
+                    use keyrx_daemon::config::{ProfileManager, ProfileTemplate};
+                    match ProfileManager::new(config_dir.clone()) {
+                        Ok(mut manager) => {
+                            // Check if we have an active profile
+                            match manager.get_active() {
+                                Ok(Some(active)) => {
+                                    eprintln!("[INFO] Using active profile: {}", active);
+                                    let mut profile_path = config_dir.clone();
+                                    profile_path.push("profiles");
+                                    profile_path.push(format!("{}.krx", active));
+                                    profile_path
+                                }
+                                Ok(None) => {
+                                    // No active profile - try to create and activate default
+                                    eprintln!("[INFO] No active profile found. Creating default profile...");
+
+                                    // Create default profile with blank template if it doesn't exist
+                                    let profile_exists = manager.get("default").is_some();
+                                    if !profile_exists {
+                                        eprintln!("[INFO] Creating default profile with blank template...");
+                                        if let Err(e) = manager.create("default", ProfileTemplate::Blank) {
+                                            eprintln!("[WARN] Failed to create default profile: {}. Running in pass-through mode.", e);
+                                        }
+                                    } else {
+                                        eprintln!("[INFO] Default profile exists, activating...");
+                                    }
+
+                                    // Activate default profile
+                                    if let Err(e) = manager.activate("default") {
+                                        eprintln!("[WARN] Failed to activate default profile: {}. Running in pass-through mode.", e);
+                                    }
+
+                                    // Return path to default.krx
+                                    let mut profile_path = config_dir.clone();
+                                    profile_path.push("profiles");
+                                    profile_path.push("default.krx");
+                                    eprintln!("[INFO] Using default profile at: {}", profile_path.display());
+                                    profile_path
+                                }
+                                Err(e) => {
+                                    // Error reading active profile - fall back
+                                    eprintln!("[WARN] Failed to read active profile: {}. Using default.krx fallback.", e);
+                                    let mut default_path = config_dir;
+                                    default_path.push("default.krx");
+                                    default_path
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            // Failed to initialize ProfileManager - fall back to old behavior
+                            eprintln!("[WARN] Failed to initialize ProfileManager: {}. Using default.krx fallback.", e);
+                            let mut default_path = config_dir;
+                            default_path.push("default.krx");
+                            default_path
+                        }
+                    }
                 }
             };
             handle_run(&config_path, debug, test_mode)

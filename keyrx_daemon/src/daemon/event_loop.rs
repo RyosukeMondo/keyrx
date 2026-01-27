@@ -259,14 +259,21 @@ where
                             keyrx_core::runtime::KeyEventType::Release => "release".to_string(),
                         },
                         input: format!("{:?}", input_keycode),
-                        output: output_desc,
+                        output: output_desc.clone(),
                         latency: latency_us,
                         device_id: device_id.clone(),
-                        device_name: device_id,
+                        device_name: device_id.clone(),
                         mapping_type: mapping_type.map(String::from),
                         mapping_triggered,
                     };
+
+                    log::debug!(
+                        "Event loop: About to broadcast {} event for key {:?} (mapping_triggered: {}, output: {})",
+                        event_data.event_type, input_keycode, mapping_triggered, output_desc
+                    );
                     broadcaster.broadcast_key_event(event_data);
+                } else {
+                    log::warn!("Event loop: EventBroadcaster is None! Events will not be sent to WebSocket clients");
                 }
             }
             Err(e) => {

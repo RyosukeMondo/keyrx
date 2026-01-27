@@ -105,6 +105,45 @@ impl AppState {
             test_mode_socket: Some(test_mode_socket),
         }
     }
+
+    /// Creates a minimal AppState for testing with default services
+    ///
+    /// This method creates all required services with minimal configuration,
+    /// suitable for integration tests that don't need full daemon functionality.
+    ///
+    /// Note: This is public for integration tests but gated with cfg(test).
+    pub fn new_for_testing(config_dir: std::path::PathBuf) -> Self {
+        use crate::config::profile_manager::ProfileManager;
+
+        let macro_recorder = Arc::new(MacroRecorder::new());
+
+        // Create ProfileManager first
+        let profile_manager = Arc::new(
+            ProfileManager::new(config_dir.clone())
+                .expect("Failed to create ProfileManager for testing")
+        );
+
+        let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
+        let device_service = Arc::new(DeviceService::new(config_dir.clone()));
+        let config_service = Arc::new(ConfigService::new(Arc::clone(&profile_manager)));
+        let settings_service = Arc::new(SettingsService::new(config_dir.clone()));
+
+        let simulation_service = Arc::new(SimulationService::new(config_dir, None));
+        let subscription_manager = Arc::new(SubscriptionManager::new());
+        let (event_broadcaster, _) = broadcast::channel(100);
+
+        Self {
+            macro_recorder,
+            profile_service,
+            device_service,
+            config_service,
+            settings_service,
+            simulation_service,
+            subscription_manager,
+            event_broadcaster,
+            test_mode_socket: None,
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -134,4 +173,22 @@ pub async fn serve(
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+/// Creates a router for testing without WebSocket event broadcasting
+///
+/// This is a simplified router creation for tests that don't need
+/// full WebSocket functionality.
+///
+/// Note: This is public for integration tests but gated with cfg(test).
+/// For production use, use create_app() instead.
+pub fn create_router(state: Arc<AppState>) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    Router::new()
+        .nest("/api", api::create_router(Arc::clone(&state)))
+        .layer(cors)
 }
