@@ -13,33 +13,45 @@ use std::sync::Arc;
 use crate::config::profile_manager::{ProfileError, ProfileManager, ProfileTemplate};
 use crate::error::DaemonError;
 use crate::web::api::error::ApiError;
+use crate::web::api::validation::{validate_config_source, validate_profile_name};
 use crate::web::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/profiles", get(list_profiles).post(create_profile))
         .route("/profiles/active", get(get_active_profile))
+        // More specific routes first (with path suffix)
         .route("/profiles/:name/activate", post(activate_profile))
+        .route("/profiles/:name/validate", post(validate_profile))
+        .route("/profiles/:name/duplicate", post(duplicate_profile))
         .route(
             "/profiles/:name/config",
             get(get_profile_config).put(set_profile_config),
         )
-        .route("/profiles/:name", delete(delete_profile))
-        .route("/profiles/:name/duplicate", post(duplicate_profile))
         .route("/profiles/:name/rename", put(rename_profile))
-        .route("/profiles/:name/validate", post(validate_profile))
+        // Less specific route last (matches any :name)
+        .route("/profiles/:name", delete(delete_profile))
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ProfileResponse {
     name: String,
+    #[serde(rename = "rhaiPath")]
     rhai_path: String,
+    #[serde(rename = "krxPath")]
     krx_path: String,
-    #[serde(serialize_with = "serialize_systemtime_as_rfc3339")]
-    modified_at: std::time::SystemTime,
-    #[serde(serialize_with = "serialize_systemtime_as_rfc3339")]
+    #[serde(
+        rename = "createdAt",
+        serialize_with = "serialize_systemtime_as_rfc3339"
+    )]
     created_at: std::time::SystemTime,
+    #[serde(
+        rename = "modifiedAt",
+        serialize_with = "serialize_systemtime_as_rfc3339"
+    )]
+    modified_at: std::time::SystemTime,
+    #[serde(rename = "layerCount")]
     layer_count: usize,
     #[serde(rename = "deviceCount")]
     device_count: usize,
@@ -47,6 +59,14 @@ struct ProfileResponse {
     key_count: usize,
     #[serde(rename = "isActive")]
     active: bool,
+    #[serde(
+        rename = "activatedAt",
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_systemtime_as_rfc3339"
+    )]
+    activated_at: Option<std::time::SystemTime>,
+    #[serde(rename = "activatedBy", skip_serializing_if = "Option::is_none")]
+    activated_by: Option<String>,
 }
 
 /// Serialize SystemTime as RFC 3339 / ISO 8601 string
@@ -62,18 +82,52 @@ where
     datetime.to_rfc3339().serialize(serializer)
 }
 
+/// Serialize Option<SystemTime> as RFC 3339 / ISO 8601 string
+fn serialize_optional_systemtime_as_rfc3339<S>(
+    time: &Option<std::time::SystemTime>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    use serde::Serialize;
+    match time {
+        Some(t) => {
+            let datetime: DateTime<Utc> = (*t).into();
+            datetime.to_rfc3339().serialize(serializer)
+        }
+        None => serializer.serialize_none(),
+    }
+}
+
 /// Convert ProfileError to ApiError with proper HTTP status codes
+/// PROF-003: Enhanced error conversion with more detailed error messages.
 fn profile_error_to_api_error(err: ProfileError) -> ApiError {
     match err {
-        ProfileError::NotFound(msg) => ApiError::NotFound(msg),
-        ProfileError::InvalidName(msg) => ApiError::BadRequest(format!("Invalid name: {}", msg)),
+        ProfileError::NotFound(msg) => ApiError::NotFound(format!("Profile not found: {}", msg)),
+        ProfileError::InvalidName(msg) => {
+            ApiError::BadRequest(format!("Invalid profile name: {}", msg))
+        }
         ProfileError::AlreadyExists(msg) => {
             ApiError::Conflict(format!("Profile already exists: {}", msg))
         }
         ProfileError::ProfileLimitExceeded => {
-            ApiError::BadRequest("Profile limit exceeded".to_string())
+            ApiError::BadRequest(format!("Profile limit exceeded (maximum {} profiles)", 100))
         }
-        _ => ApiError::InternalError(err.to_string()),
+        ProfileError::Compilation(e) => {
+            ApiError::BadRequest(format!("Configuration compilation failed: {}", e))
+        }
+        ProfileError::LockError(msg) => {
+            ApiError::InternalError(format!("Lock acquisition failed: {}", msg))
+        }
+        ProfileError::ActivationInProgress(name) => {
+            ApiError::Conflict(format!("Profile '{}' is already being activated", name))
+        }
+        ProfileError::InvalidMetadata(msg) => {
+            ApiError::BadRequest(format!("Invalid metadata: {}", msg))
+        }
+        ProfileError::IoError(e) => ApiError::InternalError(format!("IO error: {}", e)),
+        _ => ApiError::InternalError(format!("Profile operation failed: {}", err)),
     }
 }
 
@@ -114,6 +168,8 @@ async fn list_profiles(
                 device_count: 0, // TODO: Track device count per profile
                 key_count: 0,    // TODO: Parse Rhai config to count key mappings
                 active: info.active,
+                activated_at: info.activated_at,
+                activated_by: info.activated_by.clone(),
             }
         })
         .collect();
@@ -123,6 +179,7 @@ async fn list_profiles(
 
 /// POST /api/profiles - Create new profile
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct CreateProfileRequest {
     name: String,
     template: String, // "blank", "simple_remap", "capslock_escape", "vim_navigation", "gaming"
@@ -131,8 +188,9 @@ struct CreateProfileRequest {
 async fn create_profile(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<CreateProfileRequest>,
-) -> Result<Json<Value>, DaemonError> {
-    use crate::error::{ConfigError, WebError};
+) -> Result<Json<Value>, ApiError> {
+    // Validate profile name
+    validate_profile_name(&payload.name)?;
 
     let template = match payload.template.as_str() {
         "blank" => ProfileTemplate::Blank,
@@ -141,10 +199,10 @@ async fn create_profile(
         "vim_navigation" => ProfileTemplate::VimNavigation,
         "gaming" => ProfileTemplate::Gaming,
         _ => {
-            return Err(WebError::InvalidRequest {
-                reason: format!("Invalid template: '{}'. Valid templates: blank, simple_remap, capslock_escape, vim_navigation, gaming", payload.template),
-            }
-            .into())
+            return Err(ApiError::BadRequest(format!(
+                "Invalid template: '{}'. Valid templates: blank, simple_remap, capslock_escape, vim_navigation, gaming",
+                payload.template
+            )))
         }
     };
 
@@ -153,10 +211,10 @@ async fn create_profile(
         .profile_service
         .create_profile(&payload.name, template)
         .await
-        .map_err(|e| ConfigError::Profile(e.to_string()))?;
+        .map_err(profile_error_to_api_error)?;
 
     // Build paths from name
-    let config_dir = get_config_dir()?;
+    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
     let profiles_dir = config_dir.join("profiles");
     let rhai_path = profiles_dir.join(format!("{}.rhai", profile_info.name));
     let krx_path = profiles_dir.join(format!("{}.krx", profile_info.name));
@@ -165,8 +223,8 @@ async fn create_profile(
         "success": true,
         "profile": {
             "name": profile_info.name,
-            "rhai_path": rhai_path.display().to_string(),
-            "krx_path": krx_path.display().to_string(),
+            "rhaiPath": rhai_path.display().to_string(),
+            "krxPath": krx_path.display().to_string(),
         }
     })))
 }
@@ -175,8 +233,9 @@ async fn create_profile(
 async fn activate_profile(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
-) -> Result<Json<Value>, DaemonError> {
-    use crate::error::ConfigError;
+) -> Result<Json<Value>, ApiError> {
+    // Validate profile name
+    validate_profile_name(&name)?;
 
     // Check if test mode is enabled
     if let Some(socket_path) = &state.test_mode_socket {
@@ -194,12 +253,12 @@ async fn activate_profile(
         })
         .await
         .map_err(|_| {
-            ConfigError::Profile(
+            ApiError::InternalError(
                 "IPC timeout: profile activation took longer than 5 seconds".to_string(),
             )
         })?
-        .map_err(|e| ConfigError::Profile(format!("Failed to join IPC task: {}", e)))?
-        .map_err(|e| ConfigError::Profile(format!("IPC error: {}", e)))?;
+        .map_err(|e| ApiError::InternalError(format!("Failed to join IPC task: {}", e)))?
+        .map_err(|e| ApiError::InternalError(format!("IPC error: {}", e)))?;
 
         match response {
             IpcResponse::ProfileActivated { name: profile_name } => {
@@ -229,12 +288,13 @@ async fn activate_profile(
                     "reload_time_ms": 0,
                 })))
             }
-            IpcResponse::Error { code, message } => Err(ConfigError::Profile(format!(
+            IpcResponse::Error { code, message } => Err(ApiError::InternalError(format!(
                 "Profile activation failed (code {}): {}",
                 code, message
-            ))
-            .into()),
-            _ => Err(ConfigError::Profile("Unexpected IPC response".to_string()).into()),
+            ))),
+            _ => Err(ApiError::InternalError(
+                "Unexpected IPC response".to_string(),
+            )),
         }
     } else {
         // Production mode: use ProfileService to ensure consistent state
@@ -242,13 +302,12 @@ async fn activate_profile(
             .profile_service
             .activate_profile(&name)
             .await
-            .map_err(|e| ConfigError::Profile(e.to_string()))?;
+            .map_err(profile_error_to_api_error)?;
 
         if !result.success {
-            return Err(ConfigError::CompilationFailed {
-                reason: result.error.unwrap_or_else(|| "Unknown error".to_string()),
-            }
-            .into());
+            return Err(ApiError::InternalError(
+                result.error.unwrap_or_else(|| "Unknown error".to_string()),
+            ));
         }
 
         // Reload simulation service with the new profile
@@ -283,21 +342,24 @@ async fn activate_profile(
 async fn delete_profile(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
-) -> Result<Json<Value>, DaemonError> {
-    use crate::error::ConfigError;
+) -> Result<Json<Value>, ApiError> {
+    // Validate profile name
+    validate_profile_name(&name)?;
 
     state
         .profile_service
         .delete_profile(&name)
         .await
-        .map_err(|e| ConfigError::Profile(e.to_string()))?;
+        .map_err(profile_error_to_api_error)?;
 
     Ok(Json(json!({ "success": true })))
 }
 
 /// POST /api/profiles/:name/duplicate - Duplicate profile
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct DuplicateProfileRequest {
+    #[serde(rename = "newName")]
     new_name: String,
 }
 
@@ -306,6 +368,10 @@ async fn duplicate_profile(
     Path(name): Path<String>,
     Json(payload): Json<DuplicateProfileRequest>,
 ) -> Result<Json<Value>, ApiError> {
+    // Validate both profile names
+    validate_profile_name(&name)?;
+    validate_profile_name(&payload.new_name)?;
+
     let profile_info = state
         .profile_service
         .duplicate_profile(&name, &payload.new_name)
@@ -321,14 +387,16 @@ async fn duplicate_profile(
         "success": true,
         "profile": {
             "name": profile_info.name,
-            "rhai_path": rhai_path.display().to_string(),
+            "rhaiPath": rhai_path.display().to_string(),
         }
     })))
 }
 
 /// PUT /api/profiles/:name/rename - Rename profile
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RenameProfileRequest {
+    #[serde(rename = "newName")]
     new_name: String,
 }
 
@@ -337,6 +405,10 @@ async fn rename_profile(
     Path(name): Path<String>,
     Json(payload): Json<RenameProfileRequest>,
 ) -> Result<Json<Value>, ApiError> {
+    // Validate both profile names
+    validate_profile_name(&name)?;
+    validate_profile_name(&payload.new_name)?;
+
     let profile_info = state
         .profile_service
         .rename_profile(&name, &payload.new_name)
@@ -353,21 +425,19 @@ async fn rename_profile(
         "success": true,
         "profile": {
             "name": profile_info.name,
-            "rhai_path": rhai_path.display().to_string(),
-            "krx_path": krx_path.display().to_string(),
+            "rhaiPath": rhai_path.display().to_string(),
+            "krxPath": krx_path.display().to_string(),
         }
     })))
 }
 
 /// GET /api/profiles/active - Get active profile
-async fn get_active_profile(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Value>, DaemonError> {
+async fn get_active_profile(State(state): State<Arc<AppState>>) -> Json<Value> {
     let active_profile = state.profile_service.get_active_profile().await;
 
-    Ok(Json(json!({
+    Json(json!({
         "active_profile": active_profile,
-    })))
+    }))
 }
 
 /// GET /api/profiles/:name/config - Get profile configuration
@@ -375,6 +445,9 @@ async fn get_profile_config(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> Result<Json<Value>, ApiError> {
+    // Validate profile name
+    validate_profile_name(&name)?;
+
     let config = state
         .profile_service
         .get_profile_config(&name)
@@ -389,6 +462,7 @@ async fn get_profile_config(
 
 /// PUT /api/profiles/:name/config - Set profile configuration
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct SetProfileConfigRequest {
     config: String,
 }
@@ -398,6 +472,12 @@ async fn set_profile_config(
     Path(name): Path<String>,
     Json(payload): Json<SetProfileConfigRequest>,
 ) -> Result<Json<Value>, ApiError> {
+    // Validate profile name
+    validate_profile_name(&name)?;
+
+    // Validate config source size
+    validate_config_source(&payload.config)?;
+
     state
         .profile_service
         .set_profile_config(&name, &payload.config)
@@ -430,6 +510,9 @@ async fn validate_profile(
     Path(name): Path<String>,
 ) -> Result<Json<ValidationResponse>, ApiError> {
     use crate::config::profile_compiler::ProfileCompiler;
+
+    // Validate profile name
+    validate_profile_name(&name)?;
 
     // For validation, we still need to access ProfileManager directly to get file paths
     // This is read-only so it doesn't affect state consistency
@@ -484,13 +567,9 @@ async fn validate_profile(
 }
 
 /// Get config directory path (cross-platform)
-fn get_config_dir() -> Result<std::path::PathBuf, DaemonError> {
-    use crate::error::ConfigError;
-
-    let config_dir = dirs::config_dir().ok_or_else(|| ConfigError::ParseError {
-        path: std::path::PathBuf::from("~"),
-        reason: "Cannot determine config directory".to_string(),
-    })?;
+fn get_config_dir() -> Result<std::path::PathBuf, ApiError> {
+    let config_dir = dirs::config_dir()
+        .ok_or_else(|| ApiError::InternalError("Cannot determine config directory".to_string()))?;
 
     Ok(config_dir.join("keyrx"))
 }
@@ -516,6 +595,8 @@ mod tests {
             device_count: 0,
             key_count: 0,
             active: false,
+            activated_at: None,
+            activated_by: None,
         })
         .unwrap();
 
@@ -559,6 +640,8 @@ mod tests {
             device_count: 2,
             key_count: 127,
             active: true,
+            activated_at: Some(timestamp),
+            activated_by: Some("user".to_string()),
         };
 
         let json_value = serde_json::to_value(&response).unwrap();
