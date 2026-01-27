@@ -10,6 +10,47 @@ use std::sync::Arc;
 use tempfile::TempDir;
 use tokio::sync::broadcast;
 
+/// Lightweight HTTP client for concurrent testing.
+///
+/// Created by `TestApp::clone_client()` for parallel request testing.
+pub struct TestAppClient {
+    pub base_url: String,
+    client: reqwest::Client,
+}
+
+impl TestAppClient {
+    /// Sends a GET request to the specified path.
+    pub async fn get(&self, path: &str) -> reqwest::Response {
+        let url = format!("{}{}", self.base_url, path);
+        self.client
+            .get(&url)
+            .send()
+            .await
+            .expect("Failed to send GET request")
+    }
+
+    /// Sends a POST request with JSON body to the specified path.
+    pub async fn post<T: serde::Serialize>(&self, path: &str, body: &T) -> reqwest::Response {
+        let url = format!("{}{}", self.base_url, path);
+        self.client
+            .post(&url)
+            .json(body)
+            .send()
+            .await
+            .expect("Failed to send POST request")
+    }
+
+    /// Sends a DELETE request to the specified path.
+    pub async fn delete(&self, path: &str) -> reqwest::Response {
+        let url = format!("{}{}", self.base_url, path);
+        self.client
+            .delete(&url)
+            .send()
+            .await
+            .expect("Failed to send DELETE request")
+    }
+}
+
 /// Test application fixture with isolated configuration.
 ///
 /// Provides an isolated test environment with:
@@ -121,6 +162,24 @@ impl TestApp {
     /// Returns the path to the isolated config directory (HOME/.config/keyrx).
     pub fn config_path(&self) -> PathBuf {
         self.config_dir.path().join(".config").join("keyrx")
+    }
+
+    /// Creates a lightweight clone for concurrent requests.
+    ///
+    /// Returns a struct with the same base_url and a new HTTP client instance.
+    /// Useful for testing concurrent requests to the same server.
+    ///
+    /// # Example
+    /// ```no_run
+    /// let app = TestApp::new().await;
+    /// let client = app.clone_client();
+    /// let response = client.get("/api/profiles").await;
+    /// ```
+    pub fn clone_client(&self) -> TestAppClient {
+        TestAppClient {
+            base_url: self.base_url.clone(),
+            client: reqwest::Client::new(),
+        }
     }
 
     /// Sends a GET request to the specified path.

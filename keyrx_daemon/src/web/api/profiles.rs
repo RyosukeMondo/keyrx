@@ -83,33 +83,38 @@ struct ProfilesListResponse {
 }
 
 /// GET /api/profiles - List all profiles
-async fn list_profiles() -> Result<Json<ProfilesListResponse>, DaemonError> {
+async fn list_profiles(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<ProfilesListResponse>, DaemonError> {
     use crate::error::ConfigError;
 
-    let config_dir = get_config_dir()?;
-    let mut pm =
-        ProfileManager::new(config_dir).map_err(|e| ConfigError::Profile(e.to_string()))?;
-
-    pm.scan_profiles()
+    // Use ProfileService to ensure consistent state across requests
+    let profile_list = state
+        .profile_service
+        .list_profiles()
+        .await
         .map_err(|e| ConfigError::Profile(e.to_string()))?;
 
-    // Use ProfileManager's persisted active profile instead of IPC for consistency
-    // This ensures the active profile survives daemon restarts
-    let active_profile = pm.get_active().ok().flatten();
-
-    let profiles: Vec<ProfileResponse> = pm
-        .list()
+    let profiles: Vec<ProfileResponse> = profile_list
         .iter()
-        .map(|meta| ProfileResponse {
-            name: meta.name.clone(),
-            rhai_path: meta.rhai_path.display().to_string(),
-            krx_path: meta.krx_path.display().to_string(),
-            modified_at: meta.modified_at,
-            created_at: meta.modified_at, // Use modified_at as created_at for now
-            layer_count: meta.layer_count,
-            device_count: 0, // TODO: Track device count per profile
-            key_count: 0,    // TODO: Parse Rhai config to count key mappings
-            active: active_profile.as_ref() == Some(&meta.name),
+        .map(|info| {
+            // Build paths from name (ProfileService doesn't return paths)
+            let config_dir = get_config_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+            let profiles_dir = config_dir.join("profiles");
+            let rhai_path = profiles_dir.join(format!("{}.rhai", info.name));
+            let krx_path = profiles_dir.join(format!("{}.krx", info.name));
+
+            ProfileResponse {
+                name: info.name.clone(),
+                rhai_path: rhai_path.display().to_string(),
+                krx_path: krx_path.display().to_string(),
+                modified_at: info.modified_at,
+                created_at: info.modified_at, // Use modified_at as created_at for now
+                layer_count: info.layer_count,
+                device_count: 0, // TODO: Track device count per profile
+                key_count: 0,    // TODO: Parse Rhai config to count key mappings
+                active: info.active,
+            }
         })
         .collect();
 
@@ -124,6 +129,7 @@ struct CreateProfileRequest {
 }
 
 async fn create_profile(
+    State(state): State<Arc<AppState>>,
     Json(payload): Json<CreateProfileRequest>,
 ) -> Result<Json<Value>, DaemonError> {
     use crate::error::{ConfigError, WebError};
@@ -142,20 +148,25 @@ async fn create_profile(
         }
     };
 
-    let config_dir = get_config_dir()?;
-    let mut pm =
-        ProfileManager::new(config_dir).map_err(|e| ConfigError::Profile(e.to_string()))?;
-
-    let metadata = pm
-        .create(&payload.name, template)
+    // Use ProfileService to ensure consistent state
+    let profile_info = state
+        .profile_service
+        .create_profile(&payload.name, template)
+        .await
         .map_err(|e| ConfigError::Profile(e.to_string()))?;
+
+    // Build paths from name
+    let config_dir = get_config_dir()?;
+    let profiles_dir = config_dir.join("profiles");
+    let rhai_path = profiles_dir.join(format!("{}.rhai", profile_info.name));
+    let krx_path = profiles_dir.join(format!("{}.krx", profile_info.name));
 
     Ok(Json(json!({
         "success": true,
         "profile": {
-            "name": metadata.name,
-            "rhai_path": metadata.rhai_path.display().to_string(),
-            "krx_path": metadata.krx_path.display().to_string(),
+            "name": profile_info.name,
+            "rhai_path": rhai_path.display().to_string(),
+            "krx_path": krx_path.display().to_string(),
         }
     })))
 }
@@ -226,13 +237,11 @@ async fn activate_profile(
             _ => Err(ConfigError::Profile("Unexpected IPC response".to_string()).into()),
         }
     } else {
-        // Production mode: use ProfileManager directly
-        let config_dir = get_config_dir()?;
-        let mut pm =
-            ProfileManager::new(config_dir).map_err(|e| ConfigError::Profile(e.to_string()))?;
-
-        let result = pm
-            .activate(&name)
+        // Production mode: use ProfileService to ensure consistent state
+        let result = state
+            .profile_service
+            .activate_profile(&name)
+            .await
             .map_err(|e| ConfigError::Profile(e.to_string()))?;
 
         if !result.success {
@@ -271,14 +280,16 @@ async fn activate_profile(
 }
 
 /// DELETE /api/profiles/:name - Delete profile
-async fn delete_profile(Path(name): Path<String>) -> Result<Json<Value>, DaemonError> {
+async fn delete_profile(
+    State(state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+) -> Result<Json<Value>, DaemonError> {
     use crate::error::ConfigError;
 
-    let config_dir = get_config_dir()?;
-    let mut pm =
-        ProfileManager::new(config_dir).map_err(|e| ConfigError::Profile(e.to_string()))?;
-
-    pm.delete(&name)
+    state
+        .profile_service
+        .delete_profile(&name)
+        .await
         .map_err(|e| ConfigError::Profile(e.to_string()))?;
 
     Ok(Json(json!({ "success": true })))
@@ -291,21 +302,26 @@ struct DuplicateProfileRequest {
 }
 
 async fn duplicate_profile(
+    State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
     Json(payload): Json<DuplicateProfileRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-    let mut pm = ProfileManager::new(config_dir).map_err(profile_error_to_api_error)?;
-
-    let metadata = pm
-        .duplicate(&name, &payload.new_name)
+    let profile_info = state
+        .profile_service
+        .duplicate_profile(&name, &payload.new_name)
+        .await
         .map_err(profile_error_to_api_error)?;
+
+    // Build rhai_path from name
+    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
+    let profiles_dir = config_dir.join("profiles");
+    let rhai_path = profiles_dir.join(format!("{}.rhai", profile_info.name));
 
     Ok(Json(json!({
         "success": true,
         "profile": {
-            "name": metadata.name,
-            "rhai_path": metadata.rhai_path.display().to_string(),
+            "name": profile_info.name,
+            "rhai_path": rhai_path.display().to_string(),
         }
     })))
 }
@@ -317,25 +333,28 @@ struct RenameProfileRequest {
 }
 
 async fn rename_profile(
+    State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
     Json(payload): Json<RenameProfileRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-    let mut pm = ProfileManager::new(config_dir).map_err(profile_error_to_api_error)?;
-
-    // Scan profiles to ensure the profile list is up to date
-    pm.scan_profiles().map_err(profile_error_to_api_error)?;
-
-    let metadata = pm
-        .rename(&name, &payload.new_name)
+    let profile_info = state
+        .profile_service
+        .rename_profile(&name, &payload.new_name)
+        .await
         .map_err(profile_error_to_api_error)?;
+
+    // Build paths from name
+    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
+    let profiles_dir = config_dir.join("profiles");
+    let rhai_path = profiles_dir.join(format!("{}.rhai", profile_info.name));
+    let krx_path = profiles_dir.join(format!("{}.krx", profile_info.name));
 
     Ok(Json(json!({
         "success": true,
         "profile": {
-            "name": metadata.name,
-            "rhai_path": metadata.rhai_path.display().to_string(),
-            "krx_path": metadata.krx_path.display().to_string(),
+            "name": profile_info.name,
+            "rhai_path": rhai_path.display().to_string(),
+            "krx_path": krx_path.display().to_string(),
         }
     })))
 }
@@ -352,11 +371,15 @@ async fn get_active_profile(
 }
 
 /// GET /api/profiles/:name/config - Get profile configuration
-async fn get_profile_config(Path(name): Path<String>) -> Result<Json<Value>, ApiError> {
-    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-    let pm = ProfileManager::new(config_dir).map_err(profile_error_to_api_error)?;
-
-    let config = pm.get_config(&name).map_err(profile_error_to_api_error)?;
+async fn get_profile_config(
+    State(state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    let config = state
+        .profile_service
+        .get_profile_config(&name)
+        .await
+        .map_err(profile_error_to_api_error)?;
 
     Ok(Json(json!({
         "name": name,
@@ -371,13 +394,14 @@ struct SetProfileConfigRequest {
 }
 
 async fn set_profile_config(
+    State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
     Json(payload): Json<SetProfileConfigRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-    let mut pm = ProfileManager::new(config_dir).map_err(profile_error_to_api_error)?;
-
-    pm.set_config(&name, &payload.config)
+    state
+        .profile_service
+        .set_profile_config(&name, &payload.config)
+        .await
         .map_err(profile_error_to_api_error)?;
 
     Ok(Json(json!({
@@ -401,9 +425,14 @@ struct ValidationResponse {
     errors: Vec<ValidationError>,
 }
 
-async fn validate_profile(Path(name): Path<String>) -> Result<Json<ValidationResponse>, ApiError> {
+async fn validate_profile(
+    State(_state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+) -> Result<Json<ValidationResponse>, ApiError> {
     use crate::config::profile_compiler::ProfileCompiler;
 
+    // For validation, we still need to access ProfileManager directly to get file paths
+    // This is read-only so it doesn't affect state consistency
     let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
     let pm = ProfileManager::new(config_dir).map_err(profile_error_to_api_error)?;
 
