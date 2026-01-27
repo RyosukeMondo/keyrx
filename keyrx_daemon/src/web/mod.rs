@@ -2,6 +2,7 @@ pub mod api;
 pub mod error;
 pub mod events;
 pub mod handlers;
+pub mod middleware;
 pub mod rpc_types;
 pub mod static_files;
 pub mod subscriptions;
@@ -11,13 +12,14 @@ pub mod ws_rpc;
 #[cfg(test)]
 mod ws_test;
 
-use axum::Router;
+use axum::{middleware as axum_middleware, Router};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 
-pub use events::DaemonEvent;
+pub use events::{DaemonEvent, ErrorData};
+pub use middleware::{AuthMiddleware, RateLimitLayer, SecurityLayer, TimeoutLayer};
 
 use crate::macro_recorder::MacroRecorder;
 use crate::services::{
@@ -120,7 +122,7 @@ impl AppState {
         // Create ProfileManager first
         let profile_manager = Arc::new(
             ProfileManager::new(config_dir.clone())
-                .expect("Failed to create ProfileManager for testing")
+                .expect("Failed to create ProfileManager for testing"),
         );
 
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
@@ -148,18 +150,61 @@ impl AppState {
 
 #[allow(dead_code)]
 pub async fn create_app(event_tx: broadcast::Sender<DaemonEvent>, state: Arc<AppState>) -> Router {
-    // Configure CORS to allow requests from Vite dev server (localhost:5173)
-    // and any other origins for local development
+    use crate::auth::AuthMode;
+    use tower_http::cors::AllowOrigin;
+
+    // Configure CORS to allow only localhost origins for security
     let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+        .allow_origin(AllowOrigin::list([
+            "http://localhost:3000".parse().unwrap(),
+            "http://localhost:5173".parse().unwrap(),
+            "http://localhost:8080".parse().unwrap(),
+            "http://127.0.0.1:3000".parse().unwrap(),
+            "http://127.0.0.1:5173".parse().unwrap(),
+            "http://127.0.0.1:8080".parse().unwrap(),
+            "http://127.0.0.1:9867".parse().unwrap(),
+        ]))
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::PUT,
+            axum::http::Method::DELETE,
+            axum::http::Method::PATCH,
+            axum::http::Method::OPTIONS,
+        ])
+        .allow_headers([
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::AUTHORIZATION,
+        ]);
+
+    // Create security middleware layers
+    let auth_mode = AuthMode::from_env();
+    let auth_middleware = AuthMiddleware::new(auth_mode);
+    let rate_limiter = RateLimitLayer::new();
+    let security_layer = SecurityLayer::new();
+    let timeout_layer = TimeoutLayer::new();
 
     Router::new()
         .nest("/api", api::create_router(Arc::clone(&state)))
         .nest("/ws", ws::create_router(event_tx))
         .nest("/ws-rpc", ws_rpc::create_router(Arc::clone(&state)))
         .fallback_service(static_files::serve_static())
+        .layer(axum_middleware::from_fn_with_state(
+            auth_middleware,
+            middleware::auth::auth_middleware,
+        ))
+        .layer(axum_middleware::from_fn_with_state(
+            rate_limiter,
+            middleware::rate_limit::rate_limit_middleware,
+        ))
+        .layer(axum_middleware::from_fn_with_state(
+            security_layer,
+            middleware::security::security_middleware,
+        ))
+        .layer(axum_middleware::from_fn_with_state(
+            timeout_layer,
+            middleware::timeout::timeout_middleware,
+        ))
         .layer(cors)
 }
 
@@ -183,12 +228,41 @@ pub async fn serve(
 /// Note: This is public for integration tests but gated with cfg(test).
 /// For production use, use create_app() instead.
 pub fn create_router(state: Arc<AppState>) -> Router {
+    use crate::auth::AuthMode;
+    use tower_http::cors::AllowOrigin;
+
     let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+        .allow_origin(AllowOrigin::list([
+            "http://localhost:3000".parse().unwrap(),
+            "http://localhost:5173".parse().unwrap(),
+            "http://localhost:8080".parse().unwrap(),
+            "http://127.0.0.1:3000".parse().unwrap(),
+            "http://127.0.0.1:5173".parse().unwrap(),
+            "http://127.0.0.1:8080".parse().unwrap(),
+            "http://127.0.0.1:9867".parse().unwrap(),
+        ]))
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::PUT,
+            axum::http::Method::DELETE,
+            axum::http::Method::PATCH,
+            axum::http::Method::OPTIONS,
+        ])
+        .allow_headers([
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::AUTHORIZATION,
+        ]);
+
+    // Create security middleware (dev mode for tests)
+    let auth_mode = AuthMode::from_env();
+    let auth_middleware = AuthMiddleware::new(auth_mode);
 
     Router::new()
         .nest("/api", api::create_router(Arc::clone(&state)))
+        .layer(axum_middleware::from_fn_with_state(
+            auth_middleware,
+            middleware::auth::auth_middleware,
+        ))
         .layer(cors)
 }
