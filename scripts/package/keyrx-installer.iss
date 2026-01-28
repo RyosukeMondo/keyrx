@@ -51,6 +51,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "startmenu"; Description: "Create Start Menu shortcuts"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "addtopath"; Description: "Add KeyRx to PATH (system-wide if admin, current user otherwise)"; GroupDescription: "System Integration:"
+Name: "autostart"; Description: "Auto-start daemon on Windows login (with administrator privileges)"; GroupDescription: "System Integration:"; Check: IsAdmin
 
 [Files]
 ; Main binaries
@@ -93,13 +94,16 @@ Root: HKA; Subkey: "Software\KeyRx"; ValueType: string; ValueName: "InstallPath"
 Root: HKA; Subkey: "Software\KeyRx"; ValueType: string; ValueName: "Version"; ValueData: "{#AppVersion}"
 
 [Run]
-; Offer to start daemon after installation (requires admin for keyboard access)
-; Note: unchecked by default since it needs elevation
-Filename: "{app}\{#AppExeName}"; Parameters: "run"; Description: "Launch {#AppName} Daemon (will ask for administrator permission)"; Flags: nowait postinstall skipifsilent unchecked shellexec
+; Create Windows Task Scheduler entry for auto-start with admin rights (if user selected autostart)
+Filename: "schtasks.exe"; Parameters: "/Create /TN ""KeyRx Daemon"" /TR ""\""{app}\{#AppExeName}\"" run"" /SC ONLOGON /RL HIGHEST /F /DELAY 0000:05"; Flags: runhidden; Tasks: autostart; StatusMsg: "Creating auto-start task with administrator privileges..."
+; Start daemon immediately after install (checked by default, requires UAC)
+Filename: "{app}\{#AppExeName}"; Parameters: "run"; Description: "Launch {#AppName} Daemon now (requires administrator permission)"; Flags: nowait postinstall skipifsilent shellexec
 
 [UninstallRun]
 ; Stop daemon before uninstall
 Filename: "taskkill"; Parameters: "/F /IM keyrx_daemon.exe"; Flags: runhidden; RunOnceId: "StopDaemon"
+; Remove Task Scheduler entry
+Filename: "schtasks.exe"; Parameters: "/Delete /TN ""KeyRx Daemon"" /F"; Flags: runhidden; RunOnceId: "RemoveTask"
 
 [Code]
 // Check if PATH already contains the app directory
@@ -151,4 +155,11 @@ begin
       Result := False;
     end;
   end;
+end;
+
+// Determine if we should start daemon after install
+function ShouldStartDaemon(): Boolean;
+begin
+  // Start by default, user can uncheck
+  Result := True;
 end;
