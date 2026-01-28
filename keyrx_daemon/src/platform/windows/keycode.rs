@@ -264,6 +264,50 @@ pub fn keycode_to_vk(keycode: KeyCode) -> Option<u16> {
     None
 }
 
+/// Convert KeyCode to Windows scan code for key blocking
+///
+/// Uses MapVirtualKeyW to get the hardware scan code from virtual key code.
+/// Returns the scan code with extended flag if applicable (e.g., 0xE01D for Right Ctrl).
+pub fn keycode_to_scancode(keycode: KeyCode) -> Option<u32> {
+    let vk = keycode_to_vk(keycode)?;
+
+    // MapVirtualKeyW with MAPVK_VK_TO_VSC (0) returns scan code
+    let scan_code = unsafe { windows_sys::Win32::UI::Input::KeyboardAndMouse::MapVirtualKeyW(vk as u32, 0) };
+
+    if scan_code == 0 {
+        return None;
+    }
+
+    // Check if this is an extended key (arrows, insert, delete, home, end, page up/down, etc.)
+    // Extended keys need the 0xE000 prefix
+    let is_extended = matches!(
+        keycode,
+        KeyCode::Insert
+            | KeyCode::Delete
+            | KeyCode::Home
+            | KeyCode::End
+            | KeyCode::PageUp
+            | KeyCode::PageDown
+            | KeyCode::Left
+            | KeyCode::Right
+            | KeyCode::Up
+            | KeyCode::Down
+            | KeyCode::RCtrl
+            | KeyCode::RAlt
+            | KeyCode::RMeta
+            | KeyCode::NumpadDivide
+            | KeyCode::NumpadEnter
+    );
+
+    let full_scan_code = if is_extended {
+        scan_code | 0xE000
+    } else {
+        scan_code
+    };
+
+    Some(full_scan_code)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

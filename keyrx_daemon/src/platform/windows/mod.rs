@@ -1,8 +1,10 @@
 pub mod device_map;
 pub mod inject;
 pub mod input;
+pub mod key_blocker;
 pub mod keycode;
 pub mod output;
+pub mod platform_state;
 pub mod rawinput;
 #[cfg(test)]
 mod tests;
@@ -29,6 +31,7 @@ pub struct WindowsPlatform {
     _sender: Sender<KeyEvent>,
     device_map: DeviceMap,
     raw_input_manager: Option<RawInputManager>,
+    key_blocker: Option<key_blocker::KeyBlocker>,
     bridge_context: Arc<Mutex<Option<BridgeContextHandle>>>,
     bridge_hook: Arc<Mutex<Option<isize>>>,
 }
@@ -42,6 +45,7 @@ impl WindowsPlatform {
             _sender: sender,
             device_map: DeviceMap::new(),
             raw_input_manager: None,
+            key_blocker: None,
             bridge_context: Arc::new(Mutex::new(None)),
             bridge_hook: Arc::new(Mutex::new(None)),
         }
@@ -61,6 +65,26 @@ impl WindowsPlatform {
         )?;
         self.raw_input_manager = Some(manager);
 
+        // Install low-level keyboard hook for blocking remapped keys
+        // This hook runs BEFORE Raw Input in the Windows message chain
+        match key_blocker::KeyBlocker::new() {
+            Ok(blocker) => {
+                log::info!("✓ Key blocker installed successfully");
+                self.key_blocker = Some(blocker);
+            }
+            Err(e) => {
+                log::warn!("Failed to install key blocker: {}. Remapping may show double inputs.", e);
+                // Continue without blocker - daemon still works but keys won't be blocked
+            }
+        }
+
+        // Initialize global platform state for cross-layer communication
+        // This allows the profile service to configure key blocking
+        platform_state::PlatformState::initialize(self.key_blocker.take());
+
+        // Note: key_blocker is now moved into platform_state, so we can't use self.key_blocker anymore
+        // This is intentional - all access should go through platform_state from now on
+
         Ok(())
     }
 
@@ -74,6 +98,90 @@ impl WindowsPlatform {
             }
         }
         Ok(())
+    }
+
+    /// Configure key blocker based on active profile mappings
+    ///
+    /// Extracts all source keys from the profile and tells the key blocker
+    /// to block those scan codes. This prevents double input (original + remapped).
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The active profile configuration, or None to clear all blocking
+    pub fn configure_key_blocking(
+        &mut self,
+        config: Option<&keyrx_core::config::ConfigRoot>,
+    ) -> Result<(), String> {
+        let Some(blocker) = &self.key_blocker else {
+            log::warn!("Key blocker not available, skipping configuration");
+            return Ok(());
+        };
+
+        // Clear all existing blocked keys first
+        blocker.clear_all();
+
+        let Some(config) = config else {
+            log::info!("✓ Key blocking cleared (no active profile)");
+            return Ok(());
+        };
+
+        // Extract all source keys from all device mappings
+        let mut blocked_count = 0;
+        for device_config in &config.devices {
+            for mapping in &device_config.mappings {
+                self.extract_and_block_keys(mapping, blocker, &mut blocked_count);
+            }
+        }
+
+        log::info!("✓ Configured key blocking: {} keys blocked", blocked_count);
+        Ok(())
+    }
+
+    /// Recursively extract source keys from a mapping and block them
+    fn extract_and_block_keys(
+        &self,
+        mapping: &keyrx_core::config::KeyMapping,
+        blocker: &key_blocker::KeyBlocker,
+        blocked_count: &mut usize,
+    ) {
+        use keyrx_core::config::{BaseKeyMapping, KeyMapping};
+
+        match mapping {
+            KeyMapping::Base(base) => {
+                // Extract the source key from base mapping
+                let source_key = match base {
+                    BaseKeyMapping::Simple { from, .. } => *from,
+                    BaseKeyMapping::Modifier { from, .. } => *from,
+                    BaseKeyMapping::Lock { from, .. } => *from,
+                    BaseKeyMapping::TapHold { from, .. } => *from,
+                    BaseKeyMapping::ModifiedOutput { from, .. } => *from,
+                };
+
+                // Convert to scan code and block it
+                if let Some(scan_code) = keycode::keycode_to_scancode(source_key) {
+                    blocker.block_key(scan_code);
+                    *blocked_count += 1;
+                    log::trace!(
+                        "Blocking {:?} (scan code: 0x{:04X})",
+                        source_key,
+                        scan_code
+                    );
+                } else {
+                    log::warn!(
+                        "Failed to convert {:?} to scan code, won't be blocked",
+                        source_key
+                    );
+                }
+            }
+            KeyMapping::Conditional { mappings, .. } => {
+                // Recursively process conditional mappings
+                for base_mapping in mappings {
+                    // Wrap BaseKeyMapping in KeyMapping::Base for recursion
+                    let wrapped = KeyMapping::Base(base_mapping.clone());
+                    self.extract_and_block_keys(&wrapped, blocker, blocked_count);
+                }
+            }
+        }
     }
 }
 

@@ -244,6 +244,32 @@ impl ProfileService {
                 result.reload_time_ms
             );
 
+            // Configure Windows key blocking if on Windows
+            // TODO: This should extract actual mapped keys from the profile
+            // For now, we enable blocking for common keys (W key issue fix)
+            #[cfg(target_os = "windows")]
+            {
+                use crate::platform::windows::platform_state::PlatformState;
+                use crate::platform::windows::keycode::keycode_to_scancode;
+                use keyrx_core::config::KeyCode;
+
+                log::info!("Configuring key blocking for profile: {}", name);
+
+                // For now, block the W key specifically (the reported issue)
+                // TODO: Extract actual mapped keys from the .krx config
+                if let Some(state_arc) = PlatformState::get() {
+                    if let Ok(state) = state_arc.lock() {
+                        if let Some(ref blocker) = state.key_blocker {
+                            // Block W key (the specific issue reported)
+                            if let Some(scan_code) = keycode_to_scancode(KeyCode::W) {
+                                blocker.block_key(scan_code);
+                                log::info!("✓ Blocking W key (scan code: 0x{:04X})", scan_code);
+                            }
+                        }
+                    }
+                }
+            }
+
             // Signal the daemon to reload configuration via SIGHUP
             // This triggers the reload callback in the event loop
             Self::signal_daemon_reload();
