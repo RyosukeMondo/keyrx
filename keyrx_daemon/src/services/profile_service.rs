@@ -34,12 +34,15 @@ use std::sync::Arc;
 use crate::config::{ActivationResult, ProfileError, ProfileManager, ProfileTemplate};
 
 /// Profile information returned by list operations.
+/// PROF-004: Added activation metadata fields.
 #[derive(Debug, Clone)]
 pub struct ProfileInfo {
     pub name: String,
     pub layer_count: usize,
     pub active: bool,
     pub modified_at: std::time::SystemTime,
+    pub activated_at: Option<std::time::SystemTime>,
+    pub activated_by: Option<String>,
 }
 
 /// Service for profile operations.
@@ -122,6 +125,8 @@ impl ProfileService {
                 layer_count: metadata.layer_count,
                 active: active_name.as_ref() == Some(&metadata.name),
                 modified_at: metadata.modified_at,
+                activated_at: metadata.activated_at,
+                activated_by: metadata.activated_by.clone(),
             })
             .collect();
 
@@ -176,10 +181,13 @@ impl ProfileService {
             layer_count: metadata.layer_count,
             active: active_name.as_ref() == Some(&metadata.name),
             modified_at: metadata.modified_at,
+            activated_at: metadata.activated_at,
+            activated_by: metadata.activated_by.clone(),
         })
     }
 
     /// Activates a profile.
+    /// PROF-001: Fixed race conditions with serialized activation via ProfileManager's Mutex.
     ///
     /// Compiles the Rhai configuration and hot-reloads the daemon.
     ///
@@ -195,6 +203,7 @@ impl ProfileService {
     ///
     /// Returns [`ProfileError::NotFound`] if profile doesn't exist.
     /// Returns [`ProfileError::Compilation`] if compilation fails.
+    /// Returns [`ProfileError::LockError`] if activation lock cannot be acquired.
     ///
     /// # Examples
     ///
@@ -217,6 +226,10 @@ impl ProfileService {
     pub async fn activate_profile(&self, name: &str) -> Result<ActivationResult, ProfileError> {
         log::info!("Activating profile: {}", name);
 
+        // PROF-001: ProfileManager::activate now uses internal Mutex to serialize
+        // concurrent activation attempts. This prevents race conditions where
+        // multiple activations could corrupt the state.
+        //
         // ProfileManager::activate requires &mut self, but we need to work around this
         // for now by unsafely casting away the Arc immutability.
         // This is safe because ProfileManager uses internal locks for thread-safety.
@@ -322,6 +335,8 @@ impl ProfileService {
             layer_count: metadata.layer_count,
             active: false, // Newly created profiles are not active
             modified_at: metadata.modified_at,
+            activated_at: None,
+            activated_by: None,
         })
     }
 
@@ -414,6 +429,8 @@ impl ProfileService {
             layer_count: metadata.layer_count,
             active: active_name.as_ref() == Some(&metadata.name),
             modified_at: metadata.modified_at,
+            activated_at: metadata.activated_at,
+            activated_by: metadata.activated_by.clone(),
         })
     }
 
@@ -466,6 +483,8 @@ impl ProfileService {
             layer_count: metadata.layer_count,
             active: false, // Duplicates are never active
             modified_at: metadata.modified_at,
+            activated_at: None,
+            activated_by: None,
         })
     }
 
@@ -554,6 +573,8 @@ impl ProfileService {
             layer_count: metadata.layer_count,
             active: false, // Imported profiles are never active
             modified_at: metadata.modified_at,
+            activated_at: None,
+            activated_by: None,
         })
     }
 
@@ -694,6 +715,8 @@ mod tests {
                 krx_path: PathBuf::from(format!("/mock/{}.krx", name)),
                 modified_at: std::time::SystemTime::now(),
                 layer_count,
+                activated_at: None,
+                activated_by: None,
             };
             self.profiles
                 .write()

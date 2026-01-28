@@ -17,9 +17,6 @@ use super::profile_compiler::{CompilationError, ProfileCompiler};
 /// Maximum number of profiles allowed
 const MAX_PROFILES: usize = 100;
 
-/// Maximum profile name length
-const MAX_PROFILE_NAME_LEN: usize = 32;
-
 /// File name for persisting active profile
 const ACTIVE_PROFILE_FILE: &str = ".active";
 
@@ -40,6 +37,10 @@ pub struct ProfileMetadata {
     pub krx_path: PathBuf,
     pub modified_at: SystemTime,
     pub layer_count: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub activated_at: Option<SystemTime>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub activated_by: Option<String>,
 }
 
 /// Template for creating new profiles.
@@ -98,6 +99,12 @@ pub enum ProfileError {
 
     #[error("Lock error: {0}")]
     LockError(String),
+
+    #[error("Activation in progress for profile: {0}")]
+    ActivationInProgress(String),
+
+    #[error("Invalid metadata: {0}")]
+    InvalidMetadata(String),
 }
 
 impl ProfileManager {
@@ -160,6 +167,7 @@ impl ProfileManager {
     }
 
     /// Load metadata for a profile by name.
+    /// PROF-004: Load activation metadata from .active file.
     fn load_profile_metadata(&self, name: &str) -> Result<ProfileMetadata, ProfileError> {
         let rhai_path = self
             .config_dir
@@ -179,12 +187,17 @@ impl ProfileManager {
         // Try to read layer count from file (simple heuristic for now)
         let layer_count = Self::count_layers(&rhai_path)?;
 
+        // PROF-004: Load activation metadata if this is the active profile
+        let (activated_at, activated_by) = self.load_activation_metadata(name);
+
         Ok(ProfileMetadata {
             name: name.to_string(),
             rhai_path,
             krx_path,
             modified_at,
             layer_count,
+            activated_at,
+            activated_by,
         })
     }
 
@@ -196,6 +209,7 @@ impl ProfileManager {
     }
 
     /// Validate profile name.
+    /// PROF-002: Enhanced validation with strict regex-like rules.
     pub fn validate_name(name: &str) -> Result<(), ProfileError> {
         if name.is_empty() {
             return Err(ProfileError::InvalidName(
@@ -203,21 +217,28 @@ impl ProfileManager {
             ));
         }
 
-        if name.len() > MAX_PROFILE_NAME_LEN {
+        if name.len() > 64 {
             return Err(ProfileError::InvalidName(format!(
-                "Name too long (max {} chars)",
-                MAX_PROFILE_NAME_LEN
+                "Name too long (max 64 chars, got {})",
+                name.len()
             )));
         }
 
-        // Allow alphanumeric, dash, underscore
+        // Allow only alphanumeric, dash, underscore (^[a-zA-Z0-9_-]{1,64}$)
         if !name
             .chars()
-            .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
         {
             return Err(ProfileError::InvalidName(
-                "Name can only contain alphanumeric characters, dashes, and underscores"
+                "Name can only contain ASCII alphanumeric characters, dashes, and underscores"
                     .to_string(),
+            ));
+        }
+
+        // Reject names starting with dash or underscore
+        if name.starts_with('-') || name.starts_with('_') {
+            return Err(ProfileError::InvalidName(
+                "Name cannot start with dash or underscore".to_string(),
             ));
         }
 
@@ -225,6 +246,7 @@ impl ProfileManager {
     }
 
     /// Create a new profile from a template.
+    /// PROF-005: Enhanced duplicate name checking.
     pub fn create(
         &mut self,
         name: &str,
@@ -236,6 +258,12 @@ impl ProfileManager {
             return Err(ProfileError::ProfileLimitExceeded);
         }
 
+        // PROF-005: Check for duplicate in memory first
+        if self.profiles.contains_key(name) {
+            return Err(ProfileError::AlreadyExists(name.to_string()));
+        }
+
+        // PROF-005: Check for duplicate on disk (in case of desync)
         let rhai_path = self
             .config_dir
             .join("profiles")
@@ -320,11 +348,23 @@ impl ProfileManager {
     }
 
     /// Compile and reload a profile.
+    /// PROF-003: Enhanced error handling with structured errors and context.
     fn compile_and_reload(
         &self,
         name: &str,
         profile: &ProfileMetadata,
     ) -> Result<(u64, u64), (u64, ProfileError)> {
+        // PROF-003: Validate profile exists before attempting compilation
+        if !profile.rhai_path.exists() {
+            return Err((
+                0,
+                ProfileError::NotFound(format!(
+                    "Profile '{}' source file not found at {:?}",
+                    name, profile.rhai_path
+                )),
+            ));
+        }
+
         // Compile .rhai → .krx with timeout
         let compile_result = self
             .compiler
@@ -333,8 +373,9 @@ impl ProfileManager {
         let compile_time = match compile_result {
             Ok(result) => result.compile_time_ms,
             Err(e) => {
-                // Return compilation time as 0 for errors
-                return Err((0, e.into()));
+                // PROF-003: Return structured compilation error with context
+                log::error!("Compilation failed for profile '{}': {}", name, e);
+                return Err((0, ProfileError::Compilation(e)));
             }
         };
 
@@ -343,14 +384,22 @@ impl ProfileManager {
         *self.active_profile.write().map_err(|e| {
             (
                 compile_time,
-                ProfileError::LockError(format!("Failed to acquire write lock: {}", e)),
+                ProfileError::LockError(format!(
+                    "Failed to acquire write lock during activation of '{}': {}",
+                    name, e
+                )),
             )
         })? = Some(name.to_string());
         let reload_time = reload_start.elapsed().as_millis() as u64;
 
-        // Persist active profile to disk for restore on restart
+        // PROF-003: Persist active profile to disk with proper error handling
         if let Err(e) = self.save_active_profile(name) {
-            log::warn!("Failed to persist active profile (non-fatal): {}", e);
+            log::warn!(
+                "Failed to persist active profile '{}' (non-fatal): {}",
+                name,
+                e
+            );
+            // Don't fail the activation, but log the issue
         }
 
         Ok((compile_time, reload_time))
@@ -541,12 +590,27 @@ impl ProfileManager {
     }
 
     /// Save the active profile name to persistent storage.
+    /// PROF-004: Enhanced to store activation metadata (timestamp and source).
     ///
-    /// This writes the profile name to a `.active` file in the config directory
+    /// This writes the profile name and metadata to a `.active` file in the config directory
     /// so it can be restored on daemon restart.
     fn save_active_profile(&self, name: &str) -> Result<(), ProfileError> {
         let active_file = self.config_dir.join(ACTIVE_PROFILE_FILE);
-        fs::write(&active_file, name).map_err(|e| {
+
+        // PROF-004: Store activation metadata as JSON
+        let metadata = serde_json::json!({
+            "name": name,
+            "activated_at": SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            "activated_by": "user", // Default to user activation
+        });
+
+        let content = serde_json::to_string_pretty(&metadata)
+            .map_err(|e| ProfileError::InvalidMetadata(e.to_string()))?;
+
+        fs::write(&active_file, content).map_err(|e| {
             log::warn!(
                 "Failed to persist active profile to {:?}: {}",
                 active_file,
@@ -554,8 +618,58 @@ impl ProfileManager {
             );
             ProfileError::IoError(e)
         })?;
-        log::info!("Persisted active profile '{}' to {:?}", name, active_file);
+
+        log::info!(
+            "Persisted active profile '{}' with metadata to {:?}",
+            name,
+            active_file
+        );
         Ok(())
+    }
+
+    /// Load activation metadata for a profile.
+    /// PROF-004: Load activation timestamp and source from .active file.
+    fn load_activation_metadata(&self, name: &str) -> (Option<SystemTime>, Option<String>) {
+        let active_file = self.config_dir.join(ACTIVE_PROFILE_FILE);
+
+        if !active_file.exists() {
+            return (None, None);
+        }
+
+        match fs::read_to_string(&active_file) {
+            Ok(content) => {
+                // Try to parse as JSON first (new format)
+                if let Ok(metadata) = serde_json::from_str::<serde_json::Value>(&content) {
+                    let stored_name = metadata["name"].as_str();
+
+                    // Only return metadata if this is the active profile
+                    if stored_name == Some(name) {
+                        let activated_at = metadata["activated_at"].as_u64().map(|secs| {
+                            std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs)
+                        });
+                        let activated_by = metadata["activated_by"].as_str().map(|s| s.to_string());
+
+                        return (activated_at, activated_by);
+                    }
+                } else {
+                    // Legacy format: just the profile name
+                    let stored_name = content.trim();
+                    if stored_name == name {
+                        // Use file modification time as activation time
+                        if let Ok(metadata) = active_file.metadata() {
+                            if let Ok(modified) = metadata.modified() {
+                                return (Some(modified), Some("user".to_string()));
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                log::warn!("Failed to read activation metadata: {}", e);
+            }
+        }
+
+        (None, None)
     }
 
     /// Load the active profile name from persistent storage.
@@ -573,8 +687,28 @@ impl ProfileManager {
         }
 
         match fs::read_to_string(&active_file) {
-            Ok(name) => {
-                let name = name.trim().to_string();
+            Ok(content) => {
+                // PROF-004: Parse JSON metadata to extract profile name
+                let name = match serde_json::from_str::<serde_json::Value>(&content) {
+                    Ok(metadata) => {
+                        // Extract name from JSON metadata
+                        metadata
+                            .get("name")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string())
+                            .unwrap_or_else(|| {
+                                // Fallback: treat entire content as plain text name (backward compat)
+                                log::warn!("Active profile file is not JSON, treating as plain text");
+                                content.trim().to_string()
+                            })
+                    }
+                    Err(_) => {
+                        // Fallback: treat entire content as plain text name (backward compat)
+                        log::warn!("Failed to parse active profile as JSON, treating as plain text");
+                        content.trim().to_string()
+                    }
+                };
+
                 // Verify the profile still exists
                 if self.profiles.contains_key(&name) {
                     log::info!("Restored active profile '{}' from {:?}", name, active_file);

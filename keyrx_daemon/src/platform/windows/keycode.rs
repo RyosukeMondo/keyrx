@@ -3,7 +3,6 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
 
 /// Bidirectional mapping between Windows Virtual Key codes and KeyRx KeyCode enum.
 /// Uses const arrays for O(1) lookup performance.
-
 // Mapping from VK to KeyCode
 const VK_TO_KEYCODE: [(u16, KeyCode); 141] = [
     (VK_A as u16, KeyCode::A),

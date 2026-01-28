@@ -9,19 +9,47 @@ use typeshare::typeshare;
 /// Events broadcast from the daemon to WebSocket clients.
 #[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", content = "payload")]
+#[serde(tag = "type")]
 pub enum DaemonEvent {
     /// Current daemon state (modifiers, locks, layer).
     #[serde(rename = "state")]
-    State(DaemonState),
+    State {
+        #[serde(flatten)]
+        data: DaemonState,
+        /// Sequence number for message ordering (WS-004)
+        #[serde(rename = "seq")]
+        sequence: u64,
+    },
 
     /// Individual key event (press/release).
     #[serde(rename = "event")]
-    KeyEvent(KeyEventData),
+    KeyEvent {
+        #[serde(flatten)]
+        data: KeyEventData,
+        /// Sequence number for message ordering (WS-004)
+        #[serde(rename = "seq")]
+        sequence: u64,
+    },
 
     /// Latency statistics update.
     #[serde(rename = "latency")]
-    Latency(LatencyStats),
+    Latency {
+        #[serde(flatten)]
+        data: LatencyStats,
+        /// Sequence number for message ordering (WS-004)
+        #[serde(rename = "seq")]
+        sequence: u64,
+    },
+
+    /// Error notification (WS-005).
+    #[serde(rename = "error")]
+    Error {
+        #[serde(flatten)]
+        data: ErrorData,
+        /// Sequence number for message ordering (WS-004)
+        #[serde(rename = "seq")]
+        sequence: u64,
+    },
 }
 
 /// Current daemon state snapshot.
@@ -113,6 +141,25 @@ pub struct LatencyStats {
     pub p99: u64,
 
     /// Timestamp of this stats snapshot (microseconds since UNIX epoch).
+    #[typeshare(serialized_as = "number")]
+    pub timestamp: u64,
+}
+
+/// Error notification data (WS-005).
+#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ErrorData {
+    /// Error code (e.g., "CONFIG_LOAD_FAILED", "PROFILE_NOT_FOUND").
+    pub code: String,
+
+    /// Human-readable error message.
+    pub message: String,
+
+    /// Additional context (e.g., file path, profile name).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<String>,
+
+    /// Timestamp in microseconds since UNIX epoch.
     #[typeshare(serialized_as = "number")]
     pub timestamp: u64,
 }

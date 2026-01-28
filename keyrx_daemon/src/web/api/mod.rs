@@ -26,6 +26,7 @@ pub mod macros;
 pub mod metrics;
 pub mod profiles;
 pub mod simulator;
+pub mod validation;
 
 // Re-export ApiError for convenience
 pub use error::ApiError;

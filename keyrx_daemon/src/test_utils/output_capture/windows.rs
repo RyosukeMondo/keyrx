@@ -22,7 +22,7 @@ const DAEMON_OUTPUT_MARKER: usize = 0x4441454D; // "DAEM"
 // This prevents conflicts when running tests concurrently.
 thread_local! {
     static SENDER_TLS: std::cell::RefCell<Option<crossbeam_channel::Sender<KeyEvent>>> =
-        std::cell::RefCell::new(None);
+        const { std::cell::RefCell::new(None) };
 }
 
 /// Captures output events from the daemon's virtual keyboard.
@@ -313,7 +313,7 @@ impl OutputCapture {
         let mut count = self.event_buffer.len();
         self.event_buffer.clear();
 
-        while let Ok(_) = self.receiver.try_recv() {
+        while self.receiver.try_recv().is_ok() {
             count += 1;
         }
         Ok(count)

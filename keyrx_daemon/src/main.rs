@@ -212,7 +212,9 @@ fn main() {
                                     let profile_exists = manager.get("default").is_some();
                                     if !profile_exists {
                                         eprintln!("[INFO] Creating default profile with blank template...");
-                                        if let Err(e) = manager.create("default", ProfileTemplate::Blank) {
+                                        if let Err(e) =
+                                            manager.create("default", ProfileTemplate::Blank)
+                                        {
                                             eprintln!("[WARN] Failed to create default profile: {}. Running in pass-through mode.", e);
                                         }
                                     } else {
@@ -228,7 +230,10 @@ fn main() {
                                     let mut profile_path = config_dir.clone();
                                     profile_path.push("profiles");
                                     profile_path.push("default.krx");
-                                    eprintln!("[INFO] Using default profile at: {}", profile_path.display());
+                                    eprintln!(
+                                        "[INFO] Using default profile at: {}",
+                                        profile_path.display()
+                                    );
                                     profile_path
                                 }
                                 Err(e) => {

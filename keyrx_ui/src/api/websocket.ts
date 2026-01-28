@@ -62,12 +62,16 @@ export interface WebSocketCallbacks {
   onConnectionStateChange?: (state: ConnectionState) => void;
 }
 
+// WS-002: Exponential backoff configuration
+const RECONNECT_INTERVALS = [100, 200, 400, 800, 1600]; // ms
+const MAX_RECONNECT_INTERVAL = 5000; // 5 seconds max
+
 const DEFAULT_CONFIG: Required<WebSocketConfig> = {
   url: '', // Will be computed from window.location
   reconnect: true,
-  reconnectInterval: 1000, // Start at 1 second
-  maxReconnectInterval: 30000, // Max 30 seconds
-  reconnectDecay: 1.5, // Exponential backoff multiplier
+  reconnectInterval: 100, // Start at 100ms (WS-002)
+  maxReconnectInterval: MAX_RECONNECT_INTERVAL,
+  reconnectDecay: 2.0, // Double each time (WS-002)
   maxReconnectAttempts: 10,
 };
 
@@ -203,8 +207,10 @@ export class WebSocketManager {
       // eslint-disable-next-line no-console
       console.log('WebSocketManager: Connected');
     }
+    // WS-002: Clear reconnection state on successful connect
     this.reconnectAttempts = 0;
     this.currentReconnectInterval = this.config.reconnectInterval;
+    this.clearReconnectTimeout();
     this.setConnectionState('connected');
 
     if (this.callbacks.onOpen) {
@@ -284,7 +290,7 @@ export class WebSocketManager {
   }
 
   /**
-   * Schedule a reconnection attempt
+   * Schedule a reconnection attempt (WS-002: with exponential backoff)
    */
   private scheduleReconnect(): void {
     if (this.isClosed) {
@@ -299,25 +305,23 @@ export class WebSocketManager {
       return;
     }
 
-    this.reconnectAttempts++;
-    const delay = this.currentReconnectInterval;
+    // WS-002: Use exponential backoff (100ms, 200ms, 400ms, 800ms, 1600ms, max 5s)
+    const delay =
+      this.reconnectAttempts < RECONNECT_INTERVALS.length
+        ? RECONNECT_INTERVALS[this.reconnectAttempts]
+        : MAX_RECONNECT_INTERVAL;
 
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log(
-        `WebSocketManager: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`
+        `WebSocketManager: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.config.maxReconnectAttempts})`
       );
     }
 
     this.reconnectTimeoutId = window.setTimeout(() => {
+      this.reconnectAttempts++;
       this.connect();
     }, delay);
-
-    // Exponential backoff
-    this.currentReconnectInterval = Math.min(
-      this.currentReconnectInterval * this.config.reconnectDecay,
-      this.config.maxReconnectInterval
-    );
   }
 
   /**

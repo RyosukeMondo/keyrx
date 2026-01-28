@@ -67,8 +67,8 @@ async fn test_create_and_activate_profile_via_api() {
     );
 
     // Parse activation response
-    let activate_json: serde_json::Value = serde_json::from_str(&activate_body)
-        .expect("Activation response should be valid JSON");
+    let activate_json: serde_json::Value =
+        serde_json::from_str(&activate_body).expect("Activation response should be valid JSON");
 
     assert_eq!(
         activate_json["success"], true,
@@ -152,8 +152,8 @@ async fn test_activation_persists_across_reload() {
     use keyrx_daemon::config::ProfileManager;
 
     let config_path = app.config_path();
-    let reloaded_pm = ProfileManager::new(config_path.clone())
-        .expect("ProfileManager reload should succeed");
+    let reloaded_pm =
+        ProfileManager::new(config_path.clone()).expect("ProfileManager reload should succeed");
 
     let restored_active = reloaded_pm
         .get_active()
@@ -377,8 +377,11 @@ async fn test_activation_fails_for_invalid_syntax() {
     let profiles_dir = app.config_path().join("profiles");
     let rhai_path = profiles_dir.join("broken-profile.rhai");
 
-    fs::write(&rhai_path, "device_start(\"*\");\n// Missing device_end() - invalid!")
-        .expect("Failed to write corrupted profile");
+    fs::write(
+        &rhai_path,
+        "device_start(\"*\");\n// Missing device_end() - invalid!",
+    )
+    .expect("Failed to write corrupted profile");
 
     // Attempt to activate the broken profile
     let activate_response = app
@@ -478,7 +481,10 @@ async fn test_concurrent_activations_are_serialized() {
         let profile_name = format!("concurrent-{}", i);
         let handle = tokio::spawn(async move {
             app_clone
-                .post(&format!("/api/profiles/{}/activate", profile_name), &json!({}))
+                .post(
+                    &format!("/api/profiles/{}/activate", profile_name),
+                    &json!({}),
+                )
                 .await
         });
         handles.push((i, handle));

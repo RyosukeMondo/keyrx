@@ -47,12 +47,14 @@ impl From<SimulationError> for ApiError {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct LoadProfileRequest {
     /// Profile name (without .krx extension)
     name: String,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct SimulateEventsRequest {
     /// Optional scenario name (e.g., "tap-hold-under-threshold")
     scenario: Option<String>,
@@ -100,6 +102,10 @@ async fn load_profile(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<LoadProfileRequest>,
 ) -> Result<Json<Value>, ApiError> {
+    // Validate profile name
+    use super::validation::validate_profile_name;
+    validate_profile_name(&payload.name)?;
+
     state.simulation_service.load_profile(&payload.name)?;
 
     Ok(Json(json!({
@@ -113,6 +119,28 @@ async fn simulate_events(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<SimulateEventsRequest>,
 ) -> Result<Json<SimulateEventsResponse>, ApiError> {
+    // Validate that only one input method is provided
+    let input_count = [
+        payload.scenario.is_some(),
+        payload.dsl.is_some(),
+        payload.events.is_some(),
+    ]
+    .iter()
+    .filter(|&&x| x)
+    .count();
+
+    if input_count == 0 {
+        return Err(ApiError::BadRequest(
+            "Must provide either 'scenario', 'dsl', or 'events'".to_string(),
+        ));
+    }
+
+    if input_count > 1 {
+        return Err(ApiError::BadRequest(
+            "Must provide exactly one of: 'scenario', 'dsl', or 'events'".to_string(),
+        ));
+    }
+
     // Determine which simulation method to use
     let outputs = if let Some(scenario_name) = payload.scenario {
         // Use built-in scenario
@@ -120,18 +148,35 @@ async fn simulate_events(
         result.output
     } else if let Some(dsl) = payload.dsl {
         // Use DSL
+        // Validate DSL length (max 10KB to prevent abuse)
+        if dsl.len() > 10_000 {
+            return Err(ApiError::BadRequest(format!(
+                "DSL too long (max 10000 characters, got {})",
+                dsl.len()
+            )));
+        }
+
         let seed = payload.seed.unwrap_or(0);
         state.simulation_service.replay_dsl(&dsl, seed).await?
     } else if let Some(events) = payload.events {
         // Use custom event sequence
+        // Validate event count (max 10000 events to prevent abuse)
+        if events.len() > 10_000 {
+            return Err(ApiError::BadRequest(format!(
+                "Too many events (max 10000, got {})",
+                events.len()
+            )));
+        }
+
         let sequence = EventSequence {
             events,
             seed: payload.seed.unwrap_or(0),
         };
         state.simulation_service.replay(&sequence).await?
     } else {
-        return Err(ApiError::BadRequest(
-            "Must provide either 'scenario', 'dsl', or 'events'".to_string(),
+        // This should never happen due to input_count check above
+        return Err(ApiError::InternalError(
+            "Unreachable: no input method selected".to_string(),
         ));
     };
 

@@ -23,6 +23,8 @@ clap = { version = "4.5", features = ["derive"] }
 env_logger = "0.11"
 # Rhai for code generation
 rhai = { workspace = true }
+# Validation
+regex = "1.10"
 
 # Web server dependencies
 axum = { workspace = true }
@@ -45,6 +47,9 @@ dirs = "5.0"
 chrono = "0.4"
 # Terminal colors for CLI
 colored = "2.1"
+# UUID generation for WebSocket client IDs
+uuid = { version = "1.0", features = ["v4"] }
+tower = { version = "0.5.3", features = ["util"] }
 
 # Linux-specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]

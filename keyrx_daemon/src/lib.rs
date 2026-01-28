@@ -7,6 +7,7 @@
 #[macro_use]
 pub mod test_utils;
 
+pub mod auth;
 pub mod cli;
 pub mod config;
 pub mod config_loader;
@@ -20,4 +21,5 @@ pub mod platform;
 pub mod processor;
 pub mod services;
 pub mod test_mode;
+pub mod validation;
 pub mod web;

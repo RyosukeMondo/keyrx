@@ -216,7 +216,14 @@ pub async fn serve(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let app = create_app(event_tx, state).await;
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+
+    // Use into_make_service_with_connect_info to provide ConnectInfo extension
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await?;
+
     Ok(())
 }
 

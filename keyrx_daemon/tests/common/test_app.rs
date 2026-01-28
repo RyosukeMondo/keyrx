@@ -2,6 +2,7 @@
 //!
 //! Provides TestApp struct with isolated configuration directory and HTTP helpers.
 
+use futures_util::{SinkExt, StreamExt};
 use keyrx_daemon::macro_recorder::MacroRecorder;
 use keyrx_daemon::services::{ConfigService, DeviceService, ProfileService};
 use keyrx_daemon::web::{create_app, AppState, DaemonEvent};
@@ -9,6 +10,31 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tempfile::TempDir;
 use tokio::sync::broadcast;
+use tokio_tungstenite::tungstenite::Message as WsMessage;
+
+/// WebSocket client wrapper for testing.
+///
+/// Provides a simple interface for sending and receiving WebSocket messages.
+pub struct TestWebSocket {
+    write: futures_util::stream::SplitSink<
+        tokio_tungstenite::WebSocketStream<
+            tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+        >,
+        WsMessage,
+    >,
+    _read: futures_util::stream::SplitStream<
+        tokio_tungstenite::WebSocketStream<
+            tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+        >,
+    >,
+}
+
+impl TestWebSocket {
+    /// Sends a text message over the WebSocket connection.
+    pub async fn send_text(&mut self, text: String) -> Result<(), tokio_tungstenite::tungstenite::Error> {
+        self.write.send(WsMessage::Text(text)).await
+    }
+}
 
 /// Lightweight HTTP client for concurrent testing.
 ///
@@ -141,11 +167,14 @@ impl TestApp {
         let addr = listener.local_addr().expect("Failed to get local address");
         let base_url = format!("http://{}", addr);
 
-        // Spawn server in background
+        // Spawn server in background with ConnectInfo support
         let server_handle = tokio::spawn(async move {
-            axum::serve(listener, app)
-                .await
-                .expect("Server failed to start");
+            axum::serve(
+                listener,
+                app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+            )
+            .await
+            .expect("Server failed to start");
         });
 
         // Wait for server to be ready
@@ -179,6 +208,41 @@ impl TestApp {
         TestAppClient {
             base_url: self.base_url.clone(),
             client: reqwest::Client::new(),
+        }
+    }
+
+    /// Connects to the WebSocket RPC endpoint.
+    ///
+    /// Returns a WebSocket client that can be used to send JSON-RPC messages.
+    ///
+    /// # Example
+    /// ```no_run
+    /// let app = TestApp::new().await;
+    /// let mut ws = app.connect_ws().await;
+    /// let msg = serde_json::json!({
+    ///     "jsonrpc": "2.0",
+    ///     "method": "subscribe",
+    ///     "params": { "topics": ["daemon_state"] },
+    ///     "id": 1
+    /// });
+    /// ws.send_text(msg.to_string()).await.unwrap();
+    /// ```
+    pub async fn connect_ws(&self) -> TestWebSocket {
+        use tokio_tungstenite::connect_async;
+
+        // Parse base URL to get host and port
+        let url = self.base_url.replace("http://", "ws://");
+        let ws_url = format!("{}/ws-rpc", url);
+
+        let (ws_stream, _) = connect_async(&ws_url)
+            .await
+            .expect("Failed to connect to WebSocket");
+
+        let (write, read) = ws_stream.split();
+
+        TestWebSocket {
+            write,
+            _read: read,
         }
     }
 

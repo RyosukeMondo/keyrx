@@ -20,14 +20,17 @@ use serde_json::Value;
 /// update this test and the ws.rs handler.
 #[test]
 fn test_latency_event_serialization_format() {
-    let event = DaemonEvent::Latency(LatencyStats {
-        min: 100,
-        avg: 250,
-        max: 500,
-        p95: 400,
-        p99: 480,
-        timestamp: 1234567890,
-    });
+    let event = DaemonEvent::Latency {
+        data: LatencyStats {
+            min: 100,
+            avg: 250,
+            max: 500,
+            p95: 400,
+            p99: 480,
+            timestamp: 1234567890,
+        },
+        sequence: 1,
+    };
 
     let json = serde_json::to_string(&event).expect("Failed to serialize");
     let parsed: Value = serde_json::from_str(&json).expect("Failed to parse");
@@ -60,12 +63,15 @@ fn test_latency_event_serialization_format() {
 /// Verify that DaemonEvent::State serializes correctly
 #[test]
 fn test_state_event_serialization_format() {
-    let event = DaemonEvent::State(DaemonState {
-        modifiers: vec!["MD_00".to_string()],
-        locks: vec!["LK_00".to_string()],
-        layer: "base".to_string(),
-        active_profile: None,
-    });
+    let event = DaemonEvent::State {
+        data: DaemonState {
+            modifiers: vec!["MD_00".to_string()],
+            locks: vec!["LK_00".to_string()],
+            layer: "base".to_string(),
+            active_profile: None,
+        },
+        sequence: 1,
+    };
 
     let json = serde_json::to_string(&event).expect("Failed to serialize");
     let parsed: Value = serde_json::from_str(&json).expect("Failed to parse");
@@ -82,18 +88,21 @@ fn test_state_event_serialization_format() {
 /// Verify that DaemonEvent::KeyEvent serializes correctly
 #[test]
 fn test_key_event_serialization_format() {
-    let event = DaemonEvent::KeyEvent(KeyEventData {
-        timestamp: 1234567890,
-        key_code: "KEY_A".to_string(),
-        event_type: "press".to_string(),
-        input: "KEY_A".to_string(),
-        output: "KEY_B".to_string(),
-        latency: 150,
-        device_id: Some("dev-001".to_string()),
-        device_name: Some("USB Keyboard".to_string()),
-        mapping_type: None,
-        mapping_triggered: false,
-    });
+    let event = DaemonEvent::KeyEvent {
+        data: KeyEventData {
+            timestamp: 1234567890,
+            key_code: "KEY_A".to_string(),
+            event_type: "press".to_string(),
+            input: "KEY_A".to_string(),
+            output: "KEY_B".to_string(),
+            latency: 150,
+            device_id: Some("dev-001".to_string()),
+            device_name: Some("USB Keyboard".to_string()),
+            mapping_type: None,
+            mapping_triggered: false,
+        },
+        sequence: 1,
+    };
 
     let json = serde_json::to_string(&event).expect("Failed to serialize");
     let parsed: Value = serde_json::from_str(&json).expect("Failed to parse");
@@ -112,32 +121,41 @@ fn test_key_event_serialization_format() {
 #[test]
 fn test_all_daemon_events_serialize() {
     let events = vec![
-        DaemonEvent::State(DaemonState {
-            modifiers: vec![],
-            locks: vec![],
-            layer: "base".to_string(),
-            active_profile: None,
-        }),
-        DaemonEvent::KeyEvent(KeyEventData {
-            timestamp: 0,
-            key_code: "KEY_A".to_string(),
-            event_type: "press".to_string(),
-            input: "KEY_A".to_string(),
-            output: "KEY_A".to_string(),
-            latency: 0,
-            device_id: None,
-            device_name: None,
-            mapping_type: None,
-            mapping_triggered: false,
-        }),
-        DaemonEvent::Latency(LatencyStats {
-            min: 0,
-            avg: 0,
-            max: 0,
-            p95: 0,
-            p99: 0,
-            timestamp: 0,
-        }),
+        DaemonEvent::State {
+            data: DaemonState {
+                modifiers: vec![],
+                locks: vec![],
+                layer: "base".to_string(),
+                active_profile: None,
+            },
+            sequence: 1,
+        },
+        DaemonEvent::KeyEvent {
+            data: KeyEventData {
+                timestamp: 0,
+                key_code: "KEY_A".to_string(),
+                event_type: "press".to_string(),
+                input: "KEY_A".to_string(),
+                output: "KEY_A".to_string(),
+                latency: 0,
+                device_id: None,
+                device_name: None,
+                mapping_type: None,
+                mapping_triggered: false,
+            },
+            sequence: 2,
+        },
+        DaemonEvent::Latency {
+            data: LatencyStats {
+                min: 0,
+                avg: 0,
+                max: 0,
+                p95: 0,
+                p99: 0,
+                timestamp: 0,
+            },
+            sequence: 3,
+        },
     ];
 
     for event in events {

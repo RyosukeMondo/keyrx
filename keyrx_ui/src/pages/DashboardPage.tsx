@@ -12,7 +12,7 @@
  * - Responsive layout (single column mobile, 2-column desktop)
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useUnifiedApi } from '../hooks/useUnifiedApi';
 import { RpcClient } from '../api/rpc';
 import type { DaemonState, KeyEvent, LatencyMetrics } from '../types/rpc';
@@ -34,8 +34,15 @@ export function DashboardPage() {
 
   // Event stream control
   const [isPaused, setIsPaused] = useState(false);
+  // FIX MEM-001: Use ref to avoid stale closure in subscription handlers
+  const isPausedRef = useRef(isPaused);
 
-  // Subscribe to all channels on mount
+  // Keep ref in sync with state
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
+  // Subscribe to all channels on mount (FIX MEM-001: Stable subscriptions with ref)
   useEffect(() => {
     // Subscribe to daemon state updates
     const unsubscribeState = client.onDaemonState((state) => {
@@ -44,7 +51,8 @@ export function DashboardPage() {
 
     // Subscribe to key events with FIFO enforcement (max 100)
     const unsubscribeEvents = client.onKeyEvent((event) => {
-      if (!isPaused) {
+      // FIX MEM-001: Check isPausedRef.current instead of isPaused to avoid stale closure
+      if (!isPausedRef.current) {
         setEvents((prev) => {
           const newEvents = [event, ...prev];
           // Enforce 100 max FIFO
@@ -68,7 +76,9 @@ export function DashboardPage() {
       unsubscribeEvents();
       unsubscribeLatency();
     };
-  }, [client, isPaused]);
+    // FIX MEM-001: Only re-subscribe when client changes, not when isPaused changes
+    // isPausedRef is used to check pause state without triggering re-subscription
+  }, [client]);
 
   // Toggle pause/resume for event stream
   const handleTogglePause = () => {

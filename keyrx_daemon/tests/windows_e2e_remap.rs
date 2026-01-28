@@ -34,9 +34,7 @@ async fn setup_test_profile(config_dir: &PathBuf) -> Result<(), Box<dyn std::err
             identifier: DeviceIdentifier {
                 pattern: ".*".to_string(), // Match all devices
             },
-            mappings: vec![
-                KeyMapping::simple(KeyCode::A, KeyCode::B)
-            ],
+            mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
         }],
         metadata: Metadata {
             compilation_timestamp: 0,
@@ -89,7 +87,10 @@ async fn test_windows_key_remap_e2e() -> Result<(), Box<dyn std::error::Error>> 
         .send()
         .await?;
 
-    assert!(load_response.status().is_success(), "Failed to load profile");
+    assert!(
+        load_response.status().is_success(),
+        "Failed to load profile"
+    );
     println!("✓ Profile loaded");
 
     // Step 2: Clear existing events (if any)
@@ -110,7 +111,10 @@ async fn test_windows_key_remap_e2e() -> Result<(), Box<dyn std::error::Error>> 
         .send()
         .await?;
 
-    assert!(sim_response.status().is_success(), "Failed to simulate events");
+    assert!(
+        sim_response.status().is_success(),
+        "Failed to simulate events"
+    );
     let sim_result: Value = sim_response.json().await?;
     println!("✓ Events simulated: {:?}", sim_result);
 
@@ -124,14 +128,16 @@ async fn test_windows_key_remap_e2e() -> Result<(), Box<dyn std::error::Error>> 
         .send()
         .await?;
 
-    assert!(metrics_response.status().is_success(), "Failed to get metrics");
+    assert!(
+        metrics_response.status().is_success(),
+        "Failed to get metrics"
+    );
     let metrics: Value = metrics_response.json().await?;
     println!("✓ Metrics retrieved: {:?}", metrics);
 
     // Step 6: Verify remapping occurred
     println!("Step 5: Verifying remapping...");
-    let events = metrics["events"].as_array()
-        .expect("Expected events array");
+    let events = metrics["events"].as_array().expect("Expected events array");
 
     assert!(!events.is_empty(), "No events recorded in metrics!");
 
@@ -145,7 +151,10 @@ async fn test_windows_key_remap_e2e() -> Result<(), Box<dyn std::error::Error>> 
         let key_code = event["key_code"].as_u64().unwrap_or(0);
         let output = event["output"].as_str().unwrap_or("");
 
-        println!("  Event: type={}, key_code={}, output={}", event_type, key_code, output);
+        println!(
+            "  Event: type={}, key_code={}, output={}",
+            event_type, key_code, output
+        );
 
         // Check for input event (A pressed)
         if event_type == "press" && key_code == keyrx_core::config::KeyCode::A as u64 {
@@ -158,7 +167,9 @@ async fn test_windows_key_remap_e2e() -> Result<(), Box<dyn std::error::Error>> 
         }
 
         // Check for remapped output (B)
-        if output.contains("B") || output.contains(&format!("{}", keyrx_core::config::KeyCode::B as u16)) {
+        if output.contains("B")
+            || output.contains(&format!("{}", keyrx_core::config::KeyCode::B as u16))
+        {
             found_output_b = true;
         }
     }
@@ -232,7 +243,10 @@ async fn test_windows_metrics_endpoint_available() -> Result<(), Box<dyn std::er
         .send()
         .await?;
 
-    println!("✓ /api/metrics/latency status: {}", latency_response.status());
+    println!(
+        "✓ /api/metrics/latency status: {}",
+        latency_response.status()
+    );
     assert!(latency_response.status().is_success() || latency_response.status() == 500); // 500 if daemon not running
 
     println!("✅ Metrics endpoints are available");
@@ -285,7 +299,8 @@ async fn test_windows_simulator_integration() -> Result<(), Box<dyn std::error::
     let result: Value = sim_response.json().await?;
 
     // Verify outputs
-    let outputs = result["outputs"].as_array()
+    let outputs = result["outputs"]
+        .as_array()
         .expect("Expected outputs array");
 
     assert!(!outputs.is_empty(), "No outputs from simulation");
@@ -300,7 +315,10 @@ async fn test_windows_simulator_integration() -> Result<(), Box<dyn std::error::
         }
     }
 
-    assert!(remap_count >= 2, "Expected at least 2 B outputs (1 remapped, 1 direct)");
+    assert!(
+        remap_count >= 2,
+        "Expected at least 2 B outputs (1 remapped, 1 direct)"
+    );
     println!("✓ Remapping verified: {} B outputs", remap_count);
 
     println!("✅ Simulator integration test passed");

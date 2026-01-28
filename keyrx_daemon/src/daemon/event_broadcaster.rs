@@ -4,31 +4,80 @@
 //! key events, latency metrics) to connected WebSocket clients via the
 //! subscription system.
 
-use std::sync::Arc;
+use std::collections::VecDeque;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::broadcast;
 use tokio::time::interval;
 
 use super::metrics::{LatencyRecorder, MetricsAggregator};
-use crate::web::events::{DaemonEvent, DaemonState, KeyEventData, LatencyStats};
+use crate::web::events::{DaemonEvent, DaemonState, ErrorData, KeyEventData, LatencyStats};
+
+/// Global sequence number for message ordering (WS-004)
+static SEQUENCE_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+/// Get next sequence number
+fn next_sequence() -> u64 {
+    SEQUENCE_COUNTER.fetch_add(1, Ordering::SeqCst)
+}
+
+/// Ring buffer for delivered message IDs per subscriber (WS-005)
+const DELIVERED_BUFFER_SIZE: usize = 1000;
+
+/// Tracks delivered message IDs for a subscriber
+#[derive(Default)]
+struct DeliveredMessages {
+    ring_buffer: VecDeque<u64>,
+}
+
+impl DeliveredMessages {
+    fn new() -> Self {
+        Self {
+            ring_buffer: VecDeque::with_capacity(DELIVERED_BUFFER_SIZE),
+        }
+    }
+
+    /// Check if message was already delivered
+    fn contains(&self, seq: u64) -> bool {
+        self.ring_buffer.contains(&seq)
+    }
+
+    /// Mark message as delivered
+    fn insert(&mut self, seq: u64) {
+        if self.ring_buffer.len() >= DELIVERED_BUFFER_SIZE {
+            self.ring_buffer.pop_front();
+        }
+        self.ring_buffer.push_back(seq);
+    }
+}
 
 /// Broadcaster for daemon events to WebSocket clients
 #[derive(Clone)]
 pub struct EventBroadcaster {
     event_tx: broadcast::Sender<DaemonEvent>,
+    /// WS-003: Track delivered messages per subscriber for deduplication
+    delivered_messages: Arc<RwLock<std::collections::HashMap<String, DeliveredMessages>>>,
 }
 
 impl EventBroadcaster {
     /// Create a new event broadcaster
     pub fn new(event_tx: broadcast::Sender<DaemonEvent>) -> Self {
-        Self { event_tx }
+        Self {
+            event_tx,
+            delivered_messages: Arc::new(RwLock::new(std::collections::HashMap::new())),
+        }
     }
 
     /// Broadcast a daemon state change
     ///
     /// This should be called whenever modifier, lock, or layer state changes.
     pub fn broadcast_state(&self, state: DaemonState) {
-        if let Err(e) = self.event_tx.send(DaemonEvent::State(state)) {
+        let sequence = next_sequence();
+        if let Err(e) = self.event_tx.send(DaemonEvent::State {
+            data: state,
+            sequence,
+        }) {
             log::warn!("Failed to broadcast state event: {}", e);
         }
     }
@@ -38,11 +87,22 @@ impl EventBroadcaster {
     /// This should be called after each key event is processed.
     pub fn broadcast_key_event(&self, event: KeyEventData) {
         let subscribers = self.event_tx.receiver_count();
-        log::debug!("Broadcasting key event (subscribers: {}): {:?}", subscribers, event.key_code);
+        log::debug!(
+            "Broadcasting key event (subscribers: {}): {:?}",
+            subscribers,
+            event.key_code
+        );
 
-        match self.event_tx.send(DaemonEvent::KeyEvent(event)) {
+        let sequence = next_sequence();
+        match self.event_tx.send(DaemonEvent::KeyEvent {
+            data: event,
+            sequence,
+        }) {
             Ok(receiver_count) => {
-                log::debug!("Successfully broadcast key event to {} receivers", receiver_count);
+                log::debug!(
+                    "Successfully broadcast key event to {} receivers",
+                    receiver_count
+                );
             }
             Err(e) => {
                 log::warn!("Failed to broadcast key event (no subscribers?): {}", e);
@@ -54,8 +114,37 @@ impl EventBroadcaster {
     ///
     /// This should be called periodically (e.g., every 1 second) with current metrics.
     pub fn broadcast_latency(&self, stats: LatencyStats) {
-        if let Err(e) = self.event_tx.send(DaemonEvent::Latency(stats)) {
+        let sequence = next_sequence();
+        if let Err(e) = self.event_tx.send(DaemonEvent::Latency {
+            data: stats,
+            sequence,
+        }) {
             log::warn!("Failed to broadcast latency event: {}", e);
+        }
+    }
+
+    /// Broadcast an error notification (WS-005)
+    ///
+    /// This should be called when errors occur that clients should be notified about.
+    pub fn broadcast_error(&self, code: String, message: String, context: Option<String>) {
+        let sequence = next_sequence();
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_micros() as u64)
+            .unwrap_or(0);
+
+        let error_data = ErrorData {
+            code,
+            message,
+            context,
+            timestamp,
+        };
+
+        if let Err(e) = self.event_tx.send(DaemonEvent::Error {
+            data: error_data,
+            sequence,
+        }) {
+            log::warn!("Failed to broadcast error event: {}", e);
         }
     }
 
@@ -64,6 +153,36 @@ impl EventBroadcaster {
     /// This can be used to avoid expensive event creation when no clients are connected.
     pub fn has_subscribers(&self) -> bool {
         self.event_tx.receiver_count() > 0
+    }
+
+    /// WS-005: Check if message was already delivered to subscriber
+    pub fn was_delivered(&self, subscriber_id: &str, sequence: u64) -> bool {
+        let delivered = self.delivered_messages.read().unwrap();
+        delivered
+            .get(subscriber_id)
+            .map(|d| d.contains(sequence))
+            .unwrap_or(false)
+    }
+
+    /// WS-005: Mark message as delivered to subscriber
+    pub fn mark_delivered(&self, subscriber_id: &str, sequence: u64) {
+        let mut delivered = self.delivered_messages.write().unwrap();
+        delivered
+            .entry(subscriber_id.to_string())
+            .or_insert_with(DeliveredMessages::new)
+            .insert(sequence);
+    }
+
+    /// WS-003: Subscribe a new client
+    pub fn subscribe_client(&self, client_id: &str) {
+        let mut delivered = self.delivered_messages.write().unwrap();
+        delivered.insert(client_id.to_string(), DeliveredMessages::new());
+    }
+
+    /// WS-003: Unsubscribe a client
+    pub fn unsubscribe_client(&self, client_id: &str) {
+        let mut delivered = self.delivered_messages.write().unwrap();
+        delivered.remove(client_id);
     }
 }
 
@@ -192,9 +311,10 @@ mod tests {
 
         let received = event_rx.recv().await.unwrap();
         match received {
-            DaemonEvent::State(s) => {
-                assert_eq!(s.modifiers, vec!["MD_00"]);
-                assert_eq!(s.layer, "base");
+            DaemonEvent::State { data, sequence } => {
+                assert_eq!(data.modifiers, vec!["MD_00"]);
+                assert_eq!(data.layer, "base");
+                assert!(sequence > 0);
             }
             _ => panic!("Expected State event"),
         }
@@ -222,9 +342,10 @@ mod tests {
 
         let received = event_rx.recv().await.unwrap();
         match received {
-            DaemonEvent::KeyEvent(e) => {
-                assert_eq!(e.key_code, "KEY_A");
-                assert_eq!(e.latency, 2300);
+            DaemonEvent::KeyEvent { data, sequence } => {
+                assert_eq!(data.key_code, "KEY_A");
+                assert_eq!(data.latency, 2300);
+                assert!(sequence > 0);
             }
             _ => panic!("Expected KeyEvent event"),
         }
@@ -248,10 +369,11 @@ mod tests {
 
         let received = event_rx.recv().await.unwrap();
         match received {
-            DaemonEvent::Latency(s) => {
-                assert_eq!(s.min, 1200);
-                assert_eq!(s.avg, 2300);
-                assert_eq!(s.p95, 3800);
+            DaemonEvent::Latency { data, sequence } => {
+                assert_eq!(data.min, 1200);
+                assert_eq!(data.avg, 2300);
+                assert_eq!(data.p95, 3800);
+                assert!(sequence > 0);
             }
             _ => panic!("Expected Latency event"),
         }
@@ -318,8 +440,9 @@ mod tests {
         assert!(result.is_ok(), "Should receive latency event");
 
         match result.unwrap().unwrap() {
-            DaemonEvent::Latency(stats) => {
-                assert!(stats.timestamp > 0);
+            DaemonEvent::Latency { data, sequence } => {
+                assert!(data.timestamp > 0);
+                assert!(sequence > 0);
             }
             _ => panic!("Expected Latency event"),
         }
