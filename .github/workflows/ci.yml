@@ -11,10 +11,61 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  version-validation:
+    name: Version Consistency Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate version consistency
+        run: |
+          echo "=========================================="
+          echo "  VERSION CONSISTENCY VALIDATION"
+          echo "=========================================="
+          echo ""
+
+          # Run version check script
+          bash scripts/sync-version.sh --check
+          EXIT_CODE=$?
+
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo ""
+            echo "=========================================="
+            echo "✅ Version consistency check PASSED"
+            echo "=========================================="
+            exit 0
+          else
+            echo ""
+            echo "=========================================="
+            echo "❌ Version consistency check FAILED"
+            echo "=========================================="
+            echo ""
+            echo "Version mismatch detected across source files:"
+            echo "  - Cargo.toml (SSOT - Single Source of Truth)"
+            echo "  - keyrx_ui/package.json"
+            echo "  - keyrx_daemon/keyrx_installer.wxs"
+            echo "  - scripts/build_windows_installer.ps1"
+            echo ""
+            echo "To fix this issue:"
+            echo "  1. Run locally: bash scripts/sync-version.sh"
+            echo "  2. Review the changes with: git diff"
+            echo "  3. Commit the version updates"
+            echo "  4. Push to your branch"
+            echo ""
+            echo "For more information, see:"
+            echo "  - scripts/sync-version.sh --help"
+            echo "  - .spec-workflow/specs/installer-debuggability-enhancement/"
+            echo "=========================================="
+            exit 1
+          fi
+
   type-check:
     name: Type Consistency Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: version-validation
 
     steps:
       - uses: actions/checkout@v4
