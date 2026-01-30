@@ -7,7 +7,7 @@
  * Features:
  * - Request/response correlation via UUID
  * - 30-second timeout for all requests
- * - Auto-reconnect (3s interval, 10 max attempts)
+ * - Auto-reconnect with exponential backoff (1s→2s→4s→8s→16s→30s max, 10 max attempts)
  * - Type-safe query/command methods
  * - Subscription management with cleanup
  * - Connection state tracking
@@ -53,7 +53,9 @@ import {
 } from '../types/rpc';
 
 const REQUEST_TIMEOUT_MS = 30000; // 30 seconds
-const RECONNECT_INTERVAL_MS = 3000; // 3 seconds
+// FIX WS-002: Exponential backoff for reconnection
+const RECONNECT_BASE_DELAY_MS = 1000; // Start at 1 second
+const RECONNECT_MAX_DELAY_MS = 30000; // Cap at 30 seconds
 const MAX_RECONNECT_ATTEMPTS = 10;
 
 /**
@@ -113,9 +115,23 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
   >(new Map());
 
   // WebSocket connection with auto-reconnect
+  // FIX WS-002: Implement exponential backoff for reconnection
   const { sendMessage, lastMessage, readyState } = useWebSocket(wsUrl, {
     shouldReconnect: () => true,
-    reconnectInterval: RECONNECT_INTERVAL_MS,
+    reconnectInterval: (attemptNumber) => {
+      // Exponential backoff: delay = min(maxDelay, baseDelay * 2^attemptNumber)
+      const delay = Math.min(
+        RECONNECT_MAX_DELAY_MS,
+        RECONNECT_BASE_DELAY_MS * Math.pow(2, attemptNumber)
+      );
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.log(
+          `[useUnifiedApi] Reconnect attempt ${attemptNumber + 1}/${MAX_RECONNECT_ATTEMPTS}, delay: ${delay}ms`
+        );
+      }
+      return delay;
+    },
     reconnectAttempts: MAX_RECONNECT_ATTEMPTS,
     onError: (event) => {
       console.error('[useUnifiedApi] WebSocket error:', event);
