@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-30T07:40:58.118Z",
+  "timestamp": "2026-01-30T08:10:58.098Z",
   "projectRoot": "C:\\Users\\ryosu\\repos\\keyrx",
   "structure": {
     "hasPackageJson": true,
@@ -7,5 +7,5 @@
     "hasClaudeConfig": true,
     "hasClaudeFlow": true
   },
-  "scannedAt": 1769758858118
+  "scannedAt": 1769760658098
 }

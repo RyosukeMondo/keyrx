@@ -34,6 +34,19 @@ impl Default for RateLimitConfig {
     }
 }
 
+impl RateLimitConfig {
+    /// Create a test-friendly rate limit config with much higher limits
+    ///
+    /// This should only be used in test environments where we want to
+    /// stress test the system without hitting rate limits.
+    pub fn test_mode() -> Self {
+        Self {
+            max_requests: 1000,
+            window: Duration::from_secs(1),
+        }
+    }
+}
+
 /// Rate limiter state
 struct RateLimiterState {
     /// Request counts per IP

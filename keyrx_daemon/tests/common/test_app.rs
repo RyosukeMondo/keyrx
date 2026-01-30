@@ -157,8 +157,8 @@ impl TestApp {
         // Create event channel
         let (event_tx, _event_rx) = broadcast::channel::<DaemonEvent>(100);
 
-        // Create router
-        let app = create_app(event_tx, state).await;
+        // Create router with test-friendly rate limiting
+        let app = keyrx_daemon::web::create_test_app(event_tx, state).await;
 
         // Bind to random available port (127.0.0.1:0 lets OS choose)
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0")

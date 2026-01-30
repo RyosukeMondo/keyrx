@@ -150,7 +150,38 @@ impl AppState {
 
 #[allow(dead_code)]
 pub async fn create_app(event_tx: broadcast::Sender<DaemonEvent>, state: Arc<AppState>) -> Router {
+    create_app_with_config(event_tx, state, false).await
+}
+
+/// Creates an application router for testing with relaxed rate limits
+///
+/// This function is identical to `create_app` but uses test-friendly rate limiting
+/// (1000 req/sec instead of 10 req/sec) to allow stress testing without hitting limits.
+///
+/// # Arguments
+///
+/// * `event_tx` - Channel for broadcasting daemon events
+/// * `state` - Application state
+///
+/// # Returns
+///
+/// Configured router with test-friendly middleware
+///
+/// Note: This is public for integration tests but should only be used in test environments
+pub async fn create_test_app(
+    event_tx: broadcast::Sender<DaemonEvent>,
+    state: Arc<AppState>,
+) -> Router {
+    create_app_with_config(event_tx, state, true).await
+}
+
+async fn create_app_with_config(
+    event_tx: broadcast::Sender<DaemonEvent>,
+    state: Arc<AppState>,
+    test_mode: bool,
+) -> Router {
     use crate::auth::AuthMode;
+    use crate::web::middleware::rate_limit::RateLimitConfig;
     use tower_http::cors::AllowOrigin;
 
     // Configure CORS to allow only localhost origins for security
@@ -180,7 +211,11 @@ pub async fn create_app(event_tx: broadcast::Sender<DaemonEvent>, state: Arc<App
     // Create security middleware layers
     let auth_mode = AuthMode::from_env();
     let auth_middleware = AuthMiddleware::new(auth_mode);
-    let rate_limiter = RateLimitLayer::new();
+    let rate_limiter = if test_mode {
+        RateLimitLayer::with_config(RateLimitConfig::test_mode())
+    } else {
+        RateLimitLayer::new()
+    };
     let security_layer = SecurityLayer::new();
     let timeout_layer = TimeoutLayer::new();
 

@@ -3,39 +3,39 @@
   "startedAt": "2026-01-28T09:39:22.702Z",
   "workers": {
     "map": {
-      "runCount": 328,
-      "successCount": 328,
+      "runCount": 330,
+      "successCount": 330,
       "failureCount": 0,
-      "averageDurationMs": 5.765243902439021,
-      "lastRun": "2026-01-30T07:40:58.118Z",
-      "nextRun": "2026-01-30T07:55:58.118Z",
+      "averageDurationMs": 5.73333333333333,
+      "lastRun": "2026-01-30T08:10:58.099Z",
+      "nextRun": "2026-01-30T08:10:58.104Z",
       "isRunning": false
     },
     "audit": {
-      "runCount": 449,
-      "successCount": 432,
+      "runCount": 451,
+      "successCount": 434,
       "failureCount": 17,
-      "averageDurationMs": 56703.143435439706,
-      "lastRun": "2026-01-30T07:54:44.944Z",
-      "nextRun": "2026-01-30T07:59:53.748Z",
+      "averageDurationMs": 56459.64169071492,
+      "lastRun": "2026-01-30T08:09:57.320Z",
+      "nextRun": "2026-01-30T08:19:57.320Z",
       "isRunning": false
     },
     "optimize": {
-      "runCount": 254,
+      "runCount": 255,
       "successCount": 4,
-      "failureCount": 250,
+      "failureCount": 251,
       "averageDurationMs": 46199.42041884816,
-      "lastRun": "2026-01-30T07:39:56.732Z",
-      "nextRun": "2026-01-30T07:54:56.733Z",
+      "lastRun": "2026-01-30T07:59:56.727Z",
+      "nextRun": "2026-01-30T08:14:56.728Z",
       "isRunning": false
     },
     "consolidate": {
-      "runCount": 165,
-      "successCount": 165,
+      "runCount": 166,
+      "successCount": 166,
       "failureCount": 0,
-      "averageDurationMs": 0.8484848484848482,
-      "lastRun": "2026-01-30T07:39:42.973Z",
-      "nextRun": "2026-01-30T08:09:42.974Z",
+      "averageDurationMs": 0.8433734939759032,
+      "lastRun": "2026-01-30T08:09:42.941Z",
+      "nextRun": "2026-01-30T08:39:42.941Z",
       "isRunning": false
     },
     "testgaps": {
@@ -67,7 +67,7 @@
     "logDir": "C:\\Users\\ryosu\\repos\\keyrx\\.claude-flow\\logs",
     "stateFile": "C:\\Users\\ryosu\\repos\\keyrx\\.claude-flow\\daemon-state.json",
     "maxConcurrent": 2,
-    "workerTimeoutMs": 1800000,
+    "workerTimeoutMs": 300000,
     "resourceThresholds": {
       "maxCpuLoad": 2,
       "minFreeMemoryPercent": 20
@@ -131,5 +131,5 @@
       }
     ]
   },
-  "savedAt": "2026-01-30T07:54:44.944Z"
+  "savedAt": "2026-01-30T08:10:58.099Z"
 }
