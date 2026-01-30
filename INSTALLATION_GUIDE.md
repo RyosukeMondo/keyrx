@@ -1,49 +1,75 @@
-# KeyRx v0.1.1 Installation Guide
+# KeyRx v0.1.4 Installation Guide
 
-## Quick Install (Recommended)
+## ⚠️ IMPORTANT: Binary Update Required
+
+**Current Issue**: The MSI installer may package an old binary. After installation, you MUST update the binary manually.
+
+**Quick Fix** (Takes 30 seconds):
+1. Right-click `UPDATE_BINARY.ps1` → **Run as Administrator**
+2. Wait for completion
+3. Verify build date: http://localhost:9867 (right-click tray icon → About)
+
+---
+
+## Quick Install
+
+### Method 1: MSI Installer + Manual Binary Update (RECOMMENDED)
 
 1. **Run the installer:**
    ```
-   target\windows-installer\keyrx_0.1.1.0_x64_setup.exe
+   target\installer\KeyRx-0.1.3-x64.msi
    ```
 
-2. **During installation, CHECK these options:**
-   - ☑ **Auto-start daemon on Windows login** (recommended)
-   - ☑ **Launch KeyRx Daemon now** (checked by default)
-
-3. **Click Install**
+2. **Complete installation**
    - UAC will prompt for administrator permission → **Approve**
-
-4. **Daemon starts automatically**
+   - Daemon starts automatically
    - Web UI opens at http://localhost:9867
-   - Daemon runs with admin rights (required for keyboard interception)
 
-5. **On next Windows login:**
-   - Daemon auto-starts with admin rights (no UAC prompt)
-   - Keyboard remapping works immediately
+3. **Update the binary** (REQUIRED):
+   - Right-click `UPDATE_BINARY.ps1` → **Run as Administrator**
+   - This replaces the old binary with the latest v0.1.4 build
 
-## What's Fixed in This Version
+4. **Verify installation**:
+   - Open http://localhost:9867
+   - Right-click tray icon → About
+   - Build date should be: **2026/01/29 15:41:11** (not 14:23:22)
 
-### ✅ Automatic Administrator Rights
+### Method 2: Manual Installation
 
-**Before (v0.1.0):**
-- User had to manually "Run as Administrator"
-- Forgot? Remapping didn't work
-- Had to do this every Windows login
+If MSI fails or you want full control:
 
-**After (v0.1.1):**
-- Installer creates Windows Task Scheduler entry
-- Auto-starts with admin rights on every login
-- No manual steps required
+```powershell
+# 1. Stop existing daemon (as Administrator)
+Stop-Process -Name keyrx_daemon -Force
 
-### ✅ One-Click Setup
+# 2. Copy binary
+Copy-Item "target\release\keyrx_daemon.exe" "C:\Program Files\KeyRx\bin\keyrx_daemon.exe" -Force
 
-The installer now handles everything:
-1. ✅ Installs daemon with admin manifest
-2. ✅ Creates Task Scheduler entry (auto-start)
-3. ✅ Starts daemon immediately (with UAC prompt)
-4. ✅ Opens web UI
-5. ✅ Works on every login forever
+# 3. Start daemon
+Start-Process "C:\Program Files\KeyRx\bin\keyrx_daemon.exe" -ArgumentList "run"
+
+# 4. Verify
+Invoke-RestMethod http://localhost:9867/api/health
+```
+
+## What's New in v0.1.4
+
+### ✅ Critical Fixes for Keyboard Remapping
+
+| Fix | File | Impact |
+|-----|------|--------|
+| **Spawn blocking for file I/O** | `config.rs`, `devices.rs`, `profiles.rs`, `layouts.rs` | Prevents async runtime blocking that caused remapping failures |
+| **Thread-safe API handlers** | All API handlers | Allows concurrent requests without data races |
+| **Race condition fixes** | `device_registry.rs` | Prevents state corruption during device enumeration |
+| **Memory safety improvements** | Various | Eliminates undefined behavior in event processing |
+
+**Why These Fixes Matter:**
+- v0.1.2/v0.1.3: Keyboard remapping didn't work - keys passed through unchanged
+- v0.1.4: Remapping works correctly with proper async I/O handling
+
+### ⚠️ Known Issue: Installer Binary Mismatch
+
+The MSI installer may package an outdated binary due to Windows file locking. **Solution**: Use `UPDATE_BINARY.ps1` after installation (see Quick Install above).
 
 ## Verification
 
@@ -162,6 +188,51 @@ Get-Content "C:\Program Files\KeyRx\daemon.log" -Tail 50
    curl http://localhost:9867/api/config
    # Should show base_mappings and layers
    ```
+
+### Gathering Diagnostic Information
+
+**Problem:** Need to collect logs for troubleshooting
+
+**Solution 1: Automated File Collection**
+```powershell
+.\GATHER_LOGS.ps1
+# Creates: LOGS_YYYYMMDD_HHMMSS.txt with comprehensive diagnostics
+```
+
+**Solution 2: REST API Endpoints**
+```powershell
+# Health check
+Invoke-RestMethod http://localhost:9867/api/health | ConvertTo-Json
+
+# Active profile
+Invoke-RestMethod http://localhost:9867/api/profiles | ConvertTo-Json
+
+# Configuration
+Invoke-RestMethod http://localhost:9867/api/config | ConvertTo-Json
+
+# Recent events (last 20)
+Invoke-RestMethod http://localhost:9867/api/metrics/events?count=20 | ConvertTo-Json
+
+# Latency statistics
+Invoke-RestMethod http://localhost:9867/api/metrics/latency | ConvertTo-Json
+
+# Device information
+Invoke-RestMethod http://localhost:9867/api/devices | ConvertTo-Json
+```
+
+**What GATHER_LOGS.ps1 Collects:**
+- Daemon process info (PID, memory, start time)
+- Binary info and timestamps (verifies correct version)
+- API health check
+- Active profile info
+- Daemon log (last 100 lines)
+- Config files listing
+- Network port status (9867)
+- Windows event log errors
+
+**Manual Log Locations:**
+- Daemon log: `%APPDATA%\keyrx\daemon.log` or `%USERPROFILE%\.keyrx\daemon.log`
+- Config files: `%APPDATA%\keyrx\profiles\`
 
 ### Layer Contamination (Multiple Outputs)
 

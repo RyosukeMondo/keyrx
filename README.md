@@ -165,11 +165,16 @@ Then open http://localhost:5173 and load your `.krx` file.
 
 ## Documentation
 
+### User Guides
 - **[DSL Manual](docs/user-guide/dsl-manual.md)** - Complete reference for the KeyRx DSL with syntax, functions, and examples
 - **[Linux Setup Guide](docs/user-guide/linux-setup.md)** - Linux installation, permissions, and systemd integration
 - **[Windows Setup Guide](docs/user-guide/windows-setup.md)** - Windows installation, tray icon usage, and troubleshooting
-- **[Windows VM Setup (Vagrant)](docs/development/windows-vm-setup.md)** - Setting up a Windows development environment on Linux
 - **[Examples](examples/)** - Six example configurations from basic to advanced
+
+### Developer Guides
+- **[Version Management](docs/version-management.md)** - Step-by-step version update procedures and SSOT enforcement
+- **[Troubleshooting Installer](docs/troubleshooting-installer.md)** - Comprehensive guide to diagnosing installation issues
+- **[Windows VM Setup (Vagrant)](docs/development/windows-vm-setup.md)** - Setting up a Windows development environment on Linux
 - **[Compiler README](keyrx_compiler/README.md)** - CLI commands and usage
 - **[Core README](keyrx_core/README.md)** - Architecture and library API
 
@@ -274,7 +279,69 @@ device_end();
 
 See [DSL Manual](docs/user-guide/dsl-manual.md) for complete documentation.
 
+## Installation
+
+### Windows MSI Installer
+
+For Windows users, we provide an MSI installer:
+
+```powershell
+# Download the latest release from GitHub
+# Then install:
+msiexec /i KeyRx-0.1.5-x64.msi /qn
+
+# Or double-click the MSI file
+```
+
+The installer will:
+- Install KeyRx to `C:\Program Files\KeyRx`
+- Automatically start the daemon with administrator rights
+- Add system tray icon for easy control
+
+**Troubleshooting Installation:**
+
+If you encounter issues:
+
+```powershell
+# Run pre-install diagnostics
+.\scripts\installer-health-check.ps1 -PreInstall
+
+# Run post-install diagnostics
+.\scripts\installer-health-check.ps1 -PostInstall
+
+# Comprehensive troubleshooting
+.\scripts\diagnose-installation.ps1
+```
+
+See the **[Troubleshooting Installer](docs/troubleshooting-installer.md)** guide for detailed help.
+
+### Version Management
+
+KeyRx uses Single Source of Truth (SSOT) for version management. To update the version:
+
+```bash
+# Update all version sources automatically
+./scripts/sync-version.sh 0.2.0
+
+# Verify consistency
+./scripts/sync-version.sh --check
+
+# Build and install
+cargo build --release
+```
+
+See the **[Version Management](docs/version-management.md)** guide for complete procedures.
+
 ## Troubleshooting
+
+### Installation Issues
+
+See **[Troubleshooting Installer](docs/troubleshooting-installer.md)** for comprehensive installation troubleshooting, including:
+- Access denied errors
+- File lock issues
+- Version mismatches
+- Port conflicts
+- Daemon won't start
 
 ### Common Errors
 

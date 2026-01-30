@@ -22,4 +22,5 @@ pub mod processor;
 pub mod services;
 pub mod test_mode;
 pub mod validation;
+pub mod version;
 pub mod web;

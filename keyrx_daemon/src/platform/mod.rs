@@ -397,6 +397,10 @@ pub enum TrayControlEvent {
     /// The daemon should open the default browser to the web UI URL.
     OpenWebUI,
 
+    /// User requested to see the About dialog with version information.
+    /// The daemon should display version, build info, and copyright.
+    About,
+
     /// User requested to exit the daemon.
     /// The daemon should perform a clean shutdown.
     Exit,

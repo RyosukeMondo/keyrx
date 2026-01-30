@@ -376,6 +376,59 @@ fn open_browser(url: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Show About dialog with version information
+fn show_about_dialog() {
+    use keyrx_daemon::version;
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::ffi::OsStr;
+        use std::os::windows::ffi::OsStrExt;
+
+        let message = format!(
+            "KeyRx - Advanced Keyboard Remapping\n\n\
+             Version: {}\n\
+             Build: {}\n\
+             Commit: {}\n\n\
+             Copyright © 2024 KeyRx Contributors\n\
+             Licensed under AGPL-3.0-or-later",
+            version::VERSION,
+            version::BUILD_DATE,
+            version::GIT_HASH
+        );
+
+        let title = "About KeyRx";
+
+        // Convert to UTF-16 for Windows API
+        let message_wide: Vec<u16> = OsStr::new(&message)
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect();
+        let title_wide: Vec<u16> = OsStr::new(title)
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect();
+
+        unsafe {
+            windows_sys::Win32::UI::WindowsAndMessaging::MessageBoxW(
+                std::ptr::null_mut(), // No parent window
+                message_wide.as_ptr(),
+                title_wide.as_ptr(),
+                windows_sys::Win32::UI::WindowsAndMessaging::MB_OK
+                    | windows_sys::Win32::UI::WindowsAndMessaging::MB_ICONINFORMATION,
+            );
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        // For non-Windows, just log the info
+        log::info!("About KeyRx v{}", version::VERSION);
+        log::info!("Build: {}", version::BUILD_DATE);
+        log::info!("Commit: {}", version::GIT_HASH);
+    }
+}
+
 /// Handles the `run` subcommand in test mode - starts web server and IPC without keyboard capture.
 #[cfg(target_os = "linux")]
 fn handle_run_test_mode(_config_path: &std::path::Path, _debug: bool) -> Result<(), (i32, String)> {
@@ -546,6 +599,9 @@ fn handle_run(
     // Initialize logging
     init_logging(debug);
 
+    // Log version information on startup
+    log_startup_version_info();
+
     if test_mode {
         log::info!("Test mode enabled - running with IPC infrastructure without keyboard capture");
         return handle_run_test_mode(config_path, debug);
@@ -715,6 +771,10 @@ fn handle_run(
                         if let Err(e) = open_browser("http://127.0.0.1:9867") {
                             log::error!("Failed to open browser: {}", e);
                         }
+                    }
+                    TrayControlEvent::About => {
+                        log::info!("About requested via tray menu");
+                        show_about_dialog();
                     }
                     TrayControlEvent::Exit => {
                         log::info!("Exit requested via tray menu");
@@ -1007,6 +1067,9 @@ fn handle_run(
     // Initialize logging
     init_logging(debug);
 
+    // Log version information on startup
+    log_startup_version_info();
+
     if test_mode {
         log::info!("Test mode enabled - running with IPC infrastructure without keyboard capture");
         return handle_run_test_mode(config_path, debug);
@@ -1215,6 +1278,9 @@ fn handle_run(
         log::warn!("Daemon is not running with administrative privileges. Key remapping may not work for elevated applications.");
     }
 
+    // Log hook installation status after daemon initialization
+    log_post_init_hook_status();
+
     log::info!("Daemon initialized. Running message loop...");
 
     // Build web UI URL with actual port
@@ -1282,6 +1348,10 @@ fn handle_run(
                             if let Err(e) = open_browser(&web_ui_url) {
                                 log::error!("Failed to open web UI: {}", e);
                             }
+                        }
+                        TrayControlEvent::About => {
+                            log::info!("About requested via tray menu");
+                            show_about_dialog();
                         }
                         TrayControlEvent::Exit => {
                             log::info!("Exiting...");
@@ -1784,6 +1854,110 @@ fn init_logging(debug: bool) {
         .filter_level(level)
         .format_timestamp_millis()
         .init();
+}
+
+/// Log startup version information and system status
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+fn log_startup_version_info() {
+    use keyrx_daemon::version;
+
+    log::info!("========================================");
+    log::info!("KeyRx Daemon Starting");
+    log::info!("========================================");
+    log::info!("Version:    {}", version::VERSION);
+    log::info!("Build Time: {}", version::BUILD_DATE);
+    log::info!("Git Hash:   {}", version::GIT_HASH);
+
+    // Log binary timestamp
+    if let Some(binary_ts) = get_binary_timestamp() {
+        log::info!("Binary:     {}", binary_ts);
+    }
+
+    // Log admin rights status
+    let admin_status = check_startup_admin_status();
+    if admin_status {
+        log::info!("Admin:      Running with administrator privileges");
+    } else {
+        log::warn!("Admin:      NOT running with administrator privileges");
+        log::warn!("            Key remapping may not work for elevated applications");
+    }
+
+    // Log hook installation status
+    log_hook_installation_status();
+
+    log::info!("========================================");
+}
+
+/// Get binary timestamp for logging
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+fn get_binary_timestamp() -> Option<String> {
+    std::env::current_exe()
+        .ok()
+        .and_then(|path| std::fs::metadata(path).ok())
+        .and_then(|metadata| metadata.modified().ok())
+        .map(|modified| {
+            use std::time::SystemTime;
+            let duration = modified
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or_default();
+            // Format as simple timestamp
+            let secs = duration.as_secs();
+            format!("{} seconds since epoch", secs)
+        })
+}
+
+/// Check admin status for startup logging
+#[cfg(target_os = "windows")]
+fn check_startup_admin_status() -> bool {
+    is_admin()
+}
+
+#[cfg(target_os = "linux")]
+fn check_startup_admin_status() -> bool {
+    unsafe { libc::geteuid() == 0 }
+}
+
+/// Log hook installation status
+#[cfg(target_os = "windows")]
+fn log_hook_installation_status() {
+    // Hook installation happens later in the startup process
+    // Just log that it will be attempted
+    log::info!("Hook:       Will attempt to install low-level keyboard hook");
+}
+
+#[cfg(target_os = "linux")]
+fn log_hook_installation_status() {
+    // On Linux, we use evdev grab instead of hooks
+    log::info!("Hook:       Using evdev device grabbing (Linux)");
+}
+
+/// Log hook status after daemon initialization
+#[cfg(target_os = "windows")]
+fn log_post_init_hook_status() {
+    use keyrx_daemon::platform::windows::platform_state::PlatformState;
+
+    if let Some(state_arc) = PlatformState::get() {
+        if let Ok(state) = state_arc.lock() {
+            if let Some(ref blocker) = state.key_blocker {
+                let blocked_count = blocker.blocked_count();
+                log::info!("✓ Low-level keyboard hook installed successfully");
+                log::info!("  Currently blocking {} key(s)", blocked_count);
+            } else {
+                log::warn!("✗ Low-level keyboard hook NOT installed");
+                log::warn!("  Double inputs may occur during remapping");
+            }
+        } else {
+            log::warn!("✗ Failed to access platform state");
+        }
+    } else {
+        log::warn!("✗ Platform state not initialized");
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn log_post_init_hook_status() {
+    // On Linux, device grabbing is confirmed during daemon initialization
+    log::info!("✓ Device grabbing configured (evdev)");
 }
 
 /// Converts a DaemonError to an exit code and message.

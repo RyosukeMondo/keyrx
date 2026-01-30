@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { VERSION } from '../version';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -187,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center justify-between gap-2">
           {/* Version text - always show, even when collapsed */}
           {!isCollapsed && (
-            <p className="text-xs text-slate-500 flex-1">KeyRx v2.0.0</p>
+            <p className="text-xs text-slate-500 flex-1">KeyRx v{VERSION}</p>
           )}
 
           {/* Toggle button */}

@@ -31,6 +31,7 @@ pub struct TrayIconController {
     menu_receiver: Receiver<MenuEvent>,
     reload_id: String,
     webui_id: String,
+    about_id: String,
     exit_id: String,
 }
 
@@ -51,6 +52,7 @@ impl SystemTray for TrayIconController {
         let tray_menu = Menu::new();
         let webui_item = MenuItem::new("Open Web UI", true, None);
         let reload_item = MenuItem::new("Reload Config", true, None);
+        let about_item = MenuItem::new("About", true, None);
         let exit_item = MenuItem::new("Exit", true, None);
 
         tray_menu
@@ -58,6 +60,7 @@ impl SystemTray for TrayIconController {
                 &webui_item,
                 &PredefinedMenuItem::separator(),
                 &reload_item,
+                &about_item,
                 &PredefinedMenuItem::separator(),
                 &exit_item,
             ])
@@ -65,6 +68,7 @@ impl SystemTray for TrayIconController {
 
         let webui_id = webui_item.id().0.clone();
         let reload_id = reload_item.id().0.clone();
+        let about_id = about_item.id().0.clone();
         let exit_id = exit_item.id().0.clone();
 
         let icon_bytes = include_bytes!("../../../assets/icon.png");
@@ -84,6 +88,7 @@ impl SystemTray for TrayIconController {
             menu_receiver,
             reload_id,
             webui_id,
+            about_id,
             exit_id,
         })
     }
@@ -94,6 +99,8 @@ impl SystemTray for TrayIconController {
                 return Some(TrayControlEvent::OpenWebUI);
             } else if event.id.0 == self.reload_id {
                 return Some(TrayControlEvent::Reload);
+            } else if event.id.0 == self.about_id {
+                return Some(TrayControlEvent::About);
             } else if event.id.0 == self.exit_id {
                 return Some(TrayControlEvent::Exit);
             }

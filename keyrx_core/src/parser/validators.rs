@@ -7,7 +7,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use super::error::ParseError;
-use crate::config::{Condition, KeyCode};
+use crate::config::{Condition, KeyCode, MAX_LOCK_ID, MAX_MODIFIER_ID};
 
 /// Physical modifier key names that cannot be used as custom MD_ identifiers.
 pub const PHYSICAL_MODIFIERS: &[&str] = &[
@@ -53,8 +53,11 @@ pub fn parse_modifier_id(s: &str) -> Result<u8, ParseError> {
         got: s.to_string(),
         context: "custom modifier ID".to_string(),
     })?;
-    if id > 0xFE {
-        return Err(ParseError::ModifierIdOutOfRange { got: id, max: 0xFE });
+    if id > MAX_MODIFIER_ID {
+        return Err(ParseError::ModifierIdOutOfRange {
+            got: id,
+            max: MAX_MODIFIER_ID,
+        });
     }
     Ok(id as u8)
 }
@@ -73,8 +76,11 @@ pub fn parse_lock_id(s: &str) -> Result<u8, ParseError> {
         got: s.to_string(),
         context: "custom lock ID".to_string(),
     })?;
-    if id > 0xFE {
-        return Err(ParseError::LockIdOutOfRange { got: id, max: 0xFE });
+    if id > MAX_LOCK_ID {
+        return Err(ParseError::LockIdOutOfRange {
+            got: id,
+            max: MAX_LOCK_ID,
+        });
     }
     Ok(id as u8)
 }

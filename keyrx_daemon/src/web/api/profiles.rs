@@ -149,12 +149,27 @@ async fn list_profiles(
         .await
         .map_err(|e| ConfigError::Profile(e.to_string()))?;
 
+    // Get config_dir in spawn_blocking BEFORE map to avoid blocking in iterator
+    let config_dir = tokio::task::spawn_blocking(|| {
+        crate::cli::config_dir::get_config_dir()
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| ConfigError::ParseError {
+        path: std::path::PathBuf::from("config"),
+        reason: format!("Task join error: {}", e),
+    })?
+    .map_err(|e| ConfigError::ParseError {
+        path: std::path::PathBuf::from("config"),
+        reason: format!("Failed to get config directory: {}", e),
+    })?;
+
+    let profiles_dir = config_dir.join("profiles");
+
     let profiles: Vec<ProfileResponse> = profile_list
         .iter()
         .map(|info| {
-            // Build paths from name (ProfileService doesn't return paths)
-            let config_dir = get_config_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
-            let profiles_dir = config_dir.join("profiles");
+            // No blocking operations in map now!
             let rhai_path = profiles_dir.join(format!("{}.rhai", info.name));
             let krx_path = profiles_dir.join(format!("{}.krx", info.name));
 
@@ -213,18 +228,29 @@ async fn create_profile(
         .await
         .map_err(profile_error_to_api_error)?;
 
-    // Build paths from name
-    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-    let profiles_dir = config_dir.join("profiles");
-    let rhai_path = profiles_dir.join(format!("{}.rhai", profile_info.name));
-    let krx_path = profiles_dir.join(format!("{}.krx", profile_info.name));
+    // Build paths from name - wrap blocking get_config_dir() call
+    let profile_name = profile_info.name.clone();
+    let (rhai_path_str, krx_path_str) = tokio::task::spawn_blocking(move || {
+        let config_dir = crate::cli::config_dir::get_config_dir()
+            .map_err(|e| format!("Failed to get config directory: {}", e))?;
+        let profiles_dir = config_dir.join("profiles");
+        let rhai_path = profiles_dir.join(format!("{}.rhai", profile_name));
+        let krx_path = profiles_dir.join(format!("{}.krx", profile_name));
+        Ok::<(String, String), String>((
+            rhai_path.display().to_string(),
+            krx_path.display().to_string(),
+        ))
+    })
+    .await
+    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
+    .map_err(|e| ApiError::InternalError(e))?;
 
     Ok(Json(json!({
         "success": true,
         "profile": {
             "name": profile_info.name,
-            "rhaiPath": rhai_path.display().to_string(),
-            "krxPath": krx_path.display().to_string(),
+            "rhaiPath": rhai_path_str,
+            "krxPath": krx_path_str,
         }
     })))
 }
@@ -378,16 +404,24 @@ async fn duplicate_profile(
         .await
         .map_err(profile_error_to_api_error)?;
 
-    // Build rhai_path from name
-    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-    let profiles_dir = config_dir.join("profiles");
-    let rhai_path = profiles_dir.join(format!("{}.rhai", profile_info.name));
+    // Build rhai_path from name - wrap blocking get_config_dir() call
+    let profile_name = profile_info.name.clone();
+    let rhai_path_str = tokio::task::spawn_blocking(move || {
+        let config_dir = crate::cli::config_dir::get_config_dir()
+            .map_err(|e| format!("Failed to get config directory: {}", e))?;
+        let profiles_dir = config_dir.join("profiles");
+        let rhai_path = profiles_dir.join(format!("{}.rhai", profile_name));
+        Ok::<String, String>(rhai_path.display().to_string())
+    })
+    .await
+    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
+    .map_err(|e| ApiError::InternalError(e))?;
 
     Ok(Json(json!({
         "success": true,
         "profile": {
             "name": profile_info.name,
-            "rhaiPath": rhai_path.display().to_string(),
+            "rhaiPath": rhai_path_str,
         }
     })))
 }
@@ -415,18 +449,29 @@ async fn rename_profile(
         .await
         .map_err(profile_error_to_api_error)?;
 
-    // Build paths from name
-    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-    let profiles_dir = config_dir.join("profiles");
-    let rhai_path = profiles_dir.join(format!("{}.rhai", profile_info.name));
-    let krx_path = profiles_dir.join(format!("{}.krx", profile_info.name));
+    // Build paths from name - wrap blocking get_config_dir() call
+    let profile_name = profile_info.name.clone();
+    let (rhai_path_str, krx_path_str) = tokio::task::spawn_blocking(move || {
+        let config_dir = crate::cli::config_dir::get_config_dir()
+            .map_err(|e| format!("Failed to get config directory: {}", e))?;
+        let profiles_dir = config_dir.join("profiles");
+        let rhai_path = profiles_dir.join(format!("{}.rhai", profile_name));
+        let krx_path = profiles_dir.join(format!("{}.krx", profile_name));
+        Ok::<(String, String), String>((
+            rhai_path.display().to_string(),
+            krx_path.display().to_string(),
+        ))
+    })
+    .await
+    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
+    .map_err(|e| ApiError::InternalError(e))?;
 
     Ok(Json(json!({
         "success": true,
         "profile": {
             "name": profile_info.name,
-            "rhaiPath": rhai_path.display().to_string(),
-            "krxPath": krx_path.display().to_string(),
+            "rhaiPath": rhai_path_str,
+            "krxPath": krx_path_str,
         }
     })))
 }
@@ -514,64 +559,65 @@ async fn validate_profile(
     // Validate profile name
     validate_profile_name(&name)?;
 
-    // For validation, we still need to access ProfileManager directly to get file paths
-    // This is read-only so it doesn't affect state consistency
-    let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-    let pm = ProfileManager::new(config_dir).map_err(profile_error_to_api_error)?;
+    // Wrap all blocking operations in spawn_blocking
+    tokio::task::spawn_blocking(move || {
+        // For validation, we still need to access ProfileManager directly to get file paths
+        // This is read-only so it doesn't affect state consistency
+        let config_dir = crate::cli::config_dir::get_config_dir()
+            .map_err(|e| format!("Failed to get config directory: {}", e))?;
+        let pm = ProfileManager::new(config_dir)
+            .map_err(|e| format!("Failed to create ProfileManager: {}", e))?;
 
-    // Get profile metadata to find the .rhai file path
-    let profile = pm
-        .get(&name)
-        .ok_or_else(|| ApiError::NotFound(format!("Profile '{}' not found", name)))?;
+        // Get profile metadata to find the .rhai file path
+        let profile = pm
+            .get(&name)
+            .ok_or_else(|| format!("Profile '{}' not found", name))?;
 
-    // Compile the profile to validate it
-    let compiler = ProfileCompiler::new();
-    // Use timestamp + profile name for temporary file to avoid collisions
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let temp_krx = std::env::temp_dir().join(format!("{}_{}.krx", name, timestamp));
+        // Compile the profile to validate it
+        let compiler = ProfileCompiler::new();
+        // Use timestamp + profile name for temporary file to avoid collisions
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let temp_krx = std::env::temp_dir().join(format!("{}_{}.krx", name, timestamp));
 
-    let validation_result = compiler.compile_profile(&profile.rhai_path, &temp_krx);
+        let validation_result = compiler.compile_profile(&profile.rhai_path, &temp_krx);
 
-    // Clean up temporary file
-    let _ = std::fs::remove_file(&temp_krx);
+        // Clean up temporary file
+        let _ = std::fs::remove_file(&temp_krx);
 
-    match validation_result {
-        Ok(_) => {
-            // Compilation succeeded - profile is valid
-            Ok(Json(ValidationResponse {
-                valid: true,
-                errors: Vec::new(),
-            }))
+        match validation_result {
+            Ok(_) => {
+                // Compilation succeeded - profile is valid
+                Ok::<ValidationResponse, String>(ValidationResponse {
+                    valid: true,
+                    errors: Vec::new(),
+                })
+            }
+            Err(e) => {
+                // Compilation failed - extract error information
+                let error_message = e.to_string();
+
+                // Parse error message to extract line/column information
+                // The error format from the compiler is user-friendly and may include line numbers
+                let errors = vec![ValidationError {
+                    line: 1, // TODO: Parse actual line number from error message
+                    column: None,
+                    message: error_message,
+                }];
+
+                Ok(ValidationResponse {
+                    valid: false,
+                    errors,
+                })
+            }
         }
-        Err(e) => {
-            // Compilation failed - extract error information
-            let error_message = e.to_string();
-
-            // Parse error message to extract line/column information
-            // The error format from the compiler is user-friendly and may include line numbers
-            let errors = vec![ValidationError {
-                line: 1, // TODO: Parse actual line number from error message
-                column: None,
-                message: error_message,
-            }];
-
-            Ok(Json(ValidationResponse {
-                valid: false,
-                errors,
-            }))
-        }
-    }
-}
-
-/// Get config directory path (cross-platform)
-fn get_config_dir() -> Result<std::path::PathBuf, ApiError> {
-    let config_dir = dirs::config_dir()
-        .ok_or_else(|| ApiError::InternalError("Cannot determine config directory".to_string()))?;
-
-    Ok(config_dir.join("keyrx"))
+    })
+    .await
+    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
+    .map_err(|e| ApiError::InternalError(e))
+    .map(Json)
 }
 
 #[cfg(test)]

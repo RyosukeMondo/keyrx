@@ -30,12 +30,38 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/daemon/state", get(get_daemon_state))
 }
 
-/// GET /api/health - Health check
-async fn health_check() -> Json<Value> {
-    Json(json!({
-        "status": "ok",
-        "version": env!("CARGO_PKG_VERSION")
-    }))
+/// Enhanced health check response with version and system info
+#[derive(Serialize)]
+struct HealthCheckResponse {
+    status: String,
+    version: String,
+    build_time: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    git_hash: Option<String>,
+    platform: String,
+    admin_rights: bool,
+    hook_installed: bool,
+}
+
+/// GET /api/health - Enhanced health check with runtime information
+async fn health_check() -> Json<HealthCheckResponse> {
+    use crate::version;
+
+    // Check if running as admin
+    let admin_rights = check_admin_privileges();
+
+    // Get hook installation status
+    let hook_installed = check_hook_installed();
+
+    Json(HealthCheckResponse {
+        status: "ok".to_string(),
+        version: version::VERSION.to_string(),
+        build_time: version::BUILD_DATE.to_string(),
+        git_hash: Some(version::GIT_HASH.to_string()).filter(|s| !s.is_empty() && s != "unknown"),
+        platform: std::env::consts::OS.to_string(),
+        admin_rights,
+        hook_installed,
+    })
 }
 
 /// Version information response
@@ -344,4 +370,60 @@ fn query_daemon_status() -> Result<(u64, Option<String>, usize), Box<dyn std::er
         } => Ok((uptime_secs, active_profile, device_count)),
         _ => Err("Unexpected response from daemon".into()),
     }
+}
+
+/// Check if running with administrator privileges
+#[cfg(target_os = "windows")]
+fn check_admin_privileges() -> bool {
+    use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
+    use windows_sys::Win32::Security::{
+        GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY,
+    };
+    use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
+
+    unsafe {
+        let mut token: HANDLE = std::ptr::null_mut();
+        if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) == 0 {
+            return false;
+        }
+
+        let mut elevation: TOKEN_ELEVATION = std::mem::zeroed();
+        let mut size = std::mem::size_of::<TOKEN_ELEVATION>() as u32;
+
+        let result = GetTokenInformation(
+            token,
+            TokenElevation,
+            &mut elevation as *mut _ as *mut _,
+            size,
+            &mut size,
+        );
+
+        CloseHandle(token);
+        result != 0 && elevation.TokenIsElevated != 0
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn check_admin_privileges() -> bool {
+    // On Linux, check if running as root
+    unsafe { libc::geteuid() == 0 }
+}
+
+/// Check if key blocker hook is installed
+#[cfg(target_os = "windows")]
+fn check_hook_installed() -> bool {
+    use crate::platform::windows::platform_state::PlatformState;
+
+    if let Some(state_arc) = PlatformState::get() {
+        if let Ok(state) = state_arc.lock() {
+            return state.key_blocker.is_some();
+        }
+    }
+    false
+}
+
+#[cfg(not(target_os = "windows"))]
+fn check_hook_installed() -> bool {
+    // On Linux, evdev grab is always available if daemon is running
+    true
 }

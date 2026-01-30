@@ -233,53 +233,102 @@ impl ProfileService {
         // ProfileManager::activate requires &mut self, but we need to work around this
         // for now by unsafely casting away the Arc immutability.
         // This is safe because ProfileManager uses internal locks for thread-safety.
-        let manager_ptr = Arc::as_ptr(&self.profile_manager) as *mut ProfileManager;
-        let result = unsafe { (*manager_ptr).activate(name)? };
+        //
+        // CRITICAL FIX (v0.1.3): Wrap ALL blocking operations in spawn_blocking to prevent
+        // blocking the async runtime. This fixes the config page freeze issue where activating
+        // a profile would block subsequent API requests.
+        let manager = Arc::clone(&self.profile_manager);
+        let name_owned = name.to_string();
 
-        if result.success {
-            log::info!(
-                "Profile '{}' activated successfully (compile: {}ms, reload: {}ms)",
-                name,
-                result.compile_time_ms,
-                result.reload_time_ms
-            );
+        let result = tokio::task::spawn_blocking(move || {
+            log::debug!("spawn_blocking: Starting profile activation");
 
-            // Configure Windows key blocking if on Windows
-            // TODO: This should extract actual mapped keys from the profile
-            // For now, we enable blocking for common keys (W key issue fix)
-            #[cfg(target_os = "windows")]
-            {
-                use crate::platform::windows::platform_state::PlatformState;
-                use crate::platform::windows::keycode::keycode_to_scancode;
-                use keyrx_core::config::KeyCode;
+            // Activate profile (blocking operation)
+            let manager_ptr = Arc::as_ptr(&manager) as *mut ProfileManager;
+            let activation_result = unsafe { (*manager_ptr).activate(&name_owned)? };
 
-                log::info!("Configuring key blocking for profile: {}", name);
+            if activation_result.success {
+                log::info!(
+                    "Profile '{}' activated successfully (compile: {}ms, reload: {}ms)",
+                    name_owned,
+                    activation_result.compile_time_ms,
+                    activation_result.reload_time_ms
+                );
 
-                // For now, block the W key specifically (the reported issue)
-                // TODO: Extract actual mapped keys from the .krx config
-                if let Some(state_arc) = PlatformState::get() {
-                    if let Ok(state) = state_arc.lock() {
-                        if let Some(ref blocker) = state.key_blocker {
-                            // Block W key (the specific issue reported)
-                            if let Some(scan_code) = keycode_to_scancode(KeyCode::W) {
-                                blocker.block_key(scan_code);
-                                log::info!("✓ Blocking W key (scan code: 0x{:04X})", scan_code);
+                // Configure Windows key blocking based on actual profile mappings
+                #[cfg(target_os = "windows")]
+                {
+                    use crate::platform::windows::platform_state::PlatformState;
+
+                    log::info!("Configuring key blocking for profile: {}", name_owned);
+
+                    // Load the activated profile's .krx file and extract all mapped keys
+                    // Note: This is also a blocking operation (file I/O + deserialization)
+                    let config_dir = crate::cli::config_dir::get_config_dir()
+                        .map_err(|e| ProfileError::NotFound(format!("Config dir error: {}", e)))?;
+                    let profiles_dir = config_dir.join("profiles");
+                    let krx_path = profiles_dir.join(format!("{}.krx", name_owned));
+
+                    if let Ok(config_data) = std::fs::read(&krx_path) {
+                        use keyrx_compiler::serialize::deserialize as deserialize_krx;
+                        use rkyv::Deserialize;
+
+                        // Deserialize .krx file (validates magic, version, hash)
+                        let archived = deserialize_krx(&config_data);
+                        match archived {
+                            Ok(archived_config) => {
+                                // Deserialize from archived format to ConfigRoot
+                                let config: keyrx_core::config::ConfigRoot = archived_config
+                                    .deserialize(&mut rkyv::Infallible)
+                                    .map_err(|_| ProfileError::NotFound("Deserialization failed".to_string()))?;
+                                log::info!(
+                                    "✓ Loaded profile config: {} devices, {} total mappings",
+                                    config.devices.len(),
+                                    config.devices.iter().map(|d| d.mappings.len()).sum::<usize>()
+                                );
+
+                                match PlatformState::configure_blocking(Some(&config)) {
+                                    Ok(()) => {
+                                        log::info!("✓ Key blocking configured successfully");
+                                    }
+                                    Err(e) => {
+                                        log::error!("✗ Failed to configure key blocking: {}", e);
+                                    }
+                                }
                             }
+                            Err(e) => {
+                                log::error!("✗ Failed to deserialize profile config: {}", e);
+                                // Clear any existing blocks if config load fails
+                                if let Err(e) = PlatformState::configure_blocking(None) {
+                                    log::error!("✗ Failed to clear key blocking: {}", e);
+                                }
+                            }
+                        }
+                    } else {
+                        log::error!("✗ Failed to read .krx file: {:?}", krx_path);
+                        // Clear any existing blocks if file read fails
+                        if let Err(e) = PlatformState::configure_blocking(None) {
+                            log::error!("✗ Failed to clear key blocking: {}", e);
                         }
                     }
                 }
+
+                // Signal the daemon to reload configuration via SIGHUP
+                // This triggers the reload callback in the event loop
+                Self::signal_daemon_reload();
+            } else {
+                log::error!(
+                    "Profile '{}' activation failed: {}",
+                    name_owned,
+                    activation_result.error.as_deref().unwrap_or("unknown error")
+                );
             }
 
-            // Signal the daemon to reload configuration via SIGHUP
-            // This triggers the reload callback in the event loop
-            Self::signal_daemon_reload();
-        } else {
-            log::error!(
-                "Profile '{}' activation failed: {}",
-                name,
-                result.error.as_deref().unwrap_or("unknown error")
-            );
-        }
+            log::debug!("spawn_blocking: Profile activation complete");
+            Ok::<ActivationResult, ProfileError>(activation_result)
+        })
+        .await
+        .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
         Ok(result)
     }
@@ -310,6 +359,71 @@ impl ProfileService {
         {
             log::info!("Profile activated. Daemon reload signal not available on this platform.");
         }
+    }
+
+    /// Loads and deserializes a profile's .krx config file.
+    ///
+    /// This is used for extracting mapped keys for Windows key blocking.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Profile name
+    ///
+    /// # Returns
+    ///
+    /// Owned ConfigRoot instance, deserialized from the .krx file.
+    ///
+    /// # Errors
+    ///
+    /// Returns ProfileError if:
+    /// - Profile not found
+    /// - File read fails
+    /// - Deserialization fails
+    #[cfg(target_os = "windows")]
+    fn load_profile_config(&self, name: &str) -> Result<keyrx_core::config::ConfigRoot, ProfileError> {
+        use keyrx_compiler::serialize::deserialize as deserialize_krx;
+        use keyrx_compiler::error::DeserializeError;
+        use rkyv::Deserialize;
+
+        // Get profile metadata to find .krx path
+        let metadata = self.profile_manager
+            .get(name)
+            .ok_or_else(|| ProfileError::NotFound(name.to_string()))?;
+
+        // Read .krx file
+        let bytes = std::fs::read(&metadata.krx_path)?;
+
+        // Deserialize to archived type (validates magic, version, hash)
+        let archived = deserialize_krx(&bytes)
+            .map_err(|e| match e {
+                DeserializeError::InvalidMagic { .. } => {
+                    crate::config::CompilationError::CompilationFailed(
+                        "Invalid .krx file magic number".to_string()
+                    )
+                }
+                DeserializeError::VersionMismatch { .. } => {
+                    crate::config::CompilationError::CompilationFailed(
+                        "Incompatible .krx file version".to_string()
+                    )
+                }
+                DeserializeError::HashMismatch { .. } => {
+                    crate::config::CompilationError::CompilationFailed(
+                        "Corrupted .krx file (hash mismatch)".to_string()
+                    )
+                }
+                _ => {
+                    crate::config::CompilationError::CompilationFailed(
+                        format!("Failed to deserialize .krx file: {}", e)
+                    )
+                }
+            })?;
+
+        // Deserialize from archived to owned type
+        // This uses rkyv's Deserialize trait which is derived on ConfigRoot
+        archived.deserialize(&mut rkyv::Infallible)
+            .map_err(|_| crate::config::CompilationError::CompilationFailed(
+                "Failed to convert archived config to owned type".to_string()
+            ).into())
     }
 
     /// Creates a new profile from a template.

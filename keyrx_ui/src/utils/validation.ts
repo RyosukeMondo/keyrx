@@ -3,7 +3,7 @@
  * Provides client-side validation for forms and user inputs
  */
 
-import { z } from 'zod';
+import { z, type ZodIssue } from 'zod';
 
 /**
  * Profile name validation schema
@@ -36,7 +36,7 @@ export const keyCodeSchema = z
 export function validateProfileName(name: string): { valid: boolean; error?: string } {
   const result = profileNameSchema.safeParse(name);
   if (!result.success) {
-    return { valid: false, error: result.error.errors[0]?.message };
+    return { valid: false, error: result.error.issues[0]?.message };
   }
   return { valid: true };
 }
@@ -47,7 +47,7 @@ export function validateProfileName(name: string): { valid: boolean; error?: str
 export function validateDeviceName(name: string): { valid: boolean; error?: string } {
   const result = deviceNameSchema.safeParse(name);
   if (!result.success) {
-    return { valid: false, error: result.error.errors[0]?.message };
+    return { valid: false, error: result.error.issues[0]?.message };
   }
   return { valid: true };
 }
@@ -85,7 +85,7 @@ export function validateFormData<T extends Record<string, unknown>>(
 
   if (!result.success) {
     const errors: Record<string, string> = {};
-    result.error.errors.forEach((err) => {
+    result.error.issues.forEach((err: ZodIssue) => {
       const path = err.path.join('.');
       errors[path] = err.message;
     });

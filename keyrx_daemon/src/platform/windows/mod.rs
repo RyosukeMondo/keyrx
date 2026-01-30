@@ -9,6 +9,8 @@ pub mod rawinput;
 #[cfg(test)]
 mod tests;
 pub mod tray;
+#[cfg(test)]
+pub mod virtual_keyboard;
 
 use std::sync::{Arc, Mutex};
 

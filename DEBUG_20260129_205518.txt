@@ -1,0 +1,68 @@
+[20:55:18] === STEP 1: Current State ===
+[20:55:18] 
+[20:55:18] Binary version:
+[20:55:18]   Path: C:\Program Files\KeyRx\bin\keyrx_daemon.exe
+[20:55:18]   Size: 22354432 bytes
+[20:55:18]   Modified: 2026/01/29 19:31:13
+[20:55:18] 
+[20:55:18] Running processes:
+[20:55:18]   PID: 77412, Start: 01/29/2026 20:28:25, CPU: 21.125s
+[20:55:18] 
+[20:55:18] Port 9867 status:
+[20:55:19]   State: Established, PID: 23304
+[20:55:19]   State: Listen, PID: 23304
+[20:55:19]   State: Established, PID: 23304
+[20:55:20]   State: Established, PID: 23304
+[20:55:20]   State: Established, PID: 23304
+[20:55:20]   State: Established, PID: 23304
+[20:55:20]   State: CloseWait, PID: 23304
+[20:55:20]   State: Established, PID: 23304
+[20:55:20]   State: CloseWait, PID: 23304
+[20:55:20]   State: Established, PID: 23304
+[20:55:20]   State: CloseWait, PID: 23304
+[20:55:20] 
+[20:55:20] === STEP 2: Stopping Daemon ===
+[20:55:23]   OK: Daemon stopped
+[20:55:23] 
+[20:55:23] === STEP 3: Starting Daemon with Logging ===
+[20:55:23]   Started daemon (logs: daemon_stdout_20260129_205518.log, daemon_stderr_20260129_205518.log)
+[20:55:23]   Waiting 8 seconds for startup...
+[20:55:31] 
+[20:55:31] === STEP 4: API Health Check ===
+[20:55:35]   ERROR: API not responding
+[20:55:35]   Error: リモート サーバーに接続できません。
+[20:55:35] 
+[20:55:35] Daemon stderr:
+[20:55:35]   [INFO] Using active profile: profile-a
+[20:55:35]   [2026-01-29T11:55:23.608Z INFO  keyrx_daemon] Found existing daemon (PID 77412), terminating...
+[20:55:35]   [2026-01-29T11:55:23.610Z INFO  keyrx_daemon] Configured web server port: 9868
+[20:55:35]   [2026-01-29T11:55:23.611Z INFO  keyrx_daemon] Starting keyrx daemon (Windows) with config: C:\Users\ryosu\AppData\Roaming\keyrx\profiles\profile-a.krx
+[20:55:35]   [2026-01-29T11:55:23.612Z INFO  keyrx_daemon::daemon] Initializing keyrx daemon with config: C:\Users\ryosu\AppData\Roaming\keyrx\profiles\profile-a.krx
+[20:55:35]   [2026-01-29T11:55:23.613Z INFO  keyrx_daemon::daemon] Initializing platform...
+[20:55:35]   [2026-01-29T11:55:23.614Z INFO  keyrx_daemon::platform::windows] Initializing Windows platform
+[20:55:35]   [2026-01-29T11:55:23.621Z INFO  keyrx_daemon::platform::windows::rawinput] E2E Test Bridge Hook installed
+[20:55:35]   [2026-01-29T11:55:23.621Z INFO  keyrx_daemon::platform::windows::key_blocker] 笨・Keyboard blocker installed (hook: 0x444f1403)
+[20:55:35]   [2026-01-29T11:55:23.621Z INFO  keyrx_daemon::platform::windows] 笨・Key blocker installed successfully
+[20:55:35]   [2026-01-29T11:55:23.621Z INFO  keyrx_daemon::platform::windows] Windows platform initialized
+[20:55:35]   [2026-01-29T11:55:23.621Z INFO  keyrx_daemon::daemon] Platform initialized
+[20:55:35]   [2026-01-29T11:55:23.621Z INFO  keyrx_daemon::daemon] Installing signal handlers...
+[20:55:35]   [2026-01-29T11:55:23.621Z INFO  keyrx_daemon::daemon] Signal handlers installed
+[20:55:35]   [2026-01-29T11:55:23.622Z WARN  keyrx_daemon::daemon] Active profile '{
+[20:55:35]         "activated_at": 1769686105,
+[20:55:35]         "activated_by": "user",
+[20:55:35]         "name": "profile-a"
+[20:55:35]       }' has no compiled .krx file at C:\Users\ryosu\AppData\Roaming\keyrx\profiles\{
+[20:55:35]         "activated_at": 1769686105,
+[20:55:35]         "activated_by": "user",
+[20:55:35]         "name": "profile-a"
+[20:55:35]       }.krx
+[20:55:36]   [2026-01-29T11:55:23.622Z INFO  keyrx_daemon::daemon] No active profile found, running in pass-through mode
+[20:55:36]   [2026-01-29T11:55:23.622Z INFO  keyrx_daemon::daemon] Daemon initialization complete
+[20:55:36]   [2026-01-29T11:55:23.624Z INFO  keyrx_daemon::config::profile_manager] Restored active profile 'profile-a' from "C:\\Users\\ryosu\\AppData\\Roaming\\keyrx\\.active"
+[20:55:36]   [2026-01-29T11:55:23.626Z INFO  keyrx_daemon] Starting web server on http://127.0.0.1:9868
+[20:55:36]   [2026-01-29T11:55:23.626Z INFO  keyrx_daemon::daemon::event_broadcaster] Starting latency broadcast task (1 second interval)
+[20:55:36]   [2026-01-29T11:55:23.626Z WARN  keyrx_daemon::auth] No admin password set - running in dev mode (all endpoints accessible)
+[20:55:36]   [2026-01-29T11:55:23.626Z WARN  keyrx_daemon::auth] Set KEYRX_ADMIN_PASSWORD environment variable to enable authentication
+[20:55:36]   [2026-01-29T11:55:23.658Z INFO  keyrx_daemon] System tray icon created successfully
+[20:55:36]   [2026-01-29T11:55:23.658Z INFO  keyrx_daemon] Daemon initialized. Running message loop...
+[20:55:36]   [2026-01-29T11:55:23.658Z INFO  keyrx_daemon::platform::windows::rawinput] Device arrived: 10043

@@ -70,7 +70,16 @@ impl PlatformState {
             }
         }
 
-        log::info!("✓ Configured key blocking: {} keys blocked", blocked_count);
+        // Verify the blocker actually has the keys
+        let actual_count = blocker.blocked_count();
+        log::info!("✓ Configured key blocking: {} keys extracted, {} actually blocked",
+            blocked_count, actual_count);
+
+        if actual_count != blocked_count {
+            log::error!("✗ CRITICAL: Mismatch between extracted ({}) and blocked ({}) keys!",
+                blocked_count, actual_count);
+        }
+
         Ok(())
     }
 

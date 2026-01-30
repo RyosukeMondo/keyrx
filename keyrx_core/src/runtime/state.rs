@@ -8,11 +8,11 @@ extern crate alloc;
 use arrayvec::ArrayVec;
 use bitvec::prelude::*;
 
-use crate::config::{Condition, ConditionItem, KeyCode};
+use crate::config::{Condition, ConditionItem, KeyCode, MAX_MODIFIER_ID, MODIFIER_COUNT};
 use crate::runtime::tap_hold::{TapHoldProcessor, DEFAULT_MAX_PENDING};
 
-/// Maximum valid modifier/lock ID (0-254, ID 255 is reserved)
-const MAX_VALID_ID: u8 = 254;
+/// Maximum valid modifier/lock ID (re-exported from config SSOT)
+const MAX_VALID_ID: u8 = MAX_MODIFIER_ID as u8;
 
 /// Maximum number of simultaneously pressed keys to track
 /// This should cover even the most extreme cases (10-finger roll)
@@ -72,8 +72,8 @@ impl DeviceState {
     /// ```
     pub fn new() -> Self {
         Self {
-            modifiers: bitvec![u8, Lsb0; 0; 255],
-            locks: bitvec![u8, Lsb0; 0; 255],
+            modifiers: bitvec![u8, Lsb0; 0; MODIFIER_COUNT],
+            locks: bitvec![u8, Lsb0; 0; MODIFIER_COUNT],
             tap_hold: TapHoldProcessor::new(),
             pressed_keys: ArrayVec::new(),
         }

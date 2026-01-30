@@ -16,28 +16,38 @@ pub fn routes() -> Router<Arc<AppState>> {
 
 /// GET /api/layouts - List keyboard layouts
 async fn list_layouts() -> Result<Json<Value>, ApiError> {
-    let config_dir = get_config_dir()?;
-    let lm = LayoutManager::new(config_dir.join("layouts"))
-        .map_err(|e| ApiError::InternalError(e.to_string()))?;
+    // Wrap all blocking operations in spawn_blocking to prevent runtime starvation
+    tokio::task::spawn_blocking(move || {
+        let config_dir = get_config_dir()?;
+        let lm = LayoutManager::new(config_dir.join("layouts"))
+            .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
-    let layouts: Vec<String> = lm.list().iter().map(|layout| layout.name.clone()).collect();
+        let layouts: Vec<String> = lm.list().iter().map(|layout| layout.name.clone()).collect();
 
-    Ok(Json(json!({
-        "layouts": layouts
-    })))
+        Ok::<Json<Value>, ApiError>(Json(json!({
+            "layouts": layouts
+        })))
+    })
+    .await
+    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
 }
 
 /// GET /api/layouts/:name - Get layout KLE JSON
 async fn get_layout(Path(name): Path<String>) -> Result<Json<Value>, ApiError> {
-    let config_dir = get_config_dir()?;
-    let lm = LayoutManager::new(config_dir.join("layouts"))
-        .map_err(|e| ApiError::InternalError(e.to_string()))?;
+    // Wrap all blocking operations in spawn_blocking to prevent runtime starvation
+    tokio::task::spawn_blocking(move || {
+        let config_dir = get_config_dir()?;
+        let lm = LayoutManager::new(config_dir.join("layouts"))
+            .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
-    let layout = lm
-        .get(&name)
-        .ok_or_else(|| ApiError::NotFound(format!("Layout '{}' not found", name)))?;
+        let layout = lm
+            .get(&name)
+            .ok_or_else(|| ApiError::NotFound(format!("Layout '{}' not found", name)))?;
 
-    Ok(Json(layout.kle_json.clone()))
+        Ok::<Json<Value>, ApiError>(Json(layout.kle_json.clone()))
+    })
+    .await
+    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
 }
 
 /// Get config directory path (cross-platform)

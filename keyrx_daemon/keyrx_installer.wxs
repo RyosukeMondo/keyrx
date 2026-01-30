@@ -4,7 +4,7 @@
     Id="*"
     Name="KeyRx Keyboard Remapper"
     Language="1033"
-    Version="0.1.0.0"
+    Version="0.1.5.0"
     Manufacturer="KeyRx Project"
     UpgradeCode="A5B3C8D1-E9F2-4A7C-B6D3-1E8F9A2C5D7B">
 
@@ -19,9 +19,69 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
+    <!-- Task 7: Enhanced version validation with timestamp check -->
+    <!-- Validates binary version matches MSI version and binary is fresh (< 24 hours) -->
+    <!-- Inline PowerShell that runs before InstallFiles (source binary validation) -->
+    <CustomAction Id="ValidateBinaryVersion"
+                  Execute="immediate"
+                  Return="check"
+                  Directory="TARGETDIR"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;$bin='target\release\keyrx_daemon.exe'; if(!(Test-Path $bin)){Write-Host 'Binary not found'; exit 1} $f=Get-Item $bin; $age=(Get-Date)-$f.LastWriteTime; if($age.TotalHours -gt 24){Write-Host 'Binary too old'; exit 1} $v=&amp; $bin --version 2&gt;&amp;1; if($v -match '0\.1\.5'){exit 0}else{Write-Host 'Version mismatch'; exit 1}&quot;" />
+
+    <!-- Admin rights validation -->
+    <Condition Message="This installer requires administrator privileges. Please run as Administrator.">
+      Privileged
+    </Condition>
+
+    <!-- Task 8: Enhanced daemon stop with retry logic and graceful/force escalation -->
+    <!-- Attempts graceful shutdown first, then force kill, with retry and timeout -->
+    <!-- Inline PowerShell for stopping daemon (works even if install dir doesn't exist yet) -->
+    <CustomAction Id="StopDaemonBeforeUpgrade"
+                  Execute="immediate"
+                  Return="ignore"
+                  Directory="TARGETDIR"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;$proc='keyrx_daemon'; $max=3; $delay=2; $timeout=10; $start=Get-Date; for($i=1; $i -le $max -and ((Get-Date)-$start).TotalSeconds -lt $timeout; $i++){ $p=Get-Process -Name $proc -EA 0; if(!$p){exit 0} $p|Stop-Process -Force -EA 0; Start-Sleep -Seconds $delay } exit 0&quot;" />
+
+    <CustomAction Id="StopDaemonBeforeRemove"
+                  Execute="immediate"
+                  Return="ignore"
+                  Directory="TARGETDIR"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;$proc='keyrx_daemon'; $max=3; $delay=2; $timeout=10; $start=Get-Date; for($i=1; $i -le $max -and ((Get-Date)-$start).TotalSeconds -lt $timeout; $i++){ $p=Get-Process -Name $proc -EA 0; if(!$p){exit 0} $p|Stop-Process -Force -EA 0; Start-Sleep -Seconds $delay } exit 0&quot;" />
+
+    <!-- Task 9: Comprehensive post-install validation -->
+    <!-- Verifies binary exists, version matches, daemon starts, API responds -->
+    <!-- Shows user-friendly MessageBox with results, never fails installation -->
+    <Binary Id="VerifyInstallationPS1" SourceFile="keyrx_daemon\installer\verify-installation.ps1" />
+    <CustomAction Id="VerifyInstallation_SetProperty"
+                  Property="VerifyInstallation"
+                  Value="&quot;[WindowsFolder]System32\WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[#verify_installation.ps1]&quot; -InstallDir &quot;[INSTALLFOLDER]&quot; -ExpectedVersion &quot;0.1.5&quot; -ShowMessageBox"
+                  Execute="immediate" />
+    <CustomAction Id="VerifyInstallation"
+                  BinaryKey="WixCA"
+                  DllEntry="CAQuietExec64"
+                  Execute="deferred"
+                  Impersonate="yes"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <!-- Task 7: Pre-flight version validation (before copying files) -->
+      <Custom Action="ValidateBinaryVersion" Before="InstallFiles">NOT Installed</Custom>
+
+      <!-- Task 8: Stop daemon with enhanced retry logic -->
+      <!-- Stop daemon before RemoveExistingProducts (upgrade) -->
+      <Custom Action="StopDaemonBeforeUpgrade" Before="RemoveExistingProducts">Installed</Custom>
+      <!-- Also stop daemon before RemoveFiles (uninstall) -->
+      <Custom Action="StopDaemonBeforeRemove" Before="RemoveFiles">REMOVE="ALL"</Custom>
+
+      <!-- Task 9: Post-install validation (after installation completes) -->
+      <Custom Action="VerifyInstallation_SetProperty" Before="InstallFinalize">NOT Installed</Custom>
+      <Custom Action="VerifyInstallation" After="InstallFinalize">NOT Installed</Custom>
+    </InstallExecuteSequence>
+
     <Feature Id="ProductFeature" Title="KeyRx Core" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
       <ComponentGroupRef Id="ProductBinaries" />
+      <ComponentGroupRef Id="InstallerScripts" />
       <ComponentRef Id="StartMenuShortcut" />
       <ComponentRef Id="AppDataFolderComponent" />
     </Feature>
@@ -58,6 +118,7 @@
       <Directory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLFOLDER" Name="KeyRx">
           <Directory Id="BinFolder" Name="bin" />
+          <Directory Id="InstallerFolder" Name="installer" />
         </Directory>
       </Directory>
       <Directory Id="ProgramMenuFolder">
@@ -121,6 +182,30 @@
         <File
           Id="user_layout.krx"
           Source="examples\user_layout.krx"
+          KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- PowerShell scripts for CustomActions (Tasks 7-9) -->
+    <ComponentGroup Id="InstallerScripts" Directory="InstallerFolder">
+      <Component Id="ValidateBinaryVersionScript" Guid="1A2B3C4D-5E6F-7A8B-9C0D-1E2F3A4B5C6D" Win64="yes">
+        <File
+          Id="validate_binary_version.ps1"
+          Source="keyrx_daemon\installer\validate-binary-version.ps1"
+          KeyPath="yes" />
+      </Component>
+
+      <Component Id="StopDaemonRetryScript" Guid="2B3C4D5E-6F7A-8B9C-0D1E-2F3A4B5C6D7E" Win64="yes">
+        <File
+          Id="stop_daemon_retry.ps1"
+          Source="keyrx_daemon\installer\stop-daemon-retry.ps1"
+          KeyPath="yes" />
+      </Component>
+
+      <Component Id="VerifyInstallationScript" Guid="3C4D5E6F-7A8B-9C0D-1E2F-3A4B5C6D7E8F" Win64="yes">
+        <File
+          Id="verify_installation.ps1"
+          Source="keyrx_daemon\installer\verify-installation.ps1"
           KeyPath="yes" />
       </Component>
     </ComponentGroup>

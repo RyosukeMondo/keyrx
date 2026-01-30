@@ -19,7 +19,7 @@
 
 use std::collections::HashSet;
 use std::ptr;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
@@ -28,11 +28,16 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 };
 
 /// Global state for key blocking
-/// Uses thread_local to avoid cross-thread issues in the hook
-thread_local! {
-    static BLOCKER_STATE: std::cell::RefCell<Option<Arc<Mutex<KeyBlockerState>>>> =
-        std::cell::RefCell::new(None);
-}
+///
+/// CRITICAL FIX: Changed from thread_local to static OnceLock
+///
+/// The Windows hook callback runs on a different thread (the message loop thread)
+/// than where KeyBlocker::new() is called. thread_local storage is not accessible
+/// across threads, so the hook callback couldn't see the blocked keys list.
+///
+/// Using static OnceLock ensures the state is accessible from any thread,
+/// including the Windows hook callback thread.
+static BLOCKER_STATE: OnceLock<Arc<Mutex<KeyBlockerState>>> = OnceLock::new();
 
 /// Tracks which scan codes should be blocked (currently being remapped)
 struct KeyBlockerState {
@@ -78,12 +83,18 @@ impl KeyBlocker {
     /// The hook must be properly uninstalled when dropped.
     pub fn new() -> Result<Self, String> {
         let state = Arc::new(Mutex::new(KeyBlockerState::new()));
-        let state_clone = state.clone();
 
-        // Set thread-local state for the hook
-        BLOCKER_STATE.with(|tls| {
-            *tls.borrow_mut() = Some(state_clone);
-        });
+        // Initialize static state (only the first call sets it)
+        // Subsequent calls to new() will reuse the same state
+        // This is intentional - we only want ONE global blocker state
+        match BLOCKER_STATE.set(state.clone()) {
+            Ok(()) => {
+                log::debug!("✓ Initialized global blocker state");
+            }
+            Err(_) => {
+                log::debug!("Global blocker state already initialized (reusing existing)");
+            }
+        }
 
         // Install low-level keyboard hook
         let hook = unsafe {
@@ -107,8 +118,13 @@ impl KeyBlocker {
     /// Mark a key as remapped (will be blocked until unblocked)
     pub fn block_key(&self, scan_code: u32) {
         if let Ok(mut state) = self.state.lock() {
+            let was_blocked = state.is_blocked(scan_code);
             state.block_key(scan_code);
-            log::trace!("Blocking scan code: 0x{:04X}", scan_code);
+            if !was_blocked {
+                log::debug!("➕ Added scan code to blocker: 0x{:04X}", scan_code);
+            }
+        } else {
+            log::error!("✗ Failed to lock blocker state when adding scan code: 0x{:04X}", scan_code);
         }
     }
 
@@ -127,6 +143,25 @@ impl KeyBlocker {
             log::debug!("Cleared all blocked keys");
         }
     }
+
+    /// Get count of currently blocked keys (for diagnostics/testing)
+    pub fn blocked_count(&self) -> usize {
+        if let Ok(state) = self.state.lock() {
+            state.blocked_keys.len()
+        } else {
+            0
+        }
+    }
+
+    /// Check if a specific scan code is blocked (for diagnostics/testing)
+    #[allow(dead_code)]
+    pub fn is_key_blocked(&self, scan_code: u32) -> bool {
+        if let Ok(state) = self.state.lock() {
+            state.is_blocked(scan_code)
+        } else {
+            false
+        }
+    }
 }
 
 impl Drop for KeyBlocker {
@@ -138,10 +173,9 @@ impl Drop for KeyBlocker {
             log::info!("✓ Keyboard blocker uninstalled");
         }
 
-        // Clear thread-local state
-        BLOCKER_STATE.with(|tls| {
-            *tls.borrow_mut() = None;
-        });
+        // Note: We don't clear BLOCKER_STATE here because it's static
+        // and may be reused if another KeyBlocker is created
+        // The state will be cleaned up when the process exits
     }
 }
 
@@ -172,19 +206,30 @@ unsafe extern "system" fn keyboard_hook_proc(
     };
 
     // Check if this key should be blocked
-    let should_block = BLOCKER_STATE.with(|tls| {
-        if let Some(state_arc) = tls.borrow().as_ref() {
-            if let Ok(state) = state_arc.lock() {
-                return state.is_blocked(full_scan_code);
-            }
+    // Access static state (works from any thread, including Windows hook callback thread)
+    let (should_block, has_state) = if let Some(state_arc) = BLOCKER_STATE.get() {
+        if let Ok(state) = state_arc.lock() {
+            let blocked = state.is_blocked(full_scan_code);
+            (blocked, true)
+        } else {
+            log::error!("✗ Failed to lock BLOCKER_STATE in hook callback!");
+            (false, false)
         }
-        false
-    });
+    } else {
+        log::error!("✗ BLOCKER_STATE not initialized! KeyBlocker::new() was never called?");
+        (false, false)
+    };
+
+    if !has_state {
+        // This should only happen if KeyBlocker::new() was never called
+        // or if there's a severe state corruption issue
+        return CallNextHookEx(0 as HHOOK, code, w_param, l_param);
+    }
 
     if should_block {
         // Block the key by returning 1
-        log::trace!(
-            "✋ Blocked scan code: 0x{:04X} ({})",
+        log::debug!(
+            "✋ BLOCKED scan code: 0x{:04X} ({})",
             full_scan_code,
             if matches!(w_param as u32, WM_KEYDOWN | WM_SYSKEYDOWN) {
                 "press"
@@ -193,6 +238,12 @@ unsafe extern "system" fn keyboard_hook_proc(
             }
         );
         return 1;
+    } else if has_state {
+        // Key is NOT blocked but state exists - log for debugging
+        log::trace!(
+            "✓ ALLOWED scan code: 0x{:04X} (not in blocked set)",
+            full_scan_code
+        );
     }
 
     // Allow the key through

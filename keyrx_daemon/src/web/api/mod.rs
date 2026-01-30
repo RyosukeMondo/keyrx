@@ -20,6 +20,7 @@ use crate::web::AppState;
 
 pub mod config;
 pub mod devices;
+pub mod diagnostics;
 pub mod error;
 pub mod layouts;
 pub mod macros;
@@ -43,6 +44,7 @@ pub use error::ApiError;
 pub fn create_router(state: Arc<AppState>) -> Router {
     Router::new()
         .merge(metrics::routes())
+        .merge(diagnostics::routes())
         .merge(devices::routes())
         .merge(profiles::routes())
         .merge(config::routes())
