@@ -20,8 +20,6 @@ use tokio::time::sleep;
 /// Verifies that WebSocket subscriptions are properly cleaned up
 /// when clients disconnect, preventing memory leaks.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
-#[ignore] // FIXME: Requires WebSocket client implementation
 async fn test_websocket_subscription_cleanup_single_cycle() {
     let app = TestApp::new().await;
 
@@ -66,8 +64,6 @@ async fn test_websocket_subscription_cleanup_single_cycle() {
 ///
 /// This test takes ~10-20 seconds to complete.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
-#[ignore] // Run with: cargo test test_websocket_subscription_cleanup_1000_cycles -- --ignored --nocapture
 async fn test_websocket_subscription_cleanup_1000_cycles() {
     let app = TestApp::new().await;
 
@@ -138,7 +134,6 @@ async fn test_websocket_subscription_cleanup_1000_cycles() {
 /// Verifies that the event broadcaster queue does not grow unbounded
 /// when there are slow or disconnected subscribers.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
 async fn test_event_broadcaster_queue_bounded() {
     let app = TestApp::new().await;
 
@@ -193,7 +188,6 @@ async fn test_event_broadcaster_queue_bounded() {
 /// Verifies that concurrent connections and subscriptions do not
 /// create race conditions or leak resources.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
 async fn test_no_subscription_leaks_under_concurrent_load() {
     let app = Arc::new(TestApp::new().await);
 
@@ -248,7 +242,6 @@ async fn test_no_subscription_leaks_under_concurrent_load() {
 /// Verifies that repeated profile creation, activation, and deletion
 /// do not cause memory leaks.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
 async fn test_memory_stable_during_profile_operations() {
     let app = TestApp::new().await;
 
@@ -295,7 +288,6 @@ async fn test_memory_stable_during_profile_operations() {
 /// Verifies that broadcasting to multiple subscribers does not
 /// degrade performance or cause resource exhaustion.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
 async fn test_websocket_broadcast_performance() {
     let app = Arc::new(TestApp::new().await);
 
@@ -345,7 +337,6 @@ async fn test_websocket_broadcast_performance() {
 /// Verifies that abrupt disconnections (network errors, client crashes)
 /// properly clean up resources.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
 async fn test_cleanup_on_abnormal_websocket_termination() {
     let app = TestApp::new().await;
 
@@ -391,7 +382,6 @@ use tokio::sync::broadcast;
 ///
 /// Verifies that broadcast receiver count decreases when subscriptions are dropped.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
 async fn test_mem_002_subscription_cleanup_on_drop() {
     let (event_tx, _) = broadcast::channel::<DaemonEvent>(1000);
 
@@ -420,7 +410,6 @@ async fn test_mem_002_subscription_cleanup_on_drop() {
 ///
 /// Stress test to ensure subscriptions don't leak over many cycles.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
 async fn test_mem_002_subscription_cleanup_stress() {
     let (event_tx, _) = broadcast::channel::<DaemonEvent>(1000);
 
@@ -443,7 +432,6 @@ async fn test_mem_002_subscription_cleanup_stress() {
 ///
 /// Verifies that broadcast channel returns Lagged error when receiver can't keep up.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
 async fn test_mem_003_lag_detection() {
     const CAPACITY: usize = 10;
     let (event_tx, mut slow_rx) = broadcast::channel::<DaemonEvent>(CAPACITY);
@@ -483,7 +471,6 @@ async fn test_mem_003_lag_detection() {
 ///
 /// Simulates slow client and verifies channel enforces capacity limits.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
 async fn test_mem_003_queue_bounded() {
     const CAPACITY: usize = 100;
     let (event_tx, mut slow_rx) = broadcast::channel::<DaemonEvent>(CAPACITY);
@@ -536,7 +523,6 @@ async fn test_mem_003_queue_bounded() {
 ///
 /// Simulates real-world conditions with connections, lag, and disconnections.
 #[tokio::test]
-#[ignore] // Requires WebSocket client
 async fn test_mem_002_003_subscription_lifecycle() {
     const CAPACITY: usize = 100;
     let (event_tx, _) = broadcast::channel::<DaemonEvent>(CAPACITY);

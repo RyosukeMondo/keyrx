@@ -714,8 +714,8 @@ mod tests {
             "keyCount should be a number"
         );
         assert!(
-            json_value["active"].is_boolean(),
-            "active should be a boolean"
+            json_value["isActive"].is_boolean(),
+            "isActive should be a boolean"
         );
 
         // Verify snake_case fields are NOT present
@@ -731,10 +731,10 @@ mod tests {
             json_value.get("layer_count").is_none(),
             "Should not have snake_case layer_count"
         );
-        // active is the correct field name, not is_active
+        // isActive is the correct field name (camelCase), not active
         assert!(
-            json_value.get("is_active").is_none(),
-            "Should not have snake_case is_active"
+            json_value.get("active").is_none(),
+            "Should not have active (should be isActive)"
         );
     }
 }
