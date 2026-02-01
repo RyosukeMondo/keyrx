@@ -297,55 +297,11 @@ export function validateApiResponse<T>(
 
   if (!result.success) {
     const errorMessage = `API validation failed for ${endpoint}: ${result.error.message}`;
-
-    // Log structured error for debugging
-    console.error(
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'error',
-        service: 'API Validation',
-        event: 'validation_failed',
-        context: {
-          endpoint,
-          error: result.error.format(),
-          data: data,
-        },
-      })
-    );
-
     throw new Error(errorMessage);
   }
 
-  // Check for unexpected fields and log as warnings
-  // Note: Using passthrough() on schemas allows unexpected fields,
-  // so we just log them as warnings rather than failing validation
-  if (typeof data === 'object' && data !== null) {
-    const receivedKeys = Object.keys(data);
-
-    // We can't easily introspect Zod schemas to get expected keys,
-    // but passthrough() already handles this by including extra fields in the result.
-    // Just log that we received data for tracking purposes.
-    if (receivedKeys.length > 0) {
-      // Check if running in dev mode (Vite/browser or Node.js)
-      const isDev = (typeof import.meta !== 'undefined' && import.meta.env?.DEV) ||
-                    (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development');
-      if (isDev) {
-        // eslint-disable-next-line no-console
-        console.debug(
-          JSON.stringify({
-            timestamp: new Date().toISOString(),
-            level: 'debug',
-            service: 'API Validation',
-            event: 'validation_success',
-            context: {
-              endpoint,
-              fieldCount: receivedKeys.length,
-            },
-          })
-        );
-      }
-    }
-  }
+  // Note: Using passthrough() on schemas allows unexpected fields.
+  // This provides forward compatibility with API evolution.
 
   return result.data;
 }
@@ -368,20 +324,6 @@ export function validateRpcMessage(
   const result = schema.safeParse(data);
 
   if (!result.success) {
-    console.error(
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'error',
-        service: 'WebSocket RPC',
-        event: 'message_validation_failed',
-        context: {
-          direction,
-          error: result.error.format(),
-          data: data,
-        },
-      })
-    );
-
     throw new Error(
       `Invalid ${direction} RPC message: ${result.error.message}`
     );

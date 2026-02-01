@@ -19,7 +19,7 @@
  *
  *   // Subscribe to state changes
  *   client.onDaemonState((state) => {
- *     console.log('State changed:', state);
+ *     // Handle state change
  *   });
  * }
  * ```
@@ -170,18 +170,6 @@ export class RpcClient {
     });
     // For commands, the response is typically empty on success
     // Validation already happened at the WebSocket layer
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.debug(
-        JSON.stringify({
-          timestamp: new Date().toISOString(),
-          level: 'debug',
-          service: 'RPC Client',
-          event: 'set_profile_config_success',
-          context: { profileName: name },
-        })
-      );
-    }
   }
 
   /**

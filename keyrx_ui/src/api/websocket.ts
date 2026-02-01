@@ -105,17 +105,14 @@ export class WebSocketManager {
    */
   public connect(): void {
     if (this.isClosed) {
-      console.warn('WebSocketManager: Cannot connect after close() was called');
       return;
     }
 
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.warn('WebSocketManager: Already connected');
       return;
     }
 
     if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
-      console.warn('WebSocketManager: Connection already in progress');
       return;
     }
 
@@ -140,7 +137,6 @@ export class WebSocketManager {
         this.handleClose();
       };
     } catch (error) {
-      console.error('WebSocketManager: Failed to create WebSocket:', error);
       this.setConnectionState('error');
       this.scheduleReconnect();
     }
@@ -173,7 +169,6 @@ export class WebSocketManager {
    */
   public send(data: string | object): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn('WebSocketManager: Cannot send message, not connected');
       return;
     }
 
@@ -181,7 +176,7 @@ export class WebSocketManager {
       const message = typeof data === 'string' ? data : JSON.stringify(data);
       this.ws.send(message);
     } catch (error) {
-      console.error('WebSocketManager: Failed to send message:', error);
+      // Silently handle send errors
     }
   }
 
@@ -203,10 +198,6 @@ export class WebSocketManager {
    * Handle WebSocket open event
    */
   private handleOpen(): void {
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.log('WebSocketManager: Connected');
-    }
     // WS-002: Clear reconnection state on successful connect
     this.reconnectAttempts = 0;
     this.currentReconnectInterval = this.config.reconnectInterval;
@@ -246,14 +237,14 @@ export class WebSocketManager {
           break;
 
         case 'error':
-          console.error('WebSocketManager: Server error:', message.payload);
+          // Server error received
           break;
 
         default:
-          console.warn('WebSocketManager: Unknown message type:', message);
+          // Unknown message type received
       }
     } catch (error) {
-      console.error('WebSocketManager: Failed to parse message:', error);
+      // Failed to parse message
     }
   }
 
@@ -261,7 +252,6 @@ export class WebSocketManager {
    * Handle WebSocket error event
    */
   private handleError(error: Event): void {
-    console.error('WebSocketManager: Connection error:', error);
     this.setConnectionState('error');
 
     if (this.callbacks.onError) {
@@ -273,10 +263,6 @@ export class WebSocketManager {
    * Handle WebSocket close event
    */
   private handleClose(): void {
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.log('WebSocketManager: Connection closed');
-    }
     this.setConnectionState('disconnected');
 
     if (this.callbacks.onClose) {
@@ -298,9 +284,6 @@ export class WebSocketManager {
     }
 
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error(
-        'WebSocketManager: Max reconnection attempts reached, giving up'
-      );
       this.setConnectionState('error');
       return;
     }
@@ -310,13 +293,6 @@ export class WebSocketManager {
       this.reconnectAttempts < RECONNECT_INTERVALS.length
         ? RECONNECT_INTERVALS[this.reconnectAttempts]
         : MAX_RECONNECT_INTERVAL;
-
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.log(
-        `WebSocketManager: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.config.maxReconnectAttempts})`
-      );
-    }
 
     this.reconnectTimeoutId = window.setTimeout(() => {
       this.reconnectAttempts++;

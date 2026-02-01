@@ -372,60 +372,6 @@ impl ProfileService {
     /// # Returns
     ///
     /// Owned ConfigRoot instance, deserialized from the .krx file.
-    ///
-    /// # Errors
-    ///
-    /// Returns ProfileError if:
-    /// - Profile not found
-    /// - File read fails
-    /// - Deserialization fails
-    #[cfg(target_os = "windows")]
-    fn load_profile_config(&self, name: &str) -> Result<keyrx_core::config::ConfigRoot, ProfileError> {
-        use keyrx_compiler::serialize::deserialize as deserialize_krx;
-        use keyrx_compiler::error::DeserializeError;
-        use rkyv::Deserialize;
-
-        // Get profile metadata to find .krx path
-        let metadata = self.profile_manager
-            .get(name)
-            .ok_or_else(|| ProfileError::NotFound(name.to_string()))?;
-
-        // Read .krx file
-        let bytes = std::fs::read(&metadata.krx_path)?;
-
-        // Deserialize to archived type (validates magic, version, hash)
-        let archived = deserialize_krx(&bytes)
-            .map_err(|e| match e {
-                DeserializeError::InvalidMagic { .. } => {
-                    crate::config::CompilationError::CompilationFailed(
-                        "Invalid .krx file magic number".to_string()
-                    )
-                }
-                DeserializeError::VersionMismatch { .. } => {
-                    crate::config::CompilationError::CompilationFailed(
-                        "Incompatible .krx file version".to_string()
-                    )
-                }
-                DeserializeError::HashMismatch { .. } => {
-                    crate::config::CompilationError::CompilationFailed(
-                        "Corrupted .krx file (hash mismatch)".to_string()
-                    )
-                }
-                _ => {
-                    crate::config::CompilationError::CompilationFailed(
-                        format!("Failed to deserialize .krx file: {}", e)
-                    )
-                }
-            })?;
-
-        // Deserialize from archived to owned type
-        // This uses rkyv's Deserialize trait which is derived on ConfigRoot
-        archived.deserialize(&mut rkyv::Infallible)
-            .map_err(|_| crate::config::CompilationError::CompilationFailed(
-                "Failed to convert archived config to owned type".to_string()
-            ).into())
-    }
-
     /// Creates a new profile from a template.
     ///
     /// # Arguments
