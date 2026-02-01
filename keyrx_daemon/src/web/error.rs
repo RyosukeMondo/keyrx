@@ -67,6 +67,13 @@ use crate::error::{
 impl IntoResponse for DaemonError {
     fn into_response(self) -> Response {
         let (status, code, message) = match &self {
+            // Initialization errors - server issues (500 Internal Server Error)
+            DaemonError::Init(init_err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "INIT_ERROR",
+                format!("Initialization failed: {}", init_err),
+            ),
+
             // Configuration errors - client issues (400 Bad Request)
             DaemonError::Config(config_err) => match config_err {
                 ConfigError::FileNotFound { path } => (

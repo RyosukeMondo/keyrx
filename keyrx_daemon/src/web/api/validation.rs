@@ -2,6 +2,9 @@
 //!
 //! This module provides comprehensive request validation to prevent invalid
 //! or malicious API requests from reaching business logic.
+//!
+//! Validation is delegated to the `crate::validation` module for SSOT (Single Source
+//! of Truth). This module converts validation errors to API errors.
 
 use axum::{
     extract::Request,
@@ -10,25 +13,19 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
+use crate::validation;
 use super::error::ApiError;
 
 /// Maximum request body size (1MB) to prevent memory exhaustion
 pub const MAX_BODY_SIZE: usize = 1024 * 1024;
-
-/// Maximum profile name length to prevent path traversal attacks
-pub const MAX_NAME_LENGTH: usize = 64;
 
 /// Maximum config source length (512KB) to prevent memory exhaustion
 pub const MAX_CONFIG_LENGTH: usize = 512 * 1024;
 
 /// Validates profile name for security and correctness.
 ///
-/// # Security Checks
-/// - No path traversal (../)
-/// - No path separators (/ or \)
-/// - No null bytes
-/// - Length <= MAX_NAME_LENGTH
-/// - Only alphanumeric, dash, underscore
+/// This function delegates to `crate::validation::profile_name::validate_profile_name`
+/// and converts the result to an `ApiError`.
 ///
 /// # Arguments
 ///
@@ -50,102 +47,26 @@ pub const MAX_CONFIG_LENGTH: usize = 512 * 1024;
 /// assert!(validate_profile_name("con").is_err()); // Windows reserved
 /// ```
 pub fn validate_profile_name(name: &str) -> Result<(), ApiError> {
-    // Check length
-    if name.is_empty() {
-        return Err(ApiError::BadRequest(
-            "Profile name cannot be empty".to_string(),
-        ));
-    }
-
-    if name.len() > MAX_NAME_LENGTH {
-        return Err(ApiError::BadRequest(format!(
-            "Profile name too long (max {} characters, got {})",
-            MAX_NAME_LENGTH,
-            name.len()
-        )));
-    }
-
-    // Check for path traversal
-    if name.contains("..") {
-        return Err(ApiError::BadRequest(
-            "Profile name cannot contain path traversal (..)".to_string(),
-        ));
-    }
-
-    // Check for path separators
-    if name.contains('/') || name.contains('\\') {
-        return Err(ApiError::BadRequest(
-            "Profile name cannot contain path separators (/ or \\)".to_string(),
-        ));
-    }
-
-    // Check for null bytes
-    if name.contains('\0') {
-        return Err(ApiError::BadRequest(
-            "Profile name cannot contain null bytes".to_string(),
-        ));
-    }
-
-    // Check for Windows reserved names (case-insensitive)
-    let name_lower = name.to_lowercase();
-    const WINDOWS_RESERVED: &[&str] = &[
-        "con", "prn", "aux", "nul", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8",
-        "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
-    ];
-
-    if WINDOWS_RESERVED.contains(&name_lower.as_str()) {
-        return Err(ApiError::BadRequest(format!(
-            "Profile name '{}' is reserved on Windows",
-            name
-        )));
-    }
-
-    // Check for valid characters (alphanumeric, dash, underscore, space)
-    if !name
-        .chars()
-        .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == ' ')
-    {
-        return Err(ApiError::BadRequest(
-            "Profile name can only contain letters, numbers, dashes, underscores, and spaces"
-                .to_string(),
-        ));
-    }
-
-    // Check for leading/trailing whitespace
-    if name.trim() != name {
-        return Err(ApiError::BadRequest(
-            "Profile name cannot have leading or trailing whitespace".to_string(),
-        ));
-    }
-
-    Ok(())
+    validation::profile_name::validate_profile_name(name)
+        .map_err(|e| ApiError::BadRequest(e.to_string()))
 }
 
 /// Validates device ID for security and correctness.
 ///
-/// Device IDs should be simple identifiers without path components.
+/// This function delegates to `crate::validation::device::validate_device_id`
+/// and converts the result to an `ApiError`.
+///
+/// # Arguments
+///
+/// * `id` - Device ID to validate
+///
+/// # Returns
+///
+/// * `Ok(())` - ID is valid
+/// * `Err(ApiError::BadRequest)` - ID is invalid with reason
 pub fn validate_device_id(id: &str) -> Result<(), ApiError> {
-    if id.is_empty() {
-        return Err(ApiError::BadRequest(
-            "Device ID cannot be empty".to_string(),
-        ));
-    }
-
-    if id.len() > 256 {
-        return Err(ApiError::BadRequest(format!(
-            "Device ID too long (max 256 characters, got {})",
-            id.len()
-        )));
-    }
-
-    // No path traversal or separators
-    if id.contains("..") || id.contains('/') || id.contains('\\') {
-        return Err(ApiError::BadRequest(
-            "Device ID cannot contain path components".to_string(),
-        ));
-    }
-
-    Ok(())
+    validation::device::validate_device_id(id)
+        .map_err(|e| ApiError::BadRequest(e.to_string()))
 }
 
 /// Validates pagination parameters.
