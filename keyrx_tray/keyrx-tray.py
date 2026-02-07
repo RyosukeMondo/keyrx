@@ -257,7 +257,7 @@ class KeyRxTray:
         """Show about dialog"""
         dialog = Gtk.AboutDialog()
         dialog.set_program_name("KeyRx")
-        dialog.set_version("0.1.0")
+        dialog.set_version("1.0.0")
         dialog.set_comments("Advanced keyboard remapping with layers and tap-hold")
         dialog.set_website("https://github.com/RyosukeMondo/keyrx")
         dialog.set_logo_icon_name("input-keyboard")
