@@ -125,10 +125,12 @@ async fn rename_device(
         let mut registry = DeviceRegistry::load(&registry_path)
             .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
-        registry.rename(&id_clone, &name_clone).map_err(|e| match e {
-            DeviceValidationError::DeviceNotFound(msg) => ApiError::NotFound(msg),
-            _ => ApiError::BadRequest(e.to_string()),
-        })?;
+        registry
+            .rename(&id_clone, &name_clone)
+            .map_err(|e| match e {
+                DeviceValidationError::DeviceNotFound(msg) => ApiError::NotFound(msg),
+                _ => ApiError::BadRequest(e.to_string()),
+            })?;
 
         registry
             .save()

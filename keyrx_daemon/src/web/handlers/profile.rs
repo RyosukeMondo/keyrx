@@ -11,6 +11,7 @@ use validator::Validate;
 
 use crate::config::ProfileTemplate;
 use crate::services::ProfileService;
+use crate::validation;
 use crate::web::rpc_types::{RpcError, ServerMessage, INTERNAL_ERROR};
 use crate::web::AppState;
 
@@ -85,6 +86,7 @@ struct SetProfileConfigParams {
 /// Profile information returned by RPC methods
 #[typeshare]
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProfileRpcInfo {
     pub name: String,
     #[typeshare(serialized_as = "number")]
@@ -97,6 +99,7 @@ pub struct ProfileRpcInfo {
 /// Activation result returned by activate_profile
 #[typeshare]
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ActivationRpcResult {
     pub success: bool,
     #[typeshare(serialized_as = "number")]
@@ -116,24 +119,12 @@ pub struct ProfileConfigRpc {
 }
 
 /// Validate profile name to prevent path traversal attacks
+///
+/// This delegates to `crate::validation::profile_name::validate_profile_name`
+/// and converts the result to an RpcError.
 fn validate_profile_name(name: &str) -> Result<(), RpcError> {
-    if name.is_empty() {
-        return Err(RpcError::invalid_params("Profile name cannot be empty"));
-    }
-
-    // Check for path traversal attempts
-    if name.contains("..") {
-        return Err(RpcError::invalid_params("Profile name cannot contain '..'"));
-    }
-
-    if name.contains('/') || name.contains('\\') {
-        return Err(RpcError::invalid_params(
-            "Profile name cannot contain path separators",
-        ));
-    }
-
-    // Additional validation is performed by ProfileManager::validate_name
-    Ok(())
+    validation::profile_name::validate_profile_name(name)
+        .map_err(|e| RpcError::invalid_params(e.to_string()))
 }
 
 /// Get all profiles
@@ -254,6 +245,16 @@ pub async fn activate_profile(state: &AppState, params: Value) -> Result<Value, 
         .activate_profile(&params.name)
         .await
         .map_err(|e| RpcError::new(INTERNAL_ERROR, format!("Failed to activate profile: {}", e)))?;
+
+    // Update shared daemon state if available (Windows hot-reload)
+    // This signals the daemon event loop to detect the profile change and reload
+    if let Some(daemon_state) = &state.daemon_state {
+        daemon_state.set_active_profile(Some(params.name.clone()));
+        log::debug!(
+            "Updated daemon shared state with active profile: {}",
+            params.name
+        );
+    }
 
     // Broadcast event to WebSocket subscribers
     let event = ServerMessage::Event {

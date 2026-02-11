@@ -1,7 +1,7 @@
 # KeyRx2 Makefile
 # Provides simple top-level commands for common operations
 
-.PHONY: help build verify test launch clean setup msi e2e-auto package package-deb package-tar release sync-version generate-version
+.PHONY: help build verify test launch clean setup msi e2e-auto package package-deb package-tar release sync-version generate-version installer installer-simple
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -98,4 +98,20 @@ ifeq ($(OS),Windows_NT)
 else
 	@echo "MSI build is only supported on Windows"
 	@echo "Use: scripts/windows/build_msi.bat (from cmd/PowerShell)"
+endif
+
+installer: ## Build self-contained Windows installer using IExpress (Windows only, no external tools)
+ifeq ($(OS),Windows_NT)
+	@powershell.exe -ExecutionPolicy Bypass -File scripts\installer\build-installer.ps1
+else
+	@echo "Installer build is only supported on Windows"
+	@echo "Use: powershell.exe -ExecutionPolicy Bypass -File scripts\installer\build-installer.ps1"
+endif
+
+installer-simple: ## Build self-contained PowerShell installer (Windows only, single .ps1 file)
+ifeq ($(OS),Windows_NT)
+	@powershell.exe -ExecutionPolicy Bypass -File scripts\installer\create-simple-installer.ps1
+else
+	@echo "Installer build is only supported on Windows"
+	@echo "Use: powershell.exe -ExecutionPolicy Bypass -File scripts\installer\create-simple-installer.ps1"
 endif

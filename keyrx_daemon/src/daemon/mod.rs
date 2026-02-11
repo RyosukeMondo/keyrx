@@ -58,8 +58,12 @@ use state::convert_archived_device_config;
 // Submodules
 pub mod event_broadcaster;
 pub mod event_loop;
+pub mod factory;
 pub mod metrics;
+pub mod platform_runners;
+pub mod platform_setup;
 pub mod remapping_state;
+pub mod shared_state;
 pub mod signals;
 pub mod state;
 
@@ -68,6 +72,7 @@ pub use event_broadcaster::{start_latency_broadcast_task, EventBroadcaster};
 pub use event_loop::process_one_event;
 pub use metrics::{LatencyRecorder, LatencySnapshot, MetricsAggregator};
 pub use remapping_state::RemappingState;
+pub use shared_state::DaemonSharedState;
 pub use signals::{install_signal_handlers, SignalHandler};
 pub use state::ReloadState;
 

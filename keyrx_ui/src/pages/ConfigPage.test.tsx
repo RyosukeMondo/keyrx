@@ -14,7 +14,8 @@
  * user-visible behavior.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import React from 'react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import {
   renderWithProviders,
@@ -25,6 +26,22 @@ import ConfigPage from './ConfigPage';
 import { http, HttpResponse } from 'msw';
 import { server } from '../test/mocks/server';
 import userEvent from '@testing-library/user-event';
+
+// Mock WasmContext with inline mock value
+vi.mock('../contexts/WasmContext', () => {
+  const mockWasmContext = {
+    isWasmReady: true,
+    isLoading: false,
+    error: null as Error | null,
+    validateConfig: vi.fn().mockResolvedValue([]),
+    runSimulation: vi.fn().mockResolvedValue(null),
+  };
+
+  return {
+    useWasmContext: () => mockWasmContext,
+    WasmProvider: ({ children }: { children: React.ReactNode }) => children,
+  };
+});
 
 describe('ConfigPage - Simple Tests', () => {
   beforeEach(async () => {
@@ -128,20 +145,22 @@ describe('ConfigPage - Simple Tests', () => {
 
       renderWithProviders(<ConfigPage />, { wrapWithRouter: true });
 
-      // Find and click the code panel toggle button
+      // Find the code panel toggle button
       await waitFor(() => {
         const toggleButton = screen.getByRole('button', { name: /Show Code/i });
         expect(toggleButton).toBeInTheDocument();
       });
 
+      // Code panel should not be visible initially
+      expect(screen.queryByTestId('code-panel-container')).not.toBeInTheDocument();
+
+      // Click the toggle button to open the panel
       const toggleButton = screen.getByRole('button', { name: /Show Code/i });
       await user.click(toggleButton);
 
-      // After clicking, button text should change to "Hide Code"
+      // Code panel should now be visible
       await waitFor(() => {
-        expect(
-          screen.getByRole('button', { name: /Hide Code/i })
-        ).toBeInTheDocument();
+        expect(screen.getByTestId('code-panel-container')).toBeInTheDocument();
       });
     });
 

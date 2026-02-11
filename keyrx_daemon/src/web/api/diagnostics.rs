@@ -2,6 +2,7 @@
 
 use axum::{routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::sync::Arc;
 
 use crate::error::DaemonError;
@@ -9,7 +10,12 @@ use crate::version;
 use crate::web::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
-    Router::new().route("/diagnostics", get(get_diagnostics))
+    Router::new()
+        .route("/diagnostics", get(get_diagnostics))
+        .route("/diagnostics/full", get(get_full_diagnostics))
+        .route("/diagnostics/routes", get(get_routes_info))
+        .route("/diagnostics/frontend", get(get_frontend_status))
+        .route("/diagnostics/build", get(get_build_info))
 }
 
 /// Comprehensive diagnostics information
@@ -72,6 +78,36 @@ pub struct ConfigStatus {
 }
 
 /// GET /api/diagnostics - Get comprehensive system diagnostics
+/// Simple build information for quick verification
+#[derive(Serialize, Deserialize)]
+pub struct BuildInfo {
+    pub version: String,
+    pub build_time: String,
+    pub git_hash: String,
+    pub binary_timestamp: Option<String>,
+}
+
+/// Get simple build information (lightweight endpoint for verification)
+async fn get_build_info() -> Result<Json<BuildInfo>, DaemonError> {
+    tokio::task::spawn_blocking(move || {
+        let binary_timestamp = get_binary_timestamp();
+
+        Ok::<Json<BuildInfo>, DaemonError>(Json(BuildInfo {
+            version: version::VERSION.to_string(),
+            build_time: version::BUILD_DATE.to_string(),
+            git_hash: version::GIT_HASH.to_string(),
+            binary_timestamp,
+        }))
+    })
+    .await
+    .map_err(|e| {
+        DaemonError::from(crate::error::ConfigError::ParseError {
+            path: std::path::PathBuf::from("build-info"),
+            reason: format!("Task join error: {}", e),
+        })
+    })?
+}
+
 async fn get_diagnostics() -> Result<Json<DiagnosticsResponse>, DaemonError> {
     // Wrap all operations in spawn_blocking for consistency with other endpoints
     tokio::task::spawn_blocking(move || {
@@ -131,8 +167,8 @@ fn get_binary_timestamp() -> Option<String> {
                 .unwrap_or_default();
             // Format as RFC 3339 timestamp
             let secs = duration.as_secs();
-            let datetime = chrono::DateTime::<chrono::Utc>::from_timestamp(secs as i64, 0)
-                .unwrap_or_default();
+            let datetime =
+                chrono::DateTime::<chrono::Utc>::from_timestamp(secs as i64, 0).unwrap_or_default();
             datetime.to_rfc3339()
         })
 }
@@ -201,7 +237,7 @@ fn get_hook_status() -> HookStatus {
     // On Linux, we don't have a hook system in the same way
     // The evdev grab is the equivalent
     HookStatus {
-        installed: true, // Assume installed if daemon is running
+        installed: true,       // Assume installed if daemon is running
         blocked_keys_count: 0, // Not tracked on Linux
     }
 }
@@ -237,22 +273,150 @@ fn get_memory_usage() -> MemoryUsage {
     }
 }
 
-/// Format bytes in human-readable format
+/// Format byte count as human-readable string (B, KB, MB, GB)
+#[cfg(any(target_os = "linux", test))]
 fn format_bytes(bytes: u64) -> String {
-    const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
-    let mut size = bytes as f64;
-    let mut unit_index = 0;
+    const KB: u64 = 1024;
+    const MB: u64 = KB * 1024;
+    const GB: u64 = MB * 1024;
 
-    while size >= 1024.0 && unit_index < UNITS.len() - 1 {
-        size /= 1024.0;
-        unit_index += 1;
-    }
-
-    if unit_index == 0 {
-        format!("{} {}", bytes, UNITS[0])
+    if bytes >= GB {
+        format!("{:.2} GB", bytes as f64 / GB as f64)
+    } else if bytes >= MB {
+        format!("{:.2} MB", bytes as f64 / MB as f64)
+    } else if bytes >= KB {
+        format!("{:.2} KB", bytes as f64 / KB as f64)
     } else {
-        format!("{:.2} {}", size, UNITS[unit_index])
+        format!("{} B", bytes)
     }
+}
+
+/// GET /api/diagnostics/full - Get all diagnostics including routes and frontend status
+async fn get_full_diagnostics() -> Result<Json<Value>, DaemonError> {
+    tokio::task::spawn_blocking(move || {
+        let basic_diag = tokio::runtime::Handle::current()
+            .block_on(get_diagnostics())
+            .map_err(|e| {
+                DaemonError::from(crate::error::ConfigError::ParseError {
+                    path: std::path::PathBuf::from("full-diagnostics"),
+                    reason: format!("Failed to get basic diagnostics: {}", e),
+                })
+            })?;
+
+        let routes_info = get_routes_list();
+        let frontend_status = get_frontend_info();
+
+        Ok::<Json<Value>, DaemonError>(Json(serde_json::json!({
+            "basic": basic_diag.0,
+            "routes": routes_info,
+            "frontend": frontend_status,
+        })))
+    })
+    .await
+    .map_err(|e| {
+        DaemonError::from(crate::error::ConfigError::ParseError {
+            path: std::path::PathBuf::from("full-diagnostics"),
+            reason: format!("Task join error: {}", e),
+        })
+    })?
+}
+
+/// GET /api/diagnostics/routes - Get information about registered API routes
+async fn get_routes_info() -> Json<Value> {
+    Json(serde_json::json!(get_routes_list()))
+}
+
+/// GET /api/diagnostics/frontend - Get frontend bundle status
+async fn get_frontend_status() -> Json<Value> {
+    Json(serde_json::json!(get_frontend_info()))
+}
+
+/// Get list of registered API routes
+fn get_routes_list() -> Value {
+    serde_json::json!({
+        "api_routes": [
+            "/api/health",
+            "/api/version",
+            "/api/status",
+            "/api/metrics/latency",
+            "/api/metrics/events",
+            "/api/daemon/state",
+            "/api/diagnostics",
+            "/api/diagnostics/full",
+            "/api/diagnostics/routes",
+            "/api/diagnostics/frontend",
+            "/api/devices",
+            "/api/devices/:device_id",
+            "/api/devices/:device_id/layout",
+            "/api/profiles",
+            "/api/profiles/:name",
+            "/api/profiles/:name/config",
+            "/api/profiles/:name/activate",
+            "/api/profiles/active",
+            "/api/config/:profile/layers",
+            "/api/config/:profile/layers/:layer",
+            "/api/layouts",
+            "/api/layouts/:layout_name",
+            "/api/simulator/press",
+            "/api/simulator/release",
+            "/api/simulator/sequence",
+            "/api/macros/start",
+            "/api/macros/stop",
+            "/api/macros/events",
+            "/api/macros/save",
+        ],
+        "websocket_routes": [
+            "/ws",
+            "/ws-rpc",
+        ],
+        "frontend_routes": [
+            "/",
+            "/home",
+            "/devices",
+            "/profiles",
+            "/profiles/:name/config",
+            "/config",
+            "/metrics",
+            "/simulator",
+        ],
+        "note": "Frontend routes are handled by React Router via SPA fallback"
+    })
+}
+
+/// Get frontend bundle information
+fn get_frontend_info() -> Value {
+    use std::path::PathBuf;
+
+    // Check if UI dist directory exists
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let ui_dist_path = PathBuf::from(manifest_dir).join("../keyrx_ui/dist");
+    let ui_dist_exists = ui_dist_path.exists();
+
+    serde_json::json!({
+        "ui_embedded": true,
+        "ui_dist_path": ui_dist_path.to_string_lossy(),
+        "ui_dist_exists": ui_dist_exists,
+        "spa_fallback": "Enabled - all non-API routes serve index.html for React Router",
+        "bundle_files": [
+            "/index.html",
+            "/assets/index-*.js",
+            "/assets/vendor-*.js",
+            "/assets/index-*.css",
+        ],
+        "troubleshooting": {
+            "config_page_not_loading": [
+                "1. Check browser console for JavaScript errors (F12)",
+                "2. Verify /api/profiles/:name/config returns JSON",
+                "3. Ensure React Router is hydrating properly",
+                "4. Check network tab for failed asset requests",
+            ],
+            "api_returning_html": [
+                "1. Verify route path matches /api/* pattern",
+                "2. Check middleware isn't intercepting requests",
+                "3. Ensure handler returns Json<T> not Html",
+            ],
+        },
+    })
 }
 
 /// Check configuration validation status

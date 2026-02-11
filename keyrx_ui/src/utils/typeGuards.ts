@@ -73,19 +73,3 @@ export function safeJsonParse<T>(
 export function isError(error: unknown): error is Error {
   return error instanceof Error;
 }
-
-/**
- * Extract error message safely
- */
-export function getErrorMessage(error: unknown, fallback = 'An unknown error occurred'): string {
-  if (isError(error)) {
-    return error.message;
-  }
-  if (isNonEmptyString(error)) {
-    return error;
-  }
-  if (isObject(error) && 'message' in error && isNonEmptyString(error.message)) {
-    return error.message;
-  }
-  return fallback;
-}

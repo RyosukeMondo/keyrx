@@ -1,7 +1,11 @@
 /**
  * Environment Configuration
  * Type-safe access to Vite environment variables
+ *
+ * Port and host constants are imported from constants.ts (SSOT).
  */
+
+import { DEFAULT_DAEMON_PORT, DEFAULT_DAEMON_HOST, WS_RPC_PATH } from './constants';
 
 /**
  * Get the API base URL
@@ -17,7 +21,7 @@ export function getApiUrl(): string {
   }
 
   // In development or if explicitly configured, use the configured URL
-  return configuredUrl || 'http://localhost:9867';
+  return configuredUrl || `http://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}`;
 }
 
 /**
@@ -31,11 +35,11 @@ export function getWsUrl(): string {
   // In production, if no URL configured, use same origin with ws/wss protocol
   if (import.meta.env.PROD && !configuredUrl) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//${window.location.host}/ws-rpc`;
+    return `${protocol}//${window.location.host}${WS_RPC_PATH}`;
   }
 
   // In development or if explicitly configured, use the configured URL
-  return configuredUrl || 'ws://localhost:9867/ws-rpc';
+  return configuredUrl || `ws://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}${WS_RPC_PATH}`;
 }
 
 /**

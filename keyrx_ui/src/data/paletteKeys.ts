@@ -1,4 +1,4 @@
-import { KEY_DEFINITIONS } from './keyDefinitions';
+import { KEY_DEFINITIONS } from './keys';
 import type { PaletteKey } from '../components/KeyPalette';
 
 // VIA-style key definitions with categories and subcategories

@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- KeyRx WiX Installer Script -->
+<!-- Requires WiX Toolset 3.11+ -->
+<!-- Build: candle keyrx-installer.wxs && light keyrx-installer.wixobj -ext WixUIExtension -->
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+  <?define ProductVersion="0.1.5" ?>
+  <?define ProductName="KeyRx" ?>
+  <?define Manufacturer="KeyRx Contributors" ?>
+  <?define UpgradeCode="{8F3C4A7B-9D2E-4F1A-B8C3-5E6D7F8A9B0C}" ?>
+
+  <Product Id="*"
+           Name="$(var.ProductName)"
+           Language="1033"
+           Version="$(var.ProductVersion)"
+           Manufacturer="$(var.Manufacturer)"
+           UpgradeCode="$(var.UpgradeCode)">
+
+    <Package InstallerVersion="500"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Description="$(var.ProductName) $(var.ProductVersion) Installer"
+             Comments="Advanced keyboard remapping with layers, tap-hold, and conditional mappings"
+             Manufacturer="$(var.Manufacturer)" />
+
+    <!-- Require Windows 10 build 17763 or later -->
+    <Condition Message="This application requires Windows 10 version 1809 (build 17763) or later.">
+      <![CDATA[Installed OR (VersionNT >= 601 AND VersionNT64)]]>
+    </Condition>
+
+    <!-- Major upgrade configuration -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed."
+                  AllowSameVersionUpgrades="yes" />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Standard UI -->
+    <UIRef Id="WixUI_InstallDir" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <!-- License agreement -->
+    <WixVariable Id="WixUILicenseRtf" Value="..\..\LICENSE.rtf" />
+
+    <!-- Application icon -->
+    <Icon Id="keyrx.ico" SourceFile="..\..\keyrx_ui\public\favicon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="keyrx.ico" />
+
+    <!-- Add/Remove Programs information -->
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/RyosukeMondo/keyrx" />
+    <Property Id="ARPCONTACT" Value="https://github.com/RyosukeMondo/keyrx/issues" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/RyosukeMondo/keyrx" />
+
+    <!-- Directory structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="KeyRx">
+          <Directory Id="UiFolder" Name="ui" />
+          <Directory Id="DocsFolder" Name="docs" />
+          <Directory Id="ExamplesFolder" Name="examples" />
+          <Directory Id="ConfigFolder" Name="config" />
+        </Directory>
+      </Directory>
+
+      <!-- User AppData folder -->
+      <Directory Id="AppDataFolder">
+        <Directory Id="UserDataFolder" Name="KeyRx">
+          <Directory Id="UserConfigsFolder" Name="configs" />
+          <Directory Id="UserLogsFolder" Name="logs" />
+        </Directory>
+      </Directory>
+
+      <!-- Start Menu -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="KeyRx" />
+      </Directory>
+
+      <!-- Desktop -->
+      <Directory Id="DesktopFolder" Name="Desktop" />
+    </Directory>
+
+    <!-- Components -->
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <!-- Main executables -->
+      <Component Id="DaemonExecutable" Guid="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}">
+        <File Id="keyrx_daemon.exe"
+              Source="..\..\target\release\keyrx_daemon.exe"
+              KeyPath="yes" />
+      </Component>
+
+      <Component Id="CompilerExecutable" Guid="{B2C3D4E5-F678-90AB-CDEF-1234567890AB}">
+        <File Id="keyrx_compiler.exe"
+              Source="..\..\target\release\keyrx_compiler.exe"
+              KeyPath="yes" />
+      </Component>
+
+      <!-- Documentation -->
+      <Component Id="Documentation" Guid="{C3D4E5F6-7890-ABCD-EF12-34567890ABCD}">
+        <File Id="README.md" Source="..\..\README.md" KeyPath="yes" />
+        <File Id="LICENSE" Source="..\..\LICENSE" />
+      </Component>
+
+      <!-- Environment PATH -->
+      <Component Id="PathEnvironment" Guid="{D4E5F678-90AB-CDEF-1234-567890ABCDEF}">
+        <Environment Id="PATH"
+                     Name="PATH"
+                     Value="[INSTALLFOLDER]"
+                     Permanent="no"
+                     Part="last"
+                     Action="set"
+                     System="yes" />
+        <CreateFolder />
+      </Component>
+
+      <!-- Registry entries -->
+      <Component Id="RegistryEntries" Guid="{E5F67890-ABCD-EF12-3456-7890ABCDEF12}">
+        <RegistryKey Root="HKLM" Key="Software\KeyRx Contributors\KeyRx">
+          <RegistryValue Type="string" Name="InstallPath" Value="[INSTALLFOLDER]" KeyPath="yes" />
+          <RegistryValue Type="string" Name="Version" Value="$(var.ProductVersion)" />
+        </RegistryKey>
+      </Component>
+
+      <!-- File association for .krx files -->
+      <Component Id="FileAssociation" Guid="{F6789ABC-DEF1-2345-6789-0ABCDEF12345}">
+        <ProgId Id="KeyRxConfig" Description="KeyRx Configuration">
+          <Extension Id="krx" ContentType="application/x-keyrx-config">
+            <Verb Id="open" Command="Open" TargetFile="keyrx_daemon.exe" Argument='"%1"' />
+          </Extension>
+        </ProgId>
+      </Component>
+    </ComponentGroup>
+
+    <!-- Web UI files (recursive) -->
+    <ComponentGroup Id="WebUIComponents" Directory="UiFolder">
+      <Component Id="WebUIFiles" Guid="{0ABCDEF1-2345-6789-ABCD-EF1234567890}">
+        <CreateFolder />
+        <!-- WiX heat.exe should be used to harvest these files -->
+        <!-- heat dir keyrx_ui\dist -cg WebUIFiles -dr UiFolder -gg -sfrag -srd -out ui-files.wxs -->
+      </Component>
+    </ComponentGroup>
+
+    <!-- Start Menu shortcuts -->
+    <ComponentGroup Id="ShortcutComponents" Directory="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcuts" Guid="{12345678-90AB-CDEF-1234-567890ABCDEF}">
+        <Shortcut Id="DaemonShortcut"
+                  Name="KeyRx Daemon"
+                  Description="KeyRx Keyboard Remapping Daemon"
+                  Target="[INSTALLFOLDER]keyrx_daemon.exe"
+                  Arguments="--help"
+                  WorkingDirectory="INSTALLFOLDER" />
+
+        <Shortcut Id="CompilerShortcut"
+                  Name="KeyRx Compiler"
+                  Description="KeyRx Configuration Compiler"
+                  Target="[INSTALLFOLDER]keyrx_compiler.exe"
+                  Arguments="--help"
+                  WorkingDirectory="INSTALLFOLDER" />
+
+        <Shortcut Id="WebUIShortcut"
+                  Name="KeyRx Web UI"
+                  Description="Open KeyRx Web Interface"
+                  Target="http://localhost:9867" />
+
+        <Shortcut Id="ConfigFolderShortcut"
+                  Name="Configuration Folder"
+                  Description="Open configuration folder"
+                  Target="[UserConfigsFolder]" />
+
+        <Shortcut Id="UninstallShortcut"
+                  Name="Uninstall KeyRx"
+                  Description="Uninstall KeyRx"
+                  Target="[SystemFolder]msiexec.exe"
+                  Arguments="/x [ProductCode]" />
+
+        <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\KeyRx Contributors\KeyRx" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Features -->
+    <Feature Id="ProductFeature"
+             Title="KeyRx Core"
+             Description="Core KeyRx components (daemon, compiler, web UI)"
+             Level="1"
+             ConfigurableDirectory="INSTALLFOLDER"
+             AllowAdvertise="no"
+             Display="expand"
+             Absent="disallow">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="WebUIComponents" />
+      <ComponentGroupRef Id="ShortcutComponents" />
+    </Feature>
+
+    <Feature Id="Documentation"
+             Title="Documentation"
+             Description="User guides and documentation"
+             Level="1"
+             AllowAdvertise="no">
+      <!-- Add doc components here -->
+    </Feature>
+
+    <Feature Id="Examples"
+             Title="Example Configurations"
+             Description="Sample configuration files"
+             Level="1"
+             AllowAdvertise="no">
+      <!-- Add example components here -->
+    </Feature>
+
+  </Product>
+</Wix>

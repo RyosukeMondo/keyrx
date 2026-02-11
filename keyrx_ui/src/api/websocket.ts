@@ -15,6 +15,7 @@ import type {
   LatencyStats,
   KeyEventPayload,
 } from '../types';
+import { buildWsUrl, WS_RECONNECT_CONFIG } from '../config/constants';
 
 /**
  * Transform daemon's KeyEventPayload to frontend's EventRecord
@@ -62,17 +63,14 @@ export interface WebSocketCallbacks {
   onConnectionStateChange?: (state: ConnectionState) => void;
 }
 
-// WS-002: Exponential backoff configuration
-const RECONNECT_INTERVALS = [100, 200, 400, 800, 1600]; // ms
-const MAX_RECONNECT_INTERVAL = 5000; // 5 seconds max
-
+// Use configuration from central constants
 const DEFAULT_CONFIG: Required<WebSocketConfig> = {
-  url: '', // Will be computed from window.location
+  url: '', // Will be computed from buildWsUrl()
   reconnect: true,
-  reconnectInterval: 100, // Start at 100ms (WS-002)
-  maxReconnectInterval: MAX_RECONNECT_INTERVAL,
-  reconnectDecay: 2.0, // Double each time (WS-002)
-  maxReconnectAttempts: 10,
+  reconnectInterval: WS_RECONNECT_CONFIG.initialDelayMs,
+  maxReconnectInterval: WS_RECONNECT_CONFIG.maxDelayMs,
+  reconnectDecay: WS_RECONNECT_CONFIG.backoffMultiplier,
+  maxReconnectAttempts: WS_RECONNECT_CONFIG.maxRetries,
 };
 
 export class WebSocketManager {
@@ -95,8 +93,7 @@ export class WebSocketManager {
 
     // Compute WebSocket URL if not provided
     if (!this.config.url) {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      this.config.url = `${protocol}//${window.location.host}/ws`;
+      this.config.url = buildWsUrl();
     }
   }
 

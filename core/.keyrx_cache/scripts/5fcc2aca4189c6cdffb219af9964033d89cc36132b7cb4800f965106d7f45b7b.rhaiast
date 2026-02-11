@@ -1,1 +1,0 @@
-{"format_version":1,"core_version":"0.1.0","hash":"5fcc2aca4189c6cdffb219af9964033d89cc36132b7cb4800f965106d7f45b7b","script":"fn test_json() { let x = 42; }\n","compile_micros":32}

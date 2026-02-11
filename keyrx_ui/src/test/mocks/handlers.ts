@@ -109,7 +109,16 @@ export const handlers = [
     }
 
     device.name = body.name;
-    return HttpResponse.json({ success: true });
+    // Return the updated device in DeviceEntry format
+    const response: any = {
+      ...device,
+      last_seen: device.lastSeen || Date.now(),
+    };
+    // Remove null serial field to pass validation
+    if (response.serial === null) {
+      delete response.serial;
+    }
+    return HttpResponse.json(response);
   }),
 
   http.patch('/api/devices/:id', async ({ request, params }) => {

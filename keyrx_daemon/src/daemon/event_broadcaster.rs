@@ -157,32 +157,71 @@ impl EventBroadcaster {
 
     /// WS-005: Check if message was already delivered to subscriber
     pub fn was_delivered(&self, subscriber_id: &str, sequence: u64) -> bool {
-        let delivered = self.delivered_messages.read().unwrap();
-        delivered
-            .get(subscriber_id)
-            .map(|d| d.contains(sequence))
-            .unwrap_or(false)
+        match self.delivered_messages.read() {
+            Ok(delivered) => delivered
+                .get(subscriber_id)
+                .map(|d| d.contains(sequence))
+                .unwrap_or(false),
+            Err(e) => {
+                log::error!(
+                    target: "keyrx::event_broadcaster",
+                    "Lock poisoned when checking delivered messages for '{}': {}. Assuming not delivered.",
+                    subscriber_id, e
+                );
+                false
+            }
+        }
     }
 
     /// WS-005: Mark message as delivered to subscriber
     pub fn mark_delivered(&self, subscriber_id: &str, sequence: u64) {
-        let mut delivered = self.delivered_messages.write().unwrap();
-        delivered
-            .entry(subscriber_id.to_string())
-            .or_insert_with(DeliveredMessages::new)
-            .insert(sequence);
+        match self.delivered_messages.write() {
+            Ok(mut delivered) => {
+                delivered
+                    .entry(subscriber_id.to_string())
+                    .or_insert_with(DeliveredMessages::new)
+                    .insert(sequence);
+            }
+            Err(e) => {
+                log::error!(
+                    target: "keyrx::event_broadcaster",
+                    "Lock poisoned when marking message {} as delivered for '{}': {}. Message tracking will be inconsistent.",
+                    sequence, subscriber_id, e
+                );
+            }
+        }
     }
 
     /// WS-003: Subscribe a new client
     pub fn subscribe_client(&self, client_id: &str) {
-        let mut delivered = self.delivered_messages.write().unwrap();
-        delivered.insert(client_id.to_string(), DeliveredMessages::new());
+        match self.delivered_messages.write() {
+            Ok(mut delivered) => {
+                delivered.insert(client_id.to_string(), DeliveredMessages::new());
+            }
+            Err(e) => {
+                log::error!(
+                    target: "keyrx::event_broadcaster",
+                    "Lock poisoned when subscribing client '{}': {}. Client tracking may be incomplete.",
+                    client_id, e
+                );
+            }
+        }
     }
 
     /// WS-003: Unsubscribe a client
     pub fn unsubscribe_client(&self, client_id: &str) {
-        let mut delivered = self.delivered_messages.write().unwrap();
-        delivered.remove(client_id);
+        match self.delivered_messages.write() {
+            Ok(mut delivered) => {
+                delivered.remove(client_id);
+            }
+            Err(e) => {
+                log::error!(
+                    target: "keyrx::event_broadcaster",
+                    "Lock poisoned when unsubscribing client '{}': {}. Client may not be properly cleaned up.",
+                    client_id, e
+                );
+            }
+        }
     }
 }
 

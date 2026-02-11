@@ -1,18 +1,31 @@
 // Shared TypeScript types for the KeyRx UI
+// This file re-exports generated types and defines types that can't be auto-generated
 
-// Device Management Types
-export interface DeviceEntry {
-  id: string;
-  name: string;
-  path: string;
-  serial: string | null;
-  active: boolean;
-  scope: string | null; // "global" | "device-specific"
-  layout: string | null;
-  isVirtual: boolean; // true if device is daemon-created (uinput), false if physical hardware
-  enabled: boolean; // true if device is enabled (shown in UI), false if disabled (hidden)
-}
+// Re-export generated types from typeshare (SSOT)
+// Note: RPC protocol types (ClientMessage, ServerMessage, RpcError) are
+// canonically exported from ./rpc which provides stricter typing.
+export type {
+  DeviceEntry,
+  DeviceRpcInfo,
+  ProfileMetadata,
+  ProfileRpcInfo,
+  ProfileConfigRpc,
+  ActivationResult,
+  ActivationRpcResult,
+  ProfileTemplate,
+  DaemonState,
+  KeyEventData,
+  LatencyStats,
+  ErrorData,
+  LatencyRpcStats,
+  EventRpcEntry,
+  RestartResult,
+} from './generated';
 
+// Re-export enums
+export { ProfileTemplate } from './generated';
+
+// Additional types for DeviceEntry that aren't in Rust
 export type DeviceScope = 'global' | 'device-specific';
 
 export type LayoutPreset =
@@ -22,34 +35,7 @@ export type LayoutPreset =
   | 'HHKB'
   | 'NUMPAD';
 
-// Profile Management Types
-export interface ProfileMetadata {
-  name: string;
-  rhaiPath: string;
-  krxPath: string;
-  createdAt: string;
-  modifiedAt: string;
-  deviceCount: number;
-  keyCount: number;
-  isActive: boolean;
-}
-
-export type Template =
-  | 'blank'
-  | 'simple_remap'
-  | 'capslock_escape'
-  | 'vim_navigation'
-  | 'gaming';
-
-export interface ActivationResult {
-  success: boolean;
-  profile: string;
-  compiledSize: number;
-  compileTimeMs: number;
-  errors?: string[];
-}
-
-// Configuration Types
+// Configuration Types (not represented in Rust backend)
 export interface KeyMapping {
   type:
     | 'simple'
@@ -74,18 +60,7 @@ export interface MacroStep {
   delayMs?: number;
 }
 
-// Metrics Types
-export interface LatencyStats {
-  min: number;
-  max: number;
-  avg: number;
-  p50: number;
-  p95: number;
-  p99: number;
-  samples: number;
-  timestamp: string;
-}
-
+// Frontend-specific event record (transformed from KeyEventData)
 export interface EventRecord {
   id: string;
   timestamp: string;
@@ -111,32 +86,14 @@ export interface EventRecord {
   mappingTriggered?: boolean;
 }
 
-export interface DaemonState {
-  activeLayer: string;
-  modifiers: string[];
-  locks: string[];
-  tapHoldPending: boolean;
-  uptime: number;
-  activeProfile?: string | null;
-}
-
-// WebSocket Message Types - Discriminated union for proper type narrowing
+// WebSocket Message Types
+// Note: DaemonEvent uses serde(flatten) which typeshare doesn't support,
+// so we maintain the manual definition here for compatibility
 export type WSMessage =
-  | { type: 'event'; payload: KeyEventPayload }
-  | { type: 'state'; payload: DaemonState }
-  | { type: 'latency'; payload: LatencyStats }
-  | { type: 'error'; payload: { message: string } };
+  | { type: 'event'; payload: KeyEventData; seq: number }
+  | { type: 'state'; payload: DaemonState; seq: number }
+  | { type: 'latency'; payload: LatencyStats; seq: number }
+  | { type: 'error'; payload: ErrorData; seq: number };
 
-// Raw key event payload from daemon (before transformation to EventRecord)
-export interface KeyEventPayload {
-  timestamp: number;
-  keyCode: string;
-  eventType: string;
-  input: string;
-  output: string;
-  latency: number;
-  deviceId?: string;
-  deviceName?: string;
-  mappingType?: string;
-  mappingTriggered?: boolean;
-}
+// Raw key event payload from daemon (alias to generated type)
+export type KeyEventPayload = KeyEventData;

@@ -28,7 +28,7 @@ fn test_daemon_binary_version() {
 #[test]
 #[ignore]
 fn test_installed_binary_is_recent() {
-    use std::time::{SystemTime, Duration};
+    use std::time::{Duration, SystemTime};
 
     // Check if binary was modified recently (within last 24 hours)
     let binary_path = if cfg!(windows) {
@@ -37,14 +37,15 @@ fn test_installed_binary_is_recent() {
         "/usr/local/bin/keyrx_daemon"
     };
 
-    let metadata = std::fs::metadata(binary_path)
-        .expect("Failed to read binary metadata");
+    let metadata = std::fs::metadata(binary_path).expect("Failed to read binary metadata");
 
-    let modified = metadata.modified()
+    let modified = metadata
+        .modified()
         .expect("Failed to get modification time");
 
     let now = SystemTime::now();
-    let age = now.duration_since(modified)
+    let age = now
+        .duration_since(modified)
         .expect("Binary is from the future?");
 
     assert!(
@@ -70,7 +71,7 @@ fn test_daemon_has_admin_manifest() {
             &format!(
                 "Get-AuthenticodeSignature '{}' | Select-Object -ExpandProperty StatusMessage",
                 binary_path
-            )
+            ),
         ])
         .output()
         .expect("Failed to check binary signature");

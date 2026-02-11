@@ -798,7 +798,7 @@ jobs:
         id: e2e-tests
         run: |
           # Run the virtual E2E tests (auto-skip if uinput not accessible)
-          cargo test --test virtual_e2e_tests --features linux -- --test-threads=1 2>&1 | tee e2e-test-output.log
+          cargo test --test virtual_e2e_test --features linux -- --test-threads=1 2>&1 | tee e2e-test-output.log
         continue-on-error: true
 
       - name: Upload test logs on failure

@@ -1,7 +1,7 @@
 //! Rhai DSL parser for keyrx configuration.
 //!
-//! This module provides a complete Rhai DSL parser that can be used by both
-//! the compiler (keyrx_compiler) and WASM (keyrx_core wasm feature).
+//! The `error` and `validators` submodules are always available (no external deps).
+//! The full `Parser` type requires the `wasm` feature (rhai, sha2, spin).
 //!
 //! # Example
 //!
@@ -18,28 +18,44 @@
 //! let config = parser.parse_string(source)?;
 //! ```
 
+// Always available - no external dependencies
 pub mod error;
-pub mod functions;
-pub mod state;
 pub mod validators;
 
+// Full parser - requires rhai, sha2, spin
+#[cfg(feature = "wasm")]
+pub mod functions;
+#[cfg(feature = "wasm")]
+pub mod state;
+
+#[cfg(feature = "wasm")]
 use alloc::format;
+#[cfg(feature = "wasm")]
 use alloc::string::{String, ToString};
+#[cfg(feature = "wasm")]
 use alloc::sync::Arc;
+#[cfg(feature = "wasm")]
 use alloc::vec::Vec;
+#[cfg(feature = "wasm")]
 use rhai::{Engine, Scope};
+#[cfg(feature = "wasm")]
 use sha2::{Digest, Sha256};
+#[cfg(feature = "wasm")]
 use spin::Mutex;
 
+#[cfg(feature = "wasm")]
 use crate::config::{ConfigRoot, Metadata, Version};
+#[cfg(feature = "wasm")]
 use state::ParserState;
 
 /// Main parser for Rhai DSL.
+#[cfg(feature = "wasm")]
 pub struct Parser {
     engine: Engine,
     state: Arc<Mutex<ParserState>>,
 }
 
+#[cfg(feature = "wasm")]
 impl Parser {
     /// Create a new parser with all functions registered.
     pub fn new() -> Self {
@@ -99,14 +115,8 @@ impl Parser {
         let hash_result = hasher.finalize();
         let source_hash = format!("{:x}", hash_result);
 
-        // Get current timestamp (0 for WASM since we don't have reliable time)
-        #[cfg(target_arch = "wasm32")]
+        // Get current timestamp (0 for WASM/no_std since we don't have reliable time)
         let compilation_timestamp = 0u64;
-        #[cfg(not(target_arch = "wasm32"))]
-        let compilation_timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
 
         let metadata = Metadata {
             compilation_timestamp,
@@ -131,6 +141,7 @@ impl Parser {
     }
 }
 
+#[cfg(feature = "wasm")]
 impl Default for Parser {
     fn default() -> Self {
         Self::new()

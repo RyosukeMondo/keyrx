@@ -14,7 +14,7 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 
 /// Profile management subcommands.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct ProfilesArgs {
     #[command(subcommand)]
     command: ProfilesCommands,
@@ -24,7 +24,7 @@ pub struct ProfilesArgs {
     json: bool,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 enum ProfilesCommands {
     /// List all profiles.
     List,

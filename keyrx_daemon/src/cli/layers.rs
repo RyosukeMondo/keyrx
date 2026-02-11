@@ -11,7 +11,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 /// Layer management subcommands.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct LayersArgs {
     #[command(subcommand)]
     command: LayersCommands,
@@ -21,7 +21,7 @@ pub struct LayersArgs {
     json: bool,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 enum LayersCommands {
     /// List all layers in a profile.
     List {

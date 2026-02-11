@@ -233,7 +233,7 @@ When implementing CheckBytes, follow these steps:
 
 - **Primary TODO:** `keyrx_compiler/src/serialize.rs:190` - Main deserialization
 - **Fuzzing TODO:** `keyrx_core/fuzz/fuzz_targets/fuzz_deserialize.rs:24` - Fuzz target
-- **Audit Document:** `docs/TODO_AUDIT_2025-12-29.md` - Comprehensive audit
+- **Audit Document:** `docs/todo-audit-2025-12-29.md` - Comprehensive audit
 
 ### Related Documentation
 

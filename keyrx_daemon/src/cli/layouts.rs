@@ -9,7 +9,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 /// Layout management subcommands.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct LayoutsArgs {
     #[command(subcommand)]
     command: LayoutsCommands,
@@ -19,7 +19,7 @@ pub struct LayoutsArgs {
     json: bool,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 enum LayoutsCommands {
     /// List all available layouts (builtin and custom).
     List,

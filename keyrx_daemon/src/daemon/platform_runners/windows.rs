@@ -2,11 +2,24 @@
 //!
 //! This module contains the Windows-specific implementation for running the daemon,
 //! including message loop handling, web server setup, and system tray integration.
-
-#![cfg(target_os = "windows")]
+//!
+//! # Architecture - Shared State IPC Replacement
+//!
+//! On Windows, the daemon runs as a single process with two threads:
+//! - **Main thread**: Keyboard event processing and Windows message loop
+//! - **Web server thread**: Tokio async runtime serving REST API and WebSocket
+//!
+//! Instead of Unix domain sockets (which don't exist on Windows), these threads
+//! communicate via [`DaemonSharedState`] - a thread-safe structure using
+//! `Arc<AtomicBool>` and `Arc<RwLock>` for shared state access.
+//!
+//! The shared state enables the web server to query daemon status (running flag,
+//! active profile, device count, uptime) without IPC overhead.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
+use crate::daemon::DaemonSharedState;
 
 /// Run the daemon on Windows.
 ///
@@ -15,6 +28,7 @@ use std::sync::Arc;
 /// * `config_path` - Path to configuration file
 /// * `debug` - Enable debug logging
 /// * `test_mode` - Enable test mode (no keyboard capture)
+/// * `container` - Service container with all dependencies wired
 ///
 /// # Returns
 ///
@@ -23,8 +37,11 @@ pub fn run_daemon(
     config_path: &Path,
     debug: bool,
     test_mode: bool,
+    container: Arc<crate::container::ServiceContainer>,
 ) -> Result<(), (i32, String)> {
-    use crate::daemon::platform_setup::{init_logging, log_post_init_hook_status, log_startup_version_info};
+    use crate::daemon::platform_setup::{
+        init_logging, log_post_init_hook_status, log_startup_version_info,
+    };
     use crate::daemon::{Daemon, ExitCode};
     use crate::daemon_config::DaemonConfig;
     use crate::platform::windows::tray::TrayIconController;
@@ -57,7 +74,7 @@ pub fn run_daemon(
 
     if test_mode {
         log::info!("Test mode enabled - running with IPC infrastructure without keyboard capture");
-        return run_test_mode(config_path, debug);
+        return run_test_mode(config_path, debug, container);
     }
 
     // Determine config directory (always use standard location for profile management)
@@ -109,6 +126,17 @@ pub fn run_daemon(
     // Create the daemon
     let mut daemon = Daemon::new(platform, config_path).map_err(daemon_error_to_exit)?;
 
+    // Extract profile name from config path for shared state
+    // Example: "C:\Users\user\AppData\Roaming\keyrx\profiles\default.krx" -> "default"
+    let profile_name = config_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .map(|s| s.to_string());
+
+    // Create shared state for daemon-to-web-server communication (Windows IPC replacement)
+    // This enables the web API to query daemon status without Unix sockets
+    let daemon_state = Arc::new(DaemonSharedState::from_daemon(&daemon, profile_name));
+
     // Create broadcast channel for event streaming to WebSocket clients
     let (event_tx, _event_rx) = tokio::sync::broadcast::channel(1000);
     let event_tx_clone = event_tx.clone();
@@ -122,50 +150,18 @@ pub fn run_daemon(
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
 
-    // Create event bus channel for simulator-to-macro-recorder communication
-    let (macro_event_tx, _macro_event_rx) =
-        tokio::sync::mpsc::channel::<keyrx_core::runtime::KeyEvent>(1000);
-
-    // Start web server in background
-    let macro_recorder = Arc::new(crate::macro_recorder::MacroRecorder::new());
-
-    // Initialize ProfileManager and ProfileService
-    let profile_manager = match crate::config::ProfileManager::new(config_dir.clone()) {
-        Ok(mgr) => Arc::new(mgr),
-        Err(e) => {
-            log::warn!("Failed to initialize ProfileManager: {}. Profile operations will not be available.", e);
-            return Err((
-                ExitCode::ConfigError as i32,
-                format!("Failed to initialize ProfileManager: {}", e),
-            ));
-        }
-    };
-    let profile_service = Arc::new(crate::services::ProfileService::new(Arc::clone(
-        &profile_manager,
-    )));
-    let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
-    let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
-    let settings_service = Arc::new(crate::services::SettingsService::new(config_dir.clone()));
-    let simulation_service = Arc::new(crate::services::SimulationService::new(
-        config_dir.clone(),
-        Some(macro_event_tx),
+    // Create AppState from ServiceContainer with daemon shared state (dependency injection)
+    // This replaces 50+ lines of manual service instantiation and wires daemon state
+    // into the web server for Windows IPC replacement
+    // Clone daemon_state since it will be used later in the event loop
+    let app_state = Arc::new(crate::web::AppState::from_container_with_daemon(
+        (*container).clone(),
+        None, // No test mode socket in production
+        Arc::clone(&daemon_state),
     ));
 
-    let subscription_manager = Arc::new(crate::web::subscriptions::SubscriptionManager::new());
-
-    // Create RPC event broadcaster for WebSocket RPC events (device/profile updates)
-    let (rpc_event_tx, _) = tokio::sync::broadcast::channel(1000);
-
-    let app_state = Arc::new(crate::web::AppState::new(
-        macro_recorder,
-        profile_service,
-        device_service,
-        config_service,
-        settings_service.clone(),
-        simulation_service,
-        subscription_manager,
-        rpc_event_tx,
-    ));
+    // Get settings service reference for port handling (Windows-specific)
+    let settings_service = app_state.settings_service.clone();
 
     // Find an available port, starting with configured port
     let actual_port = find_available_port(configured_port);
@@ -264,6 +260,9 @@ pub fn run_daemon(
     // Build web UI URL with actual port
     let web_ui_url = format!("http://127.0.0.1:{}", actual_port);
 
+    // Track current config path for hot-reload detection
+    let mut current_config_path = config_path.to_path_buf();
+
     // Windows low-level hooks REQUIRE a message loop on the thread that installed them.
     // Our Daemon::new() calls grab() which installs the hook.
     unsafe {
@@ -302,6 +301,47 @@ pub fn run_daemon(
                     Err(e) => {
                         log::warn!("Error processing event: {}", e);
                         break;
+                    }
+                }
+            }
+
+            // Check for profile changes from web API (Windows hot-reload mechanism)
+            // On Windows, we can't use Unix signals (SIGHUP), so the web API updates
+            // the shared daemon state, and we detect the change here to trigger reload
+            let active_profile_from_state = daemon_state.get_active_profile();
+            let current_profile_from_path = current_config_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string());
+
+            if active_profile_from_state != current_profile_from_path {
+                // Profile changed via web API - trigger hot reload
+                log::info!(
+                    "Profile change detected: {:?} -> {:?}, reloading configuration...",
+                    current_profile_from_path,
+                    active_profile_from_state
+                );
+
+                // Build new config path from active profile
+                if let Some(new_profile) = &active_profile_from_state {
+                    let new_config_path = config_dir
+                        .join("profiles")
+                        .join(format!("{}.krx", new_profile));
+
+                    // Trigger daemon reload with new config
+                    if let Err(e) = daemon.reload() {
+                        log::error!("Failed to reload configuration: {}", e);
+                        // Reset shared state to previous profile on failure
+                        daemon_state.set_active_profile(current_profile_from_path.clone());
+                    } else {
+                        log::info!(
+                            "Configuration reloaded successfully for profile: {}",
+                            new_profile
+                        );
+                        // Update current config path for next iteration
+                        current_config_path = new_config_path.clone();
+                        // Update shared state config path
+                        daemon_state.set_config_path(new_config_path);
                     }
                 }
             }
@@ -347,7 +387,11 @@ pub fn run_daemon(
 }
 
 /// Run the daemon in test mode (no keyboard capture).
-fn run_test_mode(_config_path: &Path, _debug: bool) -> Result<(), (i32, String)> {
+fn run_test_mode(
+    _config_path: &Path,
+    _debug: bool,
+    _container: Arc<crate::container::ServiceContainer>,
+) -> Result<(), (i32, String)> {
     use crate::config::ProfileManager;
     use crate::daemon::ExitCode;
     use crate::daemon_config::DaemonConfig;
@@ -474,6 +518,17 @@ fn run_test_mode(_config_path: &Path, _debug: bool) -> Result<(), (i32, String)>
     // Create RPC event broadcaster
     let (rpc_event_tx, _) = tokio::sync::broadcast::channel(1000);
 
+    // Create minimal daemon shared state for test mode
+    // Even though no daemon is running, we create a minimal state for API consistency
+    use std::sync::atomic::AtomicBool;
+    let test_running_flag = Arc::new(AtomicBool::new(false)); // Not running in test mode
+    let test_daemon_state = Arc::new(DaemonSharedState::new(
+        test_running_flag,
+        None, // No active profile in test mode
+        PathBuf::from("test.krx"),
+        0, // No devices in test mode
+    ));
+
     let app_state = Arc::new(crate::web::AppState::new_with_test_mode(
         macro_recorder.clone(),
         profile_service,
@@ -484,6 +539,7 @@ fn run_test_mode(_config_path: &Path, _debug: bool) -> Result<(), (i32, String)>
         subscription_manager,
         rpc_event_tx,
         test_socket_path.clone(),
+        Some(test_daemon_state),
     ));
 
     // Start web server
@@ -631,7 +687,7 @@ fn is_admin() -> bool {
 /// Opens a URL in the default web browser.
 fn open_browser(url: &str) -> Result<(), Box<dyn std::error::Error>> {
     std::process::Command::new("cmd")
-        .args(&["/c", "start", url])
+        .args(["/c", "start", url])
         .spawn()?;
     Ok(())
 }

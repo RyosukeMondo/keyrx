@@ -149,7 +149,7 @@
   - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer with expertise in build automation and quality gates | Task: Deprecate manual unwrap counting script check_unwraps.sh following requirement 6.5. Remove from verify.sh and pre-commit hook. Clippy lints now enforce unwrap policy automatically. Add deprecation notice to script explaining migration to clippy. | Restrictions: Ensure clippy enforcement is active before removing manual check, update documentation to reflect new approach | Success: check_unwraps.sh removed from verification pipeline, clippy enforces unwrap policy, documentation updated. Edit tasks.md [-] → [x], log with artifacts (scripts modified, deprecation notice)_
 
 - [x] 16. Write error handling documentation
-  - Files: docs/ERROR_HANDLING_GUIDE.md (create new), docs/UNWRAP_HANDLING_STRATEGY.md (update)
+  - Files: docs/error-handling-guide.md (create new), docs/UNWRAP_HANDLING_STRATEGY.md (update)
   - Document error type hierarchy and usage patterns
   - Provide before/after migration examples
   - Add troubleshooting guide for common error scenarios
@@ -157,7 +157,7 @@
   - Purpose: Guide developers on error handling best practices
   - _Leverage: Existing docs/UNWRAP_HANDLING_STRATEGY.md as foundation_
   - _Requirements: All requirements (comprehensive documentation)_
-  - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer with expertise in Rust and developer documentation | Task: Create comprehensive error handling guide in docs/ERROR_HANDLING_GUIDE.md covering all requirements. Document error type hierarchy (CoreError, DaemonError, ConfigError, PlatformError). Provide before/after examples for common patterns. Include troubleshooting guide. Update existing UNWRAP_HANDLING_STRATEGY.md with migration completion notes. | Restrictions: Keep documentation concise and practical, include code examples, ensure examples compile | Success: ERROR_HANDLING_GUIDE.md created with comprehensive coverage, examples are correct, UNWRAP_HANDLING_STRATEGY.md updated. Edit tasks.md [-] → [x], log with artifacts (documentation files created/updated, example count)_
+  - _Prompt: Implement the task for spec error-handling-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer with expertise in Rust and developer documentation | Task: Create comprehensive error handling guide in docs/error-handling-guide.md covering all requirements. Document error type hierarchy (CoreError, DaemonError, ConfigError, PlatformError). Provide before/after examples for common patterns. Include troubleshooting guide. Update existing UNWRAP_HANDLING_STRATEGY.md with migration completion notes. | Restrictions: Keep documentation concise and practical, include code examples, ensure examples compile | Success: error-handling-guide.md created with comprehensive coverage, examples are correct, UNWRAP_HANDLING_STRATEGY.md updated. Edit tasks.md [-] → [x], log with artifacts (documentation files created/updated, example count)_
 
 - [x] 17. Update unit tests for Result types
   - Files: All test files affected by function signature changes

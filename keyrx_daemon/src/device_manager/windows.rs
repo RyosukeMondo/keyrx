@@ -12,7 +12,7 @@ pub fn enumerate_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
     let device_map = DeviceMap::new();
     device_map
         .enumerate()
-        .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+        .map_err(|e| DiscoveryError::Io(std::io::Error::other(e)))?;
 
     let devices = device_map
         .all()
@@ -151,14 +151,13 @@ impl DeviceManager {
         let bridge_context = Arc::new(Mutex::new(None));
         let bridge_hook = Arc::new(Mutex::new(None));
         let raw_input_manager =
-            RawInputManager::new(device_map.clone(), sender, bridge_context, bridge_hook).map_err(
-                |e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)),
-            )?;
+            RawInputManager::new(device_map.clone(), sender, bridge_context, bridge_hook)
+                .map_err(|e| DiscoveryError::Io(std::io::Error::other(e)))?;
 
         // Populate initial device list
         device_map
             .enumerate()
-            .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+            .map_err(|e| DiscoveryError::Io(std::io::Error::other(e)))?;
 
         let mut manager = Self {
             devices: Vec::new(),
@@ -216,8 +215,7 @@ impl DeviceManager {
         // Wait, device_map handles might be reused? Windows handles are pointers or similar.
         // Using handle as identity is standard for Raw Input session.
 
-        let current_handles: Vec<usize> =
-            detected_devices.iter().map(|d| d.handle as usize).collect();
+        let current_handles: Vec<usize> = detected_devices.iter().map(|d| d.handle).collect();
 
         let mut retained_indices = Vec::new();
         let mut devices_to_drop = Vec::new();
@@ -250,7 +248,7 @@ impl DeviceManager {
         let existing_handles: Vec<usize> = self.devices.iter().map(|d| d.device_handle).collect();
 
         for device_info in detected_devices {
-            let handle = device_info.handle as usize;
+            let handle = device_info.handle;
             if existing_handles.contains(&handle) {
                 continue;
             }

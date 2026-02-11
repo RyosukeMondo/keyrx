@@ -49,8 +49,14 @@ mod tests {
     #[test]
     fn test_constants_ssot() {
         // Verify SSOT consistency
-        assert_eq!(MAX_MODIFIER_ID, MAX_LOCK_ID, "Modifier and lock limits should match");
-        assert_eq!(MODIFIER_COUNT, 255, "Should support 255 custom modifiers (0-254)");
+        assert_eq!(
+            MAX_MODIFIER_ID, MAX_LOCK_ID,
+            "Modifier and lock limits should match"
+        );
+        assert_eq!(
+            MODIFIER_COUNT, 255,
+            "Should support 255 custom modifiers (0-254)"
+        );
         assert_eq!(LOCK_COUNT, 255, "Should support 255 custom locks (0-254)");
     }
 

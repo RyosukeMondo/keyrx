@@ -48,6 +48,42 @@ pub struct KeyLookup {
 }
 
 impl KeyLookup {
+    /// Adds conditional mappings to the lookup table.
+    fn add_conditional_mappings(
+        table: &mut HashMap<KeyCode, Vec<LookupEntry>>,
+        mapping: &KeyMapping,
+    ) {
+        if let KeyMapping::Conditional {
+            condition,
+            mappings,
+        } = mapping
+        {
+            for base_mapping in mappings {
+                if let Some(key) = Self::extract_input_key(base_mapping) {
+                    table.entry(key).or_insert_with(Vec::new).push(LookupEntry {
+                        mapping: base_mapping.clone(),
+                        condition: Some(condition.clone()),
+                    });
+                }
+            }
+        }
+    }
+
+    /// Adds unconditional mappings to the lookup table.
+    fn add_unconditional_mappings(
+        table: &mut HashMap<KeyCode, Vec<LookupEntry>>,
+        mapping: &KeyMapping,
+    ) {
+        if let KeyMapping::Base(base_mapping) = mapping {
+            if let Some(key) = Self::extract_input_key(base_mapping) {
+                table.entry(key).or_insert_with(Vec::new).push(LookupEntry {
+                    mapping: base_mapping.clone(),
+                    condition: None,
+                });
+            }
+        }
+    }
+
     /// Creates a key lookup table from device configuration
     ///
     /// Iterates through all mappings in the config, extracts the input key
@@ -65,35 +101,14 @@ impl KeyLookup {
     pub fn from_device_config(config: &DeviceConfig) -> Self {
         let mut table: HashMap<KeyCode, Vec<LookupEntry>> = HashMap::new();
 
-        // First pass: collect conditional mappings
+        // First pass: collect conditional mappings (higher precedence)
         for mapping in &config.mappings {
-            if let KeyMapping::Conditional {
-                condition,
-                mappings,
-            } = mapping
-            {
-                // Process each base mapping in the conditional block
-                for base_mapping in mappings {
-                    if let Some(key) = Self::extract_input_key(base_mapping) {
-                        table.entry(key).or_insert_with(Vec::new).push(LookupEntry {
-                            mapping: base_mapping.clone(),
-                            condition: Some(condition.clone()),
-                        });
-                    }
-                }
-            }
+            Self::add_conditional_mappings(&mut table, mapping);
         }
 
-        // Second pass: collect unconditional (base) mappings
+        // Second pass: collect unconditional (base) mappings (fallback)
         for mapping in &config.mappings {
-            if let KeyMapping::Base(base_mapping) = mapping {
-                if let Some(key) = Self::extract_input_key(base_mapping) {
-                    table.entry(key).or_insert_with(Vec::new).push(LookupEntry {
-                        mapping: base_mapping.clone(),
-                        condition: None,
-                    });
-                }
-            }
+            Self::add_unconditional_mappings(&mut table, mapping);
         }
 
         Self { table }
@@ -129,6 +144,17 @@ impl KeyLookup {
     /// ```
     pub fn find_mapping(&self, key: KeyCode, state: &DeviceState) -> Option<&BaseKeyMapping> {
         self.find_mapping_with_device(key, state, None)
+    }
+
+    /// Finds the first matching entry for a key and state.
+    fn find_matching_entry<'a>(
+        entries: &'a [LookupEntry],
+        state: &DeviceState,
+        device_id: Option<&str>,
+    ) -> Option<&'a LookupEntry> {
+        entries
+            .iter()
+            .find(|entry| Self::entry_matches(entry, state, device_id))
     }
 
     /// Finds the appropriate mapping for a key based on current device state and device ID
@@ -172,24 +198,25 @@ impl KeyLookup {
         state: &DeviceState,
         device_id: Option<&str>,
     ) -> Option<&BaseKeyMapping> {
-        // Get the Vec of entries for this key
         let entries = self.table.get(&key)?;
+        Self::find_matching_entry(entries, state, device_id).map(|entry| &entry.mapping)
+    }
 
-        // Iterate through entries in order (conditionals first, then unconditional)
-        for entry in entries {
-            // If there's a condition, evaluate it with device context
-            if let Some(condition) = &entry.condition {
-                if state.evaluate_condition_with_device(condition, device_id) {
-                    return Some(&entry.mapping);
-                }
-            } else {
-                // Unconditional mapping - always matches
-                return Some(&entry.mapping);
-            }
+    /// Evaluates a condition against state and optional device ID.
+    fn evaluate_condition(
+        condition: &Condition,
+        state: &DeviceState,
+        device_id: Option<&str>,
+    ) -> bool {
+        state.evaluate_condition_with_device(condition, device_id)
+    }
+
+    /// Checks if a mapping entry matches the current state.
+    fn entry_matches(entry: &LookupEntry, state: &DeviceState, device_id: Option<&str>) -> bool {
+        match &entry.condition {
+            Some(condition) => Self::evaluate_condition(condition, state, device_id),
+            None => true, // Unconditional mapping always matches
         }
-
-        // No matching mapping found
-        None
     }
 
     /// Extracts the input key from a BaseKeyMapping variant

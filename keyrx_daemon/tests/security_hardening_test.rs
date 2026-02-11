@@ -199,6 +199,9 @@ async fn test_sec004_rate_limiting() {
     let config = RateLimitConfig {
         max_requests: 3,
         window: Duration::from_secs(1),
+        max_login_attempts: 5,
+        login_window: Duration::from_secs(60),
+        max_ws_connections: 10,
     };
     let limiter = RateLimitLayer::with_config(config);
     let addr = "127.0.0.1:8080".parse().unwrap();

@@ -12,7 +12,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 /// Device management subcommands.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct DevicesArgs {
     #[command(subcommand)]
     command: DevicesCommands,
@@ -22,7 +22,7 @@ pub struct DevicesArgs {
     json: bool,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 enum DevicesCommands {
     /// List all registered devices.
     List,

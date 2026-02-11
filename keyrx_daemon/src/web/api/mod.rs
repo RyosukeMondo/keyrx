@@ -18,6 +18,7 @@ use std::sync::Arc;
 
 use crate::web::AppState;
 
+pub mod auth;
 pub mod config;
 pub mod devices;
 pub mod diagnostics;
@@ -43,6 +44,7 @@ pub use error::ApiError;
 /// Combined router with all API endpoints
 pub fn create_router(state: Arc<AppState>) -> Router {
     Router::new()
+        .merge(auth::routes())
         .merge(metrics::routes())
         .merge(diagnostics::routes())
         .merge(devices::routes())
@@ -89,6 +91,7 @@ mod tests {
             simulation_service,
             subscription_manager,
             event_broadcaster,
+            None, // No daemon state in tests
         ));
         let router = create_router(state);
         assert!(std::mem::size_of_val(&router) > 0);
@@ -120,6 +123,7 @@ mod tests {
             simulation_service,
             subscription_manager,
             event_broadcaster,
+            None, // No daemon state in tests
         ));
 
         // Verify state is accessible

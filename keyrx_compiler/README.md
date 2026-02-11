@@ -262,7 +262,7 @@ cargo test -p keyrx_compiler
 
 Run integration tests:
 ```bash
-cargo test -p keyrx_compiler --test integration_tests
+cargo test -p keyrx_compiler --test integration_test
 ```
 
 Run all tests with coverage:

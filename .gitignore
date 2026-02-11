@@ -1,6 +1,5 @@
 # Rust build artifacts
 target/
-Cargo.lock
 *.krx
 
 # Node.js artifacts
@@ -29,6 +28,8 @@ desktop.ini
 # Backup files
 *.bak
 *.tmp
+*.backup
+*.old
 
 # Spec workflow artifacts (implementation logs are transient)
 .spec-workflow/specs/*/Implementation Logs/
@@ -37,6 +38,7 @@ logs/
 # Coverage reports (regenerated)
 coverage/
 cobertura.xml
+.coverage-baseline.json
 *.profraw
 *.profdata
 
@@ -46,3 +48,40 @@ vagrant/**/vagrant_reload.log
 
 # Deployment configuration (user-specific)
 .deploy.env
+
+# Build artifacts (binaries, libraries, installers)
+*.exe
+*.pdb
+*.rlib
+*.msi
+*.zip
+nul
+
+# Build output directories
+installer-output/
+test-install/
+keyrx-portable-*/
+releases/
+
+# Swarm state (transient)
+.swarm/
+
+# Runtime artifacts
+daemon.pid
+metrics.jsonl
+test-results*.json
+
+# Dart/Flutter artifacts (abandoned stack)
+.dart_tool/
+.flutter-plugins*
+.metadata
+pubspec.lock
+
+# Tool caches (transient)
+.cache/
+.serena/
+.bfg-report/
+
+# Session logs and debug output
+*.txt
+!LICENSE.txt

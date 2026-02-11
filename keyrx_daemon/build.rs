@@ -42,8 +42,7 @@ fn main() {
 /// - Versions don't match between Cargo.toml and package.json
 fn validate_version_consistency() {
     // Get workspace root
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
-        .expect("CARGO_MANIFEST_DIR not set");
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
     let manifest_path = PathBuf::from(&manifest_dir);
     let workspace_root = manifest_path
         .parent()
@@ -127,11 +126,12 @@ fn extract_package_json_version(path: &PathBuf) -> String {
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("\"version\"") {
-            if let Some(version) = trimmed
-                .split(':')
-                .nth(1)
-                .and_then(|v| v.trim().trim_matches(|c| c == '"' || c == ',' || c == ' ').split_whitespace().next())
-            {
+            if let Some(version) = trimmed.split(':').nth(1).and_then(|v| {
+                v.trim()
+                    .trim_matches(|c| c == '"' || c == ',' || c == ' ')
+                    .split_whitespace()
+                    .next()
+            }) {
                 return version.to_string();
             }
         }
@@ -182,7 +182,10 @@ fn set_build_metadata() {
     let now_jst = chrono::Utc::now().with_timezone(&jst);
     let build_date = now_jst.format("%Y-%m-%d %H:%M JST").to_string();
     println!("cargo:rustc-env=BUILD_DATE={}", build_date);
-    println!("cargo:rustc-env=BUILD_TIMESTAMP={}", chrono::Utc::now().to_rfc3339());
+    println!(
+        "cargo:rustc-env=BUILD_TIMESTAMP={}",
+        chrono::Utc::now().to_rfc3339()
+    );
 
     // Set git commit hash if available
     if let Ok(output) = std::process::Command::new("git")

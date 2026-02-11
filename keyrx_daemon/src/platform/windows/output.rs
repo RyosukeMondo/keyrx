@@ -29,7 +29,7 @@ impl OutputDevice for WindowsKeyboardOutput {
     fn inject_event(&mut self, event: KeyEvent) -> Result<(), DeviceError> {
         self.injector
             .inject(&event)
-            .map_err(|e| DeviceError::InjectionFailed(e))
+            .map_err(DeviceError::InjectionFailed)
     }
 }
 

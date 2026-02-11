@@ -284,10 +284,14 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(
     const iconY = y * UNIT_SIZE + 12;
 
     const handleClick = useCallback(() => {
+      // In simulator mode, don't trigger onClick (only visual feedback)
+      if (simulatorMode) {
+        return;
+      }
       setIsClicked(true);
       setTimeout(() => setIsClicked(false), 150);
       onClick();
-    }, [onClick]);
+    }, [onClick, simulatorMode]);
 
     const tooltipContent = useMemo(() => {
       if (!mapping) return `${code} (Default)`;
@@ -314,13 +318,15 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(
     const strokeColor = isPressed ? '#4ade80' : style.stroke;
     const brightness = isHovered ? 1.15 : 1;
 
-    // In simulator mode, keys should be clickable (for simulating key events)
-    const className = 'key-group';
+    // In simulator mode, keys should appear disabled via styling
+    const className = simulatorMode
+      ? 'key-group opacity-50 cursor-not-allowed'
+      : 'key-group';
 
     return (
       <g
         className={className}
-        style={{ cursor: 'pointer' }}
+        style={{ cursor: simulatorMode ? 'not-allowed' : 'pointer' }}
         onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}

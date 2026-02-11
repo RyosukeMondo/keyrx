@@ -462,7 +462,10 @@ async fn test_integration_full_websocket_flow() {
     // Wait longer to ensure WebSocket is fully subscribed
     sleep(Duration::from_millis(1000)).await;
 
-    eprintln!("Broadcaster has {} subscribers before sending", broadcaster.has_subscribers());
+    eprintln!(
+        "Broadcaster has {} subscribers before sending",
+        broadcaster.has_subscribers()
+    );
 
     // Broadcast events (not in separate task to avoid timing issues)
     for i in 0..5 {

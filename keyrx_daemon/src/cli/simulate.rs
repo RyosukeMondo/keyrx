@@ -12,7 +12,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 /// Simulation subcommands.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct SimulateArgs {
     /// Profile name to simulate (defaults to current active profile).
     #[arg(long)]

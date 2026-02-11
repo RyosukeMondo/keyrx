@@ -154,6 +154,8 @@ export type ServerMessage =
 
 /**
  * RPC error structure following JSON-RPC 2.0 conventions.
+ * Note: This is intentionally stricter than generated.ts version
+ * (data is optional per JSON-RPC 2.0 spec, and typed as unknown instead of any).
  */
 export interface RpcError {
   /** Numeric error code */
@@ -164,18 +166,8 @@ export interface RpcError {
   data?: unknown;
 }
 
-/**
- * Current daemon state snapshot.
- * Broadcast on "daemon-state" channel when state changes.
- */
-export interface DaemonState {
-  /** Active modifier IDs (e.g., ["MD_00", "MD_01"]) */
-  modifiers: string[];
-  /** Active lock IDs (e.g., ["LK_00"]) */
-  locks: string[];
-  /** Current active layer name */
-  layer: string;
-}
+// DaemonState is re-exported from generated.ts (SSOT from Rust typeshare)
+export type { DaemonState } from './generated';
 
 /**
  * Simulator state for mock simulation (used when WASM is not active)

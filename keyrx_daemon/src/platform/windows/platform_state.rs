@@ -1,21 +1,19 @@
-///! Global state for Windows platform to enable cross-layer communication
-///!
-///! This module provides a way for the profile service to communicate with
-///! the Windows platform layer for key blocking configuration.
-///!
-///! # Architecture Note
-///!
-///! This is a pragmatic solution to bridge the service layer (profile activation)
-///! and platform layer (key blocking). A cleaner approach would use dependency
-///! injection or callback patterns, but this works for now.
-
-use std::sync::{Arc, Mutex, Once};
+//! Global state for Windows platform to enable cross-layer communication
+//!
+//! This module provides a way for the profile service to communicate with
+//! the Windows platform layer for key blocking configuration.
+//!
+//! # Architecture Note
+//!
+//! This is a pragmatic solution to bridge the service layer (profile activation)
+//! and platform layer (key blocking). A cleaner approach would use dependency
+//! injection or callback patterns, but this works for now.
 use keyrx_core::config::ConfigRoot;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use super::key_blocker::KeyBlocker;
 
-static INIT: Once = Once::new();
-static mut PLATFORM_STATE: Option<Arc<Mutex<PlatformState>>> = None;
+static PLATFORM_STATE: OnceLock<Arc<Mutex<PlatformState>>> = OnceLock::new();
 
 /// Global platform state for Windows
 pub struct PlatformState {
@@ -25,19 +23,15 @@ pub struct PlatformState {
 impl PlatformState {
     /// Initialize the global platform state (called once at startup)
     pub fn initialize(blocker: Option<KeyBlocker>) {
-        INIT.call_once(|| {
-            let state = PlatformState {
-                key_blocker: blocker,
-            };
-            unsafe {
-                PLATFORM_STATE = Some(Arc::new(Mutex::new(state)));
-            }
-        });
+        let state = PlatformState {
+            key_blocker: blocker,
+        };
+        let _ = PLATFORM_STATE.set(Arc::new(Mutex::new(state)));
     }
 
     /// Get the global platform state
     pub fn get() -> Option<Arc<Mutex<PlatformState>>> {
-        unsafe { PLATFORM_STATE.clone() }
+        PLATFORM_STATE.get().cloned()
     }
 
     /// Configure key blocking based on the active profile
@@ -72,12 +66,18 @@ impl PlatformState {
 
         // Verify the blocker actually has the keys
         let actual_count = blocker.blocked_count();
-        log::info!("✓ Configured key blocking: {} keys extracted, {} actually blocked",
-            blocked_count, actual_count);
+        log::info!(
+            "✓ Configured key blocking: {} keys extracted, {} actually blocked",
+            blocked_count,
+            actual_count
+        );
 
         if actual_count != blocked_count {
-            log::error!("✗ CRITICAL: Mismatch between extracted ({}) and blocked ({}) keys!",
-                blocked_count, actual_count);
+            log::error!(
+                "✗ CRITICAL: Mismatch between extracted ({}) and blocked ({}) keys!",
+                blocked_count,
+                actual_count
+            );
         }
 
         Ok(())
@@ -89,8 +89,8 @@ impl PlatformState {
         blocker: &KeyBlocker,
         blocked_count: &mut usize,
     ) {
-        use keyrx_core::config::{BaseKeyMapping, KeyMapping};
         use super::keycode::keycode_to_scancode;
+        use keyrx_core::config::{BaseKeyMapping, KeyMapping};
 
         match mapping {
             KeyMapping::Base(base) => {
@@ -107,7 +107,10 @@ impl PlatformState {
                     *blocked_count += 1;
                     log::trace!("Blocking {:?} (scan code: 0x{:04X})", source_key, scan_code);
                 } else {
-                    log::warn!("Failed to convert {:?} to scan code, won't be blocked", source_key);
+                    log::warn!(
+                        "Failed to convert {:?} to scan code, won't be blocked",
+                        source_key
+                    );
                 }
             }
             KeyMapping::Conditional { mappings, .. } => {

@@ -209,7 +209,7 @@ async fn handle_query(
     params: Value,
     state: &AppState,
 ) -> ServerMessage {
-    use crate::web::handlers::{config, device, metrics, profile, settings};
+    use crate::web::handlers::{config, device, metric, profile, setting};
 
     log::debug!("Handling query: {} with params: {}", method, params);
 
@@ -219,9 +219,9 @@ async fn handle_query(
         "get_devices" => device::get_devices(&state.device_service, params).await,
         "get_config" => config::get_config(&state.config_service, params).await,
         "get_layers" => config::get_layers(&state.config_service, params).await,
-        "get_latency" => metrics::get_latency(&state.macro_recorder, params).await,
-        "get_events" => metrics::get_events(&state.macro_recorder, params).await,
-        "get_global_layout" => settings::get_global_layout(&state.settings_service, params).await,
+        "get_latency" => metric::get_latency(&state.macro_recorder, params).await,
+        "get_events" => metric::get_events(&state.macro_recorder, params).await,
+        "get_global_layout" => setting::get_global_layout(&state.settings_service, params).await,
         _ => Err(RpcError::method_not_found(&method)),
     };
 
@@ -246,7 +246,7 @@ async fn handle_command(
     params: Value,
     state: &AppState,
 ) -> ServerMessage {
-    use crate::web::handlers::{config, daemon, device, metrics, profile, settings};
+    use crate::web::handlers::{config, daemon, device, metric, profile, setting};
 
     log::debug!("Handling command: {} with params: {}", method, params);
 
@@ -262,10 +262,10 @@ async fn handle_command(
         "update_config" => config::update_config(&state.config_service, params).await,
         "set_key_mapping" => config::set_key_mapping(&state.config_service, params).await,
         "delete_key_mapping" => config::delete_key_mapping(&state.config_service, params).await,
-        "set_global_layout" => settings::set_global_layout(&state.settings_service, params).await,
-        "clear_events" => metrics::clear_events(&state.macro_recorder, params).await,
-        "simulate" => metrics::simulate(&state.macro_recorder, params).await,
-        "reset_simulator" => metrics::reset_simulator(&state.macro_recorder, params).await,
+        "set_global_layout" => setting::set_global_layout(&state.settings_service, params).await,
+        "clear_events" => metric::clear_events(&state.macro_recorder, params).await,
+        "simulate" => metric::simulate(&state.macro_recorder, params).await,
+        "reset_simulator" => metric::reset_simulator(&state.macro_recorder, params).await,
         "restart_daemon" => daemon::restart_daemon(params).await,
         _ => Err(RpcError::method_not_found(&method)),
     };
@@ -374,6 +374,7 @@ mod tests {
             simulation_service,
             subscription_manager,
             event_broadcaster,
+            None, // No daemon state in tests
         ));
         let router = create_router(state);
         assert!(std::mem::size_of_val(&router) > 0);

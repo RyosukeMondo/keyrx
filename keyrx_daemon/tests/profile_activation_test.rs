@@ -2,10 +2,10 @@
 //! These tests catch the bug where large/complex profiles fail to activate
 //! while simple profiles succeed.
 
-use keyrx_compiler::compiler::Compiler;
-use keyrx_core::config::Config;
+use keyrx_compiler::compile_file;
+use keyrx_core::config::ConfigRoot;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 use std::time::Duration;
 use tempfile::TempDir;
 
@@ -25,8 +25,8 @@ fn main() {
     fs::write(&config_path, simple_config).unwrap();
 
     // Compile it
-    let compiler = Compiler::new();
-    let result = compiler.compile_file(&config_path);
+    let krx_path = temp_dir.path().join("simple.krx");
+    let result = compile_file(&config_path, &krx_path);
 
     assert!(
         result.is_ok(),
@@ -34,18 +34,18 @@ fn main() {
         result.err()
     );
 
-    let krx_data = result.unwrap();
-    assert!(
-        !krx_data.is_empty(),
-        "Compiled .krx should not be empty"
-    );
+    // Verify output file exists and is not empty
+    assert!(krx_path.exists(), "Compiled .krx file should exist");
 
-    // Verify it can be deserialized
-    let config = Config::from_bytes(&krx_data);
+    let krx_data = fs::read(&krx_path).unwrap();
+    assert!(!krx_data.is_empty(), "Compiled .krx should not be empty");
+
+    // Verify it can be deserialized using rkyv
+    let result = rkyv::check_archived_root::<ConfigRoot>(&krx_data);
     assert!(
-        config.is_ok(),
+        result.is_ok(),
         "Simple profile should deserialize: {:?}",
-        config.err()
+        result.err()
     );
 }
 
@@ -105,8 +105,8 @@ fn main() {
     fs::write(&config_path, complex_config).unwrap();
 
     // Compile it with timeout (complex profiles might take longer)
-    let compiler = Compiler::new();
-    let result = compiler.compile_file(&config_path);
+    let krx_path = temp_dir.path().join("complex.krx");
+    let result = compile_file(&config_path, &krx_path);
 
     assert!(
         result.is_ok(),
@@ -114,18 +114,18 @@ fn main() {
         result.err()
     );
 
-    let krx_data = result.unwrap();
-    assert!(
-        !krx_data.is_empty(),
-        "Compiled .krx should not be empty"
-    );
+    // Verify output file exists and is not empty
+    assert!(krx_path.exists(), "Compiled .krx file should exist");
 
-    // Verify it can be deserialized
-    let config = Config::from_bytes(&krx_data);
+    let krx_data = fs::read(&krx_path).unwrap();
+    assert!(!krx_data.is_empty(), "Compiled .krx should not be empty");
+
+    // Verify it can be deserialized using rkyv
+    let result = rkyv::check_archived_root::<ConfigRoot>(&krx_data);
     assert!(
-        config.is_ok(),
+        result.is_ok(),
         "Complex profile should deserialize: {:?}",
-        config.err()
+        result.err()
     );
 }
 
@@ -158,10 +158,10 @@ fn test_large_profile_timeout() {
     fs::write(&config_path, &large_config).unwrap();
 
     // Compile with timeout check
-    let compiler = Compiler::new();
+    let krx_path = temp_dir.path().join("large.krx");
     let start = std::time::Instant::now();
 
-    let result = compiler.compile_file(&config_path);
+    let result = compile_file(&config_path, &krx_path);
     let elapsed = start.elapsed();
 
     // Should complete within 30 seconds
@@ -233,10 +233,7 @@ async fn test_profile_activation_via_api() {
 
     if !status.is_success() {
         let body = response.text().await.unwrap_or_default();
-        panic!(
-            "default profile activation failed: {} - {}",
-            status, body
-        );
+        panic!("default profile activation failed: {} - {}", status, body);
     }
 }
 
@@ -255,13 +252,10 @@ fn main() {
     fs::write(&config_path, invalid_config).unwrap();
 
     // Should return error with clear message
-    let compiler = Compiler::new();
-    let result = compiler.compile_file(&config_path);
+    let krx_path = temp_dir.path().join("invalid.krx");
+    let result = compile_file(&config_path, &krx_path);
 
-    assert!(
-        result.is_err(),
-        "Invalid profile should fail compilation"
-    );
+    assert!(result.is_err(), "Invalid profile should fail compilation");
 
     let error = result.unwrap_err().to_string();
     assert!(
@@ -279,11 +273,11 @@ fn test_profile_compilation_performance() {
     let temp_dir = TempDir::new().unwrap();
 
     let test_cases = vec![
-        ("tiny", 10),       // 10 remappings
-        ("small", 50),      // 50 remappings
-        ("medium", 200),    // 200 remappings
-        ("large", 500),     // 500 remappings
-        ("huge", 1000),     // 1000 remappings
+        ("tiny", 10),    // 10 remappings
+        ("small", 50),   // 50 remappings
+        ("medium", 200), // 200 remappings
+        ("large", 500),  // 500 remappings
+        ("huge", 1000),  // 1000 remappings
     ];
 
     for (name, count) in test_cases {
@@ -301,9 +295,9 @@ fn test_profile_compilation_performance() {
 
         fs::write(&config_path, &config).unwrap();
 
-        let compiler = Compiler::new();
+        let krx_path = temp_dir.path().join(format!("{}.krx", name));
         let start = std::time::Instant::now();
-        let result = compiler.compile_file(&config_path);
+        let result = compile_file(&config_path, &krx_path);
         let elapsed = start.elapsed();
 
         assert!(

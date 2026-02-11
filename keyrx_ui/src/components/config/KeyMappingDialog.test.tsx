@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { KeyMappingDialog } from './KeyMappingDialog';
-import type { KeyMapping } from '@/types/config';
+import type { EditorKeyMapping } from '@/types/config';
 
 describe('KeyMappingDialog', () => {
   const mockOnClose = vi.fn();
@@ -337,7 +337,7 @@ describe('KeyMappingDialog', () => {
 
   describe('Editing Existing Mapping', () => {
     it('should populate form from currentMapping for simple type', () => {
-      const currentMapping: KeyMapping = {
+      const currentMapping: EditorKeyMapping = {
         keyCode: 'CapsLock',
         type: 'simple',
         simple: 'VK_A',
@@ -352,7 +352,7 @@ describe('KeyMappingDialog', () => {
     });
 
     it('should populate form from currentMapping for tap-hold type', () => {
-      const currentMapping: KeyMapping = {
+      const currentMapping: EditorKeyMapping = {
         keyCode: 'CapsLock',
         type: 'tap_hold',
         tapHold: {
@@ -376,7 +376,7 @@ describe('KeyMappingDialog', () => {
     });
 
     it('should populate form from currentMapping for macro type', () => {
-      const currentMapping: KeyMapping = {
+      const currentMapping: EditorKeyMapping = {
         keyCode: 'CapsLock',
         type: 'macro',
         macro: ['VK_H', 'VK_I'],
@@ -391,7 +391,7 @@ describe('KeyMappingDialog', () => {
     });
 
     it('should populate form from currentMapping for layer-switch type', () => {
-      const currentMapping: KeyMapping = {
+      const currentMapping: EditorKeyMapping = {
         keyCode: 'CapsLock',
         type: 'layer_switch',
         layer: 'nav',

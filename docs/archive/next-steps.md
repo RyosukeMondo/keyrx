@@ -144,7 +144,7 @@ $ keyrx_compiler verify config.krx
 ```
 
 #### 1.3: Documentation & Examples (2-3 days)
-**Files:** `docs/DSL_MANUAL.md`, `examples/`, `README.md`
+**Files:** `docs/dsl-manual.md`, `examples/`, `README.md`
 
 **Tasks:**
 - [ ] Write comprehensive DSL manual with all functions
@@ -158,7 +158,7 @@ $ keyrx_compiler verify config.krx
 - [ ] Add troubleshooting section
 - [ ] Document all error codes and fixes
 
-**Deliverable:** User can read DSL_MANUAL.md and write their own configurations in 30 minutes.
+**Deliverable:** User can read dsl-manual.md and write their own configurations in 30 minutes.
 
 ---
 
@@ -303,7 +303,7 @@ sudo keyrx_daemon --config config.krx
 ## 📊 Success Metrics
 
 ### For core-config-system (Phase 1):
-- [ ] Users can write .rhai configs following DSL_MANUAL.md
+- [ ] Users can write .rhai configs following dsl-manual.md
 - [ ] Compiler produces deterministic .krx files (same input → same hash)
 - [ ] All error messages are actionable with clear suggestions
 - [ ] 90%+ code coverage

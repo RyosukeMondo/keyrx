@@ -35,9 +35,10 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useUnifiedApi } from '../../src/hooks/useUnifiedApi';
 import type { DaemonState } from '../../src/types/rpc';
 
-// WebSocket server URL (daemon should be running on this port)
-const DAEMON_PORT = 13030;
-const WS_URL = `ws://127.0.0.1:${DAEMON_PORT}/ws-rpc`;
+import { DAEMON_TEST_PORT, DAEMON_WS_URL } from './test-harness';
+
+const DAEMON_PORT = DAEMON_TEST_PORT;
+const WS_URL = DAEMON_WS_URL;
 
 describe('End-to-End RPC Communication', () => {
   // Check if daemon is running before executing tests

@@ -3,8 +3,8 @@
 //! This module provides `DeviceState` for tracking modifier and lock state
 //! using efficient 255-bit vectors, plus tap-hold processor state.
 
-mod core;
 mod condition;
+mod core;
 
 // Re-export the main struct publicly
 pub use self::core::DeviceState;
@@ -13,8 +13,8 @@ pub use self::core::DeviceState;
 mod tests {
     use super::*;
     extern crate alloc;
-    use alloc::vec;
     use alloc::string::String;
+    use alloc::vec;
 
     use crate::config::{Condition, ConditionItem, KeyCode};
     use crate::runtime::tap_hold::TapHoldConfig;
@@ -220,8 +220,8 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     mod proptests {
         use super::*;
-        use proptest::prelude::*;
         use crate::config::MAX_MODIFIER_ID;
+        use proptest::prelude::*;
 
         // Property test: modifier state is always valid (only bits 0-254 can be set)
         //

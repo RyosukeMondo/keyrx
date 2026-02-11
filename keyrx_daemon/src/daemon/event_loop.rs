@@ -90,6 +90,201 @@ fn current_timestamp_us() -> u64 {
         .unwrap_or(0)
 }
 
+/// Formats output events description for logging and broadcasting.
+fn format_output_description(output_events: &[keyrx_core::runtime::KeyEvent]) -> String {
+    if output_events.is_empty() {
+        "(suppressed)".to_string()
+    } else {
+        output_events
+            .iter()
+            .map(|e| format!("{:?}", e.keycode()))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
+/// Injects timeout-generated events and records metrics.
+fn inject_timeout_events(
+    timeout_events: &[keyrx_core::runtime::KeyEvent],
+    platform: &mut Box<dyn Platform>,
+    stats: &mut EventLoopStats,
+) {
+    for output_event in timeout_events {
+        if let Err(e) = platform.inject_output(output_event.clone()) {
+            warn!("Failed to inject timeout event: {}", e);
+        } else {
+            stats.record_event();
+            trace!("Tap-hold timeout event injected: {:?}", output_event);
+        }
+    }
+}
+
+/// Handles timeout checks when no input event is available.
+fn handle_timeout_events(
+    remapping_state: &mut Option<&mut RemappingState>,
+    platform: &mut Box<dyn Platform>,
+    stats: &mut EventLoopStats,
+) {
+    if let Some(ref mut remap_state) = remapping_state {
+        let current_time = current_timestamp_us();
+        let timeout_events = check_tap_hold_timeouts(current_time, remap_state.state_mut());
+        inject_timeout_events(&timeout_events, platform, stats);
+    }
+}
+
+/// Logs error when reload callback fails.
+fn log_reload_error(e: &DaemonError) {
+    warn!("Configuration reload failed: {}", e);
+}
+
+/// Handles event capture errors by checking timeouts and sleeping.
+fn handle_capture_error(
+    last_timeout_check: &mut Instant,
+    remapping_state: &mut Option<&mut RemappingState>,
+    platform: &mut Box<dyn Platform>,
+    stats: &mut EventLoopStats,
+) {
+    // Check tap-hold timeouts every 10ms when idle
+    if last_timeout_check.elapsed() >= Duration::from_millis(10) {
+        handle_timeout_events(remapping_state, platform, stats);
+        *last_timeout_check = Instant::now();
+    }
+
+    // Small sleep to prevent busy loop
+    std::thread::sleep(Duration::from_millis(10));
+}
+
+/// Processes a single input event through remapping and injection pipeline.
+fn process_input_event(
+    event: keyrx_core::runtime::KeyEvent,
+    remapping_state: &mut Option<&mut RemappingState>,
+    platform: &mut Box<dyn Platform>,
+    stats: &mut EventLoopStats,
+    latency_recorder: Option<&LatencyRecorder>,
+    event_broadcaster: Option<&EventBroadcaster>,
+) {
+    let capture_time = Instant::now();
+    trace!("Input event: {:?}", event);
+
+    let device_id = event.device_id().map(String::from);
+    let input_keycode = event.keycode();
+
+    // Process event through remapping engine
+    let (output_events, mapping_type, mapping_triggered) =
+        process_remapping(&event, remapping_state);
+
+    let output_desc = format_output_description(&output_events);
+
+    // Inject output events
+    inject_output_events(&output_events, platform, stats);
+
+    // Record latency metrics
+    let latency_us = capture_time.elapsed().as_micros() as u64;
+    if let Some(recorder) = latency_recorder {
+        recorder.record(latency_us);
+    }
+
+    // Broadcast to WebSocket clients
+    broadcast_event(
+        &event,
+        input_keycode,
+        &output_desc,
+        device_id,
+        mapping_type,
+        mapping_triggered,
+        latency_us,
+        event_broadcaster,
+    );
+}
+
+/// Processes event through remapping engine if available.
+fn process_remapping(
+    event: &keyrx_core::runtime::KeyEvent,
+    remapping_state: &mut Option<&mut RemappingState>,
+) -> (
+    Vec<keyrx_core::runtime::KeyEvent>,
+    Option<&'static str>,
+    bool,
+) {
+    if let Some(ref mut remap_state) = remapping_state {
+        let (lookup, state) = remap_state.lookup_and_state_mut();
+        let input_keycode = event.keycode();
+
+        // Look up mapping to determine type before processing
+        let mapping = lookup.find_mapping(input_keycode, state);
+        let mapping_type_str = mapping.map(get_mapping_type);
+        let triggered = mapping.is_some();
+
+        // Process the event through the remapping engine
+        let outputs = process_event(event.clone(), lookup, state);
+
+        (outputs, mapping_type_str, triggered)
+    } else {
+        // Pass-through mode - no remapping
+        (vec![event.clone()], None, false)
+    }
+}
+
+/// Injects output events through platform.
+fn inject_output_events(
+    output_events: &[keyrx_core::runtime::KeyEvent],
+    platform: &mut Box<dyn Platform>,
+    stats: &mut EventLoopStats,
+) {
+    // On Linux, grab() blocks original events so we MUST always inject.
+    // On Windows, Raw Input doesn't block events so they flow naturally.
+    for output_event in output_events {
+        if let Err(e) = platform.inject_output(output_event.clone()) {
+            warn!("Failed to inject event: {}", e);
+        } else {
+            stats.record_event();
+        }
+    }
+}
+
+/// Broadcasts key event to WebSocket clients.
+#[allow(clippy::too_many_arguments)]
+fn broadcast_event(
+    event: &keyrx_core::runtime::KeyEvent,
+    input_keycode: keyrx_core::config::KeyCode,
+    output_desc: &str,
+    device_id: Option<String>,
+    mapping_type: Option<&'static str>,
+    mapping_triggered: bool,
+    latency_us: u64,
+    event_broadcaster: Option<&EventBroadcaster>,
+) {
+    if let Some(broadcaster) = event_broadcaster {
+        let timestamp = current_timestamp_us();
+
+        let event_data = KeyEventData {
+            timestamp,
+            key_code: format!("{:?}", input_keycode),
+            event_type: match event.event_type() {
+                keyrx_core::runtime::KeyEventType::Press => "press".to_string(),
+                keyrx_core::runtime::KeyEventType::Release => "release".to_string(),
+            },
+            input: format!("{:?}", input_keycode),
+            output: output_desc.to_string(),
+            latency: latency_us,
+            device_id: device_id.clone(),
+            device_name: device_id,
+            mapping_type: mapping_type.map(String::from),
+            mapping_triggered,
+        };
+
+        log::debug!(
+            "Event loop: About to broadcast {} event for key {:?} (mapping_triggered: {}, output: {})",
+            event_data.event_type, input_keycode, mapping_triggered, output_desc
+        );
+        broadcaster.broadcast_key_event(event_data);
+    } else {
+        log::warn!(
+            "Event loop: EventBroadcaster is None! Events will not be sent to WebSocket clients"
+        );
+    }
+}
+
 /// Runs the main event processing loop.
 ///
 /// This function captures keyboard events from the platform, processes them
@@ -181,132 +376,34 @@ where
         // Check for SIGHUP (reload request)
         if signal_handler.check_reload() {
             info!("Reload signal received (SIGHUP)");
-            if let Err(e) = reload_callback() {
-                // Log the error but continue running
-                warn!("Configuration reload failed: {}", e);
-            }
+            reload_callback().unwrap_or_else(|e| log_reload_error(&e));
         }
 
-        // Capture input event from platform (blocking with timeout to allow signal checking)
-        // Note: capture_input() may return an error if no events are available
-        // We treat this as non-fatal and continue the loop
+        // Capture and process input event from platform
         match platform.capture_input() {
             Ok(event) => {
-                let capture_time = Instant::now();
-                trace!("Input event: {:?}", event);
-
-                // Get device info from event
-                let device_id = event.device_id().map(String::from);
-                let input_keycode = event.keycode();
-
-                // Process event through remapping engine if available
-                let (output_events, mapping_type, mapping_triggered) =
-                    if let Some(ref mut remap_state) = remapping_state {
-                        // Get lookup and state references together to avoid borrow conflicts
-                        let (lookup, state) = remap_state.lookup_and_state_mut();
-
-                        // Look up mapping to determine type before processing
-                        let mapping = lookup.find_mapping(input_keycode, state);
-                        let mapping_type_str = mapping.map(get_mapping_type);
-                        let triggered = mapping.is_some();
-
-                        // Process the event through the remapping engine
-                        let outputs = process_event(event.clone(), lookup, state);
-
-                        (outputs, mapping_type_str, triggered)
-                    } else {
-                        // Pass-through mode - no remapping
-                        (vec![event.clone()], None, false)
-                    };
-
-                // Compute output description for broadcast
-                let output_desc = if output_events.is_empty() {
-                    "(suppressed)".to_string()
-                } else {
-                    output_events
-                        .iter()
-                        .map(|e| format!("{:?}", e.keycode()))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                };
-
-                // Inject output events
-                // On Linux, grab() blocks original events so we MUST always inject.
-                // On Windows, Raw Input doesn't block events so they flow naturally.
-                for output_event in &output_events {
-                    if let Err(e) = platform.inject_output(output_event.clone()) {
-                        warn!("Failed to inject event: {}", e);
-                    } else {
-                        stats.record_event();
-                    }
-                }
-
-                // Record latency after injection
-                let latency_us = capture_time.elapsed().as_micros() as u64;
-                if let Some(recorder) = latency_recorder {
-                    recorder.record(latency_us);
-                }
-
-                // Broadcast key event to WebSocket clients if broadcaster is available
-                if let Some(broadcaster) = event_broadcaster {
-                    let timestamp = current_timestamp_us();
-
-                    let event_data = KeyEventData {
-                        timestamp,
-                        key_code: format!("{:?}", input_keycode),
-                        event_type: match event.event_type() {
-                            keyrx_core::runtime::KeyEventType::Press => "press".to_string(),
-                            keyrx_core::runtime::KeyEventType::Release => "release".to_string(),
-                        },
-                        input: format!("{:?}", input_keycode),
-                        output: output_desc.clone(),
-                        latency: latency_us,
-                        device_id: device_id.clone(),
-                        device_name: device_id.clone(),
-                        mapping_type: mapping_type.map(String::from),
-                        mapping_triggered,
-                    };
-
-                    log::debug!(
-                        "Event loop: About to broadcast {} event for key {:?} (mapping_triggered: {}, output: {})",
-                        event_data.event_type, input_keycode, mapping_triggered, output_desc
-                    );
-                    broadcaster.broadcast_key_event(event_data);
-                } else {
-                    log::warn!("Event loop: EventBroadcaster is None! Events will not be sent to WebSocket clients");
-                }
+                process_input_event(
+                    event,
+                    &mut remapping_state,
+                    platform,
+                    &mut stats,
+                    latency_recorder,
+                    event_broadcaster,
+                );
             }
             Err(e) => {
-                // Check if we should exit
+                // Exit if shutdown requested
                 if !running.load(Ordering::SeqCst) {
                     break;
                 }
 
-                // Log non-fatal errors and continue
                 trace!("Event capture returned error (may be timeout): {}", e);
-
-                // Check tap-hold timeouts every 10ms when idle
-                if last_timeout_check.elapsed() >= Duration::from_millis(10) {
-                    if let Some(ref mut remap_state) = remapping_state {
-                        let current_time = current_timestamp_us();
-                        let timeout_events =
-                            check_tap_hold_timeouts(current_time, remap_state.state_mut());
-
-                        // Inject any timeout-generated events (e.g., hold action triggered)
-                        for output_event in &timeout_events {
-                            if let Err(e) = platform.inject_output(output_event.clone()) {
-                                warn!("Failed to inject timeout event: {}", e);
-                            } else {
-                                stats.record_event();
-                                trace!("Tap-hold timeout event injected: {:?}", output_event);
-                            }
-                        }
-                    }
-                    last_timeout_check = Instant::now();
-                }
-
-                // Small sleep to prevent busy loop
-                std::thread::sleep(Duration::from_millis(10));
+                handle_capture_error(
+                    &mut last_timeout_check,
+                    &mut remapping_state,
+                    platform,
+                    &mut stats,
+                );
             }
         }
 

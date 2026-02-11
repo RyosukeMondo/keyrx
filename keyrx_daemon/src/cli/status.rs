@@ -10,7 +10,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 /// Status subcommands.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct StatusArgs {
     /// Output as JSON.
     #[arg(long)]

@@ -4,8 +4,8 @@
 #[cfg(test)]
 mod daemon_health_tests {
     use std::process::Command;
-    use std::time::Duration;
     use std::thread;
+    use std::time::Duration;
 
     #[test]
     fn test_daemon_version_command() {
@@ -20,13 +20,15 @@ mod daemon_health_tests {
         assert!(
             output.status.success(),
             "Daemon --version failed!\nstdout: {}\nstderr: {}",
-            stdout, stderr
+            stdout,
+            stderr
         );
 
         assert!(
             stdout.contains("keyrx") || stderr.contains("keyrx"),
             "Version output doesn't contain 'keyrx': {}{}",
-            stdout, stderr
+            stdout,
+            stderr
         );
 
         println!("✓ Daemon version command works");
@@ -84,25 +86,25 @@ mod daemon_health_tests {
             attempts, last_error
         );
 
-        println!("✓ Daemon health endpoint responded after {} attempts", attempts);
+        println!(
+            "✓ Daemon health endpoint responded after {} attempts",
+            attempts
+        );
     }
 
     #[test]
     fn test_config_directory_exists() {
         let config_dir = if cfg!(windows) {
-            let app_data = std::env::var("APPDATA")
-                .expect("APPDATA environment variable not set");
+            let app_data = std::env::var("APPDATA").expect("APPDATA environment variable not set");
             format!(r"{}\keyrx", app_data)
         } else {
-            let home = std::env::var("HOME")
-                .expect("HOME environment variable not set");
+            let home = std::env::var("HOME").expect("HOME environment variable not set");
             format!("{}/.config/keyrx", home)
         };
 
         // Config directory should exist or be creatable
         if !std::path::Path::new(&config_dir).exists() {
-            std::fs::create_dir_all(&config_dir)
-                .expect("Failed to create config directory");
+            std::fs::create_dir_all(&config_dir).expect("Failed to create config directory");
         }
 
         assert!(
@@ -123,10 +125,7 @@ mod daemon_health_tests {
 
         // Test that we can create wide strings (required for Windows API)
         let test_str = "test";
-        let wide: Vec<u16> = OsStr::new(test_str)
-            .encode_wide()
-            .chain(Some(0))
-            .collect();
+        let wide: Vec<u16> = OsStr::new(test_str).encode_wide().chain(Some(0)).collect();
 
         assert_eq!(wide.len(), test_str.len() + 1); // +1 for null terminator
 

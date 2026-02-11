@@ -55,6 +55,7 @@ async fn start_test_server() -> (u16, tokio::task::JoinHandle<()>) {
         simulation_service,
         subscription_manager,
         event_broadcaster,
+        None,
     ));
 
     // Create broadcast channel for daemon events

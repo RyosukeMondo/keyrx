@@ -21,6 +21,7 @@ enum DeviceScopeLegacy {
 /// Device metadata entry
 #[typeshare]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct DeviceEntry {
     /// Unique device identifier (max 256 chars)
     pub id: String,

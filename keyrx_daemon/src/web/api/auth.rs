@@ -33,16 +33,8 @@ async fn login_handler(
     State(auth_service): State<Arc<AuthService>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     body: axum::Json<auth::handlers::LoginRequest>,
-) -> Result<
-    axum::Json<auth::handlers::LoginResponse>,
-    auth::handlers::AuthError,
-> {
-    auth::handlers::login(
-        State(auth_service),
-        ConnectInfo(addr),
-        axum::Json(body.0),
-    )
-    .await
+) -> Result<axum::Json<auth::handlers::LoginResponse>, auth::handlers::AuthError> {
+    auth::handlers::login(State(auth_service), ConnectInfo(addr), axum::Json(body.0)).await
 }
 
 /// Logout endpoint handler
@@ -54,10 +46,7 @@ async fn logout_handler() -> Result<axum::http::StatusCode, auth::handlers::Auth
 async fn refresh_handler(
     State(auth_service): State<Arc<AuthService>>,
     body: axum::Json<auth::handlers::RefreshRequest>,
-) -> Result<
-    axum::Json<auth::handlers::LoginResponse>,
-    auth::handlers::AuthError,
-> {
+) -> Result<axum::Json<auth::handlers::LoginResponse>, auth::handlers::AuthError> {
     auth::handlers::refresh(State(auth_service), axum::Json(body.0)).await
 }
 
@@ -65,18 +54,12 @@ async fn refresh_handler(
 async fn validate_handler(
     State(auth_service): State<Arc<AuthService>>,
     headers: axum::http::HeaderMap,
-) -> Result<
-    axum::Json<auth::handlers::ValidationResponse>,
-    auth::handlers::AuthError,
-> {
+) -> Result<axum::Json<auth::handlers::ValidationResponse>, auth::handlers::AuthError> {
     auth::handlers::validate(State(auth_service), headers).await
 }
 
 #[cfg(test)]
 mod tests {
-    
-    
-    
 
     // TODO: Fix Router oneshot tests - requires proper Service trait setup
     // #[tokio::test]

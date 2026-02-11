@@ -2126,7 +2126,7 @@ where
 // ============================================================================
 
 // E2EHarness infrastructure tests require Linux-specific features to run the daemon
-// These tests are separate from the actual E2E tests in virtual_e2e_tests.rs
+// These tests are separate from the actual E2E tests in virtual_e2e_test.rs
 // To run these tests: cargo test --test e2e_harness --features linux
 #[cfg(test)]
 #[cfg(any(feature = "linux", feature = "windows"))]

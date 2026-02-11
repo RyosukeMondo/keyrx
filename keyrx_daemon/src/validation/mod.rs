@@ -8,6 +8,7 @@
 //! - Input sanitization (HTML entities, control characters)
 
 pub mod content;
+pub mod device;
 pub mod path;
 pub mod profile_name;
 pub mod sanitization;

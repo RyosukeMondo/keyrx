@@ -72,12 +72,24 @@ impl Default for ReloadState {
 /// Converts an archived KeyCode to an owned KeyCode.
 ///
 /// Uses rkyv's Deserialize trait for safe conversion.
+///
+/// # Safety
+///
+/// This function uses an infallible deserializer (`rkyv::Infallible`), which means
+/// deserialization cannot fail by design. However, we handle the Result to satisfy
+/// Rust's type system and provide a clear error if the type system guarantees are violated.
 #[allow(dead_code)]
 pub(crate) fn convert_archived_keycode(archived: &ArchivedKeyCode) -> KeyCode {
     use rkyv::Deserialize;
-    archived
-        .deserialize(&mut rkyv::Infallible)
-        .expect("KeyCode deserialization is infallible")
+    match archived.deserialize(&mut rkyv::Infallible) {
+        Ok(keycode) => keycode,
+        Err(infallible) => {
+            // SAFETY: This match arm is unreachable because rkyv::Infallible has no variants.
+            // The compiler requires exhaustive matching, but this can never execute.
+            // We include it to satisfy the type system and document the invariant.
+            match infallible {}
+        }
+    }
 }
 
 /// Converts an archived ConditionItem to an owned ConditionItem.
@@ -97,9 +109,15 @@ pub(crate) fn convert_archived_condition(archived: &ArchivedCondition) -> Condit
         ArchivedCondition::LockActive(id) => Condition::LockActive(*id),
         ArchivedCondition::DeviceMatches(id) => {
             use rkyv::Deserialize;
-            // SAFETY: rkyv::Infallible means deserialization cannot fail
-            // The unwrap here is safe because the deserializer is infallible by design
-            Condition::DeviceMatches(Deserialize::deserialize(id, &mut rkyv::Infallible).unwrap())
+            // SAFETY: rkyv::Infallible means deserialization cannot fail by design
+            match Deserialize::deserialize(id, &mut rkyv::Infallible) {
+                Ok(device_id) => Condition::DeviceMatches(device_id),
+                Err(infallible) => {
+                    // SAFETY: This match arm is unreachable because rkyv::Infallible has no variants.
+                    // The compiler requires exhaustive matching, but this can never execute.
+                    match infallible {}
+                }
+            }
         }
         ArchivedCondition::AllActive(items) => {
             Condition::AllActive(items.iter().map(convert_archived_condition_item).collect())

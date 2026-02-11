@@ -149,13 +149,23 @@ async fn get_status(
             device_count,
         }))
     } else {
-        // Production mode: try to query daemon via IPC
-        let daemon_info = query_daemon_status();
-
-        let (daemon_running, uptime_secs, active_profile, device_count) = match daemon_info {
-            Ok((uptime, profile, count)) => (true, Some(uptime), profile, Some(count)),
-            Err(_) => (false, None, None, None),
-        };
+        // Production mode: use shared state (Windows) or IPC (Linux)
+        let (daemon_running, uptime_secs, active_profile, device_count) =
+            if let Some(daemon_state) = &state.daemon_state {
+                // Windows single-process mode: use shared state
+                (
+                    daemon_state.is_running(),
+                    Some(daemon_state.uptime_secs()),
+                    daemon_state.get_active_profile(),
+                    Some(daemon_state.get_device_count()),
+                )
+            } else {
+                // Linux or cross-process mode: fallback to IPC
+                match query_daemon_status() {
+                    Ok((uptime, profile, count)) => (true, Some(uptime), profile, Some(count)),
+                    Err(_) => (false, None, None, None),
+                }
+            };
 
         Ok(Json(StatusResponse {
             status: "running".to_string(),

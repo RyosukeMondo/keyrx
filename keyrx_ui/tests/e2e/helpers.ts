@@ -9,10 +9,7 @@
 
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-
-// Daemon configuration (must match global-setup)
-const DAEMON_PORT = 9867;
-const DAEMON_API_URL = `http://127.0.0.1:${DAEMON_PORT}`;
+import { DAEMON_API_URL } from './fixtures/daemon';
 
 /**
  * Check if daemon is responding on the health endpoint

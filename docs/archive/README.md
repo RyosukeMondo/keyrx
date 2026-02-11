@@ -4,7 +4,7 @@ This directory contains documents that are **outdated or superseded** but retain
 
 ## Contents
 
-### MVP_CANDIDATES_ARCHIVED_2025-12-29.md
+### mvp-candidates-archived-2025-12-29.md
 **Original:** `.spec-workflow/MVP_CANDIDATES.md`
 **Archived:** 2025-12-29
 **Reason:** Document is outdated - most features listed are now implemented or deferred

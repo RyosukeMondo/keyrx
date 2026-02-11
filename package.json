@@ -1,24 +1,12 @@
 {
-  "name": "keyrx2",
+  "name": "keyrx",
   "version": "0.1.0",
-  "description": "KeyRX2 - Advanced keyboard remapping daemon with WebAssembly support",
+  "description": "KeyRx - Advanced keyboard remapping daemon",
   "private": true,
   "scripts": {
     "prepare": "husky || true"
   },
-  "dependencies": {
-    "zod": "^3.22.4",
-    "axios": "^1.6.2",
-    "ws": "^8.14.2",
-    "commander": "^11.1.0",
-    "deep-diff": "^1.0.2",
-    "chalk": "^5.3.0"
-  },
   "devDependencies": {
-    "@types/node": "^20.10.4",
-    "@types/ws": "^8.5.9",
-    "@types/deep-diff": "^1.0.5",
-    "tsx": "^4.7.0",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.0"
   },
@@ -27,7 +15,7 @@
       "cargo fmt --check --",
       "bash -c 'cargo clippy --all-targets -- -D warnings'"
     ],
-    "keyrx_ui_v2/**/*.{ts,tsx,js,jsx}": [
+    "keyrx_ui/**/*.{ts,tsx,js,jsx}": [
       "prettier --check",
       "eslint"
     ]

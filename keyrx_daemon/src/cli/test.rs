@@ -10,7 +10,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 /// Test subcommands.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct TestArgs {
     /// Profile name to test (defaults to current active profile).
     #[arg(long)]
@@ -234,7 +234,7 @@ mod tests {
     }
 
     // Note: These unit tests modify global environment and should be run serially
-    // Remove these tests and rely on integration tests in tests/cli_test_test.rs instead
+    // Remove these tests and rely on integration tests in tests/cli_test_command_test.rs instead
 
     #[test]
     fn test_json_output_format() {

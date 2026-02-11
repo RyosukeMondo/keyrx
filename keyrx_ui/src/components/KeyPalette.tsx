@@ -8,7 +8,7 @@ import { CategoryTabs } from './palette/CategoryTabs';
 import { SearchResultsList } from './palette/SearchResultsList';
 import { KeyCaptureModal } from './palette/KeyCaptureModal';
 import { Card } from './Card';
-import { KEY_DEFINITIONS } from '../data/keyDefinitions';
+import { KEY_DEFINITIONS } from '../data/keys';
 import { KeyPaletteItem } from './KeyPaletteItem';
 import { useRecentKeys } from '../hooks/useRecentKeys';
 import { useFavoriteKeys } from '../hooks/useFavoriteKeys';

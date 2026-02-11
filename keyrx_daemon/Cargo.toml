@@ -35,6 +35,11 @@ serde_json = { workspace = true }
 typeshare = "1.0"
 validator = { version = "0.16", features = ["derive"] }
 humantime = "2.3.0"
+# Authentication dependencies
+jsonwebtoken = "9.2"
+argon2 = { version = "0.5", features = ["std"] }
+rand = "0.8"
+base64 = "0.21"
 # Embed static files in binary
 include_dir = "0.7"
 mime_guess = "2.0"
@@ -50,6 +55,8 @@ colored = "2.1"
 # UUID generation for WebSocket client IDs
 uuid = { version = "1.0", features = ["v4"] }
 tower = { version = "0.5.3", features = ["util"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["json", "env-filter"] }
 
 # Linux-specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]
@@ -93,7 +100,7 @@ futures-util = "0.3"
 # Property-based testing
 proptest = "1.4"
 # HTTP client for web API testing
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "blocking"] }
 
 [[bench]]
 name = "input_latency"

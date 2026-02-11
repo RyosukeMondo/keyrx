@@ -84,6 +84,7 @@ async fn start_test_web_server() -> (u16, tokio::task::JoinHandle<()>, Arc<AppSt
         simulation_service,
         subscription_manager,
         event_broadcaster,
+        None,
     ));
 
     let state_clone = Arc::clone(&state);

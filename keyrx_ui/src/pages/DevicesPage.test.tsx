@@ -294,10 +294,12 @@ describe('DevicesPage - Integration Tests', () => {
       const saveButton = screen.getByLabelText('Save');
       await user.click(saveButton);
 
-      // Input should disappear (exits edit mode)
-      expect(
-        screen.queryByRole('textbox', { name: 'Device name' })
-      ).not.toBeInTheDocument();
+      // Input should disappear (exits edit mode) after async save completes
+      await waitFor(() => {
+        expect(
+          screen.queryByRole('textbox', { name: 'Device name' })
+        ).not.toBeInTheDocument();
+      });
 
       // TODO: Once rename API is implemented, verify name actually changes
       // For now, rename just exits edit mode without persisting

@@ -37,10 +37,7 @@ async fn test_profile_creation_activation_workflow() {
     if !create_response.status().is_success() {
         let status = create_response.status();
         let body = create_response.text().await.unwrap_or_default();
-        panic!(
-            "Profile creation failed with status {}: {}",
-            status, body
-        );
+        panic!("Profile creation failed with status {}: {}", status, body);
     }
 
     // Step 2: Verify profile exists
@@ -79,7 +76,10 @@ async fn test_profile_creation_activation_workflow() {
     assert!(verify_response.status().is_success());
 
     let verify_body: serde_json::Value = verify_response.json().await.unwrap();
-    let verify_profiles = verify_body.get("profiles").and_then(|p| p.as_array()).unwrap();
+    let verify_profiles = verify_body
+        .get("profiles")
+        .and_then(|p| p.as_array())
+        .unwrap();
 
     let active_profile = verify_profiles
         .iter()

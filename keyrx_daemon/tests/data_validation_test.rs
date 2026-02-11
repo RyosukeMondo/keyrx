@@ -36,7 +36,7 @@ fn val_001_valid_profile_names() {
         "my_profile",
         "Profile123",
         "test-config_v2",
-        "a",             // minimum length
+        "a", // minimum length
     ];
 
     for name in valid_names {

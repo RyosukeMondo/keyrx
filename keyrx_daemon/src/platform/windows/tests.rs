@@ -278,7 +278,9 @@ fn test_all_extracted_keys_convertible_to_scancodes() {
 
     let bytes = std::fs::read(&krx_path).expect("Should read");
     let archived = deserialize(&bytes).expect("Should deserialize");
-    let owned: ConfigRoot = archived.deserialize(&mut rkyv::Infallible).expect("Should convert");
+    let owned: ConfigRoot = archived
+        .deserialize(&mut rkyv::Infallible)
+        .expect("Should convert");
 
     let keys = extract_source_keys(&owned);
     let mut failed = Vec::new();
@@ -290,7 +292,12 @@ fn test_all_extracted_keys_convertible_to_scancodes() {
     }
 
     // Filter out Japanese-specific keys that may not have Windows VK mappings
-    let japanese_keys = vec![KeyCode::Ro, KeyCode::Hiragana, KeyCode::Katakana, KeyCode::Zenkaku];
+    let japanese_keys = vec![
+        KeyCode::Ro,
+        KeyCode::Hiragana,
+        KeyCode::Katakana,
+        KeyCode::Zenkaku,
+    ];
     let non_japanese_failed: Vec<_> = failed
         .into_iter()
         .filter(|k| !japanese_keys.contains(k))
@@ -319,7 +326,11 @@ fn test_key_blocker_actually_blocks() {
     let blocker = KeyBlocker::new().expect("Should create blocker");
 
     // Initially no keys blocked
-    assert_eq!(blocker.blocked_count(), 0, "Should start with no blocked keys");
+    assert_eq!(
+        blocker.blocked_count(),
+        0,
+        "Should start with no blocked keys"
+    );
 
     // Block some keys
     blocker.block_key(0x11); // W
@@ -334,7 +345,11 @@ fn test_key_blocker_actually_blocks() {
 
     // Clear and re-add
     blocker.clear_all();
-    assert_eq!(blocker.blocked_count(), 0, "Should have no blocked keys after clear");
+    assert_eq!(
+        blocker.blocked_count(),
+        0,
+        "Should have no blocked keys after clear"
+    );
 
     blocker.block_key(0x30); // B
     assert_eq!(blocker.blocked_count(), 1, "Should have 1 blocked key");

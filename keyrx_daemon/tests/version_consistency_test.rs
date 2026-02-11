@@ -78,8 +78,7 @@ mod version_consistency_tests {
 
         // Git hash should be alphanumeric or "unknown"
         assert!(
-            git_hash.chars().all(|c| c.is_alphanumeric())
-                || git_hash == "unknown",
+            git_hash.chars().all(|c| c.is_alphanumeric()) || git_hash == "unknown",
             "GIT_HASH should be alphanumeric or 'unknown', got: {}",
             git_hash
         );
@@ -154,8 +153,7 @@ mod version_consistency_tests {
     // Test that Cargo.toml contains version in workspace.package
     #[test]
     fn test_cargo_toml_has_workspace_version() {
-        let cargo_toml =
-            std::fs::read_to_string("Cargo.toml").expect("Failed to read Cargo.toml");
+        let cargo_toml = std::fs::read_to_string("Cargo.toml").expect("Failed to read Cargo.toml");
 
         assert!(
             cargo_toml.contains("[workspace.package]"),
@@ -173,8 +171,8 @@ mod version_consistency_tests {
     // Test that package.json exists and has version
     #[test]
     fn test_package_json_has_version() {
-        let package_json = std::fs::read_to_string("keyrx_ui/package.json")
-            .expect("Failed to read package.json");
+        let package_json =
+            std::fs::read_to_string("keyrx_ui/package.json").expect("Failed to read package.json");
 
         assert!(
             package_json.contains("\"version\""),
@@ -270,9 +268,7 @@ mod version_consistency_tests {
                     resp.status()
                 );
 
-                let body = resp
-                    .text()
-                    .expect("Failed to read health response body");
+                let body = resp.text().expect("Failed to read health response body");
 
                 // Health endpoint should include version info
                 // (This test will pass even if version field is not added yet,
@@ -280,10 +276,7 @@ mod version_consistency_tests {
                 println!("✓ /api/health response: {}", body);
             }
             Err(e) => {
-                println!(
-                    "⚠ Skipping /api/health test - daemon not running: {}",
-                    e
-                );
+                println!("⚠ Skipping /api/health test - daemon not running: {}", e);
             }
         }
     }
@@ -360,16 +353,15 @@ mod version_consistency_tests {
         let cargo_version = env!("CARGO_PKG_VERSION");
 
         // Read package.json version
-        let package_json = std::fs::read_to_string("keyrx_ui/package.json")
-            .expect("Failed to read package.json");
+        let package_json =
+            std::fs::read_to_string("keyrx_ui/package.json").expect("Failed to read package.json");
 
         // Extract version from package.json (simple regex)
         let pkg_version = package_json
             .lines()
             .find(|line| line.contains("\"version\""))
             .and_then(|line| {
-                line.split('"')
-                    .nth(3) // "version": "X.Y.Z"
+                line.split('"').nth(3) // "version": "X.Y.Z"
             });
 
         if let Some(pkg_ver) = pkg_version {

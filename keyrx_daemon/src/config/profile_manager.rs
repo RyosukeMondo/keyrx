@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::profile_compiler::{CompilationError, ProfileCompiler};
+use typeshare::typeshare;
 
 /// Maximum number of profiles allowed
 const MAX_PROFILES: usize = 100;
@@ -30,21 +31,30 @@ pub struct ProfileManager {
 }
 
 /// Metadata for a single profile.
+#[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProfileMetadata {
     pub name: String,
+    #[typeshare(skip)]
     pub rhai_path: PathBuf,
+    #[typeshare(skip)]
     pub krx_path: PathBuf,
+    #[typeshare(skip)]
     pub modified_at: SystemTime,
+    #[typeshare(serialized_as = "number")]
     pub layer_count: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[typeshare(skip)]
     pub activated_at: Option<SystemTime>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub activated_by: Option<String>,
 }
 
 /// Template for creating new profiles.
-#[derive(Debug, Clone, Copy)]
+#[typeshare]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ProfileTemplate {
     /// Empty configuration with minimal valid syntax
     Blank,
@@ -59,11 +69,16 @@ pub enum ProfileTemplate {
 }
 
 /// Result of profile activation.
+#[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ActivationResult {
+    #[typeshare(serialized_as = "number")]
     pub compile_time_ms: u64,
+    #[typeshare(serialized_as = "number")]
     pub reload_time_ms: u64,
     pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
 
@@ -108,6 +123,21 @@ pub enum ProfileError {
 }
 
 impl ProfileManager {
+    /// Path to the profiles subdirectory.
+    fn profiles_dir(&self) -> PathBuf {
+        self.config_dir.join("profiles")
+    }
+
+    /// Path to a profile's .rhai source file.
+    fn rhai_path(&self, name: &str) -> PathBuf {
+        self.profiles_dir().join(format!("{}.rhai", name))
+    }
+
+    /// Path to a profile's .krx compiled file.
+    fn krx_path(&self, name: &str) -> PathBuf {
+        self.profiles_dir().join(format!("{}.krx", name))
+    }
+
     /// Create a new profile manager with the specified config directory.
     pub fn new(config_dir: PathBuf) -> Result<Self, ProfileError> {
         // Create config directory if it doesn't exist
@@ -144,7 +174,7 @@ impl ProfileManager {
 
     /// Scan the profiles directory for .rhai files.
     pub fn scan_profiles(&mut self) -> Result<(), ProfileError> {
-        let profiles_dir = self.config_dir.join("profiles");
+        let profiles_dir = self.profiles_dir();
         if !profiles_dir.exists() {
             return Ok(());
         }
@@ -169,14 +199,8 @@ impl ProfileManager {
     /// Load metadata for a profile by name.
     /// PROF-004: Load activation metadata from .active file.
     fn load_profile_metadata(&self, name: &str) -> Result<ProfileMetadata, ProfileError> {
-        let rhai_path = self
-            .config_dir
-            .join("profiles")
-            .join(format!("{}.rhai", name));
-        let krx_path = self
-            .config_dir
-            .join("profiles")
-            .join(format!("{}.krx", name));
+        let rhai_path = self.rhai_path(name);
+        let krx_path = self.krx_path(name);
 
         if !rhai_path.exists() {
             return Err(ProfileError::NotFound(name.to_string()));
@@ -264,10 +288,7 @@ impl ProfileManager {
         }
 
         // PROF-005: Check for duplicate on disk (in case of desync)
-        let rhai_path = self
-            .config_dir
-            .join("profiles")
-            .join(format!("{}.rhai", name));
+        let rhai_path = self.rhai_path(name);
         if rhai_path.exists() {
             return Err(ProfileError::AlreadyExists(name.to_string()));
         }
@@ -454,10 +475,7 @@ impl ProfileManager {
             .ok_or_else(|| ProfileError::NotFound(src.to_string()))?
             .clone();
 
-        let dest_rhai = self
-            .config_dir
-            .join("profiles")
-            .join(format!("{}.rhai", dest));
+        let dest_rhai = self.rhai_path(dest);
         if dest_rhai.exists() {
             return Err(ProfileError::AlreadyExists(dest.to_string()));
         }
@@ -497,19 +515,13 @@ impl ProfileManager {
             .clone();
 
         // Check if destination already exists
-        let new_rhai = self
-            .config_dir
-            .join("profiles")
-            .join(format!("{}.rhai", new_name));
+        let new_rhai = self.rhai_path(new_name);
         if new_rhai.exists() {
             return Err(ProfileError::AlreadyExists(new_name.to_string()));
         }
 
         // Rename both .rhai and .krx files
-        let new_krx = self
-            .config_dir
-            .join("profiles")
-            .join(format!("{}.krx", new_name));
+        let new_krx = self.krx_path(new_name);
 
         fs::rename(&old_profile.rhai_path, &new_rhai)?;
 
@@ -556,10 +568,7 @@ impl ProfileManager {
             return Err(ProfileError::ProfileLimitExceeded);
         }
 
-        let dest_rhai = self
-            .config_dir
-            .join("profiles")
-            .join(format!("{}.rhai", name));
+        let dest_rhai = self.rhai_path(name);
         if dest_rhai.exists() {
             return Err(ProfileError::AlreadyExists(name.to_string()));
         }
@@ -698,13 +707,17 @@ impl ProfileManager {
                             .map(|s| s.to_string())
                             .unwrap_or_else(|| {
                                 // Fallback: treat entire content as plain text name (backward compat)
-                                log::warn!("Active profile file is not JSON, treating as plain text");
+                                log::warn!(
+                                    "Active profile file is not JSON, treating as plain text"
+                                );
                                 content.trim().to_string()
                             })
                     }
                     Err(_) => {
                         // Fallback: treat entire content as plain text name (backward compat)
-                        log::warn!("Failed to parse active profile as JSON, treating as plain text");
+                        log::warn!(
+                            "Failed to parse active profile as JSON, treating as plain text"
+                        );
                         content.trim().to_string()
                     }
                 };

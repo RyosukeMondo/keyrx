@@ -6,10 +6,10 @@
 pub mod common;
 pub mod config;
 pub mod config_dir;
-pub mod config_handlers;
-pub mod config_helpers;
 pub mod devices;
+pub mod dispatcher;
 pub mod error;
+pub mod handlers;
 pub mod layers;
 pub mod layouts;
 pub mod logging;

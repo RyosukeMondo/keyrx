@@ -243,7 +243,7 @@ fn is_valid_hex_id(s: &str, prefix: &str) -> bool {
 fn format_range_error(
     type_name: &str,
     got: &u16,
-    max: &u8,
+    max: &u16,
     prefix: &str,
     import_chain: &[ImportStep],
 ) -> String {

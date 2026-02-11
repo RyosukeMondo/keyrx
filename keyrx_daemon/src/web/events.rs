@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use typeshare::typeshare;
 
 /// Events broadcast from the daemon to WebSocket clients.
-#[typeshare]
+/// Note: This enum uses #[serde(flatten)] which is not supported by typeshare,
+/// so we skip it and maintain a manual TypeScript definition in index.ts
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum DaemonEvent {
@@ -55,6 +56,7 @@ pub enum DaemonEvent {
 /// Current daemon state snapshot.
 #[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DaemonState {
     /// Active modifier IDs (e.g., ["MD_00", "MD_01"]).
     pub modifiers: Vec<String>,
@@ -73,17 +75,16 @@ pub struct DaemonState {
 /// Individual key event data.
 #[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct KeyEventData {
     /// Timestamp in microseconds since UNIX epoch.
     #[typeshare(serialized_as = "number")]
     pub timestamp: u64,
 
     /// Key code (e.g., "KEY_A").
-    #[serde(rename = "keyCode")]
     pub key_code: String,
 
     /// Event type ("press" or "release").
-    #[serde(rename = "eventType")]
     pub event_type: String,
 
     /// Input key (before mapping).
@@ -97,22 +98,18 @@ pub struct KeyEventData {
     pub latency: u64,
 
     /// Device ID (unique identifier for the source device).
-    #[serde(rename = "deviceId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub device_id: Option<String>,
 
     /// Device name (human-readable name).
-    #[serde(rename = "deviceName")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub device_name: Option<String>,
 
     /// Mapping type applied (e.g., "simple", "tap_hold", "layer_switch").
-    #[serde(rename = "mappingType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mapping_type: Option<String>,
 
     /// Whether a mapping was triggered for this event.
-    #[serde(rename = "mappingTriggered")]
     pub mapping_triggered: bool,
 }
 

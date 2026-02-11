@@ -8,8 +8,8 @@
 //! 4. Base mappings conflicting with tap-hold mappings
 
 use keyrx_daemon::services::SimulationService;
-use serial_test::serial;
 use serde_json::json;
+use serial_test::serial;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -29,10 +29,7 @@ device_end();
 "#;
 
     // Write profile file
-    let profile_path = app
-        .config_path()
-        .join("profiles")
-        .join("simple-test.rhai");
+    let profile_path = app.config_path().join("profiles").join("simple-test.rhai");
     std::fs::write(&profile_path, simple_profile_rhai).unwrap();
 
     // Activate profile
@@ -52,9 +49,12 @@ device_end();
 
     // Simulate key press A
     let sim_response = app
-        .post("/api/simulator/events", &json!({
-            "dsl": "press:A,wait:50,release:A"
-        }))
+        .post(
+            "/api/simulator/events",
+            &json!({
+                "dsl": "press:A,wait:50,release:A"
+            }),
+        )
         .await;
 
     assert_eq!(
@@ -79,10 +79,7 @@ device_end();
 
     // Check that we get EXACTLY 2 events: press B, release B
     // NOT: press A, press B, release B (which would indicate double processing)
-    let press_count = events
-        .iter()
-        .filter(|e| e["event_type"] == "press")
-        .count();
+    let press_count = events.iter().filter(|e| e["event_type"] == "press").count();
     let release_count = events
         .iter()
         .filter(|e| e["event_type"] == "release")
@@ -136,9 +133,12 @@ device_end();
 
     // Simulate QUICK press A (tap, not hold)
     let sim_response = app
-        .post("/api/simulator/events", &json!({
-            "dsl": "press:A,wait:50,release:A"
-        }))
+        .post(
+            "/api/simulator/events",
+            &json!({
+                "dsl": "press:A,wait:50,release:A"
+            }),
+        )
         .await;
 
     assert_eq!(
@@ -163,10 +163,7 @@ device_end();
 
     // Check that we get EXACTLY 2 events: press Tab, release Tab
     // NOT: press A, press Tab, release Tab (which would indicate both original and remapped)
-    let press_count = events
-        .iter()
-        .filter(|e| e["event_type"] == "press")
-        .count();
+    let press_count = events.iter().filter(|e| e["event_type"] == "press").count();
     let release_count = events
         .iter()
         .filter(|e| e["event_type"] == "release")
@@ -199,10 +196,7 @@ device_end();
 "#;
 
     // Write profile file
-    let profile_path = app
-        .config_path()
-        .join("profiles")
-        .join("complex-test.rhai");
+    let profile_path = app.config_path().join("profiles").join("complex-test.rhai");
     std::fs::write(&profile_path, complex_profile_rhai).unwrap();
 
     // Activate profile
@@ -227,9 +221,12 @@ device_end();
 
     // Simulate press A
     let sim_response = app
-        .post("/api/simulator/events", &json!({
-            "dsl": "press:A,wait:50,release:A"
-        }))
+        .post(
+            "/api/simulator/events",
+            &json!({
+                "dsl": "press:A,wait:50,release:A"
+            }),
+        )
         .await;
 
     assert_eq!(sim_response.status(), 200);
@@ -269,9 +266,12 @@ device_end();
 
     // Simulate press W
     let sim_response = app
-        .post("/api/simulator/events", &json!({
-            "dsl": "press:W,wait:50,release:W"
-        }))
+        .post(
+            "/api/simulator/events",
+            &json!({
+                "dsl": "press:W,wait:50,release:W"
+            }),
+        )
         .await;
 
     assert_eq!(sim_response.status(), 200);
@@ -332,10 +332,7 @@ device_end();
 "#;
 
     // Write profile file
-    let profile_path = app
-        .config_path()
-        .join("profiles")
-        .join("layer-test.rhai");
+    let profile_path = app.config_path().join("profiles").join("layer-test.rhai");
     std::fs::write(&profile_path, layer_profile_rhai).unwrap();
 
     // Activate profile
@@ -351,9 +348,12 @@ device_end();
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
     let sim_response = app
-        .post("/api/simulator/events", &json!({
-            "dsl": "press:J,wait:50,release:J"
-        }))
+        .post(
+            "/api/simulator/events",
+            &json!({
+                "dsl": "press:J,wait:50,release:J"
+            }),
+        )
         .await;
     assert_eq!(sim_response.status(), 200);
     tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
@@ -379,9 +379,12 @@ device_end();
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
     let sim_response = app
-        .post("/api/simulator/events", &json!({
-            "dsl": "press:A,wait:250,press:J,wait:50,release:J,release:A"
-        }))
+        .post(
+            "/api/simulator/events",
+            &json!({
+                "dsl": "press:A,wait:250,press:J,wait:50,release:J,release:A"
+            }),
+        )
         .await;
     assert_eq!(sim_response.status(), 200);
     tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
@@ -410,9 +413,12 @@ device_end();
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
     let sim_response = app
-        .post("/api/simulator/events", &json!({
-            "dsl": "press:J,wait:50,release:J"
-        }))
+        .post(
+            "/api/simulator/events",
+            &json!({
+                "dsl": "press:J,wait:50,release:J"
+            }),
+        )
         .await;
     assert_eq!(sim_response.status(), 200);
     tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;

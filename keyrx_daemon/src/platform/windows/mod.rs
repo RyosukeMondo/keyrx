@@ -75,7 +75,10 @@ impl WindowsPlatform {
                 self.key_blocker = Some(blocker);
             }
             Err(e) => {
-                log::warn!("Failed to install key blocker: {}. Remapping may show double inputs.", e);
+                log::warn!(
+                    "Failed to install key blocker: {}. Remapping may show double inputs.",
+                    e
+                );
                 // Continue without blocker - daemon still works but keys won't be blocked
             }
         }
@@ -163,11 +166,7 @@ impl WindowsPlatform {
                 if let Some(scan_code) = keycode::keycode_to_scancode(source_key) {
                     blocker.block_key(scan_code);
                     *blocked_count += 1;
-                    log::trace!(
-                        "Blocking {:?} (scan code: 0x{:04X})",
-                        source_key,
-                        scan_code
-                    );
+                    log::trace!("Blocking {:?} (scan code: 0x{:04X})", source_key, scan_code);
                 } else {
                     log::warn!(
                         "Failed to convert {:?} to scan code, won't be blocked",

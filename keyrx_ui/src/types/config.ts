@@ -32,7 +32,7 @@
  *   }
  * };
  */
-export interface KeyMapping {
+export interface EditorKeyMapping {
   /** Physical key code (e.g., "CapsLock", "A", "Enter") */
   keyCode: string;
 
@@ -162,7 +162,7 @@ export interface Layer {
    * Map key: Physical key code (e.g., "CapsLock", "A")
    * Map value: KeyMapping configuration
    */
-  mappings: Map<string, KeyMapping>;
+  mappings: Map<string, EditorKeyMapping>;
 }
 
 /**

@@ -7,6 +7,6 @@
 pub mod config;
 pub mod daemon;
 pub mod device;
-pub mod metrics;
+pub mod metric;
 pub mod profile;
-pub mod settings;
+pub mod setting;

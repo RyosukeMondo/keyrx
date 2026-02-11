@@ -24,9 +24,9 @@ pub(crate) fn make_pending_state(
     state
 }
 
-mod processor_tests;
-mod registry_tests;
+mod processor_test;
+mod registry_test;
 mod scenarios_part1;
 mod scenarios_part2;
-mod state_tests;
-mod types_tests;
+mod state_test;
+mod types_test;

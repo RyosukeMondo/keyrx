@@ -11,7 +11,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 /// State subcommand arguments.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct StateArgs {
     /// Subcommand to execute.
     #[command(subcommand)]
@@ -19,14 +19,14 @@ pub struct StateArgs {
 }
 
 /// State subcommands.
-#[derive(clap::Subcommand)]
+#[derive(clap::Subcommand, Debug)]
 pub enum StateCommand {
     /// Inspect the current modifier/lock state.
     Inspect(InspectArgs),
 }
 
 /// Arguments for the inspect subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct InspectArgs {
     /// Output as JSON.
     #[arg(long)]

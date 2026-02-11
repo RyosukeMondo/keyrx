@@ -4,7 +4,7 @@
  */
 
 import { toast as sonnerToast } from 'sonner';
-import { getErrorMessage } from '../utils/typeGuards';
+import { getErrorMessage } from '../utils/errorUtils';
 
 export interface ToastOptions {
   duration?: number;

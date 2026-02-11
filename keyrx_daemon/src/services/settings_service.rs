@@ -6,8 +6,8 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-/// Default web server port
-pub const DEFAULT_PORT: u16 = 9867;
+// Re-export from SSOT (daemon_config)
+pub use crate::daemon_config::DEFAULT_PORT;
 
 /// Global daemon settings
 #[derive(Debug, Clone, Serialize, Deserialize)]

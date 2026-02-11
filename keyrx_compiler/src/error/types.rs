@@ -34,7 +34,7 @@ pub enum ParseError {
     /// Custom modifier ID out of valid range (00-FE).
     ModifierIdOutOfRange {
         got: u16,
-        max: u8,
+        max: u16,
         /// Import chain leading to this error (empty if error is in main file)
         import_chain: Vec<ImportStep>,
     },
@@ -42,7 +42,7 @@ pub enum ParseError {
     /// Custom lock ID out of valid range (00-FE).
     LockIdOutOfRange {
         got: u16,
-        max: u8,
+        max: u16,
         /// Import chain leading to this error (empty if error is in main file)
         import_chain: Vec<ImportStep>,
     },

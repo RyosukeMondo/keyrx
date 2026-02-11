@@ -1,1 +1,0 @@
-{"format_version":1,"core_version":"0.1.0","hash":"b29b663e5520219208e723818e311667342bb15cd7302ad7cfe5b33e13f1e046","script":"\n            fn test_pass() {\n                let x = 1;\n            }\n            fn test_fail() {\n                throw \"failure\";\n            }\n        ","compile_micros":27}

@@ -1,8 +1,13 @@
 //! Authentication middleware for protecting API endpoints
 //!
-//! This middleware checks the Authorization header on all requests (except /health).
-//! If KEYRX_ADMIN_PASSWORD is set, requests must include:
-//! `Authorization: Bearer <password>`
+//! This middleware supports two authentication modes:
+//! 1. JWT authentication (KEYRX_JWT_SECRET set) - validates JWT tokens
+//! 2. Legacy password auth (KEYRX_ADMIN_PASSWORD set) - validates passwords
+//! 3. Dev mode (neither set) - no authentication required
+//!
+//! Endpoints that bypass authentication:
+//! - /health, /api/health
+//! - /api/auth/login, /api/auth/refresh
 
 use axum::{
     body::Body,
@@ -13,19 +18,27 @@ use axum::{
 };
 use std::sync::Arc;
 
-use crate::auth::AuthMode;
+use crate::auth::{AuthMode, AuthService};
 
 /// Authentication middleware state
 #[derive(Clone)]
 pub struct AuthMiddleware {
     auth_mode: Arc<AuthMode>,
+    auth_service: Option<Arc<AuthService>>,
 }
 
 impl AuthMiddleware {
     /// Create new authentication middleware
     pub fn new(auth_mode: AuthMode) -> Self {
+        let auth_service = if matches!(auth_mode, AuthMode::Jwt) {
+            Some(Arc::new(AuthService::new()))
+        } else {
+            None
+        };
+
         Self {
             auth_mode: Arc::new(auth_mode),
+            auth_service,
         }
     }
 
@@ -43,8 +56,15 @@ pub async fn auth_middleware(
 ) -> Result<Response<Body>, impl IntoResponse> {
     let path = request.uri().path();
 
-    // Skip authentication for health endpoint
-    if path == "/health" || path == "/api/health" {
+    // Skip authentication for public endpoints
+    let public_paths = [
+        "/health",
+        "/api/health",
+        "/api/auth/login",
+        "/api/auth/refresh",
+    ];
+
+    if public_paths.contains(&path) {
         return Ok(next.run(request).await);
     }
 
@@ -59,7 +79,7 @@ pub async fn auth_middleware(
         .get("authorization")
         .and_then(|h| h.to_str().ok());
 
-    let password = match auth_header {
+    let token = match auth_header {
         Some(header) => {
             // Extract Bearer token
             if let Some(token) = header.strip_prefix("Bearer ") {
@@ -67,25 +87,42 @@ pub async fn auth_middleware(
             } else {
                 return Err((
                     StatusCode::UNAUTHORIZED,
-                    "Invalid Authorization header format. Use: Authorization: Bearer <password>",
+                    "Invalid Authorization header format. Use: Authorization: Bearer <token>",
                 ));
             }
         }
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                "Missing Authorization header. Use: Authorization: Bearer <password>",
+                "Missing Authorization header. Use: Authorization: Bearer <token>",
             ));
         }
     };
 
-    // Validate password
-    if !auth.auth_mode().validate_password(password) {
-        return Err((StatusCode::UNAUTHORIZED, "Invalid password"));
+    // Validate based on auth mode
+    match (auth.auth_mode(), &auth.auth_service) {
+        (AuthMode::Jwt, Some(auth_service)) => {
+            // Validate JWT token
+            match auth_service.jwt_manager.validate_access_token(token) {
+                Ok(_claims) => {
+                    // Token is valid, continue
+                    Ok(next.run(request).await)
+                }
+                Err(_) => Err((StatusCode::UNAUTHORIZED, "Invalid or expired token")),
+            }
+        }
+        (AuthMode::Password(_), _) => {
+            // Legacy password validation
+            if !auth.auth_mode().validate_password(token) {
+                return Err((StatusCode::UNAUTHORIZED, "Invalid password"));
+            }
+            Ok(next.run(request).await)
+        }
+        _ => {
+            // Should not reach here, but default to unauthorized
+            Err((StatusCode::UNAUTHORIZED, "Authentication failed"))
+        }
     }
-
-    // Password is valid, continue
-    Ok(next.run(request).await)
 }
 
 #[cfg(test)]

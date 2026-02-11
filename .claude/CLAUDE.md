@@ -1,46 +1,4 @@
-# AI Agent Development Guide
-
-## 🚀 Claude-Flow Integration
-
-keyrx is now **claude-flow ready** with specialized AI agents, automated workflows, and multi-agent swarm coordination!
-
-**Quick Start:**
-```bash
-# Initialize memory
-npx claude-flow@v3alpha memory init
-
-# Run a workflow
-npx claude-flow@v3alpha flow run spec-implementation --spec uat-ui-fixes
-
-# Check status
-npx claude-flow@v3alpha status --watch
-```
-
-**See:** `.claude-flow/QUICK_START.md` for 5-minute guide, `.claude-flow/README.md` for full documentation
-
-**Features:**
-- 20 specialized agents (rust-core-dev, daemon-dev, ui-react-dev, etc.)
-- 6 automated workflows (spec-implementation, feature-development, bug-fix, etc.)
-- 8 DDD domains (Core, Compiler, Daemon, UI, Platform, Testing, Configuration, Quality)
-- Full .spec-workflow integration with MCP tools
-- Memory system with vector search and pattern learning
-- Quality gates enforcement (coverage, clippy, formatting)
-
-## Active Specs
-
-- **uat-ui-fixes**: Dashboard virtual/physical indicator, device enable/disable toggle, profile inline edit + active indicator, config RPC fix, 256-layer display, key dropdown population. See `.spec-workflow/specs/uat-ui-fixes/tasks.md`
-
-## Windows Testing on Linux (Vagrant VM)
-
-**Quick Start:**
-```bash
-./scripts/windows_test_vm.sh                    # Automated testing
-cd vagrant/windows && vagrant up                # Manual control
-vagrant winrm -c 'cd C:\vagrant_project; cargo test -p keyrx_daemon --features windows'
-vagrant snapshot restore provisioned            # Restore clean state
-```
-
-**Details:** `vagrant/windows/README.md` and `docs/development/windows-vm-setup.md`
+# KeyRx Development Guide
 
 ## Quick Start
 

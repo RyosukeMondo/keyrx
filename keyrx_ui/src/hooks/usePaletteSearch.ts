@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { KeyDefinition } from '../data/keyDefinitions';
+import { KeyDefinition } from '../data/keys';
 
 /**
  * Match result from fuzzy matching

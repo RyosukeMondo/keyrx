@@ -1,0 +1,195 @@
+name: Build Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      installer_type:
+        description: 'Installer type to build'
+        required: true
+        default: 'IExpress'
+        type: choice
+        options:
+          - IExpress
+          - PowerShell
+          - Both
+
+jobs:
+  build-installer:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: keyrx_ui/package-lock.json
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install npm dependencies
+        working-directory: keyrx_ui
+        run: npm ci
+
+      - name: Build Rust binaries (release)
+        run: |
+          cargo build --release --bin keyrx_daemon
+          cargo build --release --bin keyrx_compiler
+
+      - name: Build UI
+        working-directory: keyrx_ui
+        run: npm run build
+
+      - name: Build IExpress Installer
+        if: ${{ github.event.inputs.installer_type == 'IExpress' || github.event.inputs.installer_type == 'Both' || github.event_name == 'push' }}
+        shell: powershell
+        run: |
+          .\scripts\installer\build-installer.ps1 -SkipBuild -SkipUI
+
+      - name: Build PowerShell Installer
+        if: ${{ github.event.inputs.installer_type == 'PowerShell' || github.event.inputs.installer_type == 'Both' }}
+        shell: powershell
+        run: |
+          .\scripts\installer\create-simple-installer.ps1 -SkipBuild
+
+      - name: Calculate checksums
+        shell: powershell
+        run: |
+          $version = "0.1.5"
+          $checksums = @()
+
+          $iexpressPath = "scripts\installer\keyrx-installer-v$version.exe"
+          if (Test-Path $iexpressPath) {
+            $hash = Get-FileHash $iexpressPath -Algorithm SHA256
+            $checksums += "SHA256 ($iexpressPath) = $($hash.Hash)"
+          }
+
+          $psPath = "scripts\installer\keyrx-installer-v$version.ps1"
+          if (Test-Path $psPath) {
+            $hash = Get-FileHash $psPath -Algorithm SHA256
+            $checksums += "SHA256 ($psPath) = $($hash.Hash)"
+          }
+
+          $checksums | Out-File -FilePath "scripts\installer\checksums.txt"
+          Get-Content "scripts\installer\checksums.txt"
+
+      - name: Upload IExpress Installer
+        if: hashFiles('scripts/installer/keyrx-installer-v*.exe') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyrx-installer-iexpress
+          path: scripts/installer/keyrx-installer-v*.exe
+          if-no-files-found: warn
+
+      - name: Upload PowerShell Installer
+        if: hashFiles('scripts/installer/keyrx-installer-v*.ps1') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyrx-installer-powershell
+          path: scripts/installer/keyrx-installer-v*.ps1
+          if-no-files-found: warn
+
+      - name: Upload Checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-checksums
+          path: scripts/installer/checksums.txt
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            scripts/installer/keyrx-installer-v*.exe
+            scripts/installer/keyrx-installer-v*.ps1
+            scripts/installer/checksums.txt
+          body: |
+            # KeyRx Windows Installer
+
+            ## Downloads
+
+            - **keyrx-installer-v*.exe** - Self-contained Windows installer (IExpress)
+            - **keyrx-installer-v*.ps1** - Self-contained PowerShell installer
+            - **checksums.txt** - SHA256 checksums for verification
+
+            ## Installation
+
+            ### IExpress Installer (Recommended)
+
+            1. Download `keyrx-installer-v*.exe`
+            2. Run as Administrator
+            3. Follow installation prompts
+
+            ### PowerShell Installer
+
+            1. Download `keyrx-installer-v*.ps1`
+            2. Right-click → "Run with PowerShell" (as Administrator)
+            3. Or: `powershell.exe -ExecutionPolicy Bypass -File keyrx-installer-v*.ps1`
+
+            ## Verification
+
+            Verify downloads with SHA256 checksums:
+
+            ```powershell
+            Get-FileHash keyrx-installer-v*.exe -Algorithm SHA256
+            ```
+
+            Compare with checksums in `checksums.txt`.
+
+            ## Requirements
+
+            - Windows 10 or 11
+            - Administrator privileges
+            - No other tools required!
+
+            ## Documentation
+
+            - [Installation Guide](https://github.com/${{ github.repository }}/blob/main/scripts/installer/INSTALLER_GUIDE.md)
+            - [Comparison of Installer Types](https://github.com/${{ github.repository }}/blob/main/scripts/installer/COMPARISON.md)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Summary
+        shell: powershell
+        run: |
+          Write-Host "Build Complete!" -ForegroundColor Green
+          Write-Host ""
+
+          $version = "0.1.5"
+
+          $iexpressPath = "scripts\installer\keyrx-installer-v$version.exe"
+          if (Test-Path $iexpressPath) {
+            $size = [Math]::Round((Get-Item $iexpressPath).Length / 1MB, 2)
+            Write-Host "IExpress Installer: $size MB" -ForegroundColor Cyan
+          }
+
+          $psPath = "scripts\installer\keyrx-installer-v$version.ps1"
+          if (Test-Path $psPath) {
+            $size = [Math]::Round((Get-Item $psPath).Length / 1MB, 2)
+            Write-Host "PowerShell Installer: $size MB" -ForegroundColor Cyan
+          }
+
+          Write-Host ""
+          Write-Host "Checksums:" -ForegroundColor Yellow
+          Get-Content "scripts\installer\checksums.txt"

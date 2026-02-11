@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { usePaletteSearch } from './usePaletteSearch';
-import { KeyDefinition } from '../data/keyDefinitions';
+import { KeyDefinition } from '../data/keys';
 
 // Test data - sample key definitions
 const mockKeys: KeyDefinition[] = [

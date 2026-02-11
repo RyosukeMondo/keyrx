@@ -18,18 +18,26 @@ mod tests {
         // Test password verification
         let hasher = PasswordHasher::new();
         let stored_hash = service.get_user_password_hash("admin").unwrap();
-        assert!(hasher.verify_password("SecureP@ssw0rd123", &stored_hash).unwrap());
+        assert!(hasher
+            .verify_password("SecureP@ssw0rd123", &stored_hash)
+            .unwrap());
 
         // Test JWT generation
         let access_token = service.jwt_manager.generate_access_token("admin").unwrap();
         let refresh_token = service.jwt_manager.generate_refresh_token("admin").unwrap();
 
         // Test JWT validation
-        let claims = service.jwt_manager.validate_access_token(&access_token).unwrap();
+        let claims = service
+            .jwt_manager
+            .validate_access_token(&access_token)
+            .unwrap();
         assert_eq!(claims.sub, "admin");
         assert_eq!(claims.token_type, TokenType::Access);
 
-        let refresh_claims = service.jwt_manager.validate_refresh_token(&refresh_token).unwrap();
+        let refresh_claims = service
+            .jwt_manager
+            .validate_refresh_token(&refresh_token)
+            .unwrap();
         assert_eq!(refresh_claims.sub, "admin");
         assert_eq!(refresh_claims.token_type, TokenType::Refresh);
 
@@ -46,7 +54,11 @@ mod tests {
 
         // First 5 attempts should succeed
         for i in 0..5 {
-            assert!(limiter.check_rate_limit(ip).is_ok(), "Attempt {} failed", i + 1);
+            assert!(
+                limiter.check_rate_limit(ip).is_ok(),
+                "Attempt {} failed",
+                i + 1
+            );
         }
 
         // 6th attempt should fail
@@ -74,13 +86,14 @@ mod tests {
 
     #[test]
     fn test_token_expiration() {
-        
-
         std::env::set_var("KEYRX_JWT_SECRET", "test_secret_key");
         let service = AuthService::new();
 
         // Generate a token
-        let token = service.jwt_manager.generate_access_token("testuser").unwrap();
+        let token = service
+            .jwt_manager
+            .generate_access_token("testuser")
+            .unwrap();
 
         // Token should be valid immediately
         assert!(service.jwt_manager.validate_access_token(&token).is_ok());

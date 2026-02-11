@@ -1,5 +1,5 @@
 import React from 'react';
-import { KEY_DEFINITIONS } from '../data/keyDefinitions';
+import { KEY_DEFINITIONS } from '../data/keys';
 import type { PaletteKey } from '../components/KeyPalette';
 import {
   BASIC_KEYS,

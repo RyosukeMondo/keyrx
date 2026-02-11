@@ -34,3 +34,6 @@ test-results/
 
 *storybook.log
 storybook-static
+
+# Build artifacts
+eslint-report*.json

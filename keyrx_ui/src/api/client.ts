@@ -3,6 +3,8 @@
  * Handles common error handling and request/response processing
  */
 
+import { buildApiUrl } from '../config/constants';
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -27,8 +29,7 @@ async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  const baseUrl = import.meta.env.VITE_API_URL || '';
-  const url = `${baseUrl}${endpoint}`;
+  const url = buildApiUrl(endpoint);
 
   try {
     const response = await fetch(url, {

@@ -11,7 +11,7 @@ use regex::Regex;
 use std::sync::OnceLock;
 
 /// Maximum profile name length (alphanumeric, dash, underscore only)
-const MAX_NAME_LENGTH: usize = 64;
+pub(crate) const MAX_NAME_LENGTH: usize = 64;
 
 /// Minimum profile name length
 const MIN_NAME_LENGTH: usize = 1;

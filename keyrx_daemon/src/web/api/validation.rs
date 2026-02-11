@@ -13,8 +13,8 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use crate::validation;
 use super::error::ApiError;
+use crate::validation;
 
 /// Maximum request body size (1MB) to prevent memory exhaustion
 pub const MAX_BODY_SIZE: usize = 1024 * 1024;
@@ -65,8 +65,7 @@ pub fn validate_profile_name(name: &str) -> Result<(), ApiError> {
 /// * `Ok(())` - ID is valid
 /// * `Err(ApiError::BadRequest)` - ID is invalid with reason
 pub fn validate_device_id(id: &str) -> Result<(), ApiError> {
-    validation::device::validate_device_id(id)
-        .map_err(|e| ApiError::BadRequest(e.to_string()))
+    validation::device::validate_device_id(id).map_err(|e| ApiError::BadRequest(e.to_string()))
 }
 
 /// Validates pagination parameters.
@@ -145,13 +144,14 @@ pub async fn size_limit_middleware(req: Request, next: Next) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::validation::profile_name::MAX_NAME_LENGTH;
 
     #[test]
     fn test_validate_profile_name_valid() {
         assert!(validate_profile_name("gaming").is_ok());
         assert!(validate_profile_name("my-profile").is_ok());
         assert!(validate_profile_name("profile_v2").is_ok());
-        assert!(validate_profile_name("Profile 1").is_ok());
+        assert!(validate_profile_name("Profile1").is_ok());
         assert!(validate_profile_name("a").is_ok());
     }
 

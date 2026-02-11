@@ -42,7 +42,10 @@ async fn test_device_detection_returns_valid_structure() {
             assert!(device["id"].is_string(), "Device must have id");
             assert!(device["name"].is_string(), "Device must have name");
             assert!(device["path"].is_string(), "Device must have path");
-            assert!(device["active"].is_boolean(), "Device must have active flag");
+            assert!(
+                device["active"].is_boolean(),
+                "Device must have active flag"
+            );
             // serial and layout are optional but should be present even if null
             assert!(
                 device.get("serial").is_some(),
@@ -641,7 +644,10 @@ async fn test_simulator_load_profile() {
 
     // Load profile into simulator
     let response = app
-        .post("/api/simulator/load-profile", &json!({"name": "sim-profile"}))
+        .post(
+            "/api/simulator/load-profile",
+            &json!({"name": "sim-profile"}),
+        )
         .await;
 
     let status = response.status();
@@ -855,11 +861,7 @@ async fn test_run_all_scenarios() {
         let passed = json["passed"].as_u64().unwrap();
         let failed = json["failed"].as_u64().unwrap();
 
-        assert_eq!(
-            total,
-            passed + failed,
-            "Total should equal passed + failed"
-        );
+        assert_eq!(total, passed + failed, "Total should equal passed + failed");
     }
 }
 
@@ -1018,10 +1020,7 @@ async fn test_profile_duplicate_and_rename() {
 
     // Rename
     let rename_response = app
-        .put(
-            "/api/profiles/copy/rename",
-            &json!({"newName": "renamed"}),
-        )
+        .put("/api/profiles/copy/rename", &json!({"newName": "renamed"}))
         .await;
 
     assert!(rename_response.status().is_success());

@@ -280,11 +280,17 @@ impl ProfileService {
                                 // Deserialize from archived format to ConfigRoot
                                 let config: keyrx_core::config::ConfigRoot = archived_config
                                     .deserialize(&mut rkyv::Infallible)
-                                    .map_err(|_| ProfileError::NotFound("Deserialization failed".to_string()))?;
+                                    .map_err(|_| {
+                                        ProfileError::NotFound("Deserialization failed".to_string())
+                                    })?;
                                 log::info!(
                                     "✓ Loaded profile config: {} devices, {} total mappings",
                                     config.devices.len(),
-                                    config.devices.iter().map(|d| d.mappings.len()).sum::<usize>()
+                                    config
+                                        .devices
+                                        .iter()
+                                        .map(|d| d.mappings.len())
+                                        .sum::<usize>()
                                 );
 
                                 match PlatformState::configure_blocking(Some(&config)) {
@@ -320,7 +326,10 @@ impl ProfileService {
                 log::error!(
                     "Profile '{}' activation failed: {}",
                     name_owned,
-                    activation_result.error.as_deref().unwrap_or("unknown error")
+                    activation_result
+                        .error
+                        .as_deref()
+                        .unwrap_or("unknown error")
                 );
             }
 

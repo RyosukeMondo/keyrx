@@ -14,14 +14,12 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { writeFile } from 'fs/promises';
 import { setTimeout as sleep } from 'timers/promises';
+import { DAEMON_PORT, DAEMON_API_URL } from './fixtures/daemon';
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Daemon configuration (must match daemon fixture)
-const DAEMON_PORT = 9867;
-const DAEMON_API_URL = `http://127.0.0.1:${DAEMON_PORT}`;
 const PID_FILE = join(__dirname, '../../.daemon-e2e.pid');
 
 /**

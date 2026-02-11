@@ -36,7 +36,7 @@ const TEST_SIMULATED_PHYSICAL_MARKER: usize = 0x54455354; // "TEST"
 
 // Thread-local storage for bridge context used by the hook callback
 thread_local! {
-    static BRIDGE_CONTEXT_TLS: RefCell<Option<Arc<Mutex<Option<BridgeContextHandle>>>>> = RefCell::new(None);
+    static BRIDGE_CONTEXT_TLS: RefCell<Option<Arc<Mutex<Option<BridgeContextHandle>>>>> = const { RefCell::new(None) };
 }
 
 pub struct BridgeContextHandle {

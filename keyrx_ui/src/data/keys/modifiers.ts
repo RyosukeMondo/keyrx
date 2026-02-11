@@ -1,0 +1,133 @@
+/**
+ * Modifier key definitions (Shift, Ctrl, Alt, Meta, Custom)
+ */
+import { KeyDefinition } from './types';
+
+export const MODIFIERS: KeyDefinition[] = [
+  {
+    id: 'LCtrl',
+    label: 'LCtrl',
+    category: 'modifiers',
+    description: 'Left Control',
+    aliases: ['KC_LCTL', 'KC_LCTRL', 'VK_LCONTROL', 'KEY_LEFTCTRL'],
+  },
+  {
+    id: 'RCtrl',
+    label: 'RCtrl',
+    category: 'modifiers',
+    description: 'Right Control',
+    aliases: ['KC_RCTL', 'KC_RCTRL', 'VK_RCONTROL', 'KEY_RIGHTCTRL'],
+  },
+  {
+    id: 'LShift',
+    label: 'LShift',
+    category: 'modifiers',
+    description: 'Left Shift',
+    aliases: ['KC_LSFT', 'KC_LSHIFT', 'VK_LSHIFT', 'KEY_LEFTSHIFT'],
+  },
+  {
+    id: 'RShift',
+    label: 'RShift',
+    category: 'modifiers',
+    description: 'Right Shift',
+    aliases: ['KC_RSFT', 'KC_RSHIFT', 'VK_RSHIFT', 'KEY_RIGHTSHIFT'],
+  },
+  {
+    id: 'LAlt',
+    label: 'LAlt',
+    category: 'modifiers',
+    description: 'Left Alt/Option',
+    aliases: ['KC_LALT', 'VK_LMENU', 'KEY_LEFTALT'],
+  },
+  {
+    id: 'RAlt',
+    label: 'RAlt',
+    category: 'modifiers',
+    description: 'Right Alt/Option',
+    aliases: ['KC_RALT', 'VK_RMENU', 'KEY_RIGHTALT', 'KC_ALGR'],
+  },
+  {
+    id: 'LMeta',
+    label: 'LWin',
+    category: 'modifiers',
+    description: 'Left Windows/Super/Command',
+    aliases: ['KC_LGUI', 'KC_LWIN', 'KC_LCMD', 'VK_LWIN', 'KEY_LEFTMETA'],
+  },
+  {
+    id: 'RMeta',
+    label: 'RWin',
+    category: 'modifiers',
+    description: 'Right Windows/Super/Command',
+    aliases: ['KC_RGUI', 'KC_RWIN', 'KC_RCMD', 'VK_RWIN', 'KEY_RIGHTMETA'],
+  },
+  {
+    id: 'MD_00',
+    label: 'MD_00',
+    category: 'modifiers',
+    description: 'Custom Modifier 0',
+    aliases: [],
+  },
+  {
+    id: 'MD_01',
+    label: 'MD_01',
+    category: 'modifiers',
+    description: 'Custom Modifier 1',
+    aliases: [],
+  },
+  {
+    id: 'MD_02',
+    label: 'MD_02',
+    category: 'modifiers',
+    description: 'Custom Modifier 2',
+    aliases: [],
+  },
+  {
+    id: 'MD_03',
+    label: 'MD_03',
+    category: 'modifiers',
+    description: 'Custom Modifier 3',
+    aliases: [],
+  },
+  {
+    id: 'MD_04',
+    label: 'MD_04',
+    category: 'modifiers',
+    description: 'Custom Modifier 4',
+    aliases: [],
+  },
+  {
+    id: 'MD_05',
+    label: 'MD_05',
+    category: 'modifiers',
+    description: 'Custom Modifier 5',
+    aliases: [],
+  },
+  {
+    id: 'MD_06',
+    label: 'MD_06',
+    category: 'modifiers',
+    description: 'Custom Modifier 6',
+    aliases: [],
+  },
+  {
+    id: 'MD_07',
+    label: 'MD_07',
+    category: 'modifiers',
+    description: 'Custom Modifier 7',
+    aliases: [],
+  },
+  {
+    id: 'MD_08',
+    label: 'MD_08',
+    category: 'modifiers',
+    description: 'Custom Modifier 8',
+    aliases: [],
+  },
+  {
+    id: 'MD_09',
+    label: 'MD_09',
+    category: 'modifiers',
+    description: 'Custom Modifier 9',
+    aliases: [],
+  },
+];

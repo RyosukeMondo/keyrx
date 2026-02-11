@@ -57,16 +57,16 @@ describe('CodePanelContainer', () => {
     rhaiCode: 'fn main() { }',
     onChange: mockOnChange,
     syncEngine: createMockSyncEngine(),
+    isOpen: true,
+    onToggle: mockToggleOpen,
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Default mock implementation - panel open
+    // Default mock implementation
     mockUseCodePanel.mockReturnValue({
-      isOpen: true,
       height: 300,
-      toggleOpen: mockToggleOpen,
       setHeight: mockSetHeight,
     });
   });
@@ -79,14 +79,7 @@ describe('CodePanelContainer', () => {
     });
 
     it('does not render when isOpen is false', () => {
-      mockUseCodePanel.mockReturnValue({
-        isOpen: false,
-        height: 300,
-        toggleOpen: mockToggleOpen,
-        setHeight: mockSetHeight,
-      });
-
-      render(<CodePanelContainer {...defaultProps} />);
+      render(<CodePanelContainer {...defaultProps} isOpen={false} />);
 
       expect(
         screen.queryByTestId('code-panel-container')

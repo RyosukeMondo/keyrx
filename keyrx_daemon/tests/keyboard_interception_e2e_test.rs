@@ -1,9 +1,9 @@
 // E2E test to verify keyboard interception is actually working
 // This catches the bug where daemon runs but doesn't intercept keys
 
-use std::process::{Command, Child};
-use std::time::Duration;
+use std::process::{Child, Command};
 use std::thread;
+use std::time::Duration;
 
 struct DaemonHandle {
     child: Child,
@@ -42,8 +42,7 @@ fn test_daemon_starts_and_api_responds() {
         response.status()
     );
 
-    let health: serde_json::Value = response.json()
-        .expect("Failed to parse health response");
+    let health: serde_json::Value = response.json().expect("Failed to parse health response");
 
     assert_eq!(
         health["status"], "ok",
@@ -93,8 +92,8 @@ fn test_keyboard_interception_active() {
         .send()
         .expect("Failed to get active profile");
 
-    let active_profile: serde_json::Value = response.json()
-        .expect("Failed to parse active profile");
+    let active_profile: serde_json::Value =
+        response.json().expect("Failed to parse active profile");
 
     assert!(
         !active_profile["active_profile"].is_null(),
@@ -125,10 +124,10 @@ fn test_keyboard_interception_active() {
         .send()
         .expect("Failed to get metrics");
 
-    let metrics: serde_json::Value = response.json()
-        .expect("Failed to parse metrics");
+    let metrics: serde_json::Value = response.json().expect("Failed to parse metrics");
 
-    let events = metrics["events"].as_array()
+    let events = metrics["events"]
+        .as_array()
         .expect("Events is not an array");
 
     assert!(
@@ -137,7 +136,10 @@ fn test_keyboard_interception_active() {
          This is the bug the user is experiencing - daemon runs but doesn't intercept keys."
     );
 
-    println!("✓ Keyboard interception is working - {} events detected", events.len());
+    println!(
+        "✓ Keyboard interception is working - {} events detected",
+        events.len()
+    );
 }
 
 #[test]
@@ -160,16 +162,13 @@ fn test_metrics_reset_and_capture() {
         .send()
         .expect("Failed to get metrics");
 
-    let metrics: serde_json::Value = response.json()
-        .expect("Failed to parse metrics");
+    let metrics: serde_json::Value = response.json().expect("Failed to parse metrics");
 
-    let events = metrics["events"].as_array()
+    let events = metrics["events"]
+        .as_array()
         .expect("Events is not an array");
 
-    assert_eq!(
-        events.len(), 0,
-        "Metrics not empty after clear"
-    );
+    assert_eq!(events.len(), 0, "Metrics not empty after clear");
 
     println!("✓ Metrics cleared successfully");
 }

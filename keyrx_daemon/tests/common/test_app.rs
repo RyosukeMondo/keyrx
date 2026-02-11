@@ -5,7 +5,7 @@
 use futures_util::{SinkExt, StreamExt};
 use keyrx_daemon::macro_recorder::MacroRecorder;
 use keyrx_daemon::services::{ConfigService, DeviceService, ProfileService};
-use keyrx_daemon::web::{create_app, AppState, DaemonEvent};
+use keyrx_daemon::web::{AppState, DaemonEvent};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -31,7 +31,10 @@ pub struct TestWebSocket {
 
 impl TestWebSocket {
     /// Sends a text message over the WebSocket connection.
-    pub async fn send_text(&mut self, text: String) -> Result<(), tokio_tungstenite::tungstenite::Error> {
+    pub async fn send_text(
+        &mut self,
+        text: String,
+    ) -> Result<(), tokio_tungstenite::tungstenite::Error> {
         self.write.send(WsMessage::Text(text)).await
     }
 }
@@ -152,6 +155,7 @@ impl TestApp {
             simulation_service,
             subscription_manager,
             event_broadcaster,
+            None,
         ));
 
         // Create event channel
@@ -240,10 +244,7 @@ impl TestApp {
 
         let (write, read) = ws_stream.split();
 
-        TestWebSocket {
-            write,
-            _read: read,
-        }
+        TestWebSocket { write, _read: read }
     }
 
     /// Sends a GET request to the specified path.

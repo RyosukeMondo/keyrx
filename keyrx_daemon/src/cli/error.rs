@@ -212,6 +212,12 @@ fn extract_error_details(error: &DaemonError) -> (String, String, Option<String>
             Some("Check core library documentation for details".to_string()),
             None,
         ),
+        DaemonError::Init(e) => (
+            "Init".to_string(),
+            e.to_string(),
+            Some("Check initialization process and dependencies".to_string()),
+            None,
+        ),
     }
 }
 
@@ -613,6 +619,7 @@ fn error_code(error: &DaemonError) -> u32 {
 
         // Core and other errors: 9000-9999
         DaemonError::Core(_) => 9000,
+        DaemonError::Init(_) => 9001,
     }
 }
 

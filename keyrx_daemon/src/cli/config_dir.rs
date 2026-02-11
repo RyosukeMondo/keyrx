@@ -62,9 +62,11 @@ pub fn get_config_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::env;
 
     #[test]
+    #[serial]
     fn test_keyrx_config_dir_override() {
         // Save and clear other env vars
         let old_keyrx = env::var("KEYRX_CONFIG_DIR").ok();
@@ -113,15 +115,19 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_home_fallback() {
         // Clear KEYRX_CONFIG_DIR to ensure we test the fallback
         let old_keyrx = env::var("KEYRX_CONFIG_DIR").ok();
         env::remove_var("KEYRX_CONFIG_DIR");
 
         let old_xdg = env::var("XDG_CONFIG_HOME").ok();
-        let old_home = env::var("HOME").or_else(|_| env::var("USERPROFILE")).ok();
+        let old_home = env::var("HOME").ok();
+        let old_userprofile = env::var("USERPROFILE").ok();
 
         env::remove_var("XDG_CONFIG_HOME");
+        env::remove_var("HOME");
+        env::remove_var("USERPROFILE");
 
         #[cfg(unix)]
         env::set_var("HOME", "/home/testuser");
@@ -143,9 +149,9 @@ mod tests {
             env::set_var("XDG_CONFIG_HOME", val);
         }
         if let Some(val) = old_home {
-            #[cfg(unix)]
             env::set_var("HOME", val);
-            #[cfg(windows)]
+        }
+        if let Some(val) = old_userprofile {
             env::set_var("USERPROFILE", val);
         }
     }

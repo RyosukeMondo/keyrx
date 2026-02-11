@@ -1,5 +1,3 @@
-
-
 //! Low-level keyboard hook for blocking remapped keys on Windows
 //!
 //! This module implements key blocking using SetWindowsHookExW with WH_KEYBOARD_LL.
@@ -23,8 +21,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, SetWindowsHookExW, UnhookWindowsHookEx, HC_ACTION, HHOOK,
-    KBDLLHOOKSTRUCT, WH_KEYBOARD_LL, WM_KEYDOWN, WM_SYSKEYDOWN,
+    CallNextHookEx, SetWindowsHookExW, UnhookWindowsHookEx, HC_ACTION, HHOOK, KBDLLHOOKSTRUCT,
+    WH_KEYBOARD_LL, WM_KEYDOWN, WM_SYSKEYDOWN,
 };
 
 /// Global state for key blocking
@@ -74,6 +72,12 @@ pub struct KeyBlocker {
     state: Arc<Mutex<KeyBlockerState>>,
 }
 
+// SAFETY: HHOOK is a Windows handle (raw pointer) that is safe to send across threads.
+// The handle is only used for UnhookWindowsHookEx in Drop, which is thread-safe.
+// The actual hook callback runs on the Windows message loop thread regardless of where
+// the KeyBlocker struct resides.
+unsafe impl Send for KeyBlocker {}
+
 impl KeyBlocker {
     /// Install the low-level keyboard hook
     ///
@@ -110,7 +114,10 @@ impl KeyBlocker {
             return Err("Failed to install keyboard hook".to_string());
         }
 
-        log::info!("✓ Keyboard blocker installed (hook: {:p})", hook as *const ());
+        log::info!(
+            "✓ Keyboard blocker installed (hook: {:p})",
+            hook as *const ()
+        );
 
         Ok(Self { hook, state })
     }
@@ -124,7 +131,10 @@ impl KeyBlocker {
                 log::debug!("➕ Added scan code to blocker: 0x{:04X}", scan_code);
             }
         } else {
-            log::error!("✗ Failed to lock blocker state when adding scan code: 0x{:04X}", scan_code);
+            log::error!(
+                "✗ Failed to lock blocker state when adding scan code: 0x{:04X}",
+                scan_code
+            );
         }
     }
 
@@ -200,9 +210,9 @@ unsafe extern "system" fn keyboard_hook_proc(
 
     // Construct full scan code (extended keys use high byte)
     let full_scan_code = if is_extended {
-        (scan_code as u32) | 0xE000
+        scan_code | 0xE000
     } else {
-        scan_code as u32
+        scan_code
     };
 
     // Check if this key should be blocked

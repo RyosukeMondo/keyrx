@@ -84,11 +84,7 @@ impl DeviceState {
     /// Returns true if valid, logs error and returns false if invalid (>254).
     #[inline]
     pub(super) fn validate_id(id: u8) -> bool {
-        if id > MAX_VALID_ID {
-            false
-        } else {
-            true
-        }
+        id <= MAX_VALID_ID
     }
 
     /// Sets a modifier bit to active

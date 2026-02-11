@@ -23,6 +23,7 @@ This directory contains automation scripts for building, testing, verifying, and
 | **SETUP** | `setup.sh` | Environment setup (unified) | `setup_*.sh` (5 scripts) |
 | **UAT** | `uat.sh` | User acceptance testing (with full build) | `UAT.sh`, `uat_*.sh`, `verify_uat.sh` (5 scripts) |
 | **DEPLOY** | `install.sh` | System installation | - |
+| **PACKAGE** | `package.sh` | Create distribution packages (--windows, --deb, --rpm, --tarball) | All `package/*.sh` scripts |
 
 ### Utility Scripts
 
@@ -42,6 +43,7 @@ This directory contains automation scripts for building, testing, verifying, and
 | Script | Purpose |
 |--------|---------|
 | `lib/common.sh` | Shared utilities (logging, JSON, arg parsing) |
+| `lib/credentials.sh` | **SSOT for credential handling** (never logs secrets, env vars only) |
 | `lib/build-wasm.sh` | WASM compilation (called by build.sh) |
 | `lib/build-ui.sh` | UI compilation (called by build.sh) |
 
@@ -229,6 +231,35 @@ Install KeyRX daemon to system.
 ```bash
 ./scripts/install.sh                  # Install to ~/.local/bin
 ```
+
+### package.sh - Create Distribution Packages
+
+Build distribution packages for all platforms.
+
+```bash
+./scripts/package.sh --windows        # Build Windows installer (.exe)
+./scripts/package.sh --deb            # Build Debian package (.deb)
+./scripts/package.sh --rpm            # Build RPM package (.rpm)
+./scripts/package.sh --tarball        # Build tarball (.tar.gz)
+./scripts/package.sh --all            # Build all packages
+```
+
+**Windows Installer:**
+- Uses Inno Setup (keyrx-installer.iss)
+- Creates professional installer with uninstaller
+- Output: `installer-output/keyrx-setup-v{VERSION}-windows-x64.exe`
+
+**Debian/Ubuntu:**
+- Creates .deb package with proper control file
+- Output: `target/debian/keyrx_{VERSION}-1_amd64.deb`
+
+**Fedora/RHEL:**
+- Creates .rpm package with spec file
+- Output: `~/rpmbuild/RPMS/keyrx-{VERSION}-1.rpm`
+
+**Tarball:**
+- Creates portable .tar.gz with install script
+- Output: `target/package/keyrx-{VERSION}-linux-x86_64.tar.gz`
 
 ## Troubleshooting
 

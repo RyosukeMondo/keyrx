@@ -10,7 +10,7 @@
 //! use keyrx_daemon::services::SimulationService;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let service = SimulationService::new(PathBuf::from("./config"));
+//! let service = SimulationService::new(PathBuf::from("./config"), None);
 //!
 //! // Load a profile
 //! service.load_profile("default")?;
@@ -97,11 +97,12 @@ impl SimulationService {
     /// # use std::path::PathBuf;
     /// # use keyrx_daemon::services::SimulationService;
     /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// let service = SimulationService::new(PathBuf::from("./config"));
+    /// let service = SimulationService::new(PathBuf::from("./config"), None);
     /// service.load_profile("default")?;
     /// # Ok(())
     /// # }
     /// ```
+    ///
     /// Helper method to convert OutputEvent to KeyEvent and send to event bus
     ///
     /// This is an async method that sends the event to the event bus channel.

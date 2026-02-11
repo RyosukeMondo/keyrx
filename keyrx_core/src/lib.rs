@@ -8,14 +8,11 @@
 extern crate alloc;
 
 pub mod config;
-pub mod dfa;
 pub mod error;
 pub mod runtime;
-pub mod simulator;
-pub mod state;
 
-// Parser module (only included with wasm feature for rhai dependency)
-#[cfg(feature = "wasm")]
+// Parser module: error + validators are always available (no external deps).
+// Full Parser type requires the "wasm" feature (rhai, sha2, spin).
 pub mod parser;
 
 // WASM module (only included when compiling for wasm32 target)
@@ -30,11 +27,3 @@ pub use config::{
 
 // Re-export error types
 pub use error::{CoreError, CoreResult};
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

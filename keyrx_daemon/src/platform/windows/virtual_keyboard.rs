@@ -46,8 +46,7 @@ impl VirtualKeyboard {
         input.Anonymous.ki = KEYBDINPUT {
             wVk: 0, // We use scan codes, not virtual keys
             wScan: base_scan_code,
-            dwFlags: KEYEVENTF_SCANCODE
-                | if is_extended { 0x0001 } else { 0 }, // KEYEVENTF_EXTENDEDKEY
+            dwFlags: KEYEVENTF_SCANCODE | if is_extended { 0x0001 } else { 0 }, // KEYEVENTF_EXTENDEDKEY
             time: 0,
             dwExtraInfo: 0,
         };
@@ -83,9 +82,7 @@ impl VirtualKeyboard {
         input.Anonymous.ki = KEYBDINPUT {
             wVk: 0,
             wScan: base_scan_code,
-            dwFlags: KEYEVENTF_SCANCODE
-                | KEYEVENTF_KEYUP
-                | if is_extended { 0x0001 } else { 0 },
+            dwFlags: KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP | if is_extended { 0x0001 } else { 0 },
             time: 0,
             dwExtraInfo: 0,
         };

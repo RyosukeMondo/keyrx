@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { axe } from 'vitest-axe';
-import { renderForA11y } from './test-utils';
+import { renderForA11y } from '../testUtils';
 import ProfilesPage from '../../src/pages/ProfilesPage';
 
 // Mock useUnifiedApi to prevent WebSocket connection attempts

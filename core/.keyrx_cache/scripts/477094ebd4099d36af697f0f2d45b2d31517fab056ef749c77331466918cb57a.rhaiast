@@ -1,1 +1,0 @@
-{"format_version":1,"core_version":"0.1.0","hash":"477094ebd4099d36af697f0f2d45b2d31517fab056ef749c77331466918cb57a","script":"fn test_simple() { let x = 1 + 1; }\n","compile_micros":26}

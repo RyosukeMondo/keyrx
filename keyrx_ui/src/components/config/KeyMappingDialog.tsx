@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/Modal';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
-import type { KeyMapping } from '@/types/config';
+import type { EditorKeyMapping } from '@/types/config';
 
 /**
  * Props for the KeyMappingDialog component.
@@ -15,9 +15,9 @@ export interface KeyMappingDialogProps {
   /** Physical key code being configured (e.g., "CapsLock") */
   keyCode: string;
   /** Current mapping configuration (if editing existing) */
-  currentMapping?: KeyMapping;
+  currentMapping?: EditorKeyMapping;
   /** Callback when save is clicked with the new mapping */
-  onSave: (mapping: KeyMapping) => Promise<void>;
+  onSave: (mapping: EditorKeyMapping) => Promise<void>;
 }
 
 /**
@@ -43,7 +43,7 @@ export interface KeyMappingDialogProps {
 export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
   ({ open, onClose, keyCode, currentMapping, onSave }) => {
     const [mappingType, setMappingType] =
-      useState<KeyMapping['type']>('simple');
+      useState<EditorKeyMapping['type']>('simple');
     const [simpleAction, setSimpleAction] = useState('');
     const [tapAction, setTapAction] = useState('');
     const [holdAction, setHoldAction] = useState('');
@@ -134,7 +134,7 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
 
       setIsSaving(true);
       try {
-        const mapping: KeyMapping = {
+        const mapping: EditorKeyMapping = {
           keyCode,
           type: mappingType,
         };
@@ -200,7 +200,7 @@ export const KeyMappingDialog = React.memo<KeyMappingDialogProps>(
                   key={option.value}
                   type="button"
                   onClick={() =>
-                    setMappingType(option.value as KeyMapping['type'])
+                    setMappingType(option.value as EditorKeyMapping['type'])
                   }
                   className={`
                     px-4 py-2 rounded-md text-sm font-medium transition-colors

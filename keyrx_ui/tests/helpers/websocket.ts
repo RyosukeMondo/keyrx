@@ -20,6 +20,7 @@
 
 import WS from 'jest-websocket-mock';
 import { vi } from 'vitest';
+import type { RpcError } from '@/types/rpc';
 
 /**
  * Default WebSocket URL for tests
@@ -305,14 +306,8 @@ export function simulateError(error?: Error): void {
 // RPC Helper Functions
 // ========================================
 
-/**
- * RPC error structure following JSON-RPC 2.0
- */
-export interface RpcError {
-  code: number;
-  message: string;
-  data?: unknown;
-}
+// RpcError imported from @/types/rpc (SSOT)
+export type { RpcError };
 
 /**
  * Send an RPC response (successful result)

@@ -9,12 +9,15 @@ async fn test_broadcast_channel_publishes_state_event() {
     let (event_tx, mut event_rx) = broadcast::channel(100);
 
     // Create and send state event
-    let state_event = DaemonEvent::State { data: DaemonState {
-        modifiers: vec!["MD_00".to_string()],
-        locks: vec![],
-        layer: "base".to_string(),
-        active_profile: None,
-    }, sequence: 1 };
+    let state_event = DaemonEvent::State {
+        data: DaemonState {
+            modifiers: vec!["MD_00".to_string()],
+            locks: vec![],
+            layer: "base".to_string(),
+            active_profile: None,
+        },
+        sequence: 1,
+    };
 
     // Send event
     event_tx.send(state_event.clone()).unwrap();
@@ -22,7 +25,10 @@ async fn test_broadcast_channel_publishes_state_event() {
     // Verify event is received
     let received = event_rx.recv().await.unwrap();
     match received {
-        DaemonEvent::State { data: state, sequence: _ } => {
+        DaemonEvent::State {
+            data: state,
+            sequence: _,
+        } => {
             assert_eq!(state.modifiers, vec!["MD_00"]);
             assert_eq!(state.locks.len(), 0);
             assert_eq!(state.layer, "base");
@@ -35,24 +41,30 @@ async fn test_broadcast_channel_publishes_state_event() {
 async fn test_broadcast_channel_publishes_key_event() {
     let (event_tx, mut event_rx) = broadcast::channel(100);
 
-    let key_event = DaemonEvent::KeyEvent { data: KeyEventData {
-        timestamp: 1234567890,
-        key_code: "KEY_A".to_string(),
-        event_type: "press".to_string(),
-        input: "A".to_string(),
-        output: "B".to_string(),
-        latency: 2300,
-        device_id: Some("dev-001".to_string()),
-        device_name: Some("USB Keyboard".to_string()),
-        mapping_type: None,
-        mapping_triggered: false,
-    }, sequence: 1 };
+    let key_event = DaemonEvent::KeyEvent {
+        data: KeyEventData {
+            timestamp: 1234567890,
+            key_code: "KEY_A".to_string(),
+            event_type: "press".to_string(),
+            input: "A".to_string(),
+            output: "B".to_string(),
+            latency: 2300,
+            device_id: Some("dev-001".to_string()),
+            device_name: Some("USB Keyboard".to_string()),
+            mapping_type: None,
+            mapping_triggered: false,
+        },
+        sequence: 1,
+    };
 
     event_tx.send(key_event.clone()).unwrap();
 
     let received = event_rx.recv().await.unwrap();
     match received {
-        DaemonEvent::KeyEvent { data: event, sequence: _ } => {
+        DaemonEvent::KeyEvent {
+            data: event,
+            sequence: _,
+        } => {
             assert_eq!(event.key_code, "KEY_A");
             assert_eq!(event.event_type, "press");
             assert_eq!(event.latency, 2300);
@@ -65,20 +77,26 @@ async fn test_broadcast_channel_publishes_key_event() {
 async fn test_broadcast_channel_publishes_latency_event() {
     let (event_tx, mut event_rx) = broadcast::channel(100);
 
-    let latency_event = DaemonEvent::Latency { data: LatencyStats {
-        min: 1200,
-        avg: 2300,
-        max: 4500,
-        p95: 3800,
-        p99: 4200,
-        timestamp: 1234567890,
-    }, sequence: 1 };
+    let latency_event = DaemonEvent::Latency {
+        data: LatencyStats {
+            min: 1200,
+            avg: 2300,
+            max: 4500,
+            p95: 3800,
+            p99: 4200,
+            timestamp: 1234567890,
+        },
+        sequence: 1,
+    };
 
     event_tx.send(latency_event.clone()).unwrap();
 
     let received = event_rx.recv().await.unwrap();
     match received {
-        DaemonEvent::Latency { data: stats, sequence: _ } => {
+        DaemonEvent::Latency {
+            data: stats,
+            sequence: _,
+        } => {
             assert_eq!(stats.min, 1200);
             assert_eq!(stats.avg, 2300);
             assert_eq!(stats.max, 4500);
@@ -95,12 +113,15 @@ async fn test_broadcast_channel_multiple_subscribers() {
     let mut rx2 = event_tx.subscribe();
     let mut rx3 = event_tx.subscribe();
 
-    let state_event = DaemonEvent::State { data: DaemonState {
-        modifiers: vec![],
-        locks: vec![],
-        layer: "base".to_string(),
-        active_profile: None,
-    }, sequence: 1 };
+    let state_event = DaemonEvent::State {
+        data: DaemonState {
+            modifiers: vec![],
+            locks: vec![],
+            layer: "base".to_string(),
+            active_profile: None,
+        },
+        sequence: 1,
+    };
 
     event_tx.send(state_event.clone()).unwrap();
 
@@ -109,9 +130,27 @@ async fn test_broadcast_channel_multiple_subscribers() {
     let r2 = rx2.recv().await.unwrap();
     let r3 = rx3.recv().await.unwrap();
 
-    assert!(matches!(r1, DaemonEvent::State { data: _, sequence: _ }));
-    assert!(matches!(r2, DaemonEvent::State { data: _, sequence: _ }));
-    assert!(matches!(r3, DaemonEvent::State { data: _, sequence: _ }));
+    assert!(matches!(
+        r1,
+        DaemonEvent::State {
+            data: _,
+            sequence: _
+        }
+    ));
+    assert!(matches!(
+        r2,
+        DaemonEvent::State {
+            data: _,
+            sequence: _
+        }
+    ));
+    assert!(matches!(
+        r3,
+        DaemonEvent::State {
+            data: _,
+            sequence: _
+        }
+    ));
 }
 
 #[tokio::test]
@@ -145,12 +184,15 @@ async fn test_broadcast_channel_lagging_subscriber() {
 
 #[tokio::test]
 async fn test_event_serialization_state() {
-    let event = DaemonEvent::State { data: DaemonState {
-        modifiers: vec!["MD_00".to_string(), "MD_01".to_string()],
-        locks: vec!["LK_00".to_string()],
-        layer: "gaming".to_string(),
-        active_profile: None,
-    }, sequence: 1 };
+    let event = DaemonEvent::State {
+        data: DaemonState {
+            modifiers: vec!["MD_00".to_string(), "MD_01".to_string()],
+            locks: vec!["LK_00".to_string()],
+            layer: "gaming".to_string(),
+            active_profile: None,
+        },
+        sequence: 1,
+    };
 
     let json = serde_json::to_string(&event).unwrap();
     let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -165,18 +207,21 @@ async fn test_event_serialization_state() {
 
 #[tokio::test]
 async fn test_event_serialization_key_event() {
-    let event = DaemonEvent::KeyEvent { data: KeyEventData {
-        timestamp: 9876543210,
-        key_code: "KEY_SPACE".to_string(),
-        event_type: "release".to_string(),
-        input: "SPACE".to_string(),
-        output: "ENTER".to_string(),
-        latency: 3400,
-        device_id: Some("dev-002".to_string()),
-        device_name: Some("Gaming Keyboard".to_string()),
-        mapping_type: Some("simple".to_string()),
-        mapping_triggered: true,
-    }, sequence: 1 };
+    let event = DaemonEvent::KeyEvent {
+        data: KeyEventData {
+            timestamp: 9876543210,
+            key_code: "KEY_SPACE".to_string(),
+            event_type: "release".to_string(),
+            input: "SPACE".to_string(),
+            output: "ENTER".to_string(),
+            latency: 3400,
+            device_id: Some("dev-002".to_string()),
+            device_name: Some("Gaming Keyboard".to_string()),
+            mapping_type: Some("simple".to_string()),
+            mapping_triggered: true,
+        },
+        sequence: 1,
+    };
 
     let json = serde_json::to_string(&event).unwrap();
     let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -193,14 +238,17 @@ async fn test_event_serialization_key_event() {
 
 #[tokio::test]
 async fn test_event_serialization_latency() {
-    let event = DaemonEvent::Latency { data: LatencyStats {
-        min: 800,
-        avg: 2100,
-        max: 5200,
-        p95: 4000,
-        p99: 4800,
-        timestamp: 1111111111,
-    }, sequence: 1 };
+    let event = DaemonEvent::Latency {
+        data: LatencyStats {
+            min: 800,
+            avg: 2100,
+            max: 5200,
+            p95: 4000,
+            p99: 4800,
+            timestamp: 1111111111,
+        },
+        sequence: 1,
+    };
 
     let json = serde_json::to_string(&event).unwrap();
     let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -347,4 +395,3 @@ async fn test_subscriber_disconnect_cleanup() {
     // rx2 should still be valid (dropped to avoid unused warning)
     drop(rx2);
 }
-

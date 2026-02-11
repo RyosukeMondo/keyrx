@@ -5,8 +5,8 @@
 
 extern crate alloc;
 
-use crate::config::{Condition, ConditionItem};
 use super::core::DeviceState;
+use crate::config::{Condition, ConditionItem};
 
 impl DeviceState {
     /// Evaluates a condition against the current device state

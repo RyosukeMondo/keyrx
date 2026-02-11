@@ -37,6 +37,12 @@ pub struct DeviceMap {
     pub devices: Arc<RwLock<HashMap<usize, DeviceInfo>>>,
 }
 
+impl Default for DeviceMap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DeviceMap {
     pub fn new() -> Self {
         Self {
@@ -188,12 +194,8 @@ impl DeviceMap {
         unsafe {
             let mut size: u32 = 0;
             // First call to get size.
-            if GetRawInputDeviceInfoW(
-                handle as *mut c_void,
-                RIDI_DEVICENAME,
-                ptr::null_mut(),
-                &mut size,
-            ) == u32::MAX
+            if GetRawInputDeviceInfoW(handle, RIDI_DEVICENAME, ptr::null_mut(), &mut size)
+                == u32::MAX
             {
                 let err = std::io::Error::last_os_error();
                 return Err(format!("Failed to get device info size: {}", err));
@@ -205,7 +207,7 @@ impl DeviceMap {
 
             let mut buffer = vec![0u16; size as usize];
             let result = GetRawInputDeviceInfoW(
-                handle as *mut c_void,
+                handle,
                 RIDI_DEVICENAME,
                 buffer.as_mut_ptr() as *mut c_void,
                 &mut size,

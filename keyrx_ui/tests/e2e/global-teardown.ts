@@ -10,13 +10,13 @@ import { readFile, unlink } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { setTimeout as sleep } from 'timers/promises';
+import { DAEMON_API_URL } from './fixtures/daemon';
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const PID_FILE = join(__dirname, '../../.daemon-e2e.pid');
-const DAEMON_API_URL = 'http://127.0.0.1:9867';
 
 /**
  * Check if daemon is still responding

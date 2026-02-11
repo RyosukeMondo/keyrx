@@ -10,7 +10,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 /// Metrics subcommands.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct MetricsArgs {
     /// Subcommand to execute.
     #[command(subcommand)]
@@ -26,7 +26,7 @@ pub struct MetricsArgs {
 }
 
 /// Metrics subcommands.
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum MetricsCommand {
     /// Query latency metrics (min, avg, max, p95, p99).
     Latency,

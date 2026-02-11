@@ -9,6 +9,7 @@ use serde_json::Value;
 use typeshare::typeshare;
 
 use crate::services::DeviceService;
+use crate::validation;
 use crate::web::rpc_types::{RpcError, ServerMessage, INTERNAL_ERROR};
 use crate::web::AppState;
 
@@ -34,6 +35,7 @@ struct ForgetDeviceParams {
 /// Device information returned by RPC methods
 #[typeshare]
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DeviceRpcInfo {
     pub id: String,
     pub name: String,
@@ -41,40 +43,17 @@ pub struct DeviceRpcInfo {
     pub serial: Option<String>,
     pub active: bool,
     pub layout: Option<String>,
+    pub is_virtual: bool,
+    pub enabled: bool,
+    pub scope: Option<String>,
 }
 
 /// Validate device ID to prevent injection attacks
+///
+/// This delegates to `crate::validation::device::validate_device_id`
+/// and converts the result to an RpcError.
 fn validate_device_id(id: &str) -> Result<(), RpcError> {
-    if id.is_empty() {
-        return Err(RpcError::invalid_params("Device ID cannot be empty"));
-    }
-
-    // Device IDs should be reasonable length (max 256 chars as per DeviceEntry)
-    if id.len() > 256 {
-        return Err(RpcError::invalid_params(
-            "Device ID too long (max 256 chars)",
-        ));
-    }
-
-    // Check for path traversal attempts
-    if id.contains("..") {
-        return Err(RpcError::invalid_params("Device ID cannot contain '..'"));
-    }
-
-    if id.contains('/') || id.contains('\\') {
-        return Err(RpcError::invalid_params(
-            "Device ID cannot contain path separators",
-        ));
-    }
-
-    // Check for null bytes or other control characters
-    if id.chars().any(|c| c.is_control()) {
-        return Err(RpcError::invalid_params(
-            "Device ID cannot contain control characters",
-        ));
-    }
-
-    Ok(())
+    validation::device::validate_device_id(id).map_err(|e| RpcError::invalid_params(e.to_string()))
 }
 
 /// Get all devices
@@ -107,6 +86,9 @@ pub async fn get_devices(device_service: &DeviceService, params: Value) -> Resul
             serial: d.serial.clone(),
             active: d.active,
             layout: d.layout.clone(),
+            is_virtual: d.name.starts_with("keyrx") || d.path.contains("uinput"),
+            enabled: true, // All devices are enabled by default
+            scope: None,   // Scope is deprecated
         })
         .collect();
 

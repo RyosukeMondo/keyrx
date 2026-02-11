@@ -140,7 +140,7 @@ describe('Sidebar', () => {
   it('renders version information in footer', () => {
     renderWithRouter(<Sidebar />);
 
-    expect(screen.getByText('KeyRx v2.0.0')).toBeInTheDocument();
+    expect(screen.getByText(/KeyRx v\d+\.\d+\.\d+/)).toBeInTheDocument();
   });
 
   it('has focus visible styles on navigation items', () => {

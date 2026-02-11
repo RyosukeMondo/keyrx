@@ -3,7 +3,7 @@
 use crate::config::profile_manager::ProfileManager;
 use crate::config::rhai_generator::{KeyAction, RhaiGenerator};
 use crate::error::{CliError, ConfigError, DaemonResult};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Service layer for profile operations.
 pub struct ProfileService {
@@ -51,13 +51,13 @@ impl ProfileService {
         key: &str,
         action: KeyAction,
     ) -> DaemonResult<u64> {
-        let profile_meta = self
-            .manager
-            .get(profile_name)
-            .ok_or_else(|| ConfigError::InvalidProfile {
-                name: profile_name.to_string(),
-                reason: "Profile not found".to_string(),
-            })?;
+        let profile_meta =
+            self.manager
+                .get(profile_name)
+                .ok_or_else(|| ConfigError::InvalidProfile {
+                    name: profile_name.to_string(),
+                    reason: "Profile not found".to_string(),
+                })?;
 
         let mut gen =
             RhaiGenerator::load(&profile_meta.rhai_path).map_err(|e| ConfigError::ParseError {
@@ -81,7 +81,7 @@ impl ProfileService {
     }
 
     /// Compiles a profile and returns compilation time.
-    fn compile_profile(&self, rhai_path: &PathBuf, krx_path: &PathBuf) -> DaemonResult<u64> {
+    fn compile_profile(&self, rhai_path: &Path, krx_path: &Path) -> DaemonResult<u64> {
         let compile_start = std::time::Instant::now();
         keyrx_compiler::compile_file(rhai_path, krx_path).map_err(|e| {
             ConfigError::CompilationFailed {
@@ -98,13 +98,13 @@ impl ProfileService {
         layer: &str,
         key: &str,
     ) -> DaemonResult<u64> {
-        let profile_meta = self
-            .manager
-            .get(profile_name)
-            .ok_or_else(|| ConfigError::InvalidProfile {
-                name: profile_name.to_string(),
-                reason: "Profile not found".to_string(),
-            })?;
+        let profile_meta =
+            self.manager
+                .get(profile_name)
+                .ok_or_else(|| ConfigError::InvalidProfile {
+                    name: profile_name.to_string(),
+                    reason: "Profile not found".to_string(),
+                })?;
 
         let mut gen =
             RhaiGenerator::load(&profile_meta.rhai_path).map_err(|e| ConfigError::ParseError {
@@ -134,34 +134,33 @@ impl ProfileService {
         layer: &str,
         key: &str,
     ) -> DaemonResult<Option<String>> {
-        let profile_meta = self
-            .manager
-            .get(profile_name)
-            .ok_or_else(|| ConfigError::InvalidProfile {
-                name: profile_name.to_string(),
-                reason: "Profile not found".to_string(),
-            })?;
+        let profile_meta =
+            self.manager
+                .get(profile_name)
+                .ok_or_else(|| ConfigError::InvalidProfile {
+                    name: profile_name.to_string(),
+                    reason: "Profile not found".to_string(),
+                })?;
 
-        let content =
-            std::fs::read_to_string(&profile_meta.rhai_path).map_err(|e| {
-                ConfigError::ParseError {
-                    path: profile_meta.rhai_path.clone(),
-                    reason: format!("Failed to read profile: {}", e),
-                }
-            })?;
+        let content = std::fs::read_to_string(&profile_meta.rhai_path).map_err(|e| {
+            ConfigError::ParseError {
+                path: profile_meta.rhai_path.clone(),
+                reason: format!("Failed to read profile: {}", e),
+            }
+        })?;
 
         Ok(find_key_mapping(&content, key, layer))
     }
 
     /// Validates a profile by dry-run compilation.
     pub fn validate_profile(&self, profile_name: &str) -> DaemonResult<()> {
-        let profile_meta = self
-            .manager
-            .get(profile_name)
-            .ok_or_else(|| ConfigError::InvalidProfile {
-                name: profile_name.to_string(),
-                reason: "Profile not found".to_string(),
-            })?;
+        let profile_meta =
+            self.manager
+                .get(profile_name)
+                .ok_or_else(|| ConfigError::InvalidProfile {
+                    name: profile_name.to_string(),
+                    reason: "Profile not found".to_string(),
+                })?;
 
         let temp_output = profile_meta.krx_path.with_extension("tmp.krx");
         let result = keyrx_compiler::compile_file(&profile_meta.rhai_path, &temp_output);
@@ -180,21 +179,20 @@ impl ProfileService {
         &self,
         profile_name: &str,
     ) -> DaemonResult<(String, Vec<String>, usize)> {
-        let profile_meta = self
-            .manager
-            .get(profile_name)
-            .ok_or_else(|| ConfigError::InvalidProfile {
-                name: profile_name.to_string(),
-                reason: "Profile not found".to_string(),
-            })?;
+        let profile_meta =
+            self.manager
+                .get(profile_name)
+                .ok_or_else(|| ConfigError::InvalidProfile {
+                    name: profile_name.to_string(),
+                    reason: "Profile not found".to_string(),
+                })?;
 
-        let content =
-            std::fs::read_to_string(&profile_meta.rhai_path).map_err(|e| {
-                ConfigError::ParseError {
-                    path: profile_meta.rhai_path.clone(),
-                    reason: format!("Failed to read profile: {}", e),
-                }
-            })?;
+        let content = std::fs::read_to_string(&profile_meta.rhai_path).map_err(|e| {
+            ConfigError::ParseError {
+                path: profile_meta.rhai_path.clone(),
+                reason: format!("Failed to read profile: {}", e),
+            }
+        })?;
 
         let device_id = extract_device_id(&content).unwrap_or_else(|| "*".to_string());
         let layers = extract_layer_list(&content);
@@ -204,38 +202,34 @@ impl ProfileService {
     }
 
     /// Compares two profiles.
-    pub fn compare_profiles(
-        &self,
-        profile1: &str,
-        profile2: &str,
-    ) -> DaemonResult<Vec<String>> {
-        let meta1 = self.manager.get(profile1).ok_or_else(|| {
-            ConfigError::InvalidProfile {
+    pub fn compare_profiles(&self, profile1: &str, profile2: &str) -> DaemonResult<Vec<String>> {
+        let meta1 = self
+            .manager
+            .get(profile1)
+            .ok_or_else(|| ConfigError::InvalidProfile {
                 name: profile1.to_string(),
                 reason: "Profile not found".to_string(),
-            }
-        })?;
+            })?;
 
-        let meta2 = self.manager.get(profile2).ok_or_else(|| {
-            ConfigError::InvalidProfile {
+        let meta2 = self
+            .manager
+            .get(profile2)
+            .ok_or_else(|| ConfigError::InvalidProfile {
                 name: profile2.to_string(),
                 reason: "Profile not found".to_string(),
-            }
-        })?;
+            })?;
 
-        let content1 = std::fs::read_to_string(&meta1.rhai_path).map_err(|e| {
-            ConfigError::ParseError {
+        let content1 =
+            std::fs::read_to_string(&meta1.rhai_path).map_err(|e| ConfigError::ParseError {
                 path: meta1.rhai_path.clone(),
                 reason: format!("Failed to read {}: {}", profile1, e),
-            }
-        })?;
+            })?;
 
-        let content2 = std::fs::read_to_string(&meta2.rhai_path).map_err(|e| {
-            ConfigError::ParseError {
+        let content2 =
+            std::fs::read_to_string(&meta2.rhai_path).map_err(|e| ConfigError::ParseError {
                 path: meta2.rhai_path.clone(),
                 reason: format!("Failed to read {}: {}", profile2, e),
-            }
-        })?;
+            })?;
 
         Ok(compute_diff(&content1, &content2))
     }

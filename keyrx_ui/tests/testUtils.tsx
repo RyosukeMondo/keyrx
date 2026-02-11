@@ -278,6 +278,20 @@ export function renderPage(
 }
 
 /**
+ * Render a component for accessibility testing.
+ * Wraps with Router + QueryClient, no WASM (a11y tools don't need it).
+ *
+ * @example
+ *   renderForA11y(<DashboardPage />);
+ */
+export function renderForA11y(
+  ui: ReactElement,
+  options: Omit<TestRenderOptions, 'wrapWithRouter' | 'wrapWithWasm'> = {}
+): RenderResult {
+  return renderWithProviders(ui, { ...options, wrapWithRouter: true, wrapWithWasm: false });
+}
+
+/**
  * Render a component without any providers (pure rendering).
  * Useful for testing presentational components in isolation.
  *
