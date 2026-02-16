@@ -159,6 +159,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install system dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -590,6 +594,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -702,6 +709,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -760,6 +770,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -825,6 +838,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
