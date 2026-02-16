@@ -44,3 +44,6 @@ vagrant/**/vagrant_reload.log
 
 # Deployment configuration (user-specific)
 .deploy.env
+
+# Build artifacts
+*.tsbuildinfo
