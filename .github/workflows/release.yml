@@ -40,6 +40,10 @@ jobs:
           cache: 'npm'
           cache-dependency-path: keyrx_ui/package-lock.json
 
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+
       - name: Cache Cargo
         uses: actions/cache@v3
         with:
