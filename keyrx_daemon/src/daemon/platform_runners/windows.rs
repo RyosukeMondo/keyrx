@@ -150,14 +150,19 @@ pub fn run_daemon(
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
 
+    // Create DaemonQueryService for REST endpoint metrics
+    let daemon_query = Arc::new(crate::services::DaemonQueryService::new(
+        daemon.latency_recorder(),
+        Arc::clone(&daemon_state),
+    ));
+
     // Create AppState from ServiceContainer with daemon shared state (dependency injection)
-    // This replaces 50+ lines of manual service instantiation and wires daemon state
-    // into the web server for Windows IPC replacement
     // Clone daemon_state since it will be used later in the event loop
     let app_state = Arc::new(crate::web::AppState::from_container_with_daemon(
         (*container).clone(),
         None, // No test mode socket in production
         Arc::clone(&daemon_state),
+        Some(Arc::clone(&daemon_query)),
     ));
 
     // Get settings service reference for port handling (Windows-specific)
@@ -183,6 +188,8 @@ pub fn run_daemon(
     let actual_port_for_thread = actual_port;
     let port_changed_for_thread = port_changed;
     let configured_port_for_thread = configured_port;
+    let daemon_query_for_thread = Arc::clone(&daemon_query);
+    let event_rx_for_collector = app_state.event_broadcaster.subscribe();
 
     std::thread::spawn(move || {
         let rt = match tokio::runtime::Runtime::new() {
@@ -200,6 +207,9 @@ pub fn run_daemon(
                 running_for_broadcaster,
                 Some(latency_recorder_for_broadcaster),
             ));
+
+            // Start event collector for REST event log endpoint
+            daemon_query_for_thread.spawn_event_collector(event_rx_for_collector);
 
             let addr: std::net::SocketAddr = ([127, 0, 0, 1], actual_port_for_thread).into();
             if port_changed_for_thread {
@@ -302,6 +312,16 @@ pub fn run_daemon(
                         log::warn!("Error processing event: {}", e);
                         break;
                     }
+                }
+            }
+
+            // Check for explicit reload requests (e.g., profile config saved via web UI)
+            if daemon_state.take_reload_request() {
+                log::info!("Reload requested, reloading configuration...");
+                if let Err(e) = daemon.reload() {
+                    log::error!("Failed to reload configuration: {}", e);
+                } else {
+                    log::info!("Configuration reloaded successfully");
                 }
             }
 
@@ -498,9 +518,8 @@ fn run_test_mode(
     let (macro_event_tx, macro_event_rx) =
         tokio::sync::mpsc::channel::<keyrx_core::runtime::KeyEvent>(1000);
 
-    // Create services for web API
+    // Create services for web API (test mode — no daemon running, no reload needed)
     let macro_recorder = Arc::new(crate::macro_recorder::MacroRecorder::new());
-    // Reuse the same ProfileManager instance for IPC and REST API
     let profile_service = Arc::new(crate::services::ProfileService::new(Arc::clone(
         &profile_manager,
     )));

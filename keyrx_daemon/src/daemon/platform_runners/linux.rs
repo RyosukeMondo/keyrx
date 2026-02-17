@@ -111,15 +111,34 @@ pub fn run_daemon(
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
 
-    // Create AppState from ServiceContainer (dependency injection)
-    // This replaces 50+ lines of manual service instantiation
-    let app_state = Arc::new(crate::web::AppState::from_container(
+    // Extract profile name from config path
+    let profile_name = config_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .map(|s| s.to_string());
+
+    // Create shared state and query service (same pattern as Windows)
+    let daemon_state = Arc::new(crate::daemon::DaemonSharedState::from_daemon(
+        &daemon,
+        profile_name,
+    ));
+    let daemon_query = Arc::new(crate::services::DaemonQueryService::new(
+        daemon.latency_recorder(),
+        Arc::clone(&daemon_state),
+    ));
+
+    // Create AppState from ServiceContainer with daemon state (dependency injection)
+    let app_state = Arc::new(crate::web::AppState::from_container_with_daemon(
         (*container).clone(),
         None, // No test mode socket in production
+        Arc::clone(&daemon_state),
+        Some(Arc::clone(&daemon_query)),
     ));
 
     // Start web server and event broadcasting in background (optional)
     let config_for_web = config.clone();
+    let daemon_query_for_thread = Arc::clone(&daemon_query);
+    let event_rx_for_collector = app_state.event_broadcaster.subscribe();
     std::thread::spawn(move || {
         let rt = match tokio::runtime::Runtime::new() {
             Ok(runtime) => runtime,
@@ -139,6 +158,9 @@ pub fn run_daemon(
                 running_for_broadcaster,
                 Some(latency_recorder_for_broadcaster),
             ));
+
+            // Start event collector for REST event log endpoint
+            daemon_query_for_thread.spawn_event_collector(event_rx_for_collector);
 
             let addr = match config_for_web.socket_addr() {
                 Ok(addr) => addr,
@@ -329,9 +351,10 @@ fn run_test_mode(
     // Create services for web API
     let macro_recorder = Arc::new(crate::macro_recorder::MacroRecorder::new());
     // Reuse the same ProfileManager instance for IPC and REST API
-    let profile_service = Arc::new(crate::services::ProfileService::new(Arc::clone(
-        &profile_manager,
-    )));
+    let profile_service = Arc::new(
+        crate::services::ProfileService::new(Arc::clone(&profile_manager))
+            .with_daemon_state(Arc::clone(&daemon_state)),
+    );
     let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
     let config_service = Arc::new(crate::services::ConfigService::new(Arc::clone(
         &profile_manager,
@@ -356,6 +379,7 @@ fn run_test_mode(
         subscription_manager,
         rpc_event_tx,
         test_socket_path.clone(),
+        None, // No daemon state in test mode
     ));
 
     // Start web server

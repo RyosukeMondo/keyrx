@@ -32,6 +32,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::config::{ActivationResult, ProfileError, ProfileManager, ProfileTemplate};
+use crate::daemon::DaemonSharedState;
 
 /// Profile information returned by list operations.
 /// PROF-004: Added activation metadata fields.
@@ -56,6 +57,7 @@ pub struct ProfileInfo {
 /// ProfileService is `Send + Sync` and can be shared across threads via `Arc`.
 pub struct ProfileService {
     profile_manager: Arc<ProfileManager>,
+    daemon_state: Option<Arc<DaemonSharedState>>,
 }
 
 impl ProfileService {
@@ -81,7 +83,20 @@ impl ProfileService {
     /// ```
     pub fn new(profile_manager: Arc<ProfileManager>) -> Self {
         log::debug!("ProfileService initialized");
-        Self { profile_manager }
+        Self {
+            profile_manager,
+            daemon_state: None,
+        }
+    }
+
+    /// Sets the daemon shared state for automatic reload triggering.
+    ///
+    /// When set, `set_profile_config()` will automatically trigger a daemon
+    /// reload if the modified profile is the currently active one. This
+    /// eliminates the need for callers to handle reload logic.
+    pub fn with_daemon_state(mut self, state: Arc<DaemonSharedState>) -> Self {
+        self.daemon_state = Some(state);
+        self
     }
 
     /// Lists all available profiles.
@@ -740,8 +755,9 @@ impl ProfileService {
 
     /// Sets the configuration content for a profile.
     ///
-    /// Writes the configuration content to the profile's .rhai file.
-    /// Does NOT automatically recompile or activate the profile.
+    /// Writes the .rhai file, recompiles to .krx, and if the modified profile
+    /// is the currently active one, automatically triggers a daemon reload.
+    /// This guarantees that config changes are always applied end-to-end.
     ///
     /// # Arguments
     ///
@@ -752,29 +768,27 @@ impl ProfileService {
     ///
     /// Returns [`ProfileError::NotFound`] if profile doesn't exist.
     /// Returns [`ProfileError::IoError`] if file cannot be written.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// # use std::sync::Arc;
-    /// # use std::path::PathBuf;
-    /// # use keyrx_daemon::config::ProfileManager;
-    /// # use keyrx_daemon::services::ProfileService;
-    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let manager = Arc::new(ProfileManager::new(PathBuf::from("./config"))?);
-    /// let service = ProfileService::new(manager);
-    /// let new_config = r#"layer("base", #{});"#;
-    /// service.set_profile_config("default", new_config).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
+    /// Returns [`ProfileError::Compilation`] if recompilation fails.
     pub async fn set_profile_config(&self, name: &str, content: &str) -> Result<(), ProfileError> {
         log::info!("Setting config for profile: {}", name);
 
         let manager_ptr = Arc::as_ptr(&self.profile_manager) as *mut ProfileManager;
         unsafe { (*manager_ptr).set_config(name, content)? };
 
-        log::info!("Config updated for profile '{}'", name);
+        log::info!("Config saved and recompiled for profile '{}'", name);
+
+        // Trigger daemon reload if the modified profile is currently active
+        if let Some(ref daemon_state) = self.daemon_state {
+            let active = daemon_state.get_active_profile();
+            if active.as_deref() == Some(name) {
+                log::info!(
+                    "Active profile '{}' was modified, triggering daemon reload",
+                    name
+                );
+                daemon_state.request_reload();
+            }
+        }
+
         Ok(())
     }
 }

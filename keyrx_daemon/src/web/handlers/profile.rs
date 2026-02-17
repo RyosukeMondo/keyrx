@@ -447,7 +447,7 @@ pub async fn get_profile_config(
 
 /// Set profile configuration source code
 pub async fn set_profile_config(
-    profile_service: &ProfileService,
+    state: &AppState,
     params: Value,
 ) -> Result<Value, RpcError> {
     let params: SetProfileConfigParams = serde_json::from_value(params)
@@ -467,8 +467,9 @@ pub async fn set_profile_config(
     // Validate profile name
     validate_profile_name(&params.name)?;
 
-    // Call profile service
-    profile_service
+    // Save, recompile, and auto-reload if active (handled by ProfileService)
+    state
+        .profile_service
         .set_profile_config(&params.name, &params.source)
         .await
         .map_err(|e| {
