@@ -72,6 +72,9 @@ impl WindowsPlatform {
         match key_blocker::KeyBlocker::new() {
             Ok(blocker) => {
                 log::info!("✓ Key blocker installed successfully");
+                // Wire hook to event channel so blocked keys are forwarded
+                // to the remapping engine instead of being silently dropped
+                blocker.set_event_sender(self._sender.clone());
                 self.key_blocker = Some(blocker);
             }
             Err(e) => {

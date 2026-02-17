@@ -843,6 +843,20 @@ impl ProfileManager {
         // Rename to final location (atomic on most filesystems)
         fs::rename(&temp_path, &profile.rhai_path)?;
 
+        // Recompile .rhai → .krx so the daemon can reload the updated config
+        let compile_result = self
+            .compiler
+            .compile_profile(&profile.rhai_path, &profile.krx_path);
+        if let Err(e) = compile_result {
+            log::error!(
+                "Failed to compile profile '{}' after config update: {}",
+                name,
+                e
+            );
+            return Err(ProfileError::Compilation(e));
+        }
+        log::info!("Recompiled profile '{}' after config update", name);
+
         // Update metadata (modified time will have changed)
         let updated_metadata = self.load_profile_metadata(name)?;
         self.profiles.insert(name.to_string(), updated_metadata);

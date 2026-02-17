@@ -32,13 +32,18 @@ impl MessageBuffer {
     fn new() -> Self {
         Self {
             buffer: VecDeque::with_capacity(MESSAGE_BUFFER_SIZE),
-            next_expected: 1, // Start at 1 to match SEQUENCE_COUNTER
+            next_expected: 0, // 0 = uninitialized, syncs on first message
         }
     }
 
     /// Add a message and return all messages that are now in order
     fn add_message(&mut self, seq: u64, event: DaemonEvent) -> Vec<DaemonEvent> {
         let mut result = Vec::new();
+
+        // Auto-sync on first message received (client may connect late)
+        if self.next_expected == 0 {
+            self.next_expected = seq;
+        }
 
         // If this is the next expected message, deliver it immediately
         if seq == self.next_expected {

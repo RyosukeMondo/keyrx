@@ -440,8 +440,54 @@ function normalizeKeyCode(code: string): string {
     return `VK_Numpad${digit}`;
   }
 
-  // Handle special numpad keys
-  const numpadMap: Record<string, string> = {
+  // Handle special keys that need name translation (QMK → keyrx DSL)
+  const specialKeyMap: Record<string, string> = {
+    // Punctuation / symbol keys
+    KC_LBRC: 'VK_LeftBracket',
+    KC_RBRC: 'VK_RightBracket',
+    KC_BSLS: 'VK_Backslash',
+    KC_SCLN: 'VK_Semicolon',
+    KC_QUOT: 'VK_Quote',
+    KC_COMM: 'VK_Comma',
+    KC_DOT: 'VK_Period',
+    KC_SLSH: 'VK_Slash',
+    KC_GRV: 'VK_Grave',
+    KC_MINS: 'VK_Minus',
+    KC_EQL: 'VK_Equal',
+    // Control keys
+    KC_ESC: 'VK_Escape',
+    KC_TAB: 'VK_Tab',
+    KC_CAPS: 'VK_CapsLock',
+    KC_SPC: 'VK_Space',
+    KC_ENT: 'VK_Enter',
+    KC_BSPC: 'VK_Backspace',
+    KC_DEL: 'VK_Delete',
+    KC_INS: 'VK_Insert',
+    KC_HOME: 'VK_Home',
+    KC_END: 'VK_End',
+    KC_PGUP: 'VK_PageUp',
+    KC_PGDN: 'VK_PageDown',
+    KC_UP: 'VK_Up',
+    KC_DOWN: 'VK_Down',
+    KC_LEFT: 'VK_Left',
+    KC_RGHT: 'VK_Right',
+    KC_PSCR: 'VK_PrintScreen',
+    KC_SCRL: 'VK_ScrollLock',
+    KC_PAUS: 'VK_Pause',
+    // Modifier keys
+    KC_LSFT: 'VK_LShift',
+    KC_RSFT: 'VK_RShift',
+    KC_LCTL: 'VK_LCtrl',
+    KC_RCTL: 'VK_RCtrl',
+    KC_LALT: 'VK_LAlt',
+    KC_RALT: 'VK_RAlt',
+    KC_LGUI: 'VK_LMeta',
+    KC_RGUI: 'VK_RMeta',
+    // Function keys
+    KC_F1: 'VK_F1', KC_F2: 'VK_F2', KC_F3: 'VK_F3', KC_F4: 'VK_F4',
+    KC_F5: 'VK_F5', KC_F6: 'VK_F6', KC_F7: 'VK_F7', KC_F8: 'VK_F8',
+    KC_F9: 'VK_F9', KC_F10: 'VK_F10', KC_F11: 'VK_F11', KC_F12: 'VK_F12',
+    // Numpad special keys
     KC_NLCK: 'VK_NumLock',
     KC_PSLS: 'VK_NumpadDivide',
     KC_PAST: 'VK_NumpadMultiply',
@@ -451,8 +497,8 @@ function normalizeKeyCode(code: string): string {
     KC_PDOT: 'VK_NumpadDecimal',
   };
 
-  if (numpadMap[code]) {
-    return numpadMap[code];
+  if (specialKeyMap[code]) {
+    return specialKeyMap[code];
   }
 
   // Convert KC_ to VK_

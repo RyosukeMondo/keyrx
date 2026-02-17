@@ -51,7 +51,16 @@ pub fn get_config_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
         }
     }
 
-    // 3. Fallback to $HOME/.config/keyrx or %USERPROFILE%\.config\keyrx
+    // 3. Platform-specific default config directory
+    //    - Windows: %APPDATA%/keyrx (via dirs::config_dir, typically AppData/Roaming)
+    //    - Linux:   $HOME/.config/keyrx
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(config) = dirs::config_dir() {
+            return Ok(config.join("keyrx"));
+        }
+    }
+
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .map_err(|_| "Could not determine home directory")?;
@@ -139,7 +148,15 @@ mod tests {
         #[cfg(unix)]
         assert_eq!(dir, PathBuf::from("/home/testuser/.config/keyrx"));
         #[cfg(windows)]
-        assert_eq!(dir, PathBuf::from("C:\\Users\\testuser\\.config\\keyrx"));
+        {
+            // When HOME/USERPROFILE are set but dirs::config_dir() returns AppData/Roaming,
+            // the result depends on system state. Just verify it ends with "keyrx".
+            assert!(
+                dir.ends_with("keyrx"),
+                "Expected dir ending with keyrx, got {:?}",
+                dir
+            );
+        }
 
         // Restore
         if let Some(val) = old_keyrx {

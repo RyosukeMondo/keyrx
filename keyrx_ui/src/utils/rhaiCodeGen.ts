@@ -286,13 +286,33 @@ export function generateKeyMapping(
 }
 
 /**
- * Ensure key has VK_ prefix
+ * QMK-style key names → keyrx DSL key names.
+ * Used when the visual editor provides QMK codes (e.g., from keyboard layouts)
+ * that need to be translated to the compiler's expected names.
+ */
+const QMK_TO_DSL: Record<string, string> = {
+  // Punctuation / symbol keys
+  LBRC: 'LeftBracket', RBRC: 'RightBracket', BSLS: 'Backslash',
+  SCLN: 'Semicolon', QUOT: 'Quote', COMM: 'Comma', DOT: 'Period',
+  SLSH: 'Slash', GRV: 'Grave', MINS: 'Minus', EQL: 'Equal',
+  // Control keys
+  ESC: 'Escape', SPC: 'Space', ENT: 'Enter', BSPC: 'Backspace',
+  DEL: 'Delete', INS: 'Insert', CAPS: 'CapsLock',
+  PGUP: 'PageUp', PGDN: 'PageDown', RGHT: 'Right',
+  PSCR: 'PrintScreen', SCRL: 'ScrollLock', PAUS: 'Pause',
+  // Modifier keys
+  LSFT: 'LShift', RSFT: 'RShift', LCTL: 'LCtrl', RCTL: 'RCtrl',
+  LALT: 'LAlt', RALT: 'RAlt', LGUI: 'LMeta', RGUI: 'RMeta',
+  // Numpad
+  NLCK: 'NumLock', PSLS: 'NumpadDivide', PAST: 'NumpadMultiply',
+  PMNS: 'NumpadSubtract', PPLS: 'NumpadAdd', PENT: 'NumpadEnter',
+  PDOT: 'NumpadDecimal',
+};
+
+/**
+ * Ensure key has VK_ prefix and translate QMK names to DSL names
  */
 function ensureVKPrefix(key: string): string {
-  // Skip if already has VK_ prefix
-  if (key.startsWith('VK_')) {
-    return key;
-  }
   // Skip if it's a helper function (with_ctrl, etc.)
   if (key.startsWith('with_')) {
     return key;
@@ -301,8 +321,34 @@ function ensureVKPrefix(key: string): string {
   if (key.startsWith('MD_') || key.startsWith('MMD_')) {
     return key;
   }
-  // Add VK_ prefix
-  return `VK_${key}`;
+
+  // Strip KC_ or VK_ prefix to get the raw name
+  let rawName = key;
+  if (key.startsWith('KC_')) {
+    rawName = key.slice(3);
+  } else if (key.startsWith('VK_')) {
+    rawName = key.slice(3);
+  }
+
+  // Handle numpad digits: P0-P9 → Numpad0-Numpad9
+  const numpadDigit = rawName.match(/^P([0-9])$/);
+  if (numpadDigit) {
+    return `VK_Numpad${numpadDigit[1]}`;
+  }
+
+  // Handle top-row digits: 0-9 → Num0-Num9
+  if (rawName.match(/^[0-9]$/)) {
+    return `VK_Num${rawName}`;
+  }
+
+  // Translate QMK abbreviations to DSL names
+  const dslName = QMK_TO_DSL[rawName];
+  if (dslName) {
+    return `VK_${dslName}`;
+  }
+
+  // Already a valid DSL name (letters, F-keys, etc.)
+  return `VK_${rawName}`;
 }
 
 /**

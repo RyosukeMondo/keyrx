@@ -149,10 +149,19 @@ async fn get_status(
             device_count,
         }))
     } else {
-        // Production mode: use shared state (Windows) or IPC (Linux)
+        // Production mode: use DaemonQueryService, shared state, or IPC
         let (daemon_running, uptime_secs, active_profile, device_count) =
-            if let Some(daemon_state) = &state.daemon_state {
-                // Windows single-process mode: use shared state
+            if let Some(query) = &state.daemon_query {
+                // DaemonQueryService available (both Windows and Linux production)
+                let status = query.get_status();
+                (
+                    status.daemon_running,
+                    Some(status.uptime_secs),
+                    status.active_profile,
+                    Some(status.device_count),
+                )
+            } else if let Some(daemon_state) = &state.daemon_state {
+                // Fallback: shared state without query service
                 (
                     daemon_state.is_running(),
                     Some(daemon_state.uptime_secs()),
@@ -160,7 +169,7 @@ async fn get_status(
                     Some(daemon_state.get_device_count()),
                 )
             } else {
-                // Linux or cross-process mode: fallback to IPC
+                // IPC fallback (test mode without daemon)
                 match query_daemon_status() {
                     Ok((uptime, profile, count)) => (true, Some(uptime), profile, Some(count)),
                     Err(_) => (false, None, None, None),
@@ -188,9 +197,24 @@ struct LatencyStatsResponse {
 }
 
 /// GET /api/metrics/latency - Get latency statistics
-async fn get_latency_stats() -> Result<Json<LatencyStatsResponse>, DaemonError> {
+async fn get_latency_stats(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<LatencyStatsResponse>, DaemonError> {
     use crate::error::WebError;
 
+    // Use DaemonQueryService if available (production mode with real daemon)
+    if let Some(query) = &state.daemon_query {
+        let snap = query.get_latency_snapshot();
+        return Ok(Json(LatencyStatsResponse {
+            min_us: snap.min_us,
+            avg_us: snap.avg_us,
+            max_us: snap.max_us,
+            p95_us: snap.p95_us,
+            p99_us: snap.p99_us,
+        }));
+    }
+
+    // IPC fallback (test mode only)
     let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
     let mut ipc = crate::ipc::unix_socket::UnixSocketIpc::new(socket_path);
 
@@ -229,10 +253,22 @@ struct EventLogQuery {
 }
 
 /// GET /api/metrics/events - Get event log
-async fn get_event_log(Query(params): Query<EventLogQuery>) -> Result<Json<Value>, DaemonError> {
+async fn get_event_log(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<EventLogQuery>,
+) -> Result<Json<Value>, DaemonError> {
     use crate::error::WebError;
 
     let count = params.count.unwrap_or(100);
+
+    // Use DaemonQueryService if available (production mode with real daemon)
+    if let Some(query) = &state.daemon_query {
+        let events = query.get_event_log(count);
+        return Ok(Json(json!({
+            "count": events.len(),
+            "events": events,
+        })));
+    }
 
     let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
     let mut ipc = crate::ipc::unix_socket::UnixSocketIpc::new(socket_path);
@@ -282,8 +318,23 @@ struct DaemonStateResponse {
 }
 
 /// GET /api/daemon/state - Get current daemon state
-async fn get_daemon_state() -> Result<Json<DaemonStateResponse>, DaemonError> {
+async fn get_daemon_state(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<DaemonStateResponse>, DaemonError> {
     use crate::error::WebError;
+
+    // When DaemonQueryService is available, daemon state (modifiers/locks) is not
+    // yet tracked there. Fall through to IPC for now; return empty on Windows.
+    if state.daemon_query.is_some() && state.daemon_state.is_some() {
+        return Ok(Json(DaemonStateResponse {
+            active_layer: None,
+            modifiers: vec![],
+            locks: vec![],
+            raw_state: vec![],
+            active_modifier_count: 0,
+            active_lock_count: 0,
+        }));
+    }
 
     let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
     let mut ipc = crate::ipc::unix_socket::UnixSocketIpc::new(socket_path);

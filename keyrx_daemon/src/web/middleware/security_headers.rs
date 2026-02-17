@@ -48,7 +48,7 @@ impl SecurityHeadersConfig {
             enable_hsts: false, // Don't enforce HSTS in dev
             hsts_max_age: 3600, // 1 hour for testing
             hsts_include_subdomains: false,
-            csp_policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'".to_string(),
+            csp_policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; worker-src 'self' blob:; img-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'".to_string(),
         }
     }
 

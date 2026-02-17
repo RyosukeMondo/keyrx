@@ -29,7 +29,8 @@ use crate::daemon::DaemonSharedState;
 use crate::daemon_config::DaemonConfig;
 use crate::macro_recorder::MacroRecorder;
 use crate::services::{
-    ConfigService, DeviceService, ProfileService, SettingsService, SimulationService,
+    ConfigService, DaemonQueryService, DeviceService, ProfileService, SettingsService,
+    SimulationService,
 };
 use crate::web::subscriptions::SubscriptionManager;
 
@@ -69,6 +70,9 @@ pub struct AppState {
     /// This is `Some(state)` on Windows in single-process mode, `None` on Linux/macOS
     /// where IPC is used instead.
     pub daemon_state: Option<Arc<DaemonSharedState>>,
+    /// Query service for daemon metrics (latency, events, status).
+    /// Available when running with a real daemon (not test mode).
+    pub daemon_query: Option<Arc<DaemonQueryService>>,
 }
 
 impl AppState {
@@ -96,6 +100,7 @@ impl AppState {
             event_broadcaster,
             test_mode_socket: None,
             daemon_state,
+            daemon_query: None,
         }
     }
 
@@ -124,6 +129,7 @@ impl AppState {
             event_broadcaster,
             test_mode_socket: Some(test_mode_socket),
             daemon_state,
+            daemon_query: None,
         }
     }
 
@@ -168,6 +174,7 @@ impl AppState {
             event_broadcaster: container.event_broadcaster(),
             test_mode_socket,
             daemon_state: None,
+            daemon_query: None,
         }
     }
 
@@ -207,6 +214,7 @@ impl AppState {
         container: ServiceContainer,
         test_mode_socket: Option<std::path::PathBuf>,
         daemon_state: Arc<DaemonSharedState>,
+        daemon_query: Option<Arc<DaemonQueryService>>,
     ) -> Self {
         Self {
             macro_recorder: container.macro_recorder(),
@@ -219,6 +227,7 @@ impl AppState {
             event_broadcaster: container.event_broadcaster(),
             test_mode_socket,
             daemon_state: Some(daemon_state),
+            daemon_query,
         }
     }
 
@@ -469,7 +478,7 @@ mod tests {
             2,
         ));
 
-        let state = AppState::from_container_with_daemon(container, None, daemon_state);
+        let state = AppState::from_container_with_daemon(container, None, daemon_state, None);
 
         // With daemon state, should return true
         assert!(state.has_daemon_state());

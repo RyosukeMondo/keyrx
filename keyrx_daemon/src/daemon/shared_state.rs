@@ -117,6 +117,10 @@ pub struct DaemonSharedState {
     /// This is set once at daemon startup and never changes. The status
     /// API uses this to calculate and report daemon uptime.
     start_time: Instant,
+
+    /// Flag set by the web API when the active profile's config is modified.
+    /// The message loop checks and clears this to trigger a daemon reload.
+    reload_requested: AtomicBool,
 }
 
 impl DaemonSharedState {
@@ -161,6 +165,7 @@ impl DaemonSharedState {
             config_path: Arc::new(RwLock::new(config_path)),
             device_count: Arc::new(AtomicUsize::new(device_count)),
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         }
     }
 
@@ -205,6 +210,7 @@ impl DaemonSharedState {
             config_path: Arc::new(RwLock::new(daemon.config_path().to_path_buf())),
             device_count: Arc::new(AtomicUsize::new(daemon.device_count())),
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         }
     }
 
@@ -418,6 +424,16 @@ impl DaemonSharedState {
     pub fn set_device_count(&self, count: usize) {
         self.device_count.store(count, Ordering::SeqCst);
     }
+
+    /// Request a daemon reload (e.g., after active profile config is modified).
+    pub fn request_reload(&self) {
+        self.reload_requested.store(true, Ordering::SeqCst);
+    }
+
+    /// Check and clear the reload request flag. Returns true if reload was requested.
+    pub fn take_reload_request(&self) -> bool {
+        self.reload_requested.swap(false, Ordering::SeqCst)
+    }
 }
 
 #[cfg(test)]
@@ -443,6 +459,7 @@ mod tests {
             config_path,
             device_count,
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         };
 
         assert!(state.is_running());
@@ -461,6 +478,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         };
 
         assert!(state.is_running());
@@ -478,6 +496,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         };
 
         // Initial profile
@@ -500,6 +519,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/initial/config.krx"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         };
 
         assert_eq!(
@@ -520,6 +540,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(2)),
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         };
 
         assert_eq!(state.get_device_count(), 2);
@@ -537,6 +558,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         };
 
         // Just created, uptime should be 0
@@ -558,6 +580,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(5)),
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         });
 
         // Spawn multiple reader threads
@@ -587,6 +610,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         });
 
         // Spawn multiple writer threads
@@ -621,6 +645,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(1)),
             start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
         });
 
         // Mix of readers and writers

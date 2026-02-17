@@ -146,13 +146,11 @@ launch_daemon() {
         return 1
     fi
 
-    # Construct daemon arguments
+    # Construct daemon arguments for the 'run' subcommand
     local daemon_args=""
 
     if [[ "$DEBUG_MODE" == "true" ]]; then
-        daemon_args="$daemon_args --log-level debug"
-    else
-        daemon_args="$daemon_args --log-level info"
+        daemon_args="$daemon_args --debug"
     fi
 
     if [[ -n "$CONFIG_PATH" ]]; then
@@ -163,25 +161,48 @@ launch_daemon() {
         daemon_args="$daemon_args --config $CONFIG_PATH"
     fi
 
-    if [[ "$HEADLESS_MODE" == "true" ]]; then
-        daemon_args="$daemon_args --headless"
-    fi
-
     log_info "Launching daemon: $binary_path $daemon_args"
 
     # Launch daemon in background and capture output
     local temp_output
     temp_output=$(mktemp)
 
-    # Start daemon in background, redirecting output to temp file
-    $binary_path $daemon_args > "$temp_output" 2>&1 &
-    DAEMON_PID=$!
+    # On Windows, launch via cmd.exe to get a proper console with message loop
+    # (bash & doesn't pump Windows messages, breaking keyboard hooks)
+    if command -v cmd.exe &>/dev/null; then
+        local win_binary
+        win_binary=$(cygpath -w "$binary_path" 2>/dev/null || echo "$binary_path")
+        # Use PowerShell Start-Process to launch with proper console for Windows message loop
+        local ps_args="run ${daemon_args}"
+        powershell -Command "Start-Process -FilePath '${win_binary}' -ArgumentList '${ps_args}'" 2>"$temp_output"
+        sleep 3
+        # Find the PID of the launched daemon
+        DAEMON_PID=$(powershell -Command "(Get-Process keyrx_daemon -ErrorAction SilentlyContinue | Select-Object -First 1).Id" 2>/dev/null || echo "")
+    else
+        # Linux/macOS: background process works fine
+        $binary_path run $daemon_args > "$temp_output" 2>&1 &
+        DAEMON_PID=$!
+    fi
 
     # Give daemon time to start
     sleep 2
 
     # Check if daemon is still running
-    if ! kill -0 "$DAEMON_PID" 2>/dev/null; then
+    local daemon_alive=false
+    if command -v powershell &>/dev/null; then
+        # Windows: check via PowerShell
+        if powershell -Command "Get-Process keyrx_daemon -ErrorAction SilentlyContinue" &>/dev/null; then
+            daemon_alive=true
+            # Get PID if we don't have it yet
+            if [[ -z "$DAEMON_PID" ]]; then
+                DAEMON_PID=$(powershell -Command "(Get-Process keyrx_daemon -ErrorAction SilentlyContinue | Select-Object -First 1).Id" 2>/dev/null || echo "unknown")
+            fi
+        fi
+    elif kill -0 "$DAEMON_PID" 2>/dev/null; then
+        daemon_alive=true
+    fi
+
+    if [[ "$daemon_alive" != "true" ]]; then
         log_error "Daemon failed to start"
         log_error "Output:"
         cat "$temp_output" >&2
@@ -222,6 +243,15 @@ main() {
     if [[ -z "$LOG_FILE" ]]; then
         setup_log_file "launch"
     fi
+
+    # Kill existing keyrx processes for stable testing
+    log_info "Stopping existing keyrx processes..."
+    if command -v taskkill &>/dev/null; then
+        taskkill //F //IM keyrx_daemon.exe 2>/dev/null && log_info "Killed existing keyrx_daemon.exe" || true
+    else
+        pkill -f keyrx_daemon 2>/dev/null && log_info "Killed existing keyrx_daemon" || true
+    fi
+    sleep 1
 
     # Verify cargo is installed
     if ! require_tool "cargo" "Install Rust from https://rustup.rs"; then

@@ -326,7 +326,7 @@ unsafe extern "system" fn wnd_proc(
 
     if msg == WM_INPUT {
         if !context_ptr.is_null() {
-            let context = &*context_ptr;
+            let _context = &*context_ptr;
 
             let mut close_size: u32 = 0;
             // Use explicit casts for HRAWINPUT (isize) and pointers
@@ -363,9 +363,15 @@ unsafe extern "system" fn wnd_proc(
                     let raw: &RAWINPUT = &*(buffer.as_ptr() as *const RAWINPUT);
 
                     if raw.header.dwType == RIM_TYPEKEYBOARD {
-                        // hDevice is HANDLE (isize), cast to usize for map key
-                        let handle = raw.header.hDevice as usize;
-                        process_raw_keyboard(&raw.data.keyboard, handle, context);
+                        // Keyboard events are now handled exclusively by the
+                        // low-level hook (key_blocker). Raw Input cannot distinguish
+                        // injected events (SendInput) from physical keypresses,
+                        // which causes feedback loops when remapped output gets
+                        // re-captured. The hook has LLKHF_INJECTED flag access
+                        // and is the sole event source for the remapping engine.
+                        //
+                        // Raw Input is still used for device arrival/removal
+                        // notifications (WM_INPUT_DEVICE_CHANGE).
                     }
                 }
             }

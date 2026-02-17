@@ -336,6 +336,11 @@ async fn activate_profile(
             ));
         }
 
+        // Update shared daemon state so the message loop detects the change
+        if let Some(ref daemon_state) = state.daemon_state {
+            daemon_state.set_active_profile(Some(name.clone()));
+        }
+
         // Reload simulation service with the new profile
         if let Err(e) = state.simulation_service.load_profile(&name) {
             log::warn!("Failed to load profile into simulation service: {}", e);

@@ -269,6 +269,32 @@ impl Daemon {
         let remapping_state = match Self::load_active_profile_config(&config_dir) {
             Ok(Some(device_config)) => {
                 info!("Loaded active profile, creating remapping state");
+
+                // Configure key blocking for the loaded profile (Windows only).
+                // Without this, the low-level hook won't block original keystrokes,
+                // causing double input (original + remapped).
+                #[cfg(target_os = "windows")]
+                {
+                    use keyrx_core::config::{ConfigRoot, Metadata, Version};
+
+                    let config_root = ConfigRoot {
+                        version: Version::current(),
+                        devices: vec![device_config.clone()],
+                        metadata: Metadata {
+                            compilation_timestamp: 0,
+                            compiler_version: String::new(),
+                            source_hash: String::new(),
+                        },
+                    };
+                    if let Err(e) =
+                        crate::platform::windows::platform_state::PlatformState::configure_blocking(
+                            Some(&config_root),
+                        )
+                    {
+                        warn!("Failed to configure key blocking: {}", e);
+                    }
+                }
+
                 Some(RemappingState::new(&device_config))
             }
             Ok(None) => {
@@ -317,10 +343,17 @@ impl Daemon {
             return Ok(None);
         }
 
-        let active_name = fs::read_to_string(&active_file)
-            .map_err(|e| DaemonError::RuntimeError(format!("Failed to read .active file: {}", e)))?
-            .trim()
-            .to_string();
+        let content = fs::read_to_string(&active_file).map_err(|e| {
+            DaemonError::RuntimeError(format!("Failed to read .active file: {}", e))
+        })?;
+        let active_name = match serde_json::from_str::<serde_json::Value>(content.trim()) {
+            Ok(metadata) => metadata
+                .get("name")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| content.trim().to_string()),
+            Err(_) => content.trim().to_string(),
+        };
 
         if active_name.is_empty() {
             return Ok(None);

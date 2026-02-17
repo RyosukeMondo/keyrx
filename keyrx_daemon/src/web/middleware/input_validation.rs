@@ -134,8 +134,25 @@ pub async fn input_validation_middleware(
             ));
         }
 
-        // Check for injection patterns in headers
-        if contains_command_injection(value_str) {
+        // Check for injection patterns in headers (skip standard headers that
+        // legitimately contain semicolons, pipes, etc.)
+        let skip_injection_check = matches!(
+            name.as_str(),
+            "accept"
+                | "accept-encoding"
+                | "accept-language"
+                | "content-type"
+                | "cookie"
+                | "set-cookie"
+                | "cache-control"
+                | "user-agent"
+                | "sec-ch-ua"
+                | "sec-ch-ua-mobile"
+                | "sec-ch-ua-platform"
+                | "sec-websocket-extensions"
+                | "sec-websocket-protocol"
+        );
+        if !skip_injection_check && contains_command_injection(value_str) {
             log::warn!(
                 "Command injection attempt in header {}: {}",
                 name,
