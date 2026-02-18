@@ -76,7 +76,7 @@ jobs:
       - name: Calculate checksums
         shell: powershell
         run: |
-          $version = "0.1.5"
+          $version = "1.0.0"
           $checksums = @()
 
           $iexpressPath = "scripts\installer\keyrx-installer-v$version.exe"
@@ -176,7 +176,7 @@ jobs:
           Write-Host "Build Complete!" -ForegroundColor Green
           Write-Host ""
 
-          $version = "0.1.5"
+          $version = "1.0.0"
 
           $iexpressPath = "scripts\installer\keyrx-installer-v$version.exe"
           if (Test-Path $iexpressPath) {
