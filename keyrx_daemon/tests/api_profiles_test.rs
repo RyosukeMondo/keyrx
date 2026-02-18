@@ -15,18 +15,35 @@ mod common;
 use common::test_app::TestApp;
 use serde_json::json;
 use serial_test::serial;
-use std::fs;
 
-/// Helper function to create a profile file directly in the filesystem.
+/// Helper function to create a profile via API and set its config content.
 ///
-/// This bypasses the API's create endpoint and directly writes the profile file,
-/// which allows us to test validation independently.
-fn create_profile_file(app: &TestApp, name: &str, content: &str) {
-    let profiles_dir = app.config_path().join("profiles");
-    fs::create_dir_all(&profiles_dir).expect("Failed to create profiles directory");
+/// Creates the profile through the REST API (which registers it in ProfileManager),
+/// then sets the config content via PUT endpoint.
+async fn create_profile_with_config(app: &TestApp, name: &str, content: &str) {
+    // Create profile via API
+    let create_response = app
+        .post(
+            "/api/profiles",
+            &json!({ "name": name, "template": "blank" }),
+        )
+        .await;
+    assert!(
+        create_response.status().is_success(),
+        "Failed to create profile '{}': {}",
+        name,
+        create_response.text().await.unwrap()
+    );
 
-    let rhai_path = profiles_dir.join(format!("{}.rhai", name));
-    fs::write(&rhai_path, content).expect("Failed to write profile file");
+    // Set config content via PUT
+    let config_response = app
+        .put(
+            &format!("/api/profiles/{}/config", name),
+            &json!({ "config": content }),
+        )
+        .await;
+    // Config set may fail if content is invalid Rhai - that's OK for validation tests
+    let _ = config_response;
 }
 
 /// Test that a valid profile template compiles successfully.
@@ -47,7 +64,7 @@ device_start("*");
 device_end();
 "#;
 
-    create_profile_file(&app, "test-valid", valid_config);
+    create_profile_with_config(&app, "test-valid", valid_config).await;
 
     // Activate the profile to trigger compilation
     let activate_response = app
@@ -94,7 +111,7 @@ device_start("*");
 // device_end() is missing!
 "#;
 
-    create_profile_file(&app, "test-invalid", invalid_config);
+    create_profile_with_config(&app, "test-invalid", invalid_config).await;
 
     // Attempt to activate the invalid profile
     let activate_response = app
@@ -136,7 +153,7 @@ layer("base", "*");
 map("VK_A", "VK_B");
 "#;
 
-    create_profile_file(&app, "test-layer-syntax", invalid_layer_config);
+    create_profile_with_config(&app, "test-layer-syntax", invalid_layer_config).await;
 
     // Attempt to activate profile with invalid syntax
     let activate_response = app
@@ -177,7 +194,7 @@ device_start("*");
 device_end();
 "#;
 
-    create_profile_file(&app, "test-helpful-errors", invalid_config);
+    create_profile_with_config(&app, "test-helpful-errors", invalid_config).await;
 
     // Activate to trigger compilation
     let activate_response = app
@@ -226,8 +243,8 @@ device_start("*");
 device_end();
 "#;
 
-    create_profile_file(&app, "profile-1", config1);
-    create_profile_file(&app, "profile-2", config2);
+    create_profile_with_config(&app, "profile-1", config1).await;
+    create_profile_with_config(&app, "profile-2", config2).await;
 
     // Activate first profile
     let activate1 = app
@@ -282,7 +299,7 @@ device_end();  // End of device block
 // Final comment
 "#;
 
-    create_profile_file(&app, "test-comments", config_with_comments);
+    create_profile_with_config(&app, "test-comments", config_with_comments).await;
 
     let activate_response = app
         .post("/api/profiles/test-comments/activate", &json!({}))
@@ -315,7 +332,7 @@ device_start("*");
 device_end();
 "#;
 
-    create_profile_file(&app, "test-validate-valid", valid_config);
+    create_profile_with_config(&app, "test-validate-valid", valid_config).await;
 
     // Call validation endpoint
     let validate_response = app
@@ -367,7 +384,7 @@ device_start("*");
 // Missing device_end()!
 "#;
 
-    create_profile_file(&app, "test-validate-invalid", invalid_config);
+    create_profile_with_config(&app, "test-validate-invalid", invalid_config).await;
 
     // Call validation endpoint
     let validate_response = app

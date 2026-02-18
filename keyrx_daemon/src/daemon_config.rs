@@ -249,6 +249,7 @@ impl Default for DaemonConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     #[test]
     fn test_default_config() {
@@ -304,6 +305,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_parse_cors_origins_dev() {
         // In dev mode, should return default origins even if env var not set
         std::env::remove_var("KEYRX_ALLOWED_ORIGINS");
@@ -313,6 +315,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_parse_cors_origins_production_missing() {
         // In production, must be explicitly set
         std::env::remove_var("KEYRX_ALLOWED_ORIGINS");
@@ -324,6 +327,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_parse_cors_origins_from_env() {
         std::env::set_var(
             "KEYRX_ALLOWED_ORIGINS",
@@ -337,6 +341,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_parse_cors_origins_empty_in_production() {
         std::env::set_var("KEYRX_ALLOWED_ORIGINS", "");
         let result = DaemonConfig::parse_cors_origins(true);
@@ -345,6 +350,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_parse_cors_origins_empty_in_dev() {
         std::env::set_var("KEYRX_ALLOWED_ORIGINS", "");
         let origins = DaemonConfig::parse_cors_origins(false).unwrap();

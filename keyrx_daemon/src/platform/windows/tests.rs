@@ -1,5 +1,6 @@
 use crate::platform::windows::keycode::{keycode_to_vk, vk_to_keycode};
 use keyrx_core::config::KeyCode;
+use serial_test::serial;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
 
 #[allow(unused_imports)]
@@ -317,6 +318,7 @@ fn test_all_extracted_keys_convertible_to_scancodes() {
 }
 
 #[test]
+#[serial]
 fn test_key_blocker_actually_blocks() {
     use crate::platform::windows::key_blocker::KeyBlocker;
 
@@ -324,6 +326,9 @@ fn test_key_blocker_actually_blocks() {
     // This was the CRITICAL BUG - tests verified pipeline but not actual blocking
 
     let blocker = KeyBlocker::new().expect("Should create blocker");
+
+    // Clear any state left by other tests (global OnceLock persists across tests)
+    blocker.clear_all();
 
     // Initially no keys blocked
     assert_eq!(
@@ -357,6 +362,7 @@ fn test_key_blocker_actually_blocks() {
 }
 
 #[test]
+#[serial]
 fn test_configure_blocking_with_real_config() {
     use crate::platform::windows::key_blocker::KeyBlocker;
     use crate::platform::windows::keycode::keycode_to_scancode;
@@ -384,31 +390,33 @@ fn test_configure_blocking_with_real_config() {
         .deserialize(&mut rkyv::Infallible)
         .expect("Should convert to owned");
 
-    // Create a blocker
+    // Create a blocker and clear any state from concurrent tests
     let blocker = KeyBlocker::new().expect("Should create blocker");
+    blocker.clear_all();
 
     // Extract keys (mimics platform_state::extract_and_block_key)
     let keys = extract_source_keys(&owned);
     println!("Extracted {} unique source keys", keys.len());
 
-    // Block each key
-    let mut blocked = 0;
+    // Block each key, tracking unique scan codes
+    let mut unique_scancodes = HashSet::new();
     for key in &keys {
         if let Some(scan_code) = keycode_to_scancode(*key) {
             blocker.block_key(scan_code);
-            blocked += 1;
+            unique_scancodes.insert(scan_code);
         }
     }
 
-    println!("Blocked {} keys", blocked);
+    println!("Blocked {} unique scan codes", unique_scancodes.len());
 
-    // Verify blocker actually has the keys
+    // Verify blocker reports the correct unique count
     let actual_count = blocker.blocked_count();
     println!("Blocker reports {} keys blocked", actual_count);
 
     assert_eq!(
-        actual_count, blocked,
-        "Blocker should report same count as we blocked"
+        actual_count,
+        unique_scancodes.len(),
+        "Blocker should report same count as unique scan codes blocked"
     );
 
     // Verify specific keys are blocked

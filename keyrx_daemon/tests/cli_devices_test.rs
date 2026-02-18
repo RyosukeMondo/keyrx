@@ -137,7 +137,7 @@ fn test_devices_help() {
         .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Device management"))
+        .stdout(predicate::str::contains("Manage device"))
         .stdout(predicate::str::contains("list"))
         .stdout(predicate::str::contains("rename"))
         .stdout(predicate::str::contains("forget"))

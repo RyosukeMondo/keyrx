@@ -302,7 +302,7 @@ mod tests {
             count: 1000,
         };
         let json = serde_json::to_value(&stats).expect("Failed to serialize LatencyRpcStats");
-        assert_eq!(json["min_us"], 10);
+        assert_eq!(json["minUs"], 10);
         assert_eq!(json["count"], 1000);
     }
 

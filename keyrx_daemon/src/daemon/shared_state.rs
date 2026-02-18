@@ -398,6 +398,24 @@ impl DaemonSharedState {
         *self.config_path.write().expect("RwLock poisoned") = path;
     }
 
+    /// Atomically sets both the active profile and config path together.
+    ///
+    /// This prevents readers from seeing an inconsistent state where the profile
+    /// name has been updated but the config path still points to the old profile.
+    ///
+    /// # Arguments
+    ///
+    /// * `profile` - The profile name to activate, or `None` for pass-through mode
+    /// * `config_path` - The new configuration file path
+    pub fn set_active_config(&self, profile: Option<String>, config_path: PathBuf) {
+        // Acquire both write locks to update atomically.
+        // Always acquire in the same order (profile, then config) to prevent deadlocks.
+        let mut profile_guard = self.active_profile.write().expect("RwLock poisoned");
+        let mut config_guard = self.config_path.write().expect("RwLock poisoned");
+        *profile_guard = profile;
+        *config_guard = config_path;
+    }
+
     /// Updates the device count.
     ///
     /// This is called when devices are hotplugged or unplugged (future enhancement).
@@ -635,6 +653,67 @@ mod tests {
         assert!(final_profile.is_some());
         let profile_name = final_profile.unwrap();
         assert!(profile_name.starts_with("profile-"));
+    }
+
+    #[test]
+    fn test_set_active_config_atomic() {
+        let state = Arc::new(DaemonSharedState {
+            running: Arc::new(AtomicBool::new(true)),
+            active_profile: Arc::new(RwLock::new(Some("old".to_string()))),
+            config_path: Arc::new(RwLock::new(PathBuf::from("/old/config.krx"))),
+            device_count: Arc::new(AtomicUsize::new(0)),
+            start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
+        });
+
+        // Atomic update of both fields
+        state.set_active_config(
+            Some("new-profile".to_string()),
+            PathBuf::from("/new/config.krx"),
+        );
+
+        assert_eq!(state.get_active_profile(), Some("new-profile".to_string()));
+        assert_eq!(state.get_config_path(), PathBuf::from("/new/config.krx"));
+
+        // Set to None (pass-through)
+        state.set_active_config(None, PathBuf::from("/default.krx"));
+        assert_eq!(state.get_active_profile(), None);
+        assert_eq!(state.get_config_path(), PathBuf::from("/default.krx"));
+    }
+
+    #[test]
+    fn test_set_active_config_concurrent() {
+        let state = Arc::new(DaemonSharedState {
+            running: Arc::new(AtomicBool::new(true)),
+            active_profile: Arc::new(RwLock::new(None)),
+            config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
+            device_count: Arc::new(AtomicUsize::new(0)),
+            start_time: Instant::now(),
+            reload_requested: AtomicBool::new(false),
+        });
+
+        // Concurrent atomic updates should not deadlock
+        let handles: Vec<_> = (0..10)
+            .map(|i| {
+                let state = Arc::clone(&state);
+                thread::spawn(move || {
+                    state.set_active_config(
+                        Some(format!("profile-{}", i)),
+                        PathBuf::from(format!("/config-{}.krx", i)),
+                    );
+                })
+            })
+            .collect();
+
+        for handle in handles {
+            handle.join().expect("Thread panicked");
+        }
+
+        // Final state should be consistent (profile and path from same write)
+        let profile = state.get_active_profile().unwrap();
+        let config = state.get_config_path();
+        let idx = profile.strip_prefix("profile-").unwrap();
+        assert_eq!(config, PathBuf::from(format!("/config-{}.krx", idx)));
     }
 
     #[test]

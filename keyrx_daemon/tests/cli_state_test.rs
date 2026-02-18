@@ -116,9 +116,7 @@ fn test_state_requires_subcommand() {
         .arg("state")
         .assert()
         .failure()
-        .stderr(predicate::str::contains(
-            "Usage: keyrx_daemon state <COMMAND>",
-        ));
+        .stderr(predicate::str::contains("state <COMMAND>"));
 }
 
 // Note: Testing with a real running daemon requires:

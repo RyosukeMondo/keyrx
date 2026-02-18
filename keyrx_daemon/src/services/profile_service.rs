@@ -89,6 +89,11 @@ impl ProfileService {
         }
     }
 
+    /// Returns a reference to the underlying ProfileManager.
+    pub fn profile_manager(&self) -> &Arc<ProfileManager> {
+        &self.profile_manager
+    }
+
     /// Sets the daemon shared state for automatic reload triggering.
     ///
     /// When set, `set_profile_config()` will automatically trigger a daemon
@@ -134,14 +139,14 @@ impl ProfileService {
         let active_name = self.profile_manager.get_active().ok().flatten();
 
         let mut result: Vec<ProfileInfo> = profiles
-            .iter()
+            .into_iter()
             .map(|metadata| ProfileInfo {
-                name: metadata.name.clone(),
-                layer_count: metadata.layer_count,
                 active: active_name.as_ref() == Some(&metadata.name),
                 modified_at: metadata.modified_at,
                 activated_at: metadata.activated_at,
-                activated_by: metadata.activated_by.clone(),
+                activated_by: metadata.activated_by,
+                layer_count: metadata.layer_count,
+                name: metadata.name,
             })
             .collect();
 
@@ -192,12 +197,12 @@ impl ProfileService {
         let active_name = self.profile_manager.get_active().ok().flatten();
 
         Ok(ProfileInfo {
-            name: metadata.name.clone(),
-            layer_count: metadata.layer_count,
             active: active_name.as_ref() == Some(&metadata.name),
             modified_at: metadata.modified_at,
             activated_at: metadata.activated_at,
-            activated_by: metadata.activated_by.clone(),
+            activated_by: metadata.activated_by,
+            layer_count: metadata.layer_count,
+            name: metadata.name,
         })
     }
 
@@ -259,8 +264,7 @@ impl ProfileService {
             log::debug!("spawn_blocking: Starting profile activation");
 
             // Activate profile (blocking operation)
-            let manager_ptr = Arc::as_ptr(&manager) as *mut ProfileManager;
-            let activation_result = unsafe { (*manager_ptr).activate(&name_owned)? };
+            let activation_result = manager.activate(&name_owned)?;
 
             if activation_result.success {
                 log::info!(
@@ -435,15 +439,19 @@ impl ProfileService {
     ) -> Result<ProfileInfo, ProfileError> {
         log::info!("Creating profile '{}' with template: {:?}", name, template);
 
-        let manager_ptr = Arc::as_ptr(&self.profile_manager) as *mut ProfileManager;
-        let metadata = unsafe { (*manager_ptr).create(name, template)? };
+        let manager = Arc::clone(&self.profile_manager);
+        let name_owned = name.to_string();
+
+        let metadata = tokio::task::spawn_blocking(move || manager.create(&name_owned, template))
+            .await
+            .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
         log::info!("Profile '{}' created successfully", name);
 
         Ok(ProfileInfo {
-            name: metadata.name.clone(),
+            name: metadata.name,
             layer_count: metadata.layer_count,
-            active: false, // Newly created profiles are not active
+            active: false,
             modified_at: metadata.modified_at,
             activated_at: None,
             activated_by: None,
@@ -481,8 +489,12 @@ impl ProfileService {
     pub async fn delete_profile(&self, name: &str) -> Result<(), ProfileError> {
         log::info!("Deleting profile: {}", name);
 
-        let manager_ptr = Arc::as_ptr(&self.profile_manager) as *mut ProfileManager;
-        unsafe { (*manager_ptr).delete(name)? };
+        let manager = Arc::clone(&self.profile_manager);
+        let name_owned = name.to_string();
+
+        tokio::task::spawn_blocking(move || manager.delete(&name_owned))
+            .await
+            .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
         log::info!("Profile '{}' deleted successfully", name);
         Ok(())
@@ -527,20 +539,25 @@ impl ProfileService {
     ) -> Result<ProfileInfo, ProfileError> {
         log::info!("Renaming profile '{}' to '{}'", old_name, new_name);
 
-        let manager_ptr = Arc::as_ptr(&self.profile_manager) as *mut ProfileManager;
-        let metadata = unsafe { (*manager_ptr).rename(old_name, new_name)? };
+        let manager = Arc::clone(&self.profile_manager);
+        let old_owned = old_name.to_string();
+        let new_owned = new_name.to_string();
+
+        let metadata = tokio::task::spawn_blocking(move || manager.rename(&old_owned, &new_owned))
+            .await
+            .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
         let active_name = self.profile_manager.get_active().ok().flatten();
 
         log::info!("Profile renamed successfully");
 
         Ok(ProfileInfo {
-            name: metadata.name.clone(),
-            layer_count: metadata.layer_count,
             active: active_name.as_ref() == Some(&metadata.name),
             modified_at: metadata.modified_at,
             activated_at: metadata.activated_at,
-            activated_by: metadata.activated_by.clone(),
+            activated_by: metadata.activated_by,
+            layer_count: metadata.layer_count,
+            name: metadata.name,
         })
     }
 
@@ -583,15 +600,21 @@ impl ProfileService {
     ) -> Result<ProfileInfo, ProfileError> {
         log::info!("Duplicating profile '{}' to '{}'", src_name, dest_name);
 
-        let manager_ptr = Arc::as_ptr(&self.profile_manager) as *mut ProfileManager;
-        let metadata = unsafe { (*manager_ptr).duplicate(src_name, dest_name)? };
+        let manager = Arc::clone(&self.profile_manager);
+        let src_owned = src_name.to_string();
+        let dest_owned = dest_name.to_string();
+
+        let metadata =
+            tokio::task::spawn_blocking(move || manager.duplicate(&src_owned, &dest_owned))
+                .await
+                .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
         log::info!("Profile duplicated successfully");
 
         Ok(ProfileInfo {
-            name: metadata.name.clone(),
+            name: metadata.name,
             layer_count: metadata.layer_count,
-            active: false, // Duplicates are never active
+            active: false,
             modified_at: metadata.modified_at,
             activated_at: None,
             activated_by: None,
@@ -673,15 +696,20 @@ impl ProfileService {
     ) -> Result<ProfileInfo, ProfileError> {
         log::info!("Importing profile from {:?} as '{}'", src, name);
 
-        let manager_ptr = Arc::as_ptr(&self.profile_manager) as *mut ProfileManager;
-        let metadata = unsafe { (*manager_ptr).import(src, name)? };
+        let manager = Arc::clone(&self.profile_manager);
+        let src_owned = src.to_path_buf();
+        let name_owned = name.to_string();
+
+        let metadata = tokio::task::spawn_blocking(move || manager.import(&src_owned, &name_owned))
+            .await
+            .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
         log::info!("Profile imported successfully");
 
         Ok(ProfileInfo {
-            name: metadata.name.clone(),
+            name: metadata.name,
             layer_count: metadata.layer_count,
-            active: false, // Imported profiles are never active
+            active: false,
             modified_at: metadata.modified_at,
             activated_at: None,
             activated_by: None,
@@ -772,8 +800,13 @@ impl ProfileService {
     pub async fn set_profile_config(&self, name: &str, content: &str) -> Result<(), ProfileError> {
         log::info!("Setting config for profile: {}", name);
 
-        let manager_ptr = Arc::as_ptr(&self.profile_manager) as *mut ProfileManager;
-        unsafe { (*manager_ptr).set_config(name, content)? };
+        let manager = Arc::clone(&self.profile_manager);
+        let name_owned = name.to_string();
+        let content_owned = content.to_string();
+
+        tokio::task::spawn_blocking(move || manager.set_config(&name_owned, &content_owned))
+            .await
+            .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
         log::info!("Config saved and recompiled for profile '{}'", name);
 

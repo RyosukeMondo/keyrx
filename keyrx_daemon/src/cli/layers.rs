@@ -151,7 +151,7 @@ pub fn execute(args: LayersArgs) -> Result<(), Box<dyn std::error::Error>> {
 
 fn handle_list(profile: Option<&str>, json: bool) -> Result<(), Box<dyn std::error::Error>> {
     let config_dir = get_config_dir()?;
-    let mut manager = ProfileManager::new(config_dir)?;
+    let manager = ProfileManager::new(config_dir)?;
     manager.scan_profiles()?;
 
     let profile_name = resolve_profile(profile, &manager)?;
@@ -199,7 +199,7 @@ fn handle_create(
     json: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let config_dir = get_config_dir()?;
-    let mut manager = ProfileManager::new(config_dir)?;
+    let manager = ProfileManager::new(config_dir)?;
     manager.scan_profiles()?;
 
     let profile_name = resolve_profile(profile, &manager)?;
@@ -261,7 +261,7 @@ fn handle_rename(
     json: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let config_dir = get_config_dir()?;
-    let mut manager = ProfileManager::new(config_dir)?;
+    let manager = ProfileManager::new(config_dir)?;
     manager.scan_profiles()?;
 
     let profile_name = resolve_profile(profile, &manager)?;
@@ -319,7 +319,7 @@ fn handle_delete(
     }
 
     let config_dir = get_config_dir()?;
-    let mut manager = ProfileManager::new(config_dir)?;
+    let manager = ProfileManager::new(config_dir)?;
     manager.scan_profiles()?;
 
     let profile_name = resolve_profile(profile, &manager)?;
@@ -367,7 +367,7 @@ fn handle_show(
     json: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let config_dir = get_config_dir()?;
-    let mut manager = ProfileManager::new(config_dir)?;
+    let manager = ProfileManager::new(config_dir)?;
     manager.scan_profiles()?;
 
     let profile_name = resolve_profile(profile, &manager)?;

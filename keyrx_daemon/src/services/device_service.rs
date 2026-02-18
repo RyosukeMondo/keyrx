@@ -31,6 +31,11 @@ impl DeviceService {
         Self { registry_path }
     }
 
+    /// Returns the path to the device registry file
+    pub fn registry_path(&self) -> &std::path::Path {
+        &self.registry_path
+    }
+
     /// List all connected devices
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     pub async fn list_devices(&self) -> Result<Vec<DeviceInfo>, String> {

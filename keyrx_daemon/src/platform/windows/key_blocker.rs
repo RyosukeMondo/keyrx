@@ -16,12 +16,12 @@
 //!
 //! # Thread Safety
 //!
-//! The hook runs in the Windows message loop thread. We use OnceLock + Mutex
-//! for thread-safe access to the blocker state and event sender.
+//! The hook runs in the Windows message loop thread. We use lock-free atomics
+//! for the blocked keys bitset to ensure the hook callback never blocks.
 
-use std::collections::HashSet;
 use std::ptr;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::OnceLock;
 
 use crossbeam_channel::Sender;
 use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
@@ -34,42 +34,40 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 use crate::platform::windows::keycode::scancode_to_keycode;
 use keyrx_core::runtime::KeyEvent;
 
-/// Global state for key blocking and event forwarding
-static BLOCKER_STATE: OnceLock<Arc<Mutex<KeyBlockerState>>> = OnceLock::new();
+/// Number of AtomicU64 words needed to cover 65536 scan codes (1024 words * 64 bits)
+const BITSET_WORDS: usize = 1024;
 
-/// Tracks which scan codes should be blocked and forwards events
-struct KeyBlockerState {
-    /// Set of scan codes that are currently remapped and should be blocked
-    blocked_keys: HashSet<u32>,
-    /// Channel to forward blocked key events to the remapping engine
-    event_sender: Option<Sender<KeyEvent>>,
+/// Global atomic bitset for blocked scan codes. Lock-free.
+static BLOCKED_KEYS: OnceLock<Vec<AtomicU64>> = OnceLock::new();
+
+/// Global event sender for forwarding key events to the remapping engine.
+static EVENT_SENDER: OnceLock<Sender<KeyEvent>> = OnceLock::new();
+
+/// Initialize the global blocked keys bitset (all zeros = nothing blocked).
+fn init_blocked_keys() -> Vec<AtomicU64> {
+    (0..BITSET_WORDS).map(|_| AtomicU64::new(0)).collect()
 }
 
-impl KeyBlockerState {
-    fn new() -> Self {
-        Self {
-            blocked_keys: HashSet::new(),
-            event_sender: None,
-        }
-    }
+/// Get the bitset word index and bit mask for a scan code.
+fn scan_code_position(scan_code: u32) -> (usize, u64) {
+    let index = (scan_code as usize) / 64;
+    let bit = 1u64 << ((scan_code as usize) % 64);
+    (index.min(BITSET_WORDS - 1), bit)
+}
 
-    fn block_key(&mut self, scan_code: u32) {
-        self.blocked_keys.insert(scan_code);
-    }
-
-    fn unblock_key(&mut self, scan_code: u32) {
-        self.blocked_keys.remove(&scan_code);
-    }
-
-    fn is_blocked(&self, scan_code: u32) -> bool {
-        self.blocked_keys.contains(&scan_code)
-    }
+/// Check if a scan code is blocked. Lock-free atomic load.
+fn is_blocked(scan_code: u32) -> bool {
+    let keys = match BLOCKED_KEYS.get() {
+        Some(k) => k,
+        None => return false,
+    };
+    let (index, bit) = scan_code_position(scan_code);
+    (keys[index].load(Ordering::Relaxed) & bit) != 0
 }
 
 /// Key blocker manager - installs and manages the low-level keyboard hook
 pub struct KeyBlocker {
     hook: HHOOK,
-    state: Arc<Mutex<KeyBlockerState>>,
 }
 
 // SAFETY: HHOOK is a Windows handle (raw pointer) that is safe to send across threads.
@@ -79,16 +77,8 @@ unsafe impl Send for KeyBlocker {}
 impl KeyBlocker {
     /// Install the low-level keyboard hook
     pub fn new() -> Result<Self, String> {
-        let state = Arc::new(Mutex::new(KeyBlockerState::new()));
-
-        match BLOCKER_STATE.set(state.clone()) {
-            Ok(()) => {
-                log::debug!("✓ Initialized global blocker state");
-            }
-            Err(_) => {
-                log::debug!("Global blocker state already initialized (reusing existing)");
-            }
-        }
+        // Initialize global bitset (idempotent via OnceLock)
+        BLOCKED_KEYS.get_or_init(init_blocked_keys);
 
         let hook = unsafe {
             SetWindowsHookExW(
@@ -108,7 +98,7 @@ impl KeyBlocker {
             hook as *const ()
         );
 
-        Ok(Self { hook, state })
+        Ok(Self { hook })
     }
 
     /// Set the event sender for forwarding blocked key events
@@ -117,61 +107,51 @@ impl KeyBlocker {
     /// event processing pipeline. Without this, blocked keys are captured
     /// but not forwarded for remapping.
     pub fn set_event_sender(&self, sender: Sender<KeyEvent>) {
-        if let Ok(mut state) = self.state.lock() {
-            state.event_sender = Some(sender);
-            log::info!("✓ Key blocker event forwarding enabled");
+        match EVENT_SENDER.set(sender) {
+            Ok(()) => log::info!("✓ Key blocker event forwarding enabled"),
+            Err(_) => log::debug!("Event sender already set (reusing existing)"),
         }
     }
 
-    /// Mark a key as remapped (will be blocked until unblocked)
+    /// Mark a key as remapped (will be blocked until unblocked). Lock-free.
     pub fn block_key(&self, scan_code: u32) {
-        if let Ok(mut state) = self.state.lock() {
-            let was_blocked = state.is_blocked(scan_code);
-            state.block_key(scan_code);
-            if !was_blocked {
-                log::debug!("➕ Added scan code to blocker: 0x{:04X}", scan_code);
-            }
-        } else {
-            log::error!(
-                "✗ Failed to lock blocker state when adding scan code: 0x{:04X}",
-                scan_code
-            );
+        let keys = BLOCKED_KEYS.get().expect("BLOCKED_KEYS not initialized");
+        let (index, bit) = scan_code_position(scan_code);
+        let prev = keys[index].fetch_or(bit, Ordering::Relaxed);
+        if (prev & bit) == 0 {
+            log::debug!("➕ Added scan code to blocker: 0x{:04X}", scan_code);
         }
     }
 
-    /// Unmark a key (will no longer be blocked)
+    /// Unmark a key (will no longer be blocked). Lock-free.
     pub fn unblock_key(&self, scan_code: u32) {
-        if let Ok(mut state) = self.state.lock() {
-            state.unblock_key(scan_code);
-            log::trace!("Unblocking scan code: 0x{:04X}", scan_code);
-        }
+        let keys = BLOCKED_KEYS.get().expect("BLOCKED_KEYS not initialized");
+        let (index, bit) = scan_code_position(scan_code);
+        keys[index].fetch_and(!bit, Ordering::Relaxed);
+        log::trace!("Unblocking scan code: 0x{:04X}", scan_code);
     }
 
-    /// Clear all blocked keys
+    /// Clear all blocked keys. Lock-free.
     pub fn clear_all(&self) {
-        if let Ok(mut state) = self.state.lock() {
-            state.blocked_keys.clear();
-            log::debug!("Cleared all blocked keys");
+        let keys = BLOCKED_KEYS.get().expect("BLOCKED_KEYS not initialized");
+        for word in keys.iter() {
+            word.store(0, Ordering::Relaxed);
         }
+        log::debug!("Cleared all blocked keys");
     }
 
     /// Get count of currently blocked keys (for diagnostics/testing)
     pub fn blocked_count(&self) -> usize {
-        if let Ok(state) = self.state.lock() {
-            state.blocked_keys.len()
-        } else {
-            0
-        }
+        let keys = BLOCKED_KEYS.get().expect("BLOCKED_KEYS not initialized");
+        keys.iter()
+            .map(|w| w.load(Ordering::Relaxed).count_ones() as usize)
+            .sum()
     }
 
     /// Check if a specific scan code is blocked (for diagnostics/testing)
     #[allow(dead_code)]
     pub fn is_key_blocked(&self, scan_code: u32) -> bool {
-        if let Ok(state) = self.state.lock() {
-            state.is_blocked(scan_code)
-        } else {
-            false
-        }
+        is_blocked(scan_code)
     }
 }
 
@@ -191,6 +171,9 @@ impl Drop for KeyBlocker {
 /// Called by Windows for every keyboard event system-wide.
 /// For blocked keys: forwards the event to the remapping engine, then blocks.
 /// For unblocked keys: passes through to the next hook.
+///
+/// # Safety
+/// This is wait-free — no locks, no allocations, only atomic loads and channel try_send.
 unsafe extern "system" fn keyboard_hook_proc(
     code: i32,
     w_param: WPARAM,
@@ -217,21 +200,12 @@ unsafe extern "system" fn keyboard_hook_proc(
         scan_code
     };
 
-    let Some(state_arc) = BLOCKER_STATE.get() else {
-        return CallNextHookEx(0 as HHOOK, code, w_param, l_param);
-    };
-
-    let Ok(state) = state_arc.lock() else {
-        log::error!("✗ Failed to lock BLOCKER_STATE in hook callback!");
-        return CallNextHookEx(0 as HHOOK, code, w_param, l_param);
-    };
-
-    let is_blocked = state.is_blocked(full_scan_code);
+    let blocked = is_blocked(full_scan_code);
 
     // Forward ALL physical (non-injected) key events to the remapping engine.
     // The hook is the sole event source — Raw Input also sees injected events
     // and cannot distinguish them from physical, causing feedback loops.
-    if let Some(ref sender) = state.event_sender {
+    if let Some(sender) = EVENT_SENDER.get() {
         if let Some(keycode) = scancode_to_keycode(full_scan_code) {
             let is_release = matches!(w_param as u32, WM_KEYUP | WM_SYSKEYUP);
             let event = if is_release {
@@ -244,7 +218,7 @@ unsafe extern "system" fn keyboard_hook_proc(
         }
     }
 
-    if !is_blocked {
+    if !blocked {
         // Not blocked — let Windows process it normally AND we forwarded it
         // Raw Input will also see this, but we'll filter duplicates there
         return CallNextHookEx(0 as HHOOK, code, w_param, l_param);
@@ -269,24 +243,56 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_blocker_state() {
-        let mut state = KeyBlockerState::new();
+    fn test_scan_code_position() {
+        let (idx, bit) = scan_code_position(0);
+        assert_eq!(idx, 0);
+        assert_eq!(bit, 1);
 
-        assert!(!state.is_blocked(0x1E));
+        let (idx, bit) = scan_code_position(63);
+        assert_eq!(idx, 0);
+        assert_eq!(bit, 1u64 << 63);
 
-        state.block_key(0x1E);
-        assert!(state.is_blocked(0x1E));
+        let (idx, bit) = scan_code_position(64);
+        assert_eq!(idx, 1);
+        assert_eq!(bit, 1);
+    }
 
-        state.unblock_key(0x1E);
-        assert!(!state.is_blocked(0x1E));
+    #[test]
+    fn test_is_blocked_without_init() {
+        // Before BLOCKED_KEYS is initialized, is_blocked returns false
+        // Note: OnceLock may already be initialized from other tests
+        // Just verify it doesn't panic
+        let _ = is_blocked(0x1E);
+    }
+
+    #[test]
+    fn test_blocked_keys_bitset() {
+        // Initialize
+        let keys = BLOCKED_KEYS.get_or_init(init_blocked_keys);
+
+        // Nothing blocked initially
+        assert!(!is_blocked(0x1E));
+
+        // Block a key
+        let (idx, bit) = scan_code_position(0x1E);
+        keys[idx].fetch_or(bit, Ordering::Relaxed);
+        assert!(is_blocked(0x1E));
+
+        // Unblock
+        keys[idx].fetch_and(!bit, Ordering::Relaxed);
+        assert!(!is_blocked(0x1E));
     }
 
     #[test]
     fn test_extended_scan_codes() {
-        let mut state = KeyBlockerState::new();
+        let keys = BLOCKED_KEYS.get_or_init(init_blocked_keys);
 
-        state.block_key(0xE01D);
-        assert!(state.is_blocked(0xE01D));
-        assert!(!state.is_blocked(0x1D));
+        let (idx, bit) = scan_code_position(0xE01D);
+        keys[idx].fetch_or(bit, Ordering::Relaxed);
+        assert!(is_blocked(0xE01D));
+        assert!(!is_blocked(0x1D));
+
+        // Cleanup
+        keys[idx].fetch_and(!bit, Ordering::Relaxed);
     }
 }

@@ -20,8 +20,10 @@ use std::sync::Arc;
 ///
 /// Returns `Ok(())` on success, or `Err((exit_code, message))` on failure.
 pub fn handle_profiles(args: ProfilesArgs) -> Result<(), (i32, String)> {
-    // Determine config directory (default: ~/.config/keyrx)
-    let config_dir = {
+    // Determine config directory (KEYRX_CONFIG_DIR > dirs::config_dir)
+    let config_dir = if let Ok(dir) = std::env::var("KEYRX_CONFIG_DIR") {
+        PathBuf::from(dir)
+    } else {
         let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
         path.push("keyrx");
         path

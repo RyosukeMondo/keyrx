@@ -13,7 +13,7 @@ pub struct ProfileService {
 impl ProfileService {
     /// Creates a new profile service.
     pub fn new(config_dir: PathBuf) -> DaemonResult<Self> {
-        let mut manager =
+        let manager =
             ProfileManager::new(config_dir.clone()).map_err(|e| CliError::CommandFailed {
                 command: "config".to_string(),
                 reason: format!("Failed to initialize profile manager: {}", e),

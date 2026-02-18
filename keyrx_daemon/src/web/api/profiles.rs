@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-use crate::config::profile_manager::{ProfileError, ProfileManager, ProfileTemplate};
+use crate::config::profile_manager::{ProfileError, ProfileTemplate};
 use crate::error::DaemonError;
 use crate::web::api::error::ApiError;
 use crate::web::api::validation::{validate_config_source, validate_profile_name};
@@ -100,22 +100,6 @@ where
     }
 }
 
-/// Resolve the profiles directory path via spawn_blocking.
-///
-/// This wraps the blocking `get_config_dir()` call in `spawn_blocking` and
-/// appends the "profiles" subdirectory. All endpoints that need file paths
-/// should use this helper instead of calling `get_config_dir()` directly.
-async fn resolve_profiles_dir() -> Result<std::path::PathBuf, ApiError> {
-    tokio::task::spawn_blocking(|| {
-        crate::cli::config_dir::get_config_dir()
-            .map(|dir| dir.join("profiles"))
-            .map_err(|e| format!("Failed to get config directory: {}", e))
-    })
-    .await
-    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
-    .map_err(ApiError::InternalError)
-}
-
 /// Convert ProfileError to ApiError with proper HTTP status codes
 /// PROF-003: Enhanced error conversion with more detailed error messages.
 fn profile_error_to_api_error(err: ProfileError) -> ApiError {
@@ -165,12 +149,7 @@ async fn list_profiles(
         .await
         .map_err(|e| ConfigError::Profile(e.to_string()))?;
 
-    let profiles_dir = resolve_profiles_dir()
-        .await
-        .map_err(|e| ConfigError::ParseError {
-            path: std::path::PathBuf::from("config"),
-            reason: e.to_string(),
-        })?;
+    let profiles_dir = state.profile_service.profile_manager().profiles_dir();
 
     let profiles: Vec<ProfileResponse> = profile_list
         .iter()
@@ -235,7 +214,7 @@ async fn create_profile(
         .map_err(profile_error_to_api_error)?;
 
     // Build paths from name
-    let profiles_dir = resolve_profiles_dir().await?;
+    let profiles_dir = state.profile_service.profile_manager().profiles_dir();
     let rhai_path_str = profiles_dir
         .join(format!("{}.rhai", profile_info.name))
         .display()
@@ -410,7 +389,7 @@ async fn duplicate_profile(
         .map_err(profile_error_to_api_error)?;
 
     // Build rhai_path from name
-    let profiles_dir = resolve_profiles_dir().await?;
+    let profiles_dir = state.profile_service.profile_manager().profiles_dir();
     let rhai_path_str = profiles_dir
         .join(format!("{}.rhai", profile_info.name))
         .display()
@@ -449,7 +428,7 @@ async fn rename_profile(
         .map_err(profile_error_to_api_error)?;
 
     // Build paths from name
-    let profiles_dir = resolve_profiles_dir().await?;
+    let profiles_dir = state.profile_service.profile_manager().profiles_dir();
     let rhai_path_str = profiles_dir
         .join(format!("{}.rhai", profile_info.name))
         .display()
@@ -544,7 +523,7 @@ struct ValidationResponse {
 }
 
 async fn validate_profile(
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> Result<Json<ValidationResponse>, ApiError> {
     use crate::config::profile_compiler::ProfileCompiler;
@@ -552,15 +531,10 @@ async fn validate_profile(
     // Validate profile name
     validate_profile_name(&name)?;
 
+    let pm = Arc::clone(state.profile_service.profile_manager());
+
     // Wrap all blocking operations in spawn_blocking
     tokio::task::spawn_blocking(move || {
-        // For validation, we still need to access ProfileManager directly to get file paths
-        // This is read-only so it doesn't affect state consistency
-        let config_dir = crate::cli::config_dir::get_config_dir()
-            .map_err(|e| format!("Failed to get config directory: {}", e))?;
-        let pm = ProfileManager::new(config_dir)
-            .map_err(|e| format!("Failed to create ProfileManager: {}", e))?;
-
         // Get profile metadata to find the .rhai file path
         let profile = pm
             .get(&name)

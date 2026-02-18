@@ -389,7 +389,7 @@ async fn test_backward_compatibility_old_registry_with_scope() {
                 "serial": "OLD123",
                 "layout": "ansi_104",
                 "scope": "DeviceSpecific",
-                "last_seen": 1234567890
+                "lastSeen": 1234567890
             }
         }"#,
     )

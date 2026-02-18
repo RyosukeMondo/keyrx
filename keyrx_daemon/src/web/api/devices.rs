@@ -42,20 +42,17 @@ struct DevicesListResponse {
 
 /// GET /api/devices - List all connected devices
 #[cfg(any(target_os = "linux", target_os = "windows"))]
-async fn list_devices() -> Result<Json<DevicesListResponse>, DaemonError> {
+async fn list_devices(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<DevicesListResponse>, DaemonError> {
     use crate::device_manager::enumerate_keyboards;
     use crate::error::ConfigError;
 
-    // Wrap all blocking operations in spawn_blocking to prevent runtime starvation
-    tokio::task::spawn_blocking(move || {
-        // Get registry path
-        let config_dir = get_config_dir()?;
-        let registry_path = config_dir.join("devices.json");
+    let registry_path = state.device_service.registry_path().to_path_buf();
 
-        // Load registry (contains user-set names and scopes)
+    tokio::task::spawn_blocking(move || {
         let registry = DeviceRegistry::load(&registry_path)?;
 
-        // Enumerate actual connected devices
         let keyboards = enumerate_keyboards().map_err(|e| {
             use crate::error::PlatformError;
             PlatformError::DeviceError(e.to_string())
@@ -90,7 +87,9 @@ async fn list_devices() -> Result<Json<DevicesListResponse>, DaemonError> {
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "windows")))]
-async fn list_devices() -> Result<Json<DevicesListResponse>, DaemonError> {
+async fn list_devices(
+    State(_state): State<Arc<AppState>>,
+) -> Result<Json<DevicesListResponse>, DaemonError> {
     Ok(Json(DevicesListResponse {
         devices: Vec::new(),
     }))
@@ -108,20 +107,15 @@ async fn rename_device(
     Path(id): Path<String>,
     Json(payload): Json<RenameDeviceRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    // Validate input parameters
     payload
         .validate()
         .map_err(|e| ApiError::BadRequest(format!("Validation failed: {}", e)))?;
 
-    // Move owned data for closure
     let id_clone = id.clone();
     let name_clone = payload.name.clone();
+    let registry_path = state.device_service.registry_path().to_path_buf();
 
-    // Wrap all blocking operations in spawn_blocking
     tokio::task::spawn_blocking(move || {
-        let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-        let registry_path = config_dir.join("devices.json");
-
         let mut registry = DeviceRegistry::load(&registry_path)
             .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
@@ -166,23 +160,19 @@ struct SetDeviceLayoutRequest {
 }
 
 async fn set_device_layout(
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
     Json(payload): Json<SetDeviceLayoutRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    // Validate input parameters
     payload
         .validate()
         .map_err(|e| ApiError::BadRequest(format!("Validation failed: {}", e)))?;
 
-    // Move owned data for closure
     let id_clone = id.clone();
     let layout_clone = payload.layout.clone();
+    let registry_path = state.device_service.registry_path().to_path_buf();
 
-    // Wrap all blocking operations in spawn_blocking
     tokio::task::spawn_blocking(move || {
-        let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-        let registry_path = config_dir.join("devices.json");
-
         let mut registry = DeviceRegistry::load(&registry_path)
             .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
@@ -210,16 +200,13 @@ struct GetDeviceLayoutResponse {
 }
 
 async fn get_device_layout(
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> Result<Json<GetDeviceLayoutResponse>, ApiError> {
-    // Move owned data for closure
     let id_clone = id.clone();
+    let registry_path = state.device_service.registry_path().to_path_buf();
 
-    // Wrap all blocking operations in spawn_blocking
     tokio::task::spawn_blocking(move || {
-        let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-        let registry_path = config_dir.join("devices.json");
-
         let registry = DeviceRegistry::load(&registry_path)
             .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
@@ -249,26 +236,20 @@ async fn update_device_config(
 ) -> Result<Json<Value>, DaemonError> {
     use crate::error::{ConfigError, WebError};
 
-    // Validate input parameters
     payload.validate().map_err(|e| WebError::InvalidRequest {
         reason: format!("Validation failed: {}", e),
     })?;
 
-    // Move owned data for closure
     let id_clone = id.clone();
     let layout_clone = payload.layout.clone();
+    let registry_path = state.device_service.registry_path().to_path_buf();
 
-    // Wrap all blocking operations in spawn_blocking
     tokio::task::spawn_blocking(move || {
-        let config_dir = get_config_dir()?;
-        let registry_path = config_dir.join("devices.json");
-
         let mut registry = DeviceRegistry::load(&registry_path)?;
 
         // Auto-register device if it doesn't exist
         if registry.get(&id_clone).is_none() {
             log::info!("Auto-registering device: {}", id_clone);
-            // Sanitize device ID for use as name: replace invalid chars with dash
             let sanitized_name = id_clone
                 .chars()
                 .map(|c| {
@@ -281,7 +262,7 @@ async fn update_device_config(
                 .collect::<String>();
             let entry = DeviceEntry::new(
                 id_clone.clone(),
-                sanitized_name, // Use sanitized ID as default name
+                sanitized_name,
                 None,
                 None,
                 std::time::SystemTime::now()
@@ -295,7 +276,6 @@ async fn update_device_config(
             })?;
         }
 
-        // Update layout if provided
         if let Some(layout) = &layout_clone {
             registry.set_layout(&id_clone, layout).map_err(|e| {
                 use crate::error::RegistryError;
@@ -331,15 +311,14 @@ async fn update_device_config(
 }
 
 /// DELETE /api/devices/:id - Forget device
-async fn forget_device(Path(id): Path<String>) -> Result<Json<Value>, ApiError> {
-    // Move owned data for closure
+async fn forget_device(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<Json<Value>, ApiError> {
     let id_clone = id.clone();
+    let registry_path = state.device_service.registry_path().to_path_buf();
 
-    // Wrap all blocking operations in spawn_blocking
     tokio::task::spawn_blocking(move || {
-        let config_dir = get_config_dir().map_err(|e| ApiError::InternalError(e.to_string()))?;
-        let registry_path = config_dir.join("devices.json");
-
         let mut registry = DeviceRegistry::load(&registry_path)
             .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
@@ -356,16 +335,4 @@ async fn forget_device(Path(id): Path<String>) -> Result<Json<Value>, ApiError> 
     })
     .await
     .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
-}
-
-/// Get config directory path (cross-platform)
-fn get_config_dir() -> Result<std::path::PathBuf, DaemonError> {
-    use crate::error::ConfigError;
-
-    let config_dir = dirs::config_dir().ok_or_else(|| ConfigError::ParseError {
-        path: std::path::PathBuf::from("~"),
-        reason: "Cannot determine config directory".to_string(),
-    })?;
-
-    Ok(config_dir.join("keyrx"))
 }

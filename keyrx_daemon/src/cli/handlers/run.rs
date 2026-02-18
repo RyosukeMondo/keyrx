@@ -98,7 +98,7 @@ fn resolve_config_path(config: Option<PathBuf>) -> Result<PathBuf, (i32, String)
             // Try to initialize ProfileManager and get/create default profile
             use crate::config::{ProfileManager, ProfileTemplate};
             match ProfileManager::new(config_dir.clone()) {
-                Ok(mut manager) => {
+                Ok(manager) => {
                     // Check if we have an active profile
                     match manager.get_active() {
                         Ok(Some(active)) => {

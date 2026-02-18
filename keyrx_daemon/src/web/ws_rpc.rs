@@ -14,12 +14,14 @@ use axum::{
     Router,
 };
 use serde_json::Value;
-use std::collections::VecDeque;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::time::{interval, Duration};
 
 use crate::web::rpc_types::{ClientMessage, RpcError, ServerMessage};
 use crate::web::AppState;
+
+/// Max consecutive lag events before disconnecting a slow client
+const MAX_LAG_EVENTS: u32 = 3;
 
 pub fn create_router(state: Arc<AppState>) -> Router {
     Router::new()
@@ -55,68 +57,77 @@ async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
         timestamp,
     };
 
-    let connected_json = match serde_json::to_string(&connected) {
-        Ok(json) => json,
-        Err(e) => {
-            log::error!("Failed to serialize Connected message: {}", e);
-            return;
-        }
-    };
-
-    if socket.send(Message::Text(connected_json)).await.is_err() {
-        log::warn!("Failed to send Connected handshake");
+    if let Err(e) = send_message(&mut socket, &connected).await {
+        log::warn!("Failed to send Connected handshake: {}", e);
         return;
     }
-
-    // Queue for outgoing messages
-    let outgoing_queue = Arc::new(Mutex::new(VecDeque::<ServerMessage>::new()));
 
     // Subscribe to broadcast events
     let mut event_rx = state.event_broadcaster.subscribe();
 
+    // Heartbeat and timeout tracking
+    let mut heartbeat_interval = interval(Duration::from_secs(15));
+    let mut timeout_check_interval = interval(Duration::from_secs(5));
+    let mut last_pong_time = std::time::Instant::now();
+    let mut lag_count = 0u32;
+
     // Main message processing loop
     loop {
-        // Try to send any queued messages first
-        let next_message = {
-            let mut queue = outgoing_queue.lock().await;
-            queue.pop_front()
-        };
-
-        if let Some(response) = next_message {
-            let response_json = match serde_json::to_string(&response) {
-                Ok(json) => json,
-                Err(e) => {
-                    log::error!("Failed to serialize response: {}", e);
-                    continue;
-                }
-            };
-
-            if socket.send(Message::Text(response_json)).await.is_err() {
-                log::info!("WebSocket RPC client disconnected (send failed)");
-                break;
-            }
-            continue; // Check for more messages before blocking on recv
-        }
-
-        // No queued messages, wait for events or incoming messages
         tokio::select! {
-            // Handle broadcast events
-            Ok(event) = event_rx.recv() => {
-                log::debug!("Received broadcast event for client {}", client_id);
+            // Handle broadcast events (full Result match for Lagged/Closed)
+            event_result = event_rx.recv() => {
+                match event_result {
+                    Ok(event) => {
+                        lag_count = 0;
+                        // Check if this is an Event message and if client is subscribed
+                        let should_send = match &event {
+                            ServerMessage::Event { ref channel, .. } => {
+                                state.subscription_manager.is_subscribed(client_id, channel).await
+                            }
+                            _ => true,
+                        };
 
-                // Check if this is an Event message and if client is subscribed
-                if let ServerMessage::Event { ref channel, .. } = event {
-                    if state.subscription_manager.is_subscribed(client_id, channel).await {
-                        log::debug!("Forwarding event on channel '{}' to client {}", channel, client_id);
-                        let mut queue = outgoing_queue.lock().await;
-                        queue.push_back(event);
-                    } else {
-                        log::debug!("Client {} not subscribed to channel '{}', skipping event", client_id, channel);
+                        if should_send
+                            && send_message(&mut socket, &event).await.is_err()
+                        {
+                            log::info!("WebSocket RPC client {} disconnected (send failed)", client_id);
+                            break;
+                        }
                     }
-                } else {
-                    // For non-Event messages, queue them directly
-                    let mut queue = outgoing_queue.lock().await;
-                    queue.push_back(event);
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                        lag_count += 1;
+                        log::warn!(
+                            "WebSocket RPC client {} lagged (skipped {} messages, lag {}/{})",
+                            client_id, skipped, lag_count, MAX_LAG_EVENTS
+                        );
+                        if lag_count >= MAX_LAG_EVENTS {
+                            log::error!(
+                                "WebSocket RPC client {} disconnected due to excessive lag",
+                                client_id
+                            );
+                            break;
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                        log::info!("WebSocket RPC client {} event channel closed", client_id);
+                        break;
+                    }
+                }
+            }
+
+            // Send ping frames as heartbeat
+            _ = heartbeat_interval.tick() => {
+                if socket.send(Message::Ping(vec![])).await.is_err() {
+                    log::info!("WebSocket RPC client {} disconnected (ping failed)", client_id);
+                    break;
+                }
+            }
+
+            // Check for timeout (30 seconds since last pong)
+            _ = timeout_check_interval.tick() => {
+                if last_pong_time.elapsed() > Duration::from_secs(30) {
+                    log::warn!("WebSocket RPC client {} timeout (no pong)", client_id);
+                    break;
                 }
             }
 
@@ -130,33 +141,45 @@ async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
                         Ok(msg) => msg,
                         Err(e) => {
                             log::warn!("Failed to parse message: {}", e);
-                            // Send parse error response (can't correlate to request ID)
                             let error_response = ServerMessage::Response {
                                 id: String::new(),
                                 result: None,
                                 error: Some(RpcError::parse_error(format!("Invalid JSON: {}", e))),
                             };
-                            let mut queue = outgoing_queue.lock().await;
-                            queue.push_back(error_response);
+                            if send_message(&mut socket, &error_response).await.is_err() {
+                                break;
+                            }
                             continue;
                         }
                     };
 
-                    // Process message and queue response
-                    process_client_message(
+                    // Process message and send response directly
+                    let response = process_client_message(
                         client_msg,
                         client_id,
-                        Arc::clone(&outgoing_queue),
                         Arc::clone(&state),
                     )
                     .await;
+                    if send_message(&mut socket, &response).await.is_err() {
+                        log::info!("WebSocket RPC client {} disconnected (send failed)", client_id);
+                        break;
+                    }
+                }
+                Some(Ok(Message::Pong(_))) => {
+                    last_pong_time = std::time::Instant::now();
+                }
+                Some(Ok(Message::Ping(data))) => {
+                    if socket.send(Message::Pong(data)).await.is_err() {
+                        break;
+                    }
+                    last_pong_time = std::time::Instant::now();
                 }
                 Some(Ok(Message::Close(_))) => {
                     log::info!("WebSocket RPC client closed connection");
                     break;
                 }
                 Some(Ok(_)) => {
-                    // Ignore binary/ping/pong messages
+                    // Ignore binary messages
                 }
                 Some(Err(e)) => {
                     log::warn!("WebSocket error: {}", e);
@@ -175,14 +198,22 @@ async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
     log::info!("WebSocket RPC connection {} closed", client_id);
 }
 
-/// Process a client message and queue the appropriate response
+/// Serialize and send a ServerMessage over WebSocket.
+async fn send_message(socket: &mut WebSocket, msg: &ServerMessage) -> Result<(), axum::Error> {
+    let json = serde_json::to_string(msg).map_err(|e| {
+        log::error!("Failed to serialize message: {}", e);
+        axum::Error::new(e)
+    })?;
+    socket.send(Message::Text(json)).await
+}
+
+/// Process a client message and return the appropriate response
 async fn process_client_message(
     msg: ClientMessage,
     client_id: usize,
-    outgoing_queue: Arc<Mutex<VecDeque<ServerMessage>>>,
     state: Arc<AppState>,
-) {
-    let response = match msg {
+) -> ServerMessage {
+    match msg {
         ClientMessage::Query { id, method, params } => {
             handle_query(id, method, params, &state).await
         }
@@ -195,11 +226,7 @@ async fn process_client_message(
         ClientMessage::Unsubscribe { id, channel } => {
             handle_unsubscribe(id, channel, client_id, &state).await
         }
-    };
-
-    // Queue the response
-    let mut queue = outgoing_queue.lock().await;
-    queue.push_back(response);
+    }
 }
 
 /// Handle query request (read-only operations)

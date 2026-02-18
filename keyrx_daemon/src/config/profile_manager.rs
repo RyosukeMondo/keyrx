@@ -9,6 +9,9 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Instant, SystemTime};
 
+/// Type alias for the profiles map protected by RwLock.
+type ProfilesMap = RwLock<HashMap<String, ProfileMetadata>>;
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -25,7 +28,7 @@ const ACTIVE_PROFILE_FILE: &str = ".active";
 pub struct ProfileManager {
     config_dir: PathBuf,
     active_profile: Arc<RwLock<Option<String>>>,
-    profiles: HashMap<String, ProfileMetadata>,
+    profiles: ProfilesMap,
     activation_lock: Arc<Mutex<()>>,
     compiler: ProfileCompiler,
 }
@@ -124,7 +127,7 @@ pub enum ProfileError {
 
 impl ProfileManager {
     /// Path to the profiles subdirectory.
-    fn profiles_dir(&self) -> PathBuf {
+    pub fn profiles_dir(&self) -> PathBuf {
         self.config_dir.join("profiles")
     }
 
@@ -151,10 +154,10 @@ impl ProfileManager {
             fs::create_dir_all(&profiles_dir)?;
         }
 
-        let mut manager = Self {
+        let manager = Self {
             config_dir,
             active_profile: Arc::new(RwLock::new(None)),
-            profiles: HashMap::new(),
+            profiles: RwLock::new(HashMap::new()),
             activation_lock: Arc::new(Mutex::new(())),
             compiler: ProfileCompiler::new(),
         };
@@ -173,13 +176,16 @@ impl ProfileManager {
     }
 
     /// Scan the profiles directory for .rhai files.
-    pub fn scan_profiles(&mut self) -> Result<(), ProfileError> {
+    pub fn scan_profiles(&self) -> Result<(), ProfileError> {
         let profiles_dir = self.profiles_dir();
         if !profiles_dir.exists() {
             return Ok(());
         }
 
-        self.profiles.clear();
+        let mut profiles = self.profiles.write().map_err(|e| {
+            ProfileError::LockError(format!("Failed to acquire profiles write lock: {}", e))
+        })?;
+        profiles.clear();
 
         for entry in fs::read_dir(&profiles_dir)? {
             let entry = entry?;
@@ -188,7 +194,7 @@ impl ProfileManager {
             if path.extension().and_then(|s| s.to_str()) == Some("rhai") {
                 if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
                     let metadata = self.load_profile_metadata(name)?;
-                    self.profiles.insert(name.to_string(), metadata);
+                    profiles.insert(name.to_string(), metadata);
                 }
             }
         }
@@ -272,18 +278,22 @@ impl ProfileManager {
     /// Create a new profile from a template.
     /// PROF-005: Enhanced duplicate name checking.
     pub fn create(
-        &mut self,
+        &self,
         name: &str,
         template: ProfileTemplate,
     ) -> Result<ProfileMetadata, ProfileError> {
         Self::validate_name(name)?;
 
-        if self.profiles.len() >= MAX_PROFILES {
+        let mut profiles = self.profiles.write().map_err(|e| {
+            ProfileError::LockError(format!("Failed to acquire profiles write lock: {}", e))
+        })?;
+
+        if profiles.len() >= MAX_PROFILES {
             return Err(ProfileError::ProfileLimitExceeded);
         }
 
         // PROF-005: Check for duplicate in memory first
-        if self.profiles.contains_key(name) {
+        if profiles.contains_key(name) {
             return Err(ProfileError::AlreadyExists(name.to_string()));
         }
 
@@ -305,7 +315,7 @@ impl ProfileManager {
         fs::write(&rhai_path, content)?;
 
         let metadata = self.load_profile_metadata(name)?;
-        self.profiles.insert(name.to_string(), metadata.clone());
+        profiles.insert(name.to_string(), metadata.clone());
 
         Ok(metadata)
     }
@@ -324,7 +334,7 @@ impl ProfileManager {
     }
 
     /// Activate a profile with hot-reload.
-    pub fn activate(&mut self, name: &str) -> Result<ActivationResult, ProfileError> {
+    pub fn activate(&self, name: &str) -> Result<ActivationResult, ProfileError> {
         // Acquire activation lock to serialize concurrent activations
         let _lock = self.activation_lock.lock().map_err(|e| {
             ProfileError::LockError(format!("Failed to acquire activation lock: {}", e))
@@ -333,11 +343,14 @@ impl ProfileManager {
         let start = Instant::now();
 
         // Get profile metadata
-        let profile = self
-            .profiles
+        let profiles = self.profiles.read().map_err(|e| {
+            ProfileError::LockError(format!("Failed to acquire profiles read lock: {}", e))
+        })?;
+        let profile = profiles
             .get(name)
             .ok_or_else(|| ProfileError::NotFound(name.to_string()))?
             .clone();
+        drop(profiles);
 
         // Compile and reload
         let (compile_time, reload_time) = match self.compile_and_reload(name, &profile) {
@@ -427,12 +440,16 @@ impl ProfileManager {
     }
 
     /// Delete a profile.
-    pub fn delete(&mut self, name: &str) -> Result<(), ProfileError> {
-        let profile = self
-            .profiles
-            .get(name)
-            .ok_or_else(|| ProfileError::NotFound(name.to_string()))?
-            .clone();
+    pub fn delete(&self, name: &str) -> Result<(), ProfileError> {
+        let profile = {
+            let profiles = self.profiles.read().map_err(|e| {
+                ProfileError::LockError(format!("Failed to acquire profiles read lock: {}", e))
+            })?;
+            profiles
+                .get(name)
+                .ok_or_else(|| ProfileError::NotFound(name.to_string()))?
+                .clone()
+        };
 
         // Check if this is the active profile
         let active = self
@@ -456,21 +473,29 @@ impl ProfileManager {
             fs::remove_file(&profile.krx_path)?;
         }
 
-        self.profiles.remove(name);
+        self.profiles
+            .write()
+            .map_err(|e| {
+                ProfileError::LockError(format!("Failed to acquire profiles write lock: {}", e))
+            })?
+            .remove(name);
 
         Ok(())
     }
 
     /// Duplicate a profile.
-    pub fn duplicate(&mut self, src: &str, dest: &str) -> Result<ProfileMetadata, ProfileError> {
+    pub fn duplicate(&self, src: &str, dest: &str) -> Result<ProfileMetadata, ProfileError> {
         Self::validate_name(dest)?;
 
-        if self.profiles.len() >= MAX_PROFILES {
+        let mut profiles = self.profiles.write().map_err(|e| {
+            ProfileError::LockError(format!("Failed to acquire profiles write lock: {}", e))
+        })?;
+
+        if profiles.len() >= MAX_PROFILES {
             return Err(ProfileError::ProfileLimitExceeded);
         }
 
-        let src_profile = self
-            .profiles
+        let src_profile = profiles
             .get(src)
             .ok_or_else(|| ProfileError::NotFound(src.to_string()))?
             .clone();
@@ -483,7 +508,7 @@ impl ProfileManager {
         fs::copy(&src_profile.rhai_path, &dest_rhai)?;
 
         let metadata = self.load_profile_metadata(dest)?;
-        self.profiles.insert(dest.to_string(), metadata.clone());
+        profiles.insert(dest.to_string(), metadata.clone());
 
         Ok(metadata)
     }
@@ -499,17 +524,16 @@ impl ProfileManager {
     /// * `ProfileError::InvalidName` - If the new name is invalid
     /// * `ProfileError::AlreadyExists` - If a profile with the new name already exists
     /// * `ProfileError::IoError` - If file operations fail
-    pub fn rename(
-        &mut self,
-        old_name: &str,
-        new_name: &str,
-    ) -> Result<ProfileMetadata, ProfileError> {
+    pub fn rename(&self, old_name: &str, new_name: &str) -> Result<ProfileMetadata, ProfileError> {
         // Validate new name
         Self::validate_name(new_name)?;
 
+        let mut profiles = self.profiles.write().map_err(|e| {
+            ProfileError::LockError(format!("Failed to acquire profiles write lock: {}", e))
+        })?;
+
         // Check if source profile exists
-        let old_profile = self
-            .profiles
+        let old_profile = profiles
             .get(old_name)
             .ok_or_else(|| ProfileError::NotFound(old_name.to_string()))?
             .clone();
@@ -541,18 +565,17 @@ impl ProfileManager {
         }
 
         // Remove old entry and add new entry
-        self.profiles.remove(old_name);
+        profiles.remove(old_name);
         let new_metadata = self.load_profile_metadata(new_name)?;
-        self.profiles
-            .insert(new_name.to_string(), new_metadata.clone());
+        profiles.insert(new_name.to_string(), new_metadata.clone());
 
         Ok(new_metadata)
     }
 
     /// Export a profile to a file.
     pub fn export(&self, name: &str, dest: &Path) -> Result<(), ProfileError> {
-        let profile = self
-            .profiles
+        let profiles = self.profiles.read().expect("profiles RwLock poisoned");
+        let profile = profiles
             .get(name)
             .ok_or_else(|| ProfileError::NotFound(name.to_string()))?;
 
@@ -561,10 +584,14 @@ impl ProfileManager {
     }
 
     /// Import a profile from a file.
-    pub fn import(&mut self, src: &Path, name: &str) -> Result<ProfileMetadata, ProfileError> {
+    pub fn import(&self, src: &Path, name: &str) -> Result<ProfileMetadata, ProfileError> {
         Self::validate_name(name)?;
 
-        if self.profiles.len() >= MAX_PROFILES {
+        let mut profiles = self.profiles.write().map_err(|e| {
+            ProfileError::LockError(format!("Failed to acquire profiles write lock: {}", e))
+        })?;
+
+        if profiles.len() >= MAX_PROFILES {
             return Err(ProfileError::ProfileLimitExceeded);
         }
 
@@ -576,14 +603,19 @@ impl ProfileManager {
         fs::copy(src, &dest_rhai)?;
 
         let metadata = self.load_profile_metadata(name)?;
-        self.profiles.insert(name.to_string(), metadata.clone());
+        profiles.insert(name.to_string(), metadata.clone());
 
         Ok(metadata)
     }
 
     /// List all profiles.
-    pub fn list(&self) -> Vec<&ProfileMetadata> {
-        self.profiles.values().collect()
+    pub fn list(&self) -> Vec<ProfileMetadata> {
+        self.profiles
+            .read()
+            .expect("profiles RwLock poisoned")
+            .values()
+            .cloned()
+            .collect()
     }
 
     /// Get the currently active profile name.
@@ -723,7 +755,12 @@ impl ProfileManager {
                 };
 
                 // Verify the profile still exists
-                if self.profiles.contains_key(&name) {
+                if self
+                    .profiles
+                    .read()
+                    .expect("profiles RwLock poisoned")
+                    .contains_key(&name)
+                {
                     log::info!("Restored active profile '{}' from {:?}", name, active_file);
                     Some(name)
                 } else {
@@ -758,8 +795,12 @@ impl ProfileManager {
     }
 
     /// Get profile metadata by name.
-    pub fn get(&self, name: &str) -> Option<&ProfileMetadata> {
-        self.profiles.get(name)
+    pub fn get(&self, name: &str) -> Option<ProfileMetadata> {
+        self.profiles
+            .read()
+            .expect("profiles RwLock poisoned")
+            .get(name)
+            .cloned()
     }
 
     /// Get the configuration content (.rhai file) for a profile.
@@ -790,8 +831,8 @@ impl ProfileManager {
     /// # }
     /// ```
     pub fn get_config(&self, name: &str) -> Result<String, ProfileError> {
-        let profile = self
-            .profiles
+        let profiles = self.profiles.read().expect("profiles RwLock poisoned");
+        let profile = profiles
             .get(name)
             .ok_or_else(|| ProfileError::NotFound(name.to_string()))?;
 
@@ -819,7 +860,7 @@ impl ProfileManager {
     /// # use std::path::PathBuf;
     /// # use keyrx_daemon::config::ProfileManager;
     /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut manager = ProfileManager::new(PathBuf::from("./config"))?;
+    /// let manager = ProfileManager::new(PathBuf::from("./config"))?;
     /// let new_config = r#"
     /// layer("base", #{
     ///     "KEY_A": simple("KEY_B"),
@@ -829,12 +870,14 @@ impl ProfileManager {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn set_config(&mut self, name: &str, content: &str) -> Result<(), ProfileError> {
-        let profile = self
-            .profiles
-            .get(name)
-            .ok_or_else(|| ProfileError::NotFound(name.to_string()))?
-            .clone();
+    pub fn set_config(&self, name: &str, content: &str) -> Result<(), ProfileError> {
+        let profile = {
+            let profiles = self.profiles.read().expect("profiles RwLock poisoned");
+            profiles
+                .get(name)
+                .ok_or_else(|| ProfileError::NotFound(name.to_string()))?
+                .clone()
+        };
 
         // Write to a temporary file first (atomic write pattern)
         let temp_path = profile.rhai_path.with_extension("rhai.tmp");
@@ -859,14 +902,17 @@ impl ProfileManager {
 
         // Update metadata (modified time will have changed)
         let updated_metadata = self.load_profile_metadata(name)?;
-        self.profiles.insert(name.to_string(), updated_metadata);
+        self.profiles
+            .write()
+            .expect("profiles RwLock poisoned")
+            .insert(name.to_string(), updated_metadata);
 
         Ok(())
     }
 
     // Test-only methods (available for integration tests)
     #[doc(hidden)]
-    pub fn set_active_for_testing(&mut self, name: String) {
+    pub fn set_active_for_testing(&self, name: String) {
         // SAFETY: Test-only helper method - RwLock cannot be poisoned in test context
         #[allow(clippy::expect_used)]
         {

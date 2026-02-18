@@ -446,10 +446,7 @@ pub async fn get_profile_config(
 }
 
 /// Set profile configuration source code
-pub async fn set_profile_config(
-    state: &AppState,
-    params: Value,
-) -> Result<Value, RpcError> {
+pub async fn set_profile_config(state: &AppState, params: Value) -> Result<Value, RpcError> {
     let params: SetProfileConfigParams = serde_json::from_value(params)
         .map_err(|e| RpcError::invalid_params(format!("Invalid parameters: {}", e)))?;
 

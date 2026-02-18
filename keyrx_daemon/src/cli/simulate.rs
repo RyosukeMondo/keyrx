@@ -164,6 +164,7 @@ fn print_json_output(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use tempfile::TempDir;
 
     fn create_test_environment() -> (TempDir, PathBuf) {
@@ -173,7 +174,6 @@ mod tests {
         std::fs::create_dir_all(&profiles_dir)
             .expect("Failed to create profiles directory for test");
 
-        // Create a test KRX file
         let krx_path = profiles_dir.join("default.krx");
         std::fs::write(&krx_path, b"test krx data").expect("Failed to write test KRX file");
 
@@ -181,8 +181,10 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_resolve_krx_path_with_profile() {
         let (_temp_dir, config_dir) = create_test_environment();
+        let old = std::env::var("KEYRX_CONFIG_DIR").ok();
         std::env::set_var("KEYRX_CONFIG_DIR", &config_dir);
 
         let result = resolve_krx_path(Some("default"));
@@ -190,24 +192,43 @@ mod tests {
         assert!(result
             .expect("resolve_krx_path should succeed")
             .ends_with("default.krx"));
+
+        match old {
+            Some(v) => std::env::set_var("KEYRX_CONFIG_DIR", v),
+            None => std::env::remove_var("KEYRX_CONFIG_DIR"),
+        }
     }
 
     #[test]
+    #[serial]
     fn test_resolve_krx_path_not_found() {
         let (_temp_dir, config_dir) = create_test_environment();
+        let old = std::env::var("KEYRX_CONFIG_DIR").ok();
         std::env::set_var("KEYRX_CONFIG_DIR", &config_dir);
 
         let result = resolve_krx_path(Some("nonexistent"));
         assert!(result.is_err());
+
+        match old {
+            Some(v) => std::env::set_var("KEYRX_CONFIG_DIR", v),
+            None => std::env::remove_var("KEYRX_CONFIG_DIR"),
+        }
     }
 
     #[test]
+    #[serial]
     fn test_get_config_dir_from_env() {
         let temp_dir = TempDir::new().expect("Failed to create temp directory for test");
+        let old = std::env::var("KEYRX_CONFIG_DIR").ok();
         std::env::set_var("KEYRX_CONFIG_DIR", temp_dir.path());
 
         let result = get_config_dir().expect("get_config_dir should succeed");
         assert_eq!(result, temp_dir.path());
+
+        match old {
+            Some(v) => std::env::set_var("KEYRX_CONFIG_DIR", v),
+            None => std::env::remove_var("KEYRX_CONFIG_DIR"),
+        }
     }
 
     #[test]

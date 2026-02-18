@@ -12,7 +12,7 @@ fn setup_test_manager() -> (TempDir, ProfileManager) {
 
 #[test]
 fn test_create_blank_profile() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let result = manager.create("test-profile", ProfileTemplate::Blank);
     assert!(result.is_ok());
@@ -24,7 +24,7 @@ fn test_create_blank_profile() {
 
 #[test]
 fn test_create_simple_remap_profile() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let result = manager.create("simple-remap-test", ProfileTemplate::SimpleRemap);
     assert!(result.is_ok());
@@ -45,7 +45,7 @@ fn test_profile_name_validation() {
 
 #[test]
 fn test_duplicate_profile() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("original", ProfileTemplate::Blank).unwrap();
     let result = manager.duplicate("original", "copy");
@@ -56,7 +56,7 @@ fn test_duplicate_profile() {
 
 #[test]
 fn test_delete_profile() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("to-delete", ProfileTemplate::Blank).unwrap();
     assert!(manager.get("to-delete").is_some());
@@ -67,7 +67,7 @@ fn test_delete_profile() {
 
 #[test]
 fn test_list_profiles() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("profile1", ProfileTemplate::Blank).unwrap();
     manager
@@ -80,7 +80,7 @@ fn test_list_profiles() {
 
 #[test]
 fn test_profile_limit() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create MAX_PROFILES profiles (100)
     for i in 0..100 {
@@ -96,7 +96,7 @@ fn test_profile_limit() {
 
 #[test]
 fn test_export_import() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("original", ProfileTemplate::Blank).unwrap();
 
@@ -111,7 +111,7 @@ fn test_export_import() {
 
 #[test]
 fn test_get_active_profile() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     assert!(manager.get_active().unwrap().is_none());
 
@@ -137,7 +137,7 @@ fn test_scan_profiles() {
 
 #[test]
 fn test_profile_already_exists() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("existing", ProfileTemplate::Blank).unwrap();
     let result = manager.create("existing", ProfileTemplate::Blank);
@@ -147,7 +147,7 @@ fn test_profile_already_exists() {
 
 #[test]
 fn test_duplicate_nonexistent_profile() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let result = manager.duplicate("nonexistent", "copy");
     assert!(matches!(result, Err(ProfileError::NotFound(_))));
@@ -155,7 +155,7 @@ fn test_duplicate_nonexistent_profile() {
 
 #[test]
 fn test_duplicate_to_existing_name() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("original", ProfileTemplate::Blank).unwrap();
     manager.create("existing", ProfileTemplate::Blank).unwrap();
@@ -166,7 +166,7 @@ fn test_duplicate_to_existing_name() {
 
 #[test]
 fn test_delete_nonexistent_profile() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let result = manager.delete("nonexistent");
     assert!(matches!(result, Err(ProfileError::NotFound(_))));
@@ -174,7 +174,7 @@ fn test_delete_nonexistent_profile() {
 
 #[test]
 fn test_delete_active_profile() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager
         .create("active-profile", ProfileTemplate::Blank)
@@ -208,7 +208,7 @@ fn test_export_nonexistent_profile() {
 
 #[test]
 fn test_import_to_existing_name() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("existing", ProfileTemplate::Blank).unwrap();
 
@@ -221,7 +221,7 @@ fn test_import_to_existing_name() {
 
 #[test]
 fn test_import_invalid_name() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let import_path = _temp.path().join("import.rhai");
     fs::write(&import_path, "layer(\"base\", #{});").unwrap();
@@ -239,7 +239,7 @@ fn test_get_nonexistent_profile() {
 
 #[test]
 fn test_layer_count_heuristic() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create profile with multiple layers
     let multi_layer = r#"
@@ -299,7 +299,7 @@ fn test_validate_name_edge_cases() {
 
 #[test]
 fn test_profile_limit_with_duplicate() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create MAX_PROFILES - 1 profiles
     for i in 0..99 {
@@ -318,7 +318,7 @@ fn test_profile_limit_with_duplicate() {
 
 #[test]
 fn test_profile_limit_with_import() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create MAX_PROFILES profiles
     for i in 0..100 {
@@ -337,7 +337,7 @@ fn test_profile_limit_with_import() {
 
 #[test]
 fn test_scan_after_manual_file_creation() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create profile through manager
     manager.create("profile1", ProfileTemplate::Blank).unwrap();
@@ -374,7 +374,7 @@ fn test_scan_ignores_non_rhai_files() {
 
 #[test]
 fn test_metadata_preserves_name() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("test-name", ProfileTemplate::Blank).unwrap();
 
@@ -384,7 +384,7 @@ fn test_metadata_preserves_name() {
 
 #[test]
 fn test_metadata_paths() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("test", ProfileTemplate::Blank).unwrap();
 
@@ -395,7 +395,7 @@ fn test_metadata_paths() {
 
 #[test]
 fn test_rescan_after_delete() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("profile1", ProfileTemplate::Blank).unwrap();
     manager.create("profile2", ProfileTemplate::Blank).unwrap();
@@ -456,12 +456,12 @@ fn test_new_with_existing_config_dir() {
 
 #[test]
 fn test_delete_removes_both_files() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("test", ProfileTemplate::Blank).unwrap();
 
     // Get paths before deletion
-    let profile = manager.get("test").unwrap().clone();
+    let profile = manager.get("test").unwrap();
     let rhai_path = profile.rhai_path.clone();
     let krx_path = profile.krx_path.clone();
 
@@ -480,11 +480,11 @@ fn test_delete_removes_both_files() {
 
 #[test]
 fn test_delete_with_missing_krx() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("test", ProfileTemplate::Blank).unwrap();
 
-    let profile = manager.get("test").unwrap().clone();
+    let profile = manager.get("test").unwrap();
     assert!(profile.rhai_path.exists());
     // .krx doesn't exist yet
 
@@ -534,7 +534,7 @@ fn test_count_layers_empty_file() {
 
 #[test]
 fn test_list_returns_all_profiles() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("profile1", ProfileTemplate::Blank).unwrap();
     manager
@@ -563,7 +563,7 @@ fn test_scan_empty_directory() {
 
 #[test]
 fn test_duplicate_preserves_content() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager
         .create("original", ProfileTemplate::VimNavigation)
@@ -585,7 +585,7 @@ fn test_duplicate_preserves_content() {
 
 #[test]
 fn test_activate_success() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create a valid profile with proper Rhai syntax
     manager.create("test", ProfileTemplate::Blank).unwrap();
@@ -614,7 +614,7 @@ fn test_activate_success() {
 
 #[test]
 fn test_activate_nonexistent_profile() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let result = manager.activate("nonexistent");
     assert!(matches!(result, Err(ProfileError::NotFound(_))));
@@ -625,7 +625,7 @@ fn test_activate_nonexistent_profile() {
 
 #[test]
 fn test_activate_compilation_error() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create profile with invalid Rhai syntax
     manager.create("invalid", ProfileTemplate::Blank).unwrap();
@@ -653,7 +653,7 @@ fn test_activate_compilation_error() {
 
 #[test]
 fn test_activate_preserves_previous_active_on_error() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create and activate first valid profile
     manager.create("valid", ProfileTemplate::Blank).unwrap();
@@ -686,7 +686,7 @@ fn test_activate_preserves_previous_active_on_error() {
 
 #[test]
 fn test_activate_replaces_previous_active() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create and activate first profile
     manager.create("profile1", ProfileTemplate::Blank).unwrap();
@@ -709,7 +709,7 @@ fn test_activate_replaces_previous_active() {
 
 #[test]
 fn test_activate_creates_krx_file() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("test", ProfileTemplate::Blank).unwrap();
 
@@ -733,7 +733,7 @@ fn test_activate_creates_krx_file() {
 
 #[test]
 fn test_activate_timing_metrics() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("test", ProfileTemplate::Blank).unwrap();
 
@@ -754,7 +754,7 @@ fn test_activate_timing_metrics() {
 
 #[test]
 fn test_concurrent_activation_serialized() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("profile1", ProfileTemplate::Blank).unwrap();
     manager.create("profile2", ProfileTemplate::Blank).unwrap();
@@ -774,7 +774,7 @@ fn test_concurrent_activation_serialized() {
 
 #[test]
 fn test_delete_clears_active_profile() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("test", ProfileTemplate::Blank).unwrap();
     let result = manager.activate("test");
@@ -796,7 +796,7 @@ fn test_delete_clears_active_profile() {
 
 #[test]
 fn test_activate_after_delete() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     manager.create("profile1", ProfileTemplate::Blank).unwrap();
     manager.create("profile2", ProfileTemplate::Blank).unwrap();

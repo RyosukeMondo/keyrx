@@ -29,7 +29,7 @@ fn setup_test_manager() -> (TempDir, ProfileManager) {
 
 #[test]
 fn test_prof001_concurrent_activation_serialized() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create two profiles
     manager
@@ -44,18 +44,10 @@ fn test_prof001_concurrent_activation_serialized() {
 
     // Spawn two threads trying to activate different profiles concurrently
     let manager1 = Arc::clone(&manager_arc);
-    let handle1 = thread::spawn(move || {
-        // SAFETY: We need &mut for activate, but ProfileManager uses internal Mutex
-        let manager_ptr = Arc::as_ptr(&manager1) as *mut ProfileManager;
-        unsafe { (*manager_ptr).activate("profile1") }
-    });
+    let handle1 = thread::spawn(move || manager1.activate("profile1"));
 
     let manager2 = Arc::clone(&manager_arc);
-    let handle2 = thread::spawn(move || {
-        // SAFETY: We need &mut for activate, but ProfileManager uses internal Mutex
-        let manager_ptr = Arc::as_ptr(&manager2) as *mut ProfileManager;
-        unsafe { (*manager_ptr).activate("profile2") }
-    });
+    let handle2 = thread::spawn(move || manager2.activate("profile2"));
 
     // Wait for both threads
     let result1 = handle1.join().expect("Thread 1 panicked");
@@ -88,7 +80,7 @@ fn test_prof001_concurrent_activation_serialized() {
 
 #[test]
 fn test_prof001_rapid_activation_no_corruption() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create profile
     manager
@@ -116,7 +108,7 @@ fn test_prof001_rapid_activation_no_corruption() {
 
 #[test]
 fn test_prof002_empty_name_rejected() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let result = manager.create("", ProfileTemplate::Blank);
     assert!(matches!(result, Err(ProfileError::InvalidName(_))));
@@ -124,7 +116,7 @@ fn test_prof002_empty_name_rejected() {
 
 #[test]
 fn test_prof002_too_long_name_rejected() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create name longer than 64 characters
     let long_name = "a".repeat(65);
@@ -134,7 +126,7 @@ fn test_prof002_too_long_name_rejected() {
 
 #[test]
 fn test_prof002_special_chars_rejected() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let invalid_names = vec![
         "profile@test",    // @ not allowed
@@ -177,7 +169,7 @@ fn test_prof002_special_chars_rejected() {
 
 #[test]
 fn test_prof002_valid_names_accepted() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let valid_names = vec![
         "profile1",
@@ -203,7 +195,7 @@ fn test_prof002_valid_names_accepted() {
 
 #[test]
 fn test_prof002_dash_underscore_start_rejected() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let result = manager.create("-profile", ProfileTemplate::Blank);
     assert!(matches!(result, Err(ProfileError::InvalidName(_))));
@@ -214,7 +206,7 @@ fn test_prof002_dash_underscore_start_rejected() {
 
 #[test]
 fn test_prof002_max_length_accepted() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Exactly 64 characters should be accepted
     let name_64 = "a".repeat(64);
@@ -228,7 +220,7 @@ fn test_prof002_max_length_accepted() {
 
 #[test]
 fn test_prof003_activation_missing_file_error() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create profile then delete its .rhai file manually
     manager
@@ -259,7 +251,7 @@ fn test_prof003_activation_missing_file_error() {
 
 #[test]
 fn test_prof003_nonexistent_profile_activation_error() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     let result = manager.activate("nonexistent");
     assert!(matches!(result, Err(ProfileError::NotFound(_))));
@@ -292,7 +284,7 @@ fn test_prof003_lock_error_contains_context() {
 
 #[test]
 fn test_prof004_activation_metadata_stored() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create and activate a profile
     manager
@@ -345,8 +337,7 @@ fn test_prof004_activation_metadata_persisted() {
     let config_dir = temp_dir.path().to_path_buf();
 
     {
-        let mut manager =
-            ProfileManager::new(config_dir.clone()).expect("Failed to create manager");
+        let manager = ProfileManager::new(config_dir.clone()).expect("Failed to create manager");
         manager
             .create("test", ProfileTemplate::Blank)
             .expect("Failed to create profile");
@@ -373,7 +364,7 @@ fn test_prof004_activation_metadata_persisted() {
 
 #[test]
 fn test_prof004_inactive_profile_no_metadata() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create profile but don't activate it
     manager
@@ -401,7 +392,7 @@ fn test_prof004_inactive_profile_no_metadata() {
 
 #[test]
 fn test_prof005_duplicate_name_rejected() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create first profile
     manager
@@ -422,7 +413,7 @@ fn test_prof005_duplicate_name_rejected() {
 
 #[test]
 fn test_prof005_duplicate_after_delete_allowed() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create, delete, then recreate with same name - should succeed
     manager
@@ -440,7 +431,7 @@ fn test_prof005_duplicate_after_delete_allowed() {
 
 #[test]
 fn test_prof005_case_sensitive_names() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create profiles with different cases
     manager
@@ -462,7 +453,7 @@ fn test_prof005_case_sensitive_names() {
 
 #[test]
 fn test_prof005_import_duplicate_rejected() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create a profile
     manager
@@ -488,7 +479,7 @@ fn test_prof005_import_duplicate_rejected() {
 
 #[test]
 fn test_prof005_duplicate_after_file_deleted_rejected() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // Create profile
     manager
@@ -513,7 +504,7 @@ fn test_prof005_duplicate_after_file_deleted_rejected() {
 
 #[test]
 fn test_all_fixes_integration() {
-    let (_temp, mut manager) = setup_test_manager();
+    let (_temp, manager) = setup_test_manager();
 
     // PROF-002: Test validation
     assert!(manager.create("", ProfileTemplate::Blank).is_err());

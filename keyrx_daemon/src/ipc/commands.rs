@@ -75,12 +75,8 @@ impl IpcCommandHandler {
     async fn handle_activate_profile(&self, name: String) -> IpcResponse {
         log::info!("IPC: Activating profile '{}'", name);
 
-        // ProfileManager::activate requires &mut self, use unsafe cast like ProfileService does
-        // This is safe because ProfileManager uses internal locks for thread-safety
-        let manager_ptr = Arc::as_ptr(&self.profile_manager) as *mut ProfileManager;
-
         // Attempt to activate the profile
-        match unsafe { (*manager_ptr).activate(&name) } {
+        match self.profile_manager.activate(&name) {
             Ok(result) => {
                 if result.success {
                     log::info!(

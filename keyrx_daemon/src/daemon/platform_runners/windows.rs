@@ -358,10 +358,10 @@ pub fn run_daemon(
                             "Configuration reloaded successfully for profile: {}",
                             new_profile
                         );
-                        // Update current config path for next iteration
+                        // Atomically update both profile and config path
                         current_config_path = new_config_path.clone();
-                        // Update shared state config path
-                        daemon_state.set_config_path(new_config_path);
+                        daemon_state
+                            .set_active_config(active_profile_from_state.clone(), new_config_path);
                     }
                 }
             }

@@ -373,7 +373,7 @@ fn test_profiles_help() {
         .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Profile management"))
+        .stdout(predicate::str::contains("Manage configuration profiles"))
         .stdout(predicate::str::contains("list"))
         .stdout(predicate::str::contains("create"))
         .stdout(predicate::str::contains("activate"))

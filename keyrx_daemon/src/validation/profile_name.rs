@@ -87,10 +87,17 @@ pub fn validate_profile_name(name: &str) -> ValidationResult<()> {
         )));
     }
 
+    // Check for whitespace
+    if name.contains(char::is_whitespace) {
+        return Err(ValidationError::InvalidProfileName(
+            "Name must not contain whitespace".to_string(),
+        ));
+    }
+
     // Check regex pattern (alphanumeric, dash, underscore only)
     if !profile_name_regex().is_match(name) {
         return Err(ValidationError::InvalidProfileName(
-            "Name must contain only alphanumeric characters, dashes, and underscores".to_string(),
+            "Name can only contain alphanumeric characters, dashes, and underscores".to_string(),
         ));
     }
 
@@ -98,7 +105,7 @@ pub fn validate_profile_name(name: &str) -> ValidationResult<()> {
     let name_lower = name.to_lowercase();
     if WINDOWS_RESERVED.contains(&name_lower.as_str()) {
         return Err(ValidationError::InvalidProfileName(format!(
-            "Reserved name '{}' is not allowed (Windows compatibility)",
+            "'{}' is a reserved name (Windows compatibility)",
             name
         )));
     }
