@@ -7,7 +7,7 @@
 # Usage: .\scripts\build_windows_installer.ps1
 
 param(
-    [string]$Version = "0.1.5",
+    [string]$Version = "1.0.0",
     [string]$OutputDir = "target\installer"
 )
 

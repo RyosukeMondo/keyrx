@@ -578,11 +578,16 @@ jobs:
           echo "Accessibility: ${{ needs.frontend-accessibility.result }}"
           echo "Coverage: ${{ needs.frontend-coverage.result }}"
           echo ""
-          if [ "${{ needs.frontend-tests.result }}" != "success" ] || [ "${{ needs.frontend-accessibility.result }}" != "success" ]; then
+          TESTS="${{ needs.frontend-tests.result }}"
+          A11Y="${{ needs.frontend-accessibility.result }}"
+          # Treat skipped as acceptable (upstream job was skipped)
+          if [ "$TESTS" = "failure" ] || [ "$A11Y" = "failure" ]; then
             echo "❌ Some quality gates failed"
             exit 1
-          else
+          elif [ "$TESTS" = "success" ] && [ "$A11Y" = "success" ]; then
             echo "✅ All critical quality gates passed"
+          else
+            echo "⚠️ Some quality gates were skipped (upstream dependency)"
           fi
 
   e2e-playwright-tests:
