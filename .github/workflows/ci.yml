@@ -161,7 +161,7 @@ jobs:
 
       - name: Install system dependencies
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -595,7 +595,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -710,7 +710,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -772,7 +772,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -840,7 +840,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
