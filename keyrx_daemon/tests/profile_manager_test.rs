@@ -285,11 +285,11 @@ fn test_validate_name_edge_cases() {
     assert!(ProfileManager::validate_name("a-b").is_ok());
     assert!(ProfileManager::validate_name("a_b").is_ok());
     assert!(ProfileManager::validate_name("a-b_c123").is_ok());
-    assert!(ProfileManager::validate_name(&"a".repeat(32)).is_ok());
+    assert!(ProfileManager::validate_name(&"a".repeat(64)).is_ok());
 
     // Invalid names
     assert!(ProfileManager::validate_name("").is_err());
-    assert!(ProfileManager::validate_name(&"a".repeat(33)).is_err());
+    assert!(ProfileManager::validate_name(&"a".repeat(65)).is_err());
     assert!(ProfileManager::validate_name("a b").is_err());
     assert!(ProfileManager::validate_name("a!b").is_err());
     assert!(ProfileManager::validate_name("a@b").is_err());
@@ -418,11 +418,11 @@ fn test_templates_generate_valid_content() {
 
     let simple_remap = ProfileManager::load_template_for_testing("simple_remap");
     assert!(simple_remap.contains("device_start"));
-    assert!(simple_remap.contains("simple"));
+    assert!(simple_remap.to_lowercase().contains("simple"));
 
     let vim_nav = ProfileManager::load_template_for_testing("vim_navigation");
     assert!(vim_nav.contains("device_start"));
-    assert!(vim_nav.contains("tap_hold"));
+    assert!(vim_nav.contains("when_start"));
 }
 
 #[test]

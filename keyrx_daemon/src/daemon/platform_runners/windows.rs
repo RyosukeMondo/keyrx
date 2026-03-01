@@ -165,24 +165,18 @@ pub fn run_daemon(
         Some(Arc::clone(&daemon_query)),
     ));
 
-    // Get settings service reference for port handling (Windows-specific)
-    let settings_service = app_state.settings_service.clone();
-
     // Find an available port, starting with configured port
     let actual_port = find_available_port(configured_port);
 
-    // If we had to use a different port, save it to settings and notify user
+    // If we had to use a different port, notify user but don't persist
+    // (persisting causes port drift: 9867→9868→9869... on each restart)
     let port_changed = actual_port != configured_port;
     if port_changed {
         log::warn!(
-            "Configured port {} is in use. Using port {} instead.",
+            "Configured port {} is in use. Using port {} instead (not saved to settings).",
             configured_port,
             actual_port
         );
-        // Save the new port to settings
-        if let Err(e) = settings_service.set_port(actual_port) {
-            log::warn!("Failed to save new port to settings: {}", e);
-        }
     }
 
     let actual_port_for_thread = actual_port;

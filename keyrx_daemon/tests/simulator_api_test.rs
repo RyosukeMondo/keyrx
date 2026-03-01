@@ -23,6 +23,7 @@ fn create_test_profile(app: &TestApp, name: &str, content: &str) {
     fs::create_dir_all(&profiles_dir).expect("Failed to create profiles directory");
     let rhai_path = profiles_dir.join(format!("{}.rhai", name));
     fs::write(&rhai_path, content).expect("Failed to write profile file");
+    app.rescan_profiles();
 }
 
 /// Helper function to compile and activate a profile.

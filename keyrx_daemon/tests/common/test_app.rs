@@ -97,6 +97,8 @@ pub struct TestApp {
     client: reqwest::Client,
     /// Server task handle (server runs in background)
     _server_handle: tokio::task::JoinHandle<()>,
+    /// Profile manager for rescanning profiles after file changes
+    profile_manager: std::sync::Arc<keyrx_daemon::config::ProfileManager>,
 }
 
 impl TestApp {
@@ -121,7 +123,13 @@ impl TestApp {
         let config_path = temp_home.path().join(".config").join("keyrx");
         std::fs::create_dir_all(&config_path).expect("Failed to create config directory");
 
-        // Set HOME environment variable so get_config_dir() works correctly
+        // Pre-create devices.json and profiles dir to avoid races in tests
+        std::fs::write(config_path.join("devices.json"), "{}").expect("Failed to create devices.json");
+        std::fs::create_dir_all(config_path.join("profiles")).expect("Failed to create profiles directory");
+
+        // Set KEYRX_CONFIG_DIR for cross-platform config resolution (takes priority over HOME)
+        std::env::set_var("KEYRX_CONFIG_DIR", &config_path);
+        // Also set HOME for any code that still references it directly
         std::env::set_var("HOME", temp_home.path());
 
         // Create services with isolated config directory
@@ -132,7 +140,7 @@ impl TestApp {
         );
         let profile_service = Arc::new(ProfileService::new(profile_manager.clone()));
         let device_service = Arc::new(DeviceService::new(config_path.clone()));
-        let config_service = Arc::new(ConfigService::new(profile_manager));
+        let config_service = Arc::new(ConfigService::new(profile_manager.clone()));
         let settings_service = Arc::new(keyrx_daemon::services::SettingsService::new(
             config_path.clone(),
         ));
@@ -189,7 +197,13 @@ impl TestApp {
             base_url,
             client: reqwest::Client::new(),
             _server_handle: server_handle,
+            profile_manager,
         }
+    }
+
+    /// Rescan profiles after writing new .rhai files to the profiles directory.
+    pub fn rescan_profiles(&self) {
+        self.profile_manager.scan_profiles().expect("Failed to rescan profiles");
     }
 
     /// Returns the path to the isolated config directory (HOME/.config/keyrx).

@@ -5,15 +5,15 @@ use std::path::PathBuf;
 use tempfile::TempDir;
 
 /// Helper to create a test config directory with a test profile.
+/// Returns (TempDir guard, config_dir path).
+/// Note: No env var mutation needed — tests use direct file paths.
 fn setup_test_env() -> (TempDir, PathBuf) {
     let temp_dir = TempDir::new().unwrap();
     let config_dir = temp_dir.path().to_path_buf();
 
-    // Create profiles directory
     let profiles_dir = config_dir.join("profiles");
     fs::create_dir_all(&profiles_dir).unwrap();
 
-    // Create a test profile
     let test_profile = profiles_dir.join("test.rhai");
     fs::write(
         &test_profile,
@@ -37,7 +37,6 @@ device_end();
 #[test]
 fn test_list_layers() {
     let (_temp_dir, config_dir) = setup_test_env();
-    std::env::set_var("HOME", config_dir.parent().unwrap());
 
     // Parse test profile
     use keyrx_daemon::config::rhai_generator::RhaiGenerator;
@@ -53,7 +52,6 @@ fn test_list_layers() {
 #[test]
 fn test_create_layer() {
     let (_temp_dir, config_dir) = setup_test_env();
-    std::env::set_var("HOME", config_dir.parent().unwrap());
 
     use keyrx_daemon::config::rhai_generator::{LayerMode, RhaiGenerator};
     let profile_path = config_dir.join("profiles/test.rhai");
@@ -74,7 +72,6 @@ fn test_create_layer() {
 #[test]
 fn test_rename_layer() {
     let (_temp_dir, config_dir) = setup_test_env();
-    std::env::set_var("HOME", config_dir.parent().unwrap());
 
     use keyrx_daemon::config::rhai_generator::RhaiGenerator;
     let profile_path = config_dir.join("profiles/test.rhai");
@@ -94,7 +91,6 @@ fn test_rename_layer() {
 #[test]
 fn test_delete_layer() {
     let (_temp_dir, config_dir) = setup_test_env();
-    std::env::set_var("HOME", config_dir.parent().unwrap());
 
     use keyrx_daemon::config::rhai_generator::RhaiGenerator;
     let profile_path = config_dir.join("profiles/test.rhai");
@@ -113,7 +109,6 @@ fn test_delete_layer() {
 #[test]
 fn test_show_layer() {
     let (_temp_dir, config_dir) = setup_test_env();
-    std::env::set_var("HOME", config_dir.parent().unwrap());
 
     use keyrx_daemon::config::rhai_generator::RhaiGenerator;
     let profile_path = config_dir.join("profiles/test.rhai");
@@ -129,7 +124,6 @@ fn test_show_layer() {
 #[test]
 fn test_show_base_layer() {
     let (_temp_dir, config_dir) = setup_test_env();
-    std::env::set_var("HOME", config_dir.parent().unwrap());
 
     use keyrx_daemon::config::rhai_generator::RhaiGenerator;
     let profile_path = config_dir.join("profiles/test.rhai");
@@ -145,7 +139,6 @@ fn test_show_base_layer() {
 #[test]
 fn test_layer_not_found() {
     let (_temp_dir, config_dir) = setup_test_env();
-    std::env::set_var("HOME", config_dir.parent().unwrap());
 
     use keyrx_daemon::config::rhai_generator::RhaiGenerator;
     let profile_path = config_dir.join("profiles/test.rhai");
@@ -159,7 +152,6 @@ fn test_layer_not_found() {
 #[test]
 fn test_duplicate_layer_creation() {
     let (_temp_dir, config_dir) = setup_test_env();
-    std::env::set_var("HOME", config_dir.parent().unwrap());
 
     use keyrx_daemon::config::rhai_generator::{LayerMode, RhaiGenerator};
     let profile_path = config_dir.join("profiles/test.rhai");
@@ -173,7 +165,6 @@ fn test_duplicate_layer_creation() {
 #[test]
 fn test_invalid_layer_id() {
     let (_temp_dir, config_dir) = setup_test_env();
-    std::env::set_var("HOME", config_dir.parent().unwrap());
 
     use keyrx_daemon::config::rhai_generator::{LayerMode, RhaiGenerator};
     let profile_path = config_dir.join("profiles/test.rhai");

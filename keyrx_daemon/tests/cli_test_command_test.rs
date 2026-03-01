@@ -13,22 +13,25 @@ use tempfile::TempDir;
 static ENV_LOCK: Mutex<()> = Mutex::new(());
 
 /// Create a test profile directory with a dummy KRX file.
-fn create_test_profile(dir: &TempDir, name: &str) {
-    let profiles_dir = dir.path().join(".config").join("keyrx").join("profiles");
+/// Returns the config dir path for use with KEYRX_CONFIG_DIR.
+fn create_test_profile(dir: &TempDir, name: &str) -> std::path::PathBuf {
+    let config_dir = dir.path().join("keyrx");
+    let profiles_dir = config_dir.join("profiles");
     fs::create_dir_all(&profiles_dir).unwrap();
 
     let krx_path = profiles_dir.join(format!("{}.krx", name));
     let mut file = fs::File::create(&krx_path).unwrap();
     file.write_all(b"test krx data").unwrap();
+
+    config_dir
 }
 
 #[test]
 fn test_run_all_scenarios() {
     let _lock = ENV_LOCK.lock().unwrap();
     let temp_dir = TempDir::new().unwrap();
-    std::env::set_var("HOME", temp_dir.path());
-
-    create_test_profile(&temp_dir, "default");
+    let config_dir = create_test_profile(&temp_dir, "default");
+    std::env::set_var("KEYRX_CONFIG_DIR", &config_dir);
 
     // Import the execute function
     use keyrx_daemon::cli::test::{execute, TestArgs};
@@ -51,9 +54,8 @@ fn test_run_all_scenarios() {
 fn test_run_specific_scenario() {
     let _lock = ENV_LOCK.lock().unwrap();
     let temp_dir = TempDir::new().unwrap();
-    std::env::set_var("HOME", temp_dir.path());
-
-    create_test_profile(&temp_dir, "default");
+    let config_dir = create_test_profile(&temp_dir, "default");
+    std::env::set_var("KEYRX_CONFIG_DIR", &config_dir);
 
     use keyrx_daemon::cli::test::{execute, TestArgs};
 
@@ -71,9 +73,8 @@ fn test_run_specific_scenario() {
 fn test_invalid_scenario_name() {
     let _lock = ENV_LOCK.lock().unwrap();
     let temp_dir = TempDir::new().unwrap();
-    std::env::set_var("HOME", temp_dir.path());
-
-    create_test_profile(&temp_dir, "default");
+    let config_dir = create_test_profile(&temp_dir, "default");
+    std::env::set_var("KEYRX_CONFIG_DIR", &config_dir);
 
     use keyrx_daemon::cli::test::{execute, TestArgs};
 
@@ -92,7 +93,9 @@ fn test_invalid_scenario_name() {
 fn test_profile_not_found() {
     let _lock = ENV_LOCK.lock().unwrap();
     let temp_dir = TempDir::new().unwrap();
-    std::env::set_var("HOME", temp_dir.path());
+    let config_dir = temp_dir.path().join("keyrx");
+    fs::create_dir_all(config_dir.join("profiles")).unwrap();
+    std::env::set_var("KEYRX_CONFIG_DIR", &config_dir);
 
     // Don't create a profile
 
@@ -116,9 +119,8 @@ fn test_profile_not_found() {
 fn test_json_output_format() {
     let _lock = ENV_LOCK.lock().unwrap();
     let temp_dir = TempDir::new().unwrap();
-    std::env::set_var("HOME", temp_dir.path());
-
-    create_test_profile(&temp_dir, "test");
+    let config_dir = create_test_profile(&temp_dir, "test");
+    std::env::set_var("KEYRX_CONFIG_DIR", &config_dir);
 
     use keyrx_daemon::cli::test::{execute, TestArgs};
 
@@ -137,9 +139,8 @@ fn test_json_output_format() {
 fn test_all_scenario_names() {
     let _lock = ENV_LOCK.lock().unwrap();
     let temp_dir = TempDir::new().unwrap();
-    std::env::set_var("HOME", temp_dir.path());
-
-    create_test_profile(&temp_dir, "default");
+    let config_dir = create_test_profile(&temp_dir, "default");
+    std::env::set_var("KEYRX_CONFIG_DIR", &config_dir);
 
     use keyrx_daemon::cli::test::{execute, TestArgs};
 
@@ -171,9 +172,8 @@ fn test_all_scenario_names() {
 fn test_default_profile_fallback() {
     let _lock = ENV_LOCK.lock().unwrap();
     let temp_dir = TempDir::new().unwrap();
-    std::env::set_var("HOME", temp_dir.path());
-
-    create_test_profile(&temp_dir, "default");
+    let config_dir = create_test_profile(&temp_dir, "default");
+    std::env::set_var("KEYRX_CONFIG_DIR", &config_dir);
 
     use keyrx_daemon::cli::test::{execute, TestArgs};
 

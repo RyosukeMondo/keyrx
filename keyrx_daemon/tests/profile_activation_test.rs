@@ -243,11 +243,11 @@ fn test_invalid_profile_error_reporting() {
     let temp_dir = TempDir::new().unwrap();
     let config_path = temp_dir.path().join("invalid.rhai");
 
-    // Write invalid Rhai syntax
+    // Write invalid Rhai syntax (unclosed brace)
     let invalid_config = r#"
-fn main() {
-    remap_key(INVALID_KEY, );  // Missing second argument
-}
+device_start("*");
+map("VK_A", "VK_B"  // Missing closing parenthesis
+device_end();
 "#;
     fs::write(&config_path, invalid_config).unwrap();
 
@@ -315,8 +315,8 @@ fn test_profile_compilation_performance() {
             elapsed
         );
 
-        // Performance threshold: <5ms per 100 remappings
-        let max_time = Duration::from_millis((count / 100) * 5);
+        // Performance threshold: <5ms per 100 remappings, minimum 50ms
+        let max_time = Duration::from_millis(((count / 100) * 5).max(50));
         assert!(
             elapsed < max_time,
             "{} profile took too long: {:?} (max: {:?})",

@@ -34,7 +34,36 @@ pub fn handle_run(
     }
 
     // Resolve config path: use provided path or active profile
-    let config_path = resolve_config_path(config)?;
+    let config_path = resolve_config_path(config.clone())?;
+
+    // If user explicitly provided --config, validate the file exists and is valid
+    if config.is_some() {
+        if !config_path.exists() {
+            return Err((
+                exit_codes::CONFIG_ERROR,
+                format!("Error: Config file not found: {}", config_path.display()),
+            ));
+        }
+        if !config_path.is_file() {
+            return Err((
+                exit_codes::CONFIG_ERROR,
+                format!("Error: Not a file: {}", config_path.display()),
+            ));
+        }
+        // Validate .krx content early to fail fast on invalid configs
+        let bytes = std::fs::read(&config_path).map_err(|e| {
+            (
+                exit_codes::CONFIG_ERROR,
+                format!("Error: Cannot read config file: {}", e),
+            )
+        })?;
+        keyrx_compiler::serialize::deserialize(&bytes).map_err(|e| {
+            (
+                exit_codes::CONFIG_ERROR,
+                format!("Error: Invalid config file: {}", e),
+            )
+        })?;
+    }
 
     // Get config directory for ServiceContainer
     let config_dir = {

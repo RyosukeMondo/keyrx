@@ -73,10 +73,12 @@ impl PlatformState {
         );
 
         if actual_count != blocked_count {
-            log::error!(
-                "✗ CRITICAL: Mismatch between extracted ({}) and blocked ({}) keys!",
+            let diff = blocked_count - actual_count;
+            log::warn!(
+                "Key blocking count mismatch: {} extracted, {} unique scan codes ({} duplicates sharing scan codes)",
                 blocked_count,
-                actual_count
+                actual_count,
+                diff
             );
         }
 

@@ -26,6 +26,7 @@ fn create_profile_file(app: &TestApp, name: &str, content: &str) {
 
     let rhai_path = profiles_dir.join(format!("{}.rhai", name));
     fs::write(&rhai_path, content).expect("Failed to write profile file");
+    app.rescan_profiles();
 }
 
 /// Test that the blank.rhai template compiles successfully.

@@ -412,9 +412,7 @@ async fn test_update_profile_config_with_rhai() {
     // Update with valid Rhai config
     let new_config = r#"
         device_start("*");
-        layer_start("base");
-        remap("A", "B");
-        layer_end();
+        map("VK_A", "VK_B");
         device_end();
     "#;
 
@@ -425,9 +423,13 @@ async fn test_update_profile_config_with_rhai() {
         )
         .await;
 
+    let status = update_response.status();
+    let body = update_response.text().await.unwrap_or_default();
     assert!(
-        update_response.status().is_success(),
-        "Should update config successfully"
+        status.is_success(),
+        "Should update config successfully, got {} - {}",
+        status,
+        body
     );
 
     // Verify update
@@ -436,8 +438,8 @@ async fn test_update_profile_config_with_rhai() {
 
     let source = json["source"].as_str().unwrap();
     assert!(
-        source.contains("remap"),
-        "Updated config should contain remap"
+        source.contains("map"),
+        "Updated config should contain map"
     );
 }
 

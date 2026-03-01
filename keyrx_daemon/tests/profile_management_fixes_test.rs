@@ -230,23 +230,17 @@ fn test_prof003_activation_missing_file_error() {
     let profile = manager.get("test").expect("Profile should exist");
     fs::remove_file(&profile.rhai_path).expect("Failed to remove file");
 
-    // Try to activate - should get a clear error
-    let result = manager.activate("test");
+    // Try to activate - should fail (returns Ok with success=false)
+    let result = manager.activate("test").expect("activate should return Ok");
     assert!(
-        result.is_err(),
+        !result.success,
         "Activation should fail when source file is missing"
     );
-
-    // Error should be NotFound with context
-    if let Err(ProfileError::NotFound(msg)) = result {
-        assert!(
-            msg.contains("source file not found"),
-            "Error should mention source file, got: {}",
-            msg
-        );
-    } else {
-        panic!("Expected NotFound error, got: {:?}", result);
-    }
+    assert!(
+        result.error.as_ref().map_or(false, |e| e.contains("not found")),
+        "Error should mention file not found, got: {:?}",
+        result.error
+    );
 }
 
 #[test]
@@ -316,11 +310,12 @@ fn test_prof004_activation_metadata_stored() {
         "Activation source should be stored"
     );
 
-    // Check timestamp is reasonable
+    // Check timestamp is reasonable (allow 1s margin for UNIX epoch truncation)
     let activated_at = metadata.activated_at.unwrap();
+    let margin = Duration::from_secs(1);
     assert!(
-        activated_at >= before_activation && activated_at <= after_activation,
-        "Activation timestamp should be between before and after"
+        activated_at >= before_activation - margin && activated_at <= after_activation + margin,
+        "Activation timestamp should be between before and after (with margin)"
     );
 
     // Check activation source
@@ -430,6 +425,7 @@ fn test_prof005_duplicate_after_delete_allowed() {
 }
 
 #[test]
+#[cfg(not(target_os = "windows"))] // Windows filesystem is case-insensitive
 fn test_prof005_case_sensitive_names() {
     let (_temp, manager) = setup_test_manager();
 

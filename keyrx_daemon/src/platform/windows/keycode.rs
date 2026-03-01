@@ -269,6 +269,17 @@ pub fn keycode_to_vk(keycode: KeyCode) -> Option<u16> {
 /// Uses MapVirtualKeyW to get the hardware scan code from virtual key code.
 /// Returns the scan code with extended flag if applicable (e.g., 0xE01D for Right Ctrl).
 pub fn keycode_to_scancode(keycode: KeyCode) -> Option<u32> {
+    // Japanese keys that MapVirtualKeyW can't resolve — use hardcoded scan codes
+    match keycode {
+        KeyCode::Ro => return Some(0x73),              // JIS ろ key
+        KeyCode::Hiragana => return Some(0x70),        // Hiragana mode
+        KeyCode::KatakanaHiragana => return Some(0x70), // Katakana/Hiragana toggle
+        KeyCode::Zenkaku => return Some(0x29),         // Zenkaku/Hankaku (same position as Grave on JIS)
+        KeyCode::Henkan => return Some(0x79),          // 変換
+        KeyCode::Muhenkan => return Some(0x7B),        // 無変換
+        _ => {}
+    }
+
     let vk = keycode_to_vk(keycode)?;
 
     // MapVirtualKeyW with MAPVK_VK_TO_VSC (0) returns scan code

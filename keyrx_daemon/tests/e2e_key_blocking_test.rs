@@ -9,6 +9,7 @@ use keyrx_compiler::serialize::deserialize;
 use keyrx_core::config::{ConfigRoot, KeyCode};
 use keyrx_daemon::platform::windows::key_blocker::KeyBlocker;
 use rkyv::Deserialize;
+use serial_test::serial;
 use std::time::Duration;
 
 // Virtual keyboard is only available when testing the library, not in integration tests
@@ -71,6 +72,7 @@ fn test_blocker_blocks_virtual_keyboard() {
 
 /// Test the complete flow: load config → extract keys → block them
 #[test]
+#[serial]
 fn test_complete_blocking_flow() {
     use std::path::PathBuf;
 
@@ -182,6 +184,7 @@ fn test_blocker_rapid_keypresses() {
 
 /// Test blocker clears correctly
 #[test]
+#[serial]
 fn test_blocker_clear() {
     let blocker = KeyBlocker::new().expect("Should create blocker");
 
@@ -207,8 +210,12 @@ fn test_blocker_clear() {
 /// which is tied to the message loop thread. Windows hooks MUST be called from the same
 /// thread that created them. This test verifies that sequential access works correctly.
 #[test]
+#[serial]
 fn test_blocker_sequential_access() {
     let blocker = KeyBlocker::new().expect("Should create blocker");
+
+    // Clear any state leaked from previous tests (KeyBlocker uses global atomic bitset)
+    blocker.clear_all();
 
     // Sequential access from the same thread (correct usage)
     for i in 0..5 {

@@ -13,6 +13,7 @@ use std::time::Duration;
 mod e2e_harness;
 
 #[test]
+#[ignore] // Requires elevated privileges and active message loop
 fn test_windows_basic_remap() -> Result<(), crate::e2e_harness::E2EError> {
     // 1. Setup harness with A -> B remapping
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);

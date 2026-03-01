@@ -15,6 +15,7 @@ mod e2e_harness;
 /// Test remapping of extended keys (arrows, home, etc.)
 /// This verifies that the E0 scancode prefix is correctly preserved and mapped.
 #[test]
+#[ignore] // Requires elevated privileges and active message loop
 fn test_extended_key_remapping() -> Result<(), crate::e2e_harness::E2EError> {
     // Setup: UpArrow -> W
     let config = E2EConfig::simple_remap(KeyCode::Up, KeyCode::W);
@@ -33,6 +34,7 @@ fn test_extended_key_remapping() -> Result<(), crate::e2e_harness::E2EError> {
 
 /// Test remapping regular keys TO extended keys
 #[test]
+#[ignore] // Requires elevated privileges and active message loop
 fn test_remap_to_extended_key() -> Result<(), crate::e2e_harness::E2EError> {
     // Setup: A -> UpArrow
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::Up);
@@ -50,6 +52,7 @@ fn test_remap_to_extended_key() -> Result<(), crate::e2e_harness::E2EError> {
 /// Test rapid input chording / spamming.
 /// Verifies that the message queue and remapping engine can handle high throughput.
 #[test]
+#[ignore] // Requires elevated privileges and active message loop
 fn test_rapid_input_burst() -> Result<(), crate::e2e_harness::E2EError> {
     // Setup: A -> B
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);

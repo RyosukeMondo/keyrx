@@ -10,7 +10,7 @@ use keyrx_daemon::web::rpc_types::{ServerMessage, METHOD_NOT_FOUND, PARSE_ERROR}
 use serde_json::json;
 use std::time::Duration;
 use tokio::net::TcpListener;
-use tokio::time::timeout;
+use tokio::time::{timeout, timeout_at};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 /// Helper to start a test RPC server on a random port
@@ -113,12 +113,35 @@ async fn send_and_receive(
         .await
         .expect("Failed to send message");
 
-    match timeout(Duration::from_secs(5), read.next()).await {
-        Ok(Some(Ok(Message::Text(text)))) => text,
-        Ok(Some(Ok(msg))) => panic!("Unexpected message type: {:?}", msg),
-        Ok(Some(Err(e))) => panic!("WebSocket error: {}", e),
-        Ok(None) => panic!("WebSocket closed"),
-        Err(_) => panic!("Timeout waiting for response"),
+    // Loop to skip Ping/Pong frames (from heartbeat) and return first Text message
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        match timeout_at(deadline, read.next()).await {
+            Ok(Some(Ok(Message::Text(text)))) => return text,
+            Ok(Some(Ok(Message::Ping(_) | Message::Pong(_)))) => continue,
+            Ok(Some(Ok(msg))) => panic!("Unexpected message type: {:?}", msg),
+            Ok(Some(Err(e))) => panic!("WebSocket error: {}", e),
+            Ok(None) => panic!("WebSocket closed"),
+            Err(_) => panic!("Timeout waiting for response"),
+        }
+    }
+}
+
+/// Helper to skip non-text messages and consume the next Text message
+async fn skip_to_text(
+    read: &mut futures_util::stream::SplitStream<
+        tokio_tungstenite::WebSocketStream<
+            tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+        >,
+    >,
+) {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        match timeout_at(deadline, read.next()).await {
+            Ok(Some(Ok(Message::Text(_)))) => return,
+            Ok(Some(Ok(Message::Ping(_) | Message::Pong(_)))) => continue,
+            _ => return,
+        }
     }
 }
 
@@ -147,13 +170,12 @@ async fn test_query_with_id_receives_response_with_matching_id() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Send a query message with a specific ID
     let query = json!({
         "type": "query",
-        "id": "test-query-123",
-        "method": "get_profiles"
+        "content": {"id": "test-query-123", "method": "get_profiles"}
     });
 
     let response = send_and_receive(&mut write, &mut read, &query.to_string()).await;
@@ -177,7 +199,7 @@ async fn test_command_executes_and_returns_success() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Send a command message (use unique name to avoid conflicts)
     let profile_name = format!(
@@ -190,12 +212,7 @@ async fn test_command_executes_and_returns_success() {
 
     let command = json!({
         "type": "command",
-        "id": "cmd-1",
-        "method": "create_profile",
-        "params": {
-            "name": profile_name,
-            "template": "blank"
-        }
+        "content": {"id": "cmd-1", "method": "create_profile", "params": {"name": profile_name, "template": "blank"}}
     });
 
     let response = send_and_receive(&mut write, &mut read, &command.to_string()).await;
@@ -217,13 +234,12 @@ async fn test_subscribe_to_channel_receives_broadcast_events() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Subscribe to daemon-state channel
     let subscribe = json!({
         "type": "subscribe",
-        "id": "sub-1",
-        "channel": "daemon-state"
+        "content": {"id": "sub-1", "channel": "daemon-state"}
     });
 
     let response = send_and_receive(&mut write, &mut read, &subscribe.to_string()).await;
@@ -248,13 +264,12 @@ async fn test_unsubscribe_stops_events() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Subscribe first
     let subscribe = json!({
         "type": "subscribe",
-        "id": "sub-1",
-        "channel": "events"
+        "content": {"id": "sub-1", "channel": "events"}
     });
 
     let _ = send_and_receive(&mut write, &mut read, &subscribe.to_string()).await;
@@ -262,8 +277,7 @@ async fn test_unsubscribe_stops_events() {
     // Unsubscribe
     let unsubscribe = json!({
         "type": "unsubscribe",
-        "id": "unsub-1",
-        "channel": "events"
+        "content": {"id": "unsub-1", "channel": "events"}
     });
 
     let response = send_and_receive(&mut write, &mut read, &unsubscribe.to_string()).await;
@@ -284,7 +298,7 @@ async fn test_invalid_json_returns_parse_error() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Send invalid JSON
     let invalid_json = "{invalid json here}";
@@ -310,13 +324,12 @@ async fn test_unknown_method_returns_method_not_found() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Send query with unknown method
     let query = json!({
         "type": "query",
-        "id": "unknown-1",
-        "method": "unknown.method.that.does.not.exist"
+        "content": {"id": "unknown-1", "method": "unknown.method.that.does.not.exist"}
     });
 
     let response = send_and_receive(&mut write, &mut read, &query.to_string()).await;
@@ -346,20 +359,18 @@ async fn test_concurrent_requests_from_multiple_clients() {
     let (mut write2, mut read2) = connect_client(port).await;
 
     // Skip Connected handshakes
-    let _ = read1.next().await;
-    let _ = read2.next().await;
+    skip_to_text(&mut read1).await;
+    skip_to_text(&mut read2).await;
 
     // Send concurrent requests with different IDs
     let query1 = json!({
         "type": "query",
-        "id": "client1-query",
-        "method": "get_profiles"
+        "content": {"id": "client1-query", "method": "get_profiles"}
     });
 
     let query2 = json!({
         "type": "query",
-        "id": "client2-query",
-        "method": "get_profiles"
+        "content": {"id": "client2-query", "method": "get_profiles"}
     });
 
     // Send both requests
@@ -372,21 +383,31 @@ async fn test_concurrent_requests_from_multiple_clients() {
         .await
         .unwrap();
 
-    // Receive responses (order may vary)
-    let resp1 = timeout(Duration::from_secs(5), read1.next())
-        .await
-        .unwrap()
-        .unwrap()
-        .unwrap();
-    let resp2 = timeout(Duration::from_secs(5), read2.next())
-        .await
-        .unwrap()
-        .unwrap()
-        .unwrap();
+    // Receive responses (skip Ping/Pong, order may vary)
+    let resp1 = {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            match timeout_at(deadline, read1.next()).await {
+                Ok(Some(Ok(Message::Text(t)))) => break t,
+                Ok(Some(Ok(Message::Ping(_) | Message::Pong(_)))) => continue,
+                other => panic!("Unexpected: {:?}", other),
+            }
+        }
+    };
+    let resp2 = {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            match timeout_at(deadline, read2.next()).await {
+                Ok(Some(Ok(Message::Text(t)))) => break t,
+                Ok(Some(Ok(Message::Ping(_) | Message::Pong(_)))) => continue,
+                other => panic!("Unexpected: {:?}", other),
+            }
+        }
+    };
 
     // Parse responses
-    let msg1: ServerMessage = serde_json::from_str(&resp1.to_text().unwrap()).unwrap();
-    let msg2: ServerMessage = serde_json::from_str(&resp2.to_text().unwrap()).unwrap();
+    let msg1: ServerMessage = serde_json::from_str(&resp1).unwrap();
+    let msg2: ServerMessage = serde_json::from_str(&resp2).unwrap();
 
     // Verify IDs are correctly correlated
     match (msg1, msg2) {
@@ -404,13 +425,12 @@ async fn test_request_timeout_behavior() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Send a valid query
     let query = json!({
         "type": "query",
-        "id": "timeout-test",
-        "method": "get_profiles"
+        "content": {"id": "timeout-test", "method": "get_profiles"}
     });
 
     write.send(Message::Text(query.to_string())).await.unwrap();
@@ -429,19 +449,17 @@ async fn test_disconnect_cleans_up_subscriptions() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Subscribe to multiple channels
     let subscribe1 = json!({
         "type": "subscribe",
-        "id": "sub-1",
-        "channel": "daemon-state"
+        "content": {"id": "sub-1", "channel": "daemon-state"}
     });
 
     let subscribe2 = json!({
         "type": "subscribe",
-        "id": "sub-2",
-        "channel": "events"
+        "content": {"id": "sub-2", "channel": "events"}
     });
 
     let _ = send_and_receive(&mut write, &mut read, &subscribe1.to_string()).await;

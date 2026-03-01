@@ -8,7 +8,7 @@ use keyrx_daemon::web::rpc_types::ServerMessage;
 use serde_json::json;
 use std::time::Duration;
 use tokio::net::TcpListener;
-use tokio::time::timeout;
+use tokio::time::{timeout, timeout_at};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 /// Helper to start a test RPC server on a random port
@@ -94,6 +94,24 @@ async fn connect_client(
     ws_stream.split()
 }
 
+/// Helper to skip non-text messages (Ping/Pong) and consume the next Text message
+async fn skip_to_text(
+    read: &mut futures_util::stream::SplitStream<
+        tokio_tungstenite::WebSocketStream<
+            tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+        >,
+    >,
+) {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        match timeout_at(deadline, read.next()).await {
+            Ok(Some(Ok(Message::Text(_)))) => return,
+            Ok(Some(Ok(Message::Ping(_) | Message::Pong(_)))) => continue,
+            _ => return,
+        }
+    }
+}
+
 /// Helper to send a message and receive the response
 async fn send_and_receive(
     write: &mut futures_util::stream::SplitSink<
@@ -114,12 +132,17 @@ async fn send_and_receive(
         .await
         .expect("Failed to send message");
 
-    match timeout(Duration::from_secs(5), read.next()).await {
-        Ok(Some(Ok(Message::Text(text)))) => text,
-        Ok(Some(Ok(msg))) => panic!("Unexpected message type: {:?}", msg),
-        Ok(Some(Err(e))) => panic!("WebSocket error: {}", e),
-        Ok(None) => panic!("WebSocket closed"),
-        Err(_) => panic!("Timeout waiting for response"),
+    // Loop to skip Ping/Pong frames (from heartbeat) and return first Text message
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        match timeout_at(deadline, read.next()).await {
+            Ok(Some(Ok(Message::Text(text)))) => return text,
+            Ok(Some(Ok(Message::Ping(_) | Message::Pong(_)))) => continue,
+            Ok(Some(Ok(msg))) => panic!("Unexpected message type: {:?}", msg),
+            Ok(Some(Err(e))) => panic!("WebSocket error: {}", e),
+            Ok(None) => panic!("WebSocket closed"),
+            Err(_) => panic!("Timeout waiting for response"),
+        }
     }
 }
 
@@ -129,13 +152,12 @@ async fn test_subscribe_to_daemon_state_channel() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Subscribe to daemon-state channel
     let subscribe = json!({
         "type": "subscribe",
-        "id": "sub-state",
-        "channel": "daemon-state"
+        "content": {"id": "sub-state", "channel": "daemon-state"}
     });
 
     let response = send_and_receive(&mut write, &mut read, &subscribe.to_string()).await;
@@ -159,13 +181,12 @@ async fn test_subscribe_to_events_channel() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Subscribe to events channel
     let subscribe = json!({
         "type": "subscribe",
-        "id": "sub-events",
-        "channel": "events"
+        "content": {"id": "sub-events", "channel": "events"}
     });
 
     let response = send_and_receive(&mut write, &mut read, &subscribe.to_string()).await;
@@ -189,13 +210,12 @@ async fn test_subscribe_to_latency_channel() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Subscribe to latency channel
     let subscribe = json!({
         "type": "subscribe",
-        "id": "sub-latency",
-        "channel": "latency"
+        "content": {"id": "sub-latency", "channel": "latency"}
     });
 
     let response = send_and_receive(&mut write, &mut read, &subscribe.to_string()).await;
@@ -223,14 +243,13 @@ async fn test_multiple_subscribers_receive_same_event() {
     let (mut write2, mut read2) = connect_client(port).await;
 
     // Skip Connected handshakes
-    let _ = read1.next().await;
-    let _ = read2.next().await;
+    skip_to_text(&mut read1).await;
+    skip_to_text(&mut read2).await;
 
     // Both subscribe to daemon-state
     let subscribe = json!({
         "type": "subscribe",
-        "id": "sub-both",
-        "channel": "daemon-state"
+        "content": {"id": "sub-both", "channel": "daemon-state"}
     });
 
     let _ = send_and_receive(&mut write1, &mut read1, &subscribe.to_string()).await;
@@ -248,13 +267,12 @@ async fn test_unsubscribe_from_channel() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Subscribe first
     let subscribe = json!({
         "type": "subscribe",
-        "id": "sub-1",
-        "channel": "daemon-state"
+        "content": {"id": "sub-1", "channel": "daemon-state"}
     });
 
     let _ = send_and_receive(&mut write, &mut read, &subscribe.to_string()).await;
@@ -262,8 +280,7 @@ async fn test_unsubscribe_from_channel() {
     // Unsubscribe
     let unsubscribe = json!({
         "type": "unsubscribe",
-        "id": "unsub-1",
-        "channel": "daemon-state"
+        "content": {"id": "unsub-1", "channel": "daemon-state"}
     });
 
     let response = send_and_receive(&mut write, &mut read, &unsubscribe.to_string()).await;
@@ -287,13 +304,12 @@ async fn test_subscribe_to_invalid_channel() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Try to subscribe to invalid channel
     let subscribe = json!({
         "type": "subscribe",
-        "id": "sub-invalid",
-        "channel": "invalid-channel-name"
+        "content": {"id": "sub-invalid", "channel": "invalid-channel-name"}
     });
 
     let response = send_and_receive(&mut write, &mut read, &subscribe.to_string()).await;
@@ -317,14 +333,13 @@ async fn test_subscription_cleanup_on_disconnect() {
     let (mut write, mut read) = connect_client(port).await;
 
     // Skip Connected handshake
-    let _ = read.next().await;
+    skip_to_text(&mut read).await;
 
     // Subscribe to all channels
     for channel in &["daemon-state", "events", "latency"] {
         let subscribe = json!({
             "type": "subscribe",
-            "id": format!("sub-{}", channel),
-            "channel": channel
+            "content": {"id": format!("sub-{}", channel), "channel": channel}
         });
 
         let _ = send_and_receive(&mut write, &mut read, &subscribe.to_string()).await;

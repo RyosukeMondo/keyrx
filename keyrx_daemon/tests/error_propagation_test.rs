@@ -124,7 +124,7 @@ fn test_cli_config_file_not_found_error() {
     // Should fail with ConfigError::FileNotFound
     cmd.assert()
         .failure()
-        .stdout(predicate::str::contains("\"success\":false"))
+        .stdout(predicate::str::contains("\"success\":false").or(predicate::str::contains("\"success\": false")))
         .stdout(predicate::str::contains("not found").or(predicate::str::contains("exist")));
 }
 
@@ -149,7 +149,7 @@ device_end();
     // Should fail with compilation/parsing error
     cmd.assert()
         .failure()
-        .stdout(predicate::str::contains("\"success\":false"));
+        .stdout(predicate::str::contains("\"success\":false").or(predicate::str::contains("\"success\": false")));
 }
 
 #[test]
@@ -164,7 +164,7 @@ fn test_cli_error_context_preservation() {
     // Error message should include the profile name for context
     cmd.assert()
         .failure()
-        .stdout(predicate::str::contains("\"success\":false"))
+        .stdout(predicate::str::contains("\"success\":false").or(predicate::str::contains("\"success\": false")))
         .stdout(
             predicate::str::contains("missing_profile").or(predicate::str::contains("not found")),
         );
@@ -475,7 +475,7 @@ fn test_empty_config_directory_error() {
     // Should fail gracefully
     cmd.assert()
         .failure()
-        .stdout(predicate::str::contains("\"success\":false"));
+        .stdout(predicate::str::contains("\"success\":false").or(predicate::str::contains("\"success\": false")));
 }
 
 #[test]
@@ -493,5 +493,5 @@ fn test_corrupted_krx_file_error() {
 
     cmd.assert()
         .failure()
-        .stdout(predicate::str::contains("\"success\":false"));
+        .stdout(predicate::str::contains("\"success\":false").or(predicate::str::contains("\"success\": false")));
 }

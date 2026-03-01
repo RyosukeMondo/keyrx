@@ -150,15 +150,6 @@ fn test_run_help_shows_config_required() {
 // ============================================================================
 
 #[test]
-fn test_run_missing_config_shows_error() {
-    cmd()
-        .arg("run")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("--config"));
-}
-
-#[test]
 fn test_run_nonexistent_config_file() {
     cmd()
         .arg("run")
@@ -194,27 +185,6 @@ fn test_run_config_short_flag() {
         .stderr(predicate::str::contains("Error"));
 }
 
-#[test]
-fn test_run_debug_flag_accepted() {
-    // The command should accept --debug flag even if config is missing
-    // (arg parsing happens before file reading)
-    cmd()
-        .arg("run")
-        .arg("--debug")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("--config"));
-}
-
-#[test]
-fn test_run_debug_short_flag_accepted() {
-    cmd()
-        .arg("run")
-        .arg("-d")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("--config"));
-}
 
 // ============================================================================
 // List-Devices Subcommand Tests
@@ -379,8 +349,8 @@ fn test_validate_nonexistent_config_exit_code_one() {
 // ============================================================================
 
 #[test]
-#[cfg(not(target_os = "linux"))]
-fn test_run_not_available_without_linux_feature() {
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+fn test_run_not_available_without_platform_feature() {
     let temp_file = create_invalid_krx_file();
 
     cmd()
@@ -490,14 +460,6 @@ fn test_validate_output_shows_steps() {
 // Error Message Quality Tests
 // ============================================================================
 
-#[test]
-fn test_run_missing_config_error_is_helpful() {
-    cmd()
-        .arg("run")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("--config").or(predicate::str::contains("-c")));
-}
 
 #[test]
 fn test_validate_missing_config_error_is_helpful() {
