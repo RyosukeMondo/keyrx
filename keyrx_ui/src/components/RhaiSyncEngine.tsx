@@ -63,8 +63,10 @@ export interface RhaiSyncEngineResult {
   error: ParseError | null;
   /** Last valid AST (preserved during errors) */
   lastValidAST: RhaiAST | null;
-  /** Handle code editor changes */
+  /** Handle code editor changes (debounced) */
   onCodeChange: (code: string) => void;
+  /** Load server config immediately (bypasses debounce, always wins over localStorage) */
+  loadServerConfig: (code: string) => void;
   /** Handle visual editor changes */
   onVisualChange: (ast: RhaiAST) => void;
   /** Get current code content */
@@ -369,6 +371,24 @@ export function useRhaiSyncEngine(
     [debounceMs, parseCode, persistToStorage]
   );
 
+  // Load server config immediately (bypasses debounce, server always wins)
+  const loadServerConfig = useCallback(
+    (code: string) => {
+      if (!isMountedRef.current) return;
+
+      // Cancel any pending debounce
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+
+      codeRef.current = code;
+      persistToStorage(code);
+      parseCode(code);
+    },
+    [parseCode, persistToStorage]
+  );
+
   // Handle visual editor changes (immediate)
   const onVisualChange = useCallback(
     (ast: RhaiAST) => {
@@ -409,6 +429,7 @@ export function useRhaiSyncEngine(
     error,
     lastValidAST,
     onCodeChange,
+    loadServerConfig,
     onVisualChange,
     getCode,
     getAST,

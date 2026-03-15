@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/Card';
 import { type Device } from '@/components/DeviceSelector';
@@ -11,6 +11,7 @@ import { useProfiles, useCreateProfile } from '@/hooks/useProfiles';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
 import { useConfigStore } from '@/stores/configStore';
 import type { KeyMapping } from '@/types';
+import type { LayoutType } from '@/components/KeyboardVisualizer';
 
 // Import custom hooks
 import { useProfileSelection } from '@/hooks/useProfileSelection';
@@ -31,6 +32,19 @@ import { NotificationBanners } from '@/components/config/NotificationBanners';
 import { ConfigScopeTabs } from '@/components/config/ConfigScopeTabs';
 import { GlobalKeyboardPanel } from '@/components/config/GlobalKeyboardPanel';
 import { DeviceKeyboardPanel } from '@/components/config/DeviceKeyboardPanel';
+import { DiagnosticsPanel } from '@/components/config/DiagnosticsPanel';
+
+/** Auto-detect keyboard layout from Rhai config source */
+function detectLayoutFromSource(source: string | undefined): LayoutType {
+  if (!source) return 'JIS_109';
+  const jisKeys = [
+    'VK_Zenkaku', 'VK_全角', 'VK_無変換', 'VK_変換',
+    'VK_ひらがな', 'VK_カタカナ', 'VK_Ro', 'VK_Yen',
+    'VK_Henkan', 'VK_Muhenkan',
+  ];
+  const hasJisKeys = jisKeys.some(k => source.includes(k));
+  return hasJisKeys ? 'JIS_109' : 'ANSI_104';
+}
 
 interface ConfigPageProps {
   profileName?: string;
@@ -50,11 +64,6 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     height: _codePanelHeight,
     toggleOpen: toggleCodePanel,
   } = useCodePanel();
-  const {
-    layout: keyboardLayout,
-    setLayout: _setLayout,
-    layoutKeys,
-  } = useKeyboardLayout('ANSI_104');
   const {
     syncEngine,
     syncStatus,
@@ -100,6 +109,19 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     error,
   } = useGetProfileConfig(selectedProfileName);
   const { mutateAsync: setProfileConfig } = useSetProfileConfig();
+
+  // Auto-detect layout from profile config source, with manual override
+  const detectedLayout = useMemo(
+    () => detectLayoutFromSource(profileConfig?.source),
+    [profileConfig?.source]
+  );
+  const { layout: keyboardLayout, setLayout, layoutKeys } =
+    useKeyboardLayout(detectedLayout);
+
+  // Auto-update layout when detection changes (e.g., profile switch)
+  useEffect(() => {
+    setLayout(detectedLayout);
+  }, [detectedLayout, setLayout]);
 
   // Merged device list: connected devices + devices from Rhai (even if disconnected)
   const mergedDevices = useDeviceMerging({
@@ -147,8 +169,8 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     const shouldLoadConfig = profileConfig?.source && !configLoadedRef.current;
 
     if (shouldLoadConfig) {
-      // Initialize sync engine with loaded config
-      syncEngine.onCodeChange(profileConfig.source);
+      // Initialize sync engine with server config (bypasses debounce)
+      syncEngine.loadServerConfig(profileConfig.source);
       setSyncStatus('saved');
       configLoadedRef.current = true;
     } else if (profileChanged && configMissing) {
@@ -272,6 +294,26 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
           isLoading={isLoadingProfiles}
           disabled={!api.isConnected}
         />
+
+        {/* Center: Layout Selector */}
+        <select
+          value={keyboardLayout}
+          onChange={(e) => setLayout(e.target.value as LayoutType)}
+          className="px-3 py-2 bg-slate-700 text-slate-200 text-sm rounded-md border border-slate-600 hover:bg-slate-600 transition-colors"
+          aria-label="Keyboard layout"
+        >
+          <option value="JIS_109">JIS 109</option>
+          <option value="ANSI_104">ANSI 104</option>
+          <option value="ANSI_87">ANSI 87 (TKL)</option>
+          <option value="ISO_105">ISO 105</option>
+          <option value="ISO_88">ISO 88 (TKL)</option>
+          <option value="COMPACT_60">60%</option>
+          <option value="COMPACT_65">65%</option>
+          <option value="COMPACT_75">75%</option>
+          <option value="COMPACT_96">96%</option>
+          <option value="HHKB">HHKB</option>
+          <option value="NUMPAD">Numpad</option>
+        </select>
 
         {/* Right: Sync Status and Save Button */}
         <div className="flex items-center gap-3">
@@ -449,6 +491,21 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
         syncEngine={syncEngine}
         isOpen={isCodePanelOpen}
         onToggle={toggleCodePanel}
+      />
+
+      {/* Debug Panel */}
+      <DiagnosticsPanel
+        isConnected={api.isConnected}
+        readyState={api.readyState}
+        lastError={api.lastError}
+        selectedProfile={selectedProfileName}
+        profileConfig={profileConfig}
+        syncEngine={syncEngine}
+        syncStatus={syncStatus}
+        lastSaveTime={lastSaveTime}
+        configStore={configStore}
+        keyboardLayout={keyboardLayout}
+        layoutKeyCount={layoutKeys.length}
       />
     </div>
   );

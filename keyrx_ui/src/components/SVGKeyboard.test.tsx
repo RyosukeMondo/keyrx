@@ -317,7 +317,7 @@ describe('SVGKeyboard - Key Code Normalization', () => {
       ];
 
       const keyMappings = new Map<string, KeyMapping>([
-        ['VK_ENT', { type: 'simple', tapAction: 'VK_Backspace' }],
+        ['VK_Enter', { type: 'simple', tapAction: 'VK_Backspace' }],
       ]);
 
       const { container } = render(

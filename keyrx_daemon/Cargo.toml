@@ -6,6 +6,11 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[lib]
+# Disable doctests: rustdoc can't resolve keyrx_compiler→keyrx_core
+# transitive dependency in workspace (rust-lang/rust#56232)
+doctest = false
+
 [features]
 default = []
 linux = []

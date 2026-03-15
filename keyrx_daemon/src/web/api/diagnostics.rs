@@ -1,6 +1,10 @@
 //! Diagnostics endpoint for comprehensive system health information.
 
-use axum::{routing::get, Json, Router};
+use axum::{
+    extract::{Path, State},
+    routing::{get, post},
+    Json, Router,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
@@ -16,6 +20,9 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/diagnostics/routes", get(get_routes_info))
         .route("/diagnostics/frontend", get(get_frontend_status))
         .route("/diagnostics/build", get(get_build_info))
+        .route("/debug/state", get(get_debug_state))
+        .route("/debug/config/:name", get(get_debug_config))
+        .route("/debug/log-level", post(set_debug_log_level))
 }
 
 /// Comprehensive diagnostics information
@@ -109,29 +116,16 @@ async fn get_build_info() -> Result<Json<BuildInfo>, DaemonError> {
 }
 
 async fn get_diagnostics() -> Result<Json<DiagnosticsResponse>, DaemonError> {
-    // Wrap all operations in spawn_blocking for consistency with other endpoints
     tokio::task::spawn_blocking(move || {
-        // Get binary timestamp
         let binary_timestamp = get_binary_timestamp();
-
-        // Get admin status
         let admin_status = check_admin_status();
-
-        // Get hook status
         let hook_status = get_hook_status();
-
-        // Get platform info
         let platform_info = PlatformInfo {
             os: std::env::consts::OS.to_string(),
             arch: std::env::consts::ARCH.to_string(),
         };
-
-        // Get memory usage
         let memory_usage = get_memory_usage();
-
-        // Get config validation status
         let config_validation_status = check_config_validation();
-
         Ok::<Json<DiagnosticsResponse>, DaemonError>(Json(DiagnosticsResponse {
             version: version::VERSION.to_string(),
             build_time: version::BUILD_DATE.to_string(),
@@ -333,89 +327,38 @@ async fn get_frontend_status() -> Json<Value> {
 
 /// Get list of registered API routes
 fn get_routes_list() -> Value {
+    let api = vec![
+        "health", "version", "status", "metrics/latency", "metrics/events",
+        "daemon/state", "diagnostics", "diagnostics/full", "diagnostics/routes",
+        "diagnostics/frontend", "diagnostics/build", "devices", "devices/:device_id",
+        "devices/:device_id/layout", "profiles", "profiles/:name",
+        "profiles/:name/config", "profiles/:name/activate", "profiles/active",
+        "config/:profile/layers", "config/:profile/layers/:layer", "layouts",
+        "layouts/:layout_name", "simulator/press", "simulator/release",
+        "simulator/sequence", "macros/start", "macros/stop", "macros/events",
+        "macros/save", "debug/state", "debug/config/:name", "debug/log-level",
+    ];
+    let api_routes: Vec<String> = api.into_iter().map(|r| format!("/api/{r}")).collect();
     serde_json::json!({
-        "api_routes": [
-            "/api/health",
-            "/api/version",
-            "/api/status",
-            "/api/metrics/latency",
-            "/api/metrics/events",
-            "/api/daemon/state",
-            "/api/diagnostics",
-            "/api/diagnostics/full",
-            "/api/diagnostics/routes",
-            "/api/diagnostics/frontend",
-            "/api/devices",
-            "/api/devices/:device_id",
-            "/api/devices/:device_id/layout",
-            "/api/profiles",
-            "/api/profiles/:name",
-            "/api/profiles/:name/config",
-            "/api/profiles/:name/activate",
-            "/api/profiles/active",
-            "/api/config/:profile/layers",
-            "/api/config/:profile/layers/:layer",
-            "/api/layouts",
-            "/api/layouts/:layout_name",
-            "/api/simulator/press",
-            "/api/simulator/release",
-            "/api/simulator/sequence",
-            "/api/macros/start",
-            "/api/macros/stop",
-            "/api/macros/events",
-            "/api/macros/save",
-        ],
-        "websocket_routes": [
-            "/ws",
-            "/ws-rpc",
-        ],
-        "frontend_routes": [
-            "/",
-            "/home",
-            "/devices",
-            "/profiles",
-            "/profiles/:name/config",
-            "/config",
-            "/metrics",
-            "/simulator",
-        ],
+        "api_routes": api_routes,
+        "websocket_routes": ["/ws", "/ws-rpc"],
+        "frontend_routes": ["/", "/home", "/devices", "/profiles",
+            "/profiles/:name/config", "/config", "/metrics", "/simulator"],
         "note": "Frontend routes are handled by React Router via SPA fallback"
     })
 }
 
 /// Get frontend bundle information
 fn get_frontend_info() -> Value {
-    use std::path::PathBuf;
-
-    // Check if UI dist directory exists
-    let manifest_dir = env!("CARGO_MANIFEST_DIR");
-    let ui_dist_path = PathBuf::from(manifest_dir).join("../keyrx_ui/dist");
-    let ui_dist_exists = ui_dist_path.exists();
-
+    let ui_dist_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../keyrx_ui/dist");
     serde_json::json!({
         "ui_embedded": true,
         "ui_dist_path": ui_dist_path.to_string_lossy(),
-        "ui_dist_exists": ui_dist_exists,
-        "spa_fallback": "Enabled - all non-API routes serve index.html for React Router",
-        "bundle_files": [
-            "/index.html",
-            "/assets/index-*.js",
-            "/assets/vendor-*.js",
-            "/assets/index-*.css",
-        ],
-        "troubleshooting": {
-            "config_page_not_loading": [
-                "1. Check browser console for JavaScript errors (F12)",
-                "2. Verify /api/profiles/:name/config returns JSON",
-                "3. Ensure React Router is hydrating properly",
-                "4. Check network tab for failed asset requests",
-            ],
-            "api_returning_html": [
-                "1. Verify route path matches /api/* pattern",
-                "2. Check middleware isn't intercepting requests",
-                "3. Ensure handler returns Json<T> not Html",
-            ],
-        },
+        "ui_dist_exists": ui_dist_path.exists(),
+        "spa_fallback": "Enabled - all non-API routes serve index.html",
+        "bundle_files": ["/index.html", "/assets/index-*.js",
+            "/assets/vendor-*.js", "/assets/index-*.css"],
     })
 }
 
@@ -423,109 +366,219 @@ fn get_frontend_info() -> Value {
 fn check_config_validation() -> ConfigStatus {
     use crate::config::ProfileManager;
 
-    // Get config directory
-    let config_dir = match dirs::config_dir() {
-        Some(mut dir) => {
-            dir.push("keyrx");
-            dir
-        }
-        None => {
-            return ConfigStatus {
-                valid: false,
-                message: "Cannot determine config directory".to_string(),
-            }
-        }
+    let Some(mut config_dir) = dirs::config_dir() else {
+        return ConfigStatus { valid: false, message: "Cannot determine config directory".into() };
     };
+    config_dir.push("keyrx");
 
-    // Try to load ProfileManager
-    let profile_manager = match ProfileManager::new(config_dir.clone()) {
+    let profile_manager = match ProfileManager::new(config_dir) {
         Ok(mgr) => mgr,
-        Err(e) => {
-            return ConfigStatus {
-                valid: false,
-                message: format!("Failed to initialize ProfileManager: {}", e),
-            }
-        }
+        Err(e) => return ConfigStatus {
+            valid: false, message: format!("Failed to initialize ProfileManager: {e}"),
+        },
     };
 
-    // Check if there's an active profile
     match profile_manager.get_active() {
-        Ok(Some(active_name)) => {
-            // Try to load the active profile
-            match profile_manager.get(&active_name) {
-                Some(_) => ConfigStatus {
-                    valid: true,
-                    message: format!("Active profile '{}' is valid", active_name),
-                },
-                None => ConfigStatus {
-                    valid: false,
-                    message: format!("Active profile '{}' not found", active_name),
-                },
-            }
-        }
+        Ok(Some(name)) => match profile_manager.get(&name) {
+            Some(_) => ConfigStatus {
+                valid: true, message: format!("Active profile '{name}' is valid"),
+            },
+            None => ConfigStatus {
+                valid: false, message: format!("Active profile '{name}' not found"),
+            },
+        },
         Ok(None) => ConfigStatus {
-            valid: true,
-            message: "No active profile (running in pass-through mode)".to_string(),
+            valid: true, message: "No active profile (running in pass-through mode)".into(),
         },
         Err(e) => ConfigStatus {
-            valid: false,
-            message: format!("Error reading active profile: {}", e),
+            valid: false, message: format!("Error reading active profile: {e}"),
         },
     }
+}
+
+/// GET /api/debug/state - Comprehensive daemon state snapshot for debugging
+async fn get_debug_state(State(state): State<Arc<AppState>>) -> Json<Value> {
+    let daemon_info = match state.daemon_state.as_ref() {
+        Some(daemon) => {
+            let active = daemon.get_active_profile();
+            let mapping_count = active.as_ref()
+                .map(|n| count_mappings_for_profile(&state, n)).unwrap_or(0);
+            serde_json::json!({
+                "running": daemon.is_running(), "uptime_secs": daemon.uptime_secs(),
+                "active_profile": active, "device_count": daemon.get_device_count(),
+                "mapping_count": mapping_count,
+            })
+        }
+        None => serde_json::json!({
+            "running": false, "uptime_secs": null, "active_profile": null,
+            "device_count": 0, "mapping_count": 0,
+            "note": "daemon_state not available (test mode or Linux IPC)",
+        }),
+    };
+    let config_info = build_config_info(&state).await;
+    let profiles_info = build_profiles_info(&state).await;
+    let hook = get_hook_status();
+    Json(serde_json::json!({
+        "daemon": daemon_info,
+        "config": config_info,
+        "profiles": profiles_info,
+        "hook": { "installed": hook.installed, "blocked_keys_count": hook.blocked_keys_count },
+        "ws_info": {
+            "daemon_query_available": state.daemon_query.is_some(),
+            "daemon_state_available": state.daemon_state.is_some(),
+        },
+    }))
+}
+
+/// Count mappings for a profile by reading its .krx file from disk.
+fn count_mappings_for_profile(state: &AppState, name: &str) -> usize {
+    let profiles_dir = state.profile_service.profile_manager().profiles_dir();
+    let krx_path = profiles_dir.join(format!("{name}.krx"));
+    let Ok(data) = std::fs::read(&krx_path) else {
+        return 0;
+    };
+    let Ok(archived) = keyrx_compiler::serialize::deserialize(&data) else {
+        return 0;
+    };
+    use rkyv::Deserialize;
+    let config: keyrx_core::config::ConfigRoot =
+        archived.deserialize(&mut rkyv::Infallible).unwrap();
+    config.devices.iter().map(|d| d.mappings.len()).sum()
+}
+
+/// Build config info for the active profile.
+async fn build_config_info(state: &AppState) -> Value {
+    let active_name = state.profile_service.get_active_profile().await;
+    let Some(name) = active_name else {
+        return serde_json::json!({
+            "active_profile": null,
+            "source": null,
+            "file_size_bytes": null,
+            "last_modified": null,
+        });
+    };
+
+    let profiles_dir = state.profile_service.profile_manager().profiles_dir();
+    let rhai_path = profiles_dir.join(format!("{name}.rhai"));
+
+    let source = state.profile_service.get_profile_config(&name).await.ok();
+    let (file_size, last_modified) = std::fs::metadata(&rhai_path)
+        .ok()
+        .map(|m| {
+            let size = m.len();
+            let modified = m
+                .modified()
+                .ok()
+                .and_then(|t| {
+                    let d = t
+                        .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                        .ok()?;
+                    chrono::DateTime::<chrono::Utc>::from_timestamp(
+                        d.as_secs() as i64,
+                        0,
+                    )
+                })
+                .map(|dt| dt.to_rfc3339());
+            (Some(size), modified)
+        })
+        .unwrap_or((None, None));
+
+    serde_json::json!({
+        "active_profile": name,
+        "source": source,
+        "file_size_bytes": file_size,
+        "last_modified": last_modified,
+    })
+}
+
+/// Build profiles listing with file sizes.
+async fn build_profiles_info(state: &AppState) -> Value {
+    let profiles_dir = state.profile_service.profile_manager().profiles_dir();
+    let Ok(entries) = std::fs::read_dir(&profiles_dir) else {
+        return serde_json::json!([]);
+    };
+
+    let mut profiles = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("rhai") {
+            continue;
+        }
+        let name = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+        let file_size = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+        profiles.push(serde_json::json!({
+            "name": name,
+            "file_size_bytes": file_size,
+        }));
+    }
+
+    serde_json::json!(profiles)
+}
+
+/// GET /api/debug/config/:name - Raw .rhai source code for a profile
+async fn get_debug_config(
+    State(state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+) -> Result<Json<Value>, DaemonError> {
+    let source = state
+        .profile_service
+        .get_profile_config(&name)
+        .await
+        .map_err(|e| {
+            DaemonError::from(crate::error::ConfigError::ParseError {
+                path: std::path::PathBuf::from(format!("{name}.rhai")),
+                reason: format!("Profile not found: {e}"),
+            })
+        })?;
+
+    Ok(Json(serde_json::json!({
+        "name": name,
+        "source": source,
+    })))
+}
+
+/// Request body for changing log level.
+#[derive(Deserialize)]
+struct LogLevelRequest {
+    level: String,
+}
+
+/// POST /api/debug/log-level - Change runtime log level
+async fn set_debug_log_level(
+    Json(payload): Json<LogLevelRequest>,
+) -> Result<Json<Value>, DaemonError> {
+    let level = match payload.level.to_lowercase().as_str() {
+        "trace" => log::LevelFilter::Trace,
+        "debug" => log::LevelFilter::Debug,
+        "info" => log::LevelFilter::Info,
+        "warn" => log::LevelFilter::Warn,
+        "error" => log::LevelFilter::Error,
+        other => {
+            return Err(DaemonError::from(
+                crate::error::ConfigError::ParseError {
+                    path: std::path::PathBuf::from("log-level"),
+                    reason: format!(
+                        "Invalid log level '{other}'. \
+                         Use: trace, debug, info, warn, error"
+                    ),
+                },
+            ));
+        }
+    };
+
+    log::set_max_level(level);
+    log::info!("Log level changed to: {}", payload.level);
+
+    Ok(Json(serde_json::json!({
+        "level": payload.level.to_lowercase(),
+        "applied": true,
+    })))
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+mod tests;
 
-    #[test]
-    fn test_format_bytes() {
-        assert_eq!(format_bytes(0), "0 B");
-        assert_eq!(format_bytes(512), "512 B");
-        assert_eq!(format_bytes(1024), "1.00 KB");
-        assert_eq!(format_bytes(1536), "1.50 KB");
-        assert_eq!(format_bytes(1048576), "1.00 MB");
-        assert_eq!(format_bytes(1073741824), "1.00 GB");
-    }
-
-    #[test]
-    fn test_platform_info() {
-        let platform_info = PlatformInfo {
-            os: std::env::consts::OS.to_string(),
-            arch: std::env::consts::ARCH.to_string(),
-        };
-        assert!(!platform_info.os.is_empty());
-        assert!(!platform_info.arch.is_empty());
-    }
-
-    #[test]
-    fn test_diagnostics_response_serialization() {
-        let response = DiagnosticsResponse {
-            version: "0.1.0".to_string(),
-            build_time: "2024-01-01".to_string(),
-            git_hash: "abc123".to_string(),
-            binary_timestamp: Some("2024-01-01T00:00:00Z".to_string()),
-            admin_status: true,
-            hook_status: HookStatus {
-                installed: true,
-                blocked_keys_count: 5,
-            },
-            platform_info: PlatformInfo {
-                os: "windows".to_string(),
-                arch: "x86_64".to_string(),
-            },
-            memory_usage: MemoryUsage {
-                process_memory_bytes: 10485760,
-                process_memory_human: "10.00 MB".to_string(),
-            },
-            config_validation_status: ConfigStatus {
-                valid: true,
-                message: "Configuration is valid".to_string(),
-            },
-        };
-
-        let json = serde_json::to_string(&response).unwrap();
-        assert!(json.contains("\"version\":\"0.1.0\""));
-        assert!(json.contains("\"admin_status\":true"));
-    }
-}

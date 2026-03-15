@@ -329,7 +329,7 @@ map("VK_I", "VK_H");                // I -> H
 map("VK_J", "VK_B");                // J -> B
 map("VK_K", "VK_M");                // K -> M
 map("VK_L", "VK_W");                // L -> W
-tap_hold("VK_N", "VK_N", "MD_10", 200);  // N: tap=N, hold=MD_10 (Shift layer)               // N -> Custom Shift Layer (MD_10)
+map("VK_N", "VK_LShift");                  // N -> LShift
 map("VK_O", "VK_T");                // O -> T
 map("VK_P", "VK_N");                // P -> N
 map("VK_R", "VK_E");                // R -> E
@@ -339,64 +339,6 @@ map("VK_U", "VK_D");                // U -> D
 map("VK_W", "VK_A");                // W -> A
 map("VK_Y", "VK_I");                // Y -> I
 // Z -> Z (passthrough)
-
-// ============================================================
-// MD_10 Layer (Custom Shift on N)
-// Explicitly map shifted versions of keys because MD_10 is not a system Shift
-// ============================================================
-when_start("MD_10");
-    // Requested: Shift + S -> : (Colon)
-    map("VK_S", "VK_Quote");                    // JIS: Quote is ':'
-
-    // Requested: Shift + [ -> S (Capital S)
-    map("VK_LeftBracket", with_shift("VK_S"));
-
-    // Shifted letters (matching base mappings)
-    map("VK_D", with_shift("VK_Q"));
-    map("VK_E", with_shift("VK_O"));
-    map("VK_F", with_shift("VK_J"));
-    map("VK_G", with_shift("VK_K"));
-    map("VK_H", with_shift("VK_X"));
-    map("VK_I", with_shift("VK_H"));
-    map("VK_J", with_shift("VK_B"));
-    map("VK_K", with_shift("VK_M"));
-    map("VK_L", with_shift("VK_W"));
-    map("VK_O", with_shift("VK_T"));
-    map("VK_P", with_shift("VK_N"));
-    map("VK_R", with_shift("VK_E"));
-    // S is handled above (mapped to Colon)
-    map("VK_T", with_shift("VK_U"));
-    map("VK_U", with_shift("VK_D"));
-    map("VK_W", with_shift("VK_A"));
-    map("VK_Y", with_shift("VK_I"));
-    map("VK_Z", with_shift("VK_Z"));            // Z Passthrough
-
-    // TapHold Keys acting as letters need shifted mappings here too
-    // (If user presses Shift+B, they expect Shift+Enter?)
-    // Note: TapHold keys (B,V,M,X,Q,A) are processed *before* this if they are held.
-    // If they are tapped while MD_10 is held, the base tap_hold config handles them?
-    // No, tap_hold output is Virtual Key. We need to intercept the *input* physical key here?
-    // KeyRx logic: tap_hold is a mapping. `when` is a condition.
-    // If MD_10 is active, we need mappings for the physical keys B, V, M, etc.
-    // If we map them here, it overrides the tap_hold definition in the base layer!
-    // So we lose the hold functionality of B, V, M etc while Shift is held. This is usually desired (Shift+Hold is rare).
-    // We map them to their shifted tap values.
-    map("VK_B", with_shift("VK_Enter"));
-    map("VK_V", with_shift("VK_Delete"));
-    map("VK_M", with_shift("VK_Backspace"));
-    map("VK_X", with_shift("VK_Delete"));
-    map("VK_C", with_shift("VK_Delete"));
-    map("VK_Q", with_shift("VK_Minus"));
-    map("VK_A", with_shift("VK_Tab"));
-    map("VK_Num1", with_shift("VK_Num1"));      // Shift+1 -> !
-
-    // Other symbols from base layer
-    map("VK_RightBracket", with_shift("VK_Minus"));
-    map("VK_Quote", with_shift("VK_Z"));
-    map("VK_Equal", with_shift("VK_Slash"));
-    map("VK_Minus", with_shift("VK_L"));
-    map("VK_Semicolon", with_shift("VK_V"));
-when_end();
 
 // === Number Row Remappings (excluding TapHold/modified keys) ===
 // Note: 1 is TapHold, 2 is modified output

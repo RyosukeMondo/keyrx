@@ -22,6 +22,9 @@
 pub mod error;
 pub mod validators;
 
+#[cfg(test)]
+mod validators_test;
+
 // Full parser - requires rhai, sha2, spin
 #[cfg(feature = "wasm")]
 pub mod functions;

@@ -17,6 +17,10 @@ import type {
 } from '../types';
 import { buildWsUrl, WS_RECONNECT_CONFIG } from '../config/constants';
 
+/** Exponential backoff intervals in ms (WS-002) */
+const RECONNECT_INTERVALS = [100, 200, 400, 800, 1600];
+const MAX_RECONNECT_INTERVAL = 5000;
+
 /**
  * Transform daemon's KeyEventPayload to frontend's EventRecord
  */
@@ -166,6 +170,7 @@ export class WebSocketManager {
    */
   public send(data: string | object): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.warn('Cannot send message: WebSocket is not connected');
       return;
     }
 
@@ -241,7 +246,7 @@ export class WebSocketManager {
           // Unknown message type received
       }
     } catch (error) {
-      // Failed to parse message
+      console.error('Failed to parse WebSocket message:', error);
     }
   }
 

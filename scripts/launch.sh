@@ -97,31 +97,26 @@ parse_args() {
     done
 }
 
-# Build daemon binary
+# Build daemon binary (full sequence: WASM → UI → Daemon)
+# Delegates to build.sh to prevent stale UI files from being
+# embedded in the daemon binary.
 build_daemon() {
-    local build_cmd="cargo build --bin keyrx_daemon"
+    local build_args=""
 
     if [[ "$RELEASE_MODE" == "true" ]]; then
-        build_cmd="$build_cmd --release"
-        log_info "Building keyrx_daemon in release mode..."
-    else
-        log_info "Building keyrx_daemon in debug mode..."
+        build_args="$build_args --release"
+    fi
+    if [[ "$ERROR_ONLY_MODE" == "true" ]]; then
+        build_args="$build_args --error"
+    fi
+    if [[ "$QUIET_MODE" == "true" ]]; then
+        build_args="$build_args --quiet"
     fi
 
-    # Execute build
-    if $build_cmd 2>&1 | while IFS= read -r line; do
-        if [[ "$ERROR_ONLY_MODE" == "true" ]]; then
-            # Only show errors
-            if echo "$line" | grep -qi "error"; then
-                log_error "$line"
-            fi
-        else
-            # Show all output in quiet mode suppressed by log_info
-            if [[ "$QUIET_MODE" != "true" ]]; then
-                echo "$line"
-            fi
-        fi
-    done; then
+    log_info "Running full build sequence (WASM → UI → Daemon)..."
+
+    # shellcheck disable=SC2086
+    if "$SCRIPT_DIR/build.sh" $build_args; then
         log_info "Build completed successfully"
         return 0
     else

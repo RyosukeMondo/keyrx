@@ -122,11 +122,16 @@ log_info "Step 4/4: Building UI application..."
 # Record build start time
 BUILD_START=$(date +%s)
 
-# Run the build
-if npm run build; then
+# Run prebuild (typeshare + version generation) then vite build.
+# We skip `npm run build` because it redundantly re-runs build:wasm
+# (already done in Step 1) and fails on Windows where npm uses cmd.exe
+# which cannot execute bash scripts. We also skip `tsc -b` (type-check
+# only) since vite uses esbuild for transpilation; type errors are
+# caught separately by `npm run lint` / CI.
+if npm run prebuild && npx vite build; then
     log_info "UI build completed successfully"
 else
-    log_error "npm run build failed"
+    log_error "UI build failed"
     log_failed
     exit 1
 fi

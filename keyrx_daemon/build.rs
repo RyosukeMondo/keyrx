@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 fn main() {
     // Validate version consistency between Cargo.toml and package.json
@@ -167,11 +168,22 @@ fn check_ui_dist() {
             println!("cargo:warning=The UI build may be incomplete");
         } else {
             println!("cargo:warning=UI dist directory found and will be embedded");
+            check_ui_staleness(workspace_root);
         }
     }
 
-    // Tell cargo to re-run this build script if the UI dist directory changes
-    println!("cargo:rerun-if-changed=../keyrx_ui/dist");
+    // Re-run when dist contents change (after UI rebuild)
+    println!("cargo:rerun-if-changed=../keyrx_ui/dist/index.html");
+    // Re-run when key source entry points change (to detect staleness)
+    for entry in &[
+        "../keyrx_ui/src/App.tsx",
+        "../keyrx_ui/src/main.tsx",
+        "../keyrx_ui/index.html",
+        "../keyrx_ui/vite.config.ts",
+        "../keyrx_ui/package.json",
+    ] {
+        println!("cargo:rerun-if-changed={entry}");
+    }
 }
 
 /// Set build metadata (timestamp and git hash)
@@ -201,4 +213,79 @@ fn set_build_metadata() {
     } else {
         println!("cargo:rustc-env=GIT_HASH=unknown");
     }
+}
+
+/// Warn when UI source files are newer than dist (stale embedded UI)
+///
+/// Compares the newest modification time in `keyrx_ui/src/` and key config
+/// files against `keyrx_ui/dist/index.html`. If source is newer, the daemon
+/// would embed outdated UI chunks, causing "Failed to fetch dynamically
+/// imported module" errors at runtime.
+fn check_ui_staleness(workspace_root: &Path) {
+    let dist_index = workspace_root.join("keyrx_ui/dist/index.html");
+
+    let Ok(dist_meta) = std::fs::metadata(&dist_index) else {
+        return;
+    };
+    let Ok(dist_mtime) = dist_meta.modified() else {
+        return;
+    };
+
+    // Check source directory and config files that affect build output
+    let src_dir = workspace_root.join("keyrx_ui/src");
+    let mut newest_src = newest_mtime_in_dir(&src_dir);
+
+    let config_files = [
+        workspace_root.join("keyrx_ui/package.json"),
+        workspace_root.join("keyrx_ui/vite.config.ts"),
+        workspace_root.join("keyrx_ui/index.html"),
+    ];
+    for config_file in &config_files {
+        if let Ok(meta) = std::fs::metadata(config_file) {
+            if let Ok(mtime) = meta.modified() {
+                newest_src = Some(newest_src.map_or(mtime, |n| n.max(mtime)));
+            }
+        }
+    }
+
+    if let Some(src_mtime) = newest_src {
+        if src_mtime > dist_mtime {
+            emit_stale_ui_warning();
+        }
+    }
+}
+
+fn emit_stale_ui_warning() {
+    let lines = [
+        "STALE UI DIST DETECTED",
+        "UI source files are newer than dist/index.html.",
+        "The daemon will embed OUTDATED UI files.",
+        "This causes 'Failed to fetch dynamically imported module' errors.",
+        "",
+        "Fix: run 'make build' or 'scripts/build.sh'",
+        "     (rebuilds WASM -> UI -> Daemon in correct sequence)",
+    ];
+    for line in &lines {
+        println!("cargo:warning={line}");
+    }
+}
+
+/// Find the newest file modification time in a directory (recursive)
+fn newest_mtime_in_dir(dir: &Path) -> Option<SystemTime> {
+    let entries = std::fs::read_dir(dir).ok()?;
+    let mut newest: Option<SystemTime> = None;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let mtime = if path.is_dir() {
+            newest_mtime_in_dir(&path)
+        } else {
+            path.metadata().ok().and_then(|m| m.modified().ok())
+        };
+        if let Some(t) = mtime {
+            newest = Some(newest.map_or(t, |n| n.max(t)));
+        }
+    }
+
+    newest
 }

@@ -297,11 +297,21 @@ export function validateApiResponse<T>(
 
   if (!result.success) {
     const errorMessage = `API validation failed for ${endpoint}: ${result.error.message}`;
+    console.error(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: 'error',
+        service: 'API Validation',
+        event: 'validation_failed',
+        context: { endpoint, error: result.error.message },
+      })
+    );
     throw new Error(errorMessage);
   }
 
-  // Note: Using passthrough() on schemas allows unexpected fields.
-  // This provides forward compatibility with API evolution.
+  // Passthrough schemas allow unexpected fields for forward compatibility.
+  // Log at debug level so consumers can trace API evolution.
+  console.debug(`API response validated for ${endpoint}`);
 
   return result.data;
 }
