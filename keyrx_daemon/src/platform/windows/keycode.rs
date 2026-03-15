@@ -307,60 +307,77 @@ pub fn keycode_to_vk(keycode: KeyCode) -> Option<u16> {
     None
 }
 
-/// Convert KeyCode to Windows scan code for key blocking
+/// Convert KeyCode to Windows scan code for key blocking.
 ///
-/// Uses MapVirtualKeyW to get the hardware scan code from virtual key code.
-/// Returns the scan code with extended flag if applicable (e.g., 0xE01D for Right Ctrl).
+/// Uses a hardcoded table (reverse of scancode_to_keycode) to ensure
+/// layout-independent mapping. MapVirtualKeyW is NOT used here because
+/// it returns layout-dependent scan codes for punctuation keys (e.g.,
+/// VK_OEM_4 → wrong scan code on JIS keyboards).
 pub fn keycode_to_scancode(keycode: KeyCode) -> Option<u32> {
-    // Japanese keys that MapVirtualKeyW can't resolve — use hardcoded scan codes
-    match keycode {
-        KeyCode::Ro => return Some(0x73),               // JIS ろ key
-        KeyCode::Hiragana => return Some(0x70),         // Hiragana mode
-        KeyCode::KatakanaHiragana => return Some(0x70), // Katakana/Hiragana toggle
-        KeyCode::Zenkaku => return Some(0x29), // Zenkaku/Hankaku (same position as Grave on JIS)
-        KeyCode::Henkan => return Some(0x79),  // 変換
-        KeyCode::Muhenkan => return Some(0x7B), // 無変換
-        _ => {}
-    }
-
-    let vk = keycode_to_vk(keycode)?;
-
-    // MapVirtualKeyW with MAPVK_VK_TO_VSC (0) returns scan code
-    let scan_code =
-        unsafe { windows_sys::Win32::UI::Input::KeyboardAndMouse::MapVirtualKeyW(vk as u32, 0) };
-
-    if scan_code == 0 {
-        return None;
-    }
-
-    // Check if this is an extended key (arrows, insert, delete, home, end, page up/down, etc.)
-    // Extended keys need the 0xE000 prefix
-    let is_extended = matches!(
-        keycode,
-        KeyCode::Insert
-            | KeyCode::Delete
-            | KeyCode::Home
-            | KeyCode::End
-            | KeyCode::PageUp
-            | KeyCode::PageDown
-            | KeyCode::Left
-            | KeyCode::Right
-            | KeyCode::Up
-            | KeyCode::Down
-            | KeyCode::RCtrl
-            | KeyCode::RAlt
-            | KeyCode::RMeta
-            | KeyCode::NumpadDivide
-            | KeyCode::NumpadEnter
-    );
-
-    let full_scan_code = if is_extended {
-        scan_code | 0xE000
-    } else {
-        scan_code
+    let scan = match keycode {
+        // Letters
+        KeyCode::A => 0x1E, KeyCode::B => 0x30, KeyCode::C => 0x2E,
+        KeyCode::D => 0x20, KeyCode::E => 0x12, KeyCode::F => 0x21,
+        KeyCode::G => 0x22, KeyCode::H => 0x23, KeyCode::I => 0x17,
+        KeyCode::J => 0x24, KeyCode::K => 0x25, KeyCode::L => 0x26,
+        KeyCode::M => 0x32, KeyCode::N => 0x31, KeyCode::O => 0x18,
+        KeyCode::P => 0x19, KeyCode::Q => 0x10, KeyCode::R => 0x13,
+        KeyCode::S => 0x1F, KeyCode::T => 0x14, KeyCode::U => 0x16,
+        KeyCode::V => 0x2F, KeyCode::W => 0x11, KeyCode::X => 0x2D,
+        KeyCode::Y => 0x15, KeyCode::Z => 0x2C,
+        // Numbers
+        KeyCode::Num0 => 0x0B, KeyCode::Num1 => 0x02, KeyCode::Num2 => 0x03,
+        KeyCode::Num3 => 0x04, KeyCode::Num4 => 0x05, KeyCode::Num5 => 0x06,
+        KeyCode::Num6 => 0x07, KeyCode::Num7 => 0x08, KeyCode::Num8 => 0x09,
+        KeyCode::Num9 => 0x0A,
+        // Control keys
+        KeyCode::Escape => 0x01, KeyCode::Enter => 0x1C,
+        KeyCode::Space => 0x39, KeyCode::Backspace => 0x0E,
+        KeyCode::Tab => 0x0F, KeyCode::LShift => 0x2A,
+        KeyCode::RShift => 0x36, KeyCode::LCtrl => 0x1D,
+        KeyCode::LAlt => 0x38,
+        // Punctuation
+        KeyCode::Grave => 0x29, KeyCode::Minus => 0x0C,
+        KeyCode::Equal => 0x0D, KeyCode::LeftBracket => 0x1A,
+        KeyCode::RightBracket => 0x1B, KeyCode::Backslash => 0x2B,
+        KeyCode::Semicolon => 0x27, KeyCode::Quote => 0x28,
+        KeyCode::Comma => 0x33, KeyCode::Period => 0x34,
+        KeyCode::Slash => 0x35,
+        // Lock keys
+        KeyCode::CapsLock => 0x3A, KeyCode::NumLock => 0x45,
+        KeyCode::ScrollLock => 0x46,
+        // Function keys
+        KeyCode::F1 => 0x3B, KeyCode::F2 => 0x3C, KeyCode::F3 => 0x3D,
+        KeyCode::F4 => 0x3E, KeyCode::F5 => 0x3F, KeyCode::F6 => 0x40,
+        KeyCode::F7 => 0x41, KeyCode::F8 => 0x42, KeyCode::F9 => 0x43,
+        KeyCode::F10 => 0x44, KeyCode::F11 => 0x57, KeyCode::F12 => 0x58,
+        // Numpad
+        KeyCode::Numpad0 => 0x52, KeyCode::Numpad1 => 0x4F,
+        KeyCode::Numpad2 => 0x50, KeyCode::Numpad3 => 0x51,
+        KeyCode::Numpad4 => 0x4B, KeyCode::Numpad5 => 0x4C,
+        KeyCode::Numpad6 => 0x4D, KeyCode::Numpad7 => 0x47,
+        KeyCode::Numpad8 => 0x48, KeyCode::Numpad9 => 0x49,
+        KeyCode::NumpadDecimal => 0x53, KeyCode::NumpadMultiply => 0x37,
+        KeyCode::NumpadSubtract => 0x4A, KeyCode::NumpadAdd => 0x4E,
+        // JIS-specific keys
+        KeyCode::Ro => 0x73, KeyCode::Yen => 0x7D,
+        KeyCode::Hiragana | KeyCode::KatakanaHiragana => 0x70,
+        KeyCode::Henkan => 0x79, KeyCode::Muhenkan => 0x7B,
+        KeyCode::Zenkaku => 0x29,
+        // Extended keys (E0-prefixed)
+        KeyCode::RCtrl => 0xE01D, KeyCode::RAlt => 0xE038,
+        KeyCode::Home => 0xE047, KeyCode::Up => 0xE048,
+        KeyCode::PageUp => 0xE049, KeyCode::Left => 0xE04B,
+        KeyCode::Right => 0xE04D, KeyCode::End => 0xE04F,
+        KeyCode::Down => 0xE050, KeyCode::PageDown => 0xE051,
+        KeyCode::Insert => 0xE052, KeyCode::Delete => 0xE053,
+        KeyCode::NumpadDivide => 0xE035,
+        KeyCode::LMeta => 0xE05B, KeyCode::RMeta => 0xE05C,
+        KeyCode::Menu => 0xE05D, KeyCode::PrintScreen => 0xE037,
+        KeyCode::Pause => 0xE11D,
+        _ => return None,
     };
-
-    Some(full_scan_code)
+    Some(scan)
 }
 
 #[cfg(test)]
@@ -439,5 +456,49 @@ mod tests {
         assert_eq!(scancode_to_keycode(0xE05C), Some(KeyCode::RMeta));
         assert_eq!(scancode_to_keycode(0xE05D), Some(KeyCode::Menu));
         assert_eq!(scancode_to_keycode(0xE037), Some(KeyCode::PrintScreen));
+    }
+
+    #[test]
+    fn test_scancode_roundtrip() {
+        // Every scancode→keycode mapping must roundtrip through keycode→scancode.
+        // This ensures the key blocker registers the same scan code the hook sees.
+        let test_scancodes: &[u32] = &[
+            // Letters
+            0x1E, 0x30, 0x2E, 0x20, 0x12, 0x21, 0x22, 0x23, 0x17, 0x24,
+            0x25, 0x26, 0x32, 0x31, 0x18, 0x19, 0x10, 0x13, 0x1F, 0x14,
+            0x16, 0x2F, 0x11, 0x2D, 0x15, 0x2C,
+            // Numbers
+            0x0B, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
+            // Control
+            0x01, 0x1C, 0x39, 0x0E, 0x0F, 0x2A, 0x36, 0x1D, 0x38,
+            // Punctuation (critical for JIS)
+            0x29, 0x0C, 0x0D, 0x1A, 0x1B, 0x2B, 0x27, 0x28, 0x33, 0x34, 0x35,
+            // Locks
+            0x3A, 0x45, 0x46,
+            // Function keys
+            0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x40, 0x41, 0x42, 0x43, 0x44,
+            0x57, 0x58,
+            // Numpad
+            0x52, 0x4F, 0x50, 0x51, 0x4B, 0x4C, 0x4D, 0x47, 0x48, 0x49,
+            0x53, 0x37, 0x4A, 0x4E,
+            // JIS
+            0x73, 0x7D, 0x70, 0x79, 0x7B,
+            // Extended
+            0xE01D, 0xE038, 0xE047, 0xE048, 0xE049, 0xE04B, 0xE04D,
+            0xE04F, 0xE050, 0xE051, 0xE052, 0xE053, 0xE035,
+            0xE05B, 0xE05C, 0xE05D, 0xE037,
+        ];
+
+        for &sc in test_scancodes {
+            let kc = scancode_to_keycode(sc)
+                .unwrap_or_else(|| panic!("scancode 0x{:04X} has no keycode", sc));
+            let sc2 = keycode_to_scancode(kc)
+                .unwrap_or_else(|| panic!("keycode {:?} has no scancode", kc));
+            assert_eq!(
+                sc, sc2,
+                "Roundtrip failed: 0x{:04X} → {:?} → 0x{:04X}",
+                sc, kc, sc2
+            );
+        }
     }
 }

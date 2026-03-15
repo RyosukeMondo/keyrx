@@ -33,7 +33,7 @@ use uinput::Device as UInputDevice;
 #[cfg(target_os = "linux")]
 use crate::platform::linux::keycode_to_uinput_key;
 #[cfg(target_os = "windows")]
-use crate::platform::windows::keycode::keycode_to_vk;
+use crate::platform::windows::keycode::{keycode_to_scancode, keycode_to_vk};
 use crate::test_utils::VirtualDeviceError;
 use keyrx_core::config::KeyCode;
 use keyrx_core::runtime::event::KeyEvent;
@@ -296,9 +296,13 @@ impl VirtualKeyboard {
             let keycode = event.keycode();
             let is_release = event.is_release();
 
-            let vk = keycode_to_vk(keycode).ok_or_else(|| {
+            // Use hardcoded scan code table (layout-independent)
+            let full_scan = keycode_to_scancode(keycode).ok_or_else(|| {
                 VirtualDeviceError::creation_failed(format!("Unmapped keycode: {:?}", keycode))
             })?;
+            let vk = keycode_to_vk(keycode).unwrap_or(0);
+            let scan = (full_scan & 0xFF) as u16;
+            let is_extended = full_scan > 0xFF;
 
             unsafe {
                 let mut input = INPUT {
@@ -308,14 +312,13 @@ impl VirtualKeyboard {
 
                 input.Anonymous.ki = KEYBDINPUT {
                     wVk: vk,
-                    wScan: MapVirtualKeyW(vk as u32, MAPVK_VK_TO_VSC) as u16,
+                    wScan: scan,
                     dwFlags: (if is_release { KEYEVENTF_KEYUP } else { 0 }) | KEYEVENTF_SCANCODE,
                     time: 0,
                     dwExtraInfo: TEST_SIMULATED_PHYSICAL_MARKER,
                 };
 
-                // Set extended key flag for certain keys
-                if is_extended_key(vk) {
+                if is_extended {
                     input.Anonymous.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
                 }
 
@@ -331,30 +334,6 @@ impl VirtualKeyboard {
     }
 }
 
-#[cfg(target_os = "windows")]
-pub fn is_extended_key(vk: u16) -> bool {
-    matches!(
-        vk,
-        VK_RMENU
-            | VK_RCONTROL
-            | VK_INSERT
-            | VK_DELETE
-            | VK_HOME
-            | VK_END
-            | VK_PRIOR
-            | VK_NEXT
-            | VK_LEFT
-            | VK_RIGHT
-            | VK_UP
-            | VK_DOWN
-            | VK_NUMLOCK
-            | VK_SNAPSHOT
-            | VK_DIVIDE
-            | VK_LWIN
-            | VK_RWIN
-            | VK_APPS
-    )
-}
 
 impl VirtualKeyboard {
     /// Injects a sequence of key events with optional delay between them.

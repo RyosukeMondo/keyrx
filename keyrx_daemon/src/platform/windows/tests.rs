@@ -1,4 +1,4 @@
-use crate::platform::windows::keycode::{keycode_to_vk, vk_to_keycode};
+use crate::platform::windows::keycode::{keycode_to_scancode, keycode_to_vk, vk_to_keycode};
 use keyrx_core::config::KeyCode;
 use serial_test::serial;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
@@ -24,12 +24,12 @@ fn test_unmapped_vk() {
 }
 
 #[test]
-fn test_extended_keys() {
-    use crate::platform::windows::inject::is_extended_key;
-    assert!(is_extended_key(VK_RMENU as u16));
-    assert!(is_extended_key(VK_RCONTROL as u16));
-    assert!(is_extended_key(VK_LEFT as u16));
-    assert!(!is_extended_key(VK_A as u16));
+fn test_extended_keys_via_scancode() {
+    // Extended keys have scan codes > 0xFF (E0-prefixed)
+    assert!(keycode_to_scancode(KeyCode::RAlt).unwrap() > 0xFF);
+    assert!(keycode_to_scancode(KeyCode::RCtrl).unwrap() > 0xFF);
+    assert!(keycode_to_scancode(KeyCode::Left).unwrap() > 0xFF);
+    assert!(keycode_to_scancode(KeyCode::A).unwrap() <= 0xFF);
 }
 
 #[test]

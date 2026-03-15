@@ -1,5 +1,5 @@
 use keyrx_core::config::KeyCode;
-use keyrx_daemon::platform::windows::keycode::keycode_to_vk;
+use keyrx_daemon::platform::windows::keycode::{keycode_to_scancode, keycode_to_vk};
 use std::mem::size_of;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
 
@@ -28,15 +28,21 @@ impl VirtualWindowsKeyboard {
 
     #[allow(dead_code)]
     fn send_input(&self, keycode: KeyCode, is_release: bool) -> Result<(), String> {
-        let vk =
-            keycode_to_vk(keycode).ok_or_else(|| format!("Unmapped keycode: {:?}", keycode))?;
-
-        inject_keyboard_event(vk, is_release)
+        // Use hardcoded scan code table (layout-independent)
+        let full_scan = keycode_to_scancode(keycode)
+            .ok_or_else(|| format!("Unmapped keycode: {:?}", keycode))?;
+        let vk = keycode_to_vk(keycode).unwrap_or(0);
+        inject_keyboard_event(vk, (full_scan & 0xFF) as u16, full_scan > 0xFF, is_release)
     }
 }
 
 #[allow(dead_code)]
-pub fn inject_keyboard_event(vk: u16, is_release: bool) -> Result<(), String> {
+pub fn inject_keyboard_event(
+    vk: u16,
+    scan: u16,
+    is_extended: bool,
+    is_release: bool,
+) -> Result<(), String> {
     unsafe {
         let mut input = INPUT {
             r#type: INPUT_KEYBOARD,
@@ -45,14 +51,13 @@ pub fn inject_keyboard_event(vk: u16, is_release: bool) -> Result<(), String> {
 
         input.Anonymous.ki = KEYBDINPUT {
             wVk: vk,
-            wScan: MapVirtualKeyW(vk as u32, MAPVK_VK_TO_VSC) as u16,
+            wScan: scan,
             dwFlags: (if is_release { KEYEVENTF_KEYUP } else { 0 }) | KEYEVENTF_SCANCODE,
             time: 0,
             dwExtraInfo: 0,
         };
 
-        // Set extended key flag if necessary
-        if keyrx_daemon::platform::windows::inject::is_extended_key(vk) {
+        if is_extended {
             input.Anonymous.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
         }
 

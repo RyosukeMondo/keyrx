@@ -277,10 +277,11 @@ fn get_all_key_names() -> Vec<&'static str> {
         "Copy",
         "Paste",
         "Find",
-        // Japanese JIS keyboard keys
+        // Japanese JIS keyboard keys (Zenkaku/Hankaku → Grave, カタカナ → KatakanaHiragana)
         "Zenkaku",
         "全角",
         "半角",
+        "Hankaku",
         "Katakana",
         "カタカナ",
         "Hiragana",
@@ -525,8 +526,13 @@ pub fn parse_key_name(name: &str) -> Result<KeyCode, ParseError> {
         "Paste" => KeyCode::Paste,
         "Find" => KeyCode::Find,
         // Japanese JIS keyboard keys
-        "Zenkaku" | "全角" | "半角" | "ZenkakuHankaku" => KeyCode::Zenkaku,
-        "Katakana" | "カタカナ" => KeyCode::Katakana,
+        // Zenkaku/Hankaku: physical scan code 0x29 maps to KeyCode::Grave in the
+        // daemon's scancode table, so these aliases must resolve to Grave to match
+        // the actual hardware key event.
+        "Zenkaku" | "全角" | "半角" | "Hankaku" | "ZenkakuHankaku" => KeyCode::Grave,
+        // Katakana: on JIS keyboards the physical key produces scan code 0x70,
+        // which the daemon maps to KeyCode::KatakanaHiragana (not Katakana).
+        "Katakana" | "カタカナ" => KeyCode::KatakanaHiragana,
         "Hiragana" | "ひらがな" => KeyCode::Hiragana,
         "Henkan" | "変換" | "Convert" => KeyCode::Henkan,
         "Muhenkan" | "無変換" | "NonConvert" => KeyCode::Muhenkan,
