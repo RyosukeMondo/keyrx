@@ -382,6 +382,9 @@ export function useRhaiSyncEngine(
         debounceTimerRef.current = null;
       }
 
+      // Release sync lock if held (prevents stale lock from blocking parse)
+      syncLockRef.current = false;
+
       codeRef.current = code;
       persistToStorage(code);
       parseCode(code);

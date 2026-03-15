@@ -121,6 +121,13 @@ pub struct DaemonSharedState {
     /// Flag set by the web API when the active profile's config is modified.
     /// The message loop checks and clears this to trigger a daemon reload.
     reload_requested: AtomicBool,
+
+    /// Suspended flag — when true, the daemon passes all keys through unchanged.
+    ///
+    /// This is toggled via the system tray menu ("Suspend / Resume") or
+    /// via `POST /api/debug/suspend`. The keyboard hook checks this flag
+    /// and skips blocking when suspended.
+    suspended: Arc<AtomicBool>,
 }
 
 impl DaemonSharedState {
@@ -166,6 +173,7 @@ impl DaemonSharedState {
             device_count: Arc::new(AtomicUsize::new(device_count)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -211,6 +219,7 @@ impl DaemonSharedState {
             device_count: Arc::new(AtomicUsize::new(daemon.device_count())),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -452,6 +461,34 @@ impl DaemonSharedState {
     pub fn take_reload_request(&self) -> bool {
         self.reload_requested.swap(false, Ordering::SeqCst)
     }
+
+    /// Returns whether the daemon is currently suspended.
+    ///
+    /// When suspended, all keys pass through unchanged (no remapping/blocking).
+    ///
+    /// # Thread Safety
+    ///
+    /// Lock-free atomic read with `SeqCst` ordering.
+    #[must_use]
+    pub fn is_suspended(&self) -> bool {
+        self.suspended.load(Ordering::SeqCst)
+    }
+
+    /// Sets the suspended state.
+    ///
+    /// Pass `true` to suspend (pass all keys through), `false` to resume.
+    pub fn set_suspended(&self, suspended: bool) {
+        self.suspended.store(suspended, Ordering::SeqCst);
+    }
+
+    /// Returns an `Arc<AtomicBool>` clone of the suspended flag.
+    ///
+    /// This is used to share the flag with the keyboard hook callback,
+    /// which needs lock-free access from the hook thread.
+    #[must_use]
+    pub fn suspended_flag(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.suspended)
+    }
 }
 
 #[cfg(test)]
@@ -478,6 +515,7 @@ mod tests {
             device_count,
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         };
 
         assert!(state.is_running());
@@ -485,6 +523,7 @@ mod tests {
         assert_eq!(state.get_config_path(), PathBuf::from("/test/config.krx"));
         assert_eq!(state.get_device_count(), 2);
         assert_eq!(state.uptime_secs(), 0); // Just created
+        assert!(!state.is_suspended());
     }
 
     #[test]
@@ -497,6 +536,7 @@ mod tests {
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         };
 
         assert!(state.is_running());
@@ -515,6 +555,7 @@ mod tests {
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         };
 
         // Initial profile
@@ -538,6 +579,7 @@ mod tests {
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         };
 
         assert_eq!(
@@ -559,6 +601,7 @@ mod tests {
             device_count: Arc::new(AtomicUsize::new(2)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         };
 
         assert_eq!(state.get_device_count(), 2);
@@ -577,6 +620,7 @@ mod tests {
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         };
 
         // Just created, uptime should be 0
@@ -599,6 +643,7 @@ mod tests {
             device_count: Arc::new(AtomicUsize::new(5)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         });
 
         // Spawn multiple reader threads
@@ -629,6 +674,7 @@ mod tests {
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         });
 
         // Spawn multiple writer threads
@@ -664,6 +710,7 @@ mod tests {
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         });
 
         // Atomic update of both fields
@@ -690,6 +737,7 @@ mod tests {
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         });
 
         // Concurrent atomic updates should not deadlock
@@ -725,6 +773,7 @@ mod tests {
             device_count: Arc::new(AtomicUsize::new(1)),
             start_time: Instant::now(),
             reload_requested: AtomicBool::new(false),
+            suspended: Arc::new(AtomicBool::new(false)),
         });
 
         // Mix of readers and writers

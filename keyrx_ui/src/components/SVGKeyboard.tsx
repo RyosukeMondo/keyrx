@@ -5,7 +5,7 @@
  * MIT License compatible - no GPL dependencies
  */
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import type { KeyMapping } from '@/types';
 
 // Constants for SVG rendering
@@ -34,6 +34,8 @@ interface SVGKeyboardProps {
   pressedKeys?: Set<string>;
   className?: string;
   layoutName?: string;
+  /** Dynamic key labels from layout detection API */
+  labelOverrides?: Record<string, string>;
 }
 
 interface KeySVGProps {
@@ -495,6 +497,12 @@ function normalizeKeyCode(code: string): string {
     KC_PPLS: 'VK_NumpadAdd',
     KC_PENT: 'VK_NumpadEnter',
     KC_PDOT: 'VK_NumpadDecimal',
+    // JIS-specific keys
+    KC_JYEN: 'VK_Yen',
+    KC_RO: 'VK_Ro',
+    KC_MHEN: 'VK_Muhenkan',
+    KC_HENK: 'VK_Henkan',
+    KC_KANA: 'VK_Hiragana',
   };
 
   if (specialKeyMap[code]) {
@@ -519,6 +527,7 @@ export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
   pressedKeys = new Set(),
   className = '',
   layoutName = 'Keyboard',
+  labelOverrides,
 }) => {
   // Calculate SVG dimensions
   const dimensions = useMemo(() => {
@@ -554,10 +563,12 @@ export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
       <g transform="translate(8, 8)">
         {keys.map((key) => {
           const normalizedCode = normalizeKeyCode(key.code);
+          const keyName = normalizedCode.replace(/^VK_/, '');
+          const displayLabel = labelOverrides?.[keyName] || key.label;
           return (
             <KeySVG
               key={key.code}
-              keyData={key}
+              keyData={{ ...key, label: displayLabel }}
               mapping={keyMappings.get(normalizedCode)}
               isPressed={
                 pressedKeys.has(key.code) || pressedKeys.has(normalizedCode)

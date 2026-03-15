@@ -20,8 +20,8 @@
 //! for the blocked keys bitset to ensure the hook callback never blocks.
 
 use std::ptr;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::OnceLock;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, OnceLock};
 
 use crossbeam_channel::Sender;
 use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
@@ -42,6 +42,10 @@ static BLOCKED_KEYS: OnceLock<Vec<AtomicU64>> = OnceLock::new();
 
 /// Global event sender for forwarding key events to the remapping engine.
 static EVENT_SENDER: OnceLock<Sender<KeyEvent>> = OnceLock::new();
+
+/// Global suspended flag. When true, the hook passes all keys through unchanged.
+/// Shared with `DaemonSharedState` via `Arc<AtomicBool>`.
+static SUSPENDED_FLAG: OnceLock<Arc<AtomicBool>> = OnceLock::new();
 
 /// Initialize the global blocked keys bitset (all zeros = nothing blocked).
 fn init_blocked_keys() -> Vec<AtomicU64> {
@@ -153,6 +157,17 @@ impl KeyBlocker {
     pub fn is_key_blocked(&self, scan_code: u32) -> bool {
         is_blocked(scan_code)
     }
+
+    /// Wire the suspended flag so the hook callback can check it.
+    ///
+    /// When the flag is `true`, the hook passes all keys through unchanged.
+    /// The flag is shared with `DaemonSharedState::suspended_flag()`.
+    pub fn set_suspended_flag(&self, flag: Arc<AtomicBool>) {
+        match SUSPENDED_FLAG.set(flag) {
+            Ok(()) => log::info!("Suspend flag wired to keyboard hook"),
+            Err(_) => log::debug!("Suspend flag already set (reusing existing)"),
+        }
+    }
 }
 
 impl Drop for KeyBlocker {
@@ -181,6 +196,13 @@ unsafe extern "system" fn keyboard_hook_proc(
 ) -> LRESULT {
     if code != HC_ACTION as i32 {
         return CallNextHookEx(0 as HHOOK, code, w_param, l_param);
+    }
+
+    // When suspended, pass all keys through unchanged (no blocking, no forwarding)
+    if let Some(flag) = SUSPENDED_FLAG.get() {
+        if flag.load(Ordering::Relaxed) {
+            return CallNextHookEx(0 as HHOOK, code, w_param, l_param);
+        }
     }
 
     let kbd = *(l_param as *const KBDLLHOOKSTRUCT);

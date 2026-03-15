@@ -25,9 +25,19 @@ interface UseASTSyncProps {
   selectedDevices: string[];
 }
 
+// Map Japanese VK names to English equivalents for layout matching
+const japaneseKeyMap: Record<string, string> = {
+  'VK_無変換': 'VK_Muhenkan',
+  'VK_変換': 'VK_Henkan',
+  'VK_ひらがな': 'VK_Hiragana',
+  'VK_カタカナ': 'VK_Katakana',
+  'VK_全角': 'VK_Zenkaku',
+};
+
 // Normalize key codes to VK_ format for consistent lookup
 const normalizeKeyCode = (key: string): string => {
   if (!key) return key;
+  if (japaneseKeyMap[key]) return japaneseKeyMap[key];
   if (key.startsWith('VK_')) return key;
   if (key.startsWith('KC_')) return key.replace(/^KC_/, 'VK_');
   if (/^[A-Z0-9]$/i.test(key)) return `VK_${key.toUpperCase()}`;

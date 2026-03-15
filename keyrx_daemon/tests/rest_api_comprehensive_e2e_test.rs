@@ -437,10 +437,7 @@ async fn test_update_profile_config_with_rhai() {
     let json: serde_json::Value = get_response.json().await.unwrap();
 
     let source = json["source"].as_str().unwrap();
-    assert!(
-        source.contains("map"),
-        "Updated config should contain map"
-    );
+    assert!(source.contains("map"), "Updated config should contain map");
 }
 
 #[tokio::test]

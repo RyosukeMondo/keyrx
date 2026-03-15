@@ -201,6 +201,11 @@ pub fn run_daemon(
                         log::info!("About requested via tray menu");
                         show_about_dialog();
                     }
+                    TrayControlEvent::Suspend => {
+                        log::info!(
+                            "Suspend requested via tray menu (not yet implemented on Linux)"
+                        );
+                    }
                     TrayControlEvent::Exit => {
                         log::info!("Exit requested via tray menu");
                         running.store(false, std::sync::atomic::Ordering::SeqCst);

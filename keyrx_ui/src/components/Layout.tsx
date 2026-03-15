@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BottomNav } from './BottomNav';
+import { GlobalDebugPanel } from './GlobalDebugPanel';
 import { Sidebar } from './Sidebar';
 import { VERSION, BUILD_TIME } from '../version';
 
@@ -140,6 +141,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Bottom Navigation (Mobile only < 768px) */}
       <BottomNav />
+
+      {/* Global debug console (all pages) */}
+      <GlobalDebugPanel />
     </div>
   );
 };

@@ -1,31 +1,88 @@
 // Shared TypeScript types for the KeyRx UI
-// This file re-exports generated types and defines types that can't be auto-generated
+// This file re-exports generated types and defines frontend-specific types
+// that extend what the REST API actually returns.
 
-// Re-export generated types from typeshare (SSOT)
-// Note: RPC protocol types (ClientMessage, ServerMessage, RpcError) are
-// canonically exported from ./rpc which provides stricter typing.
+// Re-export generated types that match the frontend usage exactly
 export type {
-  DeviceEntry,
   DeviceRpcInfo,
-  ProfileMetadata,
   ProfileRpcInfo,
   ProfileConfigRpc,
-  ActivationResult,
   ActivationRpcResult,
-  ProfileTemplate,
-  DaemonState,
   KeyEventData,
-  LatencyStats,
   ErrorData,
   LatencyRpcStats,
   EventRpcEntry,
   RestartResult,
 } from './generated';
 
-// Re-export enums
+// Re-export ProfileTemplate enum (both type and value)
 export { ProfileTemplate } from './generated';
 
-// Additional types for DeviceEntry that aren't in Rust
+// Alias — some code imports as Template
+export type Template = import('./generated').ProfileTemplate;
+
+// Frontend DeviceEntry — matches what fetchDevices() returns after
+// mapping the REST API /api/devices response
+export interface DeviceEntry {
+  id: string;
+  name: string;
+  path: string;
+  serial: string | null;
+  active: boolean;
+  scope: string;
+  layout: string | null;
+  isVirtual: boolean;
+  enabled: boolean;
+  lastSeen?: number;
+}
+
+// Frontend ProfileMetadata — matches what fetchProfiles() returns after
+// mapping the REST API /api/profiles response
+export interface ProfileMetadata {
+  name: string;
+  rhaiPath: string;
+  krxPath: string;
+  createdAt: string;
+  modifiedAt: string;
+  layerCount?: number;
+  deviceCount: number;
+  keyCount: number;
+  isActive: boolean;
+  activatedAt?: string;
+  activatedBy?: string;
+}
+
+// Frontend ActivationResult — matches what activateProfile() returns
+export interface ActivationResult {
+  success: boolean;
+  profile: string;
+  compiledSize: number;
+  compileTimeMs: number;
+  errors: string[];
+}
+
+// Frontend DaemonState — union of generated fields + REST /api/daemon/state extras
+export interface DaemonState {
+  modifiers: string[];
+  locks: string[];
+  layer: string;
+  activeProfile?: string;
+  activeLayer?: string;
+  tapHoldPending?: boolean;
+}
+
+// Frontend LatencyStats — REST /api/metrics/latency response
+export interface LatencyStats {
+  min: number;
+  avg: number;
+  max: number;
+  p50?: number;
+  p95: number;
+  p99: number;
+  timestamp: number;
+  samples?: number;
+}
+
 export type DeviceScope = 'global' | 'device-specific';
 
 export type LayoutPreset =
@@ -77,7 +134,6 @@ export interface EventRecord {
   layer: string;
   latencyUs: number;
   action?: string;
-  // New fields for enhanced event info
   input?: string;
   output?: string;
   deviceId?: string;
@@ -87,8 +143,6 @@ export interface EventRecord {
 }
 
 // WebSocket Message Types
-// Note: DaemonEvent uses serde(flatten) which typeshare doesn't support,
-// so we maintain the manual definition here for compatibility
 export type WSMessage =
   | { type: 'event'; payload: KeyEventData; seq: number }
   | { type: 'state'; payload: DaemonState; seq: number }

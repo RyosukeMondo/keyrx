@@ -42,6 +42,8 @@ export interface DiagnosticsPanelProps {
   };
   keyboardLayout: string;
   layoutKeyCount: number;
+  /** Detected keyboard layout from daemon */
+  detectedLayout?: string;
 }
 
 function buildDiagnosticData(props: DiagnosticsPanelProps) {
@@ -68,6 +70,7 @@ function buildDiagnosticData(props: DiagnosticsPanelProps) {
     layout: {
       type: props.keyboardLayout,
       keyCount: props.layoutKeyCount,
+      detectedLayout: props.detectedLayout || 'Not detected',
     },
     sync: {
       status: props.syncStatus,

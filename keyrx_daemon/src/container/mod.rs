@@ -239,14 +239,9 @@ impl ServiceContainerBuilder {
         // Create event broadcaster
         let (event_broadcaster, _event_rx) = broadcast::channel(self.event_channel_size);
 
-        // If test mode, spawn macro recorder event loop
-        if let Some(rx) = macro_event_rx {
-            let recorder_for_loop = (*macro_recorder).clone();
-            tokio::spawn(async move {
-                recorder_for_loop.run_event_loop(rx).await;
-            });
-            log::debug!("Test mode enabled: macro recorder event loop spawned");
-        }
+        // Drop the macro event receiver — the caller (run_test_mode) creates
+        // its own channel and spawns the event loop inside the tokio runtime.
+        drop(macro_event_rx);
 
         log::info!("ServiceContainer built successfully");
 

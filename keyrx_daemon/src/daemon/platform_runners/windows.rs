@@ -251,6 +251,10 @@ pub fn run_daemon(
         }
     };
 
+    // Wire the suspended flag to the keyboard hook so it can skip
+    // blocking when the daemon is suspended (pass-through mode).
+    wire_suspended_flag(&daemon_state);
+
     // Check for administrative privileges
     if !is_admin() {
         log::warn!("Daemon is not running with administrative privileges. Key remapping may not work for elevated applications.");
@@ -384,6 +388,19 @@ pub fn run_daemon(
                         TrayControlEvent::About => {
                             log::info!("About requested via tray menu");
                             show_about_dialog();
+                        }
+                        TrayControlEvent::Suspend => {
+                            let now_suspended = !daemon_state.is_suspended();
+                            daemon_state.set_suspended(now_suspended);
+                            tray_controller.update_suspend_state(now_suspended);
+                            log::info!(
+                                "Daemon {}",
+                                if now_suspended {
+                                    "suspended"
+                                } else {
+                                    "resumed"
+                                }
+                            );
                         }
                         TrayControlEvent::Exit => {
                             log::info!("Exiting...");
@@ -555,36 +572,90 @@ fn run_test_mode(
         Some(test_daemon_state),
     ));
 
-    // Start web server
+    // Start web server in background thread (main thread runs message loop for tray)
     let addr = config.socket_addr().map_err(|e| {
         (
             ExitCode::ConfigError as i32,
             format!("Failed to create socket address: {}", e),
         )
     })?;
-    log::info!("Starting web server on {}", config.web_url());
+    let web_url = config.web_url();
+    log::info!("Starting web server on {}", web_url);
 
-    rt.block_on(async {
-        // Spawn macro recorder event loop inside runtime context
-        let recorder_for_loop = (*macro_recorder).clone();
-        tokio::spawn(async move {
-            recorder_for_loop.run_event_loop(macro_event_rx).await;
+    std::thread::spawn(move || {
+        rt.block_on(async {
+            // Spawn macro recorder event loop inside runtime context
+            let recorder_for_loop = (*macro_recorder).clone();
+            tokio::spawn(async move {
+                recorder_for_loop.run_event_loop(macro_event_rx).await;
+            });
+
+            match crate::web::serve(addr, event_tx, app_state).await {
+                Ok(()) => log::info!("Web server stopped"),
+                Err(e) => log::error!("Web server error: {}", e),
+            }
         });
+    });
 
-        match crate::web::serve(addr, event_tx, app_state).await {
-            Ok(()) => {
-                log::info!("Web server stopped");
-                Ok(())
-            }
-            Err(e) => {
-                log::error!("Web server error: {}", e);
-                Err((
-                    ExitCode::RuntimeError as i32,
-                    format!("Web server error: {}", e),
-                ))
-            }
+    // Create the tray icon
+    use crate::platform::windows::tray::TrayIconController;
+    use crate::platform::{SystemTray, TrayControlEvent};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        DispatchMessageW, PeekMessageW, TranslateMessage, MSG, PM_REMOVE, WM_QUIT,
+    };
+
+    let tray = match TrayIconController::new() {
+        Ok(tray) => {
+            log::info!("System tray icon created successfully (test mode)");
+            Some(tray)
         }
-    })
+        Err(e) => {
+            log::warn!("Failed to create system tray icon: {}", e);
+            None
+        }
+    };
+
+    log::info!("Test mode running. Web UI at {}", web_url);
+
+    // Message loop (required for tray icon to work on Windows)
+    unsafe {
+        let mut msg: MSG = std::mem::zeroed();
+        loop {
+            while PeekMessageW(&mut msg, std::ptr::null_mut(), 0, 0, PM_REMOVE) != 0 {
+                if msg.message == WM_QUIT {
+                    return Ok(());
+                }
+                TranslateMessage(&msg);
+                let _ = std::panic::catch_unwind(|| {
+                    DispatchMessageW(&msg);
+                });
+            }
+
+            // Poll tray events
+            if let Some(ref tray_controller) = tray {
+                if let Some(event) = tray_controller.poll_event() {
+                    match event {
+                        TrayControlEvent::OpenWebUI => {
+                            log::info!("Opening web UI at {}...", web_url);
+                            if let Err(e) = open_browser(&web_url) {
+                                log::error!("Failed to open web UI: {}", e);
+                            }
+                        }
+                        TrayControlEvent::About => {
+                            show_about_dialog();
+                        }
+                        TrayControlEvent::Exit => {
+                            log::info!("Exiting test mode...");
+                            return Ok(());
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+    }
 }
 
 /// Ensure only one instance of the daemon is running.
@@ -743,6 +814,23 @@ fn show_about_dialog() {
             windows_sys::Win32::UI::WindowsAndMessaging::MB_OK
                 | windows_sys::Win32::UI::WindowsAndMessaging::MB_ICONINFORMATION,
         );
+    }
+}
+
+/// Wire the suspended flag from DaemonSharedState to the keyboard hook.
+///
+/// The hook callback reads this flag on every keypress to decide whether
+/// to pass the key through unchanged (suspended) or process it normally.
+fn wire_suspended_flag(daemon_state: &Arc<DaemonSharedState>) {
+    use crate::platform::windows::platform_state::PlatformState;
+
+    if let Some(state_arc) = PlatformState::get() {
+        if let Ok(state) = state_arc.lock() {
+            if let Some(ref blocker) = state.key_blocker {
+                blocker.set_suspended_flag(daemon_state.suspended_flag());
+                log::info!("Suspended flag wired to keyboard hook");
+            }
+        }
     }
 }
 

@@ -124,8 +124,10 @@ impl TestApp {
         std::fs::create_dir_all(&config_path).expect("Failed to create config directory");
 
         // Pre-create devices.json and profiles dir to avoid races in tests
-        std::fs::write(config_path.join("devices.json"), "{}").expect("Failed to create devices.json");
-        std::fs::create_dir_all(config_path.join("profiles")).expect("Failed to create profiles directory");
+        std::fs::write(config_path.join("devices.json"), "{}")
+            .expect("Failed to create devices.json");
+        std::fs::create_dir_all(config_path.join("profiles"))
+            .expect("Failed to create profiles directory");
 
         // Set KEYRX_CONFIG_DIR for cross-platform config resolution (takes priority over HOME)
         std::env::set_var("KEYRX_CONFIG_DIR", &config_path);
@@ -203,7 +205,9 @@ impl TestApp {
 
     /// Rescan profiles after writing new .rhai files to the profiles directory.
     pub fn rescan_profiles(&self) {
-        self.profile_manager.scan_profiles().expect("Failed to rescan profiles");
+        self.profile_manager
+            .scan_profiles()
+            .expect("Failed to rescan profiles");
     }
 
     /// Returns the path to the isolated config directory (HOME/.config/keyrx).

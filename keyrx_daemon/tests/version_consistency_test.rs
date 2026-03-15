@@ -161,7 +161,8 @@ mod version_consistency_tests {
     // Test that Cargo.toml contains version in workspace.package
     #[test]
     fn test_cargo_toml_has_workspace_version() {
-        let cargo_toml = std::fs::read_to_string(workspace_root().join("Cargo.toml")).expect("Failed to read Cargo.toml");
+        let cargo_toml = std::fs::read_to_string(workspace_root().join("Cargo.toml"))
+            .expect("Failed to read Cargo.toml");
 
         assert!(
             cargo_toml.contains("[workspace.package]"),
@@ -179,8 +180,8 @@ mod version_consistency_tests {
     // Test that package.json exists and has version
     #[test]
     fn test_package_json_has_version() {
-        let package_json =
-            std::fs::read_to_string(workspace_root().join("keyrx_ui/package.json")).expect("Failed to read package.json");
+        let package_json = std::fs::read_to_string(workspace_root().join("keyrx_ui/package.json"))
+            .expect("Failed to read package.json");
 
         assert!(
             package_json.contains("\"version\""),
@@ -194,8 +195,9 @@ mod version_consistency_tests {
     #[test]
     #[cfg(target_os = "windows")]
     fn test_installer_wxs_has_version() {
-        let wxs = std::fs::read_to_string(workspace_root().join("keyrx_daemon/keyrx_installer.wxs"))
-            .expect("Failed to read keyrx_installer.wxs");
+        let wxs =
+            std::fs::read_to_string(workspace_root().join("keyrx_daemon/keyrx_installer.wxs"))
+                .expect("Failed to read keyrx_installer.wxs");
 
         assert!(
             wxs.contains("Version="),
@@ -209,8 +211,9 @@ mod version_consistency_tests {
     #[test]
     #[cfg(target_os = "windows")]
     fn test_installer_ps1_has_version() {
-        let ps1 = std::fs::read_to_string(workspace_root().join("scripts/build_windows_installer.ps1"))
-            .expect("Failed to read build_windows_installer.ps1");
+        let ps1 =
+            std::fs::read_to_string(workspace_root().join("scripts/build_windows_installer.ps1"))
+                .expect("Failed to read build_windows_installer.ps1");
 
         assert!(
             ps1.contains("$Version ="),
@@ -361,8 +364,8 @@ mod version_consistency_tests {
         let cargo_version = env!("CARGO_PKG_VERSION");
 
         // Read package.json version
-        let package_json =
-            std::fs::read_to_string(workspace_root().join("keyrx_ui/package.json")).expect("Failed to read package.json");
+        let package_json = std::fs::read_to_string(workspace_root().join("keyrx_ui/package.json"))
+            .expect("Failed to read package.json");
 
         // Extract version from package.json (simple regex)
         let pkg_version = package_json

@@ -237,6 +237,49 @@ pub fn scancode_to_keycode(scancode: u32) -> Option<KeyCode> {
         0x44 => Some(KeyCode::F10),
         0x57 => Some(KeyCode::F11),
         0x58 => Some(KeyCode::F12),
+        // Punctuation (physical key positions — layout-independent)
+        0x29 => Some(KeyCode::Grave),
+        0x0C => Some(KeyCode::Minus),
+        0x0D => Some(KeyCode::Equal),
+        0x1A => Some(KeyCode::LeftBracket),
+        0x1B => Some(KeyCode::RightBracket),
+        0x2B => Some(KeyCode::Backslash),
+        0x27 => Some(KeyCode::Semicolon),
+        0x28 => Some(KeyCode::Quote),
+        0x33 => Some(KeyCode::Comma),
+        0x34 => Some(KeyCode::Period),
+        0x35 => Some(KeyCode::Slash),
+        // Lock keys
+        0x3A => Some(KeyCode::CapsLock),
+        0x45 => Some(KeyCode::NumLock),
+        0x46 => Some(KeyCode::ScrollLock),
+        // Numpad
+        0x52 => Some(KeyCode::Numpad0),
+        0x4F => Some(KeyCode::Numpad1),
+        0x50 => Some(KeyCode::Numpad2),
+        0x51 => Some(KeyCode::Numpad3),
+        0x4B => Some(KeyCode::Numpad4),
+        0x4C => Some(KeyCode::Numpad5),
+        0x4D => Some(KeyCode::Numpad6),
+        0x47 => Some(KeyCode::Numpad7),
+        0x48 => Some(KeyCode::Numpad8),
+        0x49 => Some(KeyCode::Numpad9),
+        0x53 => Some(KeyCode::NumpadDecimal),
+        0x37 => Some(KeyCode::NumpadMultiply),
+        0x4A => Some(KeyCode::NumpadSubtract),
+        0x4E => Some(KeyCode::NumpadAdd),
+        // JIS-specific keys
+        0x73 => Some(KeyCode::Ro),
+        0x7D => Some(KeyCode::Yen),
+        0x70 => Some(KeyCode::Hiragana),
+        0x79 => Some(KeyCode::Henkan),
+        0x7B => Some(KeyCode::Muhenkan),
+        // Extended keys (E0-prefixed)
+        0xE05B => Some(KeyCode::LMeta),
+        0xE05C => Some(KeyCode::RMeta),
+        0xE05D => Some(KeyCode::Menu),
+        0xE037 => Some(KeyCode::PrintScreen),
+        0xE11D => Some(KeyCode::Pause),
 
         _ => {
             // Fallback to MapVirtualKeyW for other keys
@@ -271,12 +314,12 @@ pub fn keycode_to_vk(keycode: KeyCode) -> Option<u16> {
 pub fn keycode_to_scancode(keycode: KeyCode) -> Option<u32> {
     // Japanese keys that MapVirtualKeyW can't resolve — use hardcoded scan codes
     match keycode {
-        KeyCode::Ro => return Some(0x73),              // JIS ろ key
-        KeyCode::Hiragana => return Some(0x70),        // Hiragana mode
+        KeyCode::Ro => return Some(0x73),               // JIS ろ key
+        KeyCode::Hiragana => return Some(0x70),         // Hiragana mode
         KeyCode::KatakanaHiragana => return Some(0x70), // Katakana/Hiragana toggle
-        KeyCode::Zenkaku => return Some(0x29),         // Zenkaku/Hankaku (same position as Grave on JIS)
-        KeyCode::Henkan => return Some(0x79),          // 変換
-        KeyCode::Muhenkan => return Some(0x7B),        // 無変換
+        KeyCode::Zenkaku => return Some(0x29), // Zenkaku/Hankaku (same position as Grave on JIS)
+        KeyCode::Henkan => return Some(0x79),  // 変換
+        KeyCode::Muhenkan => return Some(0x7B), // 無変換
         _ => {}
     }
 
@@ -344,5 +387,57 @@ mod tests {
             let keycode2 = vk_to_keycode(vk).unwrap();
             assert_eq!(*keycode, keycode2);
         }
+    }
+
+    #[test]
+    fn test_scancode_to_keycode_punctuation() {
+        // Punctuation — these were previously falling through to MapVirtualKeyW
+        assert_eq!(scancode_to_keycode(0x29), Some(KeyCode::Grave));
+        assert_eq!(scancode_to_keycode(0x0C), Some(KeyCode::Minus));
+        assert_eq!(scancode_to_keycode(0x0D), Some(KeyCode::Equal));
+        assert_eq!(scancode_to_keycode(0x1A), Some(KeyCode::LeftBracket));
+        assert_eq!(scancode_to_keycode(0x1B), Some(KeyCode::RightBracket));
+        assert_eq!(scancode_to_keycode(0x2B), Some(KeyCode::Backslash));
+        assert_eq!(scancode_to_keycode(0x27), Some(KeyCode::Semicolon));
+        assert_eq!(scancode_to_keycode(0x28), Some(KeyCode::Quote));
+        assert_eq!(scancode_to_keycode(0x33), Some(KeyCode::Comma));
+        assert_eq!(scancode_to_keycode(0x34), Some(KeyCode::Period));
+        assert_eq!(scancode_to_keycode(0x35), Some(KeyCode::Slash));
+    }
+
+    #[test]
+    fn test_scancode_to_keycode_numpad() {
+        assert_eq!(scancode_to_keycode(0x52), Some(KeyCode::Numpad0));
+        assert_eq!(scancode_to_keycode(0x4F), Some(KeyCode::Numpad1));
+        assert_eq!(scancode_to_keycode(0x4D), Some(KeyCode::Numpad6));
+        assert_eq!(scancode_to_keycode(0x49), Some(KeyCode::Numpad9));
+        assert_eq!(scancode_to_keycode(0x37), Some(KeyCode::NumpadMultiply));
+        assert_eq!(scancode_to_keycode(0x4A), Some(KeyCode::NumpadSubtract));
+        assert_eq!(scancode_to_keycode(0x4E), Some(KeyCode::NumpadAdd));
+        assert_eq!(scancode_to_keycode(0x53), Some(KeyCode::NumpadDecimal));
+    }
+
+    #[test]
+    fn test_scancode_to_keycode_lock_keys() {
+        assert_eq!(scancode_to_keycode(0x3A), Some(KeyCode::CapsLock));
+        assert_eq!(scancode_to_keycode(0x45), Some(KeyCode::NumLock));
+        assert_eq!(scancode_to_keycode(0x46), Some(KeyCode::ScrollLock));
+    }
+
+    #[test]
+    fn test_scancode_to_keycode_jis() {
+        assert_eq!(scancode_to_keycode(0x73), Some(KeyCode::Ro));
+        assert_eq!(scancode_to_keycode(0x7D), Some(KeyCode::Yen));
+        assert_eq!(scancode_to_keycode(0x70), Some(KeyCode::Hiragana));
+        assert_eq!(scancode_to_keycode(0x79), Some(KeyCode::Henkan));
+        assert_eq!(scancode_to_keycode(0x7B), Some(KeyCode::Muhenkan));
+    }
+
+    #[test]
+    fn test_scancode_to_keycode_extended() {
+        assert_eq!(scancode_to_keycode(0xE05B), Some(KeyCode::LMeta));
+        assert_eq!(scancode_to_keycode(0xE05C), Some(KeyCode::RMeta));
+        assert_eq!(scancode_to_keycode(0xE05D), Some(KeyCode::Menu));
+        assert_eq!(scancode_to_keycode(0xE037), Some(KeyCode::PrintScreen));
     }
 }

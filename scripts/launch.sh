@@ -12,6 +12,7 @@ source "$SCRIPT_DIR/lib/common.sh"
 # Script-specific variables
 HEADLESS_MODE=false
 DEBUG_MODE=false
+TEST_MODE=false
 CONFIG_PATH=""
 RELEASE_MODE=false
 DAEMON_PID=""
@@ -27,6 +28,7 @@ Launch the keyrx daemon with specified configuration.
 OPTIONS:
     --headless      Suppress browser launch (headless mode)
     --debug         Enable debug logging (log-level: debug)
+    --test-mode     Run in test mode (no keyboard capture, web + tray only)
     --config PATH   Specify custom configuration file path
     --release       Build and run release binary (optimized)
     --error         Show only errors
@@ -70,6 +72,10 @@ parse_args() {
                 ;;
             --debug)
                 DEBUG_MODE=true
+                shift
+                ;;
+            --test-mode)
+                TEST_MODE=true
                 shift
                 ;;
             --config)
@@ -148,6 +154,10 @@ launch_daemon() {
         daemon_args="$daemon_args --debug"
     fi
 
+    if [[ "$TEST_MODE" == "true" ]]; then
+        daemon_args="$daemon_args --test-mode"
+    fi
+
     if [[ -n "$CONFIG_PATH" ]]; then
         if [[ ! -f "$CONFIG_PATH" ]]; then
             log_error "Config file not found: $CONFIG_PATH"
@@ -211,9 +221,9 @@ launch_daemon() {
         DAEMON_PORT=$(grep -oE "([0-9]{4,5})" "$temp_output" | head -n 1)
     fi
 
-    # Default port if not found (common web server default)
+    # Default port if not found
     if [[ -z "$DAEMON_PORT" ]]; then
-        DAEMON_PORT="8080"
+        DAEMON_PORT="9867"
     fi
 
     rm -f "$temp_output"

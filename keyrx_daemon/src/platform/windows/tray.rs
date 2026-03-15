@@ -32,6 +32,7 @@ pub struct TrayIconController {
     reload_id: String,
     webui_id: String,
     about_id: String,
+    suspend_item: MenuItem,
     exit_id: String,
 }
 
@@ -45,6 +46,19 @@ impl TrayIconController {
         // On Windows, we could use winrt-notification crate for native toast notifications
         // For now, we'll rely on the log message being visible to the user
     }
+
+    /// Update tray to reflect suspended/active state
+    pub fn update_suspend_state(&self, suspended: bool) {
+        let (tooltip, label) = if suspended {
+            ("KeyRx [PAUSED]", ">> Resume")
+        } else {
+            ("KeyRx Daemon", "|| Suspend")
+        };
+        self._tray_icon
+            .set_tooltip(Some(tooltip))
+            .unwrap_or_else(|e| log::warn!("Failed to update tooltip: {}", e));
+        self.suspend_item.set_text(label);
+    }
 }
 
 impl SystemTray for TrayIconController {
@@ -52,6 +66,7 @@ impl SystemTray for TrayIconController {
         let tray_menu = Menu::new();
         let webui_item = MenuItem::new("Open Web UI", true, None);
         let reload_item = MenuItem::new("Reload Config", true, None);
+        let suspend_item = MenuItem::new("|| Suspend", true, None);
         let about_item = MenuItem::new("About", true, None);
         let exit_item = MenuItem::new("Exit", true, None);
 
@@ -60,6 +75,7 @@ impl SystemTray for TrayIconController {
                 &webui_item,
                 &PredefinedMenuItem::separator(),
                 &reload_item,
+                &suspend_item,
                 &about_item,
                 &PredefinedMenuItem::separator(),
                 &exit_item,
@@ -89,6 +105,7 @@ impl SystemTray for TrayIconController {
             reload_id,
             webui_id,
             about_id,
+            suspend_item,
             exit_id,
         })
     }
@@ -99,6 +116,8 @@ impl SystemTray for TrayIconController {
                 return Some(TrayControlEvent::OpenWebUI);
             } else if event.id.0 == self.reload_id {
                 return Some(TrayControlEvent::Reload);
+            } else if event.id.0 == self.suspend_item.id().0 {
+                return Some(TrayControlEvent::Suspend);
             } else if event.id.0 == self.about_id {
                 return Some(TrayControlEvent::About);
             } else if event.id.0 == self.exit_id {

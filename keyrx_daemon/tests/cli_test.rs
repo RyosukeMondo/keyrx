@@ -185,7 +185,6 @@ fn test_run_config_short_flag() {
         .stderr(predicate::str::contains("Error"));
 }
 
-
 // ============================================================================
 // List-Devices Subcommand Tests
 // ============================================================================
@@ -459,7 +458,6 @@ fn test_validate_output_shows_steps() {
 // ============================================================================
 // Error Message Quality Tests
 // ============================================================================
-
 
 #[test]
 fn test_validate_missing_config_error_is_helpful() {

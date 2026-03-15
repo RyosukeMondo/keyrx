@@ -279,10 +279,7 @@ device_end();
 
     let mut proc = build_processor(
         config,
-        vec![
-            KeyEvent::Press(KeyCode::Z),
-            KeyEvent::Release(KeyCode::Z),
-        ],
+        vec![KeyEvent::Press(KeyCode::Z), KeyEvent::Release(KeyCode::Z)],
     );
     proc.run().unwrap();
 
@@ -389,10 +386,7 @@ map("VK_A", "VK_B");
         &source_path,
     );
 
-    assert!(
-        result.is_err(),
-        "map() outside device block should fail"
-    );
+    assert!(result.is_err(), "map() outside device block should fail");
 }
 
 // ============================================================================
@@ -418,8 +412,7 @@ device_end();
     let krx_path = temp_dir.path().join("full_pipeline.krx");
 
     // Step 1: compile_file (Rhai → .krx on disk)
-    keyrx_compiler::compile_file(&rhai_path, &krx_path)
-        .expect("compile_file should succeed");
+    keyrx_compiler::compile_file(&rhai_path, &krx_path).expect("compile_file should succeed");
 
     // Step 2: read .krx from disk
     let bytes = fs::read(&krx_path).expect("Should read .krx file");
@@ -464,8 +457,7 @@ device_end();
     )
     .unwrap();
 
-    keyrx_compiler::compile_file(&rhai_path, &krx_path)
-        .expect("Initial compile should succeed");
+    keyrx_compiler::compile_file(&rhai_path, &krx_path).expect("Initial compile should succeed");
 
     let configs_v1 = load_configs_from_krx(&krx_path);
     let mut proc = build_processor(
@@ -560,15 +552,16 @@ device_end();
     // A → B works, Z passes through
     let mut proc = build_processor(
         &configs_v1[0],
-        vec![
-            KeyEvent::Press(KeyCode::A),
-            KeyEvent::Press(KeyCode::Z),
-        ],
+        vec![KeyEvent::Press(KeyCode::A), KeyEvent::Press(KeyCode::Z)],
     );
     proc.run().unwrap();
     let events = proc.output().events();
     assert_eq!(events[0], KeyEvent::Press(KeyCode::B), "v1: A→B");
-    assert_eq!(events[1], KeyEvent::Press(KeyCode::Z), "v1: Z passes through");
+    assert_eq!(
+        events[1],
+        KeyEvent::Press(KeyCode::Z),
+        "v1: Z passes through"
+    );
 
     // --- Phase 2: User adds Ctrl+Z shortcut, reloads ---
     fs::write(
@@ -587,14 +580,15 @@ device_end();
 
     let mut proc = build_processor(
         &configs_v2[0],
-        vec![
-            KeyEvent::Press(KeyCode::A),
-            KeyEvent::Press(KeyCode::Z),
-        ],
+        vec![KeyEvent::Press(KeyCode::A), KeyEvent::Press(KeyCode::Z)],
     );
     proc.run().unwrap();
     let events = proc.output().events();
-    assert_eq!(events[0], KeyEvent::Press(KeyCode::B), "v2: A→B still works");
+    assert_eq!(
+        events[0],
+        KeyEvent::Press(KeyCode::B),
+        "v2: A→B still works"
+    );
     // Z now produces Ctrl+Z
     assert_eq!(
         events[1],
@@ -631,10 +625,7 @@ device_end();
     keyrx_compiler::compile_file(&rhai_path, &krx_path).unwrap();
     let configs_v1 = load_configs_from_krx(&krx_path);
 
-    let mut proc = build_processor(
-        &configs_v1[0],
-        vec![KeyEvent::Press(KeyCode::CapsLock)],
-    );
+    let mut proc = build_processor(&configs_v1[0], vec![KeyEvent::Press(KeyCode::CapsLock)]);
     proc.run().unwrap();
     assert_eq!(
         proc.output().events()[0],

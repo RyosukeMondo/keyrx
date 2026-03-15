@@ -401,6 +401,10 @@ pub enum TrayControlEvent {
     /// The daemon should display version, build info, and copyright.
     About,
 
+    /// User toggled the suspend/resume state.
+    /// When suspended, the daemon passes all keys through unchanged.
+    Suspend,
+
     /// User requested to exit the daemon.
     /// The daemon should perform a clean shutdown.
     Exit,
@@ -447,6 +451,12 @@ pub enum ProcessResult {
 ///                 }
 ///                 TrayControlEvent::OpenWebUI => {
 ///                     println!("Opening web UI...");
+///                 }
+///                 TrayControlEvent::About => {
+///                     println!("Showing about dialog...");
+///                 }
+///                 TrayControlEvent::Suspend => {
+///                     println!("Toggling suspend...");
 ///                 }
 ///                 TrayControlEvent::Exit => {
 ///                     println!("Shutting down...");

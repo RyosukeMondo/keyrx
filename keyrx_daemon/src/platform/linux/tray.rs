@@ -42,6 +42,12 @@ use crate::platform::{SystemTray, TrayControlEvent, TrayError};
 ///             TrayControlEvent::OpenWebUI => {
 ///                 println!("Opening web UI...");
 ///             }
+///             TrayControlEvent::About => {
+///                 println!("About...");
+///             }
+///             TrayControlEvent::Suspend => {
+///                 println!("Suspend toggle...");
+///             }
 ///             TrayControlEvent::Exit => {
 ///                 println!("Shutting down...");
 ///                 tray.shutdown()?;

@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
 import * as profileApi from '../api/profiles';
-import { useUnifiedApi } from './useUnifiedApi';
-import { RpcClient } from '../api/rpc';
 import type { ProfileMetadata, Template } from '../types';
 
 /**
@@ -59,16 +57,13 @@ export function useCreateProfile() {
 }
 
 /**
- * Activate a profile with optimistic updates and auto-restart.
+ * Activate a profile with optimistic updates.
  *
- * When a profile is successfully activated, the daemon automatically restarts
- * to apply the new configuration. This ensures "active" always means
- * "the daemon is currently remapping with this profile".
+ * The REST API compiles the profile and sets it active. The daemon's message
+ * loop detects the change via shared state and hot-reloads automatically.
  */
 export function useActivateProfile() {
   const queryClient = useQueryClient();
-  const api = useUnifiedApi();
-  const rpcClient = new RpcClient(api);
 
   return useMutation({
     mutationFn: (name: string) => profileApi.activateProfile(name),
@@ -114,23 +109,13 @@ export function useActivateProfile() {
         return;
       }
 
-      // Success - restart daemon to apply the new configuration
-      // This ensures "active" = "daemon is remapping with this profile"
-      try {
-        await rpcClient.restartDaemon();
-        // Queries will be invalidated after reconnection
-      } catch {
-        // Restart initiated but may fail to get response (expected - daemon is restarting)
-        // The WebSocket disconnects during restart, so this catch is expected behavior
-      }
-
-      // Invalidate queries - they'll refetch after WebSocket reconnects
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.profiles });
-        queryClient.invalidateQueries({ queryKey: ['config'] });
-        queryClient.invalidateQueries({ queryKey: queryKeys.daemonState });
-        queryClient.invalidateQueries({ queryKey: queryKeys.activeProfile });
-      }, 2000);
+      // Profile activated successfully — the REST API already compiled and
+      // set the active profile. The daemon's message loop detects the change
+      // via shared state and hot-reloads automatically. No restart needed.
+      queryClient.invalidateQueries({ queryKey: queryKeys.profiles });
+      queryClient.invalidateQueries({ queryKey: ['config'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.daemonState });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activeProfile });
     },
   });
 }

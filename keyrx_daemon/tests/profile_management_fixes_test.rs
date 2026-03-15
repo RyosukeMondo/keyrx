@@ -237,7 +237,10 @@ fn test_prof003_activation_missing_file_error() {
         "Activation should fail when source file is missing"
     );
     assert!(
-        result.error.as_ref().map_or(false, |e| e.contains("not found")),
+        result
+            .error
+            .as_ref()
+            .map_or(false, |e| e.contains("not found")),
         "Error should mention file not found, got: {:?}",
         result.error
     );

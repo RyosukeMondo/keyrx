@@ -242,67 +242,10 @@ async fn activate_profile(
     // Validate profile name
     validate_profile_name(&name)?;
 
-    // Check if test mode is enabled
-    if let Some(socket_path) = &state.test_mode_socket {
-        // Test mode: use IPC to activate profile
-        use crate::ipc::{unix_socket::UnixSocketIpc, DaemonIpc, IpcRequest, IpcResponse};
-        use std::time::Duration;
-
-        let mut ipc = UnixSocketIpc::new(socket_path.clone());
-
-        // Send activation request with 5 second timeout
-        let request = IpcRequest::ActivateProfile { name: name.clone() };
-
-        let response = tokio::time::timeout(Duration::from_secs(5), async {
-            tokio::task::spawn_blocking(move || ipc.send_request(&request)).await
-        })
-        .await
-        .map_err(|_| {
-            ApiError::InternalError(
-                "IPC timeout: profile activation took longer than 5 seconds".to_string(),
-            )
-        })?
-        .map_err(|e| ApiError::InternalError(format!("Failed to join IPC task: {}", e)))?
-        .map_err(|e| ApiError::InternalError(format!("IPC error: {}", e)))?;
-
-        match response {
-            IpcResponse::ProfileActivated { name: profile_name } => {
-                // Reload simulation service with the new profile
-                if let Err(e) = state.simulation_service.load_profile(&profile_name) {
-                    log::warn!("Failed to load profile into simulation service: {}", e);
-                    // Don't fail the activation if simulation service load fails - it's not critical
-                }
-
-                // Broadcast event to WebSocket subscribers
-                use crate::web::rpc_types::ServerMessage;
-                let event = ServerMessage::Event {
-                    channel: "profiles".to_string(),
-                    data: serde_json::json!({
-                        "action": "activated",
-                        "profile": profile_name.clone()
-                    }),
-                };
-                if let Err(e) = state.event_broadcaster.send(event) {
-                    log::warn!("Failed to broadcast profile activated event: {}", e);
-                }
-
-                Ok(Json(json!({
-                    "success": true,
-                    "profile": profile_name,
-                    "compile_time_ms": 0,
-                    "reload_time_ms": 0,
-                })))
-            }
-            IpcResponse::Error { code, message } => Err(ApiError::InternalError(format!(
-                "Profile activation failed (code {}): {}",
-                code, message
-            ))),
-            _ => Err(ApiError::InternalError(
-                "Unexpected IPC response".to_string(),
-            )),
-        }
-    } else {
-        // Production mode: use ProfileService to ensure consistent state
+    // Use ProfileService directly for both test and production modes.
+    // Test mode has no running daemon to reload via IPC, so direct activation
+    // through ProfileService is the correct path.
+    {
         let result = state
             .profile_service
             .activate_profile(&name)

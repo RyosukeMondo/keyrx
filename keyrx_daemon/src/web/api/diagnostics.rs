@@ -23,6 +23,8 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/debug/state", get(get_debug_state))
         .route("/debug/config/:name", get(get_debug_config))
         .route("/debug/log-level", post(set_debug_log_level))
+        .route("/debug/suspend", post(set_suspend_state))
+        .route("/keyboard/labels", get(get_keyboard_labels))
 }
 
 /// Comprehensive diagnostics information
@@ -328,15 +330,41 @@ async fn get_frontend_status() -> Json<Value> {
 /// Get list of registered API routes
 fn get_routes_list() -> Value {
     let api = vec![
-        "health", "version", "status", "metrics/latency", "metrics/events",
-        "daemon/state", "diagnostics", "diagnostics/full", "diagnostics/routes",
-        "diagnostics/frontend", "diagnostics/build", "devices", "devices/:device_id",
-        "devices/:device_id/layout", "profiles", "profiles/:name",
-        "profiles/:name/config", "profiles/:name/activate", "profiles/active",
-        "config/:profile/layers", "config/:profile/layers/:layer", "layouts",
-        "layouts/:layout_name", "simulator/press", "simulator/release",
-        "simulator/sequence", "macros/start", "macros/stop", "macros/events",
-        "macros/save", "debug/state", "debug/config/:name", "debug/log-level",
+        "health",
+        "version",
+        "status",
+        "metrics/latency",
+        "metrics/events",
+        "daemon/state",
+        "diagnostics",
+        "diagnostics/full",
+        "diagnostics/routes",
+        "diagnostics/frontend",
+        "diagnostics/build",
+        "devices",
+        "devices/:device_id",
+        "devices/:device_id/layout",
+        "profiles",
+        "profiles/:name",
+        "profiles/:name/config",
+        "profiles/:name/activate",
+        "profiles/active",
+        "config/:profile/layers",
+        "config/:profile/layers/:layer",
+        "layouts",
+        "layouts/:layout_name",
+        "simulator/press",
+        "simulator/release",
+        "simulator/sequence",
+        "macros/start",
+        "macros/stop",
+        "macros/events",
+        "macros/save",
+        "debug/state",
+        "debug/config/:name",
+        "debug/log-level",
+        "debug/suspend",
+        "keyboard/labels",
     ];
     let api_routes: Vec<String> = api.into_iter().map(|r| format!("/api/{r}")).collect();
     serde_json::json!({
@@ -350,8 +378,8 @@ fn get_routes_list() -> Value {
 
 /// Get frontend bundle information
 fn get_frontend_info() -> Value {
-    let ui_dist_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../keyrx_ui/dist");
+    let ui_dist_path =
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../keyrx_ui/dist");
     serde_json::json!({
         "ui_embedded": true,
         "ui_dist_path": ui_dist_path.to_string_lossy(),
@@ -367,31 +395,41 @@ fn check_config_validation() -> ConfigStatus {
     use crate::config::ProfileManager;
 
     let Some(mut config_dir) = dirs::config_dir() else {
-        return ConfigStatus { valid: false, message: "Cannot determine config directory".into() };
+        return ConfigStatus {
+            valid: false,
+            message: "Cannot determine config directory".into(),
+        };
     };
     config_dir.push("keyrx");
 
     let profile_manager = match ProfileManager::new(config_dir) {
         Ok(mgr) => mgr,
-        Err(e) => return ConfigStatus {
-            valid: false, message: format!("Failed to initialize ProfileManager: {e}"),
-        },
+        Err(e) => {
+            return ConfigStatus {
+                valid: false,
+                message: format!("Failed to initialize ProfileManager: {e}"),
+            }
+        }
     };
 
     match profile_manager.get_active() {
         Ok(Some(name)) => match profile_manager.get(&name) {
             Some(_) => ConfigStatus {
-                valid: true, message: format!("Active profile '{name}' is valid"),
+                valid: true,
+                message: format!("Active profile '{name}' is valid"),
             },
             None => ConfigStatus {
-                valid: false, message: format!("Active profile '{name}' not found"),
+                valid: false,
+                message: format!("Active profile '{name}' not found"),
             },
         },
         Ok(None) => ConfigStatus {
-            valid: true, message: "No active profile (running in pass-through mode)".into(),
+            valid: true,
+            message: "No active profile (running in pass-through mode)".into(),
         },
         Err(e) => ConfigStatus {
-            valid: false, message: format!("Error reading active profile: {e}"),
+            valid: false,
+            message: format!("Error reading active profile: {e}"),
         },
     }
 }
@@ -401,12 +439,14 @@ async fn get_debug_state(State(state): State<Arc<AppState>>) -> Json<Value> {
     let daemon_info = match state.daemon_state.as_ref() {
         Some(daemon) => {
             let active = daemon.get_active_profile();
-            let mapping_count = active.as_ref()
-                .map(|n| count_mappings_for_profile(&state, n)).unwrap_or(0);
+            let mapping_count = active
+                .as_ref()
+                .map(|n| count_mappings_for_profile(&state, n))
+                .unwrap_or(0);
             serde_json::json!({
                 "running": daemon.is_running(), "uptime_secs": daemon.uptime_secs(),
                 "active_profile": active, "device_count": daemon.get_device_count(),
-                "mapping_count": mapping_count,
+                "mapping_count": mapping_count, "suspended": daemon.is_suspended(),
             })
         }
         None => serde_json::json!({
@@ -470,13 +510,8 @@ async fn build_config_info(state: &AppState) -> Value {
                 .modified()
                 .ok()
                 .and_then(|t| {
-                    let d = t
-                        .duration_since(std::time::SystemTime::UNIX_EPOCH)
-                        .ok()?;
-                    chrono::DateTime::<chrono::Utc>::from_timestamp(
-                        d.as_secs() as i64,
-                        0,
-                    )
+                    let d = t.duration_since(std::time::SystemTime::UNIX_EPOCH).ok()?;
+                    chrono::DateTime::<chrono::Utc>::from_timestamp(d.as_secs() as i64, 0)
                 })
                 .map(|dt| dt.to_rfc3339());
             (Some(size), modified)
@@ -558,15 +593,13 @@ async fn set_debug_log_level(
         "warn" => log::LevelFilter::Warn,
         "error" => log::LevelFilter::Error,
         other => {
-            return Err(DaemonError::from(
-                crate::error::ConfigError::ParseError {
-                    path: std::path::PathBuf::from("log-level"),
-                    reason: format!(
-                        "Invalid log level '{other}'. \
+            return Err(DaemonError::from(crate::error::ConfigError::ParseError {
+                path: std::path::PathBuf::from("log-level"),
+                reason: format!(
+                    "Invalid log level '{other}'. \
                          Use: trace, debug, info, warn, error"
-                    ),
-                },
-            ));
+                ),
+            }));
         }
     };
 
@@ -579,6 +612,153 @@ async fn set_debug_log_level(
     })))
 }
 
+/// Request body for suspend/resume.
+#[derive(Deserialize)]
+struct SuspendRequest {
+    suspended: bool,
+}
+
+/// POST /api/debug/suspend - Suspend or resume key remapping
+async fn set_suspend_state(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<SuspendRequest>,
+) -> Result<Json<Value>, DaemonError> {
+    match state.daemon_state.as_ref() {
+        Some(daemon) => {
+            daemon.set_suspended(payload.suspended);
+            log::info!(
+                "Daemon {} via REST API",
+                if payload.suspended {
+                    "suspended"
+                } else {
+                    "resumed"
+                }
+            );
+            Ok(Json(serde_json::json!({
+                "suspended": payload.suspended,
+                "applied": true,
+            })))
+        }
+        None => Err(DaemonError::from(crate::error::ConfigError::ParseError {
+            path: std::path::PathBuf::from("suspend"),
+            reason: "Daemon state not available".to_string(),
+        })),
+    }
+}
+
+/// Response for keyboard label detection
+#[derive(Serialize, Deserialize)]
+pub struct KeyboardLabelsResponse {
+    /// Detected keyboard layout name
+    pub detected_layout: String,
+    /// Map of KeyCode name -> display label
+    pub labels: std::collections::HashMap<String, String>,
+}
+
+/// GET /api/keyboard/labels - Detect keyboard layout and return display labels
+#[cfg(target_os = "windows")]
+async fn get_keyboard_labels() -> Result<Json<KeyboardLabelsResponse>, DaemonError> {
+    tokio::task::spawn_blocking(move || {
+        let labels = detect_keyboard_labels();
+        Ok::<Json<KeyboardLabelsResponse>, DaemonError>(Json(labels))
+    })
+    .await
+    .map_err(|e| {
+        DaemonError::from(crate::error::ConfigError::ParseError {
+            path: std::path::PathBuf::from("keyboard-labels"),
+            reason: format!("Task join error: {}", e),
+        })
+    })?
+}
+
+#[cfg(not(target_os = "windows"))]
+async fn get_keyboard_labels() -> Result<Json<KeyboardLabelsResponse>, DaemonError> {
+    Ok(Json(KeyboardLabelsResponse {
+        detected_layout: "Unknown (non-Windows)".to_string(),
+        labels: std::collections::HashMap::new(),
+    }))
+}
+
+/// Detect the current keyboard layout and compute display labels
+/// for each scan code.
+#[cfg(target_os = "windows")]
+fn detect_keyboard_labels() -> KeyboardLabelsResponse {
+    use std::collections::HashMap;
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
+        GetKeyboardLayout, MapVirtualKeyW, ToUnicodeEx, MAPVK_VSC_TO_VK_EX,
+    };
+
+    let hkl = unsafe { GetKeyboardLayout(0) };
+
+    // Extract layout ID for display name
+    let layout_id = (hkl as usize) & 0xFFFF;
+    let detected_layout = match layout_id {
+        0x0411 => "Japanese (109-key)".to_string(),
+        0x0409 => "US English (ANSI)".to_string(),
+        0x0809 => "UK English (ISO)".to_string(),
+        0x0407 => "German (QWERTZ)".to_string(),
+        0x040C => "French (AZERTY)".to_string(),
+        _ => format!("Layout 0x{:04X}", layout_id),
+    };
+
+    // Scan codes to probe (all layout-dependent keys)
+    let scan_label_pairs: &[(u32, &str)] = &[
+        (0x29, "Grave"),
+        (0x0C, "Minus"),
+        (0x0D, "Equal"),
+        (0x1A, "LeftBracket"),
+        (0x1B, "RightBracket"),
+        (0x2B, "Backslash"),
+        (0x27, "Semicolon"),
+        (0x28, "Quote"),
+        (0x33, "Comma"),
+        (0x34, "Period"),
+        (0x35, "Slash"),
+        (0x02, "Num1"),
+        (0x03, "Num2"),
+        (0x04, "Num3"),
+        (0x05, "Num4"),
+        (0x06, "Num5"),
+        (0x07, "Num6"),
+        (0x08, "Num7"),
+        (0x09, "Num8"),
+        (0x0A, "Num9"),
+        (0x0B, "Num0"),
+    ];
+
+    let mut labels = HashMap::new();
+    let key_state = [0u8; 256];
+
+    for &(scancode, name) in scan_label_pairs {
+        let vk = unsafe { MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK_EX) };
+        if vk == 0 {
+            continue;
+        }
+
+        let mut buf = [0u16; 4];
+        let result = unsafe {
+            ToUnicodeEx(
+                vk,
+                scancode,
+                key_state.as_ptr(),
+                buf.as_mut_ptr(),
+                buf.len() as i32,
+                0,
+                hkl,
+            )
+        };
+
+        if result > 0 {
+            let label = String::from_utf16_lossy(&buf[..result as usize]);
+            labels.insert(name.to_string(), label);
+        }
+    }
+
+    KeyboardLabelsResponse {
+        detected_layout,
+        labels,
+    }
+}
+
 #[cfg(test)]
 mod tests;
-
