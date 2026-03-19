@@ -318,7 +318,7 @@ jobs:
 
       - name: Upload Backend Quality Reports (Ubuntu)
         if: matrix.os == 'ubuntu-latest' && always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend-quality-reports
           path: |
@@ -381,7 +381,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-shard-${{ matrix.shard }}
           path: keyrx_ui/test-shard-${{ matrix.shard }}.log
@@ -446,7 +446,7 @@ jobs:
 
       - name: Upload accessibility results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: accessibility-results
           path: keyrx_ui/a11y-output.log
@@ -548,7 +548,7 @@ jobs:
 
       - name: Upload coverage reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
           path: |
@@ -675,7 +675,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: keyrx_ui/playwright-report/
@@ -683,7 +683,7 @@ jobs:
 
       - name: Upload Playwright test results (JSON)
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-test-results
           path: keyrx_ui/test-results/
@@ -691,7 +691,7 @@ jobs:
 
       - name: Upload screenshots on failure
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-screenshots
           path: keyrx_ui/test-results/**/*.png
@@ -699,7 +699,7 @@ jobs:
 
       - name: Upload videos on failure
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-videos
           path: keyrx_ui/test-results/**/*.webm
@@ -821,7 +821,7 @@ jobs:
 
       - name: Upload test logs on failure
         if: steps.e2e-tests.outcome == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: e2e-test-logs
           path: |
@@ -931,7 +931,7 @@ jobs:
 
       - name: Upload contract validation results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: contract-validation-results
           path: |

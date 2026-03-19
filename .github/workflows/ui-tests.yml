@@ -66,7 +66,7 @@ jobs:
         run: npm run test -- --run --coverage
 
       - name: Upload Coverage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: keyrx_ui_v2/coverage
@@ -111,7 +111,7 @@ jobs:
 
       - name: Upload Playwright Report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: keyrx_ui_v2/playwright-report
@@ -119,7 +119,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: keyrx_ui_v2/test-results
@@ -152,7 +152,7 @@ jobs:
 
       - name: Upload Accessibility Report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: accessibility-report
           path: keyrx_ui_v2/playwright-report
@@ -185,7 +185,7 @@ jobs:
 
       - name: Upload Performance Report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-report
           path: keyrx_ui_v2/playwright-report
@@ -243,14 +243,14 @@ jobs:
         run: npm run build:production:analyze
 
       - name: Upload Bundle Analysis
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bundle-analysis
           path: keyrx_ui_v2/dist/stats.html
           retention-days: 7
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: production-build
           path: keyrx_ui_v2/dist
@@ -283,7 +283,7 @@ jobs:
 
       - name: Upload Lighthouse Report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: lighthouse-report
           path: keyrx_ui_v2/playwright-report

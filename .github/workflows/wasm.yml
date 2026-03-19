@@ -121,7 +121,7 @@ jobs:
           echo "Continuing workflow to upload artifacts for debugging."
 
       - name: Upload WASM Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wasm-module
           path: |
@@ -133,7 +133,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Size Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wasm-size-report
           path: keyrx_core/pkg/keyrx_core_bg.wasm*
@@ -214,7 +214,7 @@ jobs:
         run: npm run build
 
       - name: Upload UI Build with WASM
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ui-build-with-wasm
           path: keyrx_ui/dist

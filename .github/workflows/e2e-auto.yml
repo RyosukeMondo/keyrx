@@ -52,14 +52,14 @@ jobs:
         run: cargo build --release -p keyrx_compiler
 
       - name: Upload daemon binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: daemon-binary
           path: target/release/keyrx_daemon
           retention-days: 1
 
       - name: Upload compiler binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: compiler-binary
           path: target/release/keyrx_compiler
@@ -90,13 +90,13 @@ jobs:
             ${{ runner.os }}-npm-
 
       - name: Download daemon binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: daemon-binary
           path: target/release
 
       - name: Download compiler binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: compiler-binary
           path: target/release
@@ -147,7 +147,7 @@ jobs:
 
       - name: Upload test results (JSON)
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: e2e-test-results
           path: |
@@ -157,7 +157,7 @@ jobs:
 
       - name: Upload HTML report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: e2e-test-report
           path: keyrx_ui/report.html
@@ -165,7 +165,7 @@ jobs:
 
       - name: Upload daemon logs on failure
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: daemon-logs
           path: |
