@@ -109,10 +109,7 @@ export async function updateProfile(
   originalName: string,
   updates: { name?: string; description?: string }
 ): Promise<ProfileResponse> {
-  const response = await apiClient.put<EmptyResponse>(
-    `/api/profiles/${originalName}`,
-    updates
-  );
+  await apiClient.put<EmptyResponse>(`/api/profiles/${originalName}`, updates);
   return { success: true };
 }
 
@@ -120,9 +117,7 @@ export async function updateProfile(
  * Delete a profile
  */
 export async function deleteProfile(name: string): Promise<ProfileResponse> {
-  const response = await apiClient.delete<EmptyResponse>(
-    `/api/profiles/${name}`
-  );
+  await apiClient.delete<EmptyResponse>(`/api/profiles/${name}`);
   return { success: true };
 }
 

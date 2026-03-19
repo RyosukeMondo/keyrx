@@ -68,7 +68,7 @@ function sanitizeContext(context?: LogContext): LogContext | undefined {
       sanitized[key] = '[REDACTED]';
     } else if (Array.isArray(value)) {
       // Handle arrays
-      sanitized[key] = value.map(item =>
+      sanitized[key] = value.map((item) =>
         typeof item === 'object' && item !== null
           ? sanitizeContext(item as LogContext)
           : item
@@ -92,7 +92,12 @@ function formatLogEntry(entry: LogEntry): string {
 /**
  * Core logging function
  */
-function log(level: LogLevel, event: string, context?: LogContext, error?: Error): void {
+function log(
+  level: LogLevel,
+  event: string,
+  context?: LogContext,
+  error?: Error
+): void {
   const entry: LogEntry = {
     timestamp: new Date().toISOString(),
     level,
@@ -113,6 +118,7 @@ function log(level: LogLevel, event: string, context?: LogContext, error?: Error
   const formatted = formatLogEntry(entry);
 
   // Use appropriate console method based on level
+  /* eslint-disable no-console -- logger implementation requires direct console access */
   switch (level) {
     case LogLevel.ERROR:
       console.error(formatted);
@@ -127,6 +133,7 @@ function log(level: LogLevel, event: string, context?: LogContext, error?: Error
       console.debug(formatted);
       break;
   }
+  /* eslint-enable no-console */
 }
 
 /**

@@ -27,7 +27,7 @@ export function useASTRebuild({
   selectedDevices,
   devices,
 }: UseASTRebuildProps) {
-  const { data: devicesData } = useDevices();
+  useDevices();
 
   const rebuildAndSyncAST = useCallback(() => {
     // Convert a KeyMapping to RhaiKeyMapping
@@ -135,7 +135,7 @@ export function useASTRebuild({
       deviceBlocks,
       comments: [],
     });
-  }, [configStore, syncEngine, globalSelected, selectedDevices, devices, devicesData]);
+  }, [configStore, syncEngine, globalSelected, selectedDevices, devices]);
 
   return rebuildAndSyncAST;
 }

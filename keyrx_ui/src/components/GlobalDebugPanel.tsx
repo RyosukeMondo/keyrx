@@ -72,6 +72,7 @@ function pushEntry(level: LogLevel, args: unknown[]) {
 
 // === Install interceptors immediately at module scope ===
 
+/* eslint-disable no-console -- intentionally intercepting console methods */
 const origLog = console.log.bind(console);
 const origInfo = console.info.bind(console);
 const origWarn = console.warn.bind(console);
@@ -93,12 +94,18 @@ console.error = (...args: unknown[]) => {
   origError(...args);
   pushEntry('error', args);
 };
+/* eslint-enable no-console */
 
 // Intercept fetch to log all API requests/responses
 const origFetch = window.fetch.bind(window);
 window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const method = init?.method || 'GET';
-  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  const url =
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.href
+        : input.url;
 
   // Only log API calls (skip static assets)
   const isApi = url.includes('/api/') || url.includes('/ws');
@@ -136,11 +143,14 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
 // Capture uncaught errors
 window.addEventListener('error', (event) => {
-  pushEntry('error', [`Uncaught: ${event.message} at ${event.filename}:${event.lineno}`]);
+  pushEntry('error', [
+    `Uncaught: ${event.message} at ${event.filename}:${event.lineno}`,
+  ]);
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-  const reason = event.reason instanceof Error ? event.reason.message : String(event.reason);
+  const reason =
+    event.reason instanceof Error ? event.reason.message : String(event.reason);
   pushEntry('error', [`Unhandled rejection: ${reason}`]);
 });
 
@@ -154,7 +164,9 @@ function useLogEntries(): LogEntry[] {
   useEffect(() => {
     const cb = () => setTick((t) => t + 1);
     listeners.add(cb);
-    return () => { listeners.delete(cb); };
+    return () => {
+      listeners.delete(cb);
+    };
   }, []);
 
   return logStore;
@@ -177,9 +189,8 @@ export const GlobalDebugPanel: React.FC = () => {
     }
   }, [entries.length, expanded]);
 
-  const filtered = filter === 'all'
-    ? entries
-    : entries.filter((e) => e.level === filter);
+  const filtered =
+    filter === 'all' ? entries : entries.filter((e) => e.level === filter);
 
   const errorCount = entries.filter((e) => e.level === 'error').length;
   const warnCount = entries.filter((e) => e.level === 'warn').length;
@@ -193,10 +204,13 @@ export const GlobalDebugPanel: React.FC = () => {
     const text = filtered
       .map((e) => `[${e.timestamp}] ${LEVEL_BADGES[e.level]} ${e.message}`)
       .join('\n');
-    navigator.clipboard.writeText(text).then(() => {
-      setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 1500);
-    }).catch(() => {});
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 1500);
+      })
+      .catch(() => {});
   }, [filtered]);
 
   const handleDaemonLevel = useCallback(async (level: DaemonLogLevel) => {
@@ -212,11 +226,8 @@ export const GlobalDebugPanel: React.FC = () => {
     }
   }, []);
 
-  const badgeColor = errorCount > 0
-    ? '#ef4444'
-    : warnCount > 0
-      ? '#fbbf24'
-      : '#4ade80';
+  const badgeColor =
+    errorCount > 0 ? '#ef4444' : warnCount > 0 ? '#fbbf24' : '#4ade80';
 
   if (!expanded) {
     return (
@@ -260,7 +271,13 @@ export const GlobalDebugPanel: React.FC = () => {
     );
   }
 
-  const filterOptions: Array<LogLevel | 'all'> = ['all', 'error', 'warn', 'info', 'log'];
+  const filterOptions: Array<LogLevel | 'all'> = [
+    'all',
+    'error',
+    'warn',
+    'info',
+    'log',
+  ];
   const daemonLevels: DaemonLogLevel[] = ['error', 'warn', 'info', 'debug'];
 
   return (
@@ -296,20 +313,24 @@ export const GlobalDebugPanel: React.FC = () => {
           gap: 4,
         }}
       >
-        <span style={{
-          color: '#e2e8f0',
-          fontWeight: 'bold',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-        }}>
-          <span style={{
-            display: 'inline-block',
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: badgeColor,
-          }} />
+        <span
+          style={{
+            color: '#e2e8f0',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: badgeColor,
+            }}
+          />
           Console ({filtered.length})
         </span>
         <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>

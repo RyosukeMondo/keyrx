@@ -16,8 +16,8 @@
       "bash -c 'cargo clippy --all-targets -- -D warnings'"
     ],
     "keyrx_ui/**/*.{ts,tsx,js,jsx}": [
-      "prettier --check",
-      "eslint"
+      "keyrx_ui/node_modules/.bin/prettier --check",
+      "keyrx_ui/node_modules/.bin/eslint"
     ]
   }
 }

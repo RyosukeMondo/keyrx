@@ -84,32 +84,19 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = (props) => {
   const [logLevel, setLogLevel] = useState<LogLevel>('info');
   const [copyFeedback, setCopyFeedback] = useState(false);
 
-  const diagnosticData = useMemo(() => buildDiagnosticData(props), [
-    props.isConnected,
-    props.readyState,
-    props.lastError,
-    props.selectedProfile,
-    props.profileConfig,
-    props.syncEngine.state,
-    props.syncEngine.error,
-    props.syncStatus,
-    props.lastSaveTime,
-    props.configStore.activeLayer,
-    props.configStore.globalSelected,
-    props.configStore.selectedDevices,
-    props.keyboardLayout,
-    props.layoutKeyCount,
-    props.configStore,
-  ]);
+  const diagnosticData = useMemo(() => buildDiagnosticData(props), [props]);
 
   const handleCopy = useCallback(() => {
     const json = JSON.stringify(diagnosticData, null, 2);
-    navigator.clipboard.writeText(json).then(() => {
-      setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 1500);
-    }).catch((err) => {
-      console.error('Failed to copy diagnostics:', err);
-    });
+    navigator.clipboard
+      .writeText(json)
+      .then(() => {
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 1500);
+      })
+      .catch((err) => {
+        console.error('Failed to copy diagnostics:', err);
+      });
   }, [diagnosticData]);
 
   const handleLogLevel = useCallback(async (level: LogLevel) => {
@@ -197,7 +184,15 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = (props) => {
           flexShrink: 0,
         }}
       >
-        <span style={{ color: '#e2e8f0', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span
+          style={{
+            color: '#e2e8f0',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
           <span
             style={{
               display: 'inline-block',

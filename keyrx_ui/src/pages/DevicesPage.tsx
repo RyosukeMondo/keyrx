@@ -5,7 +5,6 @@ import { Input } from '../components/Input';
 import { LayoutDropdown } from '../components/LayoutDropdown';
 import { Modal } from '../components/Modal';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
-import { useAutoSave } from '../hooks/useAutoSave';
 import { useUpdateDevice } from '../hooks/useUpdateDevice';
 import {
   useDevices,
@@ -348,9 +347,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
         },
         onError: (err) => {
           // Show error message
-          setNameError(
-            getErrorMessage(err, 'Failed to rename device')
-          );
+          setNameError(getErrorMessage(err, 'Failed to rename device'));
         },
       }
     );

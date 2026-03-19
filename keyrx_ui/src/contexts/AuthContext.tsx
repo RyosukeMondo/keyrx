@@ -8,7 +8,13 @@
  * - Login/logout functionality
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
@@ -39,7 +45,9 @@ const TOKEN_STORAGE_KEY = 'keyrx_access_token';
 const REFRESH_TOKEN_KEY = 'keyrx_refresh_token';
 const TOKEN_REFRESH_INTERVAL = 14 * 60 * 1000; // 14 minutes (before 15min expiry)
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
@@ -56,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await fetch('/api/auth/validate', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -119,38 +127,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   /**
    * Login with username and password
    */
-  const login = useCallback(async (username: string, password: string) => {
-    setError(null);
-    setIsLoading(true);
+  const login = useCallback(
+    async (username: string, password: string) => {
+      setError(null);
+      setIsLoading(true);
 
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
 
-      if (response.ok) {
-        const data: LoginResponse = await response.json();
-        localStorage.setItem(TOKEN_STORAGE_KEY, data.access_token);
-        localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token);
-        setUser({ id: username, username });
-        setIsAuthenticated(true);
-        navigate('/');
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Login failed');
+        if (response.ok) {
+          const data: LoginResponse = await response.json();
+          localStorage.setItem(TOKEN_STORAGE_KEY, data.access_token);
+          localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token);
+          setUser({ id: username, username });
+          setIsAuthenticated(true);
+          navigate('/');
+        } else {
+          const errorData = await response.json();
+          setError(errorData.error || 'Login failed');
+          setIsAuthenticated(false);
+        }
+      } catch (err) {
+        setError('Network error. Please try again.');
         setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      setError('Network error. Please try again.');
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [navigate]);
+    },
+    [navigate]
+  );
 
   /**
    * Logout and clear tokens
@@ -160,7 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
+          Authorization: `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
         },
       });
     } catch (err) {
@@ -265,7 +276,9 @@ export const useAuth = (): AuthContextType => {
 /**
  * Get authorization header for API requests
  */
-export const getAuthHeader = (): { Authorization: string } | {} => {
+export const getAuthHeader = ():
+  | { Authorization: string }
+  | Record<string, never> => {
   const token = localStorage.getItem(TOKEN_STORAGE_KEY);
   return token ? { Authorization: `Bearer ${token}` } : {};
 };

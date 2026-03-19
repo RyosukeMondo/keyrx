@@ -311,6 +311,7 @@ export function validateApiResponse<T>(
 
   // Passthrough schemas allow unexpected fields for forward compatibility.
   // Log at debug level so consumers can trace API evolution.
+  // eslint-disable-next-line no-console
   console.debug(`API response validated for ${endpoint}`);
 
   return result.data;

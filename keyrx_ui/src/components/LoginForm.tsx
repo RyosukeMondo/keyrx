@@ -31,12 +31,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ className = '' }) => {
     const hasUppercase = /[A-Z]/.test(pass);
     const hasLowercase = /[a-z]/.test(pass);
     const hasDigit = /\d/.test(pass);
-    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pass);
+    const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pass);
 
-    const complexityCount = [hasUppercase, hasLowercase, hasDigit, hasSpecial].filter(Boolean).length;
+    const complexityCount = [
+      hasUppercase,
+      hasLowercase,
+      hasDigit,
+      hasSpecial,
+    ].filter(Boolean).length;
 
     if (complexityCount < 3) {
-      setValidationError('Password must contain at least 3 of: uppercase, lowercase, digit, special character');
+      setValidationError(
+        'Password must contain at least 3 of: uppercase, lowercase, digit, special character'
+      );
       return false;
     }
 
@@ -139,7 +146,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ className = '' }) => {
           <p className="mb-2">Password requirements:</p>
           <ul className="list-disc list-inside space-y-1 text-xs">
             <li>At least 12 characters</li>
-            <li>At least 3 of: uppercase, lowercase, digit, special character</li>
+            <li>
+              At least 3 of: uppercase, lowercase, digit, special character
+            </li>
           </ul>
         </div>
       </div>

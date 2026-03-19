@@ -29,7 +29,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
 import { apiClient } from '../api/client';
-import type { DeviceEntry, DeviceScope } from '../types';
+import type { DeviceScope } from '../types';
 
 /**
  * Request body for PATCH /api/devices/:id
