@@ -4,17 +4,17 @@ on:
   push:
     branches: ['**']
     paths:
-      - 'keyrx_ui_v2/**'
+      - 'keyrx_ui/**'
       - '.github/workflows/ui-tests.yml'
   pull_request:
     branches: ['**']
     paths:
-      - 'keyrx_ui_v2/**'
+      - 'keyrx_ui/**'
       - '.github/workflows/ui-tests.yml'
 
 defaults:
   run:
-    working-directory: keyrx_ui_v2
+    working-directory: keyrx_ui
 
 jobs:
   lint-and-format:
@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: keyrx_ui_v2/package-lock.json
+          cache-dependency-path: keyrx_ui/package-lock.json
 
       - name: Install Dependencies
         run: npm ci
@@ -57,7 +57,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: keyrx_ui_v2/package-lock.json
+          cache-dependency-path: keyrx_ui/package-lock.json
 
       - name: Install Dependencies
         run: npm ci
@@ -69,7 +69,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: keyrx_ui_v2/coverage
+          path: keyrx_ui/coverage
           retention-days: 7
 
       - name: Check Coverage Threshold
@@ -97,7 +97,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: keyrx_ui_v2/package-lock.json
+          cache-dependency-path: keyrx_ui/package-lock.json
 
       - name: Install Dependencies
         run: npm ci
@@ -114,7 +114,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: keyrx_ui_v2/playwright-report
+          path: keyrx_ui/playwright-report
           retention-days: 7
 
       - name: Upload Test Results
@@ -122,7 +122,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: keyrx_ui_v2/test-results
+          path: keyrx_ui/test-results
           retention-days: 7
 
   accessibility-tests:
@@ -139,7 +139,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: keyrx_ui_v2/package-lock.json
+          cache-dependency-path: keyrx_ui/package-lock.json
 
       - name: Install Dependencies
         run: npm ci
@@ -155,7 +155,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: accessibility-report
-          path: keyrx_ui_v2/playwright-report
+          path: keyrx_ui/playwright-report
           retention-days: 7
 
   performance-tests:
@@ -172,7 +172,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: keyrx_ui_v2/package-lock.json
+          cache-dependency-path: keyrx_ui/package-lock.json
 
       - name: Install Dependencies
         run: npm ci
@@ -188,7 +188,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: performance-report
-          path: keyrx_ui_v2/playwright-report
+          path: keyrx_ui/playwright-report
           retention-days: 7
 
   build-check:
@@ -205,7 +205,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: keyrx_ui_v2/package-lock.json
+          cache-dependency-path: keyrx_ui/package-lock.json
 
       - name: Install Dependencies
         run: npm ci
@@ -246,14 +246,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bundle-analysis
-          path: keyrx_ui_v2/dist/stats.html
+          path: keyrx_ui/dist/stats.html
           retention-days: 7
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: production-build
-          path: keyrx_ui_v2/dist
+          path: keyrx_ui/dist
           retention-days: 7
 
   lighthouse-tests:
@@ -270,7 +270,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: keyrx_ui_v2/package-lock.json
+          cache-dependency-path: keyrx_ui/package-lock.json
 
       - name: Install Dependencies
         run: npm ci
@@ -286,7 +286,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-report
-          path: keyrx_ui_v2/playwright-report
+          path: keyrx_ui/playwright-report
           retention-days: 7
 
   all-tests-passed:
@@ -301,6 +301,10 @@ jobs:
       - build-check
       - lighthouse-tests
     if: always()
+
+    defaults:
+      run:
+        working-directory: .
 
     steps:
       - name: Check All Jobs
