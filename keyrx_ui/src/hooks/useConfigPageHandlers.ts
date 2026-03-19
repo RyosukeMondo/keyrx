@@ -6,10 +6,7 @@ interface UseConfigPageHandlersProps {
   selectedProfileName: string;
   setSelectedProfileName: (name: string) => void;
   createProfile: (data: { name: string }) => Promise<void>;
-  setProfileConfig: (data: {
-    name: string;
-    source: string;
-  }) => Promise<void>;
+  setProfileConfig: (data: { name: string; source: string }) => Promise<void>;
   configStore: {
     setMapping: (keyCode: string, mapping: KeyMapping) => void;
     deleteMapping: (keyCode: string) => void;

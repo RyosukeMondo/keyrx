@@ -14,7 +14,8 @@
  */
 
 let wasmInstance: typeof import('@/wasm/pkg/keyrx_core.js') | null = null;
-let wasmLoading: Promise<typeof import('@/wasm/pkg/keyrx_core.js')> | null = null;
+let wasmLoading: Promise<typeof import('@/wasm/pkg/keyrx_core.js')> | null =
+  null;
 
 /**
  * Get WASM instance with lazy loading

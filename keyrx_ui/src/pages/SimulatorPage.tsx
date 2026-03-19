@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useMemo,
-} from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { KeyboardVisualizer } from '../components/KeyboardVisualizer';
 import { Card } from '../components/Card';
 import { WasmProvider } from '../contexts/WasmContext';
@@ -80,7 +75,6 @@ export const SimulatorPage: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
     []
   );
-
 
   // Mock key mappings for demonstration
   const keyMappings = useMockKeyMappings();

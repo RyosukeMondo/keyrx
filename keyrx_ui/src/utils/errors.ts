@@ -104,11 +104,9 @@ export class ValidationError extends KeyRxError {
   }
 
   static invalidFormat(field: string, format: string): ValidationError {
-    return new ValidationError(
-      `${field} must be a valid ${format}`,
-      field,
-      { format }
-    );
+    return new ValidationError(`${field} must be a valid ${format}`, field, {
+      format,
+    });
   }
 }
 
@@ -154,10 +152,10 @@ export class ProfileError extends KeyRxError {
   }
 
   static compilationFailed(name: string, reason: string): ProfileError {
-    return new ProfileError(
-      `Failed to compile profile ${name}: ${reason}`,
-      { name, reason }
-    );
+    return new ProfileError(`Failed to compile profile ${name}: ${reason}`, {
+      name,
+      reason,
+    });
   }
 
   static invalidName(name: string): ProfileError {
@@ -165,10 +163,10 @@ export class ProfileError extends KeyRxError {
   }
 
   static activationFailed(name: string, reason: string): ProfileError {
-    return new ProfileError(
-      `Failed to activate profile ${name}: ${reason}`,
-      { name, reason }
-    );
+    return new ProfileError(`Failed to activate profile ${name}: ${reason}`, {
+      name,
+      reason,
+    });
   }
 }
 
@@ -183,15 +181,21 @@ export class ConfigError extends KeyRxError {
   }
 
   static loadFailed(reason: string): ConfigError {
-    return new ConfigError(`Failed to load configuration: ${reason}`, { reason });
+    return new ConfigError(`Failed to load configuration: ${reason}`, {
+      reason,
+    });
   }
 
   static saveFailed(reason: string): ConfigError {
-    return new ConfigError(`Failed to save configuration: ${reason}`, { reason });
+    return new ConfigError(`Failed to save configuration: ${reason}`, {
+      reason,
+    });
   }
 
   static invalidFormat(format: string): ConfigError {
-    return new ConfigError(`Invalid configuration format: ${format}`, { format });
+    return new ConfigError(`Invalid configuration format: ${format}`, {
+      format,
+    });
   }
 }
 
@@ -214,7 +218,9 @@ export class DeviceError extends KeyRxError {
   }
 
   static accessDenied(deviceId: string): DeviceError {
-    return new DeviceError(`Access denied to device: ${deviceId}`, { deviceId });
+    return new DeviceError(`Access denied to device: ${deviceId}`, {
+      deviceId,
+    });
   }
 }
 
@@ -254,7 +260,9 @@ export function parseError(error: unknown): KeyRxError {
     if (error.message.includes('fetch') || error.message.includes('network')) {
       return new NetworkError(error.message, error);
     }
-    return new KeyRxError('UNKNOWN_ERROR', error.message, { originalError: error });
+    return new KeyRxError('UNKNOWN_ERROR', error.message, {
+      originalError: error,
+    });
   }
 
   if (typeof error === 'string') {

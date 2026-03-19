@@ -140,7 +140,10 @@ describe('ProfileError', () => {
   it('should create compilation failed error', () => {
     const error = ProfileError.compilationFailed('default', 'syntax error');
     expect(error.message).toContain('Failed to compile profile default');
-    expect(error.context).toMatchObject({ name: 'default', reason: 'syntax error' });
+    expect(error.context).toMatchObject({
+      name: 'default',
+      reason: 'syntax error',
+    });
   });
 
   it('should create invalid name error', () => {

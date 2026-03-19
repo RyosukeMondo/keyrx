@@ -78,13 +78,11 @@ export function useActivateProfile() {
       );
 
       // Optimistically update: set all to inactive, target to active
-      queryClient.setQueryData<ProfileMetadata[]>(
-        queryKeys.profiles,
-        (old) =>
-          old?.map((p) => ({
-            ...p,
-            isActive: p.name === name,
-          }))
+      queryClient.setQueryData<ProfileMetadata[]>(queryKeys.profiles, (old) =>
+        old?.map((p) => ({
+          ...p,
+          isActive: p.name === name,
+        }))
       );
 
       return { previousProfiles };
@@ -143,20 +141,18 @@ export function useUpdateProfile() {
       );
 
       // Optimistically update profile
-      queryClient.setQueryData<ProfileMetadata[]>(
-        queryKeys.profiles,
-        (old) =>
-          old?.map((p) => {
-            if (p.name === originalName) {
-              return {
-                ...p,
-                ...(updates.name && { name: updates.name }),
-                // Note: description is not in ProfileMetadata, so we can't update it here
-                // But the API call will succeed
-              };
-            }
-            return p;
-          })
+      queryClient.setQueryData<ProfileMetadata[]>(queryKeys.profiles, (old) =>
+        old?.map((p) => {
+          if (p.name === originalName) {
+            return {
+              ...p,
+              ...(updates.name && { name: updates.name }),
+              // Note: description is not in ProfileMetadata, so we can't update it here
+              // But the API call will succeed
+            };
+          }
+          return p;
+        })
       );
 
       return { previousProfiles };
@@ -203,9 +199,8 @@ export function useDeleteProfile() {
       );
 
       // Optimistically remove profile
-      queryClient.setQueryData<ProfileMetadata[]>(
-        queryKeys.profiles,
-        (old) => old?.filter((p) => p.name !== name)
+      queryClient.setQueryData<ProfileMetadata[]>(queryKeys.profiles, (old) =>
+        old?.filter((p) => p.name !== name)
       );
 
       return { previousProfiles };

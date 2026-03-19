@@ -69,7 +69,8 @@ export const API_ENDPOINTS = {
   // Profiles
   profiles: '/api/profiles',
   profileActivate: (profileId: string) => `/api/profiles/${profileId}/activate`,
-  profileDeactivate: (profileId: string) => `/api/profiles/${profileId}/deactivate`,
+  profileDeactivate: (profileId: string) =>
+    `/api/profiles/${profileId}/deactivate`,
   profileDelete: (profileId: string) => `/api/profiles/${profileId}`,
 
   // Configuration
@@ -116,7 +117,8 @@ export const WS_RECONNECT_CONFIG = {
 export const ENVIRONMENT = import.meta.env.VITE_ENV ?? 'development';
 
 /** Is production build */
-export const IS_PRODUCTION = import.meta.env.PROD || ENVIRONMENT === 'production';
+export const IS_PRODUCTION =
+  import.meta.env.PROD || ENVIRONMENT === 'production';
 
 /** Is development build */
 export const IS_DEVELOPMENT = !IS_PRODUCTION || ENVIRONMENT === 'development';
@@ -269,7 +271,9 @@ export function buildWsUrl(): string {
  */
 export function getDaemonConnectionInfo(): string {
   try {
-    const url = new URL(API_BASE_URL || `http://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}`);
+    const url = new URL(
+      API_BASE_URL || `http://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}`
+    );
     return `${url.hostname}:${url.port || DEFAULT_DAEMON_PORT}`;
   } catch {
     return `${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}`;

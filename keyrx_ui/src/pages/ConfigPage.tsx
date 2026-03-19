@@ -38,11 +38,18 @@ import { DiagnosticsPanel } from '@/components/config/DiagnosticsPanel';
 function detectLayoutFromSource(source: string | undefined): LayoutType {
   if (!source) return 'JIS_109';
   const jisKeys = [
-    'VK_Zenkaku', 'VK_全角', 'VK_無変換', 'VK_変換',
-    'VK_ひらがな', 'VK_カタカナ', 'VK_Ro', 'VK_Yen',
-    'VK_Henkan', 'VK_Muhenkan',
+    'VK_Zenkaku',
+    'VK_全角',
+    'VK_無変換',
+    'VK_変換',
+    'VK_ひらがな',
+    'VK_カタカナ',
+    'VK_Ro',
+    'VK_Yen',
+    'VK_Henkan',
+    'VK_Muhenkan',
   ];
-  const hasJisKeys = jisKeys.some(k => source.includes(k));
+  const hasJisKeys = jisKeys.some((k) => source.includes(k));
   return hasJisKeys ? 'JIS_109' : 'ANSI_104';
 }
 
@@ -115,8 +122,11 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     () => detectLayoutFromSource(profileConfig?.source),
     [profileConfig?.source]
   );
-  const { layout: keyboardLayout, setLayout, layoutKeys } =
-    useKeyboardLayout(detectedLayout);
+  const {
+    layout: keyboardLayout,
+    setLayout,
+    layoutKeys,
+  } = useKeyboardLayout(detectedLayout);
 
   // Auto-update layout when detection changes (e.g., profile switch)
   useEffect(() => {
@@ -141,7 +151,8 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   }, [profiles, selectedProfileName, setSelectedProfileName]);
 
   // Check if selected profile exists
-  const profileExists = profiles?.some((p) => p.name === selectedProfileName) ?? false;
+  const profileExists =
+    profiles?.some((p) => p.name === selectedProfileName) ?? false;
 
   // Check if config file exists
   const configMissing =
@@ -190,7 +201,13 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       setSyncStatus('unsaved');
       configLoadedRef.current = true;
     }
-  }, [profileConfig, configMissing, selectedProfileName, syncEngine, setSyncStatus]);
+  }, [
+    profileConfig,
+    configMissing,
+    selectedProfileName,
+    syncEngine,
+    setSyncStatus,
+  ]);
 
   // Track code changes to update sync status
   useEffect(() => {
@@ -206,8 +223,12 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncEngine.state, syncEngine.getCode, profileConfig?.source, setSyncStatus]);
-
+  }, [
+    syncEngine.state,
+    syncEngine.getCode,
+    profileConfig?.source,
+    setSyncStatus,
+  ]);
 
   // Sync visual editor state from parsed AST - LAYER-AWARE VERSION
   useASTSync({
@@ -268,7 +289,6 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     setSyncStatus('unsaved');
     rebuildAndSyncAST();
   };
-
 
   // Use merged device list (connected + disconnected from Rhai)
   const devices: Device[] = mergedDevices;
@@ -396,9 +416,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
             onKeyClick={handlePhysicalKeyClick}
             selectedKeyCode={selectedPhysicalKey}
             initialLayout={keyboardLayout}
-            isVisible={
-              selectedDevices.length === 0 || activePane === 'global'
-            }
+            isVisible={selectedDevices.length === 0 || activePane === 'global'}
           />
 
           {/* Device-Specific Keyboard Panel */}

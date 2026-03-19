@@ -65,14 +65,15 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
  * Create a debounced version of an async function
  * Automatically cancels pending promises when called again
  */
-export function debounceAsync<T extends (...args: unknown[]) => Promise<unknown>>(
-  fn: T,
-  wait: number
-): (...args: Parameters<T>) => Promise<ReturnType<T>> {
+export function debounceAsync<
+  T extends (...args: unknown[]) => Promise<unknown>,
+>(fn: T, wait: number): (...args: Parameters<T>) => Promise<ReturnType<T>> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let abortController: AbortController | null = null;
 
-  return function debouncedAsync(...args: Parameters<T>): Promise<ReturnType<T>> {
+  return function debouncedAsync(
+    ...args: Parameters<T>
+  ): Promise<ReturnType<T>> {
     // Cancel previous timeout and abort previous request
     if (timeoutId !== null) {
       clearTimeout(timeoutId);

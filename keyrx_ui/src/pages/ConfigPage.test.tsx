@@ -152,7 +152,9 @@ describe('ConfigPage - Simple Tests', () => {
       });
 
       // Code panel should not be visible initially
-      expect(screen.queryByTestId('code-panel-container')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('code-panel-container')
+      ).not.toBeInTheDocument();
 
       // Click the toggle button to open the panel
       const toggleButton = screen.getByRole('button', { name: /Show Code/i });

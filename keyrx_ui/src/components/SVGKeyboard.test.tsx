@@ -73,8 +73,8 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should show tap/hold text (Delete/L01 format)
       const texts = container.querySelectorAll('text');
-      const mappingText = Array.from(texts).find(
-        (t) => t.textContent?.includes('Del')
+      const mappingText = Array.from(texts).find((t) =>
+        t.textContent?.includes('Del')
       );
       expect(mappingText).toBeTruthy();
 
@@ -496,17 +496,17 @@ describe('SVGKeyboard - Key Code Normalization', () => {
 
       // Should show mapping text for arrows
       const texts = container.querySelectorAll('text');
-      const hasLeftMapping = Array.from(texts).some(
-        (t) => t.textContent?.includes('Left')
+      const hasLeftMapping = Array.from(texts).some((t) =>
+        t.textContent?.includes('Left')
       );
-      const hasRightMapping = Array.from(texts).some(
-        (t) => t.textContent?.includes('Right')
+      const hasRightMapping = Array.from(texts).some((t) =>
+        t.textContent?.includes('Right')
       );
-      const hasDownMapping = Array.from(texts).some(
-        (t) => t.textContent?.includes('Down')
+      const hasDownMapping = Array.from(texts).some((t) =>
+        t.textContent?.includes('Down')
       );
-      const hasUpMapping = Array.from(texts).some(
-        (t) => t.textContent?.includes('Up')
+      const hasUpMapping = Array.from(texts).some((t) =>
+        t.textContent?.includes('Up')
       );
 
       expect(

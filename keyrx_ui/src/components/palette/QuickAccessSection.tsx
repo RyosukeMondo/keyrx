@@ -36,9 +36,7 @@ export const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
       </div>
       <div
         className={`p-3 bg-slate-800/50 rounded-lg ${
-          viewMode === 'grid'
-            ? 'grid grid-cols-8 gap-2'
-            : 'flex flex-col gap-2'
+          viewMode === 'grid' ? 'grid grid-cols-8 gap-2' : 'flex flex-col gap-2'
         }`}
       >
         {keys.map((key) => renderKeyItem(key, () => onKeySelect(key), true))}

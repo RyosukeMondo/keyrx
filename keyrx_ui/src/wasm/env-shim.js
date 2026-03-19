@@ -18,5 +18,5 @@ export function now() {
 
 // Export as default object for compatibility
 export default {
-  now
+  now,
 };

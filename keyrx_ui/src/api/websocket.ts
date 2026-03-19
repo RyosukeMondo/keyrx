@@ -243,7 +243,7 @@ export class WebSocketManager {
           break;
 
         default:
-          // Unknown message type received
+        // Unknown message type received
       }
     } catch (error) {
       console.error('Failed to parse WebSocket message:', error);

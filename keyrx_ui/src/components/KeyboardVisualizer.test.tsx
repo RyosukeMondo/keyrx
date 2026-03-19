@@ -46,8 +46,8 @@ describe('KeyboardVisualizer', () => {
 
     // Find a key button (VK_ESC is first key in ANSI layout)
     const buttons = screen.getAllByRole('button');
-    const escKey = buttons.find(
-      (b) => b.getAttribute('aria-label')?.includes('VK_ESC')
+    const escKey = buttons.find((b) =>
+      b.getAttribute('aria-label')?.includes('VK_ESC')
     );
 
     if (escKey) {
@@ -134,8 +134,8 @@ describe('KeyboardVisualizer', () => {
 
     // ISO layout should have VK_ENT key
     const buttons = screen.getAllByRole('button');
-    const enterKey = buttons.find(
-      (b) => b.getAttribute('aria-label')?.includes('VK_ENT')
+    const enterKey = buttons.find((b) =>
+      b.getAttribute('aria-label')?.includes('VK_ENT')
     );
     expect(enterKey).toBeTruthy();
   });
@@ -159,8 +159,8 @@ describe('KeyboardVisualizer', () => {
     );
 
     const buttons = screen.getAllByRole('button');
-    const aKey = buttons.find(
-      (b) => b.getAttribute('aria-label')?.includes('VK_A')
+    const aKey = buttons.find((b) =>
+      b.getAttribute('aria-label')?.includes('VK_A')
     );
 
     // Should have tap/hold info in aria-label
@@ -227,14 +227,14 @@ describe('KeyboardVisualizer', () => {
       const texts = container.querySelectorAll('text');
 
       // Check for tap/hold mapping text
-      const hasEnterMapping = Array.from(texts).some(
-        (t) => t.textContent?.includes('Enter')
+      const hasEnterMapping = Array.from(texts).some((t) =>
+        t.textContent?.includes('Enter')
       );
-      const hasDeleteMapping = Array.from(texts).some(
-        (t) => t.textContent?.includes('Del')
+      const hasDeleteMapping = Array.from(texts).some((t) =>
+        t.textContent?.includes('Del')
       );
-      const hasBackspaceMapping = Array.from(texts).some(
-        (t) => t.textContent?.includes('BS')
+      const hasBackspaceMapping = Array.from(texts).some((t) =>
+        t.textContent?.includes('BS')
       );
 
       expect(hasEnterMapping || hasDeleteMapping || hasBackspaceMapping).toBe(
@@ -273,8 +273,8 @@ describe('KeyboardVisualizer', () => {
 
       // Layout files use KC_ESC, but onKeyClick should receive VK_ESC
       const buttons = screen.getAllByRole('button');
-      const escKey = buttons.find(
-        (b) => b.getAttribute('aria-label')?.includes('VK_ESC')
+      const escKey = buttons.find((b) =>
+        b.getAttribute('aria-label')?.includes('VK_ESC')
       );
 
       if (escKey) {

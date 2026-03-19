@@ -1,5 +1,10 @@
 import { useCallback, useState } from 'react';
-import { validateCustomKeycode, saveViewMode, type ViewMode, type ValidationResult } from '../utils/paletteHelpers.tsx';
+import {
+  validateCustomKeycode,
+  saveViewMode,
+  type ViewMode,
+  type ValidationResult,
+} from '../utils/paletteHelpers.tsx';
 import type { PaletteKey } from '../components/KeyPalette';
 
 interface UseKeyPaletteHandlersProps {
@@ -16,7 +21,9 @@ export function useKeyPaletteHandlers({
 }: UseKeyPaletteHandlersProps) {
   // Custom keycode input state
   const [customKeycode, setCustomKeycode] = useState('');
-  const [customValidation, setCustomValidation] = useState<ValidationResult>({ valid: false });
+  const [customValidation, setCustomValidation] = useState<ValidationResult>({
+    valid: false,
+  });
 
   // Physical key capture state
   const [isCapturingKey, setIsCapturingKey] = useState(false);

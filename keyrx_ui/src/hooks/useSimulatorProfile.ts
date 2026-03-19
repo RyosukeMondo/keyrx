@@ -27,51 +27,63 @@ export function useSimulatorProfile() {
     profileName: null,
   });
 
-  const loadProfile = useCallback(async (profileName: string): Promise<boolean> => {
-    if (!profileName) {
-      setState(prev => ({ ...prev, error: 'No profile name provided', isLoaded: false }));
-      return false;
-    }
-
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-
-    try {
-      const response = await fetch('/api/simulator/load-profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: profileName }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `Failed to load profile: ${response.status}`);
+  const loadProfile = useCallback(
+    async (profileName: string): Promise<boolean> => {
+      if (!profileName) {
+        setState((prev) => ({
+          ...prev,
+          error: 'No profile name provided',
+          isLoaded: false,
+        }));
+        return false;
       }
 
-      const data: LoadProfileResponse = await response.json();
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      if (data.success) {
-        setState({
-          isLoaded: true,
-          isLoading: false,
-          error: null,
-          profileName,
+      try {
+        const response = await fetch('/api/simulator/load-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: profileName }),
         });
-        return true;
-      } else {
-        throw new Error(data.message || 'Failed to load profile');
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            errorText || `Failed to load profile: ${response.status}`
+          );
+        }
+
+        const data: LoadProfileResponse = await response.json();
+
+        if (data.success) {
+          setState({
+            isLoaded: true,
+            isLoading: false,
+            error: null,
+            profileName,
+          });
+          return true;
+        } else {
+          throw new Error(data.message || 'Failed to load profile');
+        }
+      } catch (err) {
+        const errorMsg = getErrorMessage(
+          err,
+          'Failed to load simulator profile'
+        );
+        setState({
+          isLoaded: false,
+          isLoading: false,
+          error: errorMsg,
+          profileName: null,
+        });
+        console.error('Simulator profile load error:', err);
+        return false;
       }
-    } catch (err) {
-      const errorMsg = getErrorMessage(err, 'Failed to load simulator profile');
-      setState({
-        isLoaded: false,
-        isLoading: false,
-        error: errorMsg,
-        profileName: null,
-      });
-      console.error('Simulator profile load error:', err);
-      return false;
-    }
-  }, []);
+    },
+    []
+  );
 
   const reset = useCallback(async (): Promise<boolean> => {
     try {

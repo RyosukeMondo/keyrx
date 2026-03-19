@@ -1,6 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useDevices } from '@/hooks/useDevices';
-import { extractDevicePatterns, hasGlobalMappings, type RhaiAST } from '@/utils/rhaiParser';
+import {
+  extractDevicePatterns,
+  hasGlobalMappings,
+  type RhaiAST,
+} from '@/utils/rhaiParser';
 import type { Device } from '@/components/DeviceSelector';
 
 interface UseDeviceMergingProps {
@@ -148,7 +152,13 @@ export function useDeviceMerging({
     }
     // Note: syncEngine and configStore objects excluded from deps to prevent infinite loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncEngine.state, syncEngine.getAST, devicesData, configStore.setGlobalSelected, configStore.setSelectedDevices]);
+  }, [
+    syncEngine.state,
+    syncEngine.getAST,
+    devicesData,
+    configStore.setGlobalSelected,
+    configStore.setSelectedDevices,
+  ]);
 
   return mergedDevices;
 }

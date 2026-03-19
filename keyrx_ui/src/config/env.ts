@@ -5,7 +5,11 @@
  * Port and host constants are imported from constants.ts (SSOT).
  */
 
-import { DEFAULT_DAEMON_PORT, DEFAULT_DAEMON_HOST, WS_RPC_PATH } from './constants';
+import {
+  DEFAULT_DAEMON_PORT,
+  DEFAULT_DAEMON_HOST,
+  WS_RPC_PATH,
+} from './constants';
 
 /**
  * Get the API base URL
@@ -21,7 +25,9 @@ export function getApiUrl(): string {
   }
 
   // In development or if explicitly configured, use the configured URL
-  return configuredUrl || `http://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}`;
+  return (
+    configuredUrl || `http://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}`
+  );
 }
 
 /**
@@ -39,7 +45,10 @@ export function getWsUrl(): string {
   }
 
   // In development or if explicitly configured, use the configured URL
-  return configuredUrl || `ws://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}${WS_RPC_PATH}`;
+  return (
+    configuredUrl ||
+    `ws://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}${WS_RPC_PATH}`
+  );
 }
 
 /**

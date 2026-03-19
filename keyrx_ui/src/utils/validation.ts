@@ -12,7 +12,10 @@ export const profileNameSchema = z
   .string()
   .min(1, 'Profile name is required')
   .max(50, 'Profile name must be 50 characters or less')
-  .regex(/^[a-zA-Z0-9_-]+$/, 'Profile name can only contain letters, numbers, hyphens, and underscores');
+  .regex(
+    /^[a-zA-Z0-9_-]+$/,
+    'Profile name can only contain letters, numbers, hyphens, and underscores'
+  );
 
 /**
  * Device name validation schema
@@ -28,12 +31,18 @@ export const deviceNameSchema = z
 export const keyCodeSchema = z
   .string()
   .min(1, 'Key code is required')
-  .regex(/^[A-Z0-9_]+$/, 'Key code must be uppercase alphanumeric with underscores');
+  .regex(
+    /^[A-Z0-9_]+$/,
+    'Key code must be uppercase alphanumeric with underscores'
+  );
 
 /**
  * Validate profile name
  */
-export function validateProfileName(name: string): { valid: boolean; error?: string } {
+export function validateProfileName(name: string): {
+  valid: boolean;
+  error?: string;
+} {
   const result = profileNameSchema.safeParse(name);
   if (!result.success) {
     return { valid: false, error: result.error.issues[0]?.message };
@@ -44,7 +53,10 @@ export function validateProfileName(name: string): { valid: boolean; error?: str
 /**
  * Validate device name
  */
-export function validateDeviceName(name: string): { valid: boolean; error?: string } {
+export function validateDeviceName(name: string): {
+  valid: boolean;
+  error?: string;
+} {
   const result = deviceNameSchema.safeParse(name);
   if (!result.success) {
     return { valid: false, error: result.error.issues[0]?.message };
@@ -80,7 +92,9 @@ export function sanitizeInput(input: string): string {
 export function validateFormData<T extends Record<string, unknown>>(
   data: T,
   schema: z.ZodSchema<T>
-): { success: true; data: T } | { success: false; errors: Record<string, string> } {
+):
+  | { success: true; data: T }
+  | { success: false; errors: Record<string, string> } {
   const result = schema.safeParse(data);
 
   if (!result.success) {

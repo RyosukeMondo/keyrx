@@ -36,7 +36,9 @@ export function isArray<T = unknown>(value: unknown): value is T[] {
 /**
  * Check if value is a function
  */
-export function isFunction(value: unknown): value is (...args: unknown[]) => unknown {
+export function isFunction(
+  value: unknown
+): value is (...args: unknown[]) => unknown {
   return typeof value === 'function';
 }
 
@@ -62,7 +64,7 @@ export function safeJsonParse<T>(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error : new Error(String(error))
+      error: error instanceof Error ? error : new Error(String(error)),
     };
   }
 }

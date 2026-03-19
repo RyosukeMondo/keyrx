@@ -109,9 +109,7 @@ export const CustomKeycodeInput: React.FC<CustomKeycodeInputProps> = ({
             }
           `}
         >
-          {customValidation.valid
-            ? 'Apply Keycode'
-            : 'Enter a valid keycode'}
+          {customValidation.valid ? 'Apply Keycode' : 'Enter a valid keycode'}
         </button>
       </div>
 

@@ -284,11 +284,9 @@ describe('measureAsync', () => {
   });
 
   it('should include custom context', async () => {
-    await measureAsync(
-      'fetch_profile',
-      async () => 'profile',
-      { profileId: '123' }
-    );
+    await measureAsync('fetch_profile', async () => 'profile', {
+      profileId: '123',
+    });
 
     const logEntry = JSON.parse(consoleInfoSpy.mock.calls[0][0]);
     expect(logEntry.context.profileId).toBe('123');

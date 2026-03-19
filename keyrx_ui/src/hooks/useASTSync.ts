@@ -27,11 +27,11 @@ interface UseASTSyncProps {
 
 // Map Japanese VK names to English equivalents for layout matching
 const japaneseKeyMap: Record<string, string> = {
-  'VK_無変換': 'VK_Muhenkan',
-  'VK_変換': 'VK_Henkan',
-  'VK_ひらがな': 'VK_Hiragana',
-  'VK_カタカナ': 'VK_Katakana',
-  'VK_全角': 'VK_Zenkaku',
+  VK_無変換: 'VK_Muhenkan',
+  VK_変換: 'VK_Henkan',
+  VK_ひらがな: 'VK_Hiragana',
+  VK_カタカナ: 'VK_Katakana',
+  VK_全角: 'VK_Zenkaku',
 };
 
 // Normalize key codes to VK_ format for consistent lookup
@@ -70,8 +70,7 @@ const normalizeKeyCode = (key: string): string => {
     'LEFTMETA',
     'RIGHTMETA',
   ];
-  if (knownKeys.includes(key.toUpperCase()))
-    return `VK_${key.toUpperCase()}`;
+  if (knownKeys.includes(key.toUpperCase())) return `VK_${key.toUpperCase()}`;
   return key;
 };
 
@@ -179,14 +178,14 @@ export function useASTSync({
         const matchesSelectedDevice = isWildcard
           ? selectedDevices.includes('disconnected-*') ||
             selectedDevices.length > 0
-          : devicesData?.some((device) => {
+          : (devicesData?.some((device) => {
               const isSelected = selectedDevices.includes(device.id);
               const matchesPattern =
                 block.pattern === device.serial ||
                 block.pattern === device.name ||
                 block.pattern === device.id;
               return isSelected && matchesPattern;
-            }) ?? false;
+            }) ?? false);
 
         if (matchesSelectedDevice) {
           // Add base mappings
@@ -230,5 +229,12 @@ export function useASTSync({
     // Note: syncEngine and configStore objects are excluded from deps to prevent infinite loops
     // We depend on syncEngine.state for timing, and getAST is a stable memoized function
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncEngine.state, syncEngine.getAST, globalSelected, selectedDevices, devicesData, configStore.loadLayerMappings]);
+  }, [
+    syncEngine.state,
+    syncEngine.getAST,
+    globalSelected,
+    selectedDevices,
+    devicesData,
+    configStore.loadLayerMappings,
+  ]);
 }

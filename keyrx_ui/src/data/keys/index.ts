@@ -50,9 +50,7 @@ export const KEY_CODE_MAP = buildKeyCodeMap();
 /**
  * Get keys by category
  */
-export function getKeysByCategory(
-  category: string
-) {
+export function getKeysByCategory(category: string) {
   return KEY_DEFINITIONS.filter((k) => k.category === category);
 }
 
@@ -100,7 +98,15 @@ export function searchKeys(query: string) {
  * Get all unique categories
  */
 export function getCategories() {
-  return ['basic', 'modifiers', 'media', 'macro', 'layers', 'special', 'any'] as const;
+  return [
+    'basic',
+    'modifiers',
+    'media',
+    'macro',
+    'layers',
+    'special',
+    'any',
+  ] as const;
 }
 
 /**

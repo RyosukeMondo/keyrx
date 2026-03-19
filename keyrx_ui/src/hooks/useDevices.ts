@@ -34,12 +34,8 @@ export function useRenameDevice() {
       );
 
       // Optimistically update cache
-      queryClient.setQueryData<DeviceEntry[]>(
-        queryKeys.devices,
-        (old) =>
-          old?.map((device) =>
-            device.id === id ? { ...device, name } : device
-          )
+      queryClient.setQueryData<DeviceEntry[]>(queryKeys.devices, (old) =>
+        old?.map((device) => (device.id === id ? { ...device, name } : device))
       );
 
       // Return context for rollback
@@ -77,12 +73,8 @@ export function useSetDeviceScope() {
         queryKeys.devices
       );
 
-      queryClient.setQueryData<DeviceEntry[]>(
-        queryKeys.devices,
-        (old) =>
-          old?.map((device) =>
-            device.id === id ? { ...device, scope } : device
-          )
+      queryClient.setQueryData<DeviceEntry[]>(queryKeys.devices, (old) =>
+        old?.map((device) => (device.id === id ? { ...device, scope } : device))
       );
 
       return { previousDevices };
@@ -116,9 +108,8 @@ export function useForgetDevice() {
         queryKeys.devices
       );
 
-      queryClient.setQueryData<DeviceEntry[]>(
-        queryKeys.devices,
-        (old) => old?.filter((device) => device.id !== id)
+      queryClient.setQueryData<DeviceEntry[]>(queryKeys.devices, (old) =>
+        old?.filter((device) => device.id !== id)
       );
 
       return { previousDevices };
@@ -157,12 +148,10 @@ export function useSetDeviceEnabled() {
       );
 
       // Optimistically update the enabled state
-      queryClient.setQueryData<DeviceEntry[]>(
-        queryKeys.devices,
-        (old) =>
-          old?.map((device) =>
-            device.id === id ? { ...device, enabled } : device
-          )
+      queryClient.setQueryData<DeviceEntry[]>(queryKeys.devices, (old) =>
+        old?.map((device) =>
+          device.id === id ? { ...device, enabled } : device
+        )
       );
 
       return { previousDevices };

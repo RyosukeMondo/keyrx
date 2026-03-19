@@ -8,7 +8,9 @@ interface ProfileConfig {
 interface UseProfileConfigLoaderProps {
   profileConfig: ProfileConfig | undefined;
   isWasmReady: boolean;
-  validateConfig: (source: string) => Promise<{ line: number; message: string }[]>;
+  validateConfig: (
+    source: string
+  ) => Promise<{ line: number; message: string }[]>;
 }
 
 /**

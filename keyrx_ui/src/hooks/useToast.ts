@@ -28,9 +28,10 @@ export function useToast() {
   };
 
   const error = (messageOrError: string | unknown, options?: ToastOptions) => {
-    const message = typeof messageOrError === 'string'
-      ? messageOrError
-      : getErrorMessage(messageOrError);
+    const message =
+      typeof messageOrError === 'string'
+        ? messageOrError
+        : getErrorMessage(messageOrError);
 
     sonnerToast.error(message, {
       duration: options?.duration ?? 5000,
@@ -55,7 +56,7 @@ export function useToast() {
     });
   };
 
-  const promise = <T,>(
+  const promise = <T>(
     promise: Promise<T>,
     messages: {
       loading: string;
