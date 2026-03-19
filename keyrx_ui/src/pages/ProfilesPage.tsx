@@ -14,6 +14,7 @@ import {
   useUpdateProfile,
 } from '../hooks/useProfiles';
 import { getErrorMessage } from '../utils/errorUtils';
+import { ProfileTemplate } from '../types';
 
 interface Profile {
   id: string;
@@ -80,9 +81,9 @@ export const ProfilesPage: React.FC = () => {
 
   const [newProfileName, setNewProfileName] = useState('');
   const [newProfileDescription, setNewProfileDescription] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<
-    'blank' | 'simple_remap' | 'capslock_escape' | 'vim_navigation' | 'gaming'
-  >('blank');
+  const [selectedTemplate, setSelectedTemplate] = useState<ProfileTemplate>(
+    ProfileTemplate.Blank
+  );
   const [nameError, setNameError] = useState('');
   const [activationError, setActivationError] = useState<string | null>(null);
   const [activationSuccess, setActivationSuccess] = useState<string | null>(
@@ -120,7 +121,7 @@ export const ProfilesPage: React.FC = () => {
       // Create default profile with blank template
       await createProfileMutation.mutateAsync({
         name: 'default',
-        template: 'blank',
+        template: ProfileTemplate.Blank,
       });
 
       // Activate the newly created profile
@@ -193,7 +194,7 @@ export const ProfilesPage: React.FC = () => {
       setCreateModalOpen(false);
       setNewProfileName('');
       setNewProfileDescription('');
-      setSelectedTemplate('blank'); // Reset to default
+      setSelectedTemplate(ProfileTemplate.Blank); // Reset to default
       setNameError('');
     } catch (err) {
       setNameError(getErrorMessage(err, 'Failed to create profile'));
@@ -298,7 +299,7 @@ export const ProfilesPage: React.FC = () => {
     setCreateModalOpen(false);
     setNewProfileName('');
     setNewProfileDescription('');
-    setSelectedTemplate('blank');
+    setSelectedTemplate(ProfileTemplate.Blank);
     setNameError('');
   };
 

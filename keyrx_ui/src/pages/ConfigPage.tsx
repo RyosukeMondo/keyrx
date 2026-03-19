@@ -11,6 +11,7 @@ import { useProfiles, useCreateProfile } from '@/hooks/useProfiles';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
 import { useConfigStore } from '@/stores/configStore';
 import type { KeyMapping } from '@/types';
+import { ProfileTemplate } from '@/types';
 import type { LayoutType } from '@/components/KeyboardVisualizer';
 
 // Import custom hooks
@@ -247,7 +248,10 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   // Handle profile creation
   const handleCreateProfile = async () => {
     try {
-      await createProfile({ name: selectedProfileName, template: 'blank' });
+      await createProfile({
+        name: selectedProfileName,
+        template: ProfileTemplate.Blank,
+      });
     } catch (err) {
       console.error('Failed to create profile:', err);
     }

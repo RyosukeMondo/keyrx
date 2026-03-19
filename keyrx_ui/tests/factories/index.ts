@@ -80,12 +80,17 @@ export function resetSeed(): void {
  *   const profile = createProfile();
  *   const activeProfile = createProfile({ isActive: true });
  */
-export function createProfile(overrides?: Partial<ProfileMetadata>): ProfileMetadata {
-  const name = overrides?.name ?? faker.word.adjective() + '-' + faker.word.noun();
+export function createProfile(
+  overrides?: Partial<ProfileMetadata>
+): ProfileMetadata {
+  const name =
+    overrides?.name ?? faker.word.adjective() + '-' + faker.word.noun();
   return {
     name,
-    rhaiPath: overrides?.rhaiPath ?? `/home/user/.config/keyrx/profiles/${name}.rhai`,
-    krxPath: overrides?.krxPath ?? `/home/user/.config/keyrx/profiles/${name}.krx`,
+    rhaiPath:
+      overrides?.rhaiPath ?? `/home/user/.config/keyrx/profiles/${name}.rhai`,
+    krxPath:
+      overrides?.krxPath ?? `/home/user/.config/keyrx/profiles/${name}.krx`,
     createdAt: overrides?.createdAt ?? faker.date.past().toISOString(),
     modifiedAt: overrides?.modifiedAt ?? faker.date.recent().toISOString(),
     deviceCount: overrides?.deviceCount ?? faker.number.int({ min: 1, max: 5 }),
@@ -111,7 +116,9 @@ export interface ActiveProfile {
  *   const profile = createActiveProfile();
  *   const customProfile = createActiveProfile({ layers: 3 });
  */
-export function createActiveProfile(overrides?: Partial<ActiveProfile>): ActiveProfile {
+export function createActiveProfile(
+  overrides?: Partial<ActiveProfile>
+): ActiveProfile {
   return {
     name: overrides?.name ?? faker.word.adjective() + '-' + faker.word.noun(),
     layers: overrides?.layers ?? faker.number.int({ min: 1, max: 5 }),
@@ -143,9 +150,11 @@ export function createActivationResult(
   return {
     success: overrides?.success ?? true,
     profile: overrides?.profile ?? faker.word.noun(),
-    compiledSize: overrides?.compiledSize ?? faker.number.int({ min: 1024, max: 65536 }),
-    compileTimeMs: overrides?.compileTimeMs ?? faker.number.int({ min: 10, max: 500 }),
-    errors: overrides?.errors,
+    compiledSize:
+      overrides?.compiledSize ?? faker.number.int({ min: 1024, max: 65536 }),
+    compileTimeMs:
+      overrides?.compileTimeMs ?? faker.number.int({ min: 10, max: 500 }),
+    errors: overrides?.errors ?? [],
   };
 }
 
@@ -154,7 +163,13 @@ export function createActivationResult(
 // =============================================================================
 
 const DEVICE_SCOPES: DeviceScope[] = ['global', 'device-specific'];
-const LAYOUT_PRESETS: LayoutPreset[] = ['ANSI_104', 'ISO_105', 'JIS_109', 'HHKB', 'NUMPAD'];
+const LAYOUT_PRESETS: LayoutPreset[] = [
+  'ANSI_104',
+  'ISO_105',
+  'JIS_109',
+  'HHKB',
+  'NUMPAD',
+];
 
 /**
  * Create a realistic DeviceEntry object.
@@ -169,11 +184,17 @@ export function createDevice(overrides?: Partial<DeviceEntry>): DeviceEntry {
     name:
       overrides?.name ??
       `${faker.company.name()} ${faker.commerce.productName()} Keyboard`,
-    path: overrides?.path ?? `/dev/input/event${faker.number.int({ min: 0, max: 20 })}`,
+    path:
+      overrides?.path ??
+      `/dev/input/event${faker.number.int({ min: 0, max: 20 })}`,
     serial: overrides?.serial ?? faker.string.alphanumeric(8).toUpperCase(),
     active: overrides?.active ?? true,
-    scope: overrides?.scope ?? faker.helpers.arrayElement(['global', 'device-specific', null]),
-    layout: overrides?.layout ?? faker.helpers.arrayElement(['ANSI_104', 'ISO_105', 'JIS_109', null]),
+    scope:
+      overrides?.scope ??
+      faker.helpers.arrayElement(['global', 'device-specific']),
+    layout:
+      overrides?.layout ??
+      faker.helpers.arrayElement(['ANSI_104', 'ISO_105', 'JIS_109', null]),
     isVirtual: overrides?.isVirtual ?? false, // Default to physical device
     enabled: overrides?.enabled ?? true, // Default to enabled
   };
@@ -182,7 +203,10 @@ export function createDevice(overrides?: Partial<DeviceEntry>): DeviceEntry {
 /**
  * Create multiple devices.
  */
-export function createDevices(count: number, overrides?: Partial<DeviceEntry>): DeviceEntry[] {
+export function createDevices(
+  count: number,
+  overrides?: Partial<DeviceEntry>
+): DeviceEntry[] {
   return Array.from({ length: count }, () => createDevice(overrides));
 }
 
@@ -215,7 +239,9 @@ export function createKeyEvent(overrides?: Partial<KeyEvent>): KeyEvent {
   return {
     timestamp: overrides?.timestamp ?? Date.now() * 1000, // microseconds
     keyCode,
-    eventType: overrides?.eventType ?? faker.helpers.arrayElement(['press', 'release'] as const),
+    eventType:
+      overrides?.eventType ??
+      faker.helpers.arrayElement(['press', 'release'] as const),
     input: overrides?.input ?? keyCode,
     output: overrides?.output ?? keyCode,
     latency: overrides?.latency ?? faker.number.int({ min: 50, max: 500 }),
@@ -225,7 +251,9 @@ export function createKeyEvent(overrides?: Partial<KeyEvent>): KeyEvent {
 /**
  * Create an EventRecord (UI type).
  */
-export function createEventRecord(overrides?: Partial<EventRecord>): EventRecord {
+export function createEventRecord(
+  overrides?: Partial<EventRecord>
+): EventRecord {
   return {
     id: overrides?.id ?? faker.string.uuid(),
     timestamp: overrides?.timestamp ?? faker.date.recent().toISOString(),
@@ -249,7 +277,10 @@ export function createEventRecord(overrides?: Partial<EventRecord>): EventRecord
 /**
  * Create multiple key events.
  */
-export function createKeyEvents(count: number, overrides?: Partial<KeyEvent>): KeyEvent[] {
+export function createKeyEvents(
+  count: number,
+  overrides?: Partial<KeyEvent>
+): KeyEvent[] {
   return Array.from({ length: count }, () => createKeyEvent(overrides));
 }
 
@@ -263,7 +294,9 @@ export function createKeyEvents(count: number, overrides?: Partial<KeyEvent>): K
  * @example
  *   const metrics = createLatencyMetrics();
  */
-export function createLatencyMetrics(overrides?: Partial<LatencyMetrics>): LatencyMetrics {
+export function createLatencyMetrics(
+  overrides?: Partial<LatencyMetrics>
+): LatencyMetrics {
   const min = overrides?.min ?? faker.number.int({ min: 10, max: 50 });
   const max = overrides?.max ?? faker.number.int({ min: 300, max: 1000 });
   const avg = overrides?.avg ?? faker.number.int({ min: min, max: max });
@@ -281,7 +314,9 @@ export function createLatencyMetrics(overrides?: Partial<LatencyMetrics>): Laten
 /**
  * Create LatencyStats (UI type).
  */
-export function createLatencyStats(overrides?: Partial<LatencyStats>): LatencyStats {
+export function createLatencyStats(
+  overrides?: Partial<LatencyStats>
+): LatencyStats {
   const min = overrides?.min ?? faker.number.int({ min: 10, max: 50 });
   const max = overrides?.max ?? faker.number.int({ min: 300, max: 1000 });
   const avg = overrides?.avg ?? faker.number.int({ min: min, max: max });
@@ -294,7 +329,7 @@ export function createLatencyStats(overrides?: Partial<LatencyStats>): LatencySt
     p95: overrides?.p95 ?? faker.number.int({ min: avg, max: max }),
     p99: overrides?.p99 ?? faker.number.int({ min: avg, max: max }),
     samples: overrides?.samples ?? faker.number.int({ min: 100, max: 10000 }),
-    timestamp: overrides?.timestamp ?? faker.date.recent().toISOString(),
+    timestamp: overrides?.timestamp ?? faker.date.recent().getTime(),
   };
 }
 
@@ -305,13 +340,15 @@ export function createLatencyStats(overrides?: Partial<LatencyStats>): LatencySt
 /**
  * Create DaemonState (UI type).
  */
-export function createDaemonState(overrides?: Partial<DaemonState>): DaemonState {
+export function createDaemonState(
+  overrides?: Partial<DaemonState>
+): DaemonState {
   return {
+    layer: overrides?.layer ?? 'base',
     activeLayer: overrides?.activeLayer ?? 'base',
     modifiers: overrides?.modifiers ?? [],
     locks: overrides?.locks ?? [],
     tapHoldPending: overrides?.tapHoldPending ?? false,
-    uptime: overrides?.uptime ?? faker.number.int({ min: 0, max: 86400 }),
     activeProfile: overrides?.activeProfile ?? faker.word.noun(),
   };
 }
@@ -319,7 +356,9 @@ export function createDaemonState(overrides?: Partial<DaemonState>): DaemonState
 /**
  * Create RpcDaemonState (RPC type).
  */
-export function createRpcDaemonState(overrides?: Partial<RpcDaemonState>): RpcDaemonState {
+export function createRpcDaemonState(
+  overrides?: Partial<RpcDaemonState>
+): RpcDaemonState {
   return {
     modifiers: overrides?.modifiers ?? [],
     locks: overrides?.locks ?? [],
@@ -335,7 +374,9 @@ export function createRpcDaemonState(overrides?: Partial<RpcDaemonState>): RpcDa
  * Create a MacroStep.
  */
 export function createMacroStep(overrides?: Partial<MacroStep>): MacroStep {
-  const type = overrides?.type ?? faker.helpers.arrayElement(['press', 'release', 'delay'] as const);
+  const type =
+    overrides?.type ??
+    faker.helpers.arrayElement(['press', 'release', 'delay'] as const);
 
   if (type === 'delay') {
     return {
@@ -356,7 +397,12 @@ export function createMacroStep(overrides?: Partial<MacroStep>): MacroStep {
 export function createKeyMapping(overrides?: Partial<KeyMapping>): KeyMapping {
   const type =
     overrides?.type ??
-    faker.helpers.arrayElement(['simple', 'tap_hold', 'macro', 'layer_switch'] as const);
+    faker.helpers.arrayElement([
+      'simple',
+      'tap_hold',
+      'macro',
+      'layer_switch',
+    ] as const);
 
   const base: KeyMapping = { type };
 
@@ -364,15 +410,20 @@ export function createKeyMapping(overrides?: Partial<KeyMapping>): KeyMapping {
     return {
       ...base,
       tapAction: overrides?.tapAction ?? faker.helpers.arrayElement(KEY_CODES),
-      holdAction: overrides?.holdAction ?? faker.helpers.arrayElement(KEY_CODES),
-      threshold: overrides?.threshold ?? faker.number.int({ min: 100, max: 500 }),
+      holdAction:
+        overrides?.holdAction ?? faker.helpers.arrayElement(KEY_CODES),
+      threshold:
+        overrides?.threshold ?? faker.number.int({ min: 100, max: 500 }),
     };
   }
 
   if (type === 'macro') {
     return {
       ...base,
-      macroSteps: overrides?.macroSteps ?? [createMacroStep(), createMacroStep()],
+      macroSteps: overrides?.macroSteps ?? [
+        createMacroStep(),
+        createMacroStep(),
+      ],
     };
   }
 

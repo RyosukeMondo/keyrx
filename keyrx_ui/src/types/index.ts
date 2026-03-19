@@ -15,6 +15,9 @@ export type {
   RestartResult,
 } from './generated';
 
+// Import types used locally in this file
+import type { KeyEventData, ErrorData } from './generated';
+
 // Re-export ProfileTemplate enum (both type and value)
 export { ProfileTemplate } from './generated';
 

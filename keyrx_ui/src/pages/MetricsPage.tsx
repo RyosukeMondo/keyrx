@@ -94,7 +94,7 @@ export const MetricsPage: React.FC = () => {
       };
     }
     return {
-      activeLayer: storeState.activeLayer,
+      activeLayer: storeState.activeLayer ?? 'Base',
       modifiers: storeState.modifiers,
       locks: storeState.locks,
       tapHoldTimers: storeState.tapHoldPending ? 1 : 0,
