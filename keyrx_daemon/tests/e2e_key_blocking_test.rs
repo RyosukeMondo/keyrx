@@ -147,6 +147,7 @@ fn extract_and_block(
                 BaseKeyMapping::Modifier { from, .. } => *from,
                 BaseKeyMapping::Lock { from, .. } => *from,
                 BaseKeyMapping::TapHold { from, .. } => *from,
+                BaseKeyMapping::HoldOnly { from, .. } => *from,
                 BaseKeyMapping::ModifiedOutput { from, .. } => *from,
             };
 

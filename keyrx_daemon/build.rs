@@ -2,290 +2,285 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 fn main() {
-    // Validate version consistency between Cargo.toml and package.json
-    validate_version_consistency();
+    let workspace_root = get_workspace_root();
 
-    // Windows: Embed manifest and icon for admin elevation (release only)
+    validate_version_consistency(&workspace_root);
+
     #[cfg(target_os = "windows")]
-    {
-        // Only embed admin manifest for release builds
-        let profile = std::env::var("PROFILE").unwrap_or_default();
-        let mut res = winres::WindowsResource::new();
-        if profile == "release" {
-            res.set_manifest_file("keyrx_daemon.exe.manifest");
-        }
-        // Embed icon if available
-        let icon_path = PathBuf::from("assets/icon.ico");
-        if icon_path.exists() {
-            res.set_icon("assets/icon.ico");
-        }
-        if let Err(e) = res.compile() {
-            eprintln!("cargo:warning=Failed to compile Windows resources: {}", e);
-        }
-    }
+    embed_windows_resources();
 
-    // Verify that the UI dist directory exists
-    check_ui_dist();
-
-    // Set build timestamp and git hash
+    enforce_frontend_freshness(&workspace_root);
     set_build_metadata();
+    emit_rerun_triggers(&workspace_root);
 }
 
-/// Validate version consistency at compile time
-///
-/// This function enforces Cargo.toml as the single source of truth (SSOT)
-/// for version. It reads both Cargo.toml and package.json versions and
-/// fails compilation if they don't match.
-///
-/// # Panics
-/// Panics with a clear error message if:
-/// - Version extraction fails from either file
-/// - Versions don't match between Cargo.toml and package.json
-fn validate_version_consistency() {
-    // Get workspace root
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
-    let manifest_path = PathBuf::from(&manifest_dir);
-    let workspace_root = manifest_path
+fn get_workspace_root() -> PathBuf {
+    let manifest_dir =
+        std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
+    PathBuf::from(&manifest_dir)
         .parent()
-        .expect("Failed to get workspace root");
+        .expect("Failed to get workspace root")
+        .to_path_buf()
+}
 
-    // Paths to version files
+// ── Version consistency ──────────────────────────────────────────────
+
+/// Fail compilation if Cargo.toml (SSOT) and package.json versions differ.
+fn validate_version_consistency(workspace_root: &Path) {
     let cargo_toml = workspace_root.join("Cargo.toml");
-    let package_json = workspace_root.join("keyrx_ui").join("package.json");
+    let package_json = workspace_root.join("keyrx_ui/package.json");
 
-    // Read Cargo.toml version (SSOT)
     let cargo_version = extract_cargo_version(&cargo_toml);
+    let pkg_version = extract_package_json_version(&package_json);
 
-    // Read package.json version
-    let package_json_version = extract_package_json_version(&package_json);
-
-    // Compare versions
-    if cargo_version != package_json_version {
+    if cargo_version != pkg_version {
         panic!(
             "\n\n\
-            ╔═══════════════════════════════════════════════════════════════════════════════╗\n\
-            ║ ❌ VERSION MISMATCH DETECTED                                                   ║\n\
-            ╠═══════════════════════════════════════════════════════════════════════════════╣\n\
-            ║                                                                               ║\n\
-            ║ Cargo.toml version (SSOT):  {}                                             ║\n\
-            ║ package.json version:       {}                                             ║\n\
-            ║                                                                               ║\n\
-            ║ To fix this issue, run:                                                       ║\n\
-            ║   ./scripts/sync-version.sh                                                   ║\n\
-            ║                                                                               ║\n\
-            ║ This will synchronize all version files to match Cargo.toml (SSOT).          ║\n\
-            ╚═══════════════════════════════════════════════════════════════════════════════╝\n\
-            ",
-            cargo_version, package_json_version
+            VERSION MISMATCH: Cargo.toml={cargo_version} vs package.json={pkg_version}\n\
+            Fix: ./scripts/sync-version.sh\n"
         );
     }
-
-    // Rerun if version files change
-    println!("cargo:rerun-if-changed={}", cargo_toml.display());
-    println!("cargo:rerun-if-changed={}", package_json.display());
-    println!("cargo:rerun-if-changed=../scripts/sync-version.sh");
 }
 
-/// Extract version from Cargo.toml [workspace.package]
-fn extract_cargo_version(path: &PathBuf) -> String {
+fn extract_cargo_version(path: &Path) -> String {
     let content = std::fs::read_to_string(path)
-        .unwrap_or_else(|e| panic!("Failed to read Cargo.toml: {}", e));
+        .unwrap_or_else(|e| panic!("Failed to read {}: {e}", path.display()));
 
-    let mut in_workspace_package = false;
+    let mut in_section = false;
     for line in content.lines() {
-        let trimmed = line.trim();
-
-        if trimmed == "[workspace.package]" {
-            in_workspace_package = true;
+        let t = line.trim();
+        if t == "[workspace.package]" {
+            in_section = true;
             continue;
         }
-
-        // Stop if we hit another section
-        if in_workspace_package && trimmed.starts_with('[') {
+        if in_section && t.starts_with('[') {
             break;
         }
-
-        if in_workspace_package && trimmed.starts_with("version") {
-            if let Some(version) = trimmed
+        if in_section && t.starts_with("version") {
+            if let Some(v) = t
                 .split('=')
                 .nth(1)
                 .and_then(|v| v.trim().trim_matches('"').split_whitespace().next())
             {
-                return version.to_string();
+                return v.to_string();
             }
         }
     }
-
-    panic!("Failed to extract version from Cargo.toml [workspace.package]");
+    panic!("No version in Cargo.toml [workspace.package]");
 }
 
-/// Extract version from package.json
-fn extract_package_json_version(path: &PathBuf) -> String {
+fn extract_package_json_version(path: &Path) -> String {
     let content = std::fs::read_to_string(path)
-        .unwrap_or_else(|e| panic!("Failed to read package.json: {}", e));
+        .unwrap_or_else(|e| panic!("Failed to read {}: {e}", path.display()));
 
     for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("\"version\"") {
-            if let Some(version) = trimmed.split(':').nth(1).and_then(|v| {
+        let t = line.trim();
+        if t.starts_with("\"version\"") {
+            if let Some(v) = t.split(':').nth(1).and_then(|v| {
                 v.trim()
                     .trim_matches(|c| c == '"' || c == ',' || c == ' ')
                     .split_whitespace()
                     .next()
             }) {
-                return version.to_string();
+                return v.to_string();
             }
         }
     }
-
-    panic!("Failed to extract version from package.json");
+    panic!("No version in {}", path.display());
 }
 
-/// Check UI dist directory exists
-fn check_ui_dist() {
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let workspace_root_binding = PathBuf::from(&manifest_dir);
-    let workspace_root = workspace_root_binding
-        .parent()
-        .expect("Failed to get workspace root");
+// ── Windows resources ────────────────────────────────────────────────
 
-    let ui_dist_path = workspace_root.join("keyrx_ui/dist");
-
-    if !ui_dist_path.exists() {
-        println!(
-            "cargo:warning=UI dist directory not found at {:?}",
-            ui_dist_path
-        );
-        println!("cargo:warning=Run 'cd keyrx_ui && npm run build' to build the UI");
-        println!(
-            "cargo:warning=The daemon will still compile but will not be able to serve the UI"
-        );
-    } else {
-        // Verify index.html exists
-        let index_html = ui_dist_path.join("index.html");
-        if !index_html.exists() {
-            println!("cargo:warning=index.html not found in UI dist directory");
-            println!("cargo:warning=The UI build may be incomplete");
-        } else {
-            println!("cargo:warning=UI dist directory found and will be embedded");
-            check_ui_staleness(workspace_root);
-        }
+#[cfg(target_os = "windows")]
+fn embed_windows_resources() {
+    let profile = std::env::var("PROFILE").unwrap_or_default();
+    let mut res = winres::WindowsResource::new();
+    if profile == "release" {
+        res.set_manifest_file("keyrx_daemon.exe.manifest");
     }
-
-    // Re-run when dist contents change (after UI rebuild)
-    println!("cargo:rerun-if-changed=../keyrx_ui/dist/index.html");
-    // Re-run when key source entry points change (to detect staleness)
-    for entry in &[
-        "../keyrx_ui/src/App.tsx",
-        "../keyrx_ui/src/main.tsx",
-        "../keyrx_ui/index.html",
-        "../keyrx_ui/vite.config.ts",
-        "../keyrx_ui/package.json",
-    ] {
-        println!("cargo:rerun-if-changed={entry}");
+    let icon_path = PathBuf::from("assets/icon.ico");
+    if icon_path.exists() {
+        res.set_icon("assets/icon.ico");
+    }
+    if let Err(e) = res.compile() {
+        println!("cargo:warning=Failed to compile Windows resources: {e}");
     }
 }
 
-/// Set build metadata (timestamp and git hash)
-fn set_build_metadata() {
-    // Set build timestamp in JST (UTC+9)
-    use chrono::offset::FixedOffset;
-    let jst = FixedOffset::east_opt(9 * 3600).expect("JST offset");
-    let now_jst = chrono::Utc::now().with_timezone(&jst);
-    let build_date = now_jst.format("%Y-%m-%d %H:%M JST").to_string();
-    println!("cargo:rustc-env=BUILD_DATE={}", build_date);
-    println!(
-        "cargo:rustc-env=BUILD_TIMESTAMP={}",
-        chrono::Utc::now().to_rfc3339()
-    );
+// ── Frontend freshness enforcement ───────────────────────────────────
 
-    // Set git commit hash if available
-    if let Ok(output) = std::process::Command::new("git")
-        .args(["rev-parse", "--short", "HEAD"])
-        .output()
-    {
-        if output.status.success() {
-            let git_hash = String::from_utf8_lossy(&output.stdout);
-            println!("cargo:rustc-env=GIT_HASH={}", git_hash.trim());
-        } else {
-            println!("cargo:rustc-env=GIT_HASH=unknown");
-        }
-    } else {
-        println!("cargo:rustc-env=GIT_HASH=unknown");
-    }
-}
-
-/// Warn when UI source files are newer than dist (stale embedded UI)
+/// Fail the build if WASM or UI dist is stale.
 ///
-/// Compares the newest modification time in `keyrx_ui/src/` and key config
-/// files against `keyrx_ui/dist/index.html`. If source is newer, the daemon
-/// would embed outdated UI chunks, causing "Failed to fetch dynamically
-/// imported module" errors at runtime.
-fn check_ui_staleness(workspace_root: &Path) {
+/// This prevents embedding outdated frontend artifacts into the daemon.
+/// Bypass with: KEYRX_SKIP_FRONTEND_CHECK=1 cargo build
+fn enforce_frontend_freshness(workspace_root: &Path) {
+    if std::env::var("KEYRX_SKIP_FRONTEND_CHECK").is_ok() {
+        println!(
+            "cargo:warning=KEYRX_SKIP_FRONTEND_CHECK set \
+             — skipping UI/WASM freshness checks"
+        );
+        return;
+    }
+
+    check_wasm_freshness(workspace_root);
+    check_ui_freshness(workspace_root);
+}
+
+/// Fail if keyrx_core source is newer than the compiled WASM binary.
+fn check_wasm_freshness(workspace_root: &Path) {
+    let wasm_binary = workspace_root.join("keyrx_ui/src/wasm/pkg/keyrx_core_bg.wasm");
+    let core_src = workspace_root.join("keyrx_core/src");
+
+    if !core_src.exists() {
+        return;
+    }
+    if !wasm_binary.exists() {
+        println!(
+            "cargo:warning=WASM not found. \
+             Run 'make build' for full build with WASM."
+        );
+        return;
+    }
+
+    let wasm_mtime = file_mtime(&wasm_binary);
+    let core_mtime = newest_mtime_in_dir(&core_src);
+
+    if let (Some(wasm_t), Some(core_t)) = (wasm_mtime, core_mtime) {
+        if core_t > wasm_t {
+            panic!(
+                "\n\n\
+                STALE WASM: keyrx_core/src is newer than compiled WASM.\n\
+                The daemon would embed an outdated WASM module.\n\n\
+                Fix:  make build\n\
+                Skip: KEYRX_SKIP_FRONTEND_CHECK=1 cargo build\n"
+            );
+        }
+    }
+}
+
+/// Fail if UI source files are newer than the built dist.
+fn check_ui_freshness(workspace_root: &Path) {
     let dist_index = workspace_root.join("keyrx_ui/dist/index.html");
 
-    let Ok(dist_meta) = std::fs::metadata(&dist_index) else {
+    if !dist_index.exists() {
+        println!(
+            "cargo:warning=UI dist not found. \
+             Run 'make build' for full build with embedded UI."
+        );
         return;
-    };
-    let Ok(dist_mtime) = dist_meta.modified() else {
-        return;
-    };
+    }
 
-    // Check source directory and config files that affect build output
-    let src_dir = workspace_root.join("keyrx_ui/src");
-    let mut newest_src = newest_mtime_in_dir(&src_dir);
+    println!("cargo:warning=UI dist found and will be embedded");
 
+    let dist_mtime = file_mtime(&dist_index);
+
+    // Check keyrx_ui/src/ (includes wasm/pkg/ — catches rebuilt WASM too)
+    let mut newest_src = newest_mtime_in_dir(&workspace_root.join("keyrx_ui/src"));
+
+    // Also check config files that affect the UI bundle
     let config_files = [
         workspace_root.join("keyrx_ui/package.json"),
         workspace_root.join("keyrx_ui/vite.config.ts"),
         workspace_root.join("keyrx_ui/index.html"),
     ];
-    for config_file in &config_files {
-        if let Ok(meta) = std::fs::metadata(config_file) {
-            if let Ok(mtime) = meta.modified() {
-                newest_src = Some(newest_src.map_or(mtime, |n| n.max(mtime)));
-            }
+    for f in &config_files {
+        if let Some(t) = file_mtime(f) {
+            newest_src = Some(newest_src.map_or(t, |n| n.max(t)));
         }
     }
 
-    if let Some(src_mtime) = newest_src {
-        if src_mtime > dist_mtime {
-            emit_stale_ui_warning();
+    if let (Some(dist_t), Some(src_t)) = (dist_mtime, newest_src) {
+        if src_t > dist_t {
+            panic!(
+                "\n\n\
+                STALE UI: source files are newer than dist/index.html.\n\
+                The daemon would embed outdated frontend chunks.\n\n\
+                Fix:  make build\n\
+                Skip: KEYRX_SKIP_FRONTEND_CHECK=1 cargo build\n"
+            );
         }
     }
 }
 
-fn emit_stale_ui_warning() {
-    let lines = [
-        "STALE UI DIST DETECTED",
-        "UI source files are newer than dist/index.html.",
-        "The daemon will embed OUTDATED UI files.",
-        "This causes 'Failed to fetch dynamically imported module' errors.",
-        "",
-        "Fix: run 'make build' or 'scripts/build.sh'",
-        "     (rebuilds WASM -> UI -> Daemon in correct sequence)",
-    ];
-    for line in &lines {
-        println!("cargo:warning={line}");
-    }
+// ── Build metadata ───────────────────────────────────────────────────
+
+fn set_build_metadata() {
+    use chrono::offset::FixedOffset;
+    let jst = FixedOffset::east_opt(9 * 3600).expect("JST offset");
+    let now_jst = chrono::Utc::now().with_timezone(&jst);
+
+    println!(
+        "cargo:rustc-env=BUILD_DATE={}",
+        now_jst.format("%Y-%m-%d %H:%M JST")
+    );
+    println!(
+        "cargo:rustc-env=BUILD_TIMESTAMP={}",
+        chrono::Utc::now().to_rfc3339()
+    );
+
+    let git_hash = std::process::Command::new("git")
+        .args(["rev-parse", "--short", "HEAD"])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+
+    println!("cargo:rustc-env=GIT_HASH={git_hash}");
 }
 
-/// Find the newest file modification time in a directory (recursive)
+// ── Rerun triggers ───────────────────────────────────────────────────
+
+/// Tell Cargo when to re-run this build script.
+fn emit_rerun_triggers(workspace_root: &Path) {
+    // Version files (re-validate on change)
+    println!(
+        "cargo:rerun-if-changed={}",
+        workspace_root.join("Cargo.toml").display()
+    );
+    println!(
+        "cargo:rerun-if-changed={}",
+        workspace_root.join("keyrx_ui/package.json").display()
+    );
+
+    // UI dist (re-embed when rebuilt)
+    println!("cargo:rerun-if-changed=../keyrx_ui/dist/index.html");
+
+    // Key source files (trigger staleness check on common changes)
+    for entry in &[
+        "../keyrx_ui/src/App.tsx",
+        "../keyrx_ui/src/main.tsx",
+        "../keyrx_ui/src/version.ts",
+        "../keyrx_ui/index.html",
+        "../keyrx_ui/vite.config.ts",
+        "../keyrx_core/src/lib.rs",
+    ] {
+        println!("cargo:rerun-if-changed={entry}");
+    }
+
+    // Re-run when bypass env var changes
+    println!("cargo:rerun-if-env-changed=KEYRX_SKIP_FRONTEND_CHECK");
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+fn file_mtime(path: &Path) -> Option<SystemTime> {
+    std::fs::metadata(path).ok()?.modified().ok()
+}
+
+/// Newest file modification time in a directory (recursive).
 fn newest_mtime_in_dir(dir: &Path) -> Option<SystemTime> {
-    let entries = std::fs::read_dir(dir).ok()?;
     let mut newest: Option<SystemTime> = None;
-
-    for entry in entries.flatten() {
+    for entry in std::fs::read_dir(dir).ok()?.flatten() {
         let path = entry.path();
         let mtime = if path.is_dir() {
             newest_mtime_in_dir(&path)
         } else {
-            path.metadata().ok().and_then(|m| m.modified().ok())
+            file_mtime(&path)
         };
         if let Some(t) = mtime {
             newest = Some(newest.map_or(t, |n| n.max(t)));
         }
     }
-
     newest
 }

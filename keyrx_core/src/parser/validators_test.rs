@@ -199,7 +199,10 @@ fn test_international_keys() {
     assert_eq!(parse_key_name("Hankaku").unwrap(), KeyCode::Grave);
     assert_eq!(parse_key_name("ZenkakuHankaku").unwrap(), KeyCode::Grave);
     // Katakana resolves to KatakanaHiragana (scan code 0x70)
-    assert_eq!(parse_key_name("Katakana").unwrap(), KeyCode::KatakanaHiragana);
+    assert_eq!(
+        parse_key_name("Katakana").unwrap(),
+        KeyCode::KatakanaHiragana
+    );
     assert_eq!(parse_key_name("Hiragana").unwrap(), KeyCode::Hiragana);
     assert_eq!(parse_key_name("Henkan").unwrap(), KeyCode::Henkan);
     assert_eq!(parse_key_name("Muhenkan").unwrap(), KeyCode::Muhenkan);
@@ -212,7 +215,10 @@ fn test_international_keys() {
     // Unicode aliases
     assert_eq!(parse_key_name("全角").unwrap(), KeyCode::Grave);
     assert_eq!(parse_key_name("半角").unwrap(), KeyCode::Grave);
-    assert_eq!(parse_key_name("カタカナ").unwrap(), KeyCode::KatakanaHiragana);
+    assert_eq!(
+        parse_key_name("カタカナ").unwrap(),
+        KeyCode::KatakanaHiragana
+    );
     assert_eq!(parse_key_name("한글").unwrap(), KeyCode::Hangeul);
     assert_eq!(parse_key_name("한자").unwrap(), KeyCode::Hanja);
 }

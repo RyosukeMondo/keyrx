@@ -248,6 +248,10 @@ map("ScrollLock", "LK_00");
 tap_hold("Space", "VK_Space", "MD_01", 200);
 // tap=space, hold=MD_01, threshold=200ms
 
+// Hold-only (tap suppressed, hold activates layer)
+hold_only("VK_LMeta", "MD_02");
+// LWin key: hold=MD_02, tap=nothing (no Start menu)
+
 // Physical modifier output
 map("F1", with_shift("VK_F1"));     // Output Shift+F1
 map("F2", with_ctrl("VK_F2"));      // Output Ctrl+F2
@@ -288,7 +292,7 @@ For Windows users, we provide an MSI installer:
 ```powershell
 # Download the latest release from GitHub
 # Then install:
-msiexec /i KeyRx-0.1.5-x64.msi /qn
+msiexec /i KeyRx-1.0.0-x64.msi /qn
 
 # Or double-click the MSI file
 ```
@@ -500,48 +504,91 @@ Follow conventional commits:
 
 ## Architecture Overview
 
-### Configuration Flow
+### System Architecture
 
+```mermaid
+graph TB
+    subgraph "Configuration"
+        RHAI[".rhai script<br/>(Rhai DSL)"]
+        KRX[".krx binary<br/>(rkyv zero-copy)"]
+    end
+
+    subgraph "keyrx_compiler"
+        PARSER["Parser<br/>(shared builders)"]
+        SERIAL["Serializer<br/>(rkyv + SHA256)"]
+    end
+
+    subgraph "keyrx_daemon"
+        WEB["Web Server<br/>(axum :9867)"]
+        HOOK["OS Hook<br/>(intercept keys)"]
+        ENGINE["Remap Engine<br/>(keyrx_core)"]
+        INJECT["Injector<br/>(emit remapped)"]
+    end
+
+    subgraph "keyrx_ui"
+        REACT["React UI"]
+        WASM["WASM Simulator<br/>(keyrx_core)"]
+    end
+
+    RHAI --> PARSER --> SERIAL --> KRX
+    KRX --> ENGINE
+    HOOK -->|"physical key"| ENGINE -->|"remapped key"| INJECT
+    WEB <-->|"REST/WS"| REACT
+    REACT <--> WASM
 ```
-.rhai script
-    ↓
-[keyrx_compiler]
-    ↓
-.krx binary
-    ↓
-[keyrx_daemon] ← loads config
-    ↓
-OS keyboard events
-    ↓
-[keyrx_core] ← remapping logic
-    ↓
-Modified events
+
+### Build Pipeline
+
+```mermaid
+graph LR
+    A["keyrx_core<br/>(Rust no_std)"] -->|wasm-pack| B["WASM module<br/>(keyrx_ui/src/wasm/pkg/)"]
+    B -->|Vite build| C["UI dist<br/>(keyrx_ui/dist/)"]
+    C -->|"include_dir!"| D["Daemon binary<br/>(embedded UI)"]
+    A -->|cargo build| D
+
+    style A fill:#f96,stroke:#333
+    style D fill:#6f9,stroke:#333
+```
+
+> **Staleness enforcement**: `build.rs` **fails** (not warns) if WASM or UI dist is stale.
+> Always use `make build` — it runs the pipeline in correct order.
+
+### Version SSOT
+
+```mermaid
+graph LR
+    CARGO["Cargo.toml<br/>[workspace.package]<br/>version = '1.0.0'"]
+    CARGO -->|"vite.config.ts<br/>reads at build time"| UI["UI constants<br/>(__APP_VERSION__)"]
+    CARGO -->|"build.rs<br/>env!(CARGO_PKG_VERSION)"| DAEMON["Daemon binary"]
+    CARGO -->|"sync-version.sh"| PKG["package.json"]
+    CARGO -->|"makensis /DVERSION"| NSIS["NSIS installer"]
+
+    style CARGO fill:#ff9,stroke:#333
 ```
 
 ### Key Components
 
-1. **Compiler** (`keyrx_compiler`):
-   - Parses Rhai DSL scripts
-   - Validates key names and prefixes
-   - Resolves imports and detects circular dependencies
-   - Serializes to `.krx` binary format with SHA256 hash
+1. **Core** (`keyrx_core`) — no_std, WASM-compatible:
+   - Shared DSL builders (`parser::builders`) — SSOT for mapping creation
+   - Shared validators (`parser::validators`) — SSOT for key name parsing
+   - Tap-hold state machine with hold_only support
+   - rkyv enums with `#[repr(u8)]` explicit discriminants (binary-stable)
 
-2. **Core** (`keyrx_core`):
-   - Zero-copy deserialization of `.krx` files
-   - O(1) key lookup using MPHF
-   - DFA state machine for tap-hold behavior
-   - 255 custom modifiers + 255 custom locks
+2. **Compiler** (`keyrx_compiler`) — Rhai DSL → .krx:
+   - Thin Rhai wrappers calling shared builders from keyrx_core
+   - Import resolution and circular dependency detection
+   - SHA256 integrity hashing
 
-3. **Daemon** (`keyrx_daemon`):
-   - OS-level keyboard event interception
+3. **Daemon** (`keyrx_daemon`) — OS keyboard interception:
    - Linux: evdev/uinput
-   - Windows: Low-level keyboard hooks
-   - Embedded web server for UI
+   - Windows: Low-level keyboard hooks + scan code injection
+   - Embedded web server (axum) with REST API + WebSocket
+   - Embedded UI (include_dir! at compile time)
 
-4. **UI** (`keyrx_ui`):
-   - React frontend
+4. **UI** (`keyrx_ui`) — React + TypeScript:
    - WASM-based configuration simulator
-   - Real-time testing without hardware
+   - Profile management via REST API
+   - Real-time event monitoring via WebSocket
 
 ## Platform Support
 

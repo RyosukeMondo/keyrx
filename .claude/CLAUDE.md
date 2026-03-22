@@ -103,6 +103,29 @@ pub struct Daemon<P: Platform> {
 - Use traits for abstraction
 - Mock in tests
 
+## Critical Constraints (read before changing config/parser/build code)
+
+### rkyv Binary Format — Enum Discriminants
+All rkyv-serialized enums (`BaseKeyMapping`, `KeyMapping`, `Condition`, `ConditionItem`) use
+`#[repr(u8)]` with **explicit discriminant values** (`= 0`, `= 1`, etc.). This makes variant
+ordering in source code irrelevant to binary format. New variants get the next unused ID.
+Enforced by `test_base_key_mapping_discriminant_stability`.
+
+### Dual Parser — keyrx_core + keyrx_compiler
+Both crates have a Rhai DSL parser (keyrx_core uses `spin::Mutex`/no_std, keyrx_compiler uses `std::Mutex`).
+**Mapping creation logic is shared** via `keyrx_core::parser::builders` (SSOT). When adding a new DSL function:
+1. Add builder in `keyrx_core/src/parser/builders.rs`
+2. Add thin Rhai wrapper in BOTH `keyrx_core/src/parser/functions/` AND `keyrx_compiler/src/parser/functions/`
+3. Add discriminant entry in `test_base_key_mapping_discriminant_stability`
+
+### Build Order — Staleness Enforcement
+`build.rs` **fails** (not warns) if WASM or UI dist is stale. Use `make build` for full pipeline.
+Bypass for Rust-only dev: `KEYRX_SKIP_FRONTEND_CHECK=1 cargo build`
+
+### Version SSOT
+`Cargo.toml [workspace.package] version` is the single source. UI version injected at Vite build time
+via `vite.config.ts` (reads Cargo.toml directly). No intermediate generated files.
+
 ## Naming Conventions
 
 ### Rust

@@ -12,11 +12,12 @@ use serde::{Deserialize, Serialize};
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
 #[archive(check_bytes)]
+#[repr(u8)]
 pub enum ConditionItem {
     /// Custom modifier is active (MD_XX)
-    ModifierActive(u8),
+    ModifierActive(u8) = 0,
     /// Custom lock is active (LK_XX)
-    LockActive(u8),
+    LockActive(u8) = 1,
 }
 
 /// Conditional mapping support for when/when_not blocks
@@ -27,34 +28,22 @@ pub enum ConditionItem {
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
 #[archive(check_bytes)]
+#[repr(u8)]
 pub enum Condition {
     /// Single custom modifier active (MD_XX)
-    ModifierActive(u8),
+    ModifierActive(u8) = 0,
 
     /// Single custom lock active (LK_XX)
-    LockActive(u8),
+    LockActive(u8) = 1,
 
     /// All conditions must be true (AND logic) - for when() with multiple conditions
-    AllActive(Vec<ConditionItem>),
+    AllActive(Vec<ConditionItem>) = 2,
 
     /// Negated condition - NOT(...)
-    /// Currently limited to negating single items or AND combinations
-    /// Example: NOT(ModifierActive(0x01))
-    NotActive(Vec<ConditionItem>),
+    NotActive(Vec<ConditionItem>) = 3,
 
     /// Device ID matches pattern (for per-device configuration)
-    ///
-    /// The pattern is matched against the event's device_id field at runtime.
-    /// Supports exact match and simple glob patterns with `*` wildcard.
-    ///
-    /// # Examples
-    ///
-    /// - `DeviceMatches("usb-NumericKeypad-123")` - exact match
-    /// - `DeviceMatches("*numpad*")` - contains "numpad" (case-sensitive)
-    /// - `DeviceMatches("usb-*")` - starts with "usb-"
-    ///
-    /// If the event has no device_id (None), this condition evaluates to false.
-    DeviceMatches(alloc::string::String),
+    DeviceMatches(alloc::string::String) = 4,
 }
 
 #[cfg(test)]

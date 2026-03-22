@@ -139,6 +139,7 @@ mod tests {
                     BaseKeyMapping::Modifier { from, .. } => *from,
                     BaseKeyMapping::Lock { from, .. } => *from,
                     BaseKeyMapping::TapHold { from, .. } => *from,
+                    BaseKeyMapping::HoldOnly { from, .. } => *from,
                     BaseKeyMapping::ModifiedOutput { from, .. } => *from,
                 };
                 keys.insert(key);
@@ -150,6 +151,7 @@ mod tests {
                         BaseKeyMapping::Modifier { from, .. } => *from,
                         BaseKeyMapping::Lock { from, .. } => *from,
                         BaseKeyMapping::TapHold { from, .. } => *from,
+                        BaseKeyMapping::HoldOnly { from, .. } => *from,
                         BaseKeyMapping::ModifiedOutput { from, .. } => *from,
                     };
                     keys.insert(key);

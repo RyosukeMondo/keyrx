@@ -314,10 +314,10 @@ impl ProfileService {
 
                                 match PlatformState::configure_blocking(Some(&config)) {
                                     Ok(()) => {
-                                        log::info!("✓ Key blocking configured successfully");
+                                        log::info!("✓ Key remapping configured successfully");
                                     }
                                     Err(e) => {
-                                        log::error!("✗ Failed to configure key blocking: {}", e);
+                                        log::error!("✗ Failed to configure key remapping: {}", e);
                                     }
                                 }
                             }

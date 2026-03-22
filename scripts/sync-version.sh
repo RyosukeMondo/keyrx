@@ -6,7 +6,7 @@
 #   - keyrx_ui/package.json
 #   - keyrx_daemon/keyrx_installer.wxs
 #   - scripts/build_windows_installer.ps1
-#   - keyrx_ui/src/version.ts (via generate-version.js)
+# Note: version.ts is injected at Vite build time directly from Cargo.toml
 #
 # Usage:
 #   ./scripts/sync-version.sh              # Sync and update all files
@@ -197,13 +197,7 @@ main() {
             log_info "Dry run complete. No files modified."
         else
             log_success "Version synchronization complete!"
-            log_info "Regenerating keyrx_ui/src/version.ts..."
-
-            if [[ -f "$SCRIPT_DIR/generate-version.js" ]]; then
-                (cd "$PROJECT_ROOT/keyrx_ui" && node ../scripts/generate-version.js) || log_warn "Failed to regenerate version.ts"
-            else
-                log_warn "generate-version.js not found, skipping version.ts regeneration"
-            fi
+            log_info "Version is injected at Vite build time from Cargo.toml (see vite.config.ts)"
         fi
     else
         log_success "All versions already synchronized!"

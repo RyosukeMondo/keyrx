@@ -52,7 +52,7 @@ impl PlatformState {
         blocker.clear_all();
 
         let Some(config) = config else {
-            log::info!("✓ Key blocking cleared (no active profile)");
+            log::info!("✓ Remapping cleared (no active profile)");
             return Ok(());
         };
 
@@ -67,20 +67,10 @@ impl PlatformState {
         // Verify the blocker actually has the keys
         let actual_count = blocker.blocked_count();
         log::info!(
-            "✓ Configured key blocking: {} keys extracted, {} actually blocked",
-            blocked_count,
-            actual_count
+            "✓ Remapping {} keys ({} mappings across base + layers)",
+            actual_count,
+            blocked_count
         );
-
-        if actual_count != blocked_count {
-            let diff = blocked_count - actual_count;
-            log::warn!(
-                "Key blocking count mismatch: {} extracted, {} unique scan codes ({} duplicates sharing scan codes)",
-                blocked_count,
-                actual_count,
-                diff
-            );
-        }
 
         Ok(())
     }
@@ -101,6 +91,7 @@ impl PlatformState {
                     BaseKeyMapping::Modifier { from, .. } => *from,
                     BaseKeyMapping::Lock { from, .. } => *from,
                     BaseKeyMapping::TapHold { from, .. } => *from,
+                    BaseKeyMapping::HoldOnly { from, .. } => *from,
                     BaseKeyMapping::ModifiedOutput { from, .. } => *from,
                 };
 

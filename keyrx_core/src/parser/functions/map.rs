@@ -3,13 +3,10 @@
 //! Provides map(from, to) function with overloads for string and ModifiedKey.
 
 use crate::config::{BaseKeyMapping, KeyMapping};
+use crate::parser::builders;
 use crate::parser::functions::modifiers::ModifiedKey;
 use crate::parser::state::ParserState;
-use crate::parser::validators::{
-    parse_lock_id, parse_modifier_id, parse_physical_key, parse_virtual_key,
-};
 use alloc::boxed::Box;
-use alloc::format;
 use alloc::sync::Arc;
 use rhai::{Engine, EvalAltResult};
 use spin::Mutex;
@@ -22,36 +19,8 @@ pub fn register_map_functions(engine: &mut Engine, state: Arc<Mutex<ParserState>
         "map",
         move |from: &str, to: &str| -> Result<(), Box<EvalAltResult>> {
             let mut state = state_clone.lock();
-            let from_key =
-                parse_physical_key(from).map_err(|e| format!("Invalid 'from' key: {}", e))?;
-
-            let base_mapping = if to.starts_with("VK_") {
-                let to_key =
-                    parse_virtual_key(to).map_err(|e| format!("Invalid 'to' key: {}", e))?;
-                BaseKeyMapping::Simple {
-                    from: from_key,
-                    to: to_key,
-                }
-            } else if to.starts_with("MD_") {
-                let modifier_id =
-                    parse_modifier_id(to).map_err(|e| format!("Invalid modifier ID: {}", e))?;
-                BaseKeyMapping::Modifier {
-                    from: from_key,
-                    modifier_id,
-                }
-            } else if to.starts_with("LK_") {
-                let lock_id = parse_lock_id(to).map_err(|e| format!("Invalid lock ID: {}", e))?;
-                BaseKeyMapping::Lock {
-                    from: from_key,
-                    lock_id,
-                }
-            } else {
-                return Err(format!(
-                    "Output must have VK_, MD_, or LK_ prefix: {} -> use VK_{} for virtual key",
-                    to, to
-                )
-                .into());
-            };
+            let base_mapping: BaseKeyMapping =
+                builders::build_map(from, to).map_err(|e| -> Box<EvalAltResult> { e.into() })?;
 
             // If we're inside a conditional block, add to the conditional stack
             if let Some((_condition, ref mut mappings)) = state.conditional_stack.last_mut() {
@@ -73,17 +42,9 @@ pub fn register_map_functions(engine: &mut Engine, state: Arc<Mutex<ParserState>
         "map",
         move |from: &str, to: ModifiedKey| -> Result<(), Box<EvalAltResult>> {
             let mut state = state_clone.lock();
-            let from_key =
-                parse_physical_key(from).map_err(|e| format!("Invalid 'from' key: {}", e))?;
-
-            let base_mapping = BaseKeyMapping::ModifiedOutput {
-                from: from_key,
-                to: to.key,
-                shift: to.shift,
-                ctrl: to.ctrl,
-                alt: to.alt,
-                win: to.win,
-            };
+            let base_mapping =
+                builders::build_modified_map(from, to.key, to.shift, to.ctrl, to.alt, to.win)
+                    .map_err(|e| -> Box<EvalAltResult> { e.into() })?;
 
             // If we're inside a conditional block, add to the conditional stack
             if let Some((_condition, ref mut mappings)) = state.conditional_stack.last_mut() {

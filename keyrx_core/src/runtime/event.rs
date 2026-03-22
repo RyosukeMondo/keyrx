@@ -262,7 +262,10 @@ pub fn process_event(
     let mut permissive_hold_triggered = false;
     if event.is_press() {
         // Check if any tap-hold keys are pending and this isn't a tap-hold key itself
-        let is_tap_hold_key = matches!(mapping, Some(BaseKeyMapping::TapHold { .. }));
+        let is_tap_hold_key = matches!(
+            mapping,
+            Some(BaseKeyMapping::TapHold { .. } | BaseKeyMapping::HoldOnly { .. })
+        );
         if !is_tap_hold_key && state.tap_hold_processor_ref().has_pending_keys() {
             // Trigger permissive hold for all pending keys
             let outputs = state
@@ -324,6 +327,29 @@ pub fn process_event(
             let processor = state.tap_hold_processor();
             if !processor.is_tap_hold_key(*from) {
                 let config = TapHoldConfig::from_ms(*tap, *hold_modifier, *threshold_ms);
+                processor.register_tap_hold(*from, config);
+            }
+
+            // Process the event through the tap-hold processor
+            let timestamp = event.timestamp_us();
+            let outputs = if event.is_press() {
+                processor.process_press(*from, timestamp)
+            } else {
+                processor.process_release(*from, timestamp)
+            };
+
+            // Convert TapHoldOutput to KeyEvent and apply state changes
+            convert_tap_hold_outputs(outputs, state, timestamp)
+        }
+        BaseKeyMapping::HoldOnly {
+            from,
+            hold_modifier,
+            threshold_ms,
+        } => {
+            // Register the hold-only configuration if not already registered
+            let processor = state.tap_hold_processor();
+            if !processor.is_tap_hold_key(*from) {
+                let config = TapHoldConfig::hold_only_ms(*hold_modifier, *threshold_ms);
                 processor.register_tap_hold(*from, config);
             }
 

@@ -19,6 +19,7 @@
 //! ```
 
 // Always available - no external dependencies
+pub mod builders;
 pub mod error;
 pub mod validators;
 
@@ -74,6 +75,7 @@ impl Parser {
         functions::device::register_device_functions(&mut engine, Arc::clone(&state));
         functions::map::register_map_functions(&mut engine, Arc::clone(&state));
         functions::tap_hold::register_tap_hold_function(&mut engine, Arc::clone(&state));
+        functions::hold_only::register_hold_only_functions(&mut engine, Arc::clone(&state));
         functions::conditional::register_when_functions(&mut engine, Arc::clone(&state));
         functions::modifiers::register_modifier_functions(&mut engine);
 

@@ -6,6 +6,51 @@ import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import path from 'path';
+import fs from 'fs';
+import { execSync } from 'child_process';
+
+/**
+ * Read version directly from Cargo.toml (SSOT) and inject build metadata.
+ * Eliminates the generate-version.js intermediate step.
+ */
+function getBuildDefines() {
+  const cargoToml = fs.readFileSync(
+    path.resolve(__dirname, '../Cargo.toml'),
+    'utf8',
+  );
+  const match = cargoToml.match(
+    /\[workspace\.package\][\s\S]*?version\s*=\s*"([^"]+)"/,
+  );
+  const version = match ? match[1] : '0.0.0';
+
+  let gitCommit = 'unknown';
+  let gitBranch = 'unknown';
+  let gitDirty = false;
+  try {
+    gitCommit = execSync('git rev-parse --short HEAD', {
+      encoding: 'utf8',
+    }).trim();
+    gitBranch = execSync('git rev-parse --abbrev-ref HEAD', {
+      encoding: 'utf8',
+    }).trim();
+    const status = execSync('git status --porcelain', {
+      encoding: 'utf8',
+    });
+    gitDirty = status.trim().length > 0;
+  } catch {
+    // git not available (CI container, etc.) — use defaults
+  }
+
+  return {
+    __APP_VERSION__: JSON.stringify(version),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __GIT_COMMIT__: JSON.stringify(
+      `${gitCommit}${gitDirty ? '-dirty' : ''}`,
+    ),
+    __GIT_BRANCH__: JSON.stringify(gitBranch),
+    __GIT_DIRTY__: JSON.stringify(gitDirty),
+  };
+}
 
 export default defineConfig({
   plugins: [
@@ -62,6 +107,7 @@ export default defineConfig({
       },
     },
   },
+  define: getBuildDefines(),
   build: {
     target: 'esnext',
     minify: 'terser',

@@ -234,6 +234,7 @@ impl KeyLookup {
             BaseKeyMapping::Modifier { from, .. } => Some(*from),
             BaseKeyMapping::Lock { from, .. } => Some(*from),
             BaseKeyMapping::TapHold { from, .. } => Some(*from),
+            BaseKeyMapping::HoldOnly { from, .. } => Some(*from),
             BaseKeyMapping::ModifiedOutput { from, .. } => Some(*from),
         }
     }

@@ -48,6 +48,10 @@ impl Parser {
             &mut engine,
             Arc::clone(&state),
         );
+        crate::parser::functions::hold_only::register_hold_only_function(
+            &mut engine,
+            Arc::clone(&state),
+        );
         crate::parser::functions::conditional::register_when_functions(
             &mut engine,
             Arc::clone(&state),

@@ -55,8 +55,8 @@ pub struct DiagnosticsResponse {
 pub struct HookStatus {
     /// Whether the hook is installed
     pub installed: bool,
-    /// Number of keys currently being blocked
-    pub blocked_keys_count: usize,
+    /// Number of keys currently being remapped
+    pub remapped_keys_count: usize,
 }
 
 /// Platform information
@@ -216,7 +216,7 @@ fn get_hook_status() -> HookStatus {
             if let Some(ref blocker) = state.key_blocker {
                 return HookStatus {
                     installed: true,
-                    blocked_keys_count: blocker.blocked_count(),
+                    remapped_keys_count: blocker.blocked_count(),
                 };
             }
         }
@@ -224,7 +224,7 @@ fn get_hook_status() -> HookStatus {
 
     HookStatus {
         installed: false,
-        blocked_keys_count: 0,
+        remapped_keys_count: 0,
     }
 }
 
@@ -234,7 +234,7 @@ fn get_hook_status() -> HookStatus {
     // The evdev grab is the equivalent
     HookStatus {
         installed: true,       // Assume installed if daemon is running
-        blocked_keys_count: 0, // Not tracked on Linux
+        remapped_keys_count: 0, // Not tracked on Linux
     }
 }
 
@@ -462,7 +462,7 @@ async fn get_debug_state(State(state): State<Arc<AppState>>) -> Json<Value> {
         "daemon": daemon_info,
         "config": config_info,
         "profiles": profiles_info,
-        "hook": { "installed": hook.installed, "blocked_keys_count": hook.blocked_keys_count },
+        "hook": { "installed": hook.installed, "remapped_keys_count": hook.remapped_keys_count },
         "ws_info": {
             "daemon_query_available": state.daemon_query.is_some(),
             "daemon_state_available": state.daemon_state.is_some(),

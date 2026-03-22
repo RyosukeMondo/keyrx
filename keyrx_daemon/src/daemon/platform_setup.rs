@@ -157,7 +157,7 @@ pub fn log_post_init_hook_status() {
             if let Some(ref blocker) = state.key_blocker {
                 let blocked_count = blocker.blocked_count();
                 log::info!("✓ Low-level keyboard hook installed successfully");
-                log::info!("  Currently blocking {} key(s)", blocked_count);
+                log::info!("  Currently remapping {} key(s)", blocked_count);
             } else {
                 log::warn!("✗ Low-level keyboard hook NOT installed");
                 log::warn!("  Double inputs may occur during remapping");

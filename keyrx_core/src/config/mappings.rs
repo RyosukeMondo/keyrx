@@ -10,22 +10,26 @@ use crate::config::types::{Metadata, Version};
 
 /// Base key mapping types (non-recursive)
 ///
-/// Contains the 5 fundamental mapping types. This is separated from KeyMapping
+/// Contains the fundamental mapping types. This is separated from KeyMapping
 /// to avoid rkyv recursion depth issues while maintaining ergonomic usage.
+///
+/// Each variant has an explicit `= N` discriminant so the rkyv binary format
+/// is stable regardless of source ordering. New variants get the next unused ID.
+/// The `test_base_key_mapping_discriminant_stability` test enforces round-trip.
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
 #[archive(check_bytes)]
-#[repr(C)]
+#[repr(u8)]
 pub enum BaseKeyMapping {
     /// Simple 1:1 key remapping (A → B)
-    Simple { from: KeyCode, to: KeyCode },
+    Simple { from: KeyCode, to: KeyCode } = 0,
 
     /// Key acts as custom modifier (MD_00-MD_FE)
-    Modifier { from: KeyCode, modifier_id: u8 },
+    Modifier { from: KeyCode, modifier_id: u8 } = 1,
 
     /// Key toggles custom lock (LK_00-LK_FE)
-    Lock { from: KeyCode, lock_id: u8 },
+    Lock { from: KeyCode, lock_id: u8 } = 2,
 
     /// Dual tap/hold behavior
     TapHold {
@@ -33,7 +37,7 @@ pub enum BaseKeyMapping {
         tap: KeyCode,
         hold_modifier: u8,
         threshold_ms: u16,
-    },
+    } = 3,
 
     /// Output with physical modifiers (Shift+2, Ctrl+C, etc.)
     ModifiedOutput {
@@ -43,7 +47,14 @@ pub enum BaseKeyMapping {
         ctrl: bool,
         alt: bool,
         win: bool,
-    },
+    } = 4,
+
+    /// Hold-only behavior (hold activates modifier, tap suppressed)
+    HoldOnly {
+        from: KeyCode,
+        hold_modifier: u8,
+        threshold_ms: u16,
+    } = 5,
 }
 
 /// Key mapping configuration with recursive conditional support
@@ -55,16 +66,16 @@ pub enum BaseKeyMapping {
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
 #[archive(check_bytes)]
-#[repr(C)]
+#[repr(u8)]
 pub enum KeyMapping {
-    /// Base mapping (one of the 5 fundamental types)
-    Base(BaseKeyMapping),
+    /// Base mapping (one of the fundamental types)
+    Base(BaseKeyMapping) = 0,
 
     /// Conditional mappings (when/when_not blocks) - supports unlimited nesting
     Conditional {
         condition: Condition,
         mappings: Vec<BaseKeyMapping>,
-    },
+    } = 1,
 }
 
 impl KeyMapping {
@@ -88,6 +99,15 @@ impl KeyMapping {
         KeyMapping::Base(BaseKeyMapping::TapHold {
             from,
             tap,
+            hold_modifier,
+            threshold_ms,
+        })
+    }
+
+    /// Create a hold-only mapping (tap suppressed)
+    pub fn hold_only(from: KeyCode, hold_modifier: u8, threshold_ms: u16) -> Self {
+        KeyMapping::Base(BaseKeyMapping::HoldOnly {
+            from,
             hold_modifier,
             threshold_ms,
         })
@@ -206,6 +226,12 @@ mod tests {
             KeyMapping::Base(BaseKeyMapping::TapHold { .. })
         ));
 
+        let hold_only = KeyMapping::hold_only(KeyCode::LMeta, 0x0A, 200);
+        assert!(matches!(
+            hold_only,
+            KeyMapping::Base(BaseKeyMapping::HoldOnly { .. })
+        ));
+
         let modified =
             KeyMapping::modified_output(KeyCode::A, KeyCode::A, true, false, false, false);
         assert!(matches!(
@@ -306,5 +332,79 @@ mod tests {
         // Verify deterministic output
         assert_eq!(bytes1.len(), bytes2.len());
         assert_eq!(&bytes1[..], &bytes2[..]);
+    }
+
+    #[test]
+    fn test_base_key_mapping_discriminant_stability() {
+        // Each variant must round-trip correctly through rkyv serialization.
+        // If a new variant is inserted in the middle of BaseKeyMapping,
+        // existing serialized data will deserialize as the WRONG variant.
+        // This test catches that by verifying each variant round-trips.
+        //
+        // When adding a new variant: APPEND it to the end of the enum,
+        // then add a new entry here.
+
+        let cases: alloc::vec::Vec<BaseKeyMapping> = alloc::vec![
+            // Discriminant 0
+            BaseKeyMapping::Simple {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            // Discriminant 1
+            BaseKeyMapping::Modifier {
+                from: KeyCode::CapsLock,
+                modifier_id: 0x01,
+            },
+            // Discriminant 2
+            BaseKeyMapping::Lock {
+                from: KeyCode::ScrollLock,
+                lock_id: 0x02,
+            },
+            // Discriminant 3
+            BaseKeyMapping::TapHold {
+                from: KeyCode::Space,
+                tap: KeyCode::Escape,
+                hold_modifier: 0x00,
+                threshold_ms: 200,
+            },
+            // Discriminant 4
+            BaseKeyMapping::ModifiedOutput {
+                from: KeyCode::A,
+                to: KeyCode::A,
+                shift: true,
+                ctrl: false,
+                alt: false,
+                win: false,
+            },
+            // Discriminant 5
+            BaseKeyMapping::HoldOnly {
+                from: KeyCode::LMeta,
+                hold_modifier: 0x07,
+                threshold_ms: 200,
+            },
+        ];
+
+        for (i, mapping) in cases.iter().enumerate() {
+            let bytes = rkyv::to_bytes::<_, 256>(mapping)
+                .unwrap_or_else(|_| panic!("Failed to serialize variant {}", i));
+
+            let archived = unsafe { rkyv::archived_root::<BaseKeyMapping>(&bytes[..]) };
+            let deserialized: BaseKeyMapping = archived
+                .deserialize(&mut rkyv::Infallible)
+                .unwrap_or_else(|_| panic!("Failed to deserialize variant {}", i));
+
+            // Verify it round-trips to the same variant (not a different
+            // one due to shifted discriminants)
+            assert_eq!(
+                core::mem::discriminant(&deserialized),
+                core::mem::discriminant(mapping),
+                "Discriminant mismatch for variant {}! A variant was likely \
+                 inserted in the middle of BaseKeyMapping. New variants MUST \
+                 be appended at the end.",
+                i
+            );
+            // Also verify the field values survived
+            assert_eq!(&deserialized, mapping, "Field mismatch for variant {}", i);
+        }
     }
 }

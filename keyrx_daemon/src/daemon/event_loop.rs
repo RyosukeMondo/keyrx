@@ -78,6 +78,7 @@ fn get_mapping_type(mapping: &BaseKeyMapping) -> &'static str {
         BaseKeyMapping::Modifier { .. } => "modifier",
         BaseKeyMapping::Lock { .. } => "lock",
         BaseKeyMapping::TapHold { .. } => "tap_hold",
+        BaseKeyMapping::HoldOnly { .. } => "hold_only",
         BaseKeyMapping::ModifiedOutput { .. } => "modified_output",
     }
 }

@@ -253,6 +253,13 @@ impl<const N: usize> TapHoldProcessor<N> {
                         outputs.try_push(TapHoldOutput::activate_modifier(state.hold_modifier()));
                     let _ =
                         outputs.try_push(TapHoldOutput::deactivate_modifier(state.hold_modifier()));
+                } else if state.config().is_tap_suppressed() {
+                    // hold_only: tap does nothing
+                    log_event!(
+                        "tap-hold: {:?} release after {}us -> SUPPRESSED (hold_only)",
+                        key,
+                        elapsed
+                    );
                 } else {
                     // Quick release - this is a TAP
                     // Emit press and release of the tap key

@@ -155,6 +155,15 @@ pub(crate) fn convert_archived_base_mapping(archived: &ArchivedBaseKeyMapping) -
             hold_modifier: *hold_modifier,
             threshold_ms: *threshold_ms,
         },
+        ArchivedBaseKeyMapping::HoldOnly {
+            from,
+            hold_modifier,
+            threshold_ms,
+        } => BaseKeyMapping::HoldOnly {
+            from: convert_archived_keycode(from),
+            hold_modifier: *hold_modifier,
+            threshold_ms: *threshold_ms,
+        },
         ArchivedBaseKeyMapping::ModifiedOutput {
             from,
             to,

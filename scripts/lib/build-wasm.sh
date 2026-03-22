@@ -215,6 +215,21 @@ fi
 
 log_info "WASM manifest created successfully"
 
+# Verify env-shim import is properly patched
+if [[ -f "$JS_FILE" ]]; then
+    if grep -q "from 'env'" "$JS_FILE"; then
+        log_error "WASM JS still has unpatched 'env' import!"
+        log_error "This will cause browser loading errors."
+        log_failed
+        exit 1
+    fi
+    if grep -q "from './env-shim.js'" "$JS_FILE"; then
+        log_debug "env-shim import verified"
+    else
+        log_warn "Could not verify env-shim import pattern"
+    fi
+fi
+
 separator
 log_info "Build time: ${BUILD_TIME} seconds"
 log_accomplished
@@ -233,27 +248,3 @@ if [[ "$JSON_MODE" == "true" ]]; then
 fi
 
 exit 0
-
-# Verify env-shim import is properly patched
-verify_env_shim_import() {
-    local js_file="$1"
-    if grep -q "from 'env'" "$js_file"; then
-        log_error "WASM JS still has unpatched 'env' import!"
-        log_error "This will cause browser loading errors."
-        return 1
-    fi
-    if grep -q "from './env-shim.js'" "$js_file"; then
-        log_debug "env-shim import verified"
-        return 0
-    fi
-    log_warn "Could not verify env-shim import pattern"
-    return 0
-}
-
-# Run verification
-if [[ -f "$JS_FILE" ]]; then
-    verify_env_shim_import "$JS_FILE" || {
-        log_failed
-        exit 1
-    }
-fi

@@ -1,8 +1,7 @@
-use keyrx_compiler::parser::validators::{
-    parse_condition_string, parse_lock_id, parse_modifier_id, parse_physical_key, parse_virtual_key,
-};
+use keyrx_compiler::parser::validators::{parse_condition_string, parse_virtual_key};
 use keyrx_core::config::{Condition, KeyCode};
 use keyrx_core::parser::error::ParseError;
+use keyrx_core::parser::validators::{parse_lock_id, parse_modifier_id, parse_physical_key};
 
 #[cfg(test)]
 mod parse_physical_key_tests {

@@ -129,7 +129,7 @@ impl WindowsPlatform {
         blocker.clear_all();
 
         let Some(config) = config else {
-            log::info!("✓ Key blocking cleared (no active profile)");
+            log::info!("✓ Remapping cleared (no active profile)");
             return Ok(());
         };
 
@@ -162,6 +162,7 @@ impl WindowsPlatform {
                     BaseKeyMapping::Modifier { from, .. } => *from,
                     BaseKeyMapping::Lock { from, .. } => *from,
                     BaseKeyMapping::TapHold { from, .. } => *from,
+                    BaseKeyMapping::HoldOnly { from, .. } => *from,
                     BaseKeyMapping::ModifiedOutput { from, .. } => *from,
                 };
 

@@ -73,6 +73,8 @@ pub struct TapHoldConfig {
     hold_modifier: u8,
     /// Threshold time in microseconds (tap vs hold boundary)
     threshold_us: u64,
+    /// Whether tap output is suppressed (hold_only mode)
+    tap_suppressed: bool,
 }
 
 impl TapHoldConfig {
@@ -102,6 +104,7 @@ impl TapHoldConfig {
             tap_key,
             hold_modifier,
             threshold_us,
+            tap_suppressed: false,
         }
     }
 
@@ -135,6 +138,28 @@ impl TapHoldConfig {
     /// Returns the threshold in microseconds.
     pub const fn threshold_us(&self) -> u64 {
         self.threshold_us
+    }
+
+    /// Creates a hold-only configuration (tap suppressed).
+    ///
+    /// The tap key is set to a dummy value since it won't be used.
+    pub const fn hold_only(hold_modifier: u8, threshold_us: u64) -> Self {
+        Self {
+            tap_key: KeyCode::A, // Dummy, won't be used when tap_suppressed
+            hold_modifier,
+            threshold_us,
+            tap_suppressed: true,
+        }
+    }
+
+    /// Creates a hold-only configuration from milliseconds threshold.
+    pub const fn hold_only_ms(hold_modifier: u8, threshold_ms: u16) -> Self {
+        Self::hold_only(hold_modifier, threshold_ms as u64 * 1000)
+    }
+
+    /// Returns true if tap output is suppressed (hold_only mode).
+    pub const fn is_tap_suppressed(&self) -> bool {
+        self.tap_suppressed
     }
 }
 
