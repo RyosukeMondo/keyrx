@@ -104,6 +104,7 @@ fn print_summary(config: &keyrx_core::config::ConfigRoot) {
         let mut lock = 0;
         let mut tap_hold = 0;
         let mut modified_output = 0;
+        let mut sequence = 0;
         let mut conditional = 0;
 
         for mapping in &device.mappings {
@@ -117,6 +118,7 @@ fn print_summary(config: &keyrx_core::config::ConfigRoot) {
                     keyrx_core::config::BaseKeyMapping::ModifiedOutput { .. } => {
                         modified_output += 1
                     }
+                    keyrx_core::config::BaseKeyMapping::Sequence { .. } => sequence += 1,
                 },
                 keyrx_core::config::KeyMapping::Conditional { .. } => conditional += 1,
             }
@@ -137,6 +139,9 @@ fn print_summary(config: &keyrx_core::config::ConfigRoot) {
         }
         if modified_output > 0 {
             details.push(format!("ModifiedOutput: {}", modified_output));
+        }
+        if sequence > 0 {
+            details.push(format!("Sequence: {}", sequence));
         }
         if conditional > 0 {
             details.push(format!("Conditional: {}", conditional));

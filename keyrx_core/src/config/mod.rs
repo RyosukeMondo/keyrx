@@ -66,7 +66,7 @@ pub mod mappings;
 pub mod types;
 
 // Re-export core types
-pub use conditions::{Condition, ConditionItem};
+pub use conditions::{Condition, ConditionItem, ImeState};
 pub use constants::{LOCK_COUNT, MAX_LOCK_ID, MAX_MODIFIER_ID, MODIFIER_COUNT};
 pub use keys::KeyCode;
 pub use mappings::{BaseKeyMapping, ConfigRoot, DeviceConfig, DeviceIdentifier, KeyMapping};

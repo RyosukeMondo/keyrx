@@ -55,6 +55,9 @@ pub enum BaseKeyMapping {
         hold_modifier: u8,
         threshold_ms: u16,
     } = 5,
+
+    /// Sequence output (one key press → multiple keys typed in order)
+    Sequence { from: KeyCode, keys: Vec<KeyCode> } = 6,
 }
 
 /// Key mapping configuration with recursive conditional support
@@ -130,6 +133,11 @@ impl KeyMapping {
             alt,
             win,
         })
+    }
+
+    /// Create a sequence mapping (one key → multiple keys typed in order)
+    pub fn sequence(from: KeyCode, keys: Vec<KeyCode>) -> Self {
+        KeyMapping::Base(BaseKeyMapping::Sequence { from, keys })
     }
 
     /// Create a conditional mapping
@@ -381,6 +389,11 @@ mod tests {
                 from: KeyCode::LMeta,
                 hold_modifier: 0x07,
                 threshold_ms: 200,
+            },
+            // Discriminant 6
+            BaseKeyMapping::Sequence {
+                from: KeyCode::Semicolon,
+                keys: alloc::vec![KeyCode::Y, KeyCode::A],
             },
         ];
 

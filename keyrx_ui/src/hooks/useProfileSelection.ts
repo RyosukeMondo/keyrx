@@ -32,21 +32,23 @@ export function useProfileSelection(propProfileName?: string) {
   const profileNameFromQuery = searchParams.get('profile');
 
   // Get active profile from daemon - used as fallback when no profile specified
-  const { data: activeProfileName } = useActiveProfileQuery();
+  const { data: activeProfileName, isLoading: isActiveProfileLoading } =
+    useActiveProfileQuery();
 
   // Track user's manual selection separately from the computed default
   const [manualSelection, setManualSelection] = useState<string | null>(null);
 
-  // Effective profile: manual selection > explicit URL/prop > active profile > 'Default'
+  // Effective profile: manual selection > explicit URL/prop > active profile > 'default'
   // Use || instead of ?? to treat empty strings as falsy
-  // Note: fallback is 'Default' (capitalized) to match UI convention
-  const selectedProfileName =
+  // Wait for activeProfileName to resolve before falling back to hardcoded default
+  const explicitName =
     manualSelection ||
     propProfileName ||
     profileNameFromRoute ||
-    profileNameFromQuery ||
-    activeProfileName ||
-    'Default';
+    profileNameFromQuery;
+
+  const selectedProfileName =
+    explicitName || activeProfileName || (isActiveProfileLoading ? '' : 'default');
 
   /**
    * Set the selected profile name (tracks manual selection)

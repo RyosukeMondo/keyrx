@@ -173,6 +173,7 @@ fn extract_from_mapping(mapping: &KeyMapping, keys: &mut HashSet<KeyCode>) {
                 BaseKeyMapping::TapHold { from, .. } => *from,
                 BaseKeyMapping::HoldOnly { from, .. } => *from,
                 BaseKeyMapping::ModifiedOutput { from, .. } => *from,
+                BaseKeyMapping::Sequence { from, .. } => *from,
             };
             keys.insert(key);
         }
@@ -185,6 +186,7 @@ fn extract_from_mapping(mapping: &KeyMapping, keys: &mut HashSet<KeyCode>) {
                     BaseKeyMapping::TapHold { from, .. } => *from,
                     BaseKeyMapping::HoldOnly { from, .. } => *from,
                     BaseKeyMapping::ModifiedOutput { from, .. } => *from,
+                    BaseKeyMapping::Sequence { from, .. } => *from,
                 };
                 keys.insert(key);
             }

@@ -98,6 +98,14 @@ pub(crate) fn convert_archived_condition_item(archived: &ArchivedConditionItem) 
     match archived {
         ArchivedConditionItem::ModifierActive(id) => ConditionItem::ModifierActive(*id),
         ArchivedConditionItem::LockActive(id) => ConditionItem::LockActive(*id),
+        ArchivedConditionItem::ImeActive => ConditionItem::ImeActive,
+        ArchivedConditionItem::InputLanguage(lang) => {
+            use rkyv::Deserialize;
+            match Deserialize::deserialize(lang, &mut rkyv::Infallible) {
+                Ok(language) => ConditionItem::InputLanguage(language),
+                Err(infallible) => match infallible {},
+            }
+        }
     }
 }
 
@@ -124,6 +132,14 @@ pub(crate) fn convert_archived_condition(archived: &ArchivedCondition) -> Condit
         }
         ArchivedCondition::NotActive(items) => {
             Condition::NotActive(items.iter().map(convert_archived_condition_item).collect())
+        }
+        ArchivedCondition::ImeActive => Condition::ImeActive,
+        ArchivedCondition::InputLanguage(lang) => {
+            use rkyv::Deserialize;
+            match Deserialize::deserialize(lang, &mut rkyv::Infallible) {
+                Ok(language) => Condition::InputLanguage(language),
+                Err(infallible) => match infallible {},
+            }
         }
     }
 }
@@ -178,6 +194,10 @@ pub(crate) fn convert_archived_base_mapping(archived: &ArchivedBaseKeyMapping) -
             ctrl: *ctrl,
             alt: *alt,
             win: *win,
+        },
+        ArchivedBaseKeyMapping::Sequence { from, keys } => BaseKeyMapping::Sequence {
+            from: convert_archived_keycode(from),
+            keys: keys.iter().map(convert_archived_keycode).collect(),
         },
     }
 }

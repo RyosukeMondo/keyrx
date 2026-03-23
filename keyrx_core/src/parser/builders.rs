@@ -11,6 +11,10 @@ use crate::parser::validators::{
 };
 use alloc::format;
 use alloc::string::String;
+use alloc::vec::Vec;
+
+/// Maximum number of keys in a sequence mapping
+pub const MAX_SEQUENCE_LENGTH: usize = 8;
 
 /// Build a simple key remap, modifier, or lock mapping based on the `to` prefix.
 /// - `VK_` prefix: Simple remap
@@ -117,5 +121,33 @@ pub fn build_hold_only(key: &str, hold: &str, threshold_ms: u16) -> Result<BaseK
         from: from_key,
         hold_modifier,
         threshold_ms,
+    })
+}
+
+/// Build a sequence mapping (one key → multiple keys typed in order).
+pub fn build_sequence(key: &str, output_keys: &[String]) -> Result<BaseKeyMapping, String> {
+    let from_key = parse_physical_key(key).map_err(|e| format!("Invalid key: {}", e))?;
+
+    if output_keys.is_empty() {
+        return Err("Sequence must have at least one output key".into());
+    }
+    if output_keys.len() > MAX_SEQUENCE_LENGTH {
+        return Err(format!(
+            "Sequence too long: {} keys (max {})",
+            output_keys.len(),
+            MAX_SEQUENCE_LENGTH
+        ));
+    }
+
+    let mut keys = Vec::new();
+    for (i, key_str) in output_keys.iter().enumerate() {
+        let parsed =
+            parse_virtual_key(key_str).map_err(|e| format!("Invalid sequence key {}: {}", i, e))?;
+        keys.push(parsed);
+    }
+
+    Ok(BaseKeyMapping::Sequence {
+        from: from_key,
+        keys,
     })
 }

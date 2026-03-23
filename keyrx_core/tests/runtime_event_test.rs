@@ -1090,6 +1090,260 @@ fn test_permissive_hold_activates_before_lookup() {
     );
 }
 
+// --- Sequence Mapping Tests ---
+
+#[test]
+fn test_sequence_press_emits_press_release_pairs() {
+    // Sequence: Semicolon -> [Y, A] (types "ya" for Japanese IME)
+    let config = create_test_config(vec![KeyMapping::sequence(
+        KeyCode::Semicolon,
+        vec![KeyCode::Y, KeyCode::A],
+    )]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+
+    // Press Semicolon
+    let output = process_event(
+        KeyEvent::press(KeyCode::Semicolon).with_timestamp(1000),
+        &lookup,
+        &mut state,
+    );
+
+    // Should emit 4 events: Press(Y), Release(Y), Press(A), Release(A)
+    assert_eq!(output.len(), 4, "Sequence should emit 4 events, got {:?}", output);
+    assert_eq!(output[0].keycode(), KeyCode::Y);
+    assert!(output[0].is_press());
+    assert_eq!(output[1].keycode(), KeyCode::Y);
+    assert!(output[1].is_release());
+    assert_eq!(output[2].keycode(), KeyCode::A);
+    assert!(output[2].is_press());
+    assert_eq!(output[3].keycode(), KeyCode::A);
+    assert!(output[3].is_release());
+
+    // All events should preserve timestamp
+    for e in &output {
+        assert_eq!(e.timestamp_us(), 1000);
+    }
+}
+
+#[test]
+fn test_sequence_release_emits_nothing_or_harmless() {
+    // After a sequence press, releasing the input key should not produce meaningful output
+    let config = create_test_config(vec![KeyMapping::sequence(
+        KeyCode::Semicolon,
+        vec![KeyCode::Y, KeyCode::A],
+    )]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+
+    // Press Semicolon (generates sequence)
+    let _ = process_event(
+        KeyEvent::press(KeyCode::Semicolon).with_timestamp(0),
+        &lookup,
+        &mut state,
+    );
+
+    // Release Semicolon — tracking emits harmless duplicate releases
+    let release_output = process_event(
+        KeyEvent::release(KeyCode::Semicolon).with_timestamp(100_000),
+        &lookup,
+        &mut state,
+    );
+
+    // Release output should be duplicate releases (harmless) or empty
+    // The tracking records [Y, A] from press, so release emits Release(A), Release(Y)
+    // These are harmless since Y and A were already released during the press sequence
+    for e in &release_output {
+        assert!(e.is_release(), "Release output should only contain releases");
+    }
+}
+
+#[test]
+fn test_sequence_single_key() {
+    // Sequence with single key: C -> [K] (ka-row prefix)
+    let config = create_test_config(vec![KeyMapping::sequence(
+        KeyCode::C,
+        vec![KeyCode::K],
+    )]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+
+    let output = process_event(
+        KeyEvent::press(KeyCode::C).with_timestamp(0),
+        &lookup,
+        &mut state,
+    );
+
+    assert_eq!(output.len(), 2, "Single-key sequence should emit press+release");
+    assert_eq!(output[0].keycode(), KeyCode::K);
+    assert!(output[0].is_press());
+    assert_eq!(output[1].keycode(), KeyCode::K);
+    assert!(output[1].is_release());
+}
+
+#[test]
+fn test_sequence_three_keys() {
+    // Sequence with 3 keys
+    let config = create_test_config(vec![KeyMapping::sequence(
+        KeyCode::X,
+        vec![KeyCode::A, KeyCode::B, KeyCode::C],
+    )]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+
+    let output = process_event(
+        KeyEvent::press(KeyCode::X).with_timestamp(0),
+        &lookup,
+        &mut state,
+    );
+
+    assert_eq!(output.len(), 6, "3-key sequence should emit 6 events");
+    // Verify order: A press, A release, B press, B release, C press, C release
+    assert_eq!(output[0].keycode(), KeyCode::A);
+    assert!(output[0].is_press());
+    assert_eq!(output[1].keycode(), KeyCode::A);
+    assert!(output[1].is_release());
+    assert_eq!(output[2].keycode(), KeyCode::B);
+    assert!(output[2].is_press());
+    assert_eq!(output[3].keycode(), KeyCode::B);
+    assert!(output[3].is_release());
+    assert_eq!(output[4].keycode(), KeyCode::C);
+    assert!(output[4].is_press());
+    assert_eq!(output[5].keycode(), KeyCode::C);
+    assert!(output[5].is_release());
+}
+
+#[test]
+fn test_sequence_does_not_affect_modifier_state() {
+    // Sequence should NOT change modifier or lock state
+    let config = create_test_config(vec![KeyMapping::sequence(
+        KeyCode::Semicolon,
+        vec![KeyCode::Y, KeyCode::A],
+    )]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+
+    assert!(!state.is_modifier_active(0));
+    assert!(!state.is_lock_active(0));
+
+    let _ = process_event(
+        KeyEvent::press(KeyCode::Semicolon).with_timestamp(0),
+        &lookup,
+        &mut state,
+    );
+
+    assert!(!state.is_modifier_active(0), "Sequence should not activate any modifier");
+    assert!(!state.is_lock_active(0), "Sequence should not activate any lock");
+}
+
+#[test]
+fn test_sequence_with_conditional_ime() {
+    // Test sequence inside IME conditional block
+    use keyrx_core::config::{Condition, ConditionItem, ImeState};
+
+    let config = create_test_config(vec![
+        KeyMapping::conditional(
+            Condition::AllActive(vec![
+                ConditionItem::ImeActive,
+                ConditionItem::InputLanguage(String::from("ja")),
+            ]),
+            vec![BaseKeyMapping::Sequence {
+                from: KeyCode::Semicolon,
+                keys: vec![KeyCode::Y, KeyCode::A],
+            }],
+        ),
+    ]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+
+    // Without IME active — should passthrough
+    let output = process_event(
+        KeyEvent::press(KeyCode::Semicolon).with_timestamp(0),
+        &lookup,
+        &mut state,
+    );
+    assert_eq!(output.len(), 1, "Without IME, should passthrough");
+    assert_eq!(output[0].keycode(), KeyCode::Semicolon);
+
+    // Release to clean up tracking
+    let _ = process_event(
+        KeyEvent::release(KeyCode::Semicolon).with_timestamp(50_000),
+        &lookup,
+        &mut state,
+    );
+
+    // Activate IME with Japanese language
+    state.set_ime_state(ImeState {
+        active: true,
+        language: String::from("ja"),
+    });
+
+    // With IME active — should output sequence
+    let output = process_event(
+        KeyEvent::press(KeyCode::Semicolon).with_timestamp(100_000),
+        &lookup,
+        &mut state,
+    );
+    assert_eq!(output.len(), 4, "With IME, should emit sequence of 4 events");
+    assert_eq!(output[0].keycode(), KeyCode::Y);
+    assert!(output[0].is_press());
+    assert_eq!(output[2].keycode(), KeyCode::A);
+    assert!(output[2].is_press());
+}
+
+#[test]
+fn test_sequence_rapid_press_release_cycles() {
+    // Simulate rapid typing: multiple press+release cycles of same sequence key
+    let config = create_test_config(vec![KeyMapping::sequence(
+        KeyCode::Q,
+        vec![KeyCode::Y, KeyCode::O],
+    )]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+
+    for i in 0..5 {
+        let press_time = (i * 100_000) as u64;
+        let release_time = press_time + 50_000;
+
+        let press_output = process_event(
+            KeyEvent::press(KeyCode::Q).with_timestamp(press_time),
+            &lookup,
+            &mut state,
+        );
+        assert_eq!(
+            press_output.len(), 4,
+            "Cycle {}: press should emit 4 events", i
+        );
+
+        let _ = process_event(
+            KeyEvent::release(KeyCode::Q).with_timestamp(release_time),
+            &lookup,
+            &mut state,
+        );
+    }
+}
+
+#[test]
+fn test_sequence_unmapped_key_passthrough() {
+    // Keys not in the sequence mapping should pass through normally
+    let config = create_test_config(vec![KeyMapping::sequence(
+        KeyCode::Semicolon,
+        vec![KeyCode::Y, KeyCode::A],
+    )]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+
+    // Press a key that's NOT mapped
+    let output = process_event(
+        KeyEvent::press(KeyCode::Z).with_timestamp(0),
+        &lookup,
+        &mut state,
+    );
+    assert_eq!(output.len(), 1);
+    assert_eq!(output[0].keycode(), KeyCode::Z);
+    assert!(output[0].is_press());
+}
+
 // Property-based tests using proptest
 #[cfg(test)]
 mod proptests {

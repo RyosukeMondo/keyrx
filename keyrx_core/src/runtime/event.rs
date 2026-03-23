@@ -412,6 +412,21 @@ pub fn process_event(
 
             events
         }
+        BaseKeyMapping::Sequence { keys, .. } => {
+            // Sequence: type each key in order (press+release pairs)
+            if event.is_press() {
+                let ts = event.timestamp_us();
+                let mut events = Vec::new();
+                for &key in keys.iter() {
+                    events.push(KeyEvent::press(key).with_timestamp(ts));
+                    events.push(KeyEvent::release(key).with_timestamp(ts));
+                }
+                events
+            } else {
+                // Release handled by tracking mechanism (harmless duplicate releases)
+                Vec::new()
+            }
+        }
     };
 
     // For PRESS events: Record the mapping for press/release consistency

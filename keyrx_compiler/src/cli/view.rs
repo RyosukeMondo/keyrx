@@ -112,6 +112,8 @@ fn get_layer_name(condition: &Condition) -> String {
                 format!("DEV_{}", pattern)
             }
         }
+        Condition::ImeActive => "IME".to_string(),
+        Condition::InputLanguage(lang) => format!("LANG_{}", lang.to_uppercase()),
     }
 }
 
@@ -292,6 +294,10 @@ fn get_base_mapping_info(base: &BaseKeyMapping) -> (KeyCode, String, &'static st
                 format!("{}+{}", prefix, keycode_to_label(to)),
                 "modified",
             )
+        }
+        BaseKeyMapping::Sequence { from, keys } => {
+            let seq_str: Vec<&str> = keys.iter().map(|k| keycode_to_label(k)).collect();
+            (*from, seq_str.join("→"), "sequence")
         }
     }
 }

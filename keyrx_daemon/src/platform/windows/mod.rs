@@ -1,4 +1,5 @@
 pub mod device_map;
+pub mod ime;
 pub mod inject;
 pub mod input;
 pub mod key_blocker;
@@ -164,6 +165,7 @@ impl WindowsPlatform {
                     BaseKeyMapping::TapHold { from, .. } => *from,
                     BaseKeyMapping::HoldOnly { from, .. } => *from,
                     BaseKeyMapping::ModifiedOutput { from, .. } => *from,
+                    BaseKeyMapping::Sequence { from, .. } => *from,
                 };
 
                 // Convert to scan code and block it
@@ -324,6 +326,10 @@ impl Platform for WindowsPlatform {
 
         log::info!("Windows platform shutdown complete");
         Ok(())
+    }
+
+    fn query_ime_state(&self) -> Option<keyrx_core::config::ImeState> {
+        Some(ime::query_windows_ime_state())
     }
 }
 

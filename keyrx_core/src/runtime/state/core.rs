@@ -8,7 +8,7 @@ extern crate alloc;
 use arrayvec::ArrayVec;
 use bitvec::prelude::*;
 
-use crate::config::{KeyCode, MAX_MODIFIER_ID, MODIFIER_COUNT};
+use crate::config::{ImeState, KeyCode, MAX_MODIFIER_ID, MODIFIER_COUNT};
 use crate::runtime::tap_hold::{TapHoldProcessor, DEFAULT_MAX_PENDING};
 
 /// Maximum valid modifier/lock ID (re-exported from config SSOT)
@@ -19,8 +19,8 @@ const MAX_VALID_ID: u8 = MAX_MODIFIER_ID as u8;
 const MAX_PRESSED_KEYS: usize = 32;
 
 /// Maximum number of output keys per input key
-/// Covers ModifiedOutput with all 4 modifiers: Shift+Ctrl+Alt+Win+PrimaryKey = 5 keys
-const MAX_OUTPUT_KEYS_PER_INPUT: usize = 5;
+/// Covers Sequence (up to 8 keys) and ModifiedOutput (Shift+Ctrl+Alt+Win+Key = 5)
+const MAX_OUTPUT_KEYS_PER_INPUT: usize = 8;
 
 /// Device state tracking modifier, lock, and pressed key state
 ///
@@ -58,6 +58,8 @@ pub struct DeviceState {
     /// Supports multiple output keys per input (e.g., Shift+Z generates 2 keys)
     pressed_keys:
         ArrayVec<(KeyCode, ArrayVec<KeyCode, MAX_OUTPUT_KEYS_PER_INPUT>), MAX_PRESSED_KEYS>,
+    /// Current IME state, updated by daemon before event processing
+    ime_state: ImeState,
 }
 
 impl DeviceState {
@@ -76,6 +78,7 @@ impl DeviceState {
             locks: bitvec![u8, Lsb0; 0; MODIFIER_COUNT],
             tap_hold: TapHoldProcessor::new(),
             pressed_keys: ArrayVec::new(),
+            ime_state: ImeState::default(),
         }
     }
 
@@ -215,6 +218,26 @@ impl DeviceState {
             return false;
         }
         self.locks[id as usize]
+    }
+
+    /// Returns the current IME state
+    pub fn ime_state(&self) -> &ImeState {
+        &self.ime_state
+    }
+
+    /// Updates the IME state (called by daemon before processing events)
+    pub fn set_ime_state(&mut self, state: ImeState) {
+        self.ime_state = state;
+    }
+
+    /// Checks if IME is currently active
+    pub fn is_ime_active(&self) -> bool {
+        self.ime_state.active
+    }
+
+    /// Returns the current input language tag
+    pub fn input_language(&self) -> &str {
+        &self.ime_state.language
     }
 
     /// Returns a mutable reference to the tap-hold processor

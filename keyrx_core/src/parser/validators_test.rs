@@ -3,6 +3,11 @@
 //! Covers key parsing, prefix validation, modifier/lock ID parsing,
 //! condition parsing, fuzzy suggestions, QMK aliases, and international keys.
 
+extern crate alloc;
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use super::validators::*;
 use crate::config::{Condition, KeyCode};
 use crate::parser::error::ParseError;
@@ -221,4 +226,109 @@ fn test_international_keys() {
     );
     assert_eq!(parse_key_name("한글").unwrap(), KeyCode::Hangeul);
     assert_eq!(parse_key_name("한자").unwrap(), KeyCode::Hanja);
+}
+
+// ============================================================================
+// IME condition parsing tests
+// ============================================================================
+
+#[test]
+fn test_parse_condition_string_ime() {
+    let cond = parse_condition_string("IME").unwrap();
+    assert!(matches!(cond, Condition::ImeActive));
+}
+
+#[test]
+fn test_parse_condition_string_language() {
+    let cond = parse_condition_string("LANG_JA").unwrap();
+    assert!(matches!(cond, Condition::InputLanguage(ref lang) if lang == "ja"));
+
+    let cond2 = parse_condition_string("LANG_KO").unwrap();
+    assert!(matches!(cond2, Condition::InputLanguage(ref lang) if lang == "ko"));
+
+    let cond3 = parse_condition_string("LANG_ZH").unwrap();
+    assert!(matches!(cond3, Condition::InputLanguage(ref lang) if lang == "zh"));
+}
+
+#[test]
+fn test_parse_condition_string_language_lowercase() {
+    // LANG_JA and LANG_ja should both produce "ja"
+    let cond = parse_condition_string("LANG_ja").unwrap();
+    assert!(matches!(cond, Condition::InputLanguage(ref lang) if lang == "ja"));
+}
+
+#[test]
+fn test_parse_condition_string_language_empty() {
+    let err = parse_condition_string("LANG_").unwrap_err();
+    assert!(matches!(err, ParseError::InvalidPrefix { .. }));
+}
+
+#[test]
+fn test_parse_condition_string_updated_error_message() {
+    let err = parse_condition_string("INVALID").unwrap_err();
+    if let ParseError::InvalidPrefix { expected, .. } = &err {
+        assert!(expected.contains("IME"));
+        assert!(expected.contains("LANG_XX"));
+    } else {
+        panic!("Expected InvalidPrefix error");
+    }
+}
+
+// ============================================================================
+// Sequence builder tests
+// ============================================================================
+
+use crate::parser::builders::{build_sequence, MAX_SEQUENCE_LENGTH};
+
+#[test]
+fn test_build_sequence_valid() {
+    let keys = vec![String::from("VK_Y"), String::from("VK_A")];
+    let result = build_sequence("VK_Semicolon", &keys);
+    assert!(result.is_ok(), "Valid sequence should succeed: {:?}", result);
+}
+
+#[test]
+fn test_build_sequence_single_key() {
+    let keys = vec![String::from("VK_K")];
+    let result = build_sequence("VK_C", &keys);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_build_sequence_empty_rejected() {
+    let keys: Vec<String> = vec![];
+    let result = build_sequence("VK_A", &keys);
+    assert!(result.is_err(), "Empty sequence should be rejected");
+}
+
+#[test]
+fn test_build_sequence_too_long_rejected() {
+    let keys: Vec<String> = (0..=MAX_SEQUENCE_LENGTH)
+        .map(|_| String::from("VK_A"))
+        .collect();
+    let result = build_sequence("VK_A", &keys);
+    assert!(result.is_err(), "Sequence exceeding max length should be rejected");
+}
+
+#[test]
+fn test_build_sequence_max_length_accepted() {
+    let keys: Vec<String> = (0..MAX_SEQUENCE_LENGTH)
+        .map(|_| String::from("VK_A"))
+        .collect();
+    let result = build_sequence("VK_A", &keys);
+    assert!(result.is_ok(), "Sequence at max length should be accepted");
+}
+
+#[test]
+fn test_build_sequence_invalid_from_key() {
+    let keys = vec![String::from("VK_A")];
+    let result = build_sequence("INVALID_KEY", &keys);
+    assert!(result.is_err(), "Invalid from key should be rejected");
+}
+
+#[test]
+fn test_build_sequence_invalid_output_key() {
+    let keys = vec![String::from("VK_A"), String::from("INVALID")];
+    let result = build_sequence("VK_A", &keys);
+    assert!(result.is_err(), "Invalid output key should be rejected");
 }

@@ -36,7 +36,11 @@ pub fn register_when_functions(engine: &mut Engine, state: Arc<Mutex<ParserState
                     Condition::LockActive(id) => {
                         condition_items.push(ConditionItem::LockActive(id))
                     }
-                    _ => return Err("Only single modifiers/locks allowed in array".into()),
+                    Condition::ImeActive => condition_items.push(ConditionItem::ImeActive),
+                    Condition::InputLanguage(lang) => {
+                        condition_items.push(ConditionItem::InputLanguage(lang))
+                    }
+                    _ => return Err("Only single conditions allowed in array".into()),
                 }
             }
             start_conditional_block(&state_clone_multi, Condition::AllActive(condition_items))
@@ -59,7 +63,9 @@ pub fn register_when_functions(engine: &mut Engine, state: Arc<Mutex<ParserState
             let item = match condition {
                 Condition::ModifierActive(id) => ConditionItem::ModifierActive(id),
                 Condition::LockActive(id) => ConditionItem::LockActive(id),
-                _ => return Err("Only single modifiers/locks allowed in when_not".into()),
+                Condition::ImeActive => ConditionItem::ImeActive,
+                Condition::InputLanguage(lang) => ConditionItem::InputLanguage(lang),
+                _ => return Err("Only single conditions allowed in when_not".into()),
             };
             start_conditional_block(&state_clone_not, Condition::NotActive(vec![item]))
         },

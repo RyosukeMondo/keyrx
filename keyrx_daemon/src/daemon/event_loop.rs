@@ -80,6 +80,7 @@ fn get_mapping_type(mapping: &BaseKeyMapping) -> &'static str {
         BaseKeyMapping::TapHold { .. } => "tap_hold",
         BaseKeyMapping::HoldOnly { .. } => "hold_only",
         BaseKeyMapping::ModifiedOutput { .. } => "modified_output",
+        BaseKeyMapping::Sequence { .. } => "sequence",
     }
 }
 
@@ -169,6 +170,13 @@ fn process_input_event(
 
     let device_id = event.device_id().map(String::from);
     let input_keycode = event.keycode();
+
+    // Update IME state from platform before processing
+    if let Some(ref mut remap_state) = remapping_state {
+        if let Some(ime) = platform.query_ime_state() {
+            remap_state.state_mut().set_ime_state(ime);
+        }
+    }
 
     // Process event through remapping engine
     let (output_events, mapping_type, mapping_triggered) =
@@ -453,6 +461,15 @@ pub fn process_one_event(
             // Get device info from event
             let device_id = event.device_id().map(String::from);
             let input_keycode = event.keycode();
+
+            // Update IME state from platform before processing
+            // (mut binding needed to inject IME state then pass to remap block)
+            let mut remapping_state = remapping_state;
+            if let Some(ref mut remap_state) = remapping_state {
+                if let Some(ime) = platform.query_ime_state() {
+                    remap_state.state_mut().set_ime_state(ime);
+                }
+            }
 
             // Process event through remapping engine if available
             let (output_events, mapping_type, mapping_triggered) =

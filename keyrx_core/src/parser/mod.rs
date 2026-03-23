@@ -77,6 +77,7 @@ impl Parser {
         functions::tap_hold::register_tap_hold_function(&mut engine, Arc::clone(&state));
         functions::hold_only::register_hold_only_functions(&mut engine, Arc::clone(&state));
         functions::conditional::register_when_functions(&mut engine, Arc::clone(&state));
+        functions::sequence::register_sequence_functions(&mut engine, Arc::clone(&state));
         functions::modifiers::register_modifier_functions(&mut engine);
 
         Self { engine, state }

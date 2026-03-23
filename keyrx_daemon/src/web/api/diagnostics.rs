@@ -16,6 +16,7 @@ use crate::web::AppState;
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/diagnostics", get(get_diagnostics))
+        .route("/diagnostics/ime", get(get_ime_status))
         .route("/diagnostics/full", get(get_full_diagnostics))
         .route("/diagnostics/routes", get(get_routes_info))
         .route("/diagnostics/frontend", get(get_frontend_status))
@@ -150,6 +151,24 @@ async fn get_diagnostics() -> Result<Json<DiagnosticsResponse>, DaemonError> {
     })?
 }
 
+/// IME status diagnostic endpoint — returns detailed IME detection info
+async fn get_ime_status() -> Json<Value> {
+    #[cfg(target_os = "windows")]
+    {
+        let debug = crate::platform::windows::ime::query_windows_ime_debug();
+        Json(serde_json::json!(debug))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Json(serde_json::json!({
+            "active": null,
+            "language": null,
+            "platform": std::env::consts::OS,
+            "note": "IME detection not implemented for this platform",
+        }))
+    }
+}
+
 /// Get binary file modification timestamp
 fn get_binary_timestamp() -> Option<String> {
     std::env::current_exe()
@@ -233,7 +252,7 @@ fn get_hook_status() -> HookStatus {
     // On Linux, we don't have a hook system in the same way
     // The evdev grab is the equivalent
     HookStatus {
-        installed: true,       // Assume installed if daemon is running
+        installed: true,        // Assume installed if daemon is running
         remapped_keys_count: 0, // Not tracked on Linux
     }
 }

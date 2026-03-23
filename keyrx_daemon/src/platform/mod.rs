@@ -259,6 +259,14 @@ pub trait Platform: Send + Sync {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     fn shutdown(&mut self) -> PlatformResult<()>;
+
+    /// Queries the current IME state from the operating system.
+    ///
+    /// Returns `None` on platforms that don't support IME detection.
+    /// Default implementation returns `None` (no IME support).
+    fn query_ime_state(&self) -> Option<keyrx_core::config::ImeState> {
+        None
+    }
 }
 
 /// Creates a platform-specific implementation of the Platform trait.

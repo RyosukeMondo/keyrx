@@ -30,7 +30,7 @@ fn test_diagnostics_response_serialization() {
         admin_status: true,
         hook_status: HookStatus {
             installed: true,
-            blocked_keys_count: 5,
+            remapped_keys_count: 5,
         },
         platform_info: PlatformInfo {
             os: "windows".to_string(),

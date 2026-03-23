@@ -5,6 +5,7 @@ pub mod device;
 pub mod hold_only;
 pub mod map;
 pub mod modifiers;
+pub mod sequence;
 pub mod tap_hold;
 
 pub use modifiers::ModifiedKey;

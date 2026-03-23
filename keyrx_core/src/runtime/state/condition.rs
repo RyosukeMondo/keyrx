@@ -106,6 +106,12 @@ impl DeviceState {
 
             // Device ID matches pattern
             Condition::DeviceMatches(pattern) => Self::matches_device_pattern(device_id, pattern),
+
+            // IME is active
+            Condition::ImeActive => self.is_ime_active(),
+
+            // Input language matches
+            Condition::InputLanguage(lang) => self.matches_input_language(lang),
         }
     }
 
@@ -116,7 +122,37 @@ impl DeviceState {
         match item {
             ConditionItem::ModifierActive(id) => self.is_modifier_active(*id),
             ConditionItem::LockActive(id) => self.is_lock_active(*id),
+            ConditionItem::ImeActive => self.is_ime_active(),
+            ConditionItem::InputLanguage(lang) => self.matches_input_language(lang),
         }
+    }
+}
+
+/// Input language matching
+impl DeviceState {
+    /// Matches the current input language against a target language tag.
+    ///
+    /// Uses BCP 47 prefix matching: "ja" matches "ja", "ja-JP", "ja-Kana".
+    /// The match is case-insensitive.
+    pub(super) fn matches_input_language(&self, target: &str) -> bool {
+        let current = self.input_language();
+        if current.is_empty() || target.is_empty() {
+            return false;
+        }
+        let current_lower = current.to_lowercase();
+        let target_lower = target.to_lowercase();
+
+        if current_lower == target_lower {
+            return true;
+        }
+        // "ja" matches "ja-JP", "ja-Kana", etc.
+        if current_lower.starts_with(&target_lower) {
+            return current_lower.as_bytes().get(target_lower.len()) == Some(&b'-');
+        }
+        if target_lower.starts_with(&current_lower) {
+            return target_lower.as_bytes().get(current_lower.len()) == Some(&b'-');
+        }
+        false
     }
 }
 

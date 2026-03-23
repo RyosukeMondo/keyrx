@@ -85,7 +85,7 @@ pub fn parse_lock_id(s: &str) -> Result<u8, ParseError> {
     Ok(id as u8)
 }
 
-/// Parse a condition string (MD_XX or LK_XX) into a Condition.
+/// Parse a condition string (MD_XX, LK_XX, IME, or LANG_XX) into a Condition.
 pub fn parse_condition_string(s: &str) -> Result<Condition, ParseError> {
     if s.starts_with("MD_") {
         let id = parse_modifier_id(s)?;
@@ -93,9 +93,20 @@ pub fn parse_condition_string(s: &str) -> Result<Condition, ParseError> {
     } else if s.starts_with("LK_") {
         let id = parse_lock_id(s)?;
         Ok(Condition::LockActive(id))
+    } else if s == "IME" {
+        Ok(Condition::ImeActive)
+    } else if let Some(lang) = s.strip_prefix("LANG_") {
+        if lang.is_empty() {
+            return Err(ParseError::InvalidPrefix {
+                expected: "LANG_xx (e.g., LANG_JA, LANG_KO)".to_string(),
+                got: s.to_string(),
+                context: "input language condition".to_string(),
+            });
+        }
+        Ok(Condition::InputLanguage(lang.to_lowercase()))
     } else {
         Err(ParseError::InvalidPrefix {
-            expected: "MD_XX or LK_XX".to_string(),
+            expected: "MD_XX, LK_XX, IME, or LANG_XX".to_string(),
             got: s.to_string(),
             context: "condition".to_string(),
         })
