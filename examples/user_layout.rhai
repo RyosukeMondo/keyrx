@@ -22,6 +22,7 @@ tap_hold("VK_C", "VK_Delete", "MD_06", 200);      // C: tap=Delete, hold=MD_06
 tap_hold("VK_Tab", "VK_Space", "MD_07", 200);     // Tab: tap=Space, hold=MD_07
 tap_hold("VK_Q", "VK_Minus", "MD_08", 200);       // Q: tap=Minus, hold=MD_08
 tap_hold("VK_A", "VK_Tab", "MD_09", 200);         // A: tap=Tab, hold=MD_09
+hold_only("VK_LMeta", "MD_07");                  // LWin: hold=MD_07, tap=suppressed
 
 // ============================================================
 // MD_00 Layer (B hold) - Using PHYSICAL key positions
@@ -292,6 +293,22 @@ when_start("MD_06");
 when_end();
 
 // ============================================================
+// MD_07 Layer (LWin hold) - Number row
+// ============================================================
+when_start("MD_07");
+    map("VK_Num2", "VK_Num1");                    // 2 -> 1
+    map("VK_Num3", "VK_Num2");                    // 3 -> 2
+    map("VK_Num4", "VK_Num3");                    // 4 -> 3
+    map("VK_Num5", "VK_Num4");                    // 5 -> 4
+    map("VK_Num6", "VK_Num5");                    // 6 -> 5
+    map("VK_Y", "VK_Num6");                       // Y -> 6
+    map("VK_T", "VK_Num7");                       // T -> 7
+    map("VK_R", "VK_Num8");                       // R -> 8
+    map("VK_E", "VK_Num9");                       // E -> 9
+    map("VK_W", "VK_Num0");                       // W -> 0
+when_end();
+
+// ============================================================
 // MD_08 Layer (Q hold) - Home/End Selection
 // Row 2: Home,End,S-Home,S-End [W - T]
 // ============================================================
@@ -302,6 +319,62 @@ when_start("MD_08");
     map("VK_E", "VK_End");                                         // E -> End
     map("VK_R", with_mods("VK_Home", true, false, false, false));  // R -> S-Home (Select to start)
     map("VK_T", with_mods("VK_End", true, false, false, false));   // T -> S-End (Select to end)
+when_end();
+
+// ============================================================
+// MD_0A Layer (N hold) - Shift layer with JIS colon fix
+// N acts as Shift for all keys. On JIS, Shift+Semicolon='+',
+// so S is mapped to VK_Quote (JIS colon) instead.
+// ============================================================
+when_start("MD_0A");
+    // Letters: shifted versions of base-layer Dvorak remaps
+    map("VK_W", with_shift("VK_A"));              // W→A → Shift+A
+    map("VK_E", with_shift("VK_O"));              // E→O → Shift+O
+    map("VK_R", with_shift("VK_E"));              // R→E → Shift+E
+    map("VK_T", with_shift("VK_U"));              // T→U → Shift+U
+    map("VK_Y", with_shift("VK_I"));              // Y→I → Shift+I
+    map("VK_U", with_shift("VK_D"));              // U→D → Shift+D
+    map("VK_I", with_shift("VK_H"));              // I→H → Shift+H
+    map("VK_O", with_shift("VK_T"));              // O→T → Shift+T
+    map("VK_P", with_shift("VK_N"));              // P→N → Shift+N
+    map("VK_D", with_shift("VK_Q"));              // D→Q → Shift+Q
+    map("VK_F", with_shift("VK_J"));              // F→J → Shift+J
+    map("VK_G", with_shift("VK_K"));              // G→K → Shift+K
+    map("VK_H", with_shift("VK_X"));              // H→X → Shift+X
+    map("VK_J", with_shift("VK_B"));              // J→B → Shift+B
+    map("VK_K", with_shift("VK_M"));              // K→M → Shift+M
+    map("VK_L", with_shift("VK_W"));              // L→W → Shift+W
+
+    // TapHold keys: shifted versions of their tap outputs
+    map("VK_B", with_shift("VK_Enter"));            // B→Enter → Shift+Enter
+
+    // JIS colon fix: Quote key = ':' unshifted on JIS
+    map("VK_S", "VK_Quote");                       // S → : (colon on JIS)
+
+    // Other base-layer keys with shift
+    map("VK_LeftBracket", with_shift("VK_S"));     // [→S → Shift+S
+    map("VK_Quote", with_shift("VK_Z"));           // '→Z → Shift+Z
+    map("VK_Semicolon", with_shift("VK_V"));       // ;→V → Shift+V
+    map("VK_Minus", with_shift("VK_L"));           // -→L → Shift+L
+    map("VK_Equal", with_shift("VK_Slash"));        // =→/ → Shift+/
+
+    // Number row: shifted Dvorak outputs
+    map("VK_Num2", with_shift("VK_Num2"));          // 2→' → " (double quote on JIS)
+    map("VK_Num3", with_shift("VK_Comma"));        // 3→, → <
+    map("VK_Num4", with_shift("VK_Period"));       // 4→. → >
+    map("VK_Num5", with_shift("VK_P"));            // 5→P → Shift+P
+    map("VK_Num6", with_shift("VK_Y"));            // 6→Y → Shift+Y
+    map("VK_Num7", with_shift("VK_F"));            // 7→F → Shift+F
+    map("VK_Num8", with_shift("VK_G"));            // 8→G → Shift+G
+    map("VK_Num9", with_shift("VK_C"));            // 9→C → Shift+C
+    map("VK_Num0", with_shift("VK_R"));            // 0→R → Shift+R
+
+    // JIS underscore: Shift+Ro = _
+    map("VK_Ro", with_shift("VK_Ro"));            // ろ→- → _ (underscore on JIS)
+    map("VK_RightBracket", with_shift("VK_Ro"));  // [→- → _ (underscore on JIS)
+
+    // Space passthrough
+    map("VK_Space", "VK_Space");
 when_end();
 
 // ============================================================
@@ -329,7 +402,7 @@ map("VK_I", "VK_H");                // I -> H
 map("VK_J", "VK_B");                // J -> B
 map("VK_K", "VK_M");                // K -> M
 map("VK_L", "VK_W");                // L -> W
-map("VK_N", "VK_LShift");                  // N -> LShift
+tap_hold("VK_N", "VK_LShift", "MD_0A", 200); // N: tap=LShift, hold=MD_0A (shift layer)
 map("VK_O", "VK_T");                // O -> T
 map("VK_P", "VK_N");                // P -> N
 map("VK_R", "VK_E");                // R -> E
@@ -365,6 +438,7 @@ map("VK_F11", "VK_Tab");            // F11 -> Tab
 map("VK_F12", "VK_Tab");            // F12 -> Tab
 
 // === Special Keys ===
+map("VK_Space", "VK_Space");        // Space passthrough (blocked by MD_00 Space->F12)
 map("VK_Escape", "VK_Num5");        // Escape -> 5
 map("VK_Backspace", "VK_Delete");   // Backspace -> Delete
 map("VK_Delete", "VK_Num4");        // Delete -> 4
@@ -380,7 +454,7 @@ map("VK_Semicolon", "VK_V");        // ; -> V
 map("VK_Comma", "VK_F9");           // , -> F9
 map("VK_Period", "VK_F10");         // . -> F10
 map("VK_Slash", "VK_F11");          // / -> F11
-map("VK_Ro", "VK_F12");             // ろ (JIS backslash) -> F12
+map("VK_Ro", "VK_Minus");           // ろ (JIS Ro) -> - (hyphen)
 
 // === Japanese IME Keys (日本語キーボード) ===
 map("VK_無変換", "VK_Space");       // 無変換 (Muhenkan) -> Space
@@ -389,5 +463,20 @@ map("VK_ひらがな", "VK_RCtrl");     // ひらがな (Hiragana) -> RCtrl
 map("VK_カタカナ", "VK_RShift");    // カタカナ (Katakana) -> RShift
 map("VK_全角", "VK_Escape");        // 全角/半角 (Zenkaku) -> Escape
 map("VK_PrintScreen", "VK_Zenkaku"); // PrintScreen -> 全角/半角
+
+// ============================================================
+// Dvorak-Japanese IME Optimization (窓使いの憂鬱 DvorakY)
+// Remap low-frequency bottom-row keys to high-frequency kana combos
+// Active only when Japanese IME is on
+// ============================================================
+// Physical keys S,D,F,G,H = Dvorak ;,Q,J,K,X
+when_start(["IME", "LANG_JA"]);
+  sequence("VK_S", ["VK_Y", "VK_A"]);  // phys S (Dvk ;) -> ya (や)
+  sequence("VK_D", ["VK_Y", "VK_O"]);  // phys D (Dvk Q) -> yo (よ)
+  sequence("VK_F", ["VK_Y", "VK_E"]);  // phys F (Dvk J) -> ye (いぇ)
+  sequence("VK_G", ["VK_Y", "VK_U"]);  // phys G (Dvk K) -> yu (ゆ)
+  sequence("VK_H", ["VK_Y", "VK_I"]);  // phys H (Dvk X) -> yi (い)
+  map("VK_Num9", "VK_K");              // phys 9 (Dvk C) -> k (か行 prefix)
+when_end();
 
 device_end();
