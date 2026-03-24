@@ -16,7 +16,7 @@ pub use device_registry::{DeviceEntry, DeviceRegistry, DeviceValidationError};
 pub use layout_manager::{KeyboardLayout, LayoutError, LayoutManager, LayoutSource};
 pub use profile_compiler::{CompilationError, CompilationResult, ProfileCompiler};
 pub use profile_manager::{
-    ActivationResult, ProfileError, ProfileManager, ProfileMetadata, ProfileTemplate,
+    ActivationResult, ProfileError, ProfileManager, ProfileMetadata, ProfileTemplate, ReloadResult,
 };
 pub use rhai_generator::{GeneratorError, KeyAction, LayerMode, MacroStep, RhaiGenerator};
 pub use simulation_engine::{

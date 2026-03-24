@@ -85,6 +85,19 @@ pub struct ActivationResult {
     pub error: Option<String>,
 }
 
+/// Result of reloading the active profile.
+#[typeshare]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReloadResult {
+    pub recompiled: bool,
+    #[typeshare(serialized_as = "number")]
+    pub compile_time_ms: u64,
+    pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
 /// Errors that can occur during profile operations.
 #[derive(Debug, Error)]
 pub enum ProfileError {
@@ -437,6 +450,87 @@ impl ProfileManager {
         }
 
         Ok((compile_time, reload_time))
+    }
+
+    /// Reload the active profile, recompiling if .rhai is newer than .krx.
+    ///
+    /// Returns `ReloadResult` indicating whether recompilation occurred.
+    /// If no profile is active, returns an error.
+    pub fn reload_active(&self) -> Result<ReloadResult, ProfileError> {
+        let active_name = self
+            .get_active()?
+            .ok_or_else(|| ProfileError::NotFound("No active profile".to_string()))?;
+
+        let profile = self
+            .get(&active_name)
+            .ok_or_else(|| ProfileError::NotFound(active_name.clone()))?;
+
+        if !profile.rhai_path.exists() {
+            return Err(ProfileError::NotFound(format!(
+                "Source file missing: {:?}",
+                profile.rhai_path
+            )));
+        }
+
+        let needs_compile = if profile.krx_path.exists() {
+            let rhai_modified = profile.rhai_path.metadata()?.modified()?;
+            let krx_modified = profile.krx_path.metadata()?.modified()?;
+            rhai_modified > krx_modified
+        } else {
+            true
+        };
+
+        if !needs_compile {
+            log::info!(
+                "Profile '{}': .krx is up-to-date, skipping compilation",
+                active_name
+            );
+            return Ok(ReloadResult {
+                recompiled: false,
+                compile_time_ms: 0,
+                success: true,
+                error: None,
+            });
+        }
+
+        log::info!(
+            "Profile '{}': .rhai is newer than .krx, recompiling",
+            active_name
+        );
+
+        match self
+            .compiler
+            .compile_profile(&profile.rhai_path, &profile.krx_path)
+        {
+            Ok(result) => {
+                // Update metadata (modified time changed)
+                if let Ok(updated) = self.load_profile_metadata(&active_name) {
+                    if let Ok(mut profiles) = self.profiles.write() {
+                        profiles.insert(active_name.clone(), updated);
+                    }
+                }
+
+                Ok(ReloadResult {
+                    recompiled: true,
+                    compile_time_ms: result.compile_time_ms,
+                    success: true,
+                    error: None,
+                })
+            }
+            Err(e) => {
+                log::error!(
+                    "Compilation failed for profile '{}': {}",
+                    active_name,
+                    e
+                );
+                Ok(ReloadResult {
+                    recompiled: false,
+                    compile_time_ms: 0,
+                    success: false,
+                    error: Some(e.to_string()),
+                })
+            }
+        }
     }
 
     /// Delete a profile.

@@ -85,7 +85,7 @@ fn get_mapping_type(mapping: &BaseKeyMapping) -> &'static str {
 }
 
 /// Returns current timestamp in microseconds since UNIX epoch.
-fn current_timestamp_us() -> u64 {
+pub(crate) fn current_timestamp_us() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_micros() as u64)
@@ -207,6 +207,20 @@ fn process_input_event(
 }
 
 /// Processes event through remapping engine if available.
+/// Ensures an event has a real timestamp for tap-hold timeout resolution.
+///
+/// Platform hooks (especially Windows) may deliver events with timestamp 0.
+/// Tap-hold timeout checking compares press timestamps against real system time,
+/// so a 0 timestamp causes instant hold resolution. This function stamps real
+/// time on events that lack a timestamp, making both platforms behave correctly.
+fn ensure_timestamp(event: keyrx_core::runtime::KeyEvent) -> keyrx_core::runtime::KeyEvent {
+    if event.timestamp_us() == 0 {
+        event.with_timestamp(current_timestamp_us())
+    } else {
+        event
+    }
+}
+
 fn process_remapping(
     event: &keyrx_core::runtime::KeyEvent,
     remapping_state: &mut Option<&mut RemappingState>,
@@ -224,8 +238,11 @@ fn process_remapping(
         let mapping_type_str = mapping.map(get_mapping_type);
         let triggered = mapping.is_some();
 
+        // Ensure real timestamp for tap-hold timeout resolution
+        let event = ensure_timestamp(event.clone());
+
         // Process the event through the remapping engine
-        let outputs = process_event(event.clone(), lookup, state);
+        let outputs = process_event(event, lookup, state);
 
         (outputs, mapping_type_str, triggered)
     } else {
@@ -456,6 +473,10 @@ pub fn process_one_event(
     match platform.capture_input() {
         Ok(event) => {
             let capture_time = Instant::now();
+
+            // Ensure real timestamp for tap-hold timeout resolution
+            let event = ensure_timestamp(event);
+
             trace!("Input event: {:?}", event);
 
             // Get device info from event

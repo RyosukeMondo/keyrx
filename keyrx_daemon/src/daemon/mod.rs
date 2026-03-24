@@ -561,6 +561,25 @@ impl Daemon {
         )
     }
 
+    /// Check and process tap-hold timeouts.
+    ///
+    /// Must be called periodically (~10ms) on Windows where the event loop
+    /// doesn't have a built-in timeout check like the Linux event loop does.
+    /// Without this, tap-hold keys only resolve via permissive hold (another
+    /// key press), never via timeout — breaking hold-to-activate-layer behavior.
+    pub fn check_tap_hold_timeouts(&mut self) {
+        if let Some(ref mut remap_state) = self.remapping_state {
+            let current_time = event_loop::current_timestamp_us();
+            let timeout_events =
+                keyrx_core::runtime::check_tap_hold_timeouts(current_time, remap_state.state_mut());
+            for output_event in &timeout_events {
+                if let Err(e) = self.platform.inject_output(output_event.clone()) {
+                    log::warn!("Failed to inject timeout event: {}", e);
+                }
+            }
+        }
+    }
+
     pub fn run(&mut self) -> Result<(), DaemonError> {
         // Clone config_dir for the reload closure (avoids borrowing self)
         let config_dir = self.config_dir.clone();

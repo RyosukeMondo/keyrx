@@ -452,6 +452,51 @@ mod tests {
     }
 
     #[test]
+    fn test_conditional_modified_output_overrides_base_modified_output() {
+        // Reproduces: tap_hold N (MD_0A shift layer) + Num2
+        // Base: Num2 → Shift+Num7 (JIS single quote)
+        // Layer: Num2 → Shift+Num2 (JIS double quote) when modifier 10 active
+        let config = create_test_device_config(vec![
+            // Conditional: when modifier 10 (MD_0A) active, Num2 → Shift+Num2
+            KeyMapping::conditional(
+                Condition::ModifierActive(10),
+                vec![BaseKeyMapping::ModifiedOutput {
+                    from: KeyCode::Num2,
+                    to: KeyCode::Num2,
+                    shift: true,
+                    ctrl: false,
+                    alt: false,
+                    win: false,
+                }],
+            ),
+            // Base: Num2 → Shift+Num7
+            KeyMapping::modified_output(KeyCode::Num2, KeyCode::Num7, true, false, false, false),
+        ]);
+        let lookup = KeyLookup::from_device_config(&config);
+
+        // With modifier 10 active: should get conditional Shift+Num2
+        let mut state_active = DeviceState::new();
+        state_active.set_modifier(10);
+        let result = lookup.find_mapping(KeyCode::Num2, &state_active);
+        assert!(result.is_some(), "Should find mapping with modifier active");
+        if let BaseKeyMapping::ModifiedOutput { to, .. } = result.unwrap() {
+            assert_eq!(*to, KeyCode::Num2, "Layer should produce Shift+Num2");
+        } else {
+            panic!("Expected ModifiedOutput mapping");
+        }
+
+        // Without modifier: should fall back to base Shift+Num7
+        let state_inactive = DeviceState::new();
+        let result2 = lookup.find_mapping(KeyCode::Num2, &state_inactive);
+        assert!(result2.is_some(), "Should find base mapping");
+        if let BaseKeyMapping::ModifiedOutput { to, .. } = result2.unwrap() {
+            assert_eq!(*to, KeyCode::Num7, "Base should produce Shift+Num7");
+        } else {
+            panic!("Expected ModifiedOutput mapping");
+        }
+    }
+
+    #[test]
     fn test_extract_input_key_all_variants() {
         // Test Simple
         let simple = BaseKeyMapping::Simple {

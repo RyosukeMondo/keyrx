@@ -20,6 +20,7 @@ pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/profiles", get(list_profiles).post(create_profile))
         .route("/profiles/active", get(get_active_profile))
+        .route("/profiles/active/reload", post(reload_active_profile))
         // More specific routes first (with path suffix)
         .route("/profiles/:name/activate", post(activate_profile))
         .route("/profiles/:name/validate", post(validate_profile))
@@ -291,6 +292,51 @@ async fn activate_profile(
             "reload_time_ms": result.reload_time_ms,
         })))
     }
+}
+
+/// POST /api/profiles/active/reload - Reload active profile (recompile if .rhai newer than .krx)
+async fn reload_active_profile(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, ApiError> {
+    let result = state
+        .profile_service
+        .reload_active_profile()
+        .await
+        .map_err(profile_error_to_api_error)?;
+
+    if !result.success {
+        return Err(ApiError::InternalError(
+            result.error.unwrap_or_else(|| "Compilation failed".to_string()),
+        ));
+    }
+
+    // If recompiled, signal the daemon to pick up the new config
+    if result.recompiled {
+        if let Some(ref daemon_state) = state.daemon_state {
+            daemon_state.request_reload();
+        }
+
+        // Broadcast event to WebSocket subscribers
+        use crate::web::rpc_types::ServerMessage;
+        let active = state.profile_service.get_active_profile().await;
+        let event = ServerMessage::Event {
+            channel: "profiles".to_string(),
+            data: serde_json::json!({
+                "action": "reloaded",
+                "profile": active,
+                "recompiled": true,
+            }),
+        };
+        if let Err(e) = state.event_broadcaster.send(event) {
+            log::warn!("Failed to broadcast profile reload event: {}", e);
+        }
+    }
+
+    Ok(Json(json!({
+        "success": true,
+        "recompiled": result.recompiled,
+        "compile_time_ms": result.compile_time_ms,
+    })))
 }
 
 /// DELETE /api/profiles/:name - Delete profile

@@ -271,6 +271,9 @@ pub fn run_daemon(
     // Track current config path for hot-reload detection
     let mut current_config_path = config_path.to_path_buf();
 
+    // Track last tap-hold timeout check (must poll every ~10ms)
+    let mut last_timeout_check = std::time::Instant::now();
+
     // Windows low-level hooks REQUIRE a message loop on the thread that installed them.
     // Our Daemon::new() calls grab() which installs the hook.
     unsafe {
@@ -311,6 +314,12 @@ pub fn run_daemon(
                         break;
                     }
                 }
+            }
+
+            // Check tap-hold timeouts every ~10ms so hold-to-activate-layer works
+            if last_timeout_check.elapsed() >= std::time::Duration::from_millis(10) {
+                daemon.check_tap_hold_timeouts();
+                last_timeout_check = std::time::Instant::now();
             }
 
             // Check for explicit reload requests (e.g., profile config saved via web UI)

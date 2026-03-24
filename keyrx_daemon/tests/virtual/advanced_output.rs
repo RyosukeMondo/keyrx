@@ -12,7 +12,7 @@ mod e2e_harness;
 use std::time::Duration;
 
 use e2e_harness::{E2EConfig, E2EHarness, TestEvents};
-use keyrx_core::config::{KeyCode, KeyMapping};
+use keyrx_core::config::{BaseKeyMapping, Condition, ConditionItem, KeyCode, KeyMapping};
 use keyrx_core::runtime::KeyEvent;
 
 // ============================================================================
@@ -777,3 +777,153 @@ fn test_modified_output_with_passthrough() {
 }
 
 // ============================================================================
+// Layer ModifiedOutput Override Tests
+// ============================================================================
+
+/// Test conditional ModifiedOutput overrides base ModifiedOutput for same key.
+///
+/// Reproduces the JIS keyboard scenario:
+/// - Base: Num2 → Shift+Num7 (single quote ' on JIS)
+/// - Layer (modifier 0 active): Num2 → Shift+Num2 (double quote " on JIS)
+///
+/// When the modifier is active, the layer mapping should take priority.
+/// When inactive, the base mapping should apply.
+#[test]
+fn test_layer_modified_output_overrides_base_modified_output() {
+    keyrx_daemon::skip_if_no_uinput!();
+    let config = E2EConfig::new(
+        "*",
+        vec![
+            // CapsLock activates modifier 0
+            KeyMapping::modifier(KeyCode::CapsLock, 0),
+            // Conditional: when modifier 0 active, Num2 → Shift+Num2
+            KeyMapping::conditional(
+                Condition::AllActive(vec![ConditionItem::ModifierActive(0)]),
+                vec![BaseKeyMapping::ModifiedOutput {
+                    from: KeyCode::Num2,
+                    to: KeyCode::Num2,
+                    shift: true,
+                    ctrl: false,
+                    alt: false,
+                    win: false,
+                }],
+            ),
+            // Base: Num2 → Shift+Num7
+            KeyMapping::modified_output(KeyCode::Num2, KeyCode::Num7, true, false, false, false),
+        ],
+    );
+    let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
+
+    // 1) Without modifier: Num2 → Shift+Num7 (base mapping)
+    let base_captured = harness
+        .inject_and_capture(&TestEvents::tap(KeyCode::Num2), Duration::from_millis(150))
+        .expect("Failed to capture base Num2");
+
+    let expected_base = vec![
+        KeyEvent::Press(KeyCode::LShift),
+        KeyEvent::Press(KeyCode::Num7),
+        KeyEvent::Release(KeyCode::Num7),
+        KeyEvent::Release(KeyCode::LShift),
+    ];
+    harness
+        .verify(&base_captured, &expected_base)
+        .expect("Base Num2 should produce Shift+Num7");
+
+    // 2) Activate modifier
+    harness
+        .inject(&TestEvents::press(KeyCode::CapsLock))
+        .expect("Failed to press modifier");
+    std::thread::sleep(Duration::from_millis(50));
+    let _ = harness.drain();
+
+    // 3) With modifier: Num2 → Shift+Num2 (layer overrides base)
+    let layer_captured = harness
+        .inject_and_capture(&TestEvents::tap(KeyCode::Num2), Duration::from_millis(150))
+        .expect("Failed to capture layer Num2");
+
+    let expected_layer = vec![
+        KeyEvent::Press(KeyCode::LShift),
+        KeyEvent::Press(KeyCode::Num2),
+        KeyEvent::Release(KeyCode::Num2),
+        KeyEvent::Release(KeyCode::LShift),
+    ];
+    harness
+        .verify(&layer_captured, &expected_layer)
+        .expect("Layer Num2 should produce Shift+Num2 (overriding base Shift+Num7)");
+
+    // 4) Release modifier
+    harness
+        .inject(&TestEvents::release(KeyCode::CapsLock))
+        .expect("Failed to release modifier");
+    std::thread::sleep(Duration::from_millis(50));
+    let _ = harness.drain();
+
+    // 5) After modifier released: back to base Shift+Num7
+    let after_captured = harness
+        .inject_and_capture(&TestEvents::tap(KeyCode::Num2), Duration::from_millis(150))
+        .expect("Failed to capture after release");
+    harness
+        .verify(&after_captured, &expected_base)
+        .expect("After modifier release, Num2 should revert to base Shift+Num7");
+}
+
+/// Test tap-hold with layer ModifiedOutput override.
+///
+/// Reproduces the exact user scenario: VK_N (tap=LShift, hold=MD_0A)
+/// - Base: Num2 → Shift+Num7 (single quote)
+/// - MD_0A layer: Num2 → Shift+Num2 (double quote)
+/// - Hold N past threshold, then press Num2 → should get Shift+Num2
+#[test]
+fn test_tap_hold_layer_modified_output_override() {
+    keyrx_daemon::skip_if_no_uinput!();
+    let config = E2EConfig::new(
+        "*",
+        vec![
+            // N: tap=LShift, hold=modifier 10 (MD_0A), 200ms threshold
+            KeyMapping::tap_hold(KeyCode::N, KeyCode::LShift, 10, 200),
+            // Conditional: when modifier 10 active, Num2 → Shift+Num2
+            KeyMapping::conditional(
+                Condition::ModifierActive(10),
+                vec![BaseKeyMapping::ModifiedOutput {
+                    from: KeyCode::Num2,
+                    to: KeyCode::Num2,
+                    shift: true,
+                    ctrl: false,
+                    alt: false,
+                    win: false,
+                }],
+            ),
+            // Base: Num2 → Shift+Num7
+            KeyMapping::modified_output(KeyCode::Num2, KeyCode::Num7, true, false, false, false),
+        ],
+    );
+    let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
+
+    // Hold N past the 200ms threshold to activate modifier 10
+    harness
+        .inject(&TestEvents::press(KeyCode::N))
+        .expect("Failed to press N");
+    std::thread::sleep(Duration::from_millis(300));
+    let _ = harness.drain();
+
+    // Press Num2 while N is held (modifier 10 active)
+    // Should get Shift+Num2 from layer, NOT Shift+Num7 from base
+    let captured = harness
+        .inject_and_capture(&TestEvents::tap(KeyCode::Num2), Duration::from_millis(150))
+        .expect("Failed to capture Num2 with N held");
+
+    let expected_layer = vec![
+        KeyEvent::Press(KeyCode::LShift),
+        KeyEvent::Press(KeyCode::Num2),
+        KeyEvent::Release(KeyCode::Num2),
+        KeyEvent::Release(KeyCode::LShift),
+    ];
+    harness
+        .verify(&captured, &expected_layer)
+        .expect("N(hold)+Num2 should produce Shift+Num2 (layer), not Shift+Num7 (base)");
+
+    // Release N
+    harness
+        .inject(&TestEvents::release(KeyCode::N))
+        .expect("Failed to release N");
+}

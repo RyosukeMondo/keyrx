@@ -361,6 +361,67 @@ impl ProfileService {
         Ok(result)
     }
 
+    /// Reload the active profile, recompiling if .rhai is newer than .krx.
+    ///
+    /// Checks timestamps and only recompiles when needed. After recompilation,
+    /// configures Windows key blocking and signals the daemon to reload.
+    pub async fn reload_active_profile(
+        &self,
+    ) -> Result<crate::config::ReloadResult, ProfileError> {
+        log::info!("Reloading active profile (with timestamp check)");
+
+        let manager = Arc::clone(&self.profile_manager);
+
+        let result = tokio::task::spawn_blocking(move || {
+            let reload_result = manager.reload_active()?;
+
+            if reload_result.recompiled && reload_result.success {
+                // Get the active profile name for key blocking config
+                let active_name = manager.get_active()?.unwrap_or_default();
+
+                #[cfg(target_os = "windows")]
+                {
+                    use crate::platform::windows::platform_state::PlatformState;
+
+                    let config_dir = crate::cli::config_dir::get_config_dir()
+                        .map_err(|e| ProfileError::NotFound(format!("Config dir error: {}", e)))?;
+                    let krx_path = config_dir
+                        .join("profiles")
+                        .join(format!("{}.krx", active_name));
+
+                    if let Ok(config_data) = std::fs::read(&krx_path) {
+                        use keyrx_compiler::serialize::deserialize as deserialize_krx;
+                        use rkyv::Deserialize;
+
+                        if let Ok(archived_config) = deserialize_krx(&config_data) {
+                            let config: keyrx_core::config::ConfigRoot = archived_config
+                                .deserialize(&mut rkyv::Infallible)
+                                .map_err(|_| {
+                                    ProfileError::NotFound("Deserialization failed".to_string())
+                                })?;
+                            if let Err(e) = PlatformState::configure_blocking(Some(&config)) {
+                                log::error!("Failed to configure key remapping: {}", e);
+                            }
+                        }
+                    }
+                }
+
+                Self::signal_daemon_reload();
+                log::info!(
+                    "Active profile '{}' recompiled and reloaded ({}ms)",
+                    active_name,
+                    reload_result.compile_time_ms
+                );
+            }
+
+            Ok::<crate::config::ReloadResult, ProfileError>(reload_result)
+        })
+        .await
+        .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
+
+        Ok(result)
+    }
+
     /// Signals the daemon to reload its configuration.
     ///
     /// On Unix, this sends SIGHUP to the current process.
