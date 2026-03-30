@@ -20,13 +20,33 @@ use keyrx_core::runtime::{check_tap_hold_timeouts, process_event};
 use log::{info, trace, warn};
 
 use crate::platform::Platform;
-use crate::web::events::KeyEventData;
+use crate::web::events::{DaemonState, KeyEventData};
 
 use super::event_broadcaster::EventBroadcaster;
 use super::metrics::LatencyRecorder;
 use super::remapping_state::RemappingState;
 use super::signals::SignalHandler;
 use super::DaemonError;
+
+/// Extract current daemon state from DeviceState for WebSocket broadcasting.
+fn extract_daemon_state(state: &keyrx_core::runtime::DeviceState) -> DaemonState {
+    let modifiers: Vec<String> = (0..=254u8)
+        .filter(|&id| state.is_modifier_active(id))
+        .map(|id| format!("MD_{:02}", id))
+        .collect();
+
+    let locks: Vec<String> = (0..=254u8)
+        .filter(|&id| state.is_lock_active(id))
+        .map(|id| format!("LK_{:02}", id))
+        .collect();
+
+    DaemonState {
+        modifiers,
+        locks,
+        layer: "Base".to_string(),
+        active_profile: None,
+    }
+}
 
 /// Event loop statistics tracking.
 struct EventLoopStats {
@@ -493,17 +513,23 @@ pub fn process_one_event(
             }
 
             // Process event through remapping engine if available
-            let (output_events, mapping_type, mapping_triggered) =
+            let (output_events, mapping_type, mapping_triggered, state_snapshot) =
                 if let Some(remap_state) = remapping_state {
                     let (lookup, state) = remap_state.lookup_and_state_mut();
                     let mapping = lookup.find_mapping(input_keycode, state);
                     let mapping_type_str = mapping.map(get_mapping_type);
                     let triggered = mapping.is_some();
                     let outputs = process_event(event.clone(), lookup, state);
-                    (outputs, mapping_type_str, triggered)
+                    // Capture state snapshot after processing for broadcast
+                    let snapshot = if triggered {
+                        Some(extract_daemon_state(state))
+                    } else {
+                        None
+                    };
+                    (outputs, mapping_type_str, triggered, snapshot)
                 } else {
                     // Pass-through mode - no remapping
-                    (vec![event.clone()], None, false)
+                    (vec![event.clone()], None, false, None)
                 };
 
             // Compute output description for broadcast
@@ -555,6 +581,11 @@ pub fn process_one_event(
                     mapping_triggered,
                 };
                 broadcaster.broadcast_key_event(event_data);
+
+                // Broadcast state change if a mapping was triggered
+                if let Some(state_data) = state_snapshot {
+                    broadcaster.broadcast_state(state_data);
+                }
             }
 
             Ok(true)

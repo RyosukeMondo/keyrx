@@ -15,8 +15,7 @@ pub enum DaemonEvent {
     /// Current daemon state (modifiers, locks, layer).
     #[serde(rename = "state")]
     State {
-        #[serde(flatten)]
-        data: DaemonState,
+        payload: DaemonState,
         /// Sequence number for message ordering (WS-004)
         #[serde(rename = "seq")]
         sequence: u64,
@@ -25,8 +24,7 @@ pub enum DaemonEvent {
     /// Individual key event (press/release).
     #[serde(rename = "event")]
     KeyEvent {
-        #[serde(flatten)]
-        data: KeyEventData,
+        payload: KeyEventData,
         /// Sequence number for message ordering (WS-004)
         #[serde(rename = "seq")]
         sequence: u64,
@@ -35,8 +33,7 @@ pub enum DaemonEvent {
     /// Latency statistics update.
     #[serde(rename = "latency")]
     Latency {
-        #[serde(flatten)]
-        data: LatencyStats,
+        payload: LatencyStats,
         /// Sequence number for message ordering (WS-004)
         #[serde(rename = "seq")]
         sequence: u64,
@@ -45,8 +42,7 @@ pub enum DaemonEvent {
     /// Error notification (WS-005).
     #[serde(rename = "error")]
     Error {
-        #[serde(flatten)]
-        data: ErrorData,
+        payload: ErrorData,
         /// Sequence number for message ordering (WS-004)
         #[serde(rename = "seq")]
         sequence: u64,

@@ -10,7 +10,7 @@ async fn test_broadcast_channel_publishes_state_event() {
 
     // Create and send state event
     let state_event = DaemonEvent::State {
-        data: DaemonState {
+        payload: DaemonState {
             modifiers: vec!["MD_00".to_string()],
             locks: vec![],
             layer: "base".to_string(),
@@ -26,7 +26,7 @@ async fn test_broadcast_channel_publishes_state_event() {
     let received = event_rx.recv().await.unwrap();
     match received {
         DaemonEvent::State {
-            data: state,
+            payload: state,
             sequence: _,
         } => {
             assert_eq!(state.modifiers, vec!["MD_00"]);
@@ -42,7 +42,7 @@ async fn test_broadcast_channel_publishes_key_event() {
     let (event_tx, mut event_rx) = broadcast::channel(100);
 
     let key_event = DaemonEvent::KeyEvent {
-        data: KeyEventData {
+        payload: KeyEventData {
             timestamp: 1234567890,
             key_code: "KEY_A".to_string(),
             event_type: "press".to_string(),
@@ -62,7 +62,7 @@ async fn test_broadcast_channel_publishes_key_event() {
     let received = event_rx.recv().await.unwrap();
     match received {
         DaemonEvent::KeyEvent {
-            data: event,
+            payload: event,
             sequence: _,
         } => {
             assert_eq!(event.key_code, "KEY_A");
@@ -78,7 +78,7 @@ async fn test_broadcast_channel_publishes_latency_event() {
     let (event_tx, mut event_rx) = broadcast::channel(100);
 
     let latency_event = DaemonEvent::Latency {
-        data: LatencyStats {
+        payload: LatencyStats {
             min: 1200,
             avg: 2300,
             max: 4500,
@@ -94,7 +94,7 @@ async fn test_broadcast_channel_publishes_latency_event() {
     let received = event_rx.recv().await.unwrap();
     match received {
         DaemonEvent::Latency {
-            data: stats,
+            payload: stats,
             sequence: _,
         } => {
             assert_eq!(stats.min, 1200);
@@ -114,7 +114,7 @@ async fn test_broadcast_channel_multiple_subscribers() {
     let mut rx3 = event_tx.subscribe();
 
     let state_event = DaemonEvent::State {
-        data: DaemonState {
+        payload: DaemonState {
             modifiers: vec![],
             locks: vec![],
             layer: "base".to_string(),
@@ -133,21 +133,21 @@ async fn test_broadcast_channel_multiple_subscribers() {
     assert!(matches!(
         r1,
         DaemonEvent::State {
-            data: _,
+            payload: _,
             sequence: _
         }
     ));
     assert!(matches!(
         r2,
         DaemonEvent::State {
-            data: _,
+            payload: _,
             sequence: _
         }
     ));
     assert!(matches!(
         r3,
         DaemonEvent::State {
-            data: _,
+            payload: _,
             sequence: _
         }
     ));
@@ -162,7 +162,7 @@ async fn test_broadcast_channel_lagging_subscriber() {
     for i in 0..5 {
         event_tx
             .send(DaemonEvent::State {
-                data: DaemonState {
+                payload: DaemonState {
                     modifiers: vec![],
                     locks: vec![],
                     layer: format!("layer{}", i),
@@ -185,7 +185,7 @@ async fn test_broadcast_channel_lagging_subscriber() {
 #[tokio::test]
 async fn test_event_serialization_state() {
     let event = DaemonEvent::State {
-        data: DaemonState {
+        payload: DaemonState {
             modifiers: vec!["MD_00".to_string(), "MD_01".to_string()],
             locks: vec!["LK_00".to_string()],
             layer: "gaming".to_string(),
@@ -198,17 +198,17 @@ async fn test_event_serialization_state() {
     let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
 
     assert_eq!(parsed["type"], "state");
-    assert_eq!(parsed["modifiers"][0], "MD_00");
-    assert_eq!(parsed["modifiers"][1], "MD_01");
-    assert_eq!(parsed["locks"][0], "LK_00");
-    assert_eq!(parsed["layer"], "gaming");
+    assert_eq!(parsed["payload"]["modifiers"][0], "MD_00");
+    assert_eq!(parsed["payload"]["modifiers"][1], "MD_01");
+    assert_eq!(parsed["payload"]["locks"][0], "LK_00");
+    assert_eq!(parsed["payload"]["layer"], "gaming");
     assert_eq!(parsed["seq"], 1);
 }
 
 #[tokio::test]
 async fn test_event_serialization_key_event() {
     let event = DaemonEvent::KeyEvent {
-        data: KeyEventData {
+        payload: KeyEventData {
             timestamp: 9876543210,
             key_code: "KEY_SPACE".to_string(),
             event_type: "release".to_string(),
@@ -227,19 +227,19 @@ async fn test_event_serialization_key_event() {
     let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
 
     assert_eq!(parsed["type"], "event");
-    assert_eq!(parsed["timestamp"], 9876543210u64);
-    assert_eq!(parsed["keyCode"], "KEY_SPACE");
-    assert_eq!(parsed["eventType"], "release");
-    assert_eq!(parsed["input"], "SPACE");
-    assert_eq!(parsed["output"], "ENTER");
-    assert_eq!(parsed["latency"], 3400);
+    assert_eq!(parsed["payload"]["timestamp"], 9876543210u64);
+    assert_eq!(parsed["payload"]["keyCode"], "KEY_SPACE");
+    assert_eq!(parsed["payload"]["eventType"], "release");
+    assert_eq!(parsed["payload"]["input"], "SPACE");
+    assert_eq!(parsed["payload"]["output"], "ENTER");
+    assert_eq!(parsed["payload"]["latency"], 3400);
     assert_eq!(parsed["seq"], 1);
 }
 
 #[tokio::test]
 async fn test_event_serialization_latency() {
     let event = DaemonEvent::Latency {
-        data: LatencyStats {
+        payload: LatencyStats {
             min: 800,
             avg: 2100,
             max: 5200,
@@ -254,12 +254,12 @@ async fn test_event_serialization_latency() {
     let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
 
     assert_eq!(parsed["type"], "latency");
-    assert_eq!(parsed["min"], 800);
-    assert_eq!(parsed["avg"], 2100);
-    assert_eq!(parsed["max"], 5200);
-    assert_eq!(parsed["p95"], 4000);
-    assert_eq!(parsed["p99"], 4800);
-    assert_eq!(parsed["timestamp"], 1111111111u64);
+    assert_eq!(parsed["payload"]["min"], 800);
+    assert_eq!(parsed["payload"]["avg"], 2100);
+    assert_eq!(parsed["payload"]["max"], 5200);
+    assert_eq!(parsed["payload"]["p95"], 4000);
+    assert_eq!(parsed["payload"]["p99"], 4800);
+    assert_eq!(parsed["payload"]["timestamp"], 1111111111u64);
     assert_eq!(parsed["seq"], 1);
 }
 
@@ -274,7 +274,7 @@ async fn test_high_frequency_batching() {
     for i in 0..event_count {
         event_tx
             .send(DaemonEvent::KeyEvent {
-                data: KeyEventData {
+                payload: KeyEventData {
                     timestamp: i,
                     key_code: format!("KEY_{}", i),
                     event_type: "press".to_string(),
@@ -322,7 +322,7 @@ async fn test_channel_capacity_bounds() {
     for i in 0..capacity {
         event_tx
             .send(DaemonEvent::State {
-                data: DaemonState {
+                payload: DaemonState {
                     modifiers: vec![],
                     locks: vec![],
                     layer: format!("layer{}", i),
@@ -340,7 +340,7 @@ async fn test_channel_capacity_bounds() {
 #[tokio::test]
 async fn test_event_cloning() {
     let original = DaemonEvent::State {
-        data: DaemonState {
+        payload: DaemonState {
             modifiers: vec!["MD_00".to_string()],
             locks: vec!["LK_00".to_string()],
             layer: "test".to_string(),
@@ -354,11 +354,11 @@ async fn test_event_cloning() {
     match (&original, &cloned) {
         (
             DaemonEvent::State {
-                data: s1,
+                payload: s1,
                 sequence: seq1,
             },
             DaemonEvent::State {
-                data: s2,
+                payload: s2,
                 sequence: seq2,
             },
         ) => {
@@ -382,7 +382,7 @@ async fn test_subscriber_disconnect_cleanup() {
     // Should still work with remaining subscriber
     event_tx
         .send(DaemonEvent::State {
-            data: DaemonState {
+            payload: DaemonState {
                 modifiers: vec![],
                 locks: vec![],
                 layer: "base".to_string(),

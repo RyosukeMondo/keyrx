@@ -86,10 +86,10 @@ export const EventLogList: React.FC<EventLogListProps> = ({
   // Limit events if maxEvents is specified
   const displayEvents = maxEvents ? events.slice(-maxEvents) : events;
 
-  // Auto-scroll to bottom when new events arrive
+  // Auto-scroll to top when new events arrive (newest first)
   useEffect(() => {
     if (autoScroll && listRef.current && displayEvents.length > 0) {
-      listRef.current.scrollToItem(displayEvents.length - 1, 'end');
+      listRef.current.scrollToItem(0, 'start');
     }
   }, [displayEvents.length, autoScroll]);
 

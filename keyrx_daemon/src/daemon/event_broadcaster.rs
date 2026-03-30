@@ -75,7 +75,7 @@ impl EventBroadcaster {
     pub fn broadcast_state(&self, state: DaemonState) {
         let sequence = next_sequence();
         if let Err(e) = self.event_tx.send(DaemonEvent::State {
-            data: state,
+            payload: state,
             sequence,
         }) {
             log::warn!("Failed to broadcast state event: {}", e);
@@ -95,7 +95,7 @@ impl EventBroadcaster {
 
         let sequence = next_sequence();
         match self.event_tx.send(DaemonEvent::KeyEvent {
-            data: event,
+            payload: event,
             sequence,
         }) {
             Ok(receiver_count) => {
@@ -116,7 +116,7 @@ impl EventBroadcaster {
     pub fn broadcast_latency(&self, stats: LatencyStats) {
         let sequence = next_sequence();
         if let Err(e) = self.event_tx.send(DaemonEvent::Latency {
-            data: stats,
+            payload: stats,
             sequence,
         }) {
             log::warn!("Failed to broadcast latency event: {}", e);
@@ -141,7 +141,7 @@ impl EventBroadcaster {
         };
 
         if let Err(e) = self.event_tx.send(DaemonEvent::Error {
-            data: error_data,
+            payload: error_data,
             sequence,
         }) {
             log::warn!("Failed to broadcast error event: {}", e);
@@ -350,9 +350,9 @@ mod tests {
 
         let received = event_rx.recv().await.unwrap();
         match received {
-            DaemonEvent::State { data, sequence } => {
-                assert_eq!(data.modifiers, vec!["MD_00"]);
-                assert_eq!(data.layer, "base");
+            DaemonEvent::State { payload, sequence } => {
+                assert_eq!(payload.modifiers, vec!["MD_00"]);
+                assert_eq!(payload.layer, "base");
                 assert!(sequence > 0);
             }
             _ => panic!("Expected State event"),
@@ -381,9 +381,9 @@ mod tests {
 
         let received = event_rx.recv().await.unwrap();
         match received {
-            DaemonEvent::KeyEvent { data, sequence } => {
-                assert_eq!(data.key_code, "KEY_A");
-                assert_eq!(data.latency, 2300);
+            DaemonEvent::KeyEvent { payload, sequence } => {
+                assert_eq!(payload.key_code, "KEY_A");
+                assert_eq!(payload.latency, 2300);
                 assert!(sequence > 0);
             }
             _ => panic!("Expected KeyEvent event"),
@@ -408,10 +408,10 @@ mod tests {
 
         let received = event_rx.recv().await.unwrap();
         match received {
-            DaemonEvent::Latency { data, sequence } => {
-                assert_eq!(data.min, 1200);
-                assert_eq!(data.avg, 2300);
-                assert_eq!(data.p95, 3800);
+            DaemonEvent::Latency { payload, sequence } => {
+                assert_eq!(payload.min, 1200);
+                assert_eq!(payload.avg, 2300);
+                assert_eq!(payload.p95, 3800);
                 assert!(sequence > 0);
             }
             _ => panic!("Expected Latency event"),
@@ -479,8 +479,8 @@ mod tests {
         assert!(result.is_ok(), "Should receive latency event");
 
         match result.unwrap().unwrap() {
-            DaemonEvent::Latency { data, sequence } => {
-                assert!(data.timestamp > 0);
+            DaemonEvent::Latency { payload, sequence } => {
+                assert!(payload.timestamp > 0);
                 assert!(sequence > 0);
             }
             _ => panic!("Expected Latency event"),
