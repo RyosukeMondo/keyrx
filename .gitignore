@@ -81,6 +81,10 @@ pubspec.lock
 .cache/
 .serena/
 .bfg-report/
+.stitch-mcp/
+
+# Claude Code local settings
+.claude/settings.local.json
 
 # Session logs and debug output
 *.txt
