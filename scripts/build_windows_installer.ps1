@@ -7,11 +7,19 @@
 # Usage: .\scripts\build_windows_installer.ps1
 
 param(
-    [string]$Version = "1.0.0",
+    [string]$Version = "",
     [string]$OutputDir = "target\installer"
 )
 
 $ErrorActionPreference = "Stop"
+
+# Read version from Cargo.toml (SSOT) if not provided
+if (-not $Version) {
+    $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $RootDir = Split-Path -Parent $ScriptDir
+    $match = Select-String -Path (Join-Path $RootDir "Cargo.toml") -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1
+    $Version = $match.Matches.Groups[1].Value
+}
 
 Write-Host "================================" -ForegroundColor Cyan
 Write-Host " KeyRx Windows Installer Build" -ForegroundColor Cyan
@@ -64,7 +72,7 @@ $wixObj = Join-Path $OutputDir "keyrx_installer.wixobj"
     -nologo `
     -ext WixUIExtension `
     -ext WixUtilExtension `
-    -dVersion="$Version" `
+    -dProductVersion="$Version" `
     -out "$wixObj" `
     "keyrx_daemon\keyrx_installer.wxs"
 

@@ -25,7 +25,7 @@ Prevent installing mismatched or stale binaries by validating version and freshn
 ### Validations
 1. **Binary exists:** Checks `target\release\keyrx_daemon.exe` exists
 2. **Timestamp check:** Ensures binary is < 24 hours old (prevents stale builds)
-3. **Version match:** Executes `--version` and validates matches MSI version (0.1.5)
+3. **Version match:** Executes `--version` and validates matches MSI version (1.0.0)
 
 ### Error Handling
 - **Return:** `check` (fails installation on non-zero exit)
@@ -101,13 +101,13 @@ Provide immediate user feedback on installation success with comprehensive post-
 
 **Parameters:**
 - `-InstallDir`: Installation directory path
-- `-ExpectedVersion`: Version to validate (0.1.5)
+- `-ExpectedVersion`: Version to validate (1.0.0)
 - `-ShowMessageBox`: Display results to user
 
 **Validation Results Example:**
 ```
 ✓ Binary installed successfully (2.34 MB)
-✓ Version verified: 0.1.5
+✓ Version verified: 1.0.0
 ✓ Daemon started successfully
 ✓ API health check passed
 ```
@@ -293,7 +293,7 @@ To complete Phase 3 of the spec:
 
 ## Compliance
 
-- **SSOT:** Version comes from MSI Product element (0.1.5)
+- **SSOT:** Version comes from MSI Product element (1.0.0)
 - **KISS:** Simple, focused scripts with single responsibilities
 - **Fail Fast:** Task 7 validates before any files copied
 - **Error Handling:** All scripts have comprehensive try/catch blocks

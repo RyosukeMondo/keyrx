@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "========================================"
 echo "KeyRx - Advanced Keyboard Remapping"
-echo "Version: 0.1.5"
+echo "Version: 1.0.0"
 echo "========================================"
 echo ""
 echo "Starting KeyRx Daemon..."

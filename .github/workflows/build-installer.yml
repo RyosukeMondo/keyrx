@@ -5,16 +5,6 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
-    inputs:
-      installer_type:
-        description: 'Installer type to build'
-        required: true
-        default: 'IExpress'
-        type: choice
-        options:
-          - IExpress
-          - PowerShell
-          - Both
 
 jobs:
   build-installer:
@@ -38,7 +28,7 @@ jobs:
           cache-dependency-path: keyrx_ui/package-lock.json
 
       - name: Cache Rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -48,9 +38,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
       - name: Install npm dependencies
         working-directory: keyrx_ui
         run: npm ci
+
+      - name: Extract version from Cargo.toml
+        id: version
+        shell: powershell
+        run: |
+          $ver = (Select-String -Path "Cargo.toml" -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1).Matches.Groups[1].Value
+          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
+          Write-Host "Version: $ver"
 
       - name: Build Rust binaries (release)
         run: |
@@ -61,135 +62,76 @@ jobs:
         working-directory: keyrx_ui
         run: npm run build
 
-      - name: Build IExpress Installer
-        if: ${{ github.event.inputs.installer_type == 'IExpress' || github.event.inputs.installer_type == 'Both' || github.event_name == 'push' }}
+      - name: Build Inno Setup Installer
         shell: powershell
         run: |
-          .\scripts\installer\build-installer.ps1 -SkipBuild -SkipUI
-
-      - name: Build PowerShell Installer
-        if: ${{ github.event.inputs.installer_type == 'PowerShell' || github.event.inputs.installer_type == 'Both' }}
-        shell: powershell
-        run: |
-          .\scripts\installer\create-simple-installer.ps1 -SkipBuild
+          iscc /DAppVersion=${{ steps.version.outputs.VERSION }} keyrx-installer.iss
 
       - name: Calculate checksums
         shell: powershell
         run: |
-          $version = "1.0.0"
-          $checksums = @()
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $installerPath = "installer-output\keyrx-setup-v$version-windows-x64.exe"
 
-          $iexpressPath = "scripts\installer\keyrx-installer-v$version.exe"
-          if (Test-Path $iexpressPath) {
-            $hash = Get-FileHash $iexpressPath -Algorithm SHA256
-            $checksums += "SHA256 ($iexpressPath) = $($hash.Hash)"
+          if (Test-Path $installerPath) {
+            $hash = Get-FileHash $installerPath -Algorithm SHA256
+            "SHA256 ($installerPath) = $($hash.Hash)" | Out-File -FilePath "installer-output\checksums.txt"
+            Get-Content "installer-output\checksums.txt"
+          } else {
+            Write-Error "Installer not found: $installerPath"
+            exit 1
           }
 
-          $psPath = "scripts\installer\keyrx-installer-v$version.ps1"
-          if (Test-Path $psPath) {
-            $hash = Get-FileHash $psPath -Algorithm SHA256
-            $checksums += "SHA256 ($psPath) = $($hash.Hash)"
-          }
-
-          $checksums | Out-File -FilePath "scripts\installer\checksums.txt"
-          Get-Content "scripts\installer\checksums.txt"
-
-      - name: Upload IExpress Installer
-        if: hashFiles('scripts/installer/keyrx-installer-v*.exe') != ''
+      - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
-          name: keyrx-installer-iexpress
-          path: scripts/installer/keyrx-installer-v*.exe
-          if-no-files-found: warn
-
-      - name: Upload PowerShell Installer
-        if: hashFiles('scripts/installer/keyrx-installer-v*.ps1') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: keyrx-installer-powershell
-          path: scripts/installer/keyrx-installer-v*.ps1
-          if-no-files-found: warn
+          name: keyrx-installer
+          path: installer-output/keyrx-setup-v*.exe
+          if-no-files-found: error
 
       - name: Upload Checksums
         uses: actions/upload-artifact@v4
         with:
           name: installer-checksums
-          path: scripts/installer/checksums.txt
+          path: installer-output/checksums.txt
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
-            scripts/installer/keyrx-installer-v*.exe
-            scripts/installer/keyrx-installer-v*.ps1
-            scripts/installer/checksums.txt
+            installer-output/keyrx-setup-v*.exe
+            installer-output/checksums.txt
           body: |
-            # KeyRx Windows Installer
+            # KeyRx ${{ steps.version.outputs.VERSION }}
 
-            ## Downloads
+            ## Windows Installer
 
-            - **keyrx-installer-v*.exe** - Self-contained Windows installer (IExpress)
-            - **keyrx-installer-v*.ps1** - Self-contained PowerShell installer
-            - **checksums.txt** - SHA256 checksums for verification
-
-            ## Installation
-
-            ### IExpress Installer (Recommended)
-
-            1. Download `keyrx-installer-v*.exe`
+            1. Download `keyrx-setup-v${{ steps.version.outputs.VERSION }}-windows-x64.exe`
             2. Run as Administrator
             3. Follow installation prompts
 
-            ### PowerShell Installer
-
-            1. Download `keyrx-installer-v*.ps1`
-            2. Right-click → "Run with PowerShell" (as Administrator)
-            3. Or: `powershell.exe -ExecutionPolicy Bypass -File keyrx-installer-v*.ps1`
-
             ## Verification
 
-            Verify downloads with SHA256 checksums:
-
             ```powershell
-            Get-FileHash keyrx-installer-v*.exe -Algorithm SHA256
+            Get-FileHash keyrx-setup-v${{ steps.version.outputs.VERSION }}-windows-x64.exe -Algorithm SHA256
             ```
 
-            Compare with checksums in `checksums.txt`.
+            Compare with `checksums.txt`.
 
             ## Requirements
 
-            - Windows 10 or 11
+            - Windows 10 version 1809+ (64-bit)
             - Administrator privileges
-            - No other tools required!
-
-            ## Documentation
-
-            - [Installation Guide](https://github.com/${{ github.repository }}/blob/main/scripts/installer/INSTALLER_GUIDE.md)
-            - [Comparison of Installer Types](https://github.com/${{ github.repository }}/blob/main/scripts/installer/COMPARISON.md)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Summary
         shell: powershell
         run: |
-          Write-Host "Build Complete!" -ForegroundColor Green
-          Write-Host ""
-
-          $version = "1.0.0"
-
-          $iexpressPath = "scripts\installer\keyrx-installer-v$version.exe"
-          if (Test-Path $iexpressPath) {
-            $size = [Math]::Round((Get-Item $iexpressPath).Length / 1MB, 2)
-            Write-Host "IExpress Installer: $size MB" -ForegroundColor Cyan
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $path = "installer-output\keyrx-setup-v$version-windows-x64.exe"
+          if (Test-Path $path) {
+            $size = [Math]::Round((Get-Item $path).Length / 1MB, 2)
+            Write-Host "Installer: $path ($size MB)" -ForegroundColor Green
           }
-
-          $psPath = "scripts\installer\keyrx-installer-v$version.ps1"
-          if (Test-Path $psPath) {
-            $size = [Math]::Round((Get-Item $psPath).Length / 1MB, 2)
-            Write-Host "PowerShell Installer: $size MB" -ForegroundColor Cyan
-          }
-
-          Write-Host ""
-          Write-Host "Checksums:" -ForegroundColor Yellow
-          Get-Content "scripts\installer\checksums.txt"

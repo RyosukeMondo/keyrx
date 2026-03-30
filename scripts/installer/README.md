@@ -24,7 +24,7 @@ This directory contains scripts to build a **completely self-contained** Windows
 
 ### Output
 
-- `keyrx-installer-v0.1.5.exe` - Self-contained installer (ready to distribute)
+- `keyrx-installer-v1.0.0.exe` - Self-contained installer (ready to distribute)
 
 ## How It Works
 
@@ -92,7 +92,7 @@ Users can uninstall via:
 
 ```powershell
 # Install silently to default location
-.\keyrx-installer-v0.1.5.exe /Q
+.\keyrx-installer-v1.0.0.exe /Q
 
 # Or run install.ps1 directly
 powershell.exe -ExecutionPolicy Bypass -File install.ps1 -Silent
@@ -161,7 +161,7 @@ Check the installation log (displayed in PowerShell window) for specific errors.
 
 ## Distribution
 
-The generated `keyrx-installer-v0.1.5.exe` is:
+The generated `keyrx-installer-v1.0.0.exe` is:
 
 - **Completely self-contained** - no external files needed
 - **Safe to distribute** - standard Windows executable

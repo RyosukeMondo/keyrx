@@ -2,6 +2,7 @@ pub mod api;
 pub mod error;
 pub mod events;
 pub mod handlers;
+pub mod mcp;
 pub mod middleware;
 pub mod rpc_types;
 pub mod static_files;
@@ -370,6 +371,7 @@ async fn create_app_with_config(
         .nest("/api", api::create_router(Arc::clone(&state)))
         .nest("/ws", ws::create_router(event_tx))
         .nest("/ws-rpc", ws_rpc::create_router(Arc::clone(&state)))
+        .nest_service("/mcp", mcp::create_service(Arc::clone(&state)))
         .fallback_service(static_files::serve_static())
         // Security layers (innermost to outermost):
         // Note: Middleware order is LIFO - last layer added runs first

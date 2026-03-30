@@ -1,10 +1,16 @@
 /* tslint:disable */
 /* eslint-disable */
 
+/**
+ * Opaque handle to a loaded configuration.
+ *
+ * This handle prevents JavaScript from directly accessing Rust memory.
+ * The handle is an index into the CONFIG_STORE Vec.
+ */
 export class ConfigHandle {
-  private constructor();
-  free(): void;
-  [Symbol.dispose](): void;
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
 }
 
 /**
@@ -182,32 +188,22 @@ export function validate_config(rhai_source: string): any;
  */
 export function wasm_init(): void;
 
-export type InitInput =
-  | RequestInfo
-  | URL
-  | Response
-  | BufferSource
-  | WebAssembly.Module;
+export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
-  readonly memory: WebAssembly.Memory;
-  readonly __wbg_confighandle_free: (a: number, b: number) => void;
-  readonly get_state: (a: number, b: number) => void;
-  readonly load_config: (a: number, b: number, c: number) => void;
-  readonly load_krx: (a: number, b: number, c: number) => void;
-  readonly simulate: (a: number, b: number, c: number, d: number) => void;
-  readonly validate_config: (a: number, b: number, c: number) => void;
-  readonly wasm_init: () => void;
-  readonly __wbindgen_export: (a: number, b: number) => number;
-  readonly __wbindgen_export2: (
-    a: number,
-    b: number,
-    c: number,
-    d: number
-  ) => number;
-  readonly __wbindgen_export3: (a: number, b: number, c: number) => void;
-  readonly __wbindgen_export4: (a: number) => void;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+    readonly memory: WebAssembly.Memory;
+    readonly __wbg_confighandle_free: (a: number, b: number) => void;
+    readonly get_state: (a: number, b: number) => void;
+    readonly load_config: (a: number, b: number, c: number) => void;
+    readonly load_krx: (a: number, b: number, c: number) => void;
+    readonly simulate: (a: number, b: number, c: number, d: number) => void;
+    readonly validate_config: (a: number, b: number, c: number) => void;
+    readonly wasm_init: () => void;
+    readonly __wbindgen_export: (a: number, b: number) => number;
+    readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
+    readonly __wbindgen_export3: (a: number, b: number, c: number) => void;
+    readonly __wbindgen_export4: (a: number) => void;
+    readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;
@@ -220,9 +216,7 @@ export type SyncInitInput = BufferSource | WebAssembly.Module;
  *
  * @returns {InitOutput}
  */
-export function initSync(
-  module: { module: SyncInitInput } | SyncInitInput
-): InitOutput;
+export function initSync(module: { module: SyncInitInput } | SyncInitInput): InitOutput;
 
 /**
  * If `module_or_path` is {RequestInfo} or {URL}, makes a request and
@@ -232,9 +226,4 @@ export function initSync(
  *
  * @returns {Promise<InitOutput>}
  */
-export default function __wbg_init(
-  module_or_path?:
-    | { module_or_path: InitInput | Promise<InitInput> }
-    | InitInput
-    | Promise<InitInput>
-): Promise<InitOutput>;
+export default function __wbg_init (module_or_path?: { module_or_path: InitInput | Promise<InitInput> } | InitInput | Promise<InitInput>): Promise<InitOutput>;

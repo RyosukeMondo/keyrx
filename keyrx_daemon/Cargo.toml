@@ -62,6 +62,8 @@ uuid = { version = "1.0", features = ["v4"] }
 tower = { version = "0.5.3", features = ["util"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["json", "env-filter"] }
+# MCP (Model Context Protocol) server for AI agent integration
+rmcp = { version = "1.2", features = ["server", "transport-streamable-http-server"] }
 
 # Linux-specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]
@@ -114,6 +116,7 @@ harness = false
 
 [build-dependencies]
 chrono = "0.4"
+sha2 = { workspace = true }
 
 [target.'cfg(target_os = "windows")'.build-dependencies]
 winres = "0.1"

@@ -6,7 +6,10 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
 
-  <?define ProductVersion="0.1.5" ?>
+  <!-- Version passed via candle -dProductVersion=x.y.z (SSOT: Cargo.toml) -->
+  <?ifndef ProductVersion ?>
+    <?define ProductVersion="0.0.0" ?>
+  <?endif ?>
   <?define ProductName="KeyRx" ?>
   <?define Manufacturer="KeyRx Contributors" ?>
   <?define UpgradeCode="{8F3C4A7B-9D2E-4F1A-B8C3-5E6D7F8A9B0C}" ?>
@@ -41,7 +44,9 @@
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
 
     <!-- License agreement -->
-    <WixVariable Id="WixUILicenseRtf" Value="..\..\LICENSE.rtf" />
+    <!-- WiX WixUI_InstallDir requires RTF for license; generate from LICENSE if needed -->
+    <!-- To use: pandoc -s LICENSE -o LICENSE.rtf, then uncomment below -->
+    <!-- <WixVariable Id="WixUILicenseRtf" Value="..\..\LICENSE.rtf" /> -->
 
     <!-- Application icon -->
     <Icon Id="keyrx.ico" SourceFile="..\..\keyrx_ui\public\favicon.ico" />

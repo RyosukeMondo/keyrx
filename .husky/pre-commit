@@ -1,2 +1,32 @@
+# Check WASM staleness when keyrx_core source files are being committed.
+# Prevents committing a stale WASM binary that's out of sync with Rust source.
+if git diff --cached --name-only | grep -qE '^keyrx_core/(src/.*\.rs|Cargo\.toml)$'; then
+    MANIFEST="keyrx_ui/src/wasm/pkg/wasm-manifest.json"
+    if [ -f "$MANIFEST" ] && grep -q '"source_hash"' "$MANIFEST"; then
+        MANIFEST_HASH=$(sed -n 's/.*"source_hash": *"\([^"]*\)".*/\1/p' "$MANIFEST")
+        CURRENT_HASH=$(
+            {
+                find keyrx_core/src -name "*.rs" -type f
+                echo "keyrx_core/Cargo.toml"
+            } | sed 's|\\|/|g' | sort | while IFS= read -r f; do
+                printf '%s\n' "$f"
+                tr -d '\r' < "$f"
+            done | sha256sum | awk '{print $1}'
+        )
+        if [ "$MANIFEST_HASH" != "$CURRENT_HASH" ]; then
+            echo ""
+            echo "STALE WASM: keyrx_core source changed but WASM was not rebuilt."
+            echo ""
+            echo "  Expected: $MANIFEST_HASH"
+            echo "  Current:  $CURRENT_HASH"
+            echo ""
+            echo "  Fix: make build"
+            echo "  Skip: git commit --no-verify (NOT recommended)"
+            echo ""
+            exit 1
+        fi
+    fi
+fi
+
 # Run lint-staged for both Rust and TypeScript files
 npx lint-staged

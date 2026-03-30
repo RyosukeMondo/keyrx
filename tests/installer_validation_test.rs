@@ -280,8 +280,9 @@ mod installer_validation_tests {
     // Test pre-flight version validation logic
     #[test]
     fn test_preflight_version_validation() {
-        let msi_version = "0.1.5.0";
-        let binary_version = "0.1.5";
+        let version = env!("CARGO_PKG_VERSION");
+        let msi_version = format!("{}.0", version);
+        let binary_version = version;
 
         // Normalize versions (remove .0 suffix for comparison)
         let normalized_msi = msi_version.trim_end_matches(".0");
@@ -292,8 +293,7 @@ mod installer_validation_tests {
         );
 
         println!(
-            "✓ Pre-flight version validation: {} == {}",
-            normalized_msi, binary_version
+            "✓ Pre-flight version validation: {normalized_msi} == {binary_version}"
         );
     }
 
@@ -443,8 +443,8 @@ mod installer_validation_tests {
     // Test failure scenario: Version mismatch
     #[test]
     fn test_installer_validation_failure_version_mismatch() {
-        let msi_version = "0.1.5";
-        let binary_version = "0.1.4"; // Mismatch
+        let msi_version = env!("CARGO_PKG_VERSION");
+        let binary_version = "0.0.0-mismatch"; // Intentional mismatch
 
         if msi_version != binary_version {
             println!(

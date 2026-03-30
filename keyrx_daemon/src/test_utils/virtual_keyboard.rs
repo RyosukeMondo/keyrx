@@ -334,7 +334,6 @@ impl VirtualKeyboard {
     }
 }
 
-
 impl VirtualKeyboard {
     /// Injects a sequence of key events with optional delay between them.
     ///

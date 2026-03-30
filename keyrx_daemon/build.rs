@@ -1,3 +1,4 @@
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
@@ -15,8 +16,7 @@ fn main() {
 }
 
 fn get_workspace_root() -> PathBuf {
-    let manifest_dir =
-        std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
     PathBuf::from(&manifest_dir)
         .parent()
         .expect("Failed to get workspace root")
@@ -126,35 +126,47 @@ fn enforce_frontend_freshness(workspace_root: &Path) {
     check_ui_freshness(workspace_root);
 }
 
-/// Fail if keyrx_core source is newer than the compiled WASM binary.
+/// Fail if keyrx_core source has changed since the WASM binary was built.
+///
+/// Uses content-based hashing (SHA256 of source files) stored in
+/// `wasm-manifest.json` instead of unreliable file modification times.
 fn check_wasm_freshness(workspace_root: &Path) {
-    let wasm_binary = workspace_root.join("keyrx_ui/src/wasm/pkg/keyrx_core_bg.wasm");
+    let manifest = workspace_root.join("keyrx_ui/src/wasm/pkg/wasm-manifest.json");
     let core_src = workspace_root.join("keyrx_core/src");
 
     if !core_src.exists() {
         return;
     }
-    if !wasm_binary.exists() {
+    if !manifest.exists() {
         println!(
-            "cargo:warning=WASM not found. \
+            "cargo:warning=WASM manifest not found. \
              Run 'make build' for full build with WASM."
         );
         return;
     }
 
-    let wasm_mtime = file_mtime(&wasm_binary);
-    let core_mtime = newest_mtime_in_dir(&core_src);
+    let manifest_hash = read_manifest_source_hash(&manifest);
+    let Some(expected) = manifest_hash else {
+        println!(
+            "cargo:warning=WASM manifest missing source_hash field. \
+             Rebuild WASM with 'make build' to enable staleness detection."
+        );
+        return;
+    };
 
-    if let (Some(wasm_t), Some(core_t)) = (wasm_mtime, core_mtime) {
-        if core_t > wasm_t {
-            panic!(
-                "\n\n\
-                STALE WASM: keyrx_core/src is newer than compiled WASM.\n\
-                The daemon would embed an outdated WASM module.\n\n\
-                Fix:  make build\n\
-                Skip: KEYRX_SKIP_FRONTEND_CHECK=1 cargo build\n"
-            );
-        }
+    let current = compute_source_hash(workspace_root);
+    if current != expected {
+        panic!(
+            "\n\n\
+            STALE WASM: keyrx_core source hash changed.\n\
+            \n\
+            Expected (from manifest): {expected}\n\
+            Current (from source):    {current}\n\
+            \n\
+            The WASM binary was built from different source code.\n\n\
+            Fix:  make build\n\
+            Skip: KEYRX_SKIP_FRONTEND_CHECK=1 cargo build\n"
+        );
     }
 }
 
@@ -246,6 +258,24 @@ fn emit_rerun_triggers(workspace_root: &Path) {
     // UI dist (re-embed when rebuilt)
     println!("cargo:rerun-if-changed=../keyrx_ui/dist/index.html");
 
+    // WASM manifest (re-check staleness after WASM rebuild)
+    println!(
+        "cargo:rerun-if-changed={}",
+        workspace_root
+            .join("keyrx_ui/src/wasm/pkg/wasm-manifest.json")
+            .display()
+    );
+
+    // keyrx_core source (trigger staleness check on changes)
+    println!(
+        "cargo:rerun-if-changed={}",
+        workspace_root.join("keyrx_core/src").display()
+    );
+    println!(
+        "cargo:rerun-if-changed={}",
+        workspace_root.join("keyrx_core/Cargo.toml").display()
+    );
+
     // Key source files (trigger staleness check on common changes)
     for entry in &[
         "../keyrx_ui/src/App.tsx",
@@ -253,13 +283,75 @@ fn emit_rerun_triggers(workspace_root: &Path) {
         "../keyrx_ui/src/version.ts",
         "../keyrx_ui/index.html",
         "../keyrx_ui/vite.config.ts",
-        "../keyrx_core/src/lib.rs",
     ] {
         println!("cargo:rerun-if-changed={entry}");
     }
 
     // Re-run when bypass env var changes
     println!("cargo:rerun-if-env-changed=KEYRX_SKIP_FRONTEND_CHECK");
+}
+
+// ── Source hash helpers ───────────────────────────────────────────────
+
+/// Read `source_hash` from wasm-manifest.json (simple string extraction).
+fn read_manifest_source_hash(manifest: &Path) -> Option<String> {
+    let content = std::fs::read_to_string(manifest).ok()?;
+    // Simple JSON value extraction — avoids adding serde_json build-dep
+    let key = "\"source_hash\"";
+    let idx = content.find(key)?;
+    let rest = &content[idx + key.len()..];
+    let colon = rest.find(':')?;
+    let after_colon = &rest[colon + 1..];
+    let open_quote = after_colon.find('"')?;
+    let value_start = open_quote + 1;
+    let close_quote = after_colon[value_start..].find('"')?;
+    Some(after_colon[value_start..value_start + close_quote].to_string())
+}
+
+/// Compute SHA256 of all keyrx_core source files + Cargo.toml.
+///
+/// Algorithm (must match scripts/lib/build-wasm.sh):
+/// 1. Collect all *.rs files in keyrx_core/src/ + keyrx_core/Cargo.toml
+/// 2. Sort by forward-slash relative path
+/// 3. For each file: feed path + "\n" + content (with \r stripped) to SHA256
+fn compute_source_hash(workspace_root: &Path) -> String {
+    let core_src = workspace_root.join("keyrx_core").join("src");
+    let mut files = Vec::new();
+    collect_rs_files(&core_src, &mut files);
+    files.push(workspace_root.join("keyrx_core").join("Cargo.toml"));
+
+    let mut relative: Vec<String> = files
+        .iter()
+        .filter_map(|f| f.strip_prefix(workspace_root).ok())
+        .map(|p| p.to_string_lossy().replace('\\', "/"))
+        .collect();
+    relative.sort();
+
+    let mut hasher = Sha256::new();
+    for rel_path in &relative {
+        hasher.update(rel_path.as_bytes());
+        hasher.update(b"\n");
+        if let Ok(content) = std::fs::read(workspace_root.join(rel_path)) {
+            let normalized: Vec<u8> = content.into_iter().filter(|&b| b != b'\r').collect();
+            hasher.update(&normalized);
+        }
+    }
+    format!("{:x}", hasher.finalize())
+}
+
+/// Recursively collect all *.rs files in a directory.
+fn collect_rs_files(dir: &Path, files: &mut Vec<PathBuf>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_rs_files(&path, files);
+        } else if path.extension().is_some_and(|e| e == "rs") {
+            files.push(path);
+        }
+    }
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────

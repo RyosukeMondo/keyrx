@@ -76,8 +76,8 @@ export const ProfileCard = React.memo<ProfileCardProps>(
         await navigator.clipboard.writeText(errorText);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-      } catch (err) {
-        console.error('Failed to copy error:', err);
+      } catch {
+        // Clipboard API can fail in non-secure contexts; no action needed
       }
     }, [firstError]);
 

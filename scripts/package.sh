@@ -7,7 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-VERSION="${VERSION:-0.1.5}"
+VERSION="${VERSION:-$(grep '^version' "$REPO_ROOT/Cargo.toml" | head -1 | sed 's/.*"\(.*\)".*/\1/')}"
 
 # Source common utilities
 source "$SCRIPT_DIR/lib/common.sh"
@@ -47,10 +47,11 @@ package_windows() {
         (cd "$REPO_ROOT/keyrx_ui" && npm run build)
     fi
 
-    # Compile installer
-    info "Compiling Inno Setup installer..."
+    # Compile installer (pass version via /D flag for SSOT)
+    # MSYS_NO_PATHCONV prevents bash from converting /D to a Unix path
+    info "Compiling Inno Setup installer (version: $VERSION)..."
     cd "$REPO_ROOT"
-    "$ISCC_PATH" keyrx-installer.iss
+    MSYS_NO_PATHCONV=1 "$ISCC_PATH" /DAppVersion="$VERSION" keyrx-installer.iss
 
     success "Windows installer created: installer-output/keyrx-setup-v$VERSION-windows-x64.exe"
 }
@@ -208,7 +209,7 @@ EXAMPLES:
     $0 --all                      # Build all packages
 
 ENVIRONMENT:
-    VERSION       Package version (default: 0.1.5)
+    VERSION       Package version (default: from Cargo.toml)
 
 EOF
 }

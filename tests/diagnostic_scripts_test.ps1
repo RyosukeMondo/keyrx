@@ -17,6 +17,9 @@
 $script:ProjectRoot = Split-Path -Parent $PSScriptRoot
 $script:ScriptsDir = Join-Path $script:ProjectRoot "scripts"
 
+# Read version from Cargo.toml (SSOT)
+$script:ProjectVersion = (Select-String -Path (Join-Path $script:ProjectRoot "Cargo.toml") -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1).Matches.Groups[1].Value
+
 # Mock functions to prevent destructive operations
 function Mock-StopProcess { param($Name) Write-Host "Mock: Stopping $Name" }
 function Mock-RemoveItem { param($Path) Write-Host "Mock: Removing $Path" }
@@ -94,41 +97,41 @@ Describe "Version Check Script Behavior" {
         It "Should extract version from Cargo.toml format" {
             $testContent = @"
 [workspace.package]
-version = "0.1.5"
+version = "1.0.0"
 "@
             # Simulate version extraction
             $version = if ($testContent -match 'version\s*=\s*"([^"]+)"') { $matches[1] } else { $null }
-            $version | Should -Be "0.1.5"
+            $version | Should -Be "1.0.0"
         }
 
         It "Should extract version from package.json format" {
             $testContent = @"
 {
   "name": "keyrx-ui",
-  "version": "0.1.5",
+  "version": "1.0.0",
   "type": "module"
 }
 "@
             $version = if ($testContent -match '"version":\s*"([^"]+)"') { $matches[1] } else { $null }
-            $version | Should -Be "0.1.5"
+            $version | Should -Be "1.0.0"
         }
 
         It "Should normalize WiX version (4-part to 3-part)" {
-            $wixVersion = "0.1.5.0"
+            $wixVersion = "1.0.0.0"
             $normalized = $wixVersion -replace '\.0$', ''
-            $normalized | Should -Be "0.1.5"
+            $normalized | Should -Be "1.0.0"
         }
     }
 
     Context "Version Comparison" {
         It "Should detect version match" {
-            $v1 = "0.1.5"
-            $v2 = "0.1.5"
+            $v1 = "1.0.0"
+            $v2 = "1.0.0"
             $v1 -eq $v2 | Should -BeTrue
         }
 
         It "Should detect version mismatch" {
-            $v1 = "0.1.5"
+            $v1 = "1.0.0"
             $v2 = "0.1.4"
             $v1 -ne $v2 | Should -BeTrue
         }
@@ -138,7 +141,7 @@ version = "0.1.5"
 Describe "Installer Health Check Behavior" {
     Context "MSI Integrity Checks" {
         It "Should check if MSI file exists" {
-            $msiPath = "target/installer/KeyRx-0.1.5.msi"
+            $msiPath = "target/installer/KeyRx-$($script:ProjectVersion).msi"
             # Mock check
             $exists = Test-Path $msiPath
             # Test documents expected behavior
@@ -146,8 +149,8 @@ Describe "Installer Health Check Behavior" {
         }
 
         It "Should validate MSI version matches expected" {
-            $expectedVersion = "0.1.5"
-            $msiVersion = "0.1.5" # Mock
+            $expectedVersion = $script:ProjectVersion
+            $msiVersion = $script:ProjectVersion # Mock
             $msiVersion | Should -Be $expectedVersion
         }
 
@@ -492,7 +495,7 @@ Describe "Structured Output Format" {
         It "Should format output as table" {
             # Mock table output
             $checks = @(
-                [PSCustomObject]@{ Check = "Version"; Status = "PASS"; Details = "0.1.5" }
+                [PSCustomObject]@{ Check = "Version"; Status = "PASS"; Details = $script:ProjectVersion }
                 [PSCustomObject]@{ Check = "Binary"; Status = "PASS"; Details = "Found" }
             )
 

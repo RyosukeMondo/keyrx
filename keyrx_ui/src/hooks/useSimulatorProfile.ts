@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { getErrorMessage } from '../utils/errorUtils';
 
 interface SimulatorProfileState {
@@ -78,7 +79,7 @@ export function useSimulatorProfile() {
           error: errorMsg,
           profileName: null,
         });
-        console.error('Simulator profile load error:', err);
+        toast.error(errorMsg);
         return false;
       }
     },
@@ -93,7 +94,7 @@ export function useSimulatorProfile() {
       });
 
       if (!response.ok) {
-        console.error('Failed to reset simulator');
+        toast.error('Failed to reset simulator');
         return false;
       }
 
@@ -105,7 +106,7 @@ export function useSimulatorProfile() {
       });
       return true;
     } catch (err) {
-      console.error('Simulator reset error:', err);
+      toast.error(getErrorMessage(err, 'Failed to reset simulator'));
       return false;
     }
   }, []);

@@ -32,7 +32,7 @@
 **Objective:** Ensure installer rejects binaries with wrong version
 
 **Steps:**
-1. Build with version 0.1.5: `cargo build --release -p keyrx_daemon`
+1. Build with version 1.0.0: `cargo build --release -p keyrx_daemon`
 2. Manually edit `target\release\keyrx_daemon.exe` metadata or build old version
 3. Build MSI: `.\scripts\build_windows_installer.ps1`
 4. Run installer
@@ -102,7 +102,7 @@
 1. Install KeyRx v0.1.4 (or earlier version)
 2. Start daemon: `keyrx_daemon run`
 3. Verify running: `Get-Process keyrx_daemon`
-4. Run v0.1.5 installer (upgrade)
+4. Run v1.0.0 installer (upgrade)
 
 **Expected Result:**
 - ✅ Installer stops daemon automatically
@@ -202,7 +202,7 @@ Start-Process -FilePath keyrx_daemon.exe -ArgumentList "run" -PassThru | ForEach
   Installation verified successfully!
 
   ✓ Binary installed successfully (X.XX MB)
-  ✓ Version verified: 0.1.5
+  ✓ Version verified: 1.0.0
   ✓ Daemon started successfully
   ✓ API health check passed
 
@@ -237,7 +237,7 @@ $listener.Start()
   Installation completed with warnings:
 
   ✓ Binary installed successfully (X.XX MB)
-  ✓ Version verified: 0.1.5
+  ✓ Version verified: 1.0.0
   ⚠ Daemon start timeout (check logs)
   ⚠ API check skipped (daemon not running)
 
@@ -267,7 +267,7 @@ $listener.Start()
 - ⚠️ MessageBox shows:
   ```
   ✓ Binary installed successfully
-  ✓ Version verified: 0.1.5
+  ✓ Version verified: 1.0.0
   ✓ Daemon started successfully
   ⚠ API not responding (may need manual start)
   ```
@@ -330,7 +330,7 @@ $listener.Start()
 **Steps:**
 1. Install v0.1.4
 2. Start daemon
-3. Upgrade to v0.1.5
+3. Upgrade to v1.0.0
 
 **Expected Sequence:**
 ```
@@ -377,7 +377,7 @@ For each test, examine the MSI log:
 
 ```powershell
 # Install with logging
-msiexec /i KeyRx-0.1.5-x64.msi /l*v install.log
+msiexec /i KeyRx-1.0.0-x64.msi /l*v install.log
 
 # Search for CustomAction execution
 Select-String -Path install.log -Pattern "CustomAction|ValidateBinaryVersion|StopDaemon|VerifyInstallation"
@@ -408,7 +408,7 @@ Ensure no regressions in existing installer features:
 
 ### Installation Speed
 - **Baseline:** Record time for v0.1.4 installation
-- **New:** Time v0.1.5 with new CustomActions
+- **New:** Time v1.0.0 with new CustomActions
 - **Acceptable:** < 2 seconds overhead
 
 ### Daemon Stop Timeout
@@ -477,5 +477,5 @@ If any test fails, log with:
 
 **Tested by:** _____________
 **Date:** _____________
-**Version:** 0.1.5
+**Version:** 1.0.0
 **Result:** PASS / FAIL / PARTIAL

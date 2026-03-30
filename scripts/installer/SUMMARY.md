@@ -10,8 +10,8 @@ Created a **completely self-contained Windows installer** that requires **ZERO e
 
 | Script | Purpose | Output |
 |--------|---------|--------|
-| `build-installer.ps1` | Build IExpress installer | `keyrx-installer-v0.1.5.exe` |
-| `create-simple-installer.ps1` | Build PowerShell installer | `keyrx-installer-v0.1.5.ps1` |
+| `build-installer.ps1` | Build IExpress installer | `keyrx-installer-v1.0.0.exe` |
+| `create-simple-installer.ps1` | Build PowerShell installer | `keyrx-installer-v1.0.0.ps1` |
 | `quick-build.ps1` | One-command build both types | Both installers |
 | `install.ps1` | Installation logic (embedded) | N/A |
 
@@ -54,10 +54,10 @@ make installer-simple    # PowerShell
 
 ```powershell
 # Option 1: IExpress installer (recommended)
-.\keyrx-installer-v0.1.5.exe
+.\keyrx-installer-v1.0.0.exe
 
 # Option 2: PowerShell installer
-powershell.exe -ExecutionPolicy Bypass -File keyrx-installer-v0.1.5.ps1
+powershell.exe -ExecutionPolicy Bypass -File keyrx-installer-v1.0.0.ps1
 ```
 
 ## ✨ Key Features
@@ -191,8 +191,8 @@ scripts/installer/
 
 # Generated output files:
 scripts/installer/
-├── keyrx-installer-v0.1.5.exe  # IExpress installer
-└── keyrx-installer-v0.1.5.ps1  # PowerShell installer
+├── keyrx-installer-v1.0.0.exe  # IExpress installer
+└── keyrx-installer-v1.0.0.ps1  # PowerShell installer
 ```
 
 ## 🎨 Customization
@@ -233,7 +233,7 @@ Sign the installer for professional distribution:
 
 ```powershell
 # Get code signing certificate from trusted CA
-signtool sign /f mycert.pfx /p password /t http://timestamp.digicert.com keyrx-installer-v0.1.5.exe
+signtool sign /f mycert.pfx /p password /t http://timestamp.digicert.com keyrx-installer-v1.0.0.exe
 ```
 
 Benefits:
@@ -246,7 +246,7 @@ Benefits:
 Generate SHA256 checksums for verification:
 
 ```powershell
-Get-FileHash keyrx-installer-v0.1.5.exe -Algorithm SHA256
+Get-FileHash keyrx-installer-v1.0.0.exe -Algorithm SHA256
 ```
 
 Users can verify downloads match published checksums.
@@ -256,7 +256,7 @@ Users can verify downloads match published checksums.
 Automated builds on tag push:
 
 ```yaml
-# Triggers on version tags: v0.1.5, v1.0.0, etc.
+# Triggers on version tags: v1.0.0, v1.0.0, etc.
 on:
   push:
     tags:
@@ -277,7 +277,7 @@ What it does:
 
 ```powershell
 # Install
-.\keyrx-installer-v0.1.5.exe
+.\keyrx-installer-v1.0.0.exe
 
 # Verify installation
 keyrx_daemon --version
@@ -304,10 +304,10 @@ Test-Path "$env:ProgramFiles\KeyRx"  # Should be False
 
 ```powershell
 # IExpress silent install
-.\keyrx-installer-v0.1.5.exe /Q
+.\keyrx-installer-v1.0.0.exe /Q
 
 # PowerShell silent install
-powershell.exe -ExecutionPolicy Bypass -File keyrx-installer-v0.1.5.ps1 -Silent
+powershell.exe -ExecutionPolicy Bypass -File keyrx-installer-v1.0.0.ps1 -Silent
 ```
 
 ## 📊 Performance Metrics
@@ -428,8 +428,8 @@ make installer-simple   # PowerShell
 
 ### Output
 
-- `keyrx-installer-v0.1.5.exe` - Professional self-extracting installer
-- `keyrx-installer-v0.1.5.ps1` - Simple PowerShell installer
+- `keyrx-installer-v1.0.0.exe` - Professional self-extracting installer
+- `keyrx-installer-v1.0.0.ps1` - Simple PowerShell installer
 
 ### Distribution
 

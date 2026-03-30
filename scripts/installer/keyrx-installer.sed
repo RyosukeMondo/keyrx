@@ -22,11 +22,11 @@ UserQuietInstCmd=%UserQuietInstCmd%
 SourceFiles=SourceFiles
 
 [Strings]
-InstallPrompt=KeyRx v0.1.5 - Advanced Keyboard Remapping. Click OK to install.
+InstallPrompt=KeyRx v1.0.0 - Advanced Keyboard Remapping. Click OK to install.
 DisplayLicense=LICENSE
-FinishMessage=KeyRx v0.1.5 has been installed successfully! You can now run keyrx_daemon from the command line.
-TargetName=.\keyrx-installer-v0.1.5.exe
-FriendlyName=KeyRx Installer v0.1.5
+FinishMessage=KeyRx v1.0.0 has been installed successfully! You can now run keyrx_daemon from the command line.
+TargetName=.\keyrx-installer-v1.0.0.exe
+FriendlyName=KeyRx Installer v1.0.0
 AppLaunched=powershell.exe -ExecutionPolicy Bypass -File install.ps1
 PostInstallCmd=<None>
 AdminQuietInstCmd=powershell.exe -ExecutionPolicy Bypass -File install.ps1 -Silent

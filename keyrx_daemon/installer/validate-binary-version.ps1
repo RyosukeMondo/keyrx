@@ -56,7 +56,7 @@ try {
 
     Write-InstallerLog "Version output: $versionOutput"
 
-    # Parse version from output (format: "keyrx_daemon 0.1.5" or similar)
+    # Parse version from output (format: "keyrx_daemon 1.0.0" or similar)
     if ($versionOutput -match "(\d+\.\d+\.\d+)") {
         $actualVersion = $matches[1]
         Write-InstallerLog "Parsed binary version: $actualVersion"

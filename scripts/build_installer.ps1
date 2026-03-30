@@ -15,6 +15,15 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent $ScriptDir
 
+# Read version from Cargo.toml (SSOT)
+$CargoToml = Get-Content (Join-Path $RootDir "Cargo.toml") -Raw
+if ($CargoToml -match 'version\s*=\s*"([^"]+)"') {
+    $Version = $Matches[1]
+} else {
+    $Version = "1.0.0"
+}
+Write-Info "Version: $Version (from Cargo.toml)"
+
 # Colors
 function Write-Info { Write-Host "INFO: $args" -ForegroundColor Cyan }
 function Write-Success { Write-Host "SUCCESS: $args" -ForegroundColor Green }
@@ -191,14 +200,14 @@ if ($UseInno) {
         exit 1
     }
 
-    iscc $IssFile
+    iscc "/DAppVersion=$Version" $IssFile
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Inno Setup compilation failed"
         Pop-Location
         exit 1
     }
 
-    $InstallerPath = Join-Path $OutputDir "keyrx-setup-v0.1.5-windows-x64.exe"
+    $InstallerPath = Join-Path $OutputDir "keyrx-setup-v$Version-windows-x64.exe"
 
 } elseif ($UseWix) {
     Write-Info "Building WiX MSI installer..."
@@ -229,7 +238,7 @@ if ($UseInno) {
         New-Item -ItemType Directory -Path $WixObjDir | Out-Null
     }
 
-    candle $WxsFile $UiWxsPath -o "$WixObjDir\"
+    candle "-dProductVersion=$Version" $WxsFile $UiWxsPath -o "$WixObjDir\"
     if ($LASTEXITCODE -ne 0) {
         Write-Error "WiX candle failed"
         Pop-Location
@@ -238,14 +247,14 @@ if ($UseInno) {
 
     # Link
     Write-Info "Linking with light.exe..."
-    light "$WixObjDir\keyrx-installer.wixobj" "$WixObjDir\ui-files.wixobj" -o "$OutputDir\keyrx-setup-v0.1.5-windows-x64.msi" -ext WixUIExtension
+    light "$WixObjDir\keyrx-installer.wixobj" "$WixObjDir\ui-files.wixobj" -o "$OutputDir\keyrx-setup-v$Version-windows-x64.msi" -ext WixUIExtension
     if ($LASTEXITCODE -ne 0) {
         Write-Error "WiX light failed"
         Pop-Location
         exit 1
     }
 
-    $InstallerPath = Join-Path $OutputDir "keyrx-setup-v0.1.5-windows-x64.msi"
+    $InstallerPath = Join-Path $OutputDir "keyrx-setup-v$Version-windows-x64.msi"
 
 } elseif ($UseNsis) {
     Write-Info "Building NSIS installer..."
@@ -257,14 +266,14 @@ if ($UseInno) {
         exit 1
     }
 
-    makensis $NsiFile
+    makensis "/DVERSION=$Version" $NsiFile
     if ($LASTEXITCODE -ne 0) {
         Write-Error "NSIS compilation failed"
         Pop-Location
         exit 1
     }
 
-    $InstallerPath = Join-Path $OutputDir "keyrx-setup-v0.1.5-windows-x64.exe"
+    $InstallerPath = Join-Path $OutputDir "keyrx-setup-v$Version-windows-x64.exe"
 }
 
 Pop-Location

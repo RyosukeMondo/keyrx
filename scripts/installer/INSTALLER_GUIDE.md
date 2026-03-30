@@ -10,7 +10,7 @@ This guide covers **three different approaches** to create a self-contained Wind
 # Build everything and create installer
 .\scripts\installer\build-installer.ps1
 
-# Output: keyrx-installer-v0.1.5.exe (self-extracting)
+# Output: keyrx-installer-v1.0.0.exe (self-extracting)
 ```
 
 **Result:** Professional Windows installer that extracts and runs automatically.
@@ -21,7 +21,7 @@ This guide covers **three different approaches** to create a self-contained Wind
 # Create self-contained PowerShell script
 .\scripts\installer\create-simple-installer.ps1
 
-# Output: keyrx-installer-v0.1.5.ps1 (all files embedded)
+# Output: keyrx-installer-v1.0.0.ps1 (all files embedded)
 ```
 
 **Result:** Single PowerShell script with everything embedded as Base64.
@@ -54,16 +54,16 @@ This guide covers **three different approaches** to create a self-contained Wind
 ```
 
 **Output:**
-- `scripts/installer/keyrx-installer-v0.1.5.exe`
+- `scripts/installer/keyrx-installer-v1.0.0.exe`
 
 **How users install:**
 
 ```powershell
 # Interactive installation
-.\keyrx-installer-v0.1.5.exe
+.\keyrx-installer-v1.0.0.exe
 
 # Silent installation
-.\keyrx-installer-v0.1.5.exe /Q
+.\keyrx-installer-v1.0.0.exe /Q
 ```
 
 **What it does:**
@@ -100,13 +100,13 @@ This guide covers **three different approaches** to create a self-contained Wind
 ```
 
 **Output:**
-- `scripts/installer/keyrx-installer-v0.1.5.ps1`
+- `scripts/installer/keyrx-installer-v1.0.0.ps1`
 
 **How users install:**
 
 ```powershell
 # Run as administrator
-powershell.exe -ExecutionPolicy Bypass -File keyrx-installer-v0.1.5.ps1
+powershell.exe -ExecutionPolicy Bypass -File keyrx-installer-v1.0.0.ps1
 
 # Or right-click → "Run with PowerShell" (as Administrator)
 ```
@@ -229,12 +229,12 @@ Place `LICENSE.txt` in the temp directory and configure IExpress to display it.
 ### What to Distribute
 
 **Option 1 (IExpress):**
-- Distribute `keyrx-installer-v0.1.5.exe`
+- Distribute `keyrx-installer-v1.0.0.exe`
 - Single file, ~5-10 MB
 - Users just run the .exe
 
 **Option 2 (PowerShell):**
-- Distribute `keyrx-installer-v0.1.5.ps1`
+- Distribute `keyrx-installer-v1.0.0.ps1`
 - Single file, ~5-10 MB
 - Users run with PowerShell (as Administrator)
 
@@ -255,7 +255,7 @@ For professional distribution, sign the installer:
 ```powershell
 # Get a code signing certificate from a trusted CA
 # Then sign the executable:
-signtool sign /f mycert.pfx /p password /t http://timestamp.digicert.com keyrx-installer-v0.1.5.exe
+signtool sign /f mycert.pfx /p password /t http://timestamp.digicert.com keyrx-installer-v1.0.0.exe
 ```
 
 Benefits:
@@ -274,7 +274,7 @@ Benefits:
 
 ```powershell
 # Run installer
-.\keyrx-installer-v0.1.5.exe
+.\keyrx-installer-v1.0.0.exe
 
 # Verify installation
 keyrx_daemon --version
@@ -303,7 +303,7 @@ keyrx_daemon --version  # Should fail (not in PATH)
 
 ```powershell
 # Silent install
-.\keyrx-installer-v0.1.5.exe /Q
+.\keyrx-installer-v1.0.0.exe /Q
 
 # Silent uninstall
 powershell.exe -ExecutionPolicy Bypass -File "$env:ProgramFiles\KeyRx\uninstall.ps1" -Silent
@@ -344,7 +344,7 @@ powershell.exe -ExecutionPolicy Bypass -File installer.ps1
 
 ## 📊 File Sizes
 
-Approximate sizes for v0.1.5:
+Approximate sizes for v1.0.0:
 
 | Component | Size |
 |-----------|------|

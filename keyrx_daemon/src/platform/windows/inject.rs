@@ -31,8 +31,7 @@ impl EventInjector {
             input.Anonymous.ki = KEYBDINPUT {
                 wVk: vk,
                 wScan: scan,
-                dwFlags: (if is_release { KEYEVENTF_KEYUP } else { 0 })
-                    | KEYEVENTF_SCANCODE,
+                dwFlags: (if is_release { KEYEVENTF_KEYUP } else { 0 }) | KEYEVENTF_SCANCODE,
                 time: 0,
                 dwExtraInfo: DAEMON_OUTPUT_MARKER,
             };

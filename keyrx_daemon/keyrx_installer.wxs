@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Version passed via candle -dProductVersion=x.y.z (SSOT: Cargo.toml) -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?ifndef ProductVersion ?>
+    <?define ProductVersion="0.0.0" ?>
+  <?endif ?>
   <Product
     Id="*"
     Name="KeyRx Keyboard Remapper"
     Language="1033"
-    Version="1.0.0.0"
+    Version="$(var.ProductVersion).0"
     Manufacturer="KeyRx Project"
     UpgradeCode="A5B3C8D1-E9F2-4A7C-B6D3-1E8F9A2C5D7B">
 
@@ -26,7 +30,7 @@
                   Execute="immediate"
                   Return="check"
                   Directory="TARGETDIR"
-                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;$bin='target\release\keyrx_daemon.exe'; if(!(Test-Path $bin)){Write-Host 'Binary not found'; exit 1} $f=Get-Item $bin; $age=(Get-Date)-$f.LastWriteTime; if($age.TotalHours -gt 24){Write-Host 'Binary too old'; exit 1} $v=&amp; $bin --version 2&gt;&amp;1; if($v -match '0\.1\.5'){exit 0}else{Write-Host 'Version mismatch'; exit 1}&quot;" />
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;$bin='target\release\keyrx_daemon.exe'; if(!(Test-Path $bin)){Write-Host 'Binary not found'; exit 1} $f=Get-Item $bin; $age=(Get-Date)-$f.LastWriteTime; if($age.TotalHours -gt 24){Write-Host 'Binary too old'; exit 1} $v=&amp; $bin --version 2&gt;&amp;1; if($v -match '$(var.ProductVersion)'){exit 0}else{Write-Host 'Version mismatch'; exit 1}&quot;" />
 
     <!-- Admin rights validation -->
     <Condition Message="This installer requires administrator privileges. Please run as Administrator.">
@@ -54,7 +58,7 @@
     <Binary Id="VerifyInstallationPS1" SourceFile="keyrx_daemon\installer\verify-installation.ps1" />
     <CustomAction Id="VerifyInstallation_SetProperty"
                   Property="VerifyInstallation"
-                  Value="&quot;[WindowsFolder]System32\WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[#verify_installation.ps1]&quot; -InstallDir &quot;[INSTALLFOLDER]&quot; -ExpectedVersion &quot;0.1.5&quot; -ShowMessageBox"
+                  Value="&quot;[WindowsFolder]System32\WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[#verify_installation.ps1]&quot; -InstallDir &quot;[INSTALLFOLDER]&quot; -ExpectedVersion &quot;$(var.ProductVersion)&quot; -ShowMessageBox"
                   Execute="immediate" />
     <CustomAction Id="VerifyInstallation"
                   BinaryKey="WixCA"

@@ -1,10 +1,44 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, MutationCache } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { getErrorMessage } from '../utils/errorUtils';
+
+// Type-safe mutation meta for global toast control
+declare module '@tanstack/react-query' {
+  interface Register {
+    mutationMeta: {
+      /** Skip global error toast (for mutations with inline error UI) */
+      suppressGlobalError?: boolean;
+      /** Show success toast with this message */
+      successMessage?: string;
+    };
+  }
+}
+
+/**
+ * Global mutation cache — SSOT for mutation error/success notifications.
+ *
+ * MutationCache.onError fires for ALL mutations, alongside per-mutation
+ * onError handlers (e.g., optimistic rollback). This means existing
+ * mutations with onError for cache rollback need zero changes.
+ */
+const mutationCache = new MutationCache({
+  onError: (error, _variables, _context, mutation) => {
+    if (mutation.meta?.suppressGlobalError) return;
+    toast.error(getErrorMessage(error, 'Operation failed'));
+  },
+  onSuccess: (_data, _variables, _context, mutation) => {
+    if (mutation.meta?.successMessage) {
+      toast.success(mutation.meta.successMessage);
+    }
+  },
+});
 
 /**
  * React Query client configuration
  * Centralized configuration for caching, refetching, and error handling
  */
 export const queryClient = new QueryClient({
+  mutationCache,
   defaultOptions: {
     queries: {
       // Stale time: data considered fresh for 30 seconds

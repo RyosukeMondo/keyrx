@@ -26,6 +26,14 @@ interface EmptyResponse {
 }
 
 /**
+ * Profile configuration with name and source code
+ */
+export interface ProfileConfig {
+  name: string;
+  source: string;
+}
+
+/**
  * Fetch active profile name
  * Returns the currently active profile name or null if none
  */
@@ -34,6 +42,17 @@ export async function fetchActiveProfile(): Promise<string | null> {
     '/api/profiles/active'
   );
   return response.active_profile;
+}
+
+/**
+ * Fetch profile configuration source code via REST API
+ */
+export async function fetchProfileConfig(
+  name: string
+): Promise<ProfileConfig> {
+  return apiClient.get<ProfileConfig>(
+    `/api/profiles/${encodeURIComponent(name)}/config`
+  );
 }
 
 /**

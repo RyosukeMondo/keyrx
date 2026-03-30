@@ -97,7 +97,10 @@ pub fn query_windows_ime_debug() -> HashMap<String, serde_json::Value> {
             let mut conversion = 0u32;
             let mut sentence = 0u32;
             ImmGetConversionStatus(himc, &mut conversion, &mut sentence);
-            result.insert("conversion_mode".into(), json!(format!("0x{:08X}", conversion)));
+            result.insert(
+                "conversion_mode".into(),
+                json!(format!("0x{:08X}", conversion)),
+            );
             result.insert("sentence_mode".into(), json!(format!("0x{:08X}", sentence)));
 
             ImmReleaseContext(hwnd, himc);

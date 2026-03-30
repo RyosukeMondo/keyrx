@@ -148,14 +148,14 @@ if ($isAdmin) {
 
 2. **Option 2: Use Run As Administrator from Explorer**
    ```
-   1. Right-click on KeyRx-0.1.5-x64.msi
+   1. Right-click on KeyRx-1.0.0-x64.msi
    2. Select "Run as administrator"
    3. Follow installation wizard
    ```
 
 3. **Option 3: Command Line with Elevation**
    ```powershell
-   Start-Process powershell -Verb runAs -ArgumentList "-Command", "msiexec /i target\installer\KeyRx-0.1.5-x64.msi /qn"
+   Start-Process powershell -Verb runAs -ArgumentList "-Command", "msiexec /i target\installer\KeyRx-1.0.0-x64.msi /qn"
    ```
 
 **Prevention:**
@@ -232,7 +232,7 @@ Get-Process -Name keyrx_daemon -ErrorAction SilentlyContinue
 ```
 ERROR: Version mismatch detected
 Binary version: 0.1.4
-MSI version: 0.1.5
+MSI version: 1.0.0
 
 This installer contains the wrong binary.
 Please rebuild the installer with the correct version.
@@ -254,7 +254,7 @@ Please rebuild the installer with the correct version.
 .\scripts\version-check.ps1
 
 # Expected output shows mismatches:
-# Cargo.toml          0.1.5      ✓
+# Cargo.toml          1.0.0      ✓
 # package.json        0.1.4      ✗  <- MISMATCH
 # Source Binary       0.1.4      ✗  <- MISMATCH
 ```
@@ -264,7 +264,7 @@ Please rebuild the installer with the correct version.
 1. **Option 1: Sync Versions and Rebuild**
    ```bash
    # Sync all version sources
-   ./scripts/sync-version.sh 0.1.5
+   ./scripts/sync-version.sh 1.0.0
 
    # Clean rebuild
    cargo clean
@@ -550,12 +550,12 @@ Get-Content "$env:USERPROFILE\.keyrx\daemon_config.toml"
   Admin: True
 
 [Version Analysis]
-  Cargo.toml: 0.1.5
-  package.json: 0.1.5
-  WiX installer: 0.1.5.0
-  Source binary: 0.1.5
-  Installed binary: 0.1.5
-  Running daemon: 0.1.5
+  Cargo.toml: 1.0.0
+  package.json: 1.0.0
+  WiX installer: 1.0.0.0
+  Source binary: 1.0.0
+  Installed binary: 1.0.0
+  Running daemon: 1.0.0
   ✓ All versions consistent
 
 [File Analysis]
@@ -728,7 +728,7 @@ if ($process) {
 Start-Process "C:\Program Files\KeyRx\bin\keyrx_daemon.exe" -Verb RunAs -ArgumentList "run"
 
 # Option 2: Via installer (automatically starts with admin)
-msiexec /i KeyRx-0.1.5-x64.msi /qn
+msiexec /i KeyRx-1.0.0-x64.msi /qn
 
 # Option 3: Create shortcut with "Run as administrator"
 # 1. Right-click keyrx_daemon.exe → Create shortcut
@@ -743,7 +743,7 @@ See [version-management.md](version-management.md) for detailed version manageme
 **Quick Fix:**
 ```bash
 # Sync all versions
-./scripts/sync-version.sh 0.1.5
+./scripts/sync-version.sh 1.0.0
 
 # Verify
 ./scripts/sync-version.sh --check

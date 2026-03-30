@@ -51,7 +51,7 @@ This document compares the different Windows installer approaches for KeyRx.
 .\scripts\installer\build-installer.ps1
 ```
 
-**Output:** `keyrx-installer-v0.1.5.exe`
+**Output:** `keyrx-installer-v1.0.0.exe`
 
 ---
 
@@ -85,7 +85,7 @@ This document compares the different Windows installer approaches for KeyRx.
 .\scripts\installer\create-simple-installer.ps1
 ```
 
-**Output:** `keyrx-installer-v0.1.5.ps1`
+**Output:** `keyrx-installer-v1.0.0.ps1`
 
 ---
 
@@ -120,7 +120,7 @@ This document compares the different Windows installer approaches for KeyRx.
 make msi  # Uses scripts/windows/build_msi.bat
 ```
 
-**Output:** `keyrx-v0.1.5.msi`
+**Output:** `keyrx-v1.0.0.msi`
 
 **Note:** Currently available but requires WiX Toolset installation.
 
@@ -358,13 +358,13 @@ make msi  # Uses scripts/windows/build_msi.bat
 ### IExpress Quick Start
 ```powershell
 .\scripts\installer\build-installer.ps1
-# Output: keyrx-installer-v0.1.5.exe
+# Output: keyrx-installer-v1.0.0.exe
 ```
 
 ### PowerShell Quick Start
 ```powershell
 .\scripts\installer\create-simple-installer.ps1
-# Output: keyrx-installer-v0.1.5.ps1
+# Output: keyrx-installer-v1.0.0.ps1
 ```
 
 ### Build Both

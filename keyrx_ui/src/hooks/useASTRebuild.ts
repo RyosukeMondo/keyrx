@@ -1,7 +1,11 @@
 import { useCallback } from 'react';
 import { useDevices } from '@/hooks/useDevices';
 import type { KeyMapping } from '@/types';
-import type { KeyMapping as RhaiKeyMapping, RhaiAST } from '@/utils/rhaiParser';
+import type {
+  KeyMapping as RhaiKeyMapping,
+  RhaiAST,
+  DeviceBlock,
+} from '@/utils/rhaiParser';
 import type { Device } from '@/components/DeviceSelector';
 
 interface UseASTRebuildProps {
@@ -73,60 +77,65 @@ export function useASTRebuild({
     // Get all layers from store
     const allLayers = configStore.getAllLayers();
 
-    // Build global mappings (base layer only)
-    const globalMappings: RhaiKeyMapping[] = [];
-    if (globalSelected) {
+    // Helper: build layer structures from store (non-base layers)
+    const buildLayers = () =>
+      allLayers
+        .filter((layerId) => layerId !== 'base')
+        .map((layerId) => {
+          const layerMappings = configStore.getLayerMappings(layerId);
+          const rhaiMappings: RhaiKeyMapping[] = [];
+          layerMappings.forEach((mapping, key) => {
+            rhaiMappings.push(convertToRhaiMapping(key, mapping));
+          });
+          // Convert layer ID to modifier format (md-00 -> MD_00)
+          const modifierName = layerId.toUpperCase().replace('-', '_');
+          return {
+            modifiers: [modifierName],
+            mappings: rhaiMappings,
+            startLine: 0,
+            endLine: 0,
+          };
+        })
+        .filter((layer) => layer.mappings.length > 0);
+
+    // Helper: build base mappings from store
+    const buildBaseMappings = (): RhaiKeyMapping[] => {
       const baseMappings = configStore.getLayerMappings('base');
+      const result: RhaiKeyMapping[] = [];
       baseMappings.forEach((mapping, key) => {
-        globalMappings.push(convertToRhaiMapping(key, mapping));
+        result.push(convertToRhaiMapping(key, mapping));
+      });
+      return result;
+    };
+
+    const globalMappings: RhaiKeyMapping[] = [];
+    const deviceBlocks: DeviceBlock[] = [];
+
+    if (globalSelected) {
+      // When global is selected, wrap mappings in device_start("*") block
+      // to preserve the wildcard device pattern and layer structures
+      deviceBlocks.push({
+        pattern: '*',
+        mappings: buildBaseMappings(),
+        layers: buildLayers(),
+        startLine: 0,
+        endLine: 0,
       });
     }
 
-    // Build device blocks with layer structures
-    const deviceBlocks = selectedDevices
-      .map((deviceId) => {
-        const device = devices.find((d) => d.id === deviceId);
-        if (!device) return null;
+    // Build device-specific blocks for selected devices
+    selectedDevices.forEach((deviceId) => {
+      const device = devices.find((d) => d.id === deviceId);
+      if (!device) return;
 
-        // Base mappings for this device
-        const baseMappings = configStore.getLayerMappings('base');
-        const deviceBaseMappings: RhaiKeyMapping[] = [];
-        baseMappings.forEach((mapping, key) => {
-          deviceBaseMappings.push(convertToRhaiMapping(key, mapping));
-        });
-
-        // Layer-specific mappings
-        const layers = allLayers
-          .filter((layerId) => layerId !== 'base')
-          .map((layerId) => {
-            const layerMappings = configStore.getLayerMappings(layerId);
-            const rhaiMappings: RhaiKeyMapping[] = [];
-
-            layerMappings.forEach((mapping, key) => {
-              rhaiMappings.push(convertToRhaiMapping(key, mapping));
-            });
-
-            // Convert layer ID to modifier format (md-00 -> MD_00)
-            const modifierName = layerId.toUpperCase().replace('-', '_');
-
-            return {
-              modifiers: [modifierName],
-              mappings: rhaiMappings,
-              startLine: 0,
-              endLine: 0,
-            };
-          })
-          .filter((layer) => layer.mappings.length > 0);
-
-        return {
-          pattern: device.serial || device.name,
-          mappings: deviceBaseMappings,
-          layers,
-          startLine: 0,
-          endLine: 0,
-        };
-      })
-      .filter((block): block is NonNullable<typeof block> => block !== null);
+      deviceBlocks.push({
+        pattern: device.serial || device.name,
+        mappings: buildBaseMappings(),
+        layers: buildLayers(),
+        startLine: 0,
+        endLine: 0,
+      });
+    });
 
     // Update sync engine with new AST
     syncEngine.onVisualChange({
