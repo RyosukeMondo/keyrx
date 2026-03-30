@@ -4,15 +4,13 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { LayoutPreviewProvider } from './contexts/LayoutPreviewContext';
+import { ToastProvider } from './components/ToastProvider';
 import { WasmProvider } from './contexts/WasmContext';
 
-// Lazy load all page components for code splitting
-const HomePage = lazy(() => import('./pages/HomePage'));
-const DevicesPage = lazy(() => import('./pages/DevicesPage'));
-const ProfilesPage = lazy(() => import('./pages/ProfilesPage'));
+// Lazy load page components for code splitting
 const ConfigPage = lazy(() => import('./pages/ConfigPage'));
-const MetricsPage = lazy(() => import('./pages/MetricsPage'));
-const SimulatorPage = lazy(() => import('./pages/SimulatorPage'));
+const DevicesPage = lazy(() => import('./pages/DevicesPage'));
+const MonitorPage = lazy(() => import('./pages/MonitorPage'));
 
 function App() {
   return (
@@ -29,22 +27,41 @@ function App() {
                 }
               >
                 <Routes>
-                  <Route path="/" element={<Navigate to="/home" replace />} />
-                  <Route path="/home" element={<HomePage />} />
-                  <Route path="/devices" element={<DevicesPage />} />
-                  <Route path="/profiles" element={<ProfilesPage />} />
+                  <Route path="/" element={<ConfigPage />} />
                   <Route
                     path="/profiles/:name/config"
                     element={<ConfigPage />}
                   />
-                  <Route path="/config" element={<ConfigPage />} />
-                  <Route path="/metrics" element={<MetricsPage />} />
-                  <Route path="/simulator" element={<SimulatorPage />} />
-                  <Route path="*" element={<Navigate to="/home" replace />} />
+                  <Route path="/devices" element={<DevicesPage />} />
+                  <Route path="/monitor" element={<MonitorPage />} />
+
+                  {/* Legacy redirects */}
+                  <Route
+                    path="/home"
+                    element={<Navigate to="/" replace />}
+                  />
+                  <Route
+                    path="/profiles"
+                    element={<Navigate to="/" replace />}
+                  />
+                  <Route
+                    path="/config"
+                    element={<Navigate to="/" replace />}
+                  />
+                  <Route
+                    path="/simulator"
+                    element={<Navigate to="/" replace />}
+                  />
+                  <Route
+                    path="/metrics"
+                    element={<Navigate to="/monitor" replace />}
+                  />
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Suspense>
             </Layout>
           </BrowserRouter>
+          <ToastProvider />
         </LayoutPreviewProvider>
       </WasmProvider>
     </ErrorBoundary>

@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/Card';
-import { type Device } from '@/components/DeviceSelector';
-import { KeyConfigPanel } from '@/components/KeyConfigPanel';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   useGetProfileConfig,
   useSetProfileConfig,
@@ -10,30 +7,22 @@ import {
 import { useProfiles, useCreateProfile } from '@/hooks/useProfiles';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
 import { useConfigStore } from '@/stores/configStore';
-import type { KeyMapping } from '@/types';
 import { ProfileTemplate } from '@/types';
 import type { LayoutType } from '@/components/KeyboardVisualizer';
 
-// Import custom hooks
+// Custom hooks
 import { useProfileSelection } from '@/hooks/useProfileSelection';
 import { useCodePanel } from '@/hooks/useCodePanel';
 import { useKeyboardLayout } from '@/hooks/useKeyboardLayout';
 import { useConfigSync } from '@/hooks/useConfigSync';
-import { useASTRebuild } from '@/hooks/useASTRebuild';
-import { useDeviceMerging } from '@/hooks/useDeviceMerging';
 import { useASTSync } from '@/hooks/useASTSync';
 
-// Import container components
+// Components
 import { CodePanelContainer } from '@/components/config/CodePanelContainer';
-import { ProfileSelector } from '@/components/config/ProfileSelector';
-import { ConfigurationLayout } from '@/components/config/ConfigurationLayout';
 import { SyncStatusIndicator } from '@/components/config/SyncStatusIndicator';
-import { DeviceSelectionPanel } from '@/components/config/DeviceSelectionPanel';
-import { NotificationBanners } from '@/components/config/NotificationBanners';
-import { ConfigScopeTabs } from '@/components/config/ConfigScopeTabs';
-import { GlobalKeyboardPanel } from '@/components/config/GlobalKeyboardPanel';
-import { DeviceKeyboardPanel } from '@/components/config/DeviceKeyboardPanel';
-import { DiagnosticsPanel } from '@/components/config/DiagnosticsPanel';
+import { ProfileSidebar } from '@/components/config/ProfileSidebar';
+import { EditTab } from '@/components/config/EditTab';
+import { SimulatorTab } from '@/components/config/SimulatorTab';
 
 /** Auto-detect keyboard layout from Rhai config source */
 function detectLayoutFromSource(source: string | undefined): LayoutType {
@@ -50,28 +39,28 @@ function detectLayoutFromSource(source: string | undefined): LayoutType {
     'VK_Henkan',
     'VK_Muhenkan',
   ];
-  const hasJisKeys = jisKeys.some((k) => source.includes(k));
-  return hasJisKeys ? 'JIS_109' : 'ANSI_104';
+  return jisKeys.some((k) => source.includes(k)) ? 'JIS_109' : 'ANSI_104';
 }
 
-interface ConfigPageProps {
-  profileName?: string;
-}
+type ActiveTab = 'edit' | 'test';
 
-const ConfigPage: React.FC<ConfigPageProps> = ({
-  profileName: propProfileName,
-}) => {
+const ConfigPage: React.FC = () => {
   const navigate = useNavigate();
+  const { name: routeProfileName } = useParams<{ name: string }>();
   const api = useUnifiedApi();
 
-  // Custom hooks for state management
+  // Profile selection (route param feeds into priority chain)
   const { selectedProfileName, setSelectedProfileName } =
-    useProfileSelection(propProfileName);
+    useProfileSelection(routeProfileName);
+
+  // Code panel state
   const {
     isOpen: isCodePanelOpen,
     height: _codePanelHeight,
     toggleOpen: toggleCodePanel,
   } = useCodePanel();
+
+  // Sync engine
   const {
     syncEngine,
     syncStatus,
@@ -80,37 +69,14 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     setLastSaveTime,
   } = useConfigSync(selectedProfileName);
 
-  // Fetch available profiles
+  // Profiles
   const { data: profiles, isLoading: isLoadingProfiles } = useProfiles();
   const { mutateAsync: createProfile } = useCreateProfile();
 
-  // Visual editor state - now using Zustand store for layer-aware mappings
+  // Config store (Zustand)
   const configStore = useConfigStore();
-  const [selectedPhysicalKey, setSelectedPhysicalKey] = useState<string | null>(
-    null
-  );
 
-  // Computed: Get current layer's mappings for display
-  const keyMappings = configStore.getLayerMappings(configStore.activeLayer);
-  const activeLayer = configStore.activeLayer;
-  const globalSelected = configStore.globalSelected;
-  const selectedDevices = configStore.selectedDevices;
-
-  // Available layers
-  const availableLayers = [
-    'base',
-    'md-00',
-    'md-01',
-    'md-02',
-    'md-03',
-    'md-04',
-    'md-05',
-  ];
-
-  // Responsive layout state: 'global' or 'device' for mobile/tablet views
-  const [activePane, setActivePane] = useState<'global' | 'device'>('global');
-
-  // Query for profile config - doesn't block rendering
+  // Profile config query
   const {
     data: profileConfig,
     isLoading,
@@ -118,7 +84,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   } = useGetProfileConfig(selectedProfileName);
   const { mutateAsync: setProfileConfig } = useSetProfileConfig();
 
-  // Auto-detect layout from profile config source, with manual override
+  // Keyboard layout detection
   const detectedLayout = useMemo(
     () => detectLayoutFromSource(profileConfig?.source),
     [profileConfig?.source]
@@ -129,18 +95,34 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     layoutKeys,
   } = useKeyboardLayout(detectedLayout);
 
-  // Auto-update layout when detection changes (e.g., profile switch)
   useEffect(() => {
     setLayout(detectedLayout);
   }, [detectedLayout, setLayout]);
 
-  // Merged device list: connected devices + devices from Rhai (even if disconnected)
-  const mergedDevices = useDeviceMerging({
+  // AST sync (visual editor state from parsed config)
+  useASTSync({
     syncEngine,
     configStore,
+    globalSelected: configStore.globalSelected,
+    selectedDevices: configStore.selectedDevices,
   });
 
-  // Auto-select first profile if "Default" doesn't exist and profiles are loaded
+  // Local UI state
+  const [activeTab, setActiveTab] = useState<ActiveTab>('edit');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Profile existence checks
+  const profileExists =
+    profiles?.some((p) => p.name === selectedProfileName) ?? false;
+  const configMissing =
+    !isLoading && !error && profileExists && !profileConfig?.source;
+
+  // Track profile changes for config loading
+  const lastProfileRef = useRef<string>(selectedProfileName);
+  const configLoadedRef = useRef<boolean>(false);
+
+  // Auto-select first profile if selected doesn't exist
   useEffect(() => {
     if (
       profiles &&
@@ -151,53 +133,21 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     }
   }, [profiles, selectedProfileName, setSelectedProfileName]);
 
-  // Check if selected profile exists
-  const profileExists =
-    profiles?.some((p) => p.name === selectedProfileName) ?? false;
-
-  // Check if config file exists
-  const configMissing =
-    !isLoading && !error && profileExists && !profileConfig?.source;
-
-  // Track last loaded profile to prevent unnecessary re-initialization
-  const lastProfileRef = useRef<string>(selectedProfileName);
-
-  // Track if config has been loaded for current profile
-  const configLoadedRef = useRef<boolean>(false);
-
-  // Update sync engine when profile config loads
+  // Load config into sync engine when profile config arrives
   useEffect(() => {
     const profileChanged = lastProfileRef.current !== selectedProfileName;
-
-    // Reset configLoaded flag when profile changes
     if (profileChanged) {
       lastProfileRef.current = selectedProfileName;
       configLoadedRef.current = false;
     }
 
-    // Load config when:
-    // 1. Profile changed and config is available, OR
-    // 2. Config just became available for current profile (first load)
     const shouldLoadConfig = profileConfig?.source && !configLoadedRef.current;
-
     if (shouldLoadConfig) {
-      // Initialize sync engine with server config (bypasses debounce)
       syncEngine.loadServerConfig(profileConfig.source);
       setSyncStatus('saved');
       configLoadedRef.current = true;
     } else if (profileChanged && configMissing) {
-      // Default config template when config file doesn't exist
-      const defaultTemplate = `// Configuration for profile: ${selectedProfileName}
-// This is a new configuration file
-
-// Example: Simple key remapping
-// map("A", "B");  // Press A → outputs B
-
-// Example: Tap/Hold behavior
-// tap_hold("CapsLock", "Escape", "LCtrl", 200);
-
-// Add your key mappings here...
-`;
+      const defaultTemplate = `// Configuration for profile: ${selectedProfileName}\n// Add your key mappings here...\n`;
       syncEngine.onCodeChange(defaultTemplate);
       setSyncStatus('unsaved');
       configLoadedRef.current = true;
@@ -210,12 +160,8 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     setSyncStatus,
   ]);
 
-  // Track code changes to update sync status
+  // Track code changes for unsaved status
   useEffect(() => {
-    // Mark as unsaved when code changes (except during save)
-    // Note: syncStatus is intentionally NOT in deps to prevent infinite re-render.
-    // This effect should only run when syncEngine.state or profileConfig changes,
-    // not when syncStatus itself changes (which would create a loop).
     if (syncStatus === 'saved' && syncEngine.state === 'idle') {
       const currentCode = syncEngine.getCode();
       const originalCode = profileConfig?.source || '';
@@ -231,29 +177,21 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
     setSyncStatus,
   ]);
 
-  // Sync visual editor state from parsed AST - LAYER-AWARE VERSION
-  useASTSync({
-    syncEngine,
-    configStore,
-    globalSelected,
-    selectedDevices,
-  });
-
-  // Handle profile selection change
-  const handleProfileChange = (newProfileName: string) => {
-    setSelectedProfileName(newProfileName);
-    navigate(`/config?profile=${newProfileName}`);
+  // Handlers
+  const handleProfileSelect = (name: string) => {
+    setSelectedProfileName(name);
+    navigate(`/profiles/${name}/config`, { replace: true });
+    setMobileSidebarOpen(false);
   };
 
-  // Handle profile creation
   const handleCreateProfile = async () => {
     try {
       await createProfile({
         name: selectedProfileName,
         template: ProfileTemplate.Blank,
       });
-    } catch (err) {
-      console.error('Failed to create profile:', err);
+    } catch {
+      // Global MutationCache.onError handles the toast
     }
   };
 
@@ -266,269 +204,161 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
       });
       setSyncStatus('saved');
       setLastSaveTime(new Date());
-    } catch (err) {
-      console.error('Failed to save config:', err);
+    } catch {
       setSyncStatus('unsaved');
     }
   };
 
-  // Handle key click: select key for inline configuration
-  const handlePhysicalKeyClick = (keyCode: string) => {
-    setSelectedPhysicalKey(keyCode);
-  };
-
-  // Handle clear mapping from summary - LAYER-AWARE
-  const handleClearMapping = (keyCode: string) => {
-    configStore.deleteKeyMapping(keyCode, activeLayer);
-    setSyncStatus('unsaved');
-    rebuildAndSyncAST();
-  };
-
-  // Handle save from modal - LAYER-AWARE
-  const handleSaveMapping = (mapping: KeyMapping) => {
-    if (!selectedPhysicalKey) return;
-
-    // Save to active layer in store
-    configStore.setKeyMapping(selectedPhysicalKey, mapping, activeLayer);
-    setSyncStatus('unsaved');
-    rebuildAndSyncAST();
-  };
-
-  // Use merged device list (connected + disconnected from Rhai)
-  const devices: Device[] = mergedDevices;
-
-  // Use AST rebuild hook
-  const rebuildAndSyncAST = useASTRebuild({
-    configStore,
-    syncEngine,
-    globalSelected,
-    selectedDevices,
-    devices,
-  });
-
   return (
-    <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
-      {/* Streamlined Header */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-4 border-b border-slate-700">
-        {/* Left: Profile Selector */}
-        <ProfileSelector
-          value={selectedProfileName}
-          onChange={handleProfileChange}
-          profiles={profiles}
-          isLoading={isLoadingProfiles}
-          disabled={!api.isConnected}
+    <div className="flex h-full min-h-[calc(100vh-4rem)]">
+      {/* Mobile sidebar toggle */}
+      <button
+        className="md:hidden fixed top-16 left-16 z-30 p-2 bg-slate-700 rounded-md text-slate-300 hover:bg-slate-600"
+        onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        aria-label="Toggle profile sidebar"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8M4 18h16" />
+        </svg>
+      </button>
+
+      {/* Mobile sidebar backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
         />
+      )}
 
-        {/* Center: Layout Selector */}
-        <select
-          value={keyboardLayout}
-          onChange={(e) => setLayout(e.target.value as LayoutType)}
-          className="px-3 py-2 bg-slate-700 text-slate-200 text-sm rounded-md border border-slate-600 hover:bg-slate-600 transition-colors"
-          aria-label="Keyboard layout"
-        >
-          <option value="JIS_109">JIS 109</option>
-          <option value="ANSI_104">ANSI 104</option>
-          <option value="ANSI_87">ANSI 87 (TKL)</option>
-          <option value="ISO_105">ISO 105</option>
-          <option value="ISO_88">ISO 88 (TKL)</option>
-          <option value="COMPACT_60">60%</option>
-          <option value="COMPACT_65">65%</option>
-          <option value="COMPACT_75">75%</option>
-          <option value="COMPACT_96">96%</option>
-          <option value="HHKB">HHKB</option>
-          <option value="NUMPAD">Numpad</option>
-        </select>
-
-        {/* Right: Sync Status and Save Button */}
-        <div className="flex items-center gap-3">
-          <SyncStatusIndicator
-            syncStatus={syncStatus}
-            lastSaveTime={lastSaveTime}
-            isConnected={api.isConnected}
-          />
-
-          {/* Code Panel Toggle and Save Button */}
-          <button
-            onClick={toggleCodePanel}
-            className="px-4 py-2 bg-slate-700 text-slate-200 text-sm font-medium rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap border border-slate-600"
-            title={isCodePanelOpen ? 'Hide Code' : 'Show Code'}
-          >
-            {isCodePanelOpen ? '▼ Hide Code' : '▲ Show Code'}
-          </button>
-
-          <button
-            onClick={handleSaveConfig}
-            disabled={
-              !api.isConnected || !profileExists || syncStatus === 'saving'
-            }
-            className="px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-md hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-          >
-            {configMissing ? 'Create' : 'Save'}
-          </button>
-        </div>
+      {/* Profile Sidebar */}
+      <div
+        className={`
+          fixed md:relative z-50 md:z-auto
+          h-full md:h-auto
+          transition-transform duration-300
+          ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${sidebarCollapsed ? 'md:w-12' : 'md:w-64'}
+          flex-shrink-0
+        `}
+      >
+        <ProfileSidebar
+          selectedProfileName={selectedProfileName}
+          onSelectProfile={handleProfileSelect}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
       </div>
 
-      {/* Error/Info Messages */}
-      <NotificationBanners
-        profileName={selectedProfileName}
-        profileExists={profileExists}
-        configMissing={configMissing}
-        error={error}
-        isLoading={isLoading}
-        isConnected={api.isConnected}
-        onCreateProfile={handleCreateProfile}
-      />
-
-      {/* Visual Editor Content (Always visible) */}
-      <ConfigurationLayout profileName={selectedProfileName}>
-        {/* Device Selection Panel */}
-        <DeviceSelectionPanel
-          devices={devices}
-          globalSelected={globalSelected}
-          selectedDevices={selectedDevices}
-          onToggleGlobal={(selected) => configStore.setGlobalSelected(selected)}
-          onToggleDevice={(deviceId, selected) => {
-            if (selected) {
-              configStore.setSelectedDevices([...selectedDevices, deviceId]);
-            } else {
-              configStore.setSelectedDevices(
-                selectedDevices.filter((id) => id !== deviceId)
-              );
-            }
-          }}
-        />
-
-        {/* Tab Navigation - Accessible tabs for Global/Device switching */}
-        {globalSelected && selectedDevices.length > 0 && (
-          <ConfigScopeTabs
-            activePane={activePane}
-            onPaneChange={setActivePane}
-          />
-        )}
-
-        {/* Single-Pane Layout: Show one pane at a time (tabs control visibility) */}
-        <div className="flex flex-col gap-4">
-          {/* Global Keyboard Panel */}
-          <GlobalKeyboardPanel
-            profileName={selectedProfileName}
-            activeLayer={activeLayer}
-            availableLayers={availableLayers}
-            onLayerChange={configStore.setActiveLayer}
-            globalSelected={globalSelected}
-            onToggleGlobal={configStore.setGlobalSelected}
-            keyMappings={keyMappings}
-            onKeyClick={handlePhysicalKeyClick}
-            selectedKeyCode={selectedPhysicalKey}
-            initialLayout={keyboardLayout}
-            isVisible={selectedDevices.length === 0 || activePane === 'global'}
-          />
-
-          {/* Device-Specific Keyboard Panel */}
-          <DeviceKeyboardPanel
-            profileName={selectedProfileName}
-            activeLayer={activeLayer}
-            availableLayers={availableLayers}
-            onLayerChange={configStore.setActiveLayer}
-            devices={devices}
-            selectedDevices={selectedDevices}
-            onDeviceChange={(oldDeviceId, newDeviceId) => {
-              const updatedDevices = selectedDevices.filter(
-                (id) => id !== oldDeviceId
-              );
-              configStore.setSelectedDevices([...updatedDevices, newDeviceId]);
-            }}
-            keyMappings={keyMappings}
-            onKeyClick={handlePhysicalKeyClick}
-            selectedKeyCode={selectedPhysicalKey}
-            initialLayout={keyboardLayout}
-            isVisible={!globalSelected || activePane === 'device'}
-          />
-
-          {/* Warning if no selection */}
-          {!globalSelected && selectedDevices.length === 0 && (
-            <Card
-              className="bg-yellow-900/20 border border-yellow-700/50 flex-1 block"
-              aria-label="Configuration Warning"
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Header: Tab switcher + actions */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 border-b border-slate-700 flex-shrink-0">
+          {/* Tabs */}
+          <div className="flex rounded-lg bg-slate-800 p-1" role="tablist">
+            <button
+              role="tab"
+              aria-selected={activeTab === 'edit'}
+              onClick={() => setActiveTab('edit')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'edit'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
             >
-              <div className="text-center py-8">
-                <p className="text-yellow-200 text-lg mb-2">
-                  ⚠️ No devices selected
-                </p>
-                <p className="text-yellow-300 text-sm">
-                  Select at least one device or enable "Global Keys" to
-                  configure key mappings
-                </p>
-              </div>
-            </Card>
-          )}
+              Edit
+            </button>
+            <button
+              role="tab"
+              aria-selected={activeTab === 'test'}
+              onClick={() => setActiveTab('test')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'test'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Test
+            </button>
+          </div>
+
+          {/* Actions (Edit tab only shows code toggle + save) */}
+          <div className="flex items-center gap-3">
+            <SyncStatusIndicator
+              syncStatus={syncStatus}
+              lastSaveTime={lastSaveTime}
+              isConnected={api.isConnected}
+            />
+
+            {activeTab === 'edit' && (
+              <>
+                <button
+                  onClick={toggleCodePanel}
+                  className="px-4 py-2 bg-slate-700 text-slate-200 text-sm font-medium rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap border border-slate-600"
+                  title={isCodePanelOpen ? 'Hide Code' : 'Show Code'}
+                >
+                  {isCodePanelOpen ? '▼ Hide Code' : '▲ Show Code'}
+                </button>
+
+                <button
+                  onClick={handleSaveConfig}
+                  disabled={
+                    !api.isConnected ||
+                    !profileExists ||
+                    syncStatus === 'saving'
+                  }
+                  className="px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-md hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                >
+                  {configMissing ? 'Create' : 'Save'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Legend - Color coding */}
-        <div className="flex gap-4 flex-wrap text-xs text-slate-400 px-2">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-green-500"></div>
-            <span>Simple</span>
+        {/* Tab Content — both stay mounted for state preservation */}
+        <div className="flex-1 overflow-y-auto">
+          <div className={activeTab === 'edit' ? '' : 'hidden'}>
+            <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6">
+              <EditTab
+                selectedProfileName={selectedProfileName}
+                profileConfig={profileConfig}
+                isLoading={isLoading}
+                error={error}
+                profileExists={profileExists}
+                configMissing={configMissing}
+                isConnected={api.isConnected}
+                syncEngine={syncEngine}
+                syncStatus={syncStatus}
+                setSyncStatus={setSyncStatus}
+                configStore={configStore}
+                keyboardLayout={keyboardLayout}
+                layoutKeys={layoutKeys}
+                onCreateProfile={handleCreateProfile}
+              />
+
+              {/* Code Panel (Edit tab only) */}
+              <CodePanelContainer
+                profileName={selectedProfileName}
+                rhaiCode={syncEngine.getCode()}
+                onChange={(value) => syncEngine.onCodeChange(value)}
+                syncEngine={syncEngine}
+                isOpen={isCodePanelOpen}
+                onToggle={toggleCodePanel}
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-primary-500"></div>
-            <span>Modifier</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-purple-500"></div>
-            <span>Lock</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-red-500"></div>
-            <span>Tap/Hold</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-yellow-500"></div>
-            <span>Layer Active</span>
+
+          <div className={activeTab === 'test' ? '' : 'hidden'}>
+            <div className="p-4 md:p-6">
+              <SimulatorTab
+                profileName={selectedProfileName}
+                profileConfig={profileConfig}
+              />
+            </div>
           </div>
         </div>
-
-        {/* Current Mappings Summary - Shows active mappings with edit/delete */}
-        {/* Inline Key Configuration Panel */}
-        <KeyConfigPanel
-          physicalKey={selectedPhysicalKey}
-          currentMapping={
-            selectedPhysicalKey
-              ? keyMappings.get(selectedPhysicalKey)
-              : undefined
-          }
-          onSave={handleSaveMapping}
-          onClearMapping={handleClearMapping}
-          onEditMapping={handlePhysicalKeyClick}
-          activeLayer={activeLayer}
-          keyMappings={keyMappings}
-          layoutKeys={layoutKeys}
-        />
-      </ConfigurationLayout>
-
-      {/* Collapsible Code Panel */}
-      <CodePanelContainer
-        profileName={selectedProfileName}
-        rhaiCode={syncEngine.getCode()}
-        onChange={(value) => syncEngine.onCodeChange(value)}
-        syncEngine={syncEngine}
-        isOpen={isCodePanelOpen}
-        onToggle={toggleCodePanel}
-      />
-
-      {/* Debug Panel */}
-      <DiagnosticsPanel
-        isConnected={api.isConnected}
-        readyState={api.readyState}
-        lastError={api.lastError}
-        selectedProfile={selectedProfileName}
-        profileConfig={profileConfig}
-        syncEngine={syncEngine}
-        syncStatus={syncStatus}
-        lastSaveTime={lastSaveTime}
-        configStore={configStore}
-        keyboardLayout={keyboardLayout}
-        layoutKeyCount={layoutKeys.length}
-      />
+      </div>
     </div>
   );
 };

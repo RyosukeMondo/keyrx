@@ -28,55 +28,65 @@ export interface DiagnosticsPanelProps {
   isConnected: boolean;
   readyState: ReadyState;
   lastError: Error | null;
-  selectedProfile: string;
-  profileConfig: { source: string } | undefined;
-  syncEngine: RhaiSyncEngineResult;
-  syncStatus: SyncStatus;
-  lastSaveTime: Date | null;
-  configStore: {
+  // Config-specific props — optional for Monitor page usage
+  selectedProfile?: string;
+  profileConfig?: { source: string } | undefined;
+  syncEngine?: RhaiSyncEngineResult;
+  syncStatus?: SyncStatus;
+  lastSaveTime?: Date | null;
+  configStore?: {
     activeLayer: string;
     globalSelected: boolean;
     selectedDevices: string[];
     getLayerMappings: (layer: string) => Map<string, KeyMapping>;
     getAllLayers: () => string[];
   };
-  keyboardLayout: string;
-  layoutKeyCount: number;
+  keyboardLayout?: string;
+  layoutKeyCount?: number;
   /** Detected keyboard layout from daemon */
   detectedLayout?: string;
 }
 
 function buildDiagnosticData(props: DiagnosticsPanelProps) {
-  return {
+  const data: Record<string, unknown> = {
     connection: {
       isConnected: props.isConnected,
       readyState: READY_STATE_LABELS[props.readyState] || 'UNKNOWN',
       lastError: props.lastError?.message || null,
     },
-    profile: {
+  };
+  if (props.selectedProfile !== undefined) {
+    data.profile = {
       name: props.selectedProfile,
       configLoaded: !!props.profileConfig?.source,
       sourceLength: props.profileConfig?.source?.length || 0,
-      parseState: props.syncEngine.state,
-      parseError: props.syncEngine.error,
-    },
-    mappings: {
+      parseState: props.syncEngine?.state,
+      parseError: props.syncEngine?.error,
+    };
+  }
+  if (props.configStore) {
+    data.mappings = {
       baseMappingCount: props.configStore.getLayerMappings('base').size,
       availableLayers: props.configStore.getAllLayers(),
       activeLayer: props.configStore.activeLayer,
       globalSelected: props.configStore.globalSelected,
       selectedDevices: props.configStore.selectedDevices,
-    },
-    layout: {
+    };
+  }
+  if (props.keyboardLayout !== undefined) {
+    data.layout = {
       type: props.keyboardLayout,
       keyCount: props.layoutKeyCount,
       detectedLayout: props.detectedLayout || 'Not detected',
-    },
-    sync: {
+    };
+  }
+  if (props.syncStatus !== undefined) {
+    data.sync = {
       status: props.syncStatus,
       lastSaveTime: props.lastSaveTime?.toISOString() || null,
-    },
-  };
+    };
+  }
+  return data;
 }
 
 export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = (props) => {

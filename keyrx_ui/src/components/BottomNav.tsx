@@ -1,12 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  Home,
-  Smartphone,
-  User,
   Settings,
+  Smartphone,
   BarChart3,
-  Play,
 } from 'lucide-react';
 
 interface BottomNavProps {
@@ -22,10 +19,10 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    to: '/home',
-    icon: Home,
-    label: 'Home',
-    ariaLabel: 'Navigate to Home page',
+    to: '/',
+    icon: Settings,
+    label: 'Config',
+    ariaLabel: 'Navigate to Configuration page',
   },
   {
     to: '/devices',
@@ -34,28 +31,10 @@ const navItems: NavItem[] = [
     ariaLabel: 'Navigate to Devices page',
   },
   {
-    to: '/profiles',
-    icon: User,
-    label: 'Profiles',
-    ariaLabel: 'Navigate to Profiles page',
-  },
-  {
-    to: '/config',
-    icon: Settings,
-    label: 'Config',
-    ariaLabel: 'Navigate to Configuration page',
-  },
-  {
-    to: '/metrics',
+    to: '/monitor',
     icon: BarChart3,
-    label: 'Metrics',
-    ariaLabel: 'Navigate to Metrics page',
-  },
-  {
-    to: '/simulator',
-    icon: Play,
-    label: 'Sim',
-    ariaLabel: 'Navigate to Simulator page',
+    label: 'Monitor',
+    ariaLabel: 'Navigate to Monitor page',
   },
 ];
 

@@ -76,7 +76,7 @@ export const ActiveProfileCard: React.FC<ActiveProfileCardProps> = ({
             <Button
               variant="primary"
               size="md"
-              onClick={() => navigate('/profiles')}
+              onClick={() => navigate('/')}
               aria-label="Go to profiles page"
             >
               Manage Profiles

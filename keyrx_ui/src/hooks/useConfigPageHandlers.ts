@@ -37,7 +37,7 @@ export function useConfigPageHandlers({
   const handleProfileChange = useCallback(
     (newProfileName: string) => {
       setSelectedProfileName(newProfileName);
-      navigate(`/config/${encodeURIComponent(newProfileName)}`);
+      navigate(`/profiles/${encodeURIComponent(newProfileName)}/config`);
     },
     [setSelectedProfileName, navigate]
   );
@@ -45,8 +45,8 @@ export function useConfigPageHandlers({
   const handleCreateProfile = useCallback(async () => {
     try {
       await createProfile({ name: selectedProfileName });
-    } catch (err) {
-      console.error('Failed to create profile:', err);
+    } catch {
+      // Global MutationCache.onError handles the toast
     }
   }, [createProfile, selectedProfileName]);
 
@@ -60,9 +60,9 @@ export function useConfigPageHandlers({
       });
       setSyncStatus('saved');
       setLastSaveTime(new Date());
-    } catch (err) {
-      console.error('Failed to save config:', err);
+    } catch {
       setSyncStatus('unsaved');
+      // Global MutationCache.onError handles the toast
     }
   }, [
     selectedProfileName,

@@ -1,24 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Card } from '../components/Card';
+import { Card } from '@/components/Card';
 import { Activity, FileCode } from 'lucide-react';
-import { LoadingSkeleton } from '../components/LoadingSkeleton';
-import { useMetricsStore } from '../stores/metricsStore';
-import { useActiveProfile } from '../hooks/useProfiles';
-import { MetricsStatsCards } from '../components/metrics/MetricsStatsCards';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { useMetricsStore } from '@/stores/metricsStore';
+import { useActiveProfile } from '@/hooks/useProfiles';
+import { MetricsStatsCards } from '@/components/metrics/MetricsStatsCards';
 import {
   LatencyChart,
   type LatencyDataPoint,
-} from '../components/metrics/LatencyChart';
+} from '@/components/metrics/LatencyChart';
 import {
   EventLogList,
   type EventLogEntry,
-} from '../components/metrics/EventLogList';
-import { StateSnapshot } from '../components/metrics/StateSnapshot';
+} from '@/components/metrics/EventLogList';
+import { StateSnapshot } from '@/components/metrics/StateSnapshot';
 
-// Types are now imported from components
-
-export const MetricsPage: React.FC = () => {
+export const MonitorPage: React.FC = () => {
   // Connect to metrics store (real WebSocket data)
   const {
     latencyStats,
@@ -94,7 +92,7 @@ export const MetricsPage: React.FC = () => {
       };
     }
     return {
-      activeLayer: storeState.activeLayer ?? 'Base',
+      activeLayer: storeState.layer ?? storeState.activeLayer ?? 'Base',
       modifiers: storeState.modifiers,
       locks: storeState.locks,
       tapHoldTimers: storeState.tapHoldPending ? 1 : 0,
@@ -172,14 +170,14 @@ export const MetricsPage: React.FC = () => {
     <main
       className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6"
       role="main"
-      aria-label="Performance Metrics"
+      aria-label="Monitor"
     >
       {/* Page Header */}
       <header>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
-              Performance Metrics
+              Monitor
             </h1>
             <p className="text-sm md:text-base text-slate-400 mt-2">
               Real-time monitoring and debugging tools
@@ -219,7 +217,7 @@ export const MetricsPage: React.FC = () => {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Link
-                    to={`/config?profile=${encodeURIComponent(
+                    to={`/?profile=${encodeURIComponent(
                       activeProfile.name
                     )}`}
                     className="text-lg font-semibold text-blue-400 hover:text-blue-300 transition-colors underline"
@@ -258,7 +256,7 @@ export const MetricsPage: React.FC = () => {
                 </p>
                 {connected && (
                   <Link
-                    to="/profiles"
+                    to="/"
                     className="inline-block text-sm text-blue-400 hover:text-blue-300 transition-colors underline"
                   >
                     Go to Profiles to activate one
@@ -331,4 +329,4 @@ export const MetricsPage: React.FC = () => {
   );
 };
 
-export default MetricsPage;
+export default MonitorPage;

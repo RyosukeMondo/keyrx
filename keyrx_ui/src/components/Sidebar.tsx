@@ -1,12 +1,9 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  Home,
-  Smartphone,
-  User,
   Settings,
+  Smartphone,
   BarChart3,
-  Gamepad2,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -29,10 +26,10 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    to: '/home',
-    icon: Home,
-    label: 'Home',
-    ariaLabel: 'Navigate to Home page',
+    to: '/',
+    icon: Settings,
+    label: 'Config',
+    ariaLabel: 'Navigate to Configuration page',
   },
   {
     to: '/devices',
@@ -41,28 +38,10 @@ const navItems: NavItem[] = [
     ariaLabel: 'Navigate to Devices page',
   },
   {
-    to: '/profiles',
-    icon: User,
-    label: 'Profiles',
-    ariaLabel: 'Navigate to Profiles page',
-  },
-  {
-    to: '/config',
-    icon: Settings,
-    label: 'Config',
-    ariaLabel: 'Navigate to Configuration page',
-  },
-  {
-    to: '/metrics',
+    to: '/monitor',
     icon: BarChart3,
-    label: 'Metrics',
-    ariaLabel: 'Navigate to Metrics page',
-  },
-  {
-    to: '/simulator',
-    icon: Gamepad2,
-    label: 'Simulator',
-    ariaLabel: 'Navigate to Simulator page',
+    label: 'Monitor',
+    ariaLabel: 'Navigate to Monitor page',
   },
 ];
 
@@ -81,23 +60,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  // Custom active state check for Config and Profiles routes
-  // Config should be active for both /config and /profiles/:name/config
-  // Profiles should NOT be active when on /config page (fix dual-highlight bug)
+  // Config is active for / and /profiles/:name/config
   const isRouteActive = (path: string): boolean => {
-    if (path === '/config') {
+    if (path === '/') {
       return (
-        location.pathname === '/config' ||
+        location.pathname === '/' ||
         (location.pathname.startsWith('/profiles/') &&
           location.pathname.endsWith('/config'))
-      );
-    }
-    if (path === '/profiles') {
-      // Profiles should NOT be active when on /config page
-      return (
-        location.pathname === '/profiles' ||
-        (location.pathname.startsWith('/profiles/') &&
-          !location.pathname.includes('/config'))
       );
     }
     return false;
@@ -119,9 +88,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <ul className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            // For Config and Profiles routes, use custom active state check
+            // For Config route, use custom active state check
             const customIsActive =
-              item.to === '/config' || item.to === '/profiles'
+              item.to === '/'
                 ? isRouteActive(item.to)
                 : undefined;
 
