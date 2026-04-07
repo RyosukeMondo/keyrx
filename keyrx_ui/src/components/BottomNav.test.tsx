@@ -12,12 +12,9 @@ describe('BottomNav', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('Devices')).toBeInTheDocument();
-    expect(screen.getByText('Profiles')).toBeInTheDocument();
     expect(screen.getByText('Config')).toBeInTheDocument();
-    expect(screen.getByText('Metrics')).toBeInTheDocument();
-    expect(screen.getByText('Sim')).toBeInTheDocument();
+    expect(screen.getByText('Devices')).toBeInTheDocument();
+    expect(screen.getByText('Monitor')).toBeInTheDocument();
   });
 
   it('has correct accessibility attributes', () => {
@@ -32,8 +29,8 @@ describe('BottomNav', () => {
     });
     expect(nav).toBeInTheDocument();
 
-    const homeLink = screen.getByLabelText('Navigate to Home page');
-    expect(homeLink).toBeInTheDocument();
+    const configLink = screen.getByLabelText('Navigate to Configuration page');
+    expect(configLink).toBeInTheDocument();
   });
 
   it('highlights active route', () => {
@@ -65,8 +62,8 @@ describe('BottomNav', () => {
       </BrowserRouter>
     );
 
-    const homeLink = screen.getByLabelText('Navigate to Home page');
-    expect(homeLink).toHaveClass('h-16');
+    const configLink = screen.getByLabelText('Navigate to Configuration page');
+    expect(configLink).toHaveClass('h-16');
   });
 
   it('is fixed at bottom with correct z-index', () => {
@@ -93,20 +90,20 @@ describe('BottomNav', () => {
   });
 
   it('fills icon for active state', () => {
-    const { container } = renderWithProviders(
-      <MemoryRouter initialEntries={['/profiles']}>
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/devices']}>
         <BottomNav />
       </MemoryRouter>
     );
 
-    const profilesLink = screen.getByLabelText('Navigate to Profiles page');
-    const icon = profilesLink.querySelector('svg');
+    const devicesLink = screen.getByLabelText('Navigate to Devices page');
+    const icon = devicesLink.querySelector('svg');
     expect(icon).toHaveClass('fill-current');
   });
 
   it('makes active label semibold', () => {
     renderWithProviders(
-      <MemoryRouter initialEntries={['/config']}>
+      <MemoryRouter initialEntries={['/']}>
         <BottomNav />
       </MemoryRouter>
     );
@@ -122,8 +119,8 @@ describe('BottomNav', () => {
       </BrowserRouter>
     );
 
-    const homeLink = screen.getByLabelText('Navigate to Home page');
-    expect(homeLink).toHaveClass(
+    const configLink = screen.getByLabelText('Navigate to Configuration page');
+    expect(configLink).toHaveClass(
       'focus:outline',
       'focus:outline-2',
       'focus:outline-primary-500'

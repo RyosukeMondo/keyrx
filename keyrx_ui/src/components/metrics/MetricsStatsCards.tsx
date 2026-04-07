@@ -35,17 +35,16 @@ export interface MetricsStatsCardsProps {
  */
 export const MetricsStatsCards: React.FC<MetricsStatsCardsProps> = ({
   latencyStats,
-  eventCount: _eventCount,
+  eventCount,
   connected: _connected,
 }) => {
   // Calculate statistics from latency stats (convert microseconds to milliseconds)
   const stats = React.useMemo(() => {
     if (!latencyStats) {
-      return { current: 0, avg: 0, min: 0, max: 0 };
+      return { avg: 0, min: 0, max: 0 };
     }
 
     return {
-      current: latencyStats.avg / 1000,
       avg: latencyStats.avg / 1000,
       min: latencyStats.min / 1000,
       max: latencyStats.max / 1000,
@@ -62,8 +61,8 @@ export const MetricsStatsCards: React.FC<MetricsStatsCardsProps> = ({
       className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4"
       aria-label="Latency statistics"
     >
-      {/* Current Latency Card */}
-      <Card padding="md" aria-label="Current latency">
+      {/* Event Count Card */}
+      <Card padding="md" aria-label="Event count">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
           <div
             className="p-2 sm:p-3 bg-blue-500/10 rounded-lg"
@@ -72,12 +71,12 @@ export const MetricsStatsCards: React.FC<MetricsStatsCardsProps> = ({
             <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
           </div>
           <div>
-            <p className="text-xs sm:text-sm text-slate-400">Current</p>
+            <p className="text-xs sm:text-sm text-slate-400">Events</p>
             <p
               className="text-lg sm:text-2xl font-bold text-slate-100"
-              aria-label={`Current latency: ${formatLatency(stats.current)}`}
+              aria-label={`Event count: ${eventCount.toLocaleString()}`}
             >
-              {formatLatency(stats.current)}
+              {eventCount.toLocaleString()}
             </p>
           </div>
         </div>

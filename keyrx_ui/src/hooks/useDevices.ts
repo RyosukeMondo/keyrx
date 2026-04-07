@@ -14,6 +14,42 @@ export function useDevices() {
 }
 
 /**
+ * Fetch the global default keyboard layout
+ */
+export function useGlobalLayout() {
+  return useQuery({
+    queryKey: queryKeys.globalLayout,
+    queryFn: deviceApi.fetchGlobalLayout,
+  });
+}
+
+/**
+ * Set the global default keyboard layout with cache update
+ */
+export function useSetGlobalLayout() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (layout: string) => deviceApi.setGlobalLayout(layout),
+    onMutate: async (layout) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.globalLayout });
+      const previous = queryClient.getQueryData<string>(queryKeys.globalLayout);
+      queryClient.setQueryData(queryKeys.globalLayout, layout);
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.globalLayout, context.previous);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.globalLayout });
+    },
+    meta: { successMessage: 'Global layout saved' },
+  });
+}
+
+/**
  * Rename a device with optimistic updates and cache invalidation
  */
 export function useRenameDevice() {

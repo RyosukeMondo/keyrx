@@ -59,7 +59,7 @@ describe('ActiveProfileCard', () => {
     expect(button).toBeInTheDocument();
 
     await user.click(button);
-    expect(mockNavigate).toHaveBeenCalledWith('/profiles');
+    expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
   it('renders profile data correctly', () => {

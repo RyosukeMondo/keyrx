@@ -17,6 +17,13 @@ import { quarantinePlugin } from './vitest-plugins/quarantine-plugin';
  * between vite and vitest's bundled vite version.
  */
 export const baseConfig: UserConfig = {
+  define: {
+    __APP_VERSION__: JSON.stringify('0.0.0-test'),
+    __BUILD_TIME__: JSON.stringify('2026-01-01T00:00:00Z'),
+    __GIT_COMMIT__: JSON.stringify('test'),
+    __GIT_BRANCH__: JSON.stringify('test'),
+    __GIT_DIRTY__: JSON.stringify(false),
+  },
   plugins: [
     wasm(),
     topLevelAwait(),

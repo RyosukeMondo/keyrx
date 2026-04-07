@@ -5,9 +5,9 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders, setDaemonState } from '../../tests/testUtils';
+import { renderWithProviders, sendDaemonStateUpdate } from '../../tests/testUtils';
 import userEvent from '@testing-library/user-event';
-import { ConfigPage } from './ConfigPage';
+import ConfigPage from './ConfigPage';
 import { useConfigStore } from '../stores/configStore';
 
 describe('ConfigPage - Integration Tests', () => {
@@ -28,7 +28,7 @@ describe('ConfigPage - Integration Tests', () => {
     store.error = null;
 
     // Set up WebSocket daemon state for tests
-    setDaemonState({
+    sendDaemonStateUpdate({
       activeProfile: 'default',
       layer: 'base',
       modifiers: [],

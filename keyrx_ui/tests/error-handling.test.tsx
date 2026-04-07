@@ -3,12 +3,14 @@
  * Tests for proper error display, recovery, and toast notifications
  */
 
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from '../src/components/ToastProvider';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { useToast } from '../src/hooks/useToast';
 
 describe('Error Handling Tests', () => {
   let queryClient: QueryClient;

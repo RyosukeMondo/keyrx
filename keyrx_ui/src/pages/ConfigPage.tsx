@@ -16,6 +16,7 @@ import { useCodePanel } from '@/hooks/useCodePanel';
 import { useKeyboardLayout } from '@/hooks/useKeyboardLayout';
 import { useConfigSync } from '@/hooks/useConfigSync';
 import { useASTSync } from '@/hooks/useASTSync';
+import { useKeyboardShortcuts, CommonShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 // Components
 import { CodePanelContainer } from '@/components/config/CodePanelContainer';
@@ -23,6 +24,9 @@ import { SyncStatusIndicator } from '@/components/config/SyncStatusIndicator';
 import { ProfileSidebar } from '@/components/config/ProfileSidebar';
 import { EditTab } from '@/components/config/EditTab';
 import { SimulatorTab } from '@/components/config/SimulatorTab';
+import { Modal } from '@/components/Modal';
+import { NotificationBanners } from '@/components/config/NotificationBanners';
+import { ProfileDiffView } from '@/components/config/ProfileDiffView';
 
 /** Auto-detect keyboard layout from Rhai config source */
 function detectLayoutFromSource(source: string | undefined): LayoutType {
@@ -111,6 +115,7 @@ const ConfigPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('edit');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [showDiffModal, setShowDiffModal] = useState(false);
 
   // Profile existence checks
   const profileExists =
@@ -209,16 +214,21 @@ const ConfigPage: React.FC = () => {
     }
   };
 
+  useKeyboardShortcuts([
+    CommonShortcuts.save(handleSaveConfig),
+  ], activeTab === 'edit' && api.isConnected && profileExists);
+
   return (
     <div className="flex h-full min-h-[calc(100vh-4rem)]">
-      {/* Mobile sidebar toggle */}
+      {/* Mobile profile sidebar toggle — pinned to top-left below the app header */}
       <button
-        className="md:hidden fixed top-16 left-16 z-30 p-2 bg-slate-700 rounded-md text-slate-300 hover:bg-slate-600"
+        className="md:hidden fixed top-[4.5rem] left-2 z-30 p-2 bg-slate-700 rounded-md text-slate-300 hover:bg-slate-600 shadow-lg"
         onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
         aria-label="Toggle profile sidebar"
+        aria-expanded={mobileSidebarOpen}
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8M4 18h16" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.118a7.5 7.5 0 0 1 14.998 0" />
         </svg>
       </button>
 
@@ -297,11 +307,19 @@ const ConfigPage: React.FC = () => {
                   className="px-4 py-2 bg-slate-700 text-slate-200 text-sm font-medium rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap border border-slate-600"
                   title={isCodePanelOpen ? 'Hide Code' : 'Show Code'}
                 >
-                  {isCodePanelOpen ? '▼ Hide Code' : '▲ Show Code'}
+                  {isCodePanelOpen ? '▲ Hide Code' : '▼ Show Code'}
                 </button>
 
                 <button
-                  onClick={handleSaveConfig}
+                  onClick={() => {
+                    const currentCode = syncEngine.getCode();
+                    const originalCode = profileConfig?.source || '';
+                    if (currentCode === originalCode) {
+                      handleSaveConfig();
+                    } else {
+                      setShowDiffModal(true);
+                    }
+                  }}
                   disabled={
                     !api.isConnected ||
                     !profileExists ||
@@ -316,6 +334,19 @@ const ConfigPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Notifications — visible on all tabs */}
+        <div className="px-4 md:px-6 pt-4 md:pt-6">
+          <NotificationBanners
+            profileName={selectedProfileName}
+            profileExists={profileExists}
+            configMissing={configMissing}
+            error={error}
+            isLoading={isLoading}
+            isConnected={api.isConnected}
+            onCreateProfile={handleCreateProfile}
+          />
+        </div>
+
         {/* Tab Content — both stay mounted for state preservation */}
         <div className="flex-1 overflow-y-auto">
           <div className={activeTab === 'edit' ? '' : 'hidden'}>
@@ -323,18 +354,12 @@ const ConfigPage: React.FC = () => {
               <EditTab
                 selectedProfileName={selectedProfileName}
                 profileConfig={profileConfig}
-                isLoading={isLoading}
-                error={error}
-                profileExists={profileExists}
-                configMissing={configMissing}
-                isConnected={api.isConnected}
                 syncEngine={syncEngine}
                 syncStatus={syncStatus}
                 setSyncStatus={setSyncStatus}
                 configStore={configStore}
                 keyboardLayout={keyboardLayout}
                 layoutKeys={layoutKeys}
-                onCreateProfile={handleCreateProfile}
               />
 
               {/* Code Panel (Edit tab only) */}
@@ -359,6 +384,37 @@ const ConfigPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {showDiffModal && (
+        <Modal
+          open={showDiffModal}
+          onClose={() => setShowDiffModal(false)}
+          title="Review Changes"
+          size="xl"
+        >
+          <ProfileDiffView
+            original={profileConfig?.source || ''}
+            modified={syncEngine.getCode()}
+          />
+          <div className="flex justify-end gap-3 mt-4">
+            <button
+              onClick={() => setShowDiffModal(false)}
+              className="px-4 py-2 bg-slate-700 text-slate-200 text-sm font-medium rounded-md hover:bg-slate-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setShowDiffModal(false);
+                handleSaveConfig();
+              }}
+              className="px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-md hover:bg-primary-600 transition-colors"
+            >
+              Confirm Save
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

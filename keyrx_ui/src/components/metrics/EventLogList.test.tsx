@@ -12,6 +12,13 @@ vi.mock('react-window', () => ({
       ))}
     </div>
   )),
+  VariableSizeList: vi.fn(({ children, itemCount }: any) => (
+    <div data-testid="virtual-list" role="rowgroup">
+      {Array.from({ length: Math.min(itemCount, 10) }, (_, index) => (
+        <div key={index}>{children({ index, style: {} })}</div>
+      ))}
+    </div>
+  )),
 }));
 
 describe('EventLogList', () => {

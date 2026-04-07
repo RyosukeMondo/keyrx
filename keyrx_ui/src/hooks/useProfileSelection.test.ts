@@ -33,7 +33,7 @@ describe('useProfileSelection', () => {
     it('should use manual selection when set', () => {
       const { result } = renderHook(() => useProfileSelection());
 
-      expect(result.current.selectedProfileName).toBe('Default');
+      expect(result.current.selectedProfileName).toBe('default');
 
       // Set manual selection
       act(() => {
@@ -107,7 +107,7 @@ describe('useProfileSelection', () => {
     it('should default to "Default" when all sources are null', () => {
       const { result } = renderHook(() => useProfileSelection());
 
-      expect(result.current.selectedProfileName).toBe('Default');
+      expect(result.current.selectedProfileName).toBe('default');
     });
   });
 
@@ -193,14 +193,14 @@ describe('useProfileSelection', () => {
     it('should handle undefined prop', () => {
       const { result } = renderHook(() => useProfileSelection(undefined));
 
-      expect(result.current.selectedProfileName).toBe('Default');
+      expect(result.current.selectedProfileName).toBe('default');
     });
 
     it('should handle empty string prop', () => {
       const { result } = renderHook(() => useProfileSelection(''));
 
       // Empty string is falsy, should fallback to Default
-      expect(result.current.selectedProfileName).toBe('Default');
+      expect(result.current.selectedProfileName).toBe('default');
     });
 
     it('should handle null from all sources', () => {
@@ -214,7 +214,7 @@ describe('useProfileSelection', () => {
 
       const { result } = renderHook(() => useProfileSelection());
 
-      expect(result.current.selectedProfileName).toBe('Default');
+      expect(result.current.selectedProfileName).toBe('default');
     });
 
     it('should handle loading state from active profile query', () => {
@@ -226,8 +226,8 @@ describe('useProfileSelection', () => {
 
       const { result } = renderHook(() => useProfileSelection());
 
-      // Should fallback to Default while loading
-      expect(result.current.selectedProfileName).toBe('Default');
+      // Should return empty string while loading (waiting for active profile)
+      expect(result.current.selectedProfileName).toBe('');
     });
   });
 });

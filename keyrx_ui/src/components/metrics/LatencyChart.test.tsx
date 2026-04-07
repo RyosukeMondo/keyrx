@@ -40,6 +40,9 @@ vi.mock('recharts', () => ({
     <div data-testid="y-axis" data-label={label?.value} />
   ),
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
+  ReferenceLine: ({ y, stroke, label }: { y?: number; stroke?: string; label?: { value?: string } }) => (
+    <div data-testid="reference-line" data-y={y} data-stroke={stroke} data-label={label?.value} />
+  ),
   Tooltip: ({
     labelFormatter,
     formatter,

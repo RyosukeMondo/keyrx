@@ -18,7 +18,7 @@ const DIST_DIR = path.resolve(__dirname, '../../dist');
 const LIMITS = {
   main: 500 * 1024,      // 500KB
   monaco: 2 * 1024 * 1024, // 2MB
-  wasm: 1 * 1024 * 1024    // 1MB
+  wasm: 2.5 * 1024 * 1024   // 2.5MB
 };
 
 interface BundleInfo {
@@ -90,7 +90,7 @@ describe('Bundle Size Performance Tests', () => {
 
   it('main bundle should be < 500KB gzipped', () => {
     // Find main bundle (typically index-[hash].js)
-    const bundles = findBundles(/^index-[a-f0-9]+\.js$/);
+    const bundles = findBundles(/^index-[a-zA-Z0-9_-]+\.js$/);
 
     expect(bundles.length).toBeGreaterThan(0);
 

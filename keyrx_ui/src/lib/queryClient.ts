@@ -91,6 +91,9 @@ export const queryKeys = {
   keyMapping: (profile: string, key: string) =>
     ['config', profile, 'key', key] as const,
 
+  // Settings queries
+  globalLayout: ['settings', 'global-layout'] as const,
+
   // Metrics queries
   latencyStats: ['metrics', 'latency'] as const,
   eventLog: ['metrics', 'events'] as const,

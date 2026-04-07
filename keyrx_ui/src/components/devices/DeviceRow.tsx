@@ -15,7 +15,7 @@ interface Device {
   vendorId?: string;
   productId?: string;
   serial?: string;
-  lastSeen?: string;
+  lastSeen?: number;
 }
 
 export interface DeviceRowProps {

@@ -62,7 +62,7 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      expect(screen.getByLabelText('Current latency')).toBeInTheDocument();
+      expect(screen.getByLabelText('Event count')).toBeInTheDocument();
       expect(screen.getByLabelText('Average latency')).toBeInTheDocument();
       expect(screen.getByLabelText('Minimum latency')).toBeInTheDocument();
       expect(screen.getByLabelText('Maximum latency')).toBeInTheDocument();
@@ -107,11 +107,10 @@ describe('MetricsStatsCards', () => {
       );
 
       // Values are in microseconds, should be converted to milliseconds
-      // Note: 1.50ms appears twice (current and average are both from avg field)
-      const avgValues = screen.getAllByText('1.50ms');
-      expect(avgValues.length).toBeGreaterThanOrEqual(2); // current and average
+      expect(screen.getByText('1.50ms')).toBeInTheDocument(); // average
       expect(screen.getByText('0.50ms')).toBeInTheDocument(); // min
       expect(screen.getByText('5.00ms')).toBeInTheDocument(); // max
+      expect(screen.getByText('50')).toBeInTheDocument(); // event count
     });
 
     it('displays labels for each stat type', () => {
@@ -123,7 +122,7 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      expect(screen.getByText('Current')).toBeInTheDocument();
+      expect(screen.getByText('Events')).toBeInTheDocument();
       expect(screen.getByText('Average')).toBeInTheDocument();
       expect(screen.getByText('Min')).toBeInTheDocument();
       expect(screen.getByText('Max')).toBeInTheDocument();
@@ -149,10 +148,10 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      const avgValues = screen.getAllByText('5.00ms');
-      expect(avgValues.length).toBeGreaterThanOrEqual(2); // current and average
+      expect(screen.getByText('5.00ms')).toBeInTheDocument(); // average
       expect(screen.getByText('1.00ms')).toBeInTheDocument(); // min
       expect(screen.getByText('10.00ms')).toBeInTheDocument(); // max
+      expect(screen.getByText('100')).toBeInTheDocument(); // event count
     });
   });
 
@@ -167,7 +166,8 @@ describe('MetricsStatsCards', () => {
       );
 
       const zeroValues = screen.getAllByText('0.00ms');
-      expect(zeroValues).toHaveLength(4); // All 4 cards should show 0.00ms
+      expect(zeroValues).toHaveLength(3); // 3 latency cards show 0.00ms
+      expect(screen.getByText('0')).toBeInTheDocument(); // event count card
     });
 
     it('handles zero event count', () => {
@@ -180,8 +180,8 @@ describe('MetricsStatsCards', () => {
       );
 
       // Should still render cards with data
-      const avgValues = screen.getAllByText('1.50ms');
-      expect(avgValues.length).toBeGreaterThanOrEqual(2); // current and average
+      expect(screen.getByText('1.50ms')).toBeInTheDocument(); // average
+      expect(screen.getByText('0')).toBeInTheDocument(); // event count
     });
 
     it('handles disconnected state', () => {
@@ -194,8 +194,7 @@ describe('MetricsStatsCards', () => {
       );
 
       // Should still render data even when disconnected
-      const avgValues = screen.getAllByText('1.50ms');
-      expect(avgValues.length).toBeGreaterThanOrEqual(2); // current and average
+      expect(screen.getByText('1.50ms')).toBeInTheDocument(); // average
     });
   });
 
@@ -220,8 +219,8 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      const avgValues = screen.getAllByText('0.01ms');
-      expect(avgValues.length).toBeGreaterThanOrEqual(1); // current/avg or max
+      const smallValues = screen.getAllByText('0.01ms');
+      expect(smallValues).toHaveLength(2); // avg and max both round to 0.01ms
       expect(screen.getByText('0.00ms')).toBeInTheDocument(); // min (rounded down)
     });
 
@@ -245,8 +244,7 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      const avgValues = screen.getAllByText('250.00ms');
-      expect(avgValues.length).toBeGreaterThanOrEqual(2); // current and average
+      expect(screen.getByText('250.00ms')).toBeInTheDocument(); // average
       expect(screen.getByText('100.00ms')).toBeInTheDocument(); // min
       expect(screen.getByText('500.00ms')).toBeInTheDocument(); // max
     });
@@ -271,8 +269,7 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      const avgValues = screen.getAllByText('3.46ms');
-      expect(avgValues.length).toBeGreaterThanOrEqual(2); // current and average
+      expect(screen.getByText('3.46ms')).toBeInTheDocument(); // average
       expect(screen.getByText('1.23ms')).toBeInTheDocument(); // min
       expect(screen.getByText('5.68ms')).toBeInTheDocument(); // max
     });
@@ -288,7 +285,7 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      expect(screen.getByLabelText('Current latency')).toBeInTheDocument();
+      expect(screen.getByLabelText('Event count')).toBeInTheDocument();
       expect(screen.getByLabelText('Average latency')).toBeInTheDocument();
       expect(screen.getByLabelText('Minimum latency')).toBeInTheDocument();
       expect(screen.getByLabelText('Maximum latency')).toBeInTheDocument();
@@ -317,7 +314,7 @@ describe('MetricsStatsCards', () => {
       );
 
       expect(
-        screen.getByLabelText('Current latency: 1.50ms')
+        screen.getByLabelText('Event count: 50')
       ).toBeInTheDocument();
       expect(
         screen.getByLabelText('Average latency: 1.50ms')

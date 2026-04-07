@@ -112,6 +112,32 @@ export async function forgetDevice(id: string): Promise<DeviceResponse> {
   return { success: true };
 }
 
+interface GlobalLayoutResponse {
+  layout: string;
+}
+
+/**
+ * Fetch the global default keyboard layout
+ */
+export async function fetchGlobalLayout(): Promise<string> {
+  try {
+    const response = await apiClient.get<GlobalLayoutResponse>(
+      '/api/settings/global-layout'
+    );
+    return response.layout || 'ANSI_104';
+  } catch {
+    // Endpoint may not exist yet, use default
+    return 'ANSI_104';
+  }
+}
+
+/**
+ * Set the global default keyboard layout
+ */
+export async function setGlobalLayout(layout: string): Promise<void> {
+  await apiClient.put('/api/settings/global-layout', { layout });
+}
+
 /**
  * Set device enabled/disabled state
  *

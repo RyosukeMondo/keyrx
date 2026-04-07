@@ -1,5 +1,6 @@
-import React, { useRef, useEffect } from 'react';
-import { FixedSizeList as List } from 'react-window';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { VariableSizeList as List } from 'react-window';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 
 /**
  * Event log entry interface
@@ -74,17 +75,25 @@ export interface EventLogListProps {
  * />
  * ```
  */
+const COLLAPSED_HEIGHT = 40;
+const EXPANDED_HEIGHT = 120;
+
 export const EventLogList: React.FC<EventLogListProps> = ({
   events,
   maxEvents,
   height = 300,
-  rowHeight = 40,
   autoScroll = true,
 }) => {
   const listRef = useRef<List>(null);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   // Limit events if maxEvents is specified
   const displayEvents = maxEvents ? events.slice(-maxEvents) : events;
+
+  // Reset expanded row when events change significantly
+  useEffect(() => {
+    setExpandedIndex(null);
+  }, [displayEvents.length]);
 
   // Auto-scroll to top when new events arrive (newest first)
   useEffect(() => {
@@ -92,6 +101,22 @@ export const EventLogList: React.FC<EventLogListProps> = ({
       listRef.current.scrollToItem(0, 'start');
     }
   }, [displayEvents.length, autoScroll]);
+
+  const getItemSize = useCallback(
+    (index: number) => (index === expandedIndex ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT),
+    [expandedIndex],
+  );
+
+  // Reset list cache when expanded row changes
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.resetAfterIndex(0);
+    }
+  }, [expandedIndex]);
+
+  const handleRowClick = useCallback((index: number) => {
+    setExpandedIndex((prev) => (prev === index ? null : index));
+  }, []);
 
   // Format timestamp for display
   const formatTime = (timestamp: number): string => {
@@ -102,6 +127,10 @@ export const EventLogList: React.FC<EventLogListProps> = ({
       minute: '2-digit',
       second: '2-digit',
     });
+  };
+
+  const formatTimeFull = (timestamp: number): string => {
+    return new Date(timestamp).toISOString();
   };
 
   // Format latency for display
@@ -146,6 +175,8 @@ export const EventLogList: React.FC<EventLogListProps> = ({
     const event = displayEvents[index];
     if (!event) return null;
 
+    const isExpanded = index === expandedIndex;
+
     // Check if input differs from output (remapping occurred)
     const wasRemapped =
       event.input && event.output && event.input !== event.output;
@@ -161,85 +192,132 @@ export const EventLogList: React.FC<EventLogListProps> = ({
         : event.deviceName
       : event.deviceId?.slice(0, 8) || '–';
 
+    const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
+
     return (
       <div
         style={style}
-        className="flex items-center gap-3 px-4 text-sm font-mono border-b border-slate-700 hover:bg-slate-700/50"
-        title={`Device: ${event.deviceName || event.deviceId || 'Unknown'}`}
+        className="border-b border-slate-700"
         role="row"
       >
-        <span
-          className="w-20 text-slate-400 text-xs"
-          role="cell"
-          aria-label={`Time: ${formatTime(event.timestamp)}`}
+        <div
+          className="flex items-center gap-3 px-4 h-10 text-sm font-mono cursor-pointer hover:bg-slate-700/50 select-none"
+          title={`Device: ${event.deviceName || event.deviceId || 'Unknown'}`}
+          onClick={() => handleRowClick(index)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleRowClick(index); }}
+          tabIndex={0}
+          role="button"
+          aria-expanded={isExpanded}
+          aria-label={`Event: ${event.type} ${formatKey(event.input || event.keyCode)}`}
         >
-          {formatTime(event.timestamp)}
-        </span>
-        <span
-          className={`w-14 ${typeColors[event.type]}`}
-          title={event.type}
-          role="cell"
-          aria-label={`Event type: ${event.type}`}
-        >
-          {typeSymbols[event.type]} {event.type.slice(0, 3)}
-        </span>
-        <span
-          className="w-20 text-slate-200 truncate"
-          title={event.input || event.keyCode}
-          role="cell"
-          aria-label={`Input: ${formatKey(event.input || event.keyCode)}`}
-        >
-          {formatKey(event.input || event.keyCode)}
-        </span>
-        {/* Mapping indicator */}
-        <span
-          className={`w-6 text-center ${
-            hasMappingTriggered ? 'text-green-400' : 'text-slate-600'
-          }`}
-          role="cell"
-          aria-label={hasMappingTriggered ? 'Mapping triggered' : 'No mapping'}
-        >
-          {hasMappingTriggered ? '→' : '–'}
-        </span>
-        {/* Output */}
-        <span
-          className={`w-20 truncate ${
-            wasRemapped ? 'text-blue-400' : 'text-slate-400'
-          }`}
-          title={event.output}
-          role="cell"
-          aria-label={`Output: ${formatKey(event.output)}`}
-        >
-          {formatKey(event.output)}
-        </span>
-        {/* Mapping type */}
-        <span
-          className="w-16 text-slate-500 text-xs truncate"
-          title={event.mappingType || 'passthrough'}
-          role="cell"
-          aria-label={`Mapping type: ${event.mappingType || 'passthrough'}`}
-        >
-          {event.mappingType || (wasRemapped ? 'remap' : '–')}
-        </span>
-        {/* Device */}
-        <span
-          className="flex-1 text-slate-500 text-xs truncate"
-          title={event.deviceName || event.deviceId}
-          role="cell"
-          aria-label={`Device: ${shortDeviceName}`}
-        >
-          {shortDeviceName}
-        </span>
-        {/* Latency */}
-        <span
-          className={`w-16 text-right ${
-            event.latency > 1 ? 'text-yellow-400' : 'text-slate-400'
-          }`}
-          role="cell"
-          aria-label={`Latency: ${formatLatency(event.latency)}`}
-        >
-          {formatLatency(event.latency)}
-        </span>
+          <ChevronIcon className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
+          <span
+            className="w-20 text-slate-400 text-xs"
+            role="cell"
+            aria-label={`Time: ${formatTime(event.timestamp)}`}
+          >
+            {formatTime(event.timestamp)}
+          </span>
+          <span
+            className={`w-14 ${typeColors[event.type]}`}
+            title={event.type}
+            role="cell"
+            aria-label={`Event type: ${event.type}`}
+          >
+            {typeSymbols[event.type]} {event.type.slice(0, 3)}
+          </span>
+          <span
+            className="w-20 text-slate-200 truncate"
+            title={event.input || event.keyCode}
+            role="cell"
+            aria-label={`Input: ${formatKey(event.input || event.keyCode)}`}
+          >
+            {formatKey(event.input || event.keyCode)}
+          </span>
+          <span
+            className={`w-6 text-center ${
+              hasMappingTriggered ? 'text-green-400' : 'text-slate-600'
+            }`}
+            role="cell"
+            aria-label={hasMappingTriggered ? 'Mapping triggered' : 'No mapping'}
+          >
+            {hasMappingTriggered ? '→' : '–'}
+          </span>
+          <span
+            className={`w-20 truncate ${
+              wasRemapped ? 'text-blue-400' : 'text-slate-400'
+            }`}
+            title={event.output}
+            role="cell"
+            aria-label={`Output: ${formatKey(event.output)}`}
+          >
+            {formatKey(event.output)}
+          </span>
+          <span
+            className="w-16 text-slate-500 text-xs truncate"
+            title={event.mappingType || 'passthrough'}
+            role="cell"
+            aria-label={`Mapping type: ${event.mappingType || (wasRemapped ? 'remap' : 'passthrough')}`}
+          >
+            {event.mappingType || (wasRemapped ? 'remap' : '–')}
+          </span>
+          <span
+            className="flex-1 text-slate-500 text-xs truncate"
+            title={event.deviceName || event.deviceId}
+            role="cell"
+            aria-label={`Device: ${shortDeviceName}`}
+          >
+            {shortDeviceName}
+          </span>
+          <span
+            className={`w-16 text-right ${
+              event.latency > 1 ? 'text-yellow-400' : 'text-slate-400'
+            }`}
+            role="cell"
+            aria-label={`Latency: ${formatLatency(event.latency)}`}
+          >
+            {formatLatency(event.latency)}
+          </span>
+        </div>
+
+        {/* Expanded detail panel */}
+        {isExpanded && (
+          <div className="px-4 py-2 bg-slate-800/60 text-xs text-slate-300 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 font-mono">
+            <div>
+              <span className="text-slate-500">Timestamp: </span>
+              {formatTimeFull(event.timestamp)}
+            </div>
+            <div>
+              <span className="text-slate-500">Raw keyCode: </span>
+              {event.keyCode}
+            </div>
+            <div>
+              <span className="text-slate-500">Device ID: </span>
+              {event.deviceId || '–'}
+            </div>
+            <div>
+              <span className="text-slate-500">Device: </span>
+              {event.deviceName || '–'}
+            </div>
+            <div>
+              <span className="text-slate-500">Input: </span>
+              {event.input || '–'}
+            </div>
+            <div>
+              <span className="text-slate-500">Output: </span>
+              {event.output || '–'}
+            </div>
+            <div>
+              <span className="text-slate-500">Mapping: </span>
+              {event.mappingType || 'none'}
+              {event.mappingTriggered ? ' (triggered)' : ''}
+            </div>
+            <div>
+              <span className="text-slate-500">Latency: </span>
+              {formatLatency(event.latency)}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -251,6 +329,7 @@ export const EventLogList: React.FC<EventLogListProps> = ({
         className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-800 border-b border-slate-700 text-sm font-semibold text-slate-300"
         role="row"
       >
+        <span className="w-3.5" aria-hidden="true" />
         <span className="w-20" role="columnheader">
           Time
         </span>
@@ -286,7 +365,7 @@ export const EventLogList: React.FC<EventLogListProps> = ({
         ref={listRef}
         height={height}
         itemCount={displayEvents.length}
-        itemSize={rowHeight}
+        itemSize={getItemSize}
         width="100%"
         className="bg-slate-900"
       >

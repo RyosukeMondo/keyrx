@@ -7,6 +7,7 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 
 /**
@@ -27,6 +28,8 @@ export interface LatencyChartProps {
   maxDataPoints?: number;
   /** Height of the chart in pixels (default: 250) */
   height?: number;
+  /** Healthy latency threshold in ms (default: 1.0) */
+  thresholdMs?: number;
 }
 
 /**
@@ -71,6 +74,7 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
   data,
   maxDataPoints = 60,
   height = 250,
+  thresholdMs = 1.0,
 }) => {
   // Limit data to maxDataPoints (most recent)
   const chartData = React.useMemo(() => {
@@ -120,6 +124,17 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
           }}
           labelFormatter={(timestamp) => formatTimestamp(Number(timestamp))}
           formatter={(value: number) => [formatLatency(value), 'Latency']}
+        />
+        <ReferenceLine
+          y={thresholdMs}
+          stroke="#22c55e"
+          strokeDasharray="6 3"
+          label={{
+            value: `Target (${thresholdMs}ms)`,
+            position: 'right',
+            fill: '#22c55e',
+            fontSize: 11,
+          }}
         />
         <Line
           type="monotone"

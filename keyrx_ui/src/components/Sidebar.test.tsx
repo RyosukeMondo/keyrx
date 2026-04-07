@@ -14,32 +14,22 @@ describe('Sidebar', () => {
   it('renders all navigation items', () => {
     renderWithRouter(<Sidebar />);
 
-    expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('Devices')).toBeInTheDocument();
-    expect(screen.getByText('Profiles')).toBeInTheDocument();
     expect(screen.getByText('Config')).toBeInTheDocument();
-    expect(screen.getByText('Metrics')).toBeInTheDocument();
-    expect(screen.getByText('Simulator')).toBeInTheDocument();
+    expect(screen.getByText('Devices')).toBeInTheDocument();
+    expect(screen.getByText('Monitor')).toBeInTheDocument();
   });
 
   it('has proper ARIA labels on navigation items', () => {
     renderWithRouter(<Sidebar />);
 
-    expect(screen.getByLabelText('Navigate to Home page')).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('Navigate to Devices page')
-    ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('Navigate to Profiles page')
-    ).toBeInTheDocument();
     expect(
       screen.getByLabelText('Navigate to Configuration page')
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText('Navigate to Metrics page')
+      screen.getByLabelText('Navigate to Devices page')
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText('Navigate to Simulator page')
+      screen.getByLabelText('Navigate to Monitor page')
     ).toBeInTheDocument();
   });
 
@@ -60,18 +50,17 @@ describe('Sidebar', () => {
   });
 
   it('non-active items have hover states', () => {
-    renderWithRouter(<Sidebar />, { route: '/' });
+    renderWithRouter(<Sidebar />, { route: '/devices' });
 
-    const profilesLink = screen.getByLabelText('Navigate to Profiles page');
-    expect(profilesLink).toHaveClass('text-slate-300');
-    expect(profilesLink).toHaveClass('hover:bg-slate-700');
+    const monitorLink = screen.getByLabelText('Navigate to Monitor page');
+    expect(monitorLink).toHaveClass('text-slate-300');
+    expect(monitorLink).toHaveClass('hover:bg-slate-700');
   });
 
   it('shows active indicator for current page', () => {
-    renderWithRouter(<Sidebar />, { route: '/config' });
+    renderWithRouter(<Sidebar />, { route: '/' });
 
     const configLink = screen.getByLabelText('Navigate to Configuration page');
-    // Active indicator is a white rounded bar
     expect(
       configLink.querySelector('.bg-white.rounded-full')
     ).toBeInTheDocument();
@@ -83,8 +72,8 @@ describe('Sidebar', () => {
 
     renderWithRouter(<Sidebar onClose={onClose} />);
 
-    const homeLink = screen.getByLabelText('Navigate to Home page');
-    await user.click(homeLink);
+    const configLink = screen.getByLabelText('Navigate to Configuration page');
+    await user.click(configLink);
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -95,9 +84,8 @@ describe('Sidebar', () => {
 
     renderWithRouter(<Sidebar onClose={onClose} />);
 
-    // Focus on a nav item first, then press Escape
-    const homeLink = screen.getByLabelText('Navigate to Home page');
-    homeLink.focus();
+    const configLink = screen.getByLabelText('Navigate to Configuration page');
+    configLink.focus();
     await user.keyboard('{Escape}');
 
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -111,7 +99,6 @@ describe('Sidebar', () => {
     const sidebar = screen.getByLabelText('Main navigation sidebar');
     sidebar.focus();
 
-    // Should not throw error when Escape is pressed without onClose
     await user.keyboard('{Escape}');
   });
 
@@ -146,10 +133,10 @@ describe('Sidebar', () => {
   it('has focus visible styles on navigation items', () => {
     renderWithRouter(<Sidebar />);
 
-    const homeLink = screen.getByLabelText('Navigate to Home page');
-    expect(homeLink).toHaveClass('focus:outline');
-    expect(homeLink).toHaveClass('focus:outline-2');
-    expect(homeLink).toHaveClass('focus:outline-primary-500');
+    const configLink = screen.getByLabelText('Navigate to Configuration page');
+    expect(configLink).toHaveClass('focus:outline');
+    expect(configLink).toHaveClass('focus:outline-2');
+    expect(configLink).toHaveClass('focus:outline-primary-500');
   });
 
   it('is keyboard navigable with Tab', async () => {
@@ -157,15 +144,16 @@ describe('Sidebar', () => {
 
     renderWithRouter(<Sidebar />);
 
-    // Tab through all navigation items
     await user.tab();
-    expect(screen.getByLabelText('Navigate to Home page')).toHaveFocus();
+    expect(
+      screen.getByLabelText('Navigate to Configuration page')
+    ).toHaveFocus();
 
     await user.tab();
     expect(screen.getByLabelText('Navigate to Devices page')).toHaveFocus();
 
     await user.tab();
-    expect(screen.getByLabelText('Navigate to Profiles page')).toHaveFocus();
+    expect(screen.getByLabelText('Navigate to Monitor page')).toHaveFocus();
   });
 
   it('activates link on Enter key press', async () => {
@@ -174,7 +162,6 @@ describe('Sidebar', () => {
 
     renderWithRouter(<Sidebar onClose={onClose} />);
 
-    // Tab to first link and press Enter
     await user.tab();
     await user.keyboard('{Enter}');
 
@@ -184,9 +171,8 @@ describe('Sidebar', () => {
   it('renders all icons correctly', () => {
     renderWithRouter(<Sidebar />);
 
-    // Check that all nav items have an icon (svg element)
     const navLinks = screen.getAllByRole('link');
-    expect(navLinks).toHaveLength(6);
+    expect(navLinks).toHaveLength(3);
 
     navLinks.forEach((link) => {
       const svg = link.querySelector('svg');
@@ -204,8 +190,8 @@ describe('Sidebar', () => {
     expect(sidebar).toHaveClass('ease-in-out');
   });
 
-  it('highlights Config when on /config route', () => {
-    renderWithRouter(<Sidebar />, { route: '/config' });
+  it('highlights Config when on / route', () => {
+    renderWithRouter(<Sidebar />, { route: '/' });
 
     const configLink = screen.getByLabelText('Navigate to Configuration page');
     expect(configLink).toHaveClass('bg-primary-600');

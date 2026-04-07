@@ -19,12 +19,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders } from '../testUtils';
-import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { waitFor } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
-import { renderWithProviders } from '../testUtils';
 import { useUnifiedApi } from '../../src/hooks/useUnifiedApi';
 import {
   setupDaemon,
@@ -34,15 +30,31 @@ import {
   DAEMON_WS_URL,
 } from './test-harness';
 
+// Skip entire suite when daemon is not running (avoids WebSocket crash cascading to other tests)
+const isDaemonAvailable = async (): Promise<boolean> => {
+  try {
+    const res = await fetch(`http://localhost:13030/api/health`, { signal: AbortSignal.timeout(1000) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+};
+
 describe('Profile Workflow Integration', () => {
   let testProfiles: string[] = [];
+  let daemonRunning = false;
 
   beforeAll(async () => {
-    // Start daemon if not already running
+    daemonRunning = await isDaemonAvailable();
+    if (!daemonRunning) {
+      console.log('❌ Daemon is not running — skipping profile workflow tests');
+      return;
+    }
     await setupDaemon({ autoStart: false });
   });
 
   afterAll(async () => {
+    if (!daemonRunning) return;
     // Cleanup test profiles
     const { result } = renderHook(() => useUnifiedApi(DAEMON_WS_URL));
 
@@ -64,7 +76,8 @@ describe('Profile Workflow Integration', () => {
     }
   });
 
-  beforeEach(() => {
+  beforeEach(({ skip }) => {
+    if (!daemonRunning) skip();
     // Reset test profiles array
     testProfiles = [];
   });

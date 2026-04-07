@@ -26,29 +26,29 @@ describe('DevicesPage - Integration Tests', () => {
 
       // Wait for page to render (uses internal mock data)
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+        expect(screen.getByText('Test Keyboard 1')).toBeInTheDocument();
       });
 
-      // Click rename button for "Main Keyboard"
-      const renameButton = screen.getByLabelText('Rename device Main Keyboard');
+      // Click rename button for "Test Keyboard 1"
+      const renameButton = screen.getByLabelText('Rename Test Keyboard 1');
       await user.click(renameButton);
 
       // Find the input field
       const input = screen.getByRole('textbox', { name: 'Device name' });
-      expect(input).toHaveValue('Main Keyboard');
+      expect(input).toHaveValue('Test Keyboard 1');
 
       // Change the name
       await user.clear(input);
       await user.type(input, 'My Gaming Keyboard');
 
       // Save the change
-      const saveButton = screen.getByLabelText('Save device name');
+      const saveButton = screen.getByLabelText('Save');
       await user.click(saveButton);
 
       // Verify name changes
       await waitFor(() => {
         expect(screen.getByText('My Gaming Keyboard')).toBeInTheDocument();
-        expect(screen.queryByText('Main Keyboard')).not.toBeInTheDocument();
+        expect(screen.queryByText('Test Keyboard 1')).not.toBeInTheDocument();
       });
     });
 
@@ -57,10 +57,10 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+        expect(screen.getByText('Test Keyboard 1')).toBeInTheDocument();
       });
 
-      const renameButton = screen.getByLabelText('Rename device Main Keyboard');
+      const renameButton = screen.getByLabelText('Rename Test Keyboard 1');
       await user.click(renameButton);
 
       const input = screen.getByRole('textbox', { name: 'Device name' });
@@ -77,10 +77,10 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+        expect(screen.getByText('Test Keyboard 1')).toBeInTheDocument();
       });
 
-      const renameButton = screen.getByLabelText('Rename device Main Keyboard');
+      const renameButton = screen.getByLabelText('Rename Test Keyboard 1');
       await user.click(renameButton);
 
       const input = screen.getByRole('textbox', { name: 'Device name' });
@@ -89,7 +89,7 @@ describe('DevicesPage - Integration Tests', () => {
 
       // Original name should still be there
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+        expect(screen.getByText('Test Keyboard 1')).toBeInTheDocument();
       });
     });
 
@@ -98,21 +98,21 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+        expect(screen.getByText('Test Keyboard 1')).toBeInTheDocument();
       });
 
-      const renameButton = screen.getByLabelText('Rename device Main Keyboard');
+      const renameButton = screen.getByLabelText('Rename Test Keyboard 1');
       await user.click(renameButton);
 
       const input = screen.getByRole('textbox', { name: 'Device name' });
       await user.clear(input);
       await user.type(input, 'This will be cancelled');
 
-      const cancelButton = screen.getByLabelText('Cancel rename');
+      const cancelButton = screen.getByLabelText('Cancel');
       await user.click(cancelButton);
 
       // Original name should still be there
-      expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+      expect(screen.getByText('Test Keyboard 1')).toBeInTheDocument();
     });
 
     it('validates empty device name', async () => {
@@ -120,50 +120,23 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+        expect(screen.getByText('Test Keyboard 1')).toBeInTheDocument();
       });
 
-      const renameButton = screen.getByLabelText('Rename device Main Keyboard');
+      const renameButton = screen.getByLabelText('Rename Test Keyboard 1');
       await user.click(renameButton);
 
       const input = screen.getByRole('textbox', { name: 'Device name' });
       await user.clear(input);
 
       // Try to save empty name
-      const saveButton = screen.getByLabelText('Save device name');
+      const saveButton = screen.getByLabelText('Save');
       await user.click(saveButton);
 
-      // Should show validation error
-      // Original name should still be there
-      expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
-    });
-  });
-
-  describe('Scope toggle flow', () => {
-    it('successfully changes device scope', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<DevicesPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
-      });
-
-      // Find the scope selectors
-      const scopeSelectors = screen.getAllByRole('combobox', {
-        name: /Scope selector/i,
-      });
-      const firstScopeSelector = scopeSelectors[0];
-
-      // Verify initial scope is global
-      expect(firstScopeSelector).toHaveValue('global');
-
-      // Change to device-specific
-      await user.selectOptions(firstScopeSelector, 'device-specific');
-
-      // Verify change
-      await waitFor(() => {
-        expect(firstScopeSelector).toHaveValue('device-specific');
-      });
+      // Should show validation error and remain in edit mode
+      expect(
+        screen.getByRole('textbox', { name: 'Device name' })
+      ).toBeInTheDocument();
     });
   });
 
@@ -173,16 +146,16 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+        expect(screen.getByText('Test Keyboard 1')).toBeInTheDocument();
       });
 
-      const forgetButton = screen.getByLabelText('Forget device Main Keyboard');
+      const forgetButton = screen.getByLabelText('Permanently forget Test Keyboard 1');
       await user.click(forgetButton);
 
       // Modal should appear
       await waitFor(() => {
         expect(
-          screen.getByText(/Are you sure you want to forget this device/i)
+          screen.getByText(/Are you sure you want to forget device/i)
         ).toBeInTheDocument();
       });
     });
@@ -192,27 +165,27 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+        expect(screen.getByText('Test Keyboard 1')).toBeInTheDocument();
       });
 
-      const forgetButton = screen.getByLabelText('Forget device Main Keyboard');
+      const forgetButton = screen.getByLabelText('Permanently forget Test Keyboard 1');
       await user.click(forgetButton);
 
       // Wait for modal and click confirm
       await waitFor(() => {
-        expect(screen.getByText('Confirm')).toBeInTheDocument();
+        expect(screen.getByLabelText('Confirm forget device')).toBeInTheDocument();
       });
 
-      const confirmButton = screen.getByText('Confirm');
+      const confirmButton = screen.getByLabelText('Confirm forget device');
       await user.click(confirmButton);
 
       // Device should be removed from list
       await waitFor(() => {
-        expect(screen.queryByText('Main Keyboard')).not.toBeInTheDocument();
+        expect(screen.queryByText('Test Keyboard 1')).not.toBeInTheDocument();
       });
 
       // Other device should still be there
-      expect(screen.getByText('Left Numpad')).toBeInTheDocument();
+      expect(screen.getByText('Test Keyboard 2')).toBeInTheDocument();
     });
 
     it('cancels forget operation on Cancel button', async () => {
@@ -220,27 +193,28 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+        expect(screen.getAllByText('Test Keyboard 1').length).toBeGreaterThan(0);
       });
 
-      const forgetButton = screen.getByLabelText('Forget device Main Keyboard');
+      const forgetButton = screen.getByLabelText('Permanently forget Test Keyboard 1');
       await user.click(forgetButton);
 
+      // Wait for modal to appear, use aria-label to avoid matching other Cancel buttons
       await waitFor(() => {
-        expect(screen.getByText('Cancel')).toBeInTheDocument();
+        expect(screen.getByLabelText('Cancel forget device')).toBeInTheDocument();
       });
 
-      const cancelButton = screen.getByText('Cancel');
+      const cancelButton = screen.getByLabelText('Cancel forget device');
       await user.click(cancelButton);
 
       // Modal should close and device should still be there
       await waitFor(() => {
         expect(
-          screen.queryByText(/Are you sure you want to forget this device/i)
+          screen.queryByText(/Are you sure you want to forget device/i)
         ).not.toBeInTheDocument();
       });
 
-      expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+      expect(screen.getAllByText('Test Keyboard 1').length).toBeGreaterThan(0);
     });
   });
 
@@ -250,23 +224,30 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
+        expect(screen.getAllByText('Test Keyboard 1').length).toBeGreaterThan(0);
       });
 
-      // Find layout selector dropdown (multiple devices may have them)
-      const layoutSelectors = screen.getAllByRole('combobox', {
-        name: /Keyboard Layout/i,
+      // Find the device layout selector (HeadlessUI Listbox button)
+      // DeviceRow's LayoutDropdown has aria-label="Layout"
+      const layoutButtons = screen.getAllByLabelText('Layout');
+      const firstLayoutButton = layoutButtons[0];
+
+      // Default should show ANSI 104
+      expect(firstLayoutButton).toHaveTextContent('ANSI 104');
+
+      // Click to open the dropdown
+      await user.click(firstLayoutButton);
+
+      // Select ISO 105 option
+      const isoOption = await screen.findByRole('option', {
+        name: /ISO 105/i,
       });
-      const firstLayoutSelector = layoutSelectors[0];
+      await user.click(isoOption);
 
-      // Default should be ANSI_104
-      expect(firstLayoutSelector).toHaveValue('ANSI_104');
-
-      // Change to ISO_105
-      await user.selectOptions(firstLayoutSelector, 'ISO_105');
-
-      // Verify change
-      expect(firstLayoutSelector).toHaveValue('ISO_105');
+      // Verify the button text changed
+      await waitFor(() => {
+        expect(firstLayoutButton).toHaveTextContent('ISO 105');
+      });
     });
   });
 
@@ -276,13 +257,13 @@ describe('DevicesPage - Integration Tests', () => {
       renderWithProviders(<DevicesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Main Keyboard')).toBeInTheDocument();
-        expect(screen.getByText('Left Numpad')).toBeInTheDocument();
+        expect(screen.getByText('Test Keyboard 1')).toBeInTheDocument();
+        expect(screen.getByText('Test Keyboard 2')).toBeInTheDocument();
       });
 
       // Rename first device
       const renameButton1 = screen.getByLabelText(
-        'Rename device Main Keyboard'
+        'Rename Test Keyboard 1'
       );
       await user.click(renameButton1);
 
@@ -295,7 +276,7 @@ describe('DevicesPage - Integration Tests', () => {
       });
 
       // Rename second device
-      const renameButton2 = screen.getByLabelText('Rename device Left Numpad');
+      const renameButton2 = screen.getByLabelText('Rename Test Keyboard 2');
       await user.click(renameButton2);
 
       const input2 = screen.getByRole('textbox', { name: 'Device name' });

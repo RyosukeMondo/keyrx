@@ -9,7 +9,7 @@ import type { SyncStatus } from '@/hooks/useConfigSync';
 import type { SVGKeyData } from '@/utils/kle-parser';
 import { useDeviceMerging } from '@/hooks/useDeviceMerging';
 import { useASTRebuild } from '@/hooks/useASTRebuild';
-import { NotificationBanners } from '@/components/config/NotificationBanners';
+import { useKeyboardShortcuts, CommonShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { ConfigurationLayout } from '@/components/config/ConfigurationLayout';
 import { DeviceSelectionPanel } from '@/components/config/DeviceSelectionPanel';
 import { ConfigScopeTabs } from '@/components/config/ConfigScopeTabs';
@@ -29,11 +29,6 @@ const AVAILABLE_LAYERS = [
 interface EditTabProps {
   selectedProfileName: string;
   profileConfig: { source: string } | undefined;
-  isLoading: boolean;
-  error: Error | null;
-  profileExists: boolean;
-  configMissing: boolean;
-  isConnected: boolean;
   syncEngine: RhaiSyncEngineResult;
   syncStatus: SyncStatus;
   setSyncStatus: (status: SyncStatus) => void;
@@ -55,7 +50,6 @@ interface EditTabProps {
   };
   keyboardLayout: LayoutType;
   layoutKeys: SVGKeyData[];
-  onCreateProfile: () => void;
 }
 
 /**
@@ -69,23 +63,22 @@ interface EditTabProps {
 export const EditTab: React.FC<EditTabProps> = ({
   selectedProfileName,
   profileConfig: _profileConfig,
-  isLoading,
-  error,
-  profileExists,
-  configMissing,
-  isConnected,
   syncEngine,
   syncStatus: _syncStatus,
   setSyncStatus,
   configStore,
   keyboardLayout,
   layoutKeys,
-  onCreateProfile,
 }) => {
   // Local state owned by EditTab
   const [selectedPhysicalKey, setSelectedPhysicalKey] = useState<string | null>(
     null
   );
+
+  useKeyboardShortcuts([
+    CommonShortcuts.escape(() => setSelectedPhysicalKey(null)),
+  ]);
+
   const [activePane, setActivePane] = useState<'global' | 'device'>('global');
 
   // Derived values from configStore
@@ -125,17 +118,6 @@ export const EditTab: React.FC<EditTabProps> = ({
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
-      {/* Error/Info Messages */}
-      <NotificationBanners
-        profileName={selectedProfileName}
-        profileExists={profileExists}
-        configMissing={configMissing}
-        error={error}
-        isLoading={isLoading}
-        isConnected={isConnected}
-        onCreateProfile={onCreateProfile}
-      />
-
       {/* Visual Editor Content */}
       <ConfigurationLayout profileName={selectedProfileName}>
         {/* Device Selection Panel */}
