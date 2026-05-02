@@ -12,6 +12,8 @@ import { useUnifiedApi } from '@/hooks/useUnifiedApi';
 import { useConfigStore } from '@/stores/configStore';
 import type { KeyMapping } from '@/types';
 import { ProfileTemplate } from '@/types';
+import { detectLayoutFromSource } from '@/utils/layoutDetection';
+import { AVAILABLE_LAYERS } from '@/utils/layers';
 import type { LayoutType } from '@/components/KeyboardVisualizer';
 
 // Import custom hooks
@@ -34,25 +36,6 @@ import { ConfigScopeTabs } from '@/components/config/ConfigScopeTabs';
 import { GlobalKeyboardPanel } from '@/components/config/GlobalKeyboardPanel';
 import { DeviceKeyboardPanel } from '@/components/config/DeviceKeyboardPanel';
 import { DiagnosticsPanel } from '@/components/config/DiagnosticsPanel';
-
-/** Auto-detect keyboard layout from Rhai config source */
-function detectLayoutFromSource(source: string | undefined): LayoutType {
-  if (!source) return 'JIS_109';
-  const jisKeys = [
-    'VK_Zenkaku',
-    'VK_全角',
-    'VK_無変換',
-    'VK_変換',
-    'VK_ひらがな',
-    'VK_カタカナ',
-    'VK_Ro',
-    'VK_Yen',
-    'VK_Henkan',
-    'VK_Muhenkan',
-  ];
-  const hasJisKeys = jisKeys.some((k) => source.includes(k));
-  return hasJisKeys ? 'JIS_109' : 'ANSI_104';
-}
 
 interface ConfigPageProps {
   profileName?: string;
@@ -95,17 +78,6 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
   const activeLayer = configStore.activeLayer;
   const globalSelected = configStore.globalSelected;
   const selectedDevices = configStore.selectedDevices;
-
-  // Available layers
-  const availableLayers = [
-    'base',
-    'md-00',
-    'md-01',
-    'md-02',
-    'md-03',
-    'md-04',
-    'md-05',
-  ];
 
   // Responsive layout state: 'global' or 'device' for mobile/tablet views
   const [activePane, setActivePane] = useState<'global' | 'device'>('global');
@@ -412,7 +384,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
           <GlobalKeyboardPanel
             profileName={selectedProfileName}
             activeLayer={activeLayer}
-            availableLayers={availableLayers}
+            availableLayers={AVAILABLE_LAYERS}
             onLayerChange={configStore.setActiveLayer}
             globalSelected={globalSelected}
             onToggleGlobal={configStore.setGlobalSelected}
@@ -427,7 +399,7 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
           <DeviceKeyboardPanel
             profileName={selectedProfileName}
             activeLayer={activeLayer}
-            availableLayers={availableLayers}
+            availableLayers={AVAILABLE_LAYERS}
             onLayerChange={configStore.setActiveLayer}
             devices={devices}
             selectedDevices={selectedDevices}
