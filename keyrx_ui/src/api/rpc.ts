@@ -25,7 +25,7 @@
  * ```
  */
 
-import type { UseUnifiedApiReturn } from '../hooks/useUnifiedApi';
+import type { RpcApi } from '../types/api';
 import type { DaemonState, KeyEvent, LatencyMetrics } from '../types/rpc';
 import type {
   Profile,
@@ -44,14 +44,14 @@ import type { z } from 'zod';
  * Type-safe RPC client for daemon communication.
  */
 export class RpcClient {
-  private api: UseUnifiedApiReturn;
+  private api: RpcApi;
 
   /**
    * Create a new RPC client.
    *
-   * @param api - The useUnifiedApi hook return value
+   * @param api - The RPC API implementation (e.g., from useUnifiedApi hook)
    */
-  constructor(api: UseUnifiedApiReturn) {
+  constructor(api: RpcApi) {
     this.api = api;
   }
 
