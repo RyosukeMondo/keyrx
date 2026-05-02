@@ -24,7 +24,6 @@ import type { SVGKey } from '@/components/SVGKeyboard';
  * @example
  * ```tsx
  * <ConfigurationPanel
- *   profileName="Default"
  *   selectedPhysicalKey="VK_A"
  *   onSaveMapping={(mapping) => console.log(mapping)}
  *   onClearMapping={(key) => console.log('Clear', key)}
@@ -42,8 +41,6 @@ import type { SVGKey } from '@/components/SVGKeyboard';
  */
 
 interface ConfigurationPanelProps {
-  /** Name of the active profile */
-  profileName: string;
   /** Currently selected physical key on keyboard */
   selectedPhysicalKey: string | null;
   /** Currently selected palette key */
