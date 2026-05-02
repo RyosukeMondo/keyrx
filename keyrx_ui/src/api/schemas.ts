@@ -28,7 +28,7 @@ export const ValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
 );
 
 // Device scope enum
-export const DeviceScopeSchema = z.enum(['DeviceSpecific', 'Global']);
+export const DeviceScopeSchema = z.enum(['global', 'device-specific']);
 
 // Device metadata entry
 export const DeviceEntrySchema = z
