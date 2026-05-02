@@ -12,6 +12,9 @@ export interface Profile {
   createdAt: string;
   modifiedAt: string;
   configHash?: string;
+  layerCount: number;
+  deviceCount: number;
+  keyCount: number;
 }
 
 export interface ProfileConfig {
