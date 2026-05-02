@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { useDevices } from '@/hooks/useDevices';
 import type { KeyMapping } from '@/types';
 import type { KeyMapping as RhaiKeyMapping } from '@/utils/rhaiParser';
 import type { Device } from '@/components/DeviceSelector';
@@ -43,8 +42,6 @@ export function useASTRebuild({
   selectedDevices,
   devices,
 }: UseASTRebuildProps) {
-  const { data: devicesData } = useDevices();
-
   const rebuildAndSyncAST = useCallback(() => {
     // Convert a KeyMapping to RhaiKeyMapping
     const convertToRhaiMapping = (
@@ -151,7 +148,7 @@ export function useASTRebuild({
       deviceBlocks,
       comments: [],
     });
-  }, [configStore, syncEngine, globalSelected, selectedDevices, devices, devicesData]);
+  }, [configStore, syncEngine, globalSelected, selectedDevices, devices]);
 
   return rebuildAndSyncAST;
 }
