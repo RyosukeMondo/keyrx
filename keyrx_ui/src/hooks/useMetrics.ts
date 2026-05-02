@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { queryKeys } from '../lib/queryClient';
 import * as metricsApi from '../api/metrics';
 import type {
@@ -60,6 +60,7 @@ export function useEventLog() {
  */
 export function useWebSocketMetrics() {
   const queryClient = useQueryClient();
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -67,6 +68,7 @@ export function useWebSocketMetrics() {
     const websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
+      setConnected(true);
       if (import.meta.env.DEV) {
         // eslint-disable-next-line no-console
         console.log('WebSocket connected');
@@ -124,6 +126,7 @@ export function useWebSocketMetrics() {
     };
 
     websocket.onclose = () => {
+      setConnected(false);
       if (import.meta.env.DEV) {
         // eslint-disable-next-line no-console
         console.log('WebSocket disconnected');
@@ -136,9 +139,9 @@ export function useWebSocketMetrics() {
     };
   }, [queryClient]);
 
-  // Return connection status from cache or default to false
+  // Return actual connection status
   return {
-    connected: true, // Simplified - could track actual connection state
+    connected,
   };
 }
 
