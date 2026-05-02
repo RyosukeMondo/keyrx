@@ -9,7 +9,7 @@ import {
   ProfileRpcInfoSchema,
   ActivationRpcResultSchema,
 } from './schemas';
-import type { z } from 'zod';
+import type { ProfileRpcInfo, ActivationRpcResult } from './schemas';
 import type { ProfileMetadata, Template, ActivationResult } from '../types';
 
 interface CreateProfileRequest {
@@ -70,7 +70,7 @@ export async function createProfile(
   template: Template
 ): Promise<ProfileResponse> {
   const request: CreateProfileRequest = { name, template };
-  const response = await apiClient.post<z.infer<typeof ProfileRpcInfoSchema>>(
+  const response = await apiClient.post<ProfileRpcInfo>(
     '/api/profiles',
     request
   );
@@ -83,9 +83,9 @@ export async function createProfile(
  * Activate a profile
  */
 export async function activateProfile(name: string): Promise<ActivationResult> {
-  const response = await apiClient.post<
-    z.infer<typeof ActivationRpcResultSchema>
-  >(`/api/profiles/${name}/activate`);
+  const response = await apiClient.post<ActivationRpcResult>(
+    `/api/profiles/${name}/activate`
+  );
   const validated = validateApiResponse(
     ActivationRpcResultSchema,
     response,
@@ -164,7 +164,7 @@ export async function duplicateProfile(
   sourceName: string,
   newName: string
 ): Promise<ProfileResponse> {
-  const response = await apiClient.post<z.infer<typeof ProfileRpcInfoSchema>>(
+  const response = await apiClient.post<ProfileRpcInfo>(
     `/api/profiles/${sourceName}/duplicate`,
     { newName }
   );

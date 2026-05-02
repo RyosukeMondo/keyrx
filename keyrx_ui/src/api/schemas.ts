@@ -137,6 +137,10 @@ export const ActivationRpcResultSchema = z
   })
   .passthrough();
 
+// Inferred types for use in API clients
+export type ProfileRpcInfo = z.infer<typeof ProfileRpcInfoSchema>;
+export type ActivationRpcResult = z.infer<typeof ActivationRpcResultSchema>;
+
 // Daemon state snapshot
 export const DaemonStateSchema = z
   .object({
