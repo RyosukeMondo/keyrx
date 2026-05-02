@@ -2,10 +2,9 @@ import React from 'react';
 import { Star, Clock } from 'lucide-react';
 import { PaletteHeader } from './palette/PaletteHeader';
 import { QuickAccessSection } from './palette/QuickAccessSection';
-import { PaletteSearchInput } from './palette/PaletteSearchInput';
+import { PaletteSearch } from './palette/PaletteSearch';
 import { CustomKeycodeInput } from './palette/CustomKeycodeInput';
 import { CategoryTabs } from './palette/CategoryTabs';
-import { SearchResultsList } from './palette/SearchResultsList';
 import { KeyCaptureModal } from './palette/KeyCaptureModal';
 import { Card } from './Card';
 import { KEY_DEFINITIONS } from '../data/keys';
@@ -64,8 +63,6 @@ export function KeyPalette({
   const [activeSubcategory, setActiveSubcategory] = React.useState<
     string | null
   >(null);
-  const [selectedSearchIndex, setSelectedSearchIndex] = React.useState(0);
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // View mode state
   const [viewMode, setViewMode] = React.useState<ViewMode>(() =>
@@ -143,11 +140,6 @@ export function KeyPalette({
     { id: 'any' as const, label: 'Any', keys: [], icon: '✏️' },
   ];
 
-  // Reset selected index when search changes
-  React.useEffect(() => {
-    setSelectedSearchIndex(0);
-  }, [searchQuery]);
-
   const activeCategoryData = categories.find((c) => c.id === activeCategory);
   let activeKeys = activeCategoryData?.keys || [];
 
@@ -175,42 +167,8 @@ export function KeyPalette({
           ) as string[])
         : [];
 
-  // Handle keyboard navigation in search results
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (searchResults.length === 0) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedSearchIndex((prev) =>
-          Math.min(prev + 1, searchResults.length - 1)
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedSearchIndex((prev) => Math.max(prev - 1, 0));
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (searchResults[selectedSearchIndex]) {
-          const match = searchResults[selectedSearchIndex];
-          handleKeySelect({
-            id: match.key.id,
-            label: match.key.label,
-            category: match.key.category,
-            subcategory: match.key.subcategory,
-            description: match.key.description,
-          });
-          setSearchQuery('');
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        setSearchQuery('');
-        searchInputRef.current?.blur();
-        break;
-    }
-  };
+  // Handle keyboard navigation in search results - now handled by PaletteSearch component
+  // (kept for reference, but PaletteSearch manages its own keyboard nav internally)
 
   // Drag handlers removed - using click-only interaction now
 
@@ -283,14 +241,22 @@ export function KeyPalette({
           </div>
         )}
 
-      {/* Search Input */}
-      <PaletteSearchInput
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onKeyDown={handleSearchKeyDown}
-        searchResultCount={searchResults.length}
+      {/* Search */}
+      <PaletteSearch
+        value={searchQuery}
+        onChange={setSearchQuery}
+        results={searchResults}
+        onSelect={(match) => {
+          handleKeySelect({
+            id: match.key.id,
+            label: match.key.label,
+            category: match.key.category,
+            subcategory: match.key.subcategory,
+            description: match.key.description,
+          });
+          setSearchQuery('');
+        }}
         compact={compact}
-        inputRef={searchInputRef}
       />
 
       {/* Category Tabs */}
@@ -310,17 +276,7 @@ export function KeyPalette({
 
       {/* Key Grid - Keyboard keycap style */}
       <div className="flex-1 overflow-y-auto">
-        {isSearching ? (
-          <SearchResultsList
-            searchQuery={searchQuery}
-            searchResults={searchResults}
-            selectedSearchIndex={selectedSearchIndex}
-            onSelectResult={(key) => {
-              handleKeySelect(key);
-              setSearchQuery('');
-            }}
-          />
-        ) : activeCategory === 'any' ? (
+        {activeCategory === 'any' ? (
           // Custom keycode input (Any category)
           <CustomKeycodeInput
             customKeycode={customKeycode}

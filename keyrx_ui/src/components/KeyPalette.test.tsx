@@ -327,7 +327,9 @@ describe('KeyPalette', () => {
       await waitFor(() => {
         const input = screen.queryByPlaceholderText(/keycode|custom|enter/i);
         // Custom input should be present
-        expect(input || screen.queryByText(/any key|custom/i)).toBeTruthy();
+        expect(
+          input || screen.queryAllByText(/any key|custom/i).length > 0
+        ).toBeTruthy();
       });
     });
 
