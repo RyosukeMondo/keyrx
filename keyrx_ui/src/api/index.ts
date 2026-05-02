@@ -53,6 +53,13 @@ export {
 
 // RPC client (unified WebSocket API)
 export { RpcClient } from './rpc';
+export { ProfileRpcMethods } from './rpc-clients/profiles';
+export { DeviceRpcMethods } from './rpc-clients/devices';
+export { ConfigRpcMethods } from './rpc-clients/config';
+export { MetricsRpcMethods } from './rpc-clients/metrics';
+export { SimulationRpcMethods } from './rpc-clients/simulation';
+export { SubscriptionRpcMethods } from './rpc-clients/subscriptions';
+export { DaemonControlRpcMethods } from './rpc-clients/daemon';
 export type {
   Profile,
   Device,

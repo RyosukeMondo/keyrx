@@ -2,8 +2,14 @@
  * Type-safe RPC client for WebSocket communication with the daemon.
  *
  * This client wraps the useUnifiedApi hook and provides typed methods for all
- * RPC operations. All methods are thin wrappers that delegate to the underlying
- * query/command/subscribe methods with proper type safety.
+ * RPC operations. Uses composition to delegate to specialized RPC method classes:
+ * - profiles: Profile CRUD operations
+ * - devices: Device management
+ * - config: Configuration management
+ * - metrics: Latency and event metrics
+ * - simulation: Simulation operations
+ * - subscriptions: Real-time event subscriptions
+ * - daemon: Daemon control operations
  *
  * @example
  * ```tsx
@@ -11,39 +17,40 @@
  *   const api = useUnifiedApi();
  *   const client = new RpcClient(api);
  *
- *   // Query profiles
+ *   // Direct methods (backward compatible)
  *   const profiles = await client.getProfiles();
- *
- *   // Activate a profile
  *   await client.activateProfile('Gaming');
  *
- *   // Subscribe to state changes
- *   client.onDaemonState((state) => {
- *     console.log('State changed:', state);
- *   });
+ *   // Or use composed sub-clients (preferred for new code)
+ *   await client.profiles.getProfiles();
+ *   await client.profiles.activateProfile('Gaming');
+ *   client.subscriptions.onDaemonState((state) => { ... });
  * }
  * ```
  */
 
 import type { RpcApi } from '../types/api';
-import type { DaemonState, KeyEvent, LatencyMetrics } from '../types/rpc';
-import type {
-  Profile,
-  ProfileConfig,
-  Device,
-  Config,
-  Layer,
-  SimulationInput,
-  SimulationResult,
-  PaginatedEvents,
-} from './types';
-import { validateApiResponse, ProfileConfigRpcSchema } from './schemas';
-import type { z } from 'zod';
+import type { SimulationInput, SimulationResult } from './types';
+import { ProfileRpcMethods } from './rpc-clients/profiles';
+import { DeviceRpcMethods } from './rpc-clients/devices';
+import { ConfigRpcMethods } from './rpc-clients/config';
+import { MetricsRpcMethods } from './rpc-clients/metrics';
+import { SimulationRpcMethods } from './rpc-clients/simulation';
+import { SubscriptionRpcMethods } from './rpc-clients/subscriptions';
+import { DaemonControlRpcMethods } from './rpc-clients/daemon';
 
 /**
  * Type-safe RPC client for daemon communication.
  */
 export class RpcClient {
+  readonly profiles: ProfileRpcMethods;
+  readonly devices: DeviceRpcMethods;
+  readonly config: ConfigRpcMethods;
+  readonly metrics: MetricsRpcMethods;
+  readonly simulation: SimulationRpcMethods;
+  readonly subscriptions: SubscriptionRpcMethods;
+  readonly daemon: DaemonControlRpcMethods;
+
   private api: RpcApi;
 
   /**
@@ -53,449 +60,175 @@ export class RpcClient {
    */
   constructor(api: RpcApi) {
     this.api = api;
+
+    // Initialize composed sub-clients
+    this.profiles = new ProfileRpcMethods(api);
+    this.devices = new DeviceRpcMethods(api);
+    this.config = new ConfigRpcMethods(api);
+    this.metrics = new MetricsRpcMethods(api);
+    this.simulation = new SimulationRpcMethods(api);
+    this.subscriptions = new SubscriptionRpcMethods(api);
+    this.daemon = new DaemonControlRpcMethods(api);
   }
 
   // ========================================
-  // Profile Methods
+  // Profile Methods (delegated to profiles sub-client)
   // ========================================
 
-  /**
-   * Get all profiles.
-   *
-   * @returns Array of profile metadata
-   * @throws Error if the request fails
-   */
-  async getProfiles(): Promise<Profile[]> {
-    return this.api.query<Profile[]>('get_profiles');
+  async getProfiles() {
+    return this.profiles.getProfiles();
   }
 
-  /**
-   * Create a new profile.
-   *
-   * @param name - Name of the profile to create
-   * @param template - Optional template to initialize from
-   * @returns Success status
-   * @throws Error if profile name is invalid or profile already exists
-   */
-  async createProfile(name: string, template?: string): Promise<void> {
-    return this.api.command<void>('create_profile', { name, template });
+  async createProfile(name: string, template?: string) {
+    return this.profiles.createProfile(name, template);
   }
 
-  /**
-   * Activate a profile.
-   *
-   * @param name - Name of the profile to activate
-   * @returns Success status
-   * @throws Error if profile does not exist or activation fails
-   */
-  async activateProfile(name: string): Promise<void> {
-    return this.api.command<void>('activate_profile', { name });
+  async activateProfile(name: string) {
+    return this.profiles.activateProfile(name);
   }
 
-  /**
-   * Delete a profile.
-   *
-   * @param name - Name of the profile to delete
-   * @returns Success status
-   * @throws Error if profile does not exist or is currently active
-   */
-  async deleteProfile(name: string): Promise<void> {
-    return this.api.command<void>('delete_profile', { name });
+  async deleteProfile(name: string) {
+    return this.profiles.deleteProfile(name);
   }
 
-  /**
-   * Duplicate a profile.
-   *
-   * @param sourceName - Name of the profile to duplicate
-   * @param newName - Name for the new profile
-   * @returns Success status
-   * @throws Error if source does not exist or new name is invalid
-   */
-  async duplicateProfile(sourceName: string, newName: string): Promise<void> {
-    return this.api.command<void>('duplicate_profile', {
-      source_name: sourceName,
-      new_name: newName,
-    });
+  async duplicateProfile(sourceName: string, newName: string) {
+    return this.profiles.duplicateProfile(sourceName, newName);
   }
 
-  /**
-   * Rename a profile.
-   *
-   * @param oldName - Current name of the profile
-   * @param newName - New name for the profile
-   * @returns Success status
-   * @throws Error if profile does not exist or new name is invalid
-   */
-  async renameProfile(oldName: string, newName: string): Promise<void> {
-    return this.api.command<void>('rename_profile', {
-      old_name: oldName,
-      new_name: newName,
-    });
+  async renameProfile(oldName: string, newName: string) {
+    return this.profiles.renameProfile(oldName, newName);
   }
 
-  /**
-   * Get profile configuration source code.
-   *
-   * @param name - Name of the profile
-   * @returns Profile configuration with name and source code
-   * @throws Error if profile does not exist
-   */
-  async getProfileConfig(name: string): Promise<ProfileConfig> {
-    const response = await this.api.query<
-      z.infer<typeof ProfileConfigRpcSchema>
-    >('get_profile_config', { name });
-    const validated = validateApiResponse(
-      ProfileConfigRpcSchema,
-      response,
-      'get_profile_config'
-    );
-    return {
-      name: validated.name,
-      source: validated.source, // Backend returns 'source' field
-    };
+  async getProfileConfig(name: string) {
+    return this.profiles.getProfileConfig(name);
   }
 
-  /**
-   * Set profile configuration source code.
-   *
-   * @param name - Name of the profile
-   * @param source - Rhai configuration source code
-   * @returns Success status
-   * @throws Error if profile does not exist or source is invalid
-   */
-  async setProfileConfig(name: string, source: string): Promise<void> {
-    const response = await this.api.command<void>('set_profile_config', {
-      name,
-      source,
-    });
-    // For commands, the response is typically empty on success or contains error info
-    // Validation already happened at the WebSocket layer, so we just need to check for errors
-    if (response && typeof response === 'object') {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.debug(
-          JSON.stringify({
-            timestamp: new Date().toISOString(),
-            level: 'debug',
-            service: 'RPC Client',
-            event: 'set_profile_config_success',
-            context: { profileName: name },
-          })
-        );
-      }
-    }
+  async setProfileConfig(name: string, source: string) {
+    return this.profiles.setProfileConfig(name, source);
   }
 
-  /**
-   * Get the currently active profile name.
-   *
-   * @returns Active profile name or null if no profile is active
-   * @throws Error if the request fails
-   */
-  async getActiveProfile(): Promise<string | null> {
-    return this.api.query<string | null>('get_active_profile');
+  async getActiveProfile() {
+    return this.profiles.getActiveProfile();
   }
 
   // ========================================
-  // Device Methods
+  // Device Methods (delegated to devices sub-client)
   // ========================================
 
-  /**
-   * Get all devices.
-   *
-   * @returns Array of device information
-   * @throws Error if the request fails
-   */
-  async getDevices(): Promise<Device[]> {
-    return this.api.query<Device[]>('get_devices');
+  async getDevices() {
+    return this.devices.getDevices();
   }
 
-  /**
-   * Rename a device.
-   *
-   * @param serial - Device serial number
-   * @param newName - New name for the device
-   * @returns Success status
-   * @throws Error if device does not exist or name is invalid
-   */
-  async renameDevice(serial: string, newName: string): Promise<void> {
-    return this.api.command<void>('rename_device', {
-      serial,
-      new_name: newName,
-    });
+  async renameDevice(serial: string, newName: string) {
+    return this.devices.renameDevice(serial, newName);
   }
 
-  /**
-   * Set device scope.
-   *
-   * @param serial - Device serial number
-   * @param scope - Scope to set ('global' or 'profile')
-   * @returns Success status
-   * @throws Error if device does not exist or scope is invalid
-   */
-  async setScopeDevice(
-    serial: string,
-    scope: 'global' | 'profile'
-  ): Promise<void> {
-    return this.api.command<void>('set_scope_device', { serial, scope });
+  async setScopeDevice(serial: string, scope: 'global' | 'profile') {
+    return this.devices.setScopeDevice(serial, scope);
   }
 
-  /**
-   * Forget a device (remove from configuration).
-   *
-   * @param serial - Device serial number
-   * @returns Success status
-   * @throws Error if device does not exist
-   */
-  async forgetDevice(serial: string): Promise<void> {
-    return this.api.command<void>('forget_device', { serial });
+  async forgetDevice(serial: string) {
+    return this.devices.forgetDevice(serial);
   }
 
-  /**
-   * Set device keyboard layout preference.
-   *
-   * @param serial - Device serial number
-   * @param layout - Layout name (e.g., 'ansi', 'iso', 'jis')
-   * @returns Success status
-   * @throws Error if device does not exist or layout is invalid
-   */
-  async setDeviceLayout(serial: string, layout: string): Promise<void> {
-    return this.api.command<void>('set_device_layout', { serial, layout });
+  async setDeviceLayout(serial: string, layout: string) {
+    return this.devices.setDeviceLayout(serial, layout);
   }
 
   // ========================================
-  // Configuration Methods
+  // Configuration Methods (delegated to config sub-client)
   // ========================================
 
-  /**
-   * Get current configuration.
-   *
-   * @returns Configuration code and hash
-   * @throws Error if the request fails
-   */
-  async getConfig(): Promise<Config> {
-    return this.api.query<Config>('get_config');
+  async getConfig() {
+    return this.config.getConfig();
   }
 
-  /**
-   * Update configuration.
-   *
-   * @param code - New configuration code
-   * @returns Success status
-   * @throws Error if configuration is invalid or exceeds size limit
-   */
-  async updateConfig(code: string): Promise<void> {
-    return this.api.command<void>('update_config', { code });
+  async updateConfig(code: string) {
+    return this.config.updateConfig(code);
   }
 
-  /**
-   * Set a single key mapping.
-   *
-   * @param layer - Layer name
-   * @param keyCode - Key code to map
-   * @param mapping - Mapping definition
-   * @returns Success status
-   * @throws Error if layer or mapping is invalid
-   */
-  async setKeyMapping(
-    layer: string,
-    keyCode: string,
-    mapping: string
-  ): Promise<void> {
-    return this.api.command<void>('set_key_mapping', {
-      layer,
-      key_code: keyCode,
-      mapping,
-    });
+  async setKeyMapping(layer: string, keyCode: string, mapping: string) {
+    return this.config.setKeyMapping(layer, keyCode, mapping);
   }
 
-  /**
-   * Delete a key mapping.
-   *
-   * @param layer - Layer name
-   * @param keyCode - Key code to unmap
-   * @returns Success status
-   * @throws Error if layer does not exist
-   */
-  async deleteKeyMapping(layer: string, keyCode: string): Promise<void> {
-    return this.api.command<void>('delete_key_mapping', {
-      layer,
-      key_code: keyCode,
-    });
+  async deleteKeyMapping(layer: string, keyCode: string) {
+    return this.config.deleteKeyMapping(layer, keyCode);
   }
 
-  /**
-   * Get all layers.
-   *
-   * @returns Array of layer names
-   * @throws Error if the request fails
-   */
-  async getLayers(): Promise<Layer[]> {
-    return this.api.query<Layer[]>('get_layers');
+  async getLayers() {
+    return this.config.getLayers();
   }
 
   // ========================================
-  // Metrics Methods
+  // Metrics Methods (delegated to metrics sub-client)
   // ========================================
 
-  /**
-   * Get current latency statistics.
-   *
-   * @returns Latency metrics
-   * @throws Error if the request fails
-   */
-  async getLatency(): Promise<LatencyMetrics> {
-    return this.api.query<LatencyMetrics>('get_latency');
+  async getLatency() {
+    return this.metrics.getLatency();
   }
 
-  /**
-   * Get event history with pagination.
-   *
-   * @param limit - Maximum number of events to return (default 100, max 1000)
-   * @param offset - Number of events to skip (default 0)
-   * @returns Paginated events
-   * @throws Error if the request fails
-   */
-  async getEvents(limit?: number, offset?: number): Promise<PaginatedEvents> {
-    return this.api.query<PaginatedEvents>('get_events', { limit, offset });
+  async getEvents(limit?: number, offset?: number) {
+    return this.metrics.getEvents(limit, offset);
   }
 
-  /**
-   * Clear event history.
-   *
-   * @returns Success status
-   * @throws Error if the request fails
-   */
-  async clearEvents(): Promise<void> {
-    return this.api.command<void>('clear_events');
+  async clearEvents() {
+    return this.metrics.clearEvents();
   }
 
   // ========================================
-  // Simulation Methods
+  // Simulation Methods (delegated to simulation sub-client)
   // ========================================
 
-  /**
-   * Run a simulation with the current configuration.
-   *
-   * @param input - Array of input events to simulate
-   * @returns Simulation results
-   * @throws Error if simulation fails
-   */
   async simulate(input: SimulationInput[]): Promise<SimulationResult[]> {
-    return this.api.command<SimulationResult[]>('simulate', { input });
+    return this.simulation.simulate(input);
   }
 
-  /**
-   * Reset the simulator state.
-   *
-   * @returns Success status
-   * @throws Error if the request fails
-   */
-  async resetSimulator(): Promise<void> {
-    return this.api.command<void>('reset_simulator');
+  async resetSimulator() {
+    return this.simulation.resetSimulator();
   }
 
   // ========================================
-  // Subscription Methods
+  // Subscription Methods (delegated to subscriptions sub-client)
   // ========================================
 
-  /**
-   * Subscribe to daemon state changes.
-   *
-   * @param handler - Function to call when state changes
-   * @returns Unsubscribe function
-   */
-  onDaemonState(handler: (state: DaemonState) => void): () => void {
-    return this.api.subscribe(
-      'daemon-state',
-      handler as (data: unknown) => void
-    );
+  onDaemonState(handler: (state: import('../types/rpc').DaemonState) => void) {
+    return this.subscriptions.onDaemonState(handler);
   }
 
-  /**
-   * Subscribe to key events.
-   *
-   * @param handler - Function to call for each key event
-   * @returns Unsubscribe function
-   */
-  onKeyEvent(handler: (event: KeyEvent) => void): () => void {
-    return this.api.subscribe('events', handler as (data: unknown) => void);
+  onKeyEvent(handler: (event: import('../types/rpc').KeyEvent) => void) {
+    return this.subscriptions.onKeyEvent(handler);
   }
 
-  /**
-   * Subscribe to latency metric updates.
-   *
-   * @param handler - Function to call when latency metrics are updated
-   * @returns Unsubscribe function
-   */
-  onLatencyUpdate(handler: (metrics: LatencyMetrics) => void): () => void {
-    return this.api.subscribe('latency', handler as (data: unknown) => void);
+  onLatencyUpdate(
+    handler: (metrics: import('../types/rpc').LatencyMetrics) => void
+  ) {
+    return this.subscriptions.onLatencyUpdate(handler);
   }
 
   // ========================================
-  // Daemon Control
+  // Daemon Control Methods (delegated to daemon sub-client)
   // ========================================
 
-  /**
-   * Restart the daemon process.
-   *
-   * This triggers a full process restart to apply configuration changes.
-   * The WebSocket connection will be lost and the client should reconnect.
-   *
-   * @returns Success status with message
-   * @throws Error if restart fails to initiate
-   */
-  async restartDaemon(): Promise<{ success: boolean; message: string }> {
-    return this.api.command<{ success: boolean; message: string }>(
-      'restart_daemon',
-      {}
-    );
+  async restartDaemon() {
+    return this.daemon.restartDaemon();
   }
 
-  /**
-   * Activate a profile and restart the daemon to apply changes.
-   *
-   * This is a convenience method that activates a profile and then restarts
-   * the daemon so the new configuration takes effect immediately.
-   *
-   * @param name - Name of the profile to activate
-   * @returns Success status
-   * @throws Error if activation or restart fails
-   */
-  async activateProfileAndRestart(name: string): Promise<void> {
-    await this.activateProfile(name);
-    // Brief delay to ensure activation is complete
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    await this.restartDaemon();
+  async activateProfileAndRestart(name: string) {
+    return this.daemon.activateProfileAndRestart(name);
   }
 
   // ========================================
-  // Connection State
+  // Connection State (delegated to api)
   // ========================================
 
-  /**
-   * Check if connected to the daemon.
-   *
-   * @returns True if WebSocket is connected and handshake completed
-   */
   get isConnected(): boolean {
     return this.api.isConnected;
   }
 
-  /**
-   * Get the current WebSocket connection state.
-   *
-   * @returns ReadyState enum value
-   */
   get readyState() {
     return this.api.readyState;
   }
 
-  /**
-   * Get the last error that occurred.
-   *
-   * @returns Error object or null if no error
-   */
   get lastError(): Error | null {
     return this.api.lastError;
   }
