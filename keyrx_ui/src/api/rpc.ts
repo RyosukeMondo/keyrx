@@ -38,7 +38,7 @@ import type {
   PaginatedEvents,
 } from './types';
 import { validateApiResponse, ProfileConfigRpcSchema } from './schemas';
-import type { z } from 'zod';
+import { z } from 'zod';
 
 /**
  * Type-safe RPC client for daemon communication.
