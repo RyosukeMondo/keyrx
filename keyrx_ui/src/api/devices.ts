@@ -9,7 +9,6 @@ import {
   DeviceEntrySchema,
 } from './schemas';
 import type { DeviceEntry, DeviceScope } from '../types';
-import * as deviceStorage from '../utils/deviceStorage';
 
 interface RenameDeviceRequest {
   name: string;
@@ -54,7 +53,7 @@ export async function fetchDevices(): Promise<DeviceEntry[]> {
           : 'global', // Default to global if unset
     layout: device.layout || null,
     isVirtual: device.name.toLowerCase().startsWith('keyrx'), // Virtual if name starts with "keyrx" (daemon's uinput device)
-    enabled: deviceStorage.isDeviceEnabled(device.id), // Load enabled state from localStorage
+    enabled: true, // Default enabled; actual enabled/disabled state is managed at component layer via localStorage
   }));
 }
 
@@ -107,25 +106,20 @@ export async function forgetDevice(id: string): Promise<DeviceResponse> {
   const response = await apiClient.delete<DeviceEntry>(`/api/devices/${id}`);
   // Validate the returned device entry
   validateApiResponse(DeviceEntrySchema, response, `DELETE /api/devices/${id}`);
-  // Clean up enabled state from localStorage
-  deviceStorage.removeDeviceEnabledState(id);
   return { success: true };
 }
 
 /**
  * Set device enabled/disabled state
  *
- * Note: Backend doesn't currently support enabled state, so we persist
- * this client-side using localStorage. This allows users to hide devices
- * without permanently forgetting them.
+ * Note: Backend doesn't currently support enabled state. This is a placeholder
+ * for client-side state management - the actual persistence should be handled
+ * at a higher layer (hooks/components).
  */
 export async function setDeviceEnabled(
-  id: string,
-  enabled: boolean
+  _id: string,
+  _enabled: boolean
 ): Promise<DeviceResponse> {
-  // Persist to localStorage
-  deviceStorage.setDeviceEnabled(id, enabled);
-
-  // Return success immediately since this is client-side only
+  // No-op: localStorage persistence should be handled at a higher layer
   return { success: true };
 }
