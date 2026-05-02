@@ -154,3 +154,6 @@ export type WSMessage =
 
 // Raw key event payload from daemon (alias to generated type)
 export type KeyEventPayload = KeyEventData;
+
+// Re-export RpcApi for use by the RPC layer
+export type { RpcApi } from './api';
