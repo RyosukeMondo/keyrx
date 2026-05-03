@@ -497,7 +497,11 @@ const ConfigPage: React.FC<ConfigPageProps> = ({
         syncEngine={syncEngine}
         syncStatus={syncStatus}
         lastSaveTime={lastSaveTime}
-        configStore={configStore}
+        activeLayer={configStore.activeLayer}
+        globalSelected={configStore.globalSelected}
+        selectedDevices={configStore.selectedDevices}
+        getLayerMappings={configStore.getLayerMappings}
+        getAllLayers={configStore.getAllLayers}
         keyboardLayout={keyboardLayout}
         layoutKeyCount={layoutKeys.length}
       />

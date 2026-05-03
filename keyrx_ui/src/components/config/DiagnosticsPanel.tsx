@@ -24,27 +24,45 @@ const READY_STATE_LABELS: Record<number, string> = {
   [ReadyState.CLOSED]: 'CLOSED',
 };
 
-export interface DiagnosticsPanelProps {
+// Focused interfaces — each owns one diagnostic domain
+export interface ConnectionStateProps {
   isConnected: boolean;
   readyState: ReadyState;
   lastError: Error | null;
+}
+
+export interface ProfileStateProps {
   selectedProfile: string;
   profileConfig: { source: string } | undefined;
+}
+
+export interface SyncStateProps {
   syncEngine: RhaiSyncEngineResult;
   syncStatus: SyncStatus;
   lastSaveTime: Date | null;
-  configStore: {
-    activeLayer: string;
-    globalSelected: boolean;
-    selectedDevices: string[];
-    getLayerMappings: (layer: string) => Map<string, KeyMapping>;
-    getAllLayers: () => string[];
-  };
+}
+
+export interface ConfigStoreStateProps {
+  activeLayer: string;
+  globalSelected: boolean;
+  selectedDevices: string[];
+  getLayerMappings: (layer: string) => Map<string, KeyMapping>;
+  getAllLayers: () => string[];
+}
+
+export interface LayoutStateProps {
   keyboardLayout: string;
   layoutKeyCount: number;
-  /** Detected keyboard layout from daemon */
   detectedLayout?: string;
 }
+
+export interface DiagnosticsPanelProps
+  extends
+    ConnectionStateProps,
+    ProfileStateProps,
+    SyncStateProps,
+    ConfigStoreStateProps,
+    LayoutStateProps {}
 
 function buildDiagnosticData(props: DiagnosticsPanelProps) {
   return {
@@ -61,11 +79,11 @@ function buildDiagnosticData(props: DiagnosticsPanelProps) {
       parseError: props.syncEngine.error,
     },
     mappings: {
-      baseMappingCount: props.configStore.getLayerMappings('base').size,
-      availableLayers: props.configStore.getAllLayers(),
-      activeLayer: props.configStore.activeLayer,
-      globalSelected: props.configStore.globalSelected,
-      selectedDevices: props.configStore.selectedDevices,
+      baseMappingCount: props.getLayerMappings('base').size,
+      availableLayers: props.getAllLayers(),
+      activeLayer: props.activeLayer,
+      globalSelected: props.globalSelected,
+      selectedDevices: props.selectedDevices,
     },
     layout: {
       type: props.keyboardLayout,
