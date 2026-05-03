@@ -36,3 +36,15 @@ export interface RpcApi {
   /** Last error that occurred */
   lastError: Error | null;
 }
+
+// Re-export RPC types for use by rpc.ts
+export type { RpcMethod, SubscriptionChannel } from './rpc';
+
+// Daemon state type
+export type { DaemonState } from './rpc';
+
+// Latency metrics type
+export type { LatencyMetrics } from './rpc';
+
+// Key event type
+export type { KeyEvent } from './rpc';

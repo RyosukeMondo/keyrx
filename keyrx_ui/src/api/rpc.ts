@@ -25,45 +25,22 @@
  * ```
  */
 
-import type { ReadyState } from 'react-use-websocket';
 import type {
-  RpcMethod,
-  SubscriptionChannel,
+  RpcApi,
   DaemonState,
   LatencyMetrics,
   KeyEvent,
-} from '../types/rpc';
+  Profile,
+  Device,
+  Layer,
+  Config,
+  ProfileConfig,
+  SimulationInput,
+  SimulationResult,
+  PaginatedEvents,
+} from '../types/api';
 import { validateApiResponse, ProfileConfigRpcSchema } from './schemas';
 import { z } from 'zod';
-
-/**
- * RPC API interface for daemon communication.
- *
- * This interface defines the contract for WebSocket-based RPC communication,
- * independent of any React hooks. It can be implemented by:
- * - The useUnifiedApi hook (React)
- * - A mock implementation (testing)
- * - A standalone WebSocket client (non-React usage)
- */
-export interface RpcApi {
-  /** Execute a query (read-only) RPC method */
-  query: <T = unknown>(method: RpcMethod, params?: unknown) => Promise<T>;
-  /** Execute a command (state-modifying) RPC method */
-  command: <T = unknown>(method: RpcMethod, params?: unknown) => Promise<T>;
-  /** Subscribe to a channel for real-time updates */
-  subscribe: (
-    channel: SubscriptionChannel,
-    handler: (data: unknown) => void
-  ) => () => void;
-  /** Unsubscribe from a channel */
-  unsubscribe: (channel: SubscriptionChannel) => void;
-  /** Current WebSocket connection state */
-  readyState: ReadyState;
-  /** Whether the WebSocket is connected and handshake completed */
-  isConnected: boolean;
-  /** Last error that occurred */
-  lastError: Error | null;
-}
 
 /**
  * Type-safe RPC client for daemon communication.
