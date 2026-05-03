@@ -6,7 +6,7 @@ import { apiClient } from './client';
 import {
   validateApiResponse,
   DeviceListResponseSchema,
-  DeviceRpcInfoSchema,
+  UpdateDeviceConfigResponseSchema,
 } from './schemas';
 import type { DeviceEntry, DeviceScope } from '../types';
 
@@ -71,7 +71,7 @@ export async function renameDevice(
   );
   // Validate the returned device entry
   validateApiResponse(
-    DeviceRpcInfoSchema,
+    UpdateDeviceConfigResponseSchema,
     response,
     `PUT /api/devices/${id}/name`
   );
@@ -92,7 +92,7 @@ export async function setDeviceScope(
   );
   // Validate the returned device entry
   validateApiResponse(
-    DeviceRpcInfoSchema,
+    UpdateDeviceConfigResponseSchema,
     response,
     `PUT /api/devices/${id}/scope`
   );
@@ -104,9 +104,9 @@ export async function setDeviceScope(
  */
 export async function forgetDevice(id: string): Promise<DeviceResponse> {
   const response = await apiClient.delete<DeviceEntry>(`/api/devices/${id}`);
-  // Validate the returned device entry
+  // Validate the response
   validateApiResponse(
-    DeviceRpcInfoSchema,
+    UpdateDeviceConfigResponseSchema,
     response,
     `DELETE /api/devices/${id}`
   );
