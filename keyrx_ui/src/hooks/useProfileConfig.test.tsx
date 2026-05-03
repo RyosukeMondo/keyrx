@@ -21,6 +21,8 @@ import {
   cleanupMockWebSocket,
   getMockWebSocket,
   simulateConnected,
+  sendRpcResponse,
+  waitForRpcRequest,
   WS_URL,
 } from '../../tests/helpers/websocket';
 import type { ClientMessage } from '../types/rpc';
@@ -168,8 +170,7 @@ describe('useSetProfileConfig', () => {
       expect((parsedMessage.content.params as any).content).toBeUndefined();
     });
 
-    // TODO: Fix - tests WebSocket RPC response timing, flaky/timeout
-    it.skip('should handle successful response', async () => {
+    it('should handle successful response', async () => {
       const { result } = renderHook(() => useSetProfileConfig(), {
         wrapper: createWrapper(),
       });
@@ -183,36 +184,19 @@ describe('useSetProfileConfig', () => {
       });
 
       // Trigger mutation
-      const mutationPromise = new Promise<void>((resolve, reject) => {
-        result.current.mutate(
-          { name: 'TestProfile', source: 'let x = 42;' },
-          {
-            onSuccess: () => resolve(),
-            onError: (error) => reject(error),
-          }
-        );
+      const mutationPromise = result.current.mutateAsync({
+        name: 'TestProfile',
+        source: 'let x = 42;',
       });
 
-      // Wait for message
-      await waitFor(() => {
-        expect(server.messages.length).toBeGreaterThan(0);
-      });
+      // Wait for the command request and respond
+      const request = await waitForRpcRequest('set_profile_config');
+      expect(request.method).toBe('set_profile_config');
 
       // Send success response
-      const lastMessage = server.messages[server.messages.length - 1];
-      const parsedMessage: ClientMessage =
-        typeof lastMessage === 'string' ? JSON.parse(lastMessage) : lastMessage;
-      const requestId = parsedMessage.content.id;
+      sendRpcResponse(request.id, {});
 
-      server.send({
-        type: 'response',
-        content: {
-          id: requestId,
-          result: {},
-        },
-      });
-
-      // Wait for mutation to complete
+      // Verify the mutation resolved
       await expect(mutationPromise).resolves.toBeUndefined();
     });
 
