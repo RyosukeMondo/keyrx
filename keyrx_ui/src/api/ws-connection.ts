@@ -5,12 +5,7 @@
  * Does not handle reconnection, parsing, or singleton management.
  */
 
-import type {
-  WSMessage,
-  EventRecord,
-  DaemonState,
-  LatencyStats,
-} from '../types';
+import type { EventRecord, DaemonState, LatencyStats } from '../types';
 import { buildWsUrl } from '../config/constants';
 import { MessageParser } from './ws-parser';
 
@@ -167,40 +162,11 @@ export class WebSocketConnectionManager {
    * Handle WebSocket message event
    */
   private handleMessage(event: MessageEvent): void {
-    // Default parsing - can be overridden by subclasses or replaced
-    try {
-      const message: WSMessage = JSON.parse(event.data);
-
-      switch (message.type) {
-        case 'event':
-          if (this.callbacks.onEvent) {
-            this.callbacks.onEvent(
-              this.parser.transformKeyEvent(message.payload)
-            );
-          }
-          break;
-
-        case 'state':
-          if (this.callbacks.onState) {
-            this.callbacks.onState(message.payload);
-          }
-          break;
-
-        case 'latency':
-          if (this.callbacks.onLatency) {
-            this.callbacks.onLatency(message.payload);
-          }
-          break;
-
-        case 'error':
-          break;
-
-        default:
-        // Unknown message type received
-      }
-    } catch (error) {
-      console.error('Failed to parse WebSocket message:', error);
-    }
+    this.parser.parse(event, {
+      onEvent: this.callbacks.onEvent,
+      onState: this.callbacks.onState,
+      onLatency: this.callbacks.onLatency,
+    });
   }
 
   /**
