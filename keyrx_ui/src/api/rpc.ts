@@ -191,7 +191,9 @@ export class RpcClient {
   // Subscription Methods (delegated to subscriptions sub-client)
   // ========================================
 
-  onDaemonState(handler: (state: import('../types/rpc').DaemonState) => void) {
+  onDaemonState(
+    handler: (state: import('../types/rpc').DaemonState) => void
+  ): () => void {
     return this.subscriptions.onDaemonState(handler);
   }
 
