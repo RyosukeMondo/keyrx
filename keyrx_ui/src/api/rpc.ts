@@ -34,11 +34,11 @@ import type {
   Device,
   Layer,
   Config,
-  ProfileConfig,
   SimulationInput,
   SimulationResult,
   PaginatedEvents,
-} from '../types/api';
+  ProfileConfig,
+} from '../types';
 import { validateApiResponse, ProfileConfigRpcSchema } from './schemas';
 import { z } from 'zod';
 

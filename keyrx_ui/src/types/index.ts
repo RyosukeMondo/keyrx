@@ -6,7 +6,6 @@
 export type {
   DeviceRpcInfo,
   ProfileRpcInfo,
-  ProfileConfigRpc as ProfileConfig,
   ActivationRpcResult,
   KeyEventData,
   ErrorData,
@@ -157,3 +156,23 @@ export type KeyEventPayload = KeyEventData;
 
 // Re-export RpcApi for use by the RPC layer
 export type { RpcApi } from './api';
+
+// Re-export RPC types for use by rpc.ts
+export type {
+  RpcMethod,
+  SubscriptionChannel,
+  LatencyMetrics,
+  KeyEvent,
+} from './rpc';
+
+// Re-export data types for RPC client (from api/types.ts)
+export type {
+  Profile,
+  Device,
+  Config,
+  Layer,
+  SimulationInput,
+  SimulationResult,
+  PaginatedEvents,
+  ProfileConfig,
+} from '../api/types';
