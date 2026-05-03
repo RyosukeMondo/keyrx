@@ -14,6 +14,11 @@ export interface Profile {
   configHash?: string;
 }
 
+export interface ProfileConfig {
+  name: string;
+  source: string;
+}
+
 // Device Types
 export interface Device {
   id: string;
