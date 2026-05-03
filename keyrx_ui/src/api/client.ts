@@ -5,7 +5,7 @@
 
 import { buildApiUrl } from '../config/constants';
 
-export class ApiError extends Error {
+export class ApiError extends Error<never> {
   constructor(
     message: string,
     public statusCode: number,
