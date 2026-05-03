@@ -32,7 +32,20 @@
  *   }
  * };
  */
-export interface KeyMapping {
+/**
+ * Represents a key mapping configuration for the visual editor.
+ *
+ * Used by KeyMappingDialog and other configuration UI components.
+ * Distinguished from KeyMapping in @/types (daemon RPC format).
+ *
+ * @example
+ * const editorMapping: EditorKeyMapping = {
+ *   keyCode: 'CapsLock',
+ *   type: 'simple',
+ *   simple: 'VK_A'
+ * };
+ */
+export interface EditorKeyMapping {
   /** Physical key code (e.g., "CapsLock", "A", "Enter") */
   keyCode: string;
 
@@ -160,9 +173,9 @@ export interface Layer {
    * Key mappings specific to this layer.
    *
    * Map key: Physical key code (e.g., "CapsLock", "A")
-   * Map value: KeyMapping configuration
+   * Map value: EditorKeyMapping configuration
    */
-  mappings: Map<string, KeyMapping>;
+  mappings: Map<string, EditorKeyMapping>;
 }
 
 /**
