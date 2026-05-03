@@ -10,9 +10,9 @@ import type {
   EventRecord,
   DaemonState,
   LatencyStats,
-  KeyEventPayload,
 } from '../types';
 import { buildWsUrl } from '../config/constants';
+import { MessageParser } from './ws-parser';
 
 export type ConnectionState =
   | 'connecting'
@@ -45,6 +45,7 @@ export class WebSocketConnectionManager {
   private callbacks: WebSocketCallbacks;
   private connectionState: ConnectionState = 'disconnected';
   private isClosed = false;
+  private parser = new MessageParser();
 
   constructor(
     config: WebSocketConfig = {},
@@ -173,7 +174,9 @@ export class WebSocketConnectionManager {
       switch (message.type) {
         case 'event':
           if (this.callbacks.onEvent) {
-            this.callbacks.onEvent(this.transformKeyEvent(message.payload));
+            this.callbacks.onEvent(
+              this.parser.transformKeyEvent(message.payload)
+            );
           }
           break;
 
@@ -198,27 +201,6 @@ export class WebSocketConnectionManager {
     } catch (error) {
       console.error('Failed to parse WebSocket message:', error);
     }
-  }
-
-  /**
-   * Transform daemon's KeyEventPayload to frontend's EventRecord
-   */
-  private transformKeyEvent(payload: KeyEventPayload): EventRecord {
-    return {
-      id: `evt-${payload.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
-      timestamp: new Date(payload.timestamp / 1000).toISOString(),
-      type: payload.eventType === 'press' ? 'press' : 'release',
-      keyCode: payload.keyCode.replace(/^KEY_/, ''),
-      layer: 'Base',
-      latencyUs: payload.latency,
-      action: payload.mappingTriggered ? payload.output : undefined,
-      input: payload.input,
-      output: payload.output,
-      deviceId: payload.deviceId,
-      deviceName: payload.deviceName,
-      mappingType: payload.mappingType,
-      mappingTriggered: payload.mappingTriggered,
-    };
   }
 
   /**
