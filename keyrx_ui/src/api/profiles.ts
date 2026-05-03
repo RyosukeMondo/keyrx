@@ -56,6 +56,7 @@ export async function fetchProfiles(): Promise<ProfileMetadata[]> {
     krxPath: p.krxPath,
     createdAt: p.createdAt,
     modifiedAt: p.modifiedAt,
+    layerCount: p.layerCount,
     deviceCount: p.deviceCount,
     keyCount: p.keyCount,
     isActive: p.isActive,

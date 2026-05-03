@@ -88,6 +88,7 @@ export function createProfile(overrides?: Partial<ProfileMetadata>): ProfileMeta
     krxPath: overrides?.krxPath ?? `/home/user/.config/keyrx/profiles/${name}.krx`,
     createdAt: overrides?.createdAt ?? faker.date.past().toISOString(),
     modifiedAt: overrides?.modifiedAt ?? faker.date.recent().toISOString(),
+    layerCount: overrides?.layerCount ?? faker.number.int({ min: 1, max: 16 }),
     deviceCount: overrides?.deviceCount ?? faker.number.int({ min: 1, max: 5 }),
     keyCount: overrides?.keyCount ?? faker.number.int({ min: 0, max: 104 }),
     isActive: overrides?.isActive ?? false,

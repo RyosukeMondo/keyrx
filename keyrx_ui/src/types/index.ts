@@ -29,6 +29,7 @@ export interface ProfileMetadata {
   krxPath: string;
   createdAt: string;
   modifiedAt: string;
+  layerCount: number;
   deviceCount: number;
   keyCount: number;
   isActive: boolean;
