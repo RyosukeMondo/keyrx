@@ -273,6 +273,20 @@ export const UpdateDeviceConfigResponseSchema = z
   })
   .passthrough();
 
+// Validation error structure (returned by /api/profiles/validate endpoint)
+export interface ValidationError {
+  line: number;
+  column: number;
+  length: number;
+  message: string;
+}
+
+// Validation result structure (returned by /api/profiles/validate endpoint)
+export interface ValidationResult {
+  valid: boolean;
+  errors: ValidationError[];
+}
+
 /**
  * Validates API response data against a Zod schema.
  *

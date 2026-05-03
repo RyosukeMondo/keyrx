@@ -9,8 +9,12 @@ import {
   ProfileRpcInfoSchema,
   ActivationRpcResultSchema,
 } from './schemas';
+import type { ValidationResult } from './schemas';
 import type { z } from 'zod';
 import type { ProfileMetadata, Template, ActivationResult } from '../types';
+
+// Re-export ValidationResult for API consumers
+export type { ValidationResult } from './schemas';
 
 interface CreateProfileRequest {
   name: string;
@@ -139,24 +143,6 @@ export async function duplicateProfile(
     `POST /api/profiles/${sourceName}/duplicate`
   );
   return { success: true };
-}
-
-/**
- * Validation error structure
- */
-export interface ValidationError {
-  line: number;
-  column: number;
-  length: number;
-  message: string;
-}
-
-/**
- * Validation result
- */
-export interface ValidationResult {
-  valid: boolean;
-  errors: ValidationError[];
 }
 
 /**
