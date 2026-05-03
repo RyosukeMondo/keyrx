@@ -116,17 +116,14 @@ export async function forgetDevice(id: string): Promise<DeviceResponse> {
 /**
  * Set device enabled/disabled state
  *
- * Persisted client-side via localStorage since the backend doesn't support
- * enabled state. Uses deviceStorage utility for actual persistence.
+ * Note: Backend doesn't currently support enabled state. This is a placeholder
+ * for client-side state management - the actual persistence should be handled
+ * at a higher layer (hooks/components).
  */
 export async function setDeviceEnabled(
-  id: string,
-  enabled: boolean
+  _id: string,
+  _enabled: boolean
 ): Promise<DeviceResponse> {
-  // Delegate to deviceStorage for actual persistence
-  // This is the SSOT for enabled state since backend doesn't support it
-  const { setDeviceEnabled: persistEnabled } =
-    await import('../utils/deviceStorage');
-  persistEnabled(id, enabled);
+  // No-op: localStorage persistence should be handled at a higher layer
   return { success: true };
 }
