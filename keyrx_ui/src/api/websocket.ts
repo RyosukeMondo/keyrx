@@ -19,11 +19,8 @@ import { WebSocketConnectionManager } from './ws-connection';
 import { ReconnectionScheduler } from './ws-reconnection';
 import { MessageParser } from './ws-parser';
 
-export type ConnectionState =
-  | 'connecting'
-  | 'connected'
-  | 'disconnected'
-  | 'error';
+// Re-export ConnectionState from ws-connection to avoid duplication
+export type { ConnectionState } from './ws-connection';
 
 export interface WebSocketConfig {
   url?: string;
