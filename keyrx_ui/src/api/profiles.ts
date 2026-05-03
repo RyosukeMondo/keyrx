@@ -10,6 +10,7 @@ import {
   ActivationRpcResultSchema,
   type ProfileRpcInfo,
   type ActivationRpcResult,
+  type ValidationResult,
 } from './schemas';
 import type { ProfileMetadata, Template, ActivationResult } from '../types';
 
@@ -140,24 +141,6 @@ export async function duplicateProfile(
     `POST /api/profiles/${sourceName}/duplicate`
   );
   return { success: true };
-}
-
-/**
- * Validation error structure
- */
-export interface ValidationError {
-  line: number;
-  column: number;
-  length: number;
-  message: string;
-}
-
-/**
- * Validation result
- */
-export interface ValidationResult {
-  valid: boolean;
-  errors: ValidationError[];
 }
 
 /**
