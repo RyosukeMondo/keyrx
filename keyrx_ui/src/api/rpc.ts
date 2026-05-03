@@ -39,7 +39,7 @@ import type {
   PaginatedEvents,
   ProfileConfig,
 } from '../types';
-import { validateApiResponse, ProfileConfigRpcSchema } from './schemas';
+import { ProfileConfigRpcSchema } from './schemas';
 import { z } from 'zod';
 
 /**
