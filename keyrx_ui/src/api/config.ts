@@ -2,7 +2,7 @@
  * Configuration management API client
  */
 
-import { apiClient } from './client';
+import { apiClient } from './index';
 import type { KeyMapping } from '../types';
 
 interface ConfigData {
