@@ -24,7 +24,7 @@ export {
 export { useValidateConfig } from './useValidateConfig';
 
 // Config hooks
-export { useConfig, useSetKeyMapping, useDeleteKeyMapping } from './useConfig';
+export { useConfig, useDeleteKeyMapping } from './useConfig';
 
 // Metrics hooks
 export {
