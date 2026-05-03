@@ -38,8 +38,6 @@ describe('KeyboardVisualizerContainer', () => {
   const mockSetLayout = vi.fn();
 
   const defaultProps = {
-    profileName: 'Default',
-    activeLayer: 'base',
     mappings: new Map<string, KeyMapping>(),
     onKeyClick: vi.fn(),
   };

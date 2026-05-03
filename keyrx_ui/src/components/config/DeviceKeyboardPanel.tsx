@@ -25,7 +25,7 @@ interface DeviceKeyboardPanelProps {
  * Panel for configuring device-specific keyboard mappings
  */
 export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
-  profileName,
+  profileName: _profileName,
   activeLayer,
   availableLayers,
   onLayerChange,
@@ -34,7 +34,7 @@ export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
   onDeviceChange,
   keyMappings,
   onKeyClick,
-  selectedKeyCode,
+  selectedKeyCode: _selectedKeyCode,
   initialLayout,
   isVisible,
 }) => {
@@ -108,11 +108,8 @@ export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
                   )}
                 </h3>
                 <KeyboardVisualizerContainer
-                  profileName={profileName}
-                  activeLayer={activeLayer}
                   mappings={keyMappings}
                   onKeyClick={onKeyClick}
-                  selectedKeyCode={selectedKeyCode}
                   initialLayout={initialLayout}
                 />
               </Card>

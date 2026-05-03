@@ -16,16 +16,10 @@ import { useKeyboardLayout } from '@/hooks/useKeyboardLayout';
 import type { KeyMapping } from '@/types';
 
 export interface KeyboardVisualizerContainerProps {
-  /** Currently active profile name */
-  profileName: string;
-  /** Active layer ID (e.g., 'base', 'md-00') */
-  activeLayer: string;
   /** Key mappings for the current layer */
   mappings: Map<string, KeyMapping>;
   /** Callback when a key is clicked */
   onKeyClick: (keyCode: string) => void;
-  /** Currently selected key code (optional) */
-  selectedKeyCode?: string | null;
   /** Initial keyboard layout type */
   initialLayout?: LayoutType;
   /** Optional CSS class name */
@@ -41,28 +35,14 @@ export interface KeyboardVisualizerContainerProps {
  * @example
  * ```tsx
  * <KeyboardVisualizerContainer
- *   profileName="Default"
- *   activeLayer="base"
  *   mappings={keyMappings}
  *   onKeyClick={handleKeyClick}
- *   selectedKeyCode="VK_A"
  * />
  * ```
  */
 export const KeyboardVisualizerContainer: React.FC<
   KeyboardVisualizerContainerProps
-> = ({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  profileName,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  activeLayer,
-  mappings,
-  onKeyClick,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  selectedKeyCode,
-  initialLayout = 'ANSI_104',
-  className = '',
-}) => {
+> = ({ mappings, onKeyClick, initialLayout = 'ANSI_104', className = '' }) => {
   const { layout, setLayout } = useKeyboardLayout(initialLayout);
 
   return (

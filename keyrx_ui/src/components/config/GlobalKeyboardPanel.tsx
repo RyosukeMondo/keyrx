@@ -23,7 +23,7 @@ interface GlobalKeyboardPanelProps {
  * Panel for configuring global keyboard mappings (applies to all devices)
  */
 export const GlobalKeyboardPanel: React.FC<GlobalKeyboardPanelProps> = ({
-  profileName,
+  profileName: _profileName,
   activeLayer,
   availableLayers,
   onLayerChange,
@@ -31,7 +31,7 @@ export const GlobalKeyboardPanel: React.FC<GlobalKeyboardPanelProps> = ({
   onToggleGlobal,
   keyMappings,
   onKeyClick,
-  selectedKeyCode,
+  selectedKeyCode: _selectedKeyCode,
   initialLayout,
   isVisible,
 }) => {
@@ -76,11 +76,8 @@ export const GlobalKeyboardPanel: React.FC<GlobalKeyboardPanelProps> = ({
             Global Keyboard (All Devices)
           </h3>
           <KeyboardVisualizerContainer
-            profileName={profileName}
-            activeLayer={activeLayer}
             mappings={keyMappings}
             onKeyClick={onKeyClick}
-            selectedKeyCode={selectedKeyCode}
             initialLayout={initialLayout}
           />
         </Card>
