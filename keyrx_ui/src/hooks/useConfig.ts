@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
 import * as configApi from '../api/config';
+import { apiClient } from '../api/client';
 import type { KeyMapping } from '../types';
 
 /**
@@ -13,7 +14,7 @@ export function useConfig(profile: string | null) {
       if (!profile) {
         throw new Error('No profile specified');
       }
-      return configApi.fetchConfig(profile);
+      return configApi.fetchConfig(profile, apiClient);
     },
     enabled: !!profile, // Only run query if profile is provided
   });
@@ -27,7 +28,7 @@ export function useSetKeyMapping(profile: string) {
 
   return useMutation({
     mutationFn: ({ key, mapping }: { key: string; mapping: KeyMapping }) =>
-      configApi.setKeyMapping(profile, key, mapping),
+      configApi.setKeyMapping(profile, key, mapping, apiClient),
 
     onMutate: async ({ key, mapping }) => {
       const queryKey = queryKeys.config(profile);
@@ -85,7 +86,7 @@ export function useDeleteKeyMapping(profile: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (key: string) => configApi.deleteKeyMapping(profile, key),
+    mutationFn: (key: string) => configApi.deleteKeyMapping(profile, key, apiClient),
 
     onMutate: async (key) => {
       const queryKey = queryKeys.config(profile);

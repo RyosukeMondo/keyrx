@@ -1,9 +1,22 @@
 /**
  * Configuration management API client
+ *
+ * Uses dependency injection to avoid coupling to concrete HTTP client.
+ * Import this module and pass an ApiClient instance to the functions.
  */
 
-import { apiClient } from './client';
 import type { KeyMapping } from '../types';
+
+/**
+ * Minimal API client interface for config operations.
+ * Allows injection of mock clients in tests.
+ */
+export interface ConfigApiClient {
+  get<T>(endpoint: string): Promise<T>;
+  post<T>(endpoint: string, body?: unknown): Promise<T>;
+  put<T>(endpoint: string, body?: unknown): Promise<T>;
+  delete<T>(endpoint: string, body?: unknown): Promise<T>;
+}
 
 interface ConfigData {
   profileName: string;
@@ -28,8 +41,11 @@ interface ConfigResponse {
 /**
  * Fetch configuration for a profile
  */
-export async function fetchConfig(profile: string): Promise<ConfigData> {
-  return apiClient.get<ConfigData>(`/api/config/${profile}`);
+export async function fetchConfig(
+  profile: string,
+  client: ConfigApiClient
+): Promise<ConfigData> {
+  return client.get<ConfigData>(`/api/config/${profile}`);
 }
 
 /**
@@ -38,10 +54,11 @@ export async function fetchConfig(profile: string): Promise<ConfigData> {
 export async function setKeyMapping(
   profile: string,
   key: string,
-  mapping: KeyMapping
+  mapping: KeyMapping,
+  client: ConfigApiClient
 ): Promise<ConfigResponse> {
   const request: SetKeyMappingRequest = { key, mapping };
-  return apiClient.put<ConfigResponse>(`/api/config/${profile}/key`, request);
+  return client.put<ConfigResponse>(`/api/config/${profile}/key`, request);
 }
 
 /**
@@ -49,20 +66,21 @@ export async function setKeyMapping(
  */
 export async function deleteKeyMapping(
   profile: string,
-  key: string
+  key: string,
+  client: ConfigApiClient
 ): Promise<ConfigResponse> {
   const request: DeleteKeyMappingRequest = { key };
-  return apiClient.delete<ConfigResponse>(
-    `/api/config/${profile}/key`,
-    request
-  );
+  return client.delete<ConfigResponse>(`/api/config/${profile}/key`, request);
 }
 
 /**
  * Export configuration as JSON
  */
-export async function exportConfig(profile: string): Promise<string> {
-  return apiClient.get<string>(`/api/config/${profile}/export`);
+export async function exportConfig(
+  profile: string,
+  client: ConfigApiClient
+): Promise<string> {
+  return client.get<string>(`/api/config/${profile}/export`);
 }
 
 /**
@@ -70,9 +88,10 @@ export async function exportConfig(profile: string): Promise<string> {
  */
 export async function importConfig(
   profile: string,
-  configData: string
+  configData: string,
+  client: ConfigApiClient
 ): Promise<ConfigResponse> {
-  return apiClient.post<ConfigResponse>(`/api/config/${profile}/import`, {
+  return client.post<ConfigResponse>(`/api/config/${profile}/import`, {
     data: configData,
   });
 }
