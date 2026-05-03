@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
 import * as deviceApi from '../api/devices';
+import { setDeviceEnabled as persistDeviceEnabled } from '../utils/deviceStorage';
 import type { DeviceEntry, DeviceScope } from '../types';
 
 /**
@@ -130,15 +131,17 @@ export function useForgetDevice() {
 /**
  * Set device enabled/disabled state with optimistic updates
  *
- * This manages client-side enabled state (persisted to localStorage).
+ * Manages client-side enabled state persisted directly to localStorage.
  * Disabled devices are hidden from the UI but not forgotten.
  */
 export function useSetDeviceEnabled() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      deviceApi.setDeviceEnabled(id, enabled),
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) => {
+      persistDeviceEnabled(id, enabled);
+      return Promise.resolve({ success: true });
+    },
 
     onMutate: async ({ id, enabled }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.devices });
