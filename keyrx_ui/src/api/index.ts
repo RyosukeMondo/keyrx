@@ -49,6 +49,9 @@ export {
   type ConnectionState,
   type WebSocketConfig,
   type WebSocketCallbacks,
+  WebSocketConnectionManager,
+  ReconnectionScheduler,
+  MessageParser,
 } from './websocket';
 
 // RPC client (unified WebSocket API)
