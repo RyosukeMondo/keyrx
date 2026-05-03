@@ -23,9 +23,9 @@ export interface ProfileConfig {
 export interface Device {
   id: string;
   name: string;
-  serial: string;
-  vendorId: string;
-  productId: string;
+  serial?: string;
+  vendorId?: string;
+  productId?: string;
   scope: 'global' | 'profile';
   isConnected: boolean;
 }
