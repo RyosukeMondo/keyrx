@@ -5,7 +5,7 @@
  * Does not handle reconnection, parsing, or singleton management.
  */
 
-import type { EventRecord, DaemonState, LatencyStats } from '../types';
+import type { EventRecord, DaemonState, LatencyStats } from '../types/index';
 import { buildWsUrl } from '../config/constants';
 import { MessageParser } from './ws-parser';
 
