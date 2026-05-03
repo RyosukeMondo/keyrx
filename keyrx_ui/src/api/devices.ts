@@ -8,6 +8,7 @@ import {
   DeviceListResponseSchema,
   UpdateDeviceConfigResponseSchema,
 } from './schemas';
+import { setDeviceEnabled as persistDeviceEnabled } from '../utils/deviceStorage';
 import type { DeviceEntry, DeviceScope } from '../types';
 
 interface RenameDeviceRequest {
@@ -115,16 +116,11 @@ export async function forgetDevice(id: string): Promise<DeviceResponse> {
 
 /**
  * Set device enabled/disabled state
- *
- * Note: The actual persistence to localStorage is handled at the hook layer
- * (useSetDeviceEnabled) to maintain proper layer boundaries.
- * This function currently returns success since enabled state is client-side only.
  */
 export async function setDeviceEnabled(
-  _id: string,
-  _enabled: boolean
+  id: string,
+  enabled: boolean
 ): Promise<DeviceResponse> {
-  // Enabled state is managed client-side via localStorage at the hook layer
-  // This API function exists for interface consistency with other device operations
+  persistDeviceEnabled(id, enabled);
   return { success: true };
 }
