@@ -25,7 +25,7 @@ const READY_STATE_LABELS: Record<number, string> = {
 };
 
 // Focused interfaces — each owns one diagnostic domain
-export interface ConnectionStateProps {
+interface ConnectionStateProps {
   isConnected: boolean;
   readyState: ReadyState;
   lastError: Error | null;
