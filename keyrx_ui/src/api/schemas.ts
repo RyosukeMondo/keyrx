@@ -78,19 +78,6 @@ export const KeyEventDataSchema = z
   })
   .passthrough();
 
-// Latency statistics from RPC
-export const LatencyRpcStatsSchema = z
-  .object({
-    min_us: z.number(),
-    avg_us: z.number(),
-    max_us: z.number(),
-    p50_us: z.number(),
-    p95_us: z.number(),
-    p99_us: z.number(),
-    count: z.number(),
-  })
-  .passthrough();
-
 // Latency statistics
 export const LatencyStatsSchema = z
   .object({
