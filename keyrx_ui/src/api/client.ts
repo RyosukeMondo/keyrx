@@ -92,25 +92,25 @@ export const apiClient = {
   get: <T>(endpoint: string): Promise<T> =>
     apiFetch<T>(endpoint, { method: 'GET' }),
 
-  post: <T>(endpoint: string, body?: unknown) =>
+  post: <T>(endpoint: string, body?: unknown): Promise<T> =>
     apiFetch<T>(endpoint, {
       method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
     }),
 
-  put: <T>(endpoint: string, body?: unknown) =>
+  put: <T>(endpoint: string, body?: unknown): Promise<T> =>
     apiFetch<T>(endpoint, {
       method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
     }),
 
-  patch: <T>(endpoint: string, body?: unknown) =>
+  patch: <T>(endpoint: string, body?: unknown): Promise<T> =>
     apiFetch<T>(endpoint, {
       method: 'PATCH',
       body: body ? JSON.stringify(body) : undefined,
     }),
 
-  delete: <T>(endpoint: string, body?: unknown) =>
+  delete: <T>(endpoint: string, body?: unknown): Promise<T> =>
     apiFetch<T>(endpoint, {
       method: 'DELETE',
       body: body ? JSON.stringify(body) : undefined,
