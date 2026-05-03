@@ -8,13 +8,10 @@ import {
   ProfileListResponseSchema,
   ProfileRpcInfoSchema,
   ActivationRpcResultSchema,
+  type ProfileRpcInfo,
+  type ActivationRpcResult,
 } from './schemas';
-import type { ValidationResult } from './schemas';
-import type { z } from 'zod';
 import type { ProfileMetadata, Template, ActivationResult } from '../types';
-
-// Re-export ValidationResult for API consumers
-export type { ValidationResult } from './schemas';
 
 interface CreateProfileRequest {
   name: string;
@@ -74,7 +71,7 @@ export async function createProfile(
   template: Template
 ): Promise<ProfileResponse> {
   const request: CreateProfileRequest = { name, template };
-  const response = await apiClient.post<z.infer<typeof ProfileRpcInfoSchema>>(
+  const response = await apiClient.post<ProfileRpcInfo>(
     '/api/profiles',
     request
   );
@@ -87,9 +84,9 @@ export async function createProfile(
  * Activate a profile
  */
 export async function activateProfile(name: string): Promise<ActivationResult> {
-  const response = await apiClient.post<
-    z.infer<typeof ActivationRpcResultSchema>
-  >(`/api/profiles/${name}/activate`);
+  const response = await apiClient.post<ActivationRpcResult>(
+    `/api/profiles/${name}/activate`
+  );
   const validated = validateApiResponse(
     ActivationRpcResultSchema,
     response,
@@ -132,7 +129,7 @@ export async function duplicateProfile(
   sourceName: string,
   newName: string
 ): Promise<ProfileResponse> {
-  const response = await apiClient.post<z.infer<typeof ProfileRpcInfoSchema>>(
+  const response = await apiClient.post<ProfileRpcInfo>(
     `/api/profiles/${sourceName}/duplicate`,
     { newName }
   );
@@ -143,6 +140,24 @@ export async function duplicateProfile(
     `POST /api/profiles/${sourceName}/duplicate`
   );
   return { success: true };
+}
+
+/**
+ * Validation error structure
+ */
+export interface ValidationError {
+  line: number;
+  column: number;
+  length: number;
+  message: string;
+}
+
+/**
+ * Validation result
+ */
+export interface ValidationResult {
+  valid: boolean;
+  errors: ValidationError[];
 }
 
 /**

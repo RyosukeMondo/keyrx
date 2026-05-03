@@ -115,6 +115,7 @@ export const ProfileConfigRpcSchema = z
   .passthrough();
 
 // Profile information from RPC (used in list responses)
+export type ProfileRpcInfo = z.infer<typeof ProfileRpcInfoSchema>;
 export const ProfileRpcInfoSchema = z
   .object({
     name: z.string(),
@@ -130,6 +131,7 @@ export const ProfileRpcInfoSchema = z
   .passthrough();
 
 // Activation result
+export type ActivationRpcResult = z.infer<typeof ActivationRpcResultSchema>;
 export const ActivationRpcResultSchema = z
   .object({
     success: z.boolean(),
