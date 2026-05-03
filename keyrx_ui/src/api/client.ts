@@ -3,7 +3,31 @@
  * Handles common error handling and request/response processing
  */
 
-import { buildApiUrl } from '../config/constants';
+import {
+  API_BASE_URL,
+  DEFAULT_DAEMON_HOST,
+  DEFAULT_DAEMON_PORT,
+} from '../config/constants';
+
+/**
+ * Build full API URL from endpoint path
+ */
+function buildApiUrl(endpoint: string): string {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  const baseUrl =
+    API_BASE_URL ||
+    (import.meta.env.PROD
+      ? '' // Production: use relative URLs (same host)
+      : `http://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}`);
+
+  if (!baseUrl) {
+    return cleanEndpoint;
+  }
+
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  return `${cleanBase}${cleanEndpoint}`;
+}
 
 export class ApiError extends Error<never> {
   constructor(
