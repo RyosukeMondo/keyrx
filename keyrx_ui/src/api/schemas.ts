@@ -97,9 +97,11 @@ export const LatencyStatsSchema = z
     min: z.number(),
     avg: z.number(),
     max: z.number(),
+    p50: z.number().optional(),
     p95: z.number(),
     p99: z.number(),
     timestamp: z.number(),
+    samples: z.number().optional(),
   })
   .passthrough();
 
