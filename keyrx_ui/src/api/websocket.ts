@@ -17,29 +17,153 @@ import type {
 } from '../types';
 import { buildWsUrl, WS_RECONNECT_CONFIG } from '../config/constants';
 
-/** Exponential backoff intervals in ms (WS-002) */
-const RECONNECT_INTERVALS = [100, 200, 400, 800, 1600];
-const MAX_RECONNECT_INTERVAL = 5000;
+/**
+ * Reconnection Scheduler with exponential backoff
+ *
+ * Handles scheduling reconnection attempts with configurable
+ * backoff intervals and max retry limits.
+ */
+export class ReconnectionScheduler {
+  private attempts = 0;
+  private timeoutId: number | null = null;
+  private readonly intervals: readonly number[];
+  private readonly maxInterval: number;
+  private readonly maxRetries: number;
+  private onSchedule: (delay: number, attempt: () => void) => void;
+
+  constructor(
+    onSchedule: (delay: number, attempt: () => void) => void,
+    intervals: readonly number[] = [100, 200, 400, 800, 1600],
+    maxInterval = 5000,
+    maxRetries = WS_RECONNECT_CONFIG.maxRetries
+  ) {
+    this.onSchedule = onSchedule;
+    this.intervals = intervals;
+    this.maxInterval = maxInterval;
+    this.maxRetries = maxRetries;
+  }
+
+  /**
+   * Schedule next reconnection attempt with exponential backoff
+   */
+  schedule(attempt: () => void): boolean {
+    if (this.attempts >= this.maxRetries) {
+      return false;
+    }
+
+    const delay =
+      this.attempts < this.intervals.length
+        ? this.intervals[this.attempts]
+        : this.maxInterval;
+
+    this.timeoutId = window.setTimeout(() => {
+      this.attempts++;
+      attempt();
+    }, delay);
+
+    return true;
+  }
+
+  /**
+   * Clear any pending reconnection timeout
+   */
+  clear(): void {
+    if (this.timeoutId !== null) {
+      window.clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
+  }
+
+  /**
+   * Reset scheduler state (call on successful connect)
+   */
+  reset(): void {
+    this.clear();
+    this.attempts = 0;
+  }
+
+  /**
+   * Check if max retries reached
+   */
+  isExhausted(): boolean {
+    return this.attempts >= this.maxRetries;
+  }
+
+  get attemptCount(): number {
+    return this.attempts;
+  }
+}
 
 /**
- * Transform daemon's KeyEventPayload to frontend's EventRecord
+ * Message parser for WebSocket messages
+ *
+ * Handles parsing and transforming daemon messages to frontend types.
  */
-function transformKeyEvent(payload: KeyEventPayload): EventRecord {
-  return {
-    id: `evt-${payload.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
-    timestamp: new Date(payload.timestamp / 1000).toISOString(),
-    type: payload.eventType === 'press' ? 'press' : 'release',
-    keyCode: payload.keyCode.replace(/^KEY_/, ''),
-    layer: 'Base',
-    latencyUs: payload.latency,
-    action: payload.mappingTriggered ? payload.output : undefined,
-    input: payload.input,
-    output: payload.output,
-    deviceId: payload.deviceId,
-    deviceName: payload.deviceName,
-    mappingType: payload.mappingType,
-    mappingTriggered: payload.mappingTriggered,
-  };
+export class MessageParser {
+  /**
+   * Transform daemon's KeyEventPayload to frontend's EventRecord
+   */
+  transformKeyEvent(payload: KeyEventPayload): EventRecord {
+    return {
+      id: `evt-${payload.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date(payload.timestamp / 1000).toISOString(),
+      type: payload.eventType === 'press' ? 'press' : 'release',
+      keyCode: payload.keyCode.replace(/^KEY_/, ''),
+      layer: 'Base',
+      latencyUs: payload.latency,
+      action: payload.mappingTriggered ? payload.output : undefined,
+      input: payload.input,
+      output: payload.output,
+      deviceId: payload.deviceId,
+      deviceName: payload.deviceName,
+      mappingType: payload.mappingType,
+      mappingTriggered: payload.mappingTriggered,
+    };
+  }
+
+  /**
+   * Parse and dispatch message to appropriate callback
+   */
+  parse(
+    event: MessageEvent,
+    callbacks: {
+      onEvent?: (event: EventRecord) => void;
+      onState?: (state: DaemonState) => void;
+      onLatency?: (stats: LatencyStats) => void;
+    }
+  ): void {
+    try {
+      const message: WSMessage = JSON.parse(event.data);
+
+      switch (message.type) {
+        case 'event':
+          if (callbacks.onEvent) {
+            callbacks.onEvent(this.transformKeyEvent(message.payload));
+          }
+          break;
+
+        case 'state':
+          if (callbacks.onState) {
+            callbacks.onState(message.payload);
+          }
+          break;
+
+        case 'latency':
+          if (callbacks.onLatency) {
+            callbacks.onLatency(message.payload);
+          }
+          break;
+
+        case 'error':
+          break;
+
+        default:
+        // Unknown message type received
+      }
+    } catch (error) {
+      console.error('Failed to parse WebSocket message:', error);
+    }
+  }
 }
 
 export type ConnectionState =
@@ -81,11 +205,10 @@ export class WebSocketManager {
   private ws: WebSocket | null = null;
   private config: Required<WebSocketConfig>;
   private callbacks: WebSocketCallbacks;
-  private reconnectAttempts = 0;
-  private reconnectTimeoutId: number | null = null;
-  private currentReconnectInterval: number;
   private connectionState: ConnectionState = 'disconnected';
   private isClosed = false;
+  private reconnectScheduler: ReconnectionScheduler;
+  private messageParser: MessageParser;
 
   constructor(
     config: WebSocketConfig = {},
@@ -93,7 +216,19 @@ export class WebSocketManager {
   ) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.callbacks = callbacks;
-    this.currentReconnectInterval = this.config.reconnectInterval;
+
+    // Initialize reconnection scheduler with exponential backoff
+    this.reconnectScheduler = new ReconnectionScheduler(
+      (delay, attempt) => {
+        window.setTimeout(attempt, delay);
+      },
+      [100, 200, 400, 800, 1600],
+      5000,
+      this.config.maxReconnectAttempts
+    );
+
+    // Initialize message parser
+    this.messageParser = new MessageParser();
 
     // Compute WebSocket URL if not provided
     if (!this.config.url) {
@@ -147,7 +282,7 @@ export class WebSocketManager {
    * Disconnect from the WebSocket server
    */
   public disconnect(): void {
-    this.clearReconnectTimeout();
+    this.reconnectScheduler.clear();
 
     if (this.ws) {
       this.ws.close();
@@ -200,10 +335,7 @@ export class WebSocketManager {
    * Handle WebSocket open event
    */
   private handleOpen(): void {
-    // WS-002: Clear reconnection state on successful connect
-    this.reconnectAttempts = 0;
-    this.currentReconnectInterval = this.config.reconnectInterval;
-    this.clearReconnectTimeout();
+    this.reconnectScheduler.reset();
     this.setConnectionState('connected');
 
     if (this.callbacks.onOpen) {
@@ -215,39 +347,11 @@ export class WebSocketManager {
    * Handle WebSocket message event
    */
   private handleMessage(event: MessageEvent): void {
-    try {
-      const message: WSMessage = JSON.parse(event.data);
-
-      switch (message.type) {
-        case 'event':
-          if (this.callbacks.onEvent) {
-            // Transform KeyEventPayload to EventRecord
-            this.callbacks.onEvent(transformKeyEvent(message.payload));
-          }
-          break;
-
-        case 'state':
-          if (this.callbacks.onState) {
-            this.callbacks.onState(message.payload);
-          }
-          break;
-
-        case 'latency':
-          if (this.callbacks.onLatency) {
-            this.callbacks.onLatency(message.payload);
-          }
-          break;
-
-        case 'error':
-          // Server error received
-          break;
-
-        default:
-        // Unknown message type received
-      }
-    } catch (error) {
-      console.error('Failed to parse WebSocket message:', error);
-    }
+    this.messageParser.parse(event, {
+      onEvent: this.callbacks.onEvent,
+      onState: this.callbacks.onState,
+      onLatency: this.callbacks.onLatency,
+    });
   }
 
   /**
@@ -278,37 +382,19 @@ export class WebSocketManager {
   }
 
   /**
-   * Schedule a reconnection attempt (WS-002: with exponential backoff)
+   * Schedule a reconnection attempt with exponential backoff
    */
   private scheduleReconnect(): void {
     if (this.isClosed) {
       return;
     }
 
-    if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      this.setConnectionState('error');
-      return;
-    }
-
-    // WS-002: Use exponential backoff (100ms, 200ms, 400ms, 800ms, 1600ms, max 5s)
-    const delay =
-      this.reconnectAttempts < RECONNECT_INTERVALS.length
-        ? RECONNECT_INTERVALS[this.reconnectAttempts]
-        : MAX_RECONNECT_INTERVAL;
-
-    this.reconnectTimeoutId = window.setTimeout(() => {
-      this.reconnectAttempts++;
+    const scheduled = this.reconnectScheduler.schedule(() => {
       this.connect();
-    }, delay);
-  }
+    });
 
-  /**
-   * Clear reconnection timeout
-   */
-  private clearReconnectTimeout(): void {
-    if (this.reconnectTimeoutId !== null) {
-      window.clearTimeout(this.reconnectTimeoutId);
-      this.reconnectTimeoutId = null;
+    if (!scheduled) {
+      this.setConnectionState('error');
     }
   }
 
