@@ -59,7 +59,9 @@ test.describe('Configuration Editor', () => {
 
     // Switch back to Visual
     await visualTab.click();
-    await expect(page.locator('[data-testid="keyboard-visualizer"]')).toBeVisible();
+    await expect(
+      page.locator('[data-testid="keyboard-visualizer"]')
+    ).toBeVisible();
   });
 
   test('should display profile selector', async ({ page }) => {
@@ -88,7 +90,10 @@ test.describe('Configuration Editor', () => {
   test('should display save button', async ({ page }) => {
     // Look for save button with various text patterns
     const saveBtn = page.locator('button:has-text(/Save|Configuration/i)');
-    const isVisible = await saveBtn.first().isVisible().catch(() => false);
+    const isVisible = await saveBtn
+      .first()
+      .isVisible()
+      .catch(() => false);
     expect(isVisible || true).toBe(true);
   });
 
@@ -128,9 +133,10 @@ test.describe('Configuration Editor', () => {
     const isVisible = await layerSwitcher.isVisible().catch(() => false);
 
     // Layer switcher may or may not be visible depending on config
-    if (isVisible) {
-      expect(isVisible).toBe(true);
+    if (!isVisible) {
+      test.skip();
     }
+    await expect(layerSwitcher).toBeVisible();
   });
 
   test('should display device selector', async ({ page }) => {
@@ -145,10 +151,14 @@ test.describe('Configuration Editor', () => {
     await page.waitForLoadState('networkidle');
 
     // Should show warning or fallback
-    const warningOrFallback = page.locator('text=/not found|not exist|default/i');
+    const warningOrFallback = page.locator(
+      'text=/not found|not exist|default/i'
+    );
     const hasWarning = await warningOrFallback.isVisible().catch(() => false);
 
     // Either warning or profile selector shows
-    expect(hasWarning || await page.locator('#profile-selector').isVisible()).toBe(true);
+    expect(
+      hasWarning || (await page.locator('#profile-selector').isVisible())
+    ).toBe(true);
   });
 });
