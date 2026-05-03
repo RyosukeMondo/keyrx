@@ -9,17 +9,32 @@ import {
   DEFAULT_DAEMON_PORT,
 } from '../config/constants';
 
+export interface ApiClientConfig {
+  baseUrl?: string;
+  daemonHost?: string;
+  daemonPort?: number;
+}
+
+const defaultConfig: Required<ApiClientConfig> = {
+  baseUrl: API_BASE_URL,
+  daemonHost: DEFAULT_DAEMON_HOST,
+  daemonPort: DEFAULT_DAEMON_PORT,
+};
+
 /**
  * Build full API URL from endpoint path
  */
-function buildApiUrl(endpoint: string): string {
+function buildApiUrl(
+  endpoint: string,
+  config: Required<ApiClientConfig> = defaultConfig
+): string {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
   const baseUrl =
-    API_BASE_URL ||
+    config.baseUrl ||
     (import.meta.env.PROD
       ? '' // Production: use relative URLs (same host)
-      : `http://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}`);
+      : `http://${config.daemonHost}:${config.daemonPort}`);
 
   if (!baseUrl) {
     return cleanEndpoint;
@@ -51,9 +66,10 @@ interface ApiResponse<T> {
  */
 async function apiFetch<T>(
   endpoint: string,
-  options?: RequestInit
+  options?: RequestInit,
+  config: Required<ApiClientConfig> = defaultConfig
 ): Promise<T> {
-  const url = buildApiUrl(endpoint);
+  const url = buildApiUrl(endpoint, config);
 
   try {
     const response = await fetch(url, {
