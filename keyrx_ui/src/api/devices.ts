@@ -8,7 +8,6 @@ import {
   DeviceListResponseSchema,
   UpdateDeviceConfigResponseSchema,
 } from './schemas';
-import { setDeviceEnabled as persistDeviceEnabled } from '../utils/deviceStorage';
 import type { DeviceEntry, DeviceScope } from '../types';
 
 interface RenameDeviceRequest {
@@ -111,16 +110,5 @@ export async function forgetDevice(id: string): Promise<DeviceResponse> {
     response,
     `DELETE /api/devices/${id}`
   );
-  return { success: true };
-}
-
-/**
- * Set device enabled/disabled state
- */
-export async function setDeviceEnabled(
-  id: string,
-  enabled: boolean
-): Promise<DeviceResponse> {
-  persistDeviceEnabled(id, enabled);
   return { success: true };
 }
