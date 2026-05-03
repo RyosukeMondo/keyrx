@@ -6,7 +6,7 @@
 export type {
   DeviceRpcInfo,
   ProfileRpcInfo,
-  ProfileConfigRpc,
+  ProfileConfigRpc as ProfileConfig,
   ActivationRpcResult,
   KeyEventData,
   ErrorData,
