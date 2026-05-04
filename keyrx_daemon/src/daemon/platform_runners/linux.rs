@@ -3,8 +3,6 @@
 //! This module contains the Linux-specific implementation for running the daemon,
 //! including web server setup, IPC server initialization, and system tray integration.
 
-#![cfg(target_os = "linux")]
-
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -352,6 +350,17 @@ fn run_test_mode(
     // Create event bus channel for simulator-to-macro-recorder communication
     let (macro_event_tx, macro_event_rx) =
         tokio::sync::mpsc::channel::<keyrx_core::runtime::KeyEvent>(1000);
+
+    // Create minimal daemon shared state for test mode
+    // Even though no daemon is running, we create a minimal state for API consistency
+    use std::sync::atomic::AtomicBool;
+    let test_running_flag = Arc::new(AtomicBool::new(false)); // Not running in test mode
+    let daemon_state = Arc::new(crate::daemon::DaemonSharedState::new(
+        test_running_flag,
+        None,                      // No active profile in test mode
+        PathBuf::from("test.krx"), // Placeholder config path
+        0,                         // No devices in test mode
+    ));
 
     // Create services for web API
     let macro_recorder = Arc::new(crate::macro_recorder::MacroRecorder::new());

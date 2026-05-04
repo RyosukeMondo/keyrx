@@ -7,7 +7,7 @@ use std::path::Path;
 /// Handles the `record` subcommand.
 pub fn handle_record(output_path: &Path, device_path: Option<&Path>) -> Result<(), (i32, String)> {
     use keyrx_core::runtime::KeyEvent;
-    use keyrx_daemon::platform::linux::evdev_to_keycode;
+    use crate::platform::linux::evdev_to_keycode;
     use serde::{Deserialize, Serialize};
     use std::fs::File;
     use std::io::Write;

@@ -132,7 +132,8 @@ fn check_startup_admin_status() -> bool {
 /// Check admin status for startup logging (Linux).
 #[cfg(target_os = "linux")]
 fn check_startup_admin_status() -> bool {
-    unsafe { libc::geteuid() == 0 }
+    // SAFETY: geteuid() is a simple syscall with no side effects
+    unsafe { nix::libc::geteuid() == 0 }
 }
 
 /// Log hook installation status (Windows).

@@ -202,8 +202,8 @@ fn check_admin_status() -> bool {
 
 #[cfg(not(target_os = "windows"))]
 fn check_admin_status() -> bool {
-    // On Linux, check if running as root
-    unsafe { libc::geteuid() == 0 }
+    // SAFETY: geteuid() is a simple syscall with no side effects
+    unsafe { nix::libc::geteuid() == 0 }
 }
 
 /// Get hook installation status

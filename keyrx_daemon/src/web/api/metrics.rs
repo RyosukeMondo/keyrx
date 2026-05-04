@@ -466,8 +466,8 @@ fn check_admin_privileges() -> bool {
 
 #[cfg(not(target_os = "windows"))]
 fn check_admin_privileges() -> bool {
-    // On Linux, check if running as root
-    unsafe { libc::geteuid() == 0 }
+    // SAFETY: geteuid() is a simple syscall with no side effects
+    unsafe { nix::libc::geteuid() == 0 }
 }
 
 /// Check if key blocker hook is installed
