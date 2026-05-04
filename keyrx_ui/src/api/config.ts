@@ -5,7 +5,30 @@
  * Import this module and pass an ApiClient instance to the functions.
  */
 
-import type { KeyMapping } from '../types';
+// Transport primitive types (defined inline to maintain API layer boundary)
+interface MacroStep {
+  type: 'press' | 'release' | 'delay';
+  key?: string;
+  delayMs?: number;
+}
+
+interface KeyMapping {
+  type:
+    | 'simple'
+    | 'modifier'
+    | 'lock'
+    | 'tap_hold'
+    | 'layer_active'
+    | 'macro'
+    | 'layer_switch';
+  tapAction?: string;
+  holdAction?: string;
+  threshold?: number;
+  modifierKey?: string;
+  lockKey?: string;
+  macroSteps?: MacroStep[];
+  targetLayer?: string;
+}
 
 /**
  * Minimal API client interface for config operations.
