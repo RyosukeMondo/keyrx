@@ -146,6 +146,7 @@ pub fn run_daemon(
     let event_broadcaster = crate::daemon::EventBroadcaster::new(event_tx_for_broadcaster);
     let running_for_broadcaster = daemon.running_flag();
     let latency_recorder_for_broadcaster = daemon.latency_recorder();
+    let telemetry_for_broadcaster = daemon.telemetry();
 
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
@@ -200,6 +201,7 @@ pub fn run_daemon(
                 event_broadcaster,
                 running_for_broadcaster,
                 Some(latency_recorder_for_broadcaster),
+                Some(telemetry_for_broadcaster),
             ));
 
             // Start event collector for REST event log endpoint

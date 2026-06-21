@@ -128,13 +128,17 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   / `event_description` in event_loop.rs). All call sites updated (2 in mod.rs, 2 in
   windows_remap_pipeline_test.rs). *Accept:* lib compiles (✓ 56s, clean).
 
-- [NEXT] **C3b — Latency snapshot → telemetry + runner wiring.** Add a `telemetry`
+- [x] **C3b — Latency snapshot → telemetry + runner wiring.** Add a `telemetry`
   param to `start_latency_broadcast_task` so it also calls `telemetry.update_latency`
   with each computed snapshot. In `platform_runners/{linux,windows}.rs`, pass
   `daemon.telemetry()` to the broadcast task. Update the 2 test call sites (None).
   *Accept:* lib + relevant tests compile; latency flows to telemetry.
+  → DONE: broadcast task feeds telemetry; both runners pass `daemon.telemetry()`;
+    2 test sites + ignore doc example updated. `cargo check --lib` clean. CAVEAT:
+    `linux.rs` is `cfg(linux)` so NOT compiled on this Windows host — edit was
+    mirrored 1:1 from `windows.rs`; verify on Linux/CI before release.
 
-- [ ] **C3c — Production IPC server + Windows web wiring.** In the Linux production
+- [NEXT] **C3c — Production IPC server + Windows web wiring.** In the Linux production
   runner, spawn an IPC server on `DEFAULT_SOCKET_PATH` using
   `IpcCommandHandler::with_telemetry(daemon.telemetry())` so CLI/web IPC queries hit
   live data. On Windows (no Unix socket), expose `daemon.telemetry()` through the web
@@ -205,3 +209,6 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 - 2026-06-22: C3 split into C3a/C3b/C3c. C3a DONE — Daemon owns Arc<DaemonTelemetry>,
   event loop (both platforms) populates state+events; lib compiles clean (56s). C3b
   (latency task + runner wiring) [NEXT].
+- 2026-06-22: C3b DONE — latency snapshot feeds telemetry; runners pass
+  daemon.telemetry(); lib check clean. NOTE: linux.rs not compiled on Windows host
+  (mirrored from windows.rs). C3c (prod IPC server + Windows web) [NEXT].
