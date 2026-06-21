@@ -14,8 +14,14 @@ reads it, works the ONE task marked `[NEXT]`, then updates this file and commits
 
 1. **Read this file.** Find the single task marked `[NEXT]`.
 2. **Do that task only.** Read just the files it names — do not load unrelated context.
-3. **Verify** with the task's acceptance check (scoped tests/clippy on the touched
-   crate only — e.g. `cargo test -p keyrx_daemon <module>`, `cargo clippy -p keyrx_daemon`).
+3. **Verify** with the task's acceptance check. NOTE: the test profile is
+   `optimized + debuginfo`, so a cold `cargo test` took **365m**. Therefore:
+   - Per slice, verify with `cargo check -p keyrx_daemon --tests` (fast; deps are
+     cached after the first build, only the daemon crate recompiles).
+   - Run the full `cargo test -p keyrx_daemon <module>` only at PHASE boundaries
+     (end of C, D, etc.), not every slice.
+   - Possible speedup (not yet applied; needs care — perf/latency tests may rely on
+     optimization): lower `[profile.test]`/`[profile.dev]` opt-level in root Cargo.toml.
    Never run the full workspace build unless a task explicitly says to.
 4. **Update this file:** change the finished task `[NEXT]`→`[x]`, write a one-line
    result note under it, and promote the next pending `[ ]` task to `[NEXT]`.
@@ -86,15 +92,21 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 >
 > Plumbing sub-slices below replace the old C1–C5. Do them in order.
 
-- [NEXT] **C1 — Design + telemetry source.** Read the event path (`processor/mod.rs`,
+- [x] **C1 — Design + telemetry source.** Read the event path (`processor/mod.rs`,
   `daemon/event_loop.rs`, `daemon/event_broadcaster.rs`, where `ExtendedState` lives
   and how latency is recorded). Then add a shared `DaemonTelemetry` source (live
   `ExtendedState` snapshot + `Arc<LatencyRecorder>` + an event ring buffer) that the
   processor/event loop updates on the hot path with minimal overhead. Document the
   concrete design as a comment block and refine the remaining C slices from it.
   *Accept:* telemetry source type compiles with unit tests; design noted in plan.
+  → DONE: added `daemon/telemetry.rs` — `DaemonTelemetry` (state snapshot + latest
+    `LatencySnapshot` + bounded events ring) and `TelemetryState` which OWNS the
+    255-bit packing convention (0..128 modifiers / 128..192 locks / 192..255 layers)
+    that was duplicated in `web/api/metrics.rs`. Poison-tolerant locks. 10 unit tests
+    pass. Registered in `daemon/mod.rs`. Wiring into event loop = C3; web reuse of
+    `TelemetryState` parsing also deferred to C3.
 
-- [ ] **C2 — Wire production IPC server with live handler.** Extend `IpcCommandHandler`
+- [NEXT] **C2 — Wire production IPC server with live handler.** Extend `IpcCommandHandler`
   with the telemetry source (new fields/ctor); construct an IPC server on
   `DEFAULT_SOCKET_PATH` in the production Linux runner (not just test mode). On Windows,
   surface the same data via `DaemonSharedState` (no Unix socket). *Accept:* production
@@ -160,3 +172,6 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   live data source. Asked user → chose FULL LIVE PLUMBING + full autonomy (no more
   questions). Phase C rewritten into plumbing slices C1–C5b. C1 (design) [NEXT].
   Autonomy recorded in memory `resume-loop-full-autonomy`.
+- 2026-06-22: C1 DONE (daemon/telemetry.rs, 10 tests pass). Discovered cold
+  `cargo test` = 365m (optimized test profile) → switched per-slice verify to
+  `cargo check --tests`, full tests at phase boundaries only. C2 [NEXT].

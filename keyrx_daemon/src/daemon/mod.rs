@@ -66,6 +66,7 @@ pub mod remapping_state;
 pub mod shared_state;
 pub mod signals;
 pub mod state;
+pub mod telemetry;
 
 // Re-exports for public API
 pub use event_broadcaster::{start_latency_broadcast_task, EventBroadcaster};
