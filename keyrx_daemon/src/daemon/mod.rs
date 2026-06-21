@@ -76,6 +76,7 @@ pub use remapping_state::RemappingState;
 pub use shared_state::DaemonSharedState;
 pub use signals::{install_signal_handlers, SignalHandler};
 pub use state::ReloadState;
+pub use telemetry::{DaemonTelemetry, TelemetryState};
 
 /// Returns the current time in microseconds since UNIX epoch.
 ///
@@ -201,6 +202,11 @@ pub struct Daemon {
     /// This is `Some` when a profile is active and remapping is enabled.
     /// It is `None` in pass-through mode (no active profile).
     remapping_state: Option<RemappingState>,
+
+    /// Live telemetry (state/latency/recent events) shared with IPC/web consumers.
+    ///
+    /// The event loop writes to this; the IPC server and web API read from it.
+    telemetry: Arc<DaemonTelemetry>,
 }
 
 impl Daemon {
@@ -266,6 +272,9 @@ impl Daemon {
         // Create lock-free latency recorder for metrics collection
         let latency_recorder = Arc::new(LatencyRecorder::new());
 
+        // Create shared telemetry source for IPC/web pull-based queries
+        let telemetry = Arc::new(DaemonTelemetry::new());
+
         // Step 3: Load active profile and create remapping state (if any)
         let remapping_state = match Self::load_active_profile_config(&config_dir) {
             Ok(Some(device_config)) => {
@@ -322,6 +331,7 @@ impl Daemon {
             event_broadcaster: None,
             latency_recorder,
             remapping_state,
+            telemetry,
         })
     }
 
@@ -445,6 +455,15 @@ impl Daemon {
         Arc::clone(&self.latency_recorder)
     }
 
+    /// Returns a clone of the shared telemetry Arc.
+    ///
+    /// Used to share live state/latency/events with the IPC server, the web API,
+    /// and the latency broadcast task.
+    #[must_use]
+    pub fn telemetry(&self) -> Arc<DaemonTelemetry> {
+        Arc::clone(&self.telemetry)
+    }
+
     /// Reloads the configuration from disk.
     ///
     /// This method reads the active profile from the `.active` file and
@@ -559,6 +578,7 @@ impl Daemon {
             self.event_broadcaster.as_ref(),
             self.remapping_state.as_mut(),
             Some(&self.latency_recorder),
+            Some(&self.telemetry),
         )
     }
 
@@ -618,6 +638,7 @@ impl Daemon {
             self.event_broadcaster.as_ref(),
             self.remapping_state.as_mut(),
             Some(&self.latency_recorder),
+            Some(&self.telemetry),
         )
     }
 

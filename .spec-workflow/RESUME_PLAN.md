@@ -118,16 +118,28 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
     `DaemonEvent::Error.data`→`payload`). Per-slice verify changed to
     `cargo check -p keyrx_daemon --lib` (`--tests` drags in pre-existing broken targets).
 
-- [NEXT] **C3 — Integration: populate telemetry + run production IPC server.** Wire
-  `Arc<DaemonTelemetry>` into the event loop so live data flows: in `run_event_loop`
-  (Linux) and `process_one_event` (Windows), update telemetry state when a mapping
-  changes it (reuse `extract_daemon_state`→`TelemetryState`), push event descriptions
-  to the ring, and feed the latency snapshot (have `start_latency_broadcast_task` also
-  call `telemetry.update_latency`). Then construct a production IPC server on
-  `DEFAULT_SOCKET_PATH` (Linux) using `IpcCommandHandler::with_telemetry`. On Windows,
-  ensure `/api/daemon/state` etc. read the same telemetry via `AppState`. NOTE: likely
-  needs signature changes to `run_event_loop`/`Daemon::run` — keep edits tight, split if
-  it exceeds one iteration. *Accept:* prod daemon serves live state/latency/events; tests.
+**C3 — Integration: populate telemetry + run production IPC server.** Split into 3:
+
+- [x] **C3a — Event-loop population.** `Daemon` now owns `Arc<DaemonTelemetry>`
+  (created in `new()`, exposed via `telemetry()`). `run_event_loop` (Linux) and
+  `process_one_event` (Windows) gained a `telemetry: Option<&DaemonTelemetry>` param
+  (mirrors `latency_recorder`): they push event descriptions to the ring and update
+  the packed state snapshot when a mapping triggers (helpers `build_telemetry_state`
+  / `event_description` in event_loop.rs). All call sites updated (2 in mod.rs, 2 in
+  windows_remap_pipeline_test.rs). *Accept:* lib compiles (✓ 56s, clean).
+
+- [NEXT] **C3b — Latency snapshot → telemetry + runner wiring.** Add a `telemetry`
+  param to `start_latency_broadcast_task` so it also calls `telemetry.update_latency`
+  with each computed snapshot. In `platform_runners/{linux,windows}.rs`, pass
+  `daemon.telemetry()` to the broadcast task. Update the 2 test call sites (None).
+  *Accept:* lib + relevant tests compile; latency flows to telemetry.
+
+- [ ] **C3c — Production IPC server + Windows web wiring.** In the Linux production
+  runner, spawn an IPC server on `DEFAULT_SOCKET_PATH` using
+  `IpcCommandHandler::with_telemetry(daemon.telemetry())` so CLI/web IPC queries hit
+  live data. On Windows (no Unix socket), expose `daemon.telemetry()` through the web
+  `AppState` so `/api/daemon/state` + `/api/metrics/*` read it directly. *Accept:*
+  prod daemon serves live state/latency/events end-to-end.
 
 - [ ] **C5 — `ClearEvents` IPC + web clear-events.** Add `IpcRequest::ClearEvents`,
   handle it via `telemetry.clear_events()`, and implement the web clear-events stub
@@ -190,3 +202,6 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   integration tests (suite doesn't currently build, contradicting "962/962 pass");
   fixed 2 files, more may exist — sweep at Phase-C boundary. Per-slice verify → `--lib`.
   C3 (event-loop + prod IPC integration) [NEXT].
+- 2026-06-22: C3 split into C3a/C3b/C3c. C3a DONE — Daemon owns Arc<DaemonTelemetry>,
+  event loop (both platforms) populates state+events; lib compiles clean (56s). C3b
+  (latency task + runner wiring) [NEXT].

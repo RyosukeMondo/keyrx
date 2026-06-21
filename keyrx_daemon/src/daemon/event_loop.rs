@@ -26,6 +26,7 @@ use super::event_broadcaster::EventBroadcaster;
 use super::metrics::LatencyRecorder;
 use super::remapping_state::RemappingState;
 use super::signals::SignalHandler;
+use super::telemetry::{DaemonTelemetry, TelemetryState};
 use super::DaemonError;
 
 /// Extract current daemon state from DeviceState for WebSocket broadcasting.
@@ -125,6 +126,37 @@ fn format_output_description(output_events: &[keyrx_core::runtime::KeyEvent]) ->
     }
 }
 
+/// Builds a packed telemetry state snapshot from the live device state.
+///
+/// Mirrors the [`TelemetryState`] bit layout: modifiers 0..128, locks 0..64.
+fn build_telemetry_state(state: &keyrx_core::runtime::DeviceState) -> TelemetryState {
+    let mut snapshot = TelemetryState::empty();
+    for id in 0u8..128 {
+        if state.is_modifier_active(id) {
+            snapshot.set_modifier(id, true);
+        }
+    }
+    for id in 0u8..64 {
+        if state.is_lock_active(id) {
+            snapshot.set_lock(id, true);
+        }
+    }
+    snapshot
+}
+
+/// Formats a concise event description for the telemetry recent-events ring.
+fn event_description(
+    event: &keyrx_core::runtime::KeyEvent,
+    input_keycode: keyrx_core::config::KeyCode,
+    output_desc: &str,
+) -> String {
+    let kind = match event.event_type() {
+        keyrx_core::runtime::KeyEventType::Press => "press",
+        keyrx_core::runtime::KeyEventType::Release => "release",
+    };
+    format!("{kind} {input_keycode:?} -> {output_desc}")
+}
+
 /// Injects timeout-generated events and records metrics.
 fn inject_timeout_events(
     timeout_events: &[keyrx_core::runtime::KeyEvent],
@@ -177,6 +209,7 @@ fn handle_capture_error(
 }
 
 /// Processes a single input event through remapping and injection pipeline.
+#[allow(clippy::too_many_arguments)]
 fn process_input_event(
     event: keyrx_core::runtime::KeyEvent,
     remapping_state: &mut Option<&mut RemappingState>,
@@ -184,6 +217,7 @@ fn process_input_event(
     stats: &mut EventLoopStats,
     latency_recorder: Option<&LatencyRecorder>,
     event_broadcaster: Option<&EventBroadcaster>,
+    telemetry: Option<&DaemonTelemetry>,
 ) {
     let capture_time = Instant::now();
     trace!("Input event: {:?}", event);
@@ -224,6 +258,16 @@ fn process_input_event(
         latency_us,
         event_broadcaster,
     );
+
+    // Record live telemetry for pull-based consumers (CLI/web).
+    if let Some(t) = telemetry {
+        t.push_event(event_description(&event, input_keycode, &output_desc));
+        if mapping_triggered {
+            if let Some(rs) = remapping_state.as_deref() {
+                t.update_state(build_telemetry_state(rs.state()));
+            }
+        }
+    }
 }
 
 /// Processes event through remapping engine if available.
@@ -397,9 +441,11 @@ fn broadcast_event(
 ///         None, // No event broadcaster
 ///         None, // No remapping state (pass-through mode)
 ///         None, // No latency recording
+///         None, // No telemetry
 ///     )
 /// }
 /// ```
+#[allow(clippy::too_many_arguments)]
 pub fn run_event_loop<F>(
     platform: &mut Box<dyn Platform>,
     running: Arc<AtomicBool>,
@@ -408,6 +454,7 @@ pub fn run_event_loop<F>(
     event_broadcaster: Option<&EventBroadcaster>,
     mut remapping_state: Option<&mut RemappingState>,
     latency_recorder: Option<&LatencyRecorder>,
+    telemetry: Option<&DaemonTelemetry>,
 ) -> Result<(), DaemonError>
 where
     F: FnMut() -> Result<(), DaemonError>,
@@ -435,6 +482,7 @@ where
                     &mut stats,
                     latency_recorder,
                     event_broadcaster,
+                    telemetry,
                 );
             }
             Err(e) => {
@@ -488,6 +536,7 @@ pub fn process_one_event(
     event_broadcaster: Option<&EventBroadcaster>,
     remapping_state: Option<&mut RemappingState>,
     latency_recorder: Option<&LatencyRecorder>,
+    telemetry: Option<&DaemonTelemetry>,
 ) -> Result<bool, DaemonError> {
     // Try to capture an input event (non-blocking on Windows)
     match platform.capture_input() {
@@ -513,23 +562,23 @@ pub fn process_one_event(
             }
 
             // Process event through remapping engine if available
-            let (output_events, mapping_type, mapping_triggered, state_snapshot) =
+            let (output_events, mapping_type, mapping_triggered, state_snapshot, telemetry_state) =
                 if let Some(remap_state) = remapping_state {
                     let (lookup, state) = remap_state.lookup_and_state_mut();
                     let mapping = lookup.find_mapping(input_keycode, state);
                     let mapping_type_str = mapping.map(get_mapping_type);
                     let triggered = mapping.is_some();
                     let outputs = process_event(event.clone(), lookup, state);
-                    // Capture state snapshot after processing for broadcast
-                    let snapshot = if triggered {
-                        Some(extract_daemon_state(state))
+                    // Capture state snapshots after processing (broadcast + telemetry)
+                    let (snapshot, telem) = if triggered {
+                        (Some(extract_daemon_state(state)), Some(build_telemetry_state(state)))
                     } else {
-                        None
+                        (None, None)
                     };
-                    (outputs, mapping_type_str, triggered, snapshot)
+                    (outputs, mapping_type_str, triggered, snapshot, telem)
                 } else {
                     // Pass-through mode - no remapping
-                    (vec![event.clone()], None, false, None)
+                    (vec![event.clone()], None, false, None, None)
                 };
 
             // Compute output description for broadcast
@@ -542,6 +591,14 @@ pub fn process_one_event(
                     .collect::<Vec<_>>()
                     .join(", ")
             };
+
+            // Record live telemetry for pull-based consumers (CLI/web).
+            if let Some(t) = telemetry {
+                t.push_event(event_description(&event, input_keycode, &output_desc));
+                if let Some(ts) = telemetry_state {
+                    t.update_state(ts);
+                }
+            }
 
             // Only inject output events if remapping was triggered
             // In pass-through mode (no remapping), we must NOT inject because:

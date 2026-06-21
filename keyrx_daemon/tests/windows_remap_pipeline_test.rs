@@ -273,7 +273,7 @@ fn run_press_release(key: KeyCode, remap: &mut RemappingState) -> Vec<KeyEvent> 
     let (platform, injected) = CapturingPlatform::new(events);
     let mut boxed: Box<dyn Platform> = Box::new(platform);
 
-    while let Ok(true) = process_one_event(&mut boxed, None, Some(remap), None) {}
+    while let Ok(true) = process_one_event(&mut boxed, None, Some(remap), None, None) {}
 
     let result = injected.lock().unwrap().clone();
     result
@@ -284,7 +284,7 @@ fn run_events(events: Vec<KeyEvent>, remap: &mut RemappingState) -> Vec<KeyEvent
     let (platform, injected) = CapturingPlatform::new(events);
     let mut boxed: Box<dyn Platform> = Box::new(platform);
 
-    while let Ok(true) = process_one_event(&mut boxed, None, Some(remap), None) {}
+    while let Ok(true) = process_one_event(&mut boxed, None, Some(remap), None, None) {}
 
     let result = injected.lock().unwrap().clone();
     result
