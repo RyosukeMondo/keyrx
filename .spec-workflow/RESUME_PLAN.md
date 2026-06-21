@@ -72,22 +72,48 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 
 ## Phase C — Daemon functional gaps
 
-- [NEXT] **C1 — Implement IPC `GetState`** (`keyrx_daemon/src/ipc/commands.rs:51`).
-  Returns "not implemented yet". Wire it to the daemon's real state broadcast
-  (see commit d8694064 "daemon state broadcasting"). *Accept:* returns real state;
-  scoped test added; `cargo test -p keyrx_daemon ipc`.
+> **DECISION (2026-06-22):** User chose **FULL LIVE PLUMBING + full autonomy, no
+> more questions** ("all approved, fully implement, get deeper as needed"). So C1–C5
+> are implemented for real: expose live runtime `ExtendedState`, run a production
+> daemon IPC server with a live-state handler, surface real latency + events to
+> CLI/web/Monitor. See memory `resume-loop-full-autonomy`.
+>
+> **FINDING that drove this:** `IpcCommandHandler` was constructed ONLY in test mode;
+> test mode does no keyboard capture so it had no live data. CLI (`keyrx metrics`)
+> and web API (`/api/metrics/latency|events`, `/api/daemon/state`) call these IPC
+> commands over `/tmp/keyrx-daemon.sock`, but production didn't serve a live handler,
+> and the 255-bit `ExtendedState` wasn't exposed anywhere shareable.
+>
+> Plumbing sub-slices below replace the old C1–C5. Do them in order.
 
-- [ ] **C2 — Implement IPC `GetLatencyMetrics`** (`commands.rs:58`).
-  Wire to the metrics source used by the web metrics API. *Accept:* real metrics; test.
+- [NEXT] **C1 — Design + telemetry source.** Read the event path (`processor/mod.rs`,
+  `daemon/event_loop.rs`, `daemon/event_broadcaster.rs`, where `ExtendedState` lives
+  and how latency is recorded). Then add a shared `DaemonTelemetry` source (live
+  `ExtendedState` snapshot + `Arc<LatencyRecorder>` + an event ring buffer) that the
+  processor/event loop updates on the hot path with minimal overhead. Document the
+  concrete design as a comment block and refine the remaining C slices from it.
+  *Accept:* telemetry source type compiles with unit tests; design noted in plan.
 
-- [ ] **C3 — Implement IPC `GetEventsTail`** (`commands.rs:65`).
-  Return the recent event ring/tail. *Accept:* returns recent events; test.
+- [ ] **C2 — Wire production IPC server with live handler.** Extend `IpcCommandHandler`
+  with the telemetry source (new fields/ctor); construct an IPC server on
+  `DEFAULT_SOCKET_PATH` in the production Linux runner (not just test mode). On Windows,
+  surface the same data via `DaemonSharedState` (no Unix socket). *Accept:* production
+  daemon answers IPC; test.
 
-- [ ] **C4 — Implement metrics follow/tail mode** (`src/cli/metrics.rs:40,69`).
-  Currently `Err("not implemented")`. *Accept:* follow mode streams; test or manual note.
+- [ ] **C3 — Implement IPC `GetState`** (`ipc/commands.rs:51`) reading live
+  `ExtendedState` (255-bit vec). Test-mode handler (no events) returns the all-false
+  default rather than error. *Accept:* real state in prod, empty default in test; test.
 
-- [ ] **C5 — Implement metrics web endpoint stub** (`src/web/api/metrics.rs:300`).
-  Returns "not implemented" response. *Accept:* returns real payload; test.
+- [ ] **C4 — Implement IPC `GetLatencyMetrics`** (`commands.rs:58`) from the
+  `MetricsAggregator`/`LatencyRecorder` snapshot. *Accept:* real metrics; test.
+
+- [ ] **C5 — Implement IPC `GetEventsTail`** (`commands.rs:65`) from the event ring
+  buffer. Also add `IpcRequest::ClearEvents` and implement the web clear-events stub
+  (`web/api/metrics.rs:300`) against it. *Accept:* real events + working clear; test.
+
+- [ ] **C5b — CLI events follow mode** (`cli/metrics.rs:40,69`). Replace the
+  `Err("not implemented")` with a poll loop that repeatedly calls `GetEventsTail` and
+  prints new events until interrupted. *Accept:* follow streams; test or manual note.
 
 - [ ] **C6 — Real profile counts** (`src/web/api/profiles.rs:169,170`).
   device count and key-mapping count hardcoded to 0. Compute device count per profile
@@ -130,3 +156,7 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 - 2026-06-21: Plan created. A1 marked [NEXT].
 - 2026-06-22: A1 done (installer/release fixes committed). B1 [NEXT].
 - 2026-06-22: Phase B done (B1/B2/B3 — stale docs reconciled). C1 [NEXT].
+- 2026-06-22: C1 investigation revealed IPC telemetry is test-mode-only with no
+  live data source. Asked user → chose FULL LIVE PLUMBING + full autonomy (no more
+  questions). Phase C rewritten into plumbing slices C1–C5b. C1 (design) [NEXT].
+  Autonomy recorded in memory `resume-loop-full-autonomy`.
