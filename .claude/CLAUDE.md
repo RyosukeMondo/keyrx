@@ -50,13 +50,16 @@ cargo test --workspace                     # All tests pass
 
 | Quality Gate | Threshold | Current | Enforcement |
 |--------------|-----------|---------|-------------|
-| Backend Tests | 100% pass | ✅ 962/962 | Strict |
-| Backend Doc Tests | 100% pass | ✅ 9/9 | Strict |
-| Frontend Tests | ≥95% pass | ⚠️ 681/897 (75.9%) | Warning* |
-| Frontend Coverage | ≥80% line/branch | ⚠️ Blocked | Warning* |
-| Accessibility | Zero WCAG violations | ✅ 23/23 | Strict |
+| Backend Tests | 100% pass | ~2,331 `#[test]`/`#[tokio::test]` fns (core 341 / compiler 277 / daemon 1,713); some daemon tests `#[ignore]`-gated on hardware/privileges | Local† |
+| Frontend Tests | ≥95% pass | ~1,874 test cases across 92 test files; WebSocket-mock instability resolved (commit d8694064) | Local† |
+| Frontend Coverage | ≥80% line/branch | Measured on demand (`npm run test:coverage`) | Local† |
+| Accessibility | Zero WCAG violations | axe a11y suite present (`npm run test:a11y`) | Local† |
 
-*Will become strict after WebSocket infrastructure fixes
+†**CI enforcement is currently PAUSED** (GitHub billing out → `ci.yml` is
+`ci.yml.disabled`). These gates are verified by running locally — they are NOT
+auto-enforced on push/PR right now. Counts are approximate (source-grep of test
+attributes/cases as of 2026-06-22), not live pass/fail tallies; run the commands
+below for authoritative results.
 
 **Run all gates locally:**
 ```bash

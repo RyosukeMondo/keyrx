@@ -45,28 +45,34 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 
 ## Phase B — Reconcile stale status docs
 
-- [NEXT] **B1 — Fix `.spec-workflow/SPEC_STATUS_SUMMARY.md`.**
+- [x] **B1 — Fix `.spec-workflow/SPEC_STATUS_SUMMARY.md`.**
   It lists bug-remediation-sweep 0/67, production-readiness-remediation 9/14,
   windows-quality-improvements 7/14 — all now fully complete in their tasks.md.
   Action: recount each referenced spec's tasks.md and update the summary numbers/dates.
   *Accept:* summary matches actual `[x]` counts.
+  → DONE: recounted (bug-remediation 36/36, prod-readiness 26/26, windows-quality
+    25/25, installer 17/17); rewrote summary to mark all four COMPLETE.
 
-- [ ] **B2 — Fix `.spec-workflow/specs/production-readiness-remediation/STATUS.md`.**
+- [x] **B2 — Fix `.spec-workflow/specs/production-readiness-remediation/STATUS.md`.**
   Still says "BLOCKED — WebSocket Integration Test Infrastructure Required" though
   tasks.md is 26/26. Action: update to reflect completion; note WebSocket fix landed
   in commit d8694064.
   *Accept:* no false BLOCKED state.
+  → DONE: status line → COMPLETE (26/26); added RESOLUTION banner crediting
+    commit d8694064; historical analysis retained as record.
 
-- [ ] **B3 — Fix Production Quality Gates table in `.claude/CLAUDE.md`.**
+- [x] **B3 — Fix Production Quality Gates table in `.claude/CLAUDE.md`.**
   Claims 962 backend tests (repo has ~2,300+) and stale frontend numbers.
   Action: recount Rust `#[test]`/`#[tokio::test]` and TS test files, update the table,
   remove the now-resolved "Will become strict after WebSocket fixes" footnote or
   update its wording. Note CI enforcement is currently paused (billing).
   *Accept:* table reflects reality.
+  → DONE: table now shows ~2,331 Rust test fns + ~1,874 TS cases/92 files; footnote
+    replaced with "CI enforcement PAUSED (billing)" note; counts dated 2026-06-22.
 
 ## Phase C — Daemon functional gaps
 
-- [ ] **C1 — Implement IPC `GetState`** (`keyrx_daemon/src/ipc/commands.rs:51`).
+- [NEXT] **C1 — Implement IPC `GetState`** (`keyrx_daemon/src/ipc/commands.rs:51`).
   Returns "not implemented yet". Wire it to the daemon's real state broadcast
   (see commit d8694064 "daemon state broadcasting"). *Accept:* returns real state;
   scoped test added; `cargo test -p keyrx_daemon ipc`.
@@ -123,3 +129,4 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 ## Status Log
 - 2026-06-21: Plan created. A1 marked [NEXT].
 - 2026-06-22: A1 done (installer/release fixes committed). B1 [NEXT].
+- 2026-06-22: Phase B done (B1/B2/B3 — stale docs reconciled). C1 [NEXT].
