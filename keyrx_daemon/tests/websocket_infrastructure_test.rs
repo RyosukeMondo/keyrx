@@ -589,7 +589,10 @@ async fn test_ws005_error_broadcasting() {
     // Receive error event
     let event = event_rx.recv().await.unwrap();
     match event {
-        DaemonEvent::Error { data, sequence } => {
+        DaemonEvent::Error {
+            payload: data,
+            sequence,
+        } => {
             assert_eq!(data.code, "TEST_ERROR");
             assert_eq!(data.message, "Test error message");
             assert_eq!(data.context, Some("test context".to_string()));
@@ -614,7 +617,7 @@ async fn test_ws005_error_includes_context() {
 
     let event = event_rx.recv().await.unwrap();
     match event {
-        DaemonEvent::Error { data, .. } => {
+        DaemonEvent::Error { payload: data, .. } => {
             assert_eq!(data.code, "CONFIG_LOAD_FAILED");
             assert_eq!(data.context, Some("/path/to/config.krx".to_string()));
         }
@@ -636,7 +639,7 @@ async fn test_ws005_error_without_context() {
 
     let event = event_rx.recv().await.unwrap();
     match event {
-        DaemonEvent::Error { data, .. } => {
+        DaemonEvent::Error { payload: data, .. } => {
             assert_eq!(data.code, "GENERIC_ERROR");
             assert!(data.context.is_none());
         }

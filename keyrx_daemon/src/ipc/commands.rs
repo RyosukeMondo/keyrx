@@ -5,6 +5,8 @@
 
 use super::{IpcRequest, IpcResponse};
 use crate::config::profile_manager::ProfileManager;
+use crate::daemon::metrics::LatencySnapshot;
+use crate::daemon::telemetry::{DaemonTelemetry, STATE_BITS};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -15,10 +17,16 @@ use tokio::sync::RwLock;
 pub struct IpcCommandHandler {
     profile_manager: Arc<ProfileManager>,
     daemon_running: Arc<RwLock<bool>>,
+    /// Live runtime telemetry (state/latency/events). `None` in test mode where
+    /// no keyboard events are processed — telemetry queries then return defaults.
+    telemetry: Option<Arc<DaemonTelemetry>>,
 }
 
 impl IpcCommandHandler {
-    /// Create a new command handler.
+    /// Create a new command handler without live telemetry (test mode).
+    ///
+    /// Telemetry queries (`GetState`/`GetLatencyMetrics`/`GetEventsTail`) return
+    /// well-formed empty/default responses.
     ///
     /// # Arguments
     ///
@@ -28,6 +36,26 @@ impl IpcCommandHandler {
         Self {
             profile_manager,
             daemon_running,
+            telemetry: None,
+        }
+    }
+
+    /// Create a command handler wired to live daemon telemetry (production mode).
+    ///
+    /// # Arguments
+    ///
+    /// * `profile_manager` - Shared ProfileManager for profile operations
+    /// * `daemon_running` - Shared flag indicating daemon running state
+    /// * `telemetry` - Shared live telemetry updated by the event loop
+    pub fn with_telemetry(
+        profile_manager: Arc<ProfileManager>,
+        daemon_running: Arc<RwLock<bool>>,
+        telemetry: Arc<DaemonTelemetry>,
+    ) -> Self {
+        Self {
+            profile_manager,
+            daemon_running,
+            telemetry: Some(telemetry),
         }
     }
 
@@ -44,28 +72,52 @@ impl IpcCommandHandler {
         match request {
             IpcRequest::ActivateProfile { name } => self.handle_activate_profile(name).await,
             IpcRequest::GetStatus => self.handle_get_status().await,
-            IpcRequest::GetState => {
-                // State query not yet implemented
-                IpcResponse::Error {
-                    code: 5001,
-                    message: "GetState not implemented yet".to_string(),
-                }
-            }
-            IpcRequest::GetLatencyMetrics => {
-                // Latency metrics not yet implemented
-                IpcResponse::Error {
-                    code: 5001,
-                    message: "GetLatencyMetrics not implemented yet".to_string(),
-                }
-            }
-            IpcRequest::GetEventsTail { .. } => {
-                // Events tail not yet implemented
-                IpcResponse::Error {
-                    code: 5001,
-                    message: "GetEventsTail not implemented yet".to_string(),
-                }
-            }
+            IpcRequest::GetState => self.handle_get_state(),
+            IpcRequest::GetLatencyMetrics => self.handle_get_latency(),
+            IpcRequest::GetEventsTail { count } => self.handle_get_events(count),
         }
+    }
+
+    /// Handle a live-state query.
+    ///
+    /// Returns the packed 255-bit modifier/lock/layer vector. Without live
+    /// telemetry (test mode), returns the all-inactive default.
+    fn handle_get_state(&self) -> IpcResponse {
+        let state = match self.telemetry {
+            Some(ref t) => t.raw_state(),
+            None => vec![false; STATE_BITS],
+        };
+        IpcResponse::State { state }
+    }
+
+    /// Handle a latency-metrics query.
+    ///
+    /// Returns the latest aggregated latency snapshot. Without live telemetry
+    /// (test mode), returns zeros.
+    fn handle_get_latency(&self) -> IpcResponse {
+        let snapshot = match self.telemetry {
+            Some(ref t) => t.latency(),
+            None => LatencySnapshot::empty(),
+        };
+        IpcResponse::Latency {
+            min_us: snapshot.min_us,
+            avg_us: snapshot.avg_us,
+            max_us: snapshot.max_us,
+            p95_us: snapshot.p95_us,
+            p99_us: snapshot.p99_us,
+        }
+    }
+
+    /// Handle a recent-events query.
+    ///
+    /// Returns up to `count` most recent event descriptions (oldest first).
+    /// Without live telemetry (test mode), returns an empty list.
+    fn handle_get_events(&self, count: usize) -> IpcResponse {
+        let events = match self.telemetry {
+            Some(ref t) => t.recent_events(count),
+            None => Vec::new(),
+        };
+        IpcResponse::Events { events }
     }
 
     /// Handle profile activation request.
@@ -189,39 +241,99 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_unimplemented_commands() {
+    async fn test_telemetry_commands_default_empty() {
+        // Without telemetry (test mode), telemetry queries return empty defaults,
+        // NOT errors.
         let (handler, _temp_dir) = setup_test_handler().await;
 
-        // Test GetState
-        let response = handler.handle(IpcRequest::GetState).await;
-        match response {
-            IpcResponse::Error { code, message } => {
-                assert_eq!(code, 5001);
-                assert!(message.contains("not implemented"));
+        match handler.handle(IpcRequest::GetState).await {
+            IpcResponse::State { state } => {
+                assert_eq!(state.len(), STATE_BITS);
+                assert!(state.iter().all(|&b| !b));
             }
-            _ => panic!("Expected Error response"),
+            other => panic!("Expected State response, got {other:?}"),
         }
 
-        // Test GetLatencyMetrics
-        let response = handler.handle(IpcRequest::GetLatencyMetrics).await;
-        match response {
-            IpcResponse::Error { code, message } => {
-                assert_eq!(code, 5001);
-                assert!(message.contains("not implemented"));
+        match handler.handle(IpcRequest::GetLatencyMetrics).await {
+            IpcResponse::Latency {
+                min_us,
+                avg_us,
+                max_us,
+                p95_us,
+                p99_us,
+            } => {
+                assert_eq!((min_us, avg_us, max_us, p95_us, p99_us), (0, 0, 0, 0, 0));
             }
-            _ => panic!("Expected Error response"),
+            other => panic!("Expected Latency response, got {other:?}"),
         }
 
-        // Test GetEventsTail
-        let response = handler
-            .handle(IpcRequest::GetEventsTail { count: 10 })
-            .await;
-        match response {
-            IpcResponse::Error { code, message } => {
-                assert_eq!(code, 5001);
-                assert!(message.contains("not implemented"));
+        match handler.handle(IpcRequest::GetEventsTail { count: 10 }).await {
+            IpcResponse::Events { events } => assert!(events.is_empty()),
+            other => panic!("Expected Events response, got {other:?}"),
+        }
+    }
+
+    async fn setup_telemetry_handler() -> (IpcCommandHandler, Arc<DaemonTelemetry>, TempDir) {
+        let temp_dir = TempDir::new().unwrap();
+        let profile_manager = Arc::new(ProfileManager::new(temp_dir.path().to_path_buf()).unwrap());
+        let daemon_running = Arc::new(RwLock::new(true));
+        let telemetry = Arc::new(DaemonTelemetry::new());
+        let handler = IpcCommandHandler::with_telemetry(
+            profile_manager,
+            daemon_running,
+            Arc::clone(&telemetry),
+        );
+        (handler, telemetry, temp_dir)
+    }
+
+    #[tokio::test]
+    async fn test_get_state_reads_telemetry() {
+        use crate::daemon::telemetry::TelemetryState;
+        let (handler, telemetry, _temp_dir) = setup_telemetry_handler().await;
+
+        let mut s = TelemetryState::empty();
+        s.set_modifier(7, true);
+        telemetry.update_state(s);
+
+        match handler.handle(IpcRequest::GetState).await {
+            IpcResponse::State { state } => {
+                assert_eq!(state.len(), STATE_BITS);
+                assert!(state[7]);
             }
-            _ => panic!("Expected Error response"),
+            other => panic!("Expected State response, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_latency_reads_telemetry() {
+        let (handler, telemetry, _temp_dir) = setup_telemetry_handler().await;
+
+        let mut snap = LatencySnapshot::empty();
+        snap.avg_us = 250;
+        snap.p99_us = 900;
+        telemetry.update_latency(snap);
+
+        match handler.handle(IpcRequest::GetLatencyMetrics).await {
+            IpcResponse::Latency { avg_us, p99_us, .. } => {
+                assert_eq!(avg_us, 250);
+                assert_eq!(p99_us, 900);
+            }
+            other => panic!("Expected Latency response, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_events_reads_telemetry() {
+        let (handler, telemetry, _temp_dir) = setup_telemetry_handler().await;
+
+        telemetry.push_event("press A".to_string());
+        telemetry.push_event("release A".to_string());
+
+        match handler.handle(IpcRequest::GetEventsTail { count: 10 }).await {
+            IpcResponse::Events { events } => {
+                assert_eq!(events, vec!["press A", "release A"]);
+            }
+            other => panic!("Expected Events response, got {other:?}"),
         }
     }
 }

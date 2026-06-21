@@ -149,6 +149,7 @@ fn extract_and_block(
                 BaseKeyMapping::TapHold { from, .. } => *from,
                 BaseKeyMapping::HoldOnly { from, .. } => *from,
                 BaseKeyMapping::ModifiedOutput { from, .. } => *from,
+                BaseKeyMapping::Sequence { from, .. } => *from,
             };
 
             if let Some(scan_code) = keycode_to_scancode(source_key) {

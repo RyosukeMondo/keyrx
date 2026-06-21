@@ -106,22 +106,32 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
     pass. Registered in `daemon/mod.rs`. Wiring into event loop = C3; web reuse of
     `TelemetryState` parsing also deferred to C3.
 
-- [NEXT] **C2 — Wire production IPC server with live handler.** Extend `IpcCommandHandler`
-  with the telemetry source (new fields/ctor); construct an IPC server on
-  `DEFAULT_SOCKET_PATH` in the production Linux runner (not just test mode). On Windows,
-  surface the same data via `DaemonSharedState` (no Unix socket). *Accept:* production
-  daemon answers IPC; test.
+- [x] **C2 — Handler holds telemetry + implement read methods.** Extended
+  `IpcCommandHandler` with `Option<Arc<DaemonTelemetry>>` (new `with_telemetry` ctor;
+  `new` keeps `None`). Implemented `GetState`/`GetLatencyMetrics`/`GetEventsTail` to
+  read telemetry, returning well-formed empty/zero defaults when `None` (test mode).
+  This ABSORBS the former C3/C4/C5 handler logic. Updated/added unit tests (default-
+  empty + telemetry-backed paths). *Accept:* lib compiles; tests added.
+  → DONE: lib compiles clean (errors found were pre-existing rot in `tests/`, see
+    below). Also fixed 2 pre-existing broken integration test files
+    (`e2e_key_blocking_test.rs` missing `Sequence` arm; `websocket_infrastructure_test.rs`
+    `DaemonEvent::Error.data`→`payload`). Per-slice verify changed to
+    `cargo check -p keyrx_daemon --lib` (`--tests` drags in pre-existing broken targets).
 
-- [ ] **C3 — Implement IPC `GetState`** (`ipc/commands.rs:51`) reading live
-  `ExtendedState` (255-bit vec). Test-mode handler (no events) returns the all-false
-  default rather than error. *Accept:* real state in prod, empty default in test; test.
+- [NEXT] **C3 — Integration: populate telemetry + run production IPC server.** Wire
+  `Arc<DaemonTelemetry>` into the event loop so live data flows: in `run_event_loop`
+  (Linux) and `process_one_event` (Windows), update telemetry state when a mapping
+  changes it (reuse `extract_daemon_state`→`TelemetryState`), push event descriptions
+  to the ring, and feed the latency snapshot (have `start_latency_broadcast_task` also
+  call `telemetry.update_latency`). Then construct a production IPC server on
+  `DEFAULT_SOCKET_PATH` (Linux) using `IpcCommandHandler::with_telemetry`. On Windows,
+  ensure `/api/daemon/state` etc. read the same telemetry via `AppState`. NOTE: likely
+  needs signature changes to `run_event_loop`/`Daemon::run` — keep edits tight, split if
+  it exceeds one iteration. *Accept:* prod daemon serves live state/latency/events; tests.
 
-- [ ] **C4 — Implement IPC `GetLatencyMetrics`** (`commands.rs:58`) from the
-  `MetricsAggregator`/`LatencyRecorder` snapshot. *Accept:* real metrics; test.
-
-- [ ] **C5 — Implement IPC `GetEventsTail`** (`commands.rs:65`) from the event ring
-  buffer. Also add `IpcRequest::ClearEvents` and implement the web clear-events stub
-  (`web/api/metrics.rs:300`) against it. *Accept:* real events + working clear; test.
+- [ ] **C5 — `ClearEvents` IPC + web clear-events.** Add `IpcRequest::ClearEvents`,
+  handle it via `telemetry.clear_events()`, and implement the web clear-events stub
+  (`web/api/metrics.rs:300`) against it. *Accept:* working clear; test.
 
 - [ ] **C5b — CLI events follow mode** (`cli/metrics.rs:40,69`). Replace the
   `Err("not implemented")` with a poll loop that repeatedly calls `GetEventsTail` and
@@ -175,3 +185,8 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 - 2026-06-22: C1 DONE (daemon/telemetry.rs, 10 tests pass). Discovered cold
   `cargo test` = 365m (optimized test profile) → switched per-slice verify to
   `cargo check --tests`, full tests at phase boundaries only. C2 [NEXT].
+- 2026-06-22: C2 DONE (IpcCommandHandler telemetry field + 3 read methods, absorbs
+  former C3/C4/C5 handler logic). `--tests` revealed PRE-EXISTING compile rot in
+  integration tests (suite doesn't currently build, contradicting "962/962 pass");
+  fixed 2 files, more may exist — sweep at Phase-C boundary. Per-slice verify → `--lib`.
+  C3 (event-loop + prod IPC integration) [NEXT].
