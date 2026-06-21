@@ -25,7 +25,7 @@ fn get_workspace_root() -> PathBuf {
 
 // ── Version consistency ──────────────────────────────────────────────
 
-/// Fail compilation if Cargo.toml (SSOT) and package.json versions differ.
+/// Auto-sync package.json version from Cargo.toml (SSOT).
 fn validate_version_consistency(workspace_root: &Path) {
     let cargo_toml = workspace_root.join("Cargo.toml");
     let package_json = workspace_root.join("keyrx_ui/package.json");
@@ -34,10 +34,17 @@ fn validate_version_consistency(workspace_root: &Path) {
     let pkg_version = extract_package_json_version(&package_json);
 
     if cargo_version != pkg_version {
-        panic!(
-            "\n\n\
-            VERSION MISMATCH: Cargo.toml={cargo_version} vs package.json={pkg_version}\n\
-            Fix: ./scripts/sync-version.sh\n"
+        let content = std::fs::read_to_string(&package_json)
+            .unwrap_or_else(|e| panic!("Failed to read {}: {e}", package_json.display()));
+        let updated = content.replacen(
+            &format!("\"version\": \"{pkg_version}\""),
+            &format!("\"version\": \"{cargo_version}\""),
+            1,
+        );
+        std::fs::write(&package_json, updated)
+            .unwrap_or_else(|e| panic!("Failed to write {}: {e}", package_json.display()));
+        println!(
+            "cargo:warning=Auto-synced package.json version: {pkg_version} → {cargo_version}"
         );
     }
 }

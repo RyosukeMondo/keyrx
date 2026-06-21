@@ -109,7 +109,7 @@ Root: HKCR; Subkey: "KeyRxScript"; ValueType: string; ValueData: "KeyRx Rhai Scr
 Root: HKCR; Subkey: "KeyRxScript\DefaultIcon"; ValueType: string; ValueData: "{app}\keyrx_compiler.exe,0"; Flags: uninsdeletekey
 
 [Run]
-Filename: "{app}\{#AppExeName}"; Parameters: "run"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; Parameters: "run"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: shellexec nowait postinstall skipifsilent
 
 [UninstallRun]
 Filename: "taskkill"; Parameters: "/F /IM keyrx_daemon.exe"; Flags: runhidden; RunOnceId: "StopDaemon"

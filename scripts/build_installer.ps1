@@ -15,6 +15,12 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent $ScriptDir
 
+# Colors
+function Write-Info { Write-Host "INFO: $args" -ForegroundColor Cyan }
+function Write-Success { Write-Host "SUCCESS: $args" -ForegroundColor Green }
+function Write-Error { Write-Host "ERROR: $args" -ForegroundColor Red }
+function Write-Warning { Write-Host "WARNING: $args" -ForegroundColor Yellow }
+
 # Read version from Cargo.toml (SSOT)
 $CargoToml = Get-Content (Join-Path $RootDir "Cargo.toml") -Raw
 if ($CargoToml -match 'version\s*=\s*"([^"]+)"') {
@@ -23,12 +29,6 @@ if ($CargoToml -match 'version\s*=\s*"([^"]+)"') {
     $Version = "1.0.0"
 }
 Write-Info "Version: $Version (from Cargo.toml)"
-
-# Colors
-function Write-Info { Write-Host "INFO: $args" -ForegroundColor Cyan }
-function Write-Success { Write-Host "SUCCESS: $args" -ForegroundColor Green }
-function Write-Error { Write-Host "ERROR: $args" -ForegroundColor Red }
-function Write-Warning { Write-Host "WARNING: $args" -ForegroundColor Yellow }
 
 Write-Info "KeyRx Windows Installer Build Script"
 Write-Info "Installer Type: $InstallerType"
@@ -102,9 +102,46 @@ if ($InstallerType -eq "inno") {
     exit 1
 }
 
-# Step 1: Build release binaries
+# Step 1: Build Web UI (must precede daemon so freshness check passes)
 if (-not $SkipBuild) {
-    Write-Info "Step 1: Building release binaries..."
+    Write-Info "Step 1: Building Web UI..."
+
+    $UiDir = Join-Path $RootDir "keyrx_ui"
+    Push-Location $UiDir
+
+    Write-Info "Running npm install..."
+    npm install
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "npm install failed"
+        Pop-Location
+        exit 1
+    }
+
+    Write-Info "Running npm run build..."
+    npm run build
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "npm build failed"
+        Pop-Location
+        exit 1
+    }
+
+    # Verify dist exists
+    $DistPath = Join-Path $UiDir "dist"
+    if (-not (Test-Path $DistPath)) {
+        Write-Error "UI dist not found: $DistPath"
+        Pop-Location
+        exit 1
+    }
+
+    Write-Success "Web UI built successfully"
+    Pop-Location
+} else {
+    Write-Warning "Skipping UI build (--SkipBuild)"
+}
+
+# Step 2: Build release binaries (embeds UI dist)
+if (-not $SkipBuild) {
+    Write-Info "Step 2: Building release binaries..."
 
     Push-Location $RootDir
 
@@ -139,43 +176,6 @@ if (-not $SkipBuild) {
     Pop-Location
 } else {
     Write-Warning "Skipping cargo build (--SkipBuild)"
-}
-
-# Step 2: Build Web UI
-if (-not $SkipBuild) {
-    Write-Info "Step 2: Building Web UI..."
-
-    $UiDir = Join-Path $RootDir "keyrx_ui"
-    Push-Location $UiDir
-
-    Write-Info "Running npm install..."
-    npm install
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "npm install failed"
-        Pop-Location
-        exit 1
-    }
-
-    Write-Info "Running npm run build..."
-    npm run build
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "npm build failed"
-        Pop-Location
-        exit 1
-    }
-
-    # Verify dist exists
-    $DistPath = Join-Path $UiDir "dist"
-    if (-not (Test-Path $DistPath)) {
-        Write-Error "UI dist not found: $DistPath"
-        Pop-Location
-        exit 1
-    }
-
-    Write-Success "Web UI built successfully"
-    Pop-Location
-} else {
-    Write-Warning "Skipping UI build (--SkipBuild)"
 }
 
 # Step 3: Create installer output directory
