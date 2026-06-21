@@ -33,7 +33,7 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 
 ## Phase A — Release hygiene (1.1.0)
 
-- [NEXT] **A1 — Commit staged installer/release work.**
+- [x] **A1 — Commit staged installer/release work.**
   Files already modified in working tree: `keyrx_daemon/build.rs` (version-sync
   fail-hard → auto-fix), `keyrx-installer.iss` (`shellexec` on launch entry),
   `scripts/build_installer.ps1` (UI-before-binaries ordering + helper hoist),
@@ -41,10 +41,11 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   Action: review the diffs are coherent, then commit them as the 1.1.0 release-build
   fixes. Do NOT run a full installer build (heavy); just verify the diffs make sense.
   *Accept:* working tree clean of those 6 files; commit present.
+  → DONE: diffs verified coherent; committed. Working tree clean.
 
 ## Phase B — Reconcile stale status docs
 
-- [ ] **B1 — Fix `.spec-workflow/SPEC_STATUS_SUMMARY.md`.**
+- [NEXT] **B1 — Fix `.spec-workflow/SPEC_STATUS_SUMMARY.md`.**
   It lists bug-remediation-sweep 0/67, production-readiness-remediation 9/14,
   windows-quality-improvements 7/14 — all now fully complete in their tasks.md.
   Action: recount each referenced spec's tasks.md and update the summary numbers/dates.
@@ -121,3 +122,4 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 
 ## Status Log
 - 2026-06-21: Plan created. A1 marked [NEXT].
+- 2026-06-22: A1 done (installer/release fixes committed). B1 [NEXT].
