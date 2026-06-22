@@ -108,6 +108,7 @@ pub fn run_daemon(
     let running_for_broadcaster = daemon.running_flag();
     let latency_recorder_for_broadcaster = daemon.latency_recorder();
     let telemetry_for_broadcaster = daemon.telemetry();
+    let telemetry_for_ipc = daemon.telemetry();
 
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
@@ -182,6 +183,10 @@ pub fn run_daemon(
         });
     });
 
+    // Start the production IPC server so the `keyrx metrics` CLI can query live
+    // telemetry over the default Unix socket. Best-effort; the daemon runs regardless.
+    start_production_ipc_server(telemetry_for_ipc);
+
     // Run the daemon event loop with tray polling
     let running = daemon.running_flag();
     let result = std::thread::spawn(move || daemon.run());
@@ -244,6 +249,68 @@ pub fn run_daemon(
 
     log::info!("Daemon stopped gracefully");
     Ok(())
+}
+
+/// Spawns a production IPC server on the default Unix socket so the
+/// `keyrx metrics latency|events` CLI can query live telemetry from the running
+/// daemon.
+///
+/// Best-effort: any setup failure is logged and the daemon continues without the
+/// IPC server (the web API already serves telemetry independently). Mirrors the
+/// test-mode IPC server setup in [`run_test_mode`].
+fn start_production_ipc_server(telemetry: Arc<crate::daemon::DaemonTelemetry>) {
+    use crate::config::ProfileManager;
+    use crate::ipc::commands::IpcCommandHandler;
+    use crate::ipc::server::IpcServer;
+    use crate::ipc::DEFAULT_SOCKET_PATH;
+    use tokio::sync::{Mutex, RwLock};
+
+    let config_dir = dirs::config_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("keyrx");
+    let profile_manager = match ProfileManager::new(config_dir) {
+        Ok(manager) => Arc::new(manager),
+        Err(e) => {
+            log::warn!("Production IPC server disabled: ProfileManager init failed: {e}");
+            return;
+        }
+    };
+
+    // Only telemetry queries use this server in production; the running flag and
+    // profile manager satisfy the handler's constructor for status/activation.
+    let daemon_running = Arc::new(RwLock::new(true));
+    let ipc_handler = Arc::new(IpcCommandHandler::with_telemetry(
+        profile_manager,
+        daemon_running,
+        telemetry,
+    ));
+
+    let mut ipc_server = match IpcServer::new(PathBuf::from(DEFAULT_SOCKET_PATH)) {
+        Ok(server) => server,
+        Err(e) => {
+            log::warn!("Production IPC server disabled: create failed: {e}");
+            return;
+        }
+    };
+    if let Err(e) = ipc_server.start() {
+        log::warn!("Production IPC server disabled: start failed: {e}");
+        return;
+    }
+    log::info!("Production IPC server listening on {DEFAULT_SOCKET_PATH}");
+
+    std::thread::spawn(move || {
+        let handler_fn = Arc::new(Mutex::new(
+            move |request: crate::ipc::IpcRequest| -> Result<crate::ipc::IpcResponse, String> {
+                let rt = tokio::runtime::Runtime::new().map_err(|e| e.to_string())?;
+                let handler = Arc::clone(&ipc_handler);
+                Ok(rt.block_on(async move { handler.handle(request).await }))
+            },
+        ));
+
+        if let Err(e) = ipc_server.handle_connections(handler_fn) {
+            log::error!("Production IPC server error: {e}");
+        }
+    });
 }
 
 /// Run the daemon in test mode (no keyboard capture).

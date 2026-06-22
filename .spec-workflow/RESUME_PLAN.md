@@ -148,15 +148,20 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   *Accept:* `cargo check --lib` clean. → DONE. Web state works on Windows AND Linux
   via the query service (no Unix socket needed for the web path).
 
-- [NEXT] **C3c-2 — Linux production IPC server (CLI path).** The web no longer needs
+- [x] **C3c-2 — Linux production IPC server (CLI path).** The web no longer needs
   IPC, but the `keyrx metrics latency|events` CLI connects to `DEFAULT_SOCKET_PATH`.
   In the Linux production runner, spawn an IPC server there using
   `IpcCommandHandler::with_telemetry(daemon.telemetry())` (mirror the test-mode
   IPC server setup in `run_test_mode`). NOTE: `cfg(linux)` — NOT compilable on the
   Windows host; mirror carefully and flag for Linux/CI verification. *Accept:* code
   written + mirrored; verify on Linux later.
+  → DONE (UNVERIFIED on this host): added `start_production_ipc_server(telemetry)`
+    helper in linux.rs (best-effort: logs+skips on failure), called before the daemon
+    run loop; captured `telemetry_for_ipc` before the daemon move. The handler logic
+    (`with_telemetry` + `handle`) is cross-platform unit-tested (C2); only the Linux
+    glue is unverified. **⚠ MUST `cargo build` on Linux before release** (see risk note).
 
-- [ ] **C5 — `ClearEvents` IPC + web clear-events.** Add `IpcRequest::ClearEvents`,
+- [NEXT] **C5 — `ClearEvents` IPC + web clear-events.** Add `IpcRequest::ClearEvents`,
   handle it via `telemetry.clear_events()`, and implement the web clear-events stub
   (`web/api/metrics.rs:300`) against it. *Accept:* working clear; test.
 
@@ -201,6 +206,15 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 
 ---
 
+## ⚠ Cross-platform verification risk (MUST do before release)
+
+This host is **Windows**, so `cfg(target_os = "linux")` code is NOT compiled by
+`cargo check`/`cargo build` here. The following Linux-only edits are written but
+UNVERIFIED — run `cargo build` (or CI) **on Linux** to confirm they compile:
+- `platform_runners/linux.rs`: C3b broadcast-task arg, C3c-1 `DaemonQueryService
+  .with_telemetry`, C3c-2 `start_production_ipc_server` helper + call site.
+The shared/cross-platform logic they depend on IS unit-tested on Windows.
+
 ## Status Log
 - 2026-06-21: Plan created. A1 marked [NEXT].
 - 2026-06-22: A1 done (installer/release fixes committed). B1 [NEXT].
@@ -226,3 +240,6 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 - 2026-06-22: C3c-1 DONE — web /api/daemon/state serves live state via
   DaemonQueryService.get_state() (telemetry-backed) on both platforms; SSOT cleanup
   of 255-bit parsing. lib check clean. C3c-2 (Linux CLI IPC server) [NEXT].
+- 2026-06-22: C3c-2 DONE but UNVERIFIED (cfg-linux, can't compile on Windows) —
+  start_production_ipc_server helper mirrors run_test_mode. C3 COMPLETE. Added
+  cross-platform verification risk note. C5 (ClearEvents + web clear) [NEXT].
