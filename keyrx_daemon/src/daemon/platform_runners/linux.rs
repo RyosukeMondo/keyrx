@@ -123,10 +123,13 @@ pub fn run_daemon(
         &daemon,
         profile_name,
     ));
-    let daemon_query = Arc::new(crate::services::DaemonQueryService::new(
-        daemon.latency_recorder(),
-        Arc::clone(&daemon_state),
-    ));
+    let daemon_query = Arc::new(
+        crate::services::DaemonQueryService::new(
+            daemon.latency_recorder(),
+            Arc::clone(&daemon_state),
+        )
+        .with_telemetry(daemon.telemetry()),
+    );
 
     // Create AppState from ServiceContainer with daemon state (dependency injection)
     let app_state = Arc::new(crate::web::AppState::from_container_with_daemon(

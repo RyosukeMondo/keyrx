@@ -317,23 +317,33 @@ struct DaemonStateResponse {
     active_lock_count: usize,
 }
 
+/// Builds a state response from a telemetry snapshot.
+///
+/// `TelemetryState` is the single source of truth for the 255-bit packing
+/// (modifiers 0..128, locks 128..192, layers 192..255), so this avoids
+/// duplicating that layout in the handler.
+fn daemon_state_response(ts: &crate::daemon::TelemetryState) -> DaemonStateResponse {
+    DaemonStateResponse {
+        active_layer: ts.active_layer(),
+        modifiers: ts.modifiers(),
+        locks: ts.locks(),
+        raw_state: ts.raw().to_vec(),
+        active_modifier_count: ts.active_modifier_count(),
+        active_lock_count: ts.active_lock_count(),
+    }
+}
+
 /// GET /api/daemon/state - Get current daemon state
 async fn get_daemon_state(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<DaemonStateResponse>, DaemonError> {
     use crate::error::WebError;
 
-    // When DaemonQueryService is available, daemon state (modifiers/locks) is not
-    // yet tracked there. Fall through to IPC for now; return empty on Windows.
-    if state.daemon_query.is_some() && state.daemon_state.is_some() {
-        return Ok(Json(DaemonStateResponse {
-            active_layer: None,
-            modifiers: vec![],
-            locks: vec![],
-            raw_state: vec![],
-            active_modifier_count: 0,
-            active_lock_count: 0,
-        }));
+    // Production path (both platforms): read live modifier/lock/layer state from
+    // telemetry via the query service. Falls through to IPC only in test mode.
+    if let Some(query) = &state.daemon_query {
+        let ts = query.get_state().unwrap_or_default();
+        return Ok(Json(daemon_state_response(&ts)));
     }
 
     let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
@@ -344,66 +354,9 @@ async fn get_daemon_state(
         .map_err(|_| SocketError::NotConnected)?;
 
     match response {
-        IpcResponse::State { state } => {
-            // Parse the 255-bit state vector
-            // Note: The exact bit layout depends on keyrx_core's ExtendedState structure
-            // For now, we provide the raw state and basic analysis
-
-            // Modifiers are typically bits 0-127 (MD_00 to MD_127)
-            // Locks are typically bits 128-191 (LK_00 to LK_63)
-            // Active layers are typically bits 192-254
-
-            let modifiers: Vec<String> = state
-                .iter()
-                .take(128)
-                .enumerate()
-                .filter_map(|(i, &active)| {
-                    if active {
-                        Some(format!("MD_{:02}", i))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            let locks: Vec<String> = state
-                .iter()
-                .skip(128)
-                .take(64)
-                .enumerate()
-                .filter_map(|(i, &active)| {
-                    if active {
-                        Some(format!("LK_{:02}", i))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            // Active layers (bits 192-254)
-            let active_layer_bits: Vec<usize> = state
-                .iter()
-                .skip(192)
-                .take(63)
-                .enumerate()
-                .filter_map(|(i, &active)| if active { Some(i) } else { None })
-                .collect();
-
-            let active_layer = if !active_layer_bits.is_empty() {
-                Some(format!("Layer bits: {:?}", active_layer_bits))
-            } else {
-                None
-            };
-
-            Ok(Json(DaemonStateResponse {
-                active_layer,
-                modifiers: modifiers.clone(),
-                locks: locks.clone(),
-                raw_state: state,
-                active_modifier_count: modifiers.len(),
-                active_lock_count: locks.len(),
-            }))
-        }
+        IpcResponse::State { state } => Ok(Json(daemon_state_response(
+            &crate::daemon::TelemetryState::from_raw(state),
+        ))),
         IpcResponse::Error { code, message } => Err(WebError::InvalidRequest {
             reason: format!("Daemon error {}: {}", code, message),
         }

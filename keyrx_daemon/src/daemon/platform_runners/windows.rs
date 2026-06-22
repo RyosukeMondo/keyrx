@@ -152,10 +152,13 @@ pub fn run_daemon(
     daemon.set_event_broadcaster(event_broadcaster.clone());
 
     // Create DaemonQueryService for REST endpoint metrics
-    let daemon_query = Arc::new(crate::services::DaemonQueryService::new(
-        daemon.latency_recorder(),
-        Arc::clone(&daemon_state),
-    ));
+    let daemon_query = Arc::new(
+        crate::services::DaemonQueryService::new(
+            daemon.latency_recorder(),
+            Arc::clone(&daemon_state),
+        )
+        .with_telemetry(daemon.telemetry()),
+    );
 
     // Create AppState from ServiceContainer with daemon shared state (dependency injection)
     // Clone daemon_state since it will be used later in the event loop

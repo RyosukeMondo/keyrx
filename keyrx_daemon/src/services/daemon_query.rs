@@ -9,7 +9,10 @@ use std::time::Duration;
 
 use serde_json::Value;
 
-use crate::daemon::{DaemonSharedState, LatencyRecorder, LatencySnapshot, MetricsAggregator};
+use crate::daemon::{
+    DaemonSharedState, DaemonTelemetry, LatencyRecorder, LatencySnapshot, MetricsAggregator,
+    TelemetryState,
+};
 
 /// Maximum number of events stored in the ring buffer.
 const EVENT_LOG_CAPACITY: usize = 1000;
@@ -23,6 +26,8 @@ pub struct DaemonQueryService {
     aggregator: Mutex<MetricsAggregator>,
     daemon_state: Arc<DaemonSharedState>,
     event_log: Arc<RwLock<VecDeque<Value>>>,
+    /// Live telemetry source for modifier/lock/layer state (set in production).
+    telemetry: Option<Arc<DaemonTelemetry>>,
 }
 
 impl DaemonQueryService {
@@ -36,7 +41,20 @@ impl DaemonQueryService {
             aggregator: Mutex::new(MetricsAggregator::new(Duration::from_secs(60))),
             daemon_state,
             event_log: Arc::new(RwLock::new(VecDeque::with_capacity(EVENT_LOG_CAPACITY))),
+            telemetry: None,
         }
+    }
+
+    /// Attaches live telemetry as the source for modifier/lock/layer state.
+    #[must_use]
+    pub fn with_telemetry(mut self, telemetry: Arc<DaemonTelemetry>) -> Self {
+        self.telemetry = Some(telemetry);
+        self
+    }
+
+    /// Returns the current modifier/lock/layer state snapshot, if telemetry is wired.
+    pub fn get_state(&self) -> Option<TelemetryState> {
+        self.telemetry.as_ref().map(|t| t.state())
     }
 
     /// Computes a latency statistics snapshot from the recorder.
@@ -137,6 +155,24 @@ mod tests {
         let snap = svc.get_latency_snapshot();
         assert_eq!(snap.sample_count, 2);
         assert!(snap.min_us >= 100);
+    }
+
+    #[test]
+    fn test_get_state_without_telemetry_is_none() {
+        let svc = make_test_service();
+        assert!(svc.get_state().is_none());
+    }
+
+    #[test]
+    fn test_get_state_reads_telemetry() {
+        let telemetry = Arc::new(DaemonTelemetry::new());
+        let mut s = TelemetryState::empty();
+        s.set_modifier(4, true);
+        telemetry.update_state(s);
+
+        let svc = make_test_service().with_telemetry(telemetry);
+        let got = svc.get_state().expect("telemetry state present");
+        assert_eq!(got.modifiers(), vec!["MD_04"]);
     }
 
     #[test]

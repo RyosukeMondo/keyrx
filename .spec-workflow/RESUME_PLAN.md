@@ -138,12 +138,23 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
     `linux.rs` is `cfg(linux)` so NOT compiled on this Windows host — edit was
     mirrored 1:1 from `windows.rs`; verify on Linux/CI before release.
 
-- [NEXT] **C3c — Production IPC server + Windows web wiring.** In the Linux production
-  runner, spawn an IPC server on `DEFAULT_SOCKET_PATH` using
-  `IpcCommandHandler::with_telemetry(daemon.telemetry())` so CLI/web IPC queries hit
-  live data. On Windows (no Unix socket), expose `daemon.telemetry()` through the web
-  `AppState` so `/api/daemon/state` + `/api/metrics/*` read it directly. *Accept:*
-  prod daemon serves live state/latency/events end-to-end.
+- [x] **C3c-1 — Web live state (both platforms).** Found latency+events ALREADY
+  flow to the web via `DaemonQueryService` (`get_latency_snapshot`/`get_event_log`);
+  only `/api/daemon/state` was a gap (returned empty). Added `with_telemetry` +
+  `get_state()` to `DaemonQueryService`; both runners now call `.with_telemetry(
+  daemon.telemetry())`. Rewrote `get_daemon_state` to build from `TelemetryState`
+  (SSOT) for both the query path and the IPC fallback — collapsed ~50 lines of
+  duplicated 255-bit parsing into one helper. Added 2 query-service tests.
+  *Accept:* `cargo check --lib` clean. → DONE. Web state works on Windows AND Linux
+  via the query service (no Unix socket needed for the web path).
+
+- [NEXT] **C3c-2 — Linux production IPC server (CLI path).** The web no longer needs
+  IPC, but the `keyrx metrics latency|events` CLI connects to `DEFAULT_SOCKET_PATH`.
+  In the Linux production runner, spawn an IPC server there using
+  `IpcCommandHandler::with_telemetry(daemon.telemetry())` (mirror the test-mode
+  IPC server setup in `run_test_mode`). NOTE: `cfg(linux)` — NOT compilable on the
+  Windows host; mirror carefully and flag for Linux/CI verification. *Accept:* code
+  written + mirrored; verify on Linux later.
 
 - [ ] **C5 — `ClearEvents` IPC + web clear-events.** Add `IpcRequest::ClearEvents`,
   handle it via `telemetry.clear_events()`, and implement the web clear-events stub
@@ -212,3 +223,6 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 - 2026-06-22: C3b DONE — latency snapshot feeds telemetry; runners pass
   daemon.telemetry(); lib check clean. NOTE: linux.rs not compiled on Windows host
   (mirrored from windows.rs). C3c (prod IPC server + Windows web) [NEXT].
+- 2026-06-22: C3c-1 DONE — web /api/daemon/state serves live state via
+  DaemonQueryService.get_state() (telemetry-backed) on both platforms; SSOT cleanup
+  of 255-bit parsing. lib check clean. C3c-2 (Linux CLI IPC server) [NEXT].
