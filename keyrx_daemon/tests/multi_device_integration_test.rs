@@ -427,15 +427,13 @@ fn test_device_pattern_matching_comprehensive() {
 fn test_device_pattern_case_sensitivity() {
     let state = DeviceState::new();
 
-    // Pattern matching should be case-sensitive as documented
+    // Patterns are ASCII case-insensitive (the same rule as device_start
+    // selection; see keyrx_core::runtime::device_pattern).
     let pattern = Condition::DeviceMatches(String::from("USB-Keyboard"));
-
-    // Exact case should match
     assert!(state.evaluate_condition_with_device(&pattern, Some("USB-Keyboard")));
-
-    // Different case should not match (case-sensitive)
-    assert!(!state.evaluate_condition_with_device(&pattern, Some("usb-keyboard")));
-    assert!(!state.evaluate_condition_with_device(&pattern, Some("USB-KEYBOARD")));
+    assert!(state.evaluate_condition_with_device(&pattern, Some("usb-keyboard")));
+    assert!(state.evaluate_condition_with_device(&pattern, Some("USB-KEYBOARD")));
+    assert!(!state.evaluate_condition_with_device(&pattern, Some("USB-Mouse")));
 }
 
 /// Test: Empty pattern and edge cases.

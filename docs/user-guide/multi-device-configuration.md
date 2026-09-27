@@ -177,6 +177,9 @@ Use `when_device_start(pattern)` for flexible matching with glob patterns:
 | `"*numpad*"` | Contains | "Generic numpad", "USB-Numpad-123" |
 | `"*"` | All devices | Every connected keyboard |
 
+Matching is case-insensitive and is tried against the device's name, serial
+number and path; the same rule applies to `device_start(pattern)`.
+
 ```rhai
 // Match any device containing "numpad" in its name
 when_device_start("*numpad*");
@@ -620,7 +623,7 @@ keyrx_daemon run --config ~/.config/keyrx/config.krx
    when_device_start("USB Keyboard");  // Exact name from list-devices
    ```
 
-3. Check case sensitivity (patterns are case-sensitive):
+3. Check the pattern against the names `keyrx_daemon list-devices` prints (matching is case-insensitive):
    ```rhai
    when_device_start("*Keyboard*");  // Matches "USB Keyboard"
    when_device_start("*keyboard*");  // Matches "AT keyboard"
