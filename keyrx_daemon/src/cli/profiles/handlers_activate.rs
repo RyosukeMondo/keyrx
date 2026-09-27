@@ -1,0 +1,112 @@
+//! The `activate` subcommand handler.
+
+use super::output::ActivationOutput;
+use crate::cli::common::output_error;
+use crate::cli::logging;
+use crate::config::profile_manager::ProfileError;
+use crate::error::{CliError, DaemonResult};
+use crate::services::ProfileService;
+
+/// Handle the `activate` subcommand.
+pub(super) async fn handle_activate(
+    service: &ProfileService,
+    name: &str,
+    json: bool,
+) -> DaemonResult<()> {
+    logging::log_command_start("profiles activate", name);
+
+    match service.activate_profile(name).await {
+        Ok(result) => {
+            logging::log_profile_activate(name, result.success);
+            if result.success {
+                logging::log_command_success(
+                    "profiles activate",
+                    result.compile_time_ms + result.reload_time_ms,
+                );
+            } else {
+                let error_msg = result
+                    .error
+                    .as_deref()
+                    .unwrap_or("Unknown activation error");
+                logging::log_command_error("profiles activate", error_msg);
+            }
+
+            if json {
+                let output = ActivationOutput {
+                    success: result.success,
+                    compile_time_ms: result.compile_time_ms,
+                    reload_time_ms: result.reload_time_ms,
+                    error: result.error,
+                };
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&output).map_err(CliError::from)?
+                );
+            } else if result.success {
+                println!("✓ Profile '{}' activated", name);
+                println!("  Compile time: {}ms", result.compile_time_ms);
+                println!("  Reload time: {}ms", result.reload_time_ms);
+                println!(
+                    "  Total: {}ms",
+                    result.compile_time_ms + result.reload_time_ms
+                );
+            } else {
+                eprintln!("✗ Activation failed");
+                if let Some(ref error) = result.error {
+                    eprintln!("  Error: {}", error);
+                }
+                eprintln!("  Compile time: {}ms", result.compile_time_ms);
+                return Err(CliError::CommandFailed {
+                    command: "activate".to_string(),
+                    reason: result
+                        .error
+                        .unwrap_or_else(|| "Unknown activation error".to_string()),
+                }
+                .into());
+            }
+
+            if result.success {
+                Ok(())
+            } else {
+                Err(CliError::CommandFailed {
+                    command: "profiles".to_string(),
+                    reason: "Command failed".to_string(),
+                }
+                .into())
+            }
+        }
+        Err(ProfileError::NotFound(name)) => {
+            logging::log_command_error(
+                "profiles activate",
+                &format!("Profile '{}' not found", name),
+            );
+            output_error(&format!("Profile '{}' not found", name), 1001, json);
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
+        }
+        Err(ProfileError::Compilation(e)) => {
+            logging::log_command_error("profiles activate", &format!("Compilation error: {}", e));
+            output_error(&format!("Compilation error: {}", e), 2004, json);
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
+        }
+        Err(e) => {
+            logging::log_command_error(
+                "profiles activate",
+                &format!("Failed to activate profile: {}", e),
+            );
+            output_error(&format!("Failed to activate profile: {}", e), 2001, json);
+            Err(CliError::CommandFailed {
+                command: "profiles".to_string(),
+                reason: "Command failed".to_string(),
+            }
+            .into())
+        }
+    }
+}
