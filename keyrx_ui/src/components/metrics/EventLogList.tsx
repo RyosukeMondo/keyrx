@@ -85,15 +85,17 @@ export const EventLogList: React.FC<EventLogListProps> = ({
   autoScroll = true,
 }) => {
   const listRef = useRef<List>(null);
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  // Track the expanded row together with the list length it was expanded
+  // under. When the list length changes (events arrive, filter changes,
+  // etc.) the stored length no longer matches, so the row derives back to
+  // "collapsed" on the next render — no effect needed to reset it.
+  const [expanded, setExpanded] = useState<{ index: number; length: number } | null>(null);
 
   // Limit events if maxEvents is specified
   const displayEvents = maxEvents ? events.slice(-maxEvents) : events;
 
-  // Reset expanded row when events change significantly
-  useEffect(() => {
-    setExpandedIndex(null);
-  }, [displayEvents.length]);
+  const expandedIndex =
+    expanded && expanded.length === displayEvents.length ? expanded.index : null;
 
   // Auto-scroll to top when new events arrive (newest first)
   useEffect(() => {
@@ -114,9 +116,16 @@ export const EventLogList: React.FC<EventLogListProps> = ({
     }
   }, [expandedIndex]);
 
-  const handleRowClick = useCallback((index: number) => {
-    setExpandedIndex((prev) => (prev === index ? null : index));
-  }, []);
+  const handleRowClick = useCallback(
+    (index: number) => {
+      setExpanded((prev) =>
+        prev && prev.length === displayEvents.length && prev.index === index
+          ? null
+          : { index, length: displayEvents.length },
+      );
+    },
+    [displayEvents.length],
+  );
 
   // Format timestamp for display
   const formatTime = (timestamp: number): string => {

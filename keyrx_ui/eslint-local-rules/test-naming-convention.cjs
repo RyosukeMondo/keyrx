@@ -33,17 +33,27 @@ module.exports = {
       Program(node) {
         const filename = context.getFilename();
 
-        // Skip non-test files and node_modules
-        if (!filename.includes('test') && !filename.includes('spec') && !filename.includes('e2e')) {
-          return;
-        }
-
         if (filename.includes('node_modules')) {
           return;
         }
 
+        // Judge naming only by the basename — a directory segment or an
+        // unrelated identifier elsewhere in the path must never decide this.
+        const basename = filename.split(/[/\\]/).pop() || filename;
+
+        // "test"/"spec"/"e2e" must appear as a whole word/segment (bounded by
+        // non-letters such as '.', '-', '_', or the string edges). A plain
+        // substring check would also match ordinary identifiers that merely
+        // contain those letters, e.g. "special.ts" (contains "spec") or
+        // "StateInspectorCard.tsx" (contains "spec" inside "Inspector") —
+        // neither of which is a test file.
+        const testMarker = /\b(test|spec|e2e)\b/;
+        if (!testMarker.test(basename)) {
+          return;
+        }
+
         // Check for .spec.* pattern (should be .test.*)
-        if (filename.match(/\.spec\.(ts|tsx|js|jsx)$/)) {
+        if (basename.match(/\.spec\.(ts|tsx|js|jsx)$/)) {
           context.report({
             node,
             messageId: 'useTestNotSpec',
@@ -59,15 +69,15 @@ module.exports = {
           /\.e2e\.(ts|tsx)$/,               // E2E tests
         ];
 
-        const isValid = validPatterns.some(pattern => pattern.test(filename));
+        const isValid = validPatterns.some(pattern => pattern.test(basename));
 
-        if (!isValid && (filename.includes('test') || filename.includes('spec'))) {
+        if (!isValid) {
           // Determine expected pattern based on file location
           let expected = '*.test.ts or *.test.tsx (unit), *.integration.test.ts (integration), *.e2e.ts (E2E)';
 
-          if (filename.includes('e2e')) {
+          if (/\be2e\b/.test(basename)) {
             expected = '*.e2e.ts or *.e2e.tsx';
-          } else if (filename.includes('integration')) {
+          } else if (/\bintegration\b/.test(basename)) {
             expected = '*.integration.test.ts or *.integration.test.tsx';
           }
 

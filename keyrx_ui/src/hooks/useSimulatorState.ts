@@ -1,7 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { DaemonState, KeyEvent, SimulatorState } from '@/types/rpc';
-import type { SimulationInput } from '@/hooks/useWasm';
+import type { SimulationInput, SimulationResult } from '@/hooks/useWasm';
+import type { KeyMapping } from '@/types';
 import { getErrorMessage } from '@/utils/errorUtils';
+
+type SimulationOutput = SimulationResult['outputs'][number];
 
 const MAX_EVENTS = 1000;
 
@@ -25,9 +28,9 @@ export interface UseSimulatorStateParams {
   isUsingProfileConfig: boolean;
   isWasmReady: boolean;
   runSimulation:
-    | ((source: string, input: SimulationInput) => Promise<any>)
+    | ((source: string, input: SimulationInput) => Promise<SimulationResult | null>)
     | null;
-  keyMappings: Map<string, any>;
+  keyMappings: Map<string, KeyMapping>;
 }
 
 export interface UseSimulatorStateReturn {
@@ -59,9 +62,13 @@ export function useSimulatorState(
   const [holdTimers, setHoldTimers] = useState<Map<string, number>>(new Map());
   const [wasmState, setWasmState] = useState<DaemonState | null>(null);
 
-  // Use ref to access holdTimers in cleanup without stale closures
+  // Use ref to access holdTimers in cleanup without stale closures.
+  // Synced via effect (not during render) so React never observes the ref
+  // mutation as a side effect of rendering.
   const holdTimersRef = useRef(holdTimers);
-  holdTimersRef.current = holdTimers;
+  useEffect(() => {
+    holdTimersRef.current = holdTimers;
+  }, [holdTimers]);
 
   const addEvent = useCallback(
     (
@@ -92,7 +99,7 @@ export function useSimulatorState(
   }, []);
 
   const processWasmResult = useCallback(
-    (result: any, keyCode: string, eventType: 'press' | 'release') => {
+    (result: SimulationResult, keyCode: string) => {
       setWasmState({
         modifiers: result.final_state.active_modifiers.map(
           (id: number) => `MD_${id.toString().padStart(2, '0')}`
@@ -103,10 +110,10 @@ export function useSimulatorState(
         layer: result.final_state.active_layer || 'Base',
       });
 
-      result.outputs.forEach((output: any) => {
+      result.outputs.forEach((output: SimulationOutput) => {
         addEvent(
           output.keycode,
-          output.event_type as 'press' | 'release',
+          output.event_type,
           keyCode,
           output.keycode
         );
@@ -153,7 +160,7 @@ export function useSimulatorState(
           };
           const result = await runSimulation(profileConfig.source, input);
           if (result) {
-            processWasmResult(result, keyCode, 'press');
+            processWasmResult(result, keyCode);
           }
         } catch (err) {
           console.error('WASM simulation error:', err);
@@ -222,7 +229,7 @@ export function useSimulatorState(
           };
           const result = await runSimulation(profileConfig.source, input);
           if (result) {
-            processWasmResult(result, keyCode, 'release');
+            processWasmResult(result, keyCode);
           }
         } catch (err) {
           console.error('WASM simulation error:', err);
