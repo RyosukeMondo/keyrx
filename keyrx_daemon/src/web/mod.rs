@@ -84,6 +84,9 @@ impl AppState {
         event_broadcaster: broadcast::Sender<ServerMessage>,
         daemon_state: Option<Arc<DaemonSharedState>>,
     ) -> Self {
+        if let Some(ds) = &daemon_state {
+            profile_service.attach_daemon_state(Arc::clone(ds));
+        }
         let daemon_query = Arc::new(match &daemon_state {
             Some(ds) => DaemonQueryService::new(Arc::clone(ds), Arc::new(DaemonTelemetry::new())),
             None => DaemonQueryService::without_daemon(),
@@ -166,6 +169,11 @@ impl AppState {
         daemon_state: Option<Arc<DaemonSharedState>>,
         daemon_query: Arc<DaemonQueryService>,
     ) -> Self {
+        if let Some(ds) = &daemon_state {
+            container
+                .profile_service()
+                .attach_daemon_state(Arc::clone(ds));
+        }
         Self {
             macro_recorder: container.macro_recorder(),
             profile_service: container.profile_service(),

@@ -13,7 +13,7 @@
 //!
 //! - **SIGTERM**: Graceful shutdown - stops event processing and releases all resources
 //! - **SIGINT**: Same as SIGTERM (Ctrl+C handling)
-//! - **SIGHUP**: Configuration reload - reloads .krx file without restarting
+//! - **SIGHUP**: Configuration reload - re-reads the live config without restarting
 //!
 //! # Daemon Lifecycle
 //!
@@ -25,11 +25,12 @@
 //! # Example
 //!
 //! ```ignore
-//! use std::path::Path;
-//! use keyrx_daemon::daemon::Daemon;
+//! use keyrx_daemon::daemon::{ConfigSource, Daemon};
+//! use keyrx_daemon::platform::create_platform;
 //!
-//! // Initialize daemon with configuration
-//! let mut daemon = Daemon::new(Path::new("config.krx"))?;
+//! // Start from the active profile in ~/.config/keyrx
+//! let config_dir = dirs::config_dir().unwrap().join("keyrx");
+//! let mut daemon = Daemon::new(create_platform()?, ConfigSource::ActiveProfile, config_dir)?;
 //!
 //! // Run the event loop (blocks until shutdown signal)
 //! daemon.run()?;
@@ -38,7 +39,6 @@
 //! # Ok::<(), keyrx_daemon::daemon::DaemonError>(())
 //! ```
 
-use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -49,16 +49,13 @@ use thiserror::Error;
 use keyrx_core::config::DeviceConfig;
 use log::{info, warn};
 
-use crate::config_loader::load_config;
 use crate::error::ConfigError;
 use crate::platform::{Platform, PlatformError};
-
-use state::convert_archived_device_config;
 
 // Submodules
 pub mod event_broadcaster;
 pub mod event_loop;
-pub mod factory;
+pub mod live_config;
 pub mod metrics;
 pub mod platform_runners;
 pub mod platform_setup;
@@ -71,6 +68,7 @@ pub mod telemetry;
 // Re-exports for public API
 pub use event_broadcaster::{start_latency_broadcast_task, EventBroadcaster};
 pub use event_loop::process_one_event;
+pub use live_config::{ConfigSource, LiveConfig, LoadedConfig};
 pub use metrics::{LatencyRecorder, LatencySnapshot, MetricsAggregator};
 pub use remapping_state::RemappingState;
 pub use shared_state::DaemonSharedState;
@@ -137,46 +135,16 @@ impl From<ExitCode> for i32 {
 
 /// The main keyrx daemon.
 ///
-/// `Daemon` coordinates all components for keyboard event processing:
+/// Owns the platform (input capture + output injection), the live remapping
+/// state, and the single sources of truth shared with the web/IPC threads:
+/// [`DaemonSharedState`] (status, reload flag, activation requests) and
+/// [`DaemonTelemetry`] (live state, latency, recent events).
 ///
-/// - **Configuration**: Loads and manages the .krx configuration file
-/// - **Device Manager**: Discovers and manages input keyboard devices
-/// - **Output Device**: Creates virtual keyboard for injecting remapped events
-/// - **Signal Handling**: Responds to SIGTERM, SIGINT (shutdown), SIGHUP (reload)
-///
-/// # Initialization Order
-///
-/// The daemon initializes components in this order:
-///
-/// 1. Load configuration from .krx file
-/// 2. Discover and match input devices
-/// 3. Create uinput virtual keyboard
-/// 4. Install signal handlers
-///
-/// This order ensures we fail fast on configuration errors before grabbing devices.
-///
-/// # Example
-///
-/// ```ignore
-/// use std::path::Path;
-/// use keyrx_daemon::daemon::Daemon;
-///
-/// // Initialize daemon
-/// let mut daemon = Daemon::new(Path::new("config.krx"))?;
-///
-/// // Check device count
-/// println!("Managing {} devices", daemon.device_count());
-///
-/// // Run event loop (blocks until shutdown)
-/// daemon.run()?;
-/// # Ok::<(), keyrx_daemon::daemon::DaemonError>(())
-/// ```
+/// Which configuration is live is decided in one place, [`LiveConfig`]; see
+/// [`live_config`] for what `run --config` means and how activation works.
 pub struct Daemon {
-    /// Path to the configuration file (for reload support).
-    config_path: PathBuf,
-
-    /// Path to the keyrx config directory (~/.config/keyrx).
-    config_dir: PathBuf,
+    /// Which configuration is loaded, and how reloads resolve.
+    live: LiveConfig,
 
     /// Platform abstraction for input/output operations.
     platform: Box<dyn Platform>,
@@ -184,146 +152,66 @@ pub struct Daemon {
     /// Running flag for event loop control.
     running: Arc<AtomicBool>,
 
-    /// Signal handler for reload detection.
+    /// Signal handler; its reload flag is the one `DaemonSharedState` raises.
     signal_handler: SignalHandler,
 
     /// Event broadcaster for WebSocket real-time updates (optional).
     event_broadcaster: Option<EventBroadcaster>,
 
-    /// Lock-free latency recorder for metrics collection.
-    ///
-    /// This is shared between the event loop (writing samples) and
-    /// the broadcast task (reading statistics). Lock-free design
-    /// ensures no mutex contention on the hot path.
+    /// Lock-free latency recorder (owned by `telemetry`, cached for the hot path).
     latency_recorder: Arc<LatencyRecorder>,
 
-    /// Remapping state for key remapping (KeyLookup + DeviceState).
-    ///
-    /// This is `Some` when a profile is active and remapping is enabled.
-    /// It is `None` in pass-through mode (no active profile).
+    /// Live remapping state; `None` in pass-through mode. Owned by the event
+    /// loop while it runs — reloads hand a replacement back to the loop.
     remapping_state: Option<RemappingState>,
 
     /// Live telemetry (state/latency/recent events) shared with IPC/web consumers.
-    ///
-    /// The event loop writes to this; the IPC server and web API read from it.
     telemetry: Arc<DaemonTelemetry>,
+
+    /// Status + control shared with the web server and IPC server.
+    shared_state: Arc<DaemonSharedState>,
 }
 
 impl Daemon {
-    /// Creates a new daemon instance with the specified platform and configuration file.
+    /// Creates a daemon that starts from `source`.
     ///
-    /// This method performs the initialization sequence:
+    /// The configuration is read before any device is grabbed, so a broken
+    /// `--config` file fails fast. A missing or broken *active profile* is not
+    /// fatal: the daemon starts in pass-through mode and logs why.
     ///
-    /// 1. Accepts a platform implementation via dependency injection
-    /// 2. Initializes the platform
-    /// 3. Installs signal handlers for graceful shutdown and reload
+    /// # Errors
     ///
-    /// # Arguments
-    ///
-    /// * `platform` - Platform implementation for input/output operations
-    /// * `config_path` - Path to the .krx configuration file (for reload support)
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Daemon)` - Successfully initialized daemon
-    /// * `Err(DaemonError::Platform)` - Platform initialization failed
-    /// * `Err(DaemonError::SignalError)` - Failed to install signal handlers
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use std::path::Path;
-    /// use keyrx_daemon::daemon::Daemon;
-    /// use keyrx_daemon::platform::create_platform;
-    ///
-    /// let platform = create_platform()?;
-    /// match Daemon::new(platform, Path::new("config.krx")) {
-    ///     Ok(daemon) => {
-    ///         println!("Daemon initialized successfully");
-    ///     }
-    ///     Err(e) => {
-    ///         eprintln!("Failed to initialize daemon: {}", e);
-    ///     }
-    /// }
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn new(mut platform: Box<dyn Platform>, config_path: &Path) -> Result<Self, DaemonError> {
-        info!(
-            "Initializing keyrx daemon with config: {}",
-            config_path.display()
-        );
+    /// - `DaemonError::Config` / `RuntimeError`: an explicit `--config` file
+    ///   cannot be loaded
+    /// - `DaemonError::Platform`: platform initialization failed
+    /// - `DaemonError::SignalError`: signal handlers could not be installed
+    pub fn new(
+        mut platform: Box<dyn Platform>,
+        source: ConfigSource,
+        config_dir: PathBuf,
+    ) -> Result<Self, DaemonError> {
+        info!("Initializing keyrx daemon from {source:?}");
+        let mut live = LiveConfig::new(config_dir);
+        let loaded = Self::load_startup_config(&live, &source)?;
 
-        // Determine config directory (~/.config/keyrx)
-        let config_dir = dirs::config_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("keyrx");
-
-        // Step 1: Initialize the platform
-        info!("Initializing platform...");
         platform.initialize()?;
-        info!("Platform initialized");
-
-        // Step 2: Install signal handlers
-        info!("Installing signal handlers...");
         let running = Arc::new(AtomicBool::new(true));
         let signal_handler = install_signal_handlers(Arc::clone(&running))?;
-        info!("Signal handlers installed");
 
-        // Shared telemetry (state, latency, events) for IPC/web queries. It owns
-        // the latency recorder so there is exactly one recorder + aggregator.
+        // Telemetry owns the latency recorder: one recorder, one aggregator.
         let telemetry = Arc::new(DaemonTelemetry::new());
         let latency_recorder = telemetry.latency_recorder();
 
-        // Step 3: Load active profile and create remapping state (if any)
-        let remapping_state = match Self::load_active_profile_config(&config_dir) {
-            Ok(Some(device_config)) => {
-                info!("Loaded active profile, creating remapping state");
-
-                // Configure key blocking for the loaded profile (Windows only).
-                // Without this, the low-level hook won't block original keystrokes,
-                // causing double input (original + remapped).
-                #[cfg(target_os = "windows")]
-                {
-                    use keyrx_core::config::{ConfigRoot, Metadata, Version};
-
-                    let config_root = ConfigRoot {
-                        version: Version::current(),
-                        devices: vec![device_config.clone()],
-                        metadata: Metadata {
-                            compilation_timestamp: 0,
-                            compiler_version: String::new(),
-                            source_hash: String::new(),
-                        },
-                    };
-                    if let Err(e) =
-                        crate::platform::windows::platform_state::PlatformState::configure_blocking(
-                            Some(&config_root),
-                        )
-                    {
-                        warn!("Failed to configure key blocking: {}", e);
-                    }
-                }
-
-                Some(RemappingState::new(&device_config))
-            }
-            Ok(None) => {
-                info!("No active profile found, running in pass-through mode");
-                None
-            }
-            Err(e) => {
-                warn!(
-                    "Failed to load active profile: {}. Running in pass-through mode",
-                    e
-                );
-                None
-            }
-        };
+        let device_count = platform.list_devices().map(|d| d.len()).unwrap_or(0);
+        let shared_state = Arc::new(
+            DaemonSharedState::new(Arc::clone(&running), None, PathBuf::new(), device_count)
+                .sharing_reload_flag(signal_handler.reload_state().flag()),
+        );
+        let remapping_state = apply_loaded(&mut live, &shared_state, loaded);
 
         info!("Daemon initialization complete");
-
         Ok(Self {
-            config_path: config_path.to_path_buf(),
-            config_dir,
+            live,
             platform,
             running,
             signal_handler,
@@ -331,92 +219,37 @@ impl Daemon {
             latency_recorder,
             remapping_state,
             telemetry,
+            shared_state,
         })
     }
 
-    /// Sets the event broadcaster for real-time WebSocket updates.
-    ///
-    /// This method allows injecting an EventBroadcaster after daemon creation.
-    /// The broadcaster will receive key events and state updates during event processing.
-    pub fn set_event_broadcaster(&mut self, broadcaster: EventBroadcaster) {
-        self.event_broadcaster = Some(broadcaster);
+    fn load_startup_config(
+        live: &LiveConfig,
+        source: &ConfigSource,
+    ) -> Result<Option<LoadedConfig>, DaemonError> {
+        match (source, live.load(source)) {
+            (_, Ok(None)) => {
+                info!("No active profile; running in pass-through mode");
+                Ok(None)
+            }
+            (_, Ok(loaded)) => Ok(loaded),
+            (ConfigSource::ActiveProfile, Err(e)) => {
+                warn!("Failed to load the active profile ({e}); running in pass-through mode");
+                Ok(None)
+            }
+            (_, Err(e)) => Err(e),
+        }
     }
 
-    /// Loads the active profile's DeviceConfig from the .krx file.
-    ///
-    /// Returns `Ok(Some(config))` if an active profile exists and was loaded successfully,
-    /// `Ok(None)` if no active profile is set, or `Err` on load failure.
-    fn load_active_profile_config(config_dir: &Path) -> Result<Option<DeviceConfig>, DaemonError> {
-        // Read the .active file to get the active profile name
-        let active_file = config_dir.join(".active");
-        if !active_file.exists() {
-            return Ok(None);
-        }
-
-        let content = fs::read_to_string(&active_file).map_err(|e| {
-            DaemonError::RuntimeError(format!("Failed to read .active file: {}", e))
-        })?;
-        let active_name = match serde_json::from_str::<serde_json::Value>(content.trim()) {
-            Ok(metadata) => metadata
-                .get("name")
-                .and_then(|v| v.as_str())
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| content.trim().to_string()),
-            Err(_) => content.trim().to_string(),
-        };
-
-        if active_name.is_empty() {
-            return Ok(None);
-        }
-
-        // Construct path to the .krx file
-        let krx_path = config_dir
-            .join("profiles")
-            .join(format!("{}.krx", active_name));
-        if !krx_path.exists() {
-            warn!(
-                "Active profile '{}' has no compiled .krx file at {}",
-                active_name,
-                krx_path.display()
-            );
-            return Ok(None);
-        }
-
-        // Load the .krx file
-        info!(
-            "Loading active profile '{}' from {}",
-            active_name,
-            krx_path.display()
-        );
-        let archived_config = load_config(&krx_path)?;
-
-        // Get the first device config (global config)
-        // Most profiles use a single wildcard pattern "*" for global remapping
-        if archived_config.devices.is_empty() {
-            warn!("Profile '{}' has no device configurations", active_name);
-            return Ok(None);
-        }
-
-        // Convert the first (global) device config to owned type
-        let device_config = convert_archived_device_config(&archived_config.devices[0]);
-        info!(
-            "Loaded {} key mappings from profile '{}'",
-            device_config.mappings.len(),
-            active_name
-        );
-
-        Ok(Some(device_config))
+    /// Sets the event broadcaster for real-time WebSocket updates.
+    pub fn set_event_broadcaster(&mut self, broadcaster: EventBroadcaster) {
+        self.event_broadcaster = Some(broadcaster);
     }
 
     /// Returns the number of managed devices.
     #[must_use]
     pub fn device_count(&self) -> usize {
-        // Platform trait doesn't expose device count directly
-        // Return the number of devices from list_devices()
-        self.platform
-            .list_devices()
-            .map(|devices| devices.len())
-            .unwrap_or(0)
+        self.shared_state.get_device_count()
     }
 
     /// Returns whether the daemon is still running.
@@ -427,10 +260,16 @@ impl Daemon {
         self.running.load(Ordering::SeqCst)
     }
 
-    /// Returns the path to the configuration file.
+    /// The loaded configuration file, if any (pass-through: `None`).
     #[must_use]
-    pub fn config_path(&self) -> &Path {
-        &self.config_path
+    pub fn config_path(&self) -> Option<&Path> {
+        self.live.loaded().map(|l| l.path.as_path())
+    }
+
+    /// The keyrx config directory the daemon resolves profiles in.
+    #[must_use]
+    pub fn config_dir(&self) -> &Path {
+        self.live.config_dir()
     }
 
     /// Returns a reference to the signal handler.
@@ -446,125 +285,48 @@ impl Daemon {
     }
 
     /// Returns a clone of the latency recorder Arc.
-    ///
-    /// This is used to share the recorder with the latency broadcast task.
-    /// The recorder is lock-free and safe for concurrent access.
     #[must_use]
     pub fn latency_recorder(&self) -> Arc<LatencyRecorder> {
         Arc::clone(&self.latency_recorder)
     }
 
     /// Returns a clone of the shared telemetry Arc.
-    ///
-    /// Used to share live state/latency/events with the IPC server, the web API,
-    /// and the latency broadcast task.
     #[must_use]
     pub fn telemetry(&self) -> Arc<DaemonTelemetry> {
         Arc::clone(&self.telemetry)
     }
 
-    /// Reloads the configuration from disk.
-    ///
-    /// This method reads the active profile from the `.active` file and
-    /// rebuilds the remapping state. Called when SIGHUP is received or
-    /// when profile activation triggers a reload.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use std::path::Path;
-    /// use keyrx_daemon::daemon::Daemon;
-    /// use keyrx_daemon::platform::create_platform;
-    ///
-    /// let platform = create_platform()?;
-    /// let mut daemon = Daemon::new(platform, Path::new("config.krx"))?;
-    ///
-    /// match daemon.reload() {
-    ///     Ok(()) => println!("Configuration reloaded successfully"),
-    ///     Err(e) => eprintln!("Reload failed: {}", e),
-    /// }
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn reload(&mut self) -> Result<(), DaemonError> {
-        info!("Reloading configuration from active profile...");
-
-        match Self::load_active_profile_config(&self.config_dir) {
-            Ok(Some(device_config)) => {
-                let mapping_count = device_config.mappings.len();
-                if let Some(ref mut state) = self.remapping_state {
-                    // Update existing state
-                    state.reload(&device_config);
-                    info!("Remapping state reloaded with {} mappings", mapping_count);
-                } else {
-                    // Create new state
-                    self.remapping_state = Some(RemappingState::new(&device_config));
-                    info!(
-                        "Created new remapping state with {} mappings",
-                        mapping_count
-                    );
-                }
-                Ok(())
-            }
-            Ok(None) => {
-                info!("No active profile found, switching to pass-through mode");
-                self.remapping_state = None;
-                Ok(())
-            }
-            Err(e) => {
-                warn!("Failed to reload configuration: {}", e);
-                Err(e)
-            }
-        }
+    /// The status/control state shared with the web and IPC servers.
+    #[must_use]
+    pub fn shared_state(&self) -> Arc<DaemonSharedState> {
+        Arc::clone(&self.shared_state)
     }
 
-    /// Runs the main event processing loop.
+    /// Reloads now: switches to a pending activation if one was requested,
+    /// otherwise re-reads the loaded source. On error the current mappings stay.
+    pub fn reload(&mut self) -> Result<(), DaemonError> {
+        self.remapping_state = reload_remapping(&mut self.live, &self.shared_state)?;
+        self.telemetry.update_state(TelemetryState::empty());
+        Ok(())
+    }
+
+    /// Services a pending reload request (SIGHUP, activation, config saved).
     ///
-    /// This method captures keyboard events from the platform, processes them,
-    /// and injects output events. The loop continues until a shutdown signal
-    /// (SIGTERM or SIGINT) is received.
-    ///
-    /// # Event Processing Flow
-    ///
-    /// For each input event:
-    /// 1. Capture event from platform (blocking)
-    /// 2. Inject the event back through the platform
-    ///
-    /// **Note**: The current implementation is simplified and does not perform
-    /// key remapping. Full remapping support would require the Platform trait
-    /// to expose device state and lookup tables, or for the Daemon to manage
-    /// remapping state independently.
-    ///
-    /// # Signal Handling
-    ///
-    /// - **SIGTERM/SIGINT**: Sets the running flag to false, causing graceful exit
-    /// - **SIGHUP**: Triggers configuration reload (logs but requires restart for full effect)
-    ///
-    /// # Errors
-    ///
-    /// - `DaemonError::Platform`: Platform error during event capture or injection
-    /// - `DaemonError::RuntimeError`: Critical error during event processing
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use std::path::Path;
-    /// use keyrx_daemon::daemon::Daemon;
-    /// use keyrx_daemon::platform::create_platform;
-    ///
-    /// let platform = create_platform()?;
-    /// let mut daemon = Daemon::new(platform, Path::new("config.krx"))?;
-    ///
-    /// // This blocks until shutdown signal received
-    /// daemon.run()?;
-    ///
-    /// println!("Daemon stopped gracefully");
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
+    /// For message-pump platforms (Windows); the Linux event loop does the
+    /// same inside [`event_loop::run_event_loop`]. Returns whether one was pending.
+    pub fn service_reload_request(&mut self) -> bool {
+        if !self.signal_handler.check_reload() {
+            return false;
+        }
+        if let Err(e) = self.reload() {
+            warn!("Configuration reload failed, keeping current mappings: {e}");
+        }
+        true
+    }
+
     /// Process a single event from the platform (non-blocking).
     ///
-    /// This method is designed for Windows where the event loop must be
-    /// integrated with the system message pump. Call this repeatedly in
-    /// the Windows message loop to process keyboard events.
+    /// For Windows, where events are pumped from the message loop.
     ///
     /// # Returns
     ///
@@ -600,42 +362,20 @@ impl Daemon {
         }
     }
 
+    /// Runs the event loop until a shutdown signal (Linux).
+    ///
+    /// Reload requests are serviced inside the loop: the new remapping state
+    /// replaces the old one before the next event is processed.
     pub fn run(&mut self) -> Result<(), DaemonError> {
-        // Clone config_dir for the reload closure (avoids borrowing self)
-        let config_dir = self.config_dir.clone();
-
-        // Create reload callback that reloads from active profile
-        // Note: Due to borrow constraints, this callback cannot directly update
-        // self.remapping_state. For now, it loads the new config and logs.
-        // Full hot-reload would require Arc<RwLock> for the remapping state.
-        let reload_fn = move || -> Result<(), DaemonError> {
-            info!("Reload signal received, reloading configuration...");
-            match Daemon::load_active_profile_config(&config_dir) {
-                Ok(Some(device_config)) => {
-                    info!(
-                        "Loaded active profile with {} mappings. Note: Full hot-reload requires daemon restart.",
-                        device_config.mappings.len()
-                    );
-                    Ok(())
-                }
-                Ok(None) => {
-                    info!("No active profile found after reload signal");
-                    Ok(())
-                }
-                Err(e) => {
-                    warn!("Failed to reload configuration: {}", e);
-                    Err(e)
-                }
-            }
-        };
-
+        let live = &mut self.live;
+        let shared_state = &self.shared_state;
         event_loop::run_event_loop(
             &mut self.platform,
             Arc::clone(&self.running),
             &self.signal_handler,
-            reload_fn,
+            || reload_remapping(live, shared_state),
             self.event_broadcaster.as_ref(),
-            self.remapping_state.as_mut(),
+            &mut self.remapping_state,
             Some(&self.latency_recorder),
             Some(&self.telemetry),
         )
@@ -643,56 +383,82 @@ impl Daemon {
 
     /// Performs graceful shutdown of the daemon.
     ///
-    /// This method shuts down the platform and releases all resources.
-    ///
-    /// # Error Handling
-    ///
-    /// Errors during shutdown are logged but do not prevent continued cleanup.
-    /// This ensures that all resources are released even if some operations fail.
-    ///
-    /// # Automatic Cleanup
-    ///
-    /// This method is called automatically by the `Drop` implementation, so
-    /// cleanup occurs even on panic or unexpected termination.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use std::path::Path;
-    /// use keyrx_daemon::daemon::Daemon;
-    /// use keyrx_daemon::platform::create_platform;
-    ///
-    /// let platform = create_platform()?;
-    /// let mut daemon = Daemon::new(platform, Path::new("config.krx"))?;
-    ///
-    /// // Run the event loop
-    /// daemon.run()?;
-    ///
-    /// // Explicit shutdown (optional - Drop will call this automatically)
-    /// daemon.shutdown();
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
+    /// Shuts down the platform (releases grabbed devices, destroys the virtual
+    /// output). Errors are logged; cleanup continues. Called by `Drop`.
     pub fn shutdown(&mut self) {
         info!("Initiating graceful shutdown...");
-
-        // Shutdown the platform
-        info!("Shutting down platform...");
         match self.platform.shutdown() {
-            Ok(()) => {
-                info!("Platform shutdown successfully");
-            }
-            Err(e) => {
-                // Log warning but continue
-                warn!("Failed to shutdown platform: {}", e);
-            }
+            Ok(()) => info!("Platform shutdown successfully"),
+            Err(e) => warn!("Failed to shutdown platform: {}", e),
         }
-
-        // Mark daemon as stopped
         self.running.store(false, Ordering::SeqCst);
-
         info!("Shutdown complete");
     }
 }
+
+/// Resolves and loads what a reload should switch to (a pending activation,
+/// else the loaded source) and makes it live. Errors leave everything as is.
+fn reload_remapping(
+    live: &mut LiveConfig,
+    shared_state: &DaemonSharedState,
+) -> Result<Option<RemappingState>, DaemonError> {
+    let source = live.reload_source(shared_state.take_pending_activation());
+    info!("Reloading configuration from {source:?}");
+    let loaded = live.load(&source)?;
+    Ok(apply_loaded(live, shared_state, loaded))
+}
+
+/// Makes `loaded` the live configuration: builds its remapping state,
+/// configures platform key blocking, and publishes it to status.
+fn apply_loaded(
+    live: &mut LiveConfig,
+    shared_state: &DaemonSharedState,
+    loaded: Option<LoadedConfig>,
+) -> Option<RemappingState> {
+    let device_config = loaded.as_ref().map(|l| &l.device_config);
+    configure_platform_blocking(device_config);
+    let remapping_state = device_config.map(RemappingState::new);
+    shared_state.set_active_config(
+        loaded.as_ref().and_then(|l| l.profile.clone()),
+        loaded.as_ref().map(|l| l.path.clone()).unwrap_or_default(),
+    );
+    match &loaded {
+        Some(l) => info!(
+            "Live config: {} ({} mappings, profile: {})",
+            l.path.display(),
+            l.device_config.mappings.len(),
+            l.profile.as_deref().unwrap_or("-")
+        ),
+        None => info!("Live config: none (pass-through)"),
+    }
+    live.set_loaded(loaded);
+    remapping_state
+}
+
+/// Windows: the low-level hook must block exactly the remapped source keys,
+/// otherwise the original keystroke leaks through (double input). Linux grabs
+/// the devices, so there is nothing to configure.
+#[cfg(target_os = "windows")]
+fn configure_platform_blocking(device_config: Option<&DeviceConfig>) {
+    use crate::platform::windows::platform_state::PlatformState;
+    use keyrx_core::config::{ConfigRoot, Metadata, Version};
+
+    let config_root = device_config.map(|dc| ConfigRoot {
+        version: Version::current(),
+        devices: vec![dc.clone()],
+        metadata: Metadata {
+            compilation_timestamp: 0,
+            compiler_version: String::new(),
+            source_hash: String::new(),
+        },
+    });
+    if let Err(e) = PlatformState::configure_blocking(config_root.as_ref()) {
+        warn!("Failed to configure key blocking: {}", e);
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn configure_platform_blocking(_device_config: Option<&DeviceConfig>) {}
 
 /// Drop implementation to ensure automatic cleanup on daemon exit.
 ///

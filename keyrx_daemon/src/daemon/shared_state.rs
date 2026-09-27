@@ -22,34 +22,17 @@
 //! - `active_profile`, `config_path`: `RwLock` - multiple readers, single writer
 //! - `start_time`: `Instant` - immutable after creation
 //!
-//! # Example
+//! # Who writes what
 //!
-//! ```no_run
-//! use std::path::Path;
-//! use std::sync::Arc;
-//! use keyrx_daemon::daemon::{Daemon, DaemonSharedState};
-//! use keyrx_daemon::platform::create_platform;
-//!
-//! // Create daemon
-//! let platform = create_platform()?;
-//! let daemon = Daemon::new(platform, Path::new("config.krx"))?;
-//!
-//! // Extract shared state for web server
-//! let shared_state = Arc::new(DaemonSharedState::from_daemon(&daemon, Some("default".to_string())));
-//!
-//! // Web server thread can now query status
-//! println!("Daemon running: {}", shared_state.is_running());
-//! println!("Active profile: {:?}", shared_state.get_active_profile());
-//! println!("Uptime: {} seconds", shared_state.uptime_secs());
-//! # Ok::<(), Box<dyn std::error::Error>>(())
-//! ```
+//! `active_profile` / `config_path` describe what the daemon has **actually
+//! loaded**; only the daemon writes them, after swapping its remapping state.
+//! Transports that activate a profile call [`DaemonSharedState::request_activation`],
+//! which records the request and raises the reload flag.
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
-
-use super::Daemon;
 
 /// Thread-safe shared state for daemon-to-web-server communication on Windows.
 ///
@@ -74,20 +57,15 @@ use super::Daemon;
 /// # Example
 ///
 /// ```no_run
-/// use std::path::Path;
-/// use std::sync::Arc;
-/// use keyrx_daemon::daemon::{Daemon, DaemonSharedState};
-/// use keyrx_daemon::platform::create_platform;
-///
-/// let platform = create_platform()?;
-/// let daemon = Daemon::new(platform, Path::new("config.krx"))?;
-/// let shared = Arc::new(DaemonSharedState::from_daemon(&daemon, Some("default".to_string())));
+/// # use keyrx_daemon::daemon::Daemon;
+/// # fn example(daemon: &Daemon) {
+/// let shared = daemon.shared_state();
 ///
 /// // Query from web server thread
 /// if shared.is_running() {
 ///     println!("Daemon has been running for {} seconds", shared.uptime_secs());
 /// }
-/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// # }
 /// ```
 #[derive(Debug)]
 pub struct DaemonSharedState {
@@ -123,6 +101,10 @@ pub struct DaemonSharedState {
     /// Linux event loop and the Windows message loop through one mechanism.
     reload_requested: Arc<AtomicBool>,
 
+    /// Profile activation requested by a transport, not yet applied by the
+    /// daemon. Taken by the daemon when it services the reload flag.
+    pending_activation: Arc<Mutex<Option<String>>>,
+
     /// Suspended flag — when true, the daemon passes all keys through unchanged.
     ///
     /// This is toggled via the system tray menu ("Suspend / Resume") or
@@ -134,9 +116,8 @@ pub struct DaemonSharedState {
 impl DaemonSharedState {
     /// Creates a new DaemonSharedState for testing or when no Daemon is available.
     ///
-    /// This constructor is useful for test scenarios or Windows test mode where
-    /// a full Daemon instance is not available. For production use with a real
-    /// Daemon, prefer [`from_daemon`](Self::from_daemon).
+    /// A real daemon creates its own instance (see `Daemon::shared_state`);
+    /// this constructor serves test mode and unit tests.
     ///
     /// # Arguments
     ///
@@ -175,51 +156,8 @@ impl DaemonSharedState {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         }
-    }
-
-    /// Creates shared state by extracting data from an existing Daemon.
-    ///
-    /// This constructor takes a reference to a `Daemon` and extracts its state
-    /// into a shareable form. The `running` flag is shared directly (Arc clone),
-    /// while other fields are copied into new Arc-wrapped containers.
-    ///
-    /// # Arguments
-    ///
-    /// * `daemon` - Reference to the daemon to extract state from
-    /// * `profile_name` - Optional name of the active profile
-    ///
-    /// # Returns
-    ///
-    /// A new `DaemonSharedState` instance ready to be wrapped in `Arc` and
-    /// shared with the web server thread.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use std::path::Path;
-    /// use std::sync::Arc;
-    /// use keyrx_daemon::daemon::{Daemon, DaemonSharedState};
-    /// use keyrx_daemon::platform::create_platform;
-    ///
-    /// let platform = create_platform()?;
-    /// let daemon = Daemon::new(platform, Path::new("default.krx"))?;
-    ///
-    /// // Extract shared state with profile name
-    /// let shared_state = Arc::new(DaemonSharedState::from_daemon(&daemon, Some("default".to_string())));
-    ///
-    /// // Pass to web server
-    /// // let app_state = AppState::new(..., Some(shared_state));
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn from_daemon(daemon: &Daemon, profile_name: Option<String>) -> Self {
-        Self::new(
-            daemon.running_flag(),
-            profile_name,
-            daemon.config_path().to_path_buf(),
-            daemon.device_count(),
-        )
-        .sharing_reload_flag(daemon.signal_handler().reload_state().flag())
     }
 
     /// Uses `flag` as the reload-request flag, so [`request_reload`](Self::request_reload)
@@ -469,6 +407,26 @@ impl DaemonSharedState {
         self.reload_requested.swap(false, Ordering::SeqCst)
     }
 
+    /// Asks the daemon to switch to profile `name` (already compiled).
+    ///
+    /// Status keeps reporting the previously loaded profile until the daemon
+    /// has loaded `name`; if loading fails, status never changes.
+    pub fn request_activation(&self, name: &str) {
+        *self
+            .pending_activation
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = Some(name.to_string());
+        self.request_reload();
+    }
+
+    /// Takes the pending activation request, if any (daemon side).
+    pub fn take_pending_activation(&self) -> Option<String> {
+        self.pending_activation
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take()
+    }
+
     /// Returns whether the daemon is currently suspended.
     ///
     /// When suspended, all keys pass through unchanged (no remapping/blocking).
@@ -523,6 +481,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         };
 
         assert!(state.is_running());
@@ -544,6 +503,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         };
 
         assert!(state.is_running());
@@ -563,6 +523,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         };
 
         // Initial profile
@@ -587,6 +548,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         };
 
         assert_eq!(
@@ -609,6 +571,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         };
 
         assert_eq!(state.get_device_count(), 2);
@@ -628,6 +591,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         };
 
         // Just created, uptime should be 0
@@ -651,6 +615,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         });
 
         // Spawn multiple reader threads
@@ -682,6 +647,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         });
 
         // Spawn multiple writer threads
@@ -718,6 +684,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         });
 
         // Atomic update of both fields
@@ -745,6 +712,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         });
 
         // Concurrent atomic updates should not deadlock
@@ -781,6 +749,7 @@ mod tests {
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
+            pending_activation: Arc::default(),
         });
 
         // Mix of readers and writers

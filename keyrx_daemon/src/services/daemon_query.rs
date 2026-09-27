@@ -79,13 +79,12 @@ impl DaemonQueryService {
         self.telemetry.clear_events()
     }
 
-    /// Records that `name` was activated and asks the daemon to reload it.
+    /// Asks the daemon to switch to the (already compiled) profile `name`.
     ///
-    /// Every activation path (REST, IPC) must call this so status reflects the
-    /// activation regardless of which transport performed it.
-    pub fn record_profile_activation(&self, name: &str) {
-        self.daemon_state.set_active_profile(Some(name.to_string()));
-        self.daemon_state.request_reload();
+    /// Every activation path (REST, MCP, WS-RPC, IPC) calls this. Status
+    /// reports `name` once the daemon has actually loaded it.
+    pub fn request_profile_activation(&self, name: &str) {
+        self.daemon_state.request_activation(name);
     }
 }
 
@@ -167,10 +166,16 @@ mod tests {
         assert!(telemetry.recent_events(10).is_empty());
     }
 
+    /// Status reports what the daemon loaded, not what was requested: the
+    /// activation is a request the daemon takes when it services the reload.
     #[test]
-    fn test_record_profile_activation_updates_status() {
+    fn test_request_profile_activation_is_a_request() {
         let (svc, _) = make_test_service();
-        svc.record_profile_activation("gaming");
-        assert_eq!(svc.get_status().active_profile.as_deref(), Some("gaming"));
+        svc.request_profile_activation("gaming");
+        assert_eq!(svc.get_status().active_profile.as_deref(), Some("test"));
+        let state = svc.shared_state();
+        assert!(state.take_reload_request());
+        assert_eq!(state.take_pending_activation().as_deref(), Some("gaming"));
+        assert_eq!(state.take_pending_activation(), None);
     }
 }

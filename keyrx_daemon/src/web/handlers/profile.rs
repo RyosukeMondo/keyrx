@@ -246,12 +246,6 @@ pub async fn activate_profile(state: &AppState, params: Value) -> Result<Value, 
         .await
         .map_err(|e| RpcError::new(INTERNAL_ERROR, format!("Failed to activate profile: {}", e)))?;
 
-    // Record in the read model and request reload — the same side effects as
-    // the REST and IPC activation paths.
-    if result.success {
-        state.daemon_query.record_profile_activation(&params.name);
-    }
-
     // Broadcast event to WebSocket subscribers
     let event = ServerMessage::Event {
         channel: "profiles".to_string(),

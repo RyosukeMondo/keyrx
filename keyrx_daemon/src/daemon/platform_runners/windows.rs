@@ -25,7 +25,8 @@ use crate::daemon::DaemonSharedState;
 ///
 /// # Arguments
 ///
-/// * `config_path` - Path to configuration file
+/// * `source` - Where the startup configuration comes from (see `daemon::live_config`)
+/// * `config_dir` - The keyrx config directory (profiles, `.active`)
 /// * `debug` - Enable debug logging
 /// * `test_mode` - Enable test mode (no keyboard capture)
 /// * `container` - Service container with all dependencies wired
@@ -34,7 +35,8 @@ use crate::daemon::DaemonSharedState;
 ///
 /// Returns `Ok(())` on success, or `Err((exit_code, message))` on failure.
 pub fn run_daemon(
-    config_path: &Path,
+    source: crate::daemon::ConfigSource,
+    config_dir: PathBuf,
     debug: bool,
     test_mode: bool,
     container: Arc<crate::container::ServiceContainer>,
@@ -74,15 +76,8 @@ pub fn run_daemon(
 
     if test_mode {
         log::info!("Test mode enabled - running with IPC infrastructure without keyboard capture");
-        return run_test_mode(config_path, debug, container);
+        return run_test_mode(debug, container);
     }
-
-    // Determine config directory (always use standard location for profile management)
-    let config_dir = {
-        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        path.push("keyrx");
-        path
-    };
 
     // Ensure single instance - kill any existing daemon before starting
     let killed_old = ensure_single_instance(&config_dir);
@@ -102,18 +97,7 @@ pub fn run_daemon(
     };
     log::info!("Configured web server port: {}", configured_port);
 
-    // Check if config file exists, warn if not
-    if !config_path.exists() {
-        log::warn!(
-            "Config file not found: {}. Running in pass-through mode.",
-            config_path.display()
-        );
-    }
-
-    log::info!(
-        "Starting keyrx daemon (Windows) with config: {}",
-        config_path.display()
-    );
+    log::info!("Starting keyrx daemon (Windows) from {source:?}");
 
     // Create platform instance
     let platform = crate::platform::create_platform().map_err(|e| {
@@ -124,18 +108,12 @@ pub fn run_daemon(
     })?;
 
     // Create the daemon
-    let mut daemon = Daemon::new(platform, config_path).map_err(daemon_error_to_exit)?;
+    let mut daemon =
+        Daemon::new(platform, source, config_dir.clone()).map_err(daemon_error_to_exit)?;
 
-    // Extract profile name from config path for shared state
-    // Example: "C:\Users\user\AppData\Roaming\keyrx\profiles\default.krx" -> "default"
-    let profile_name = config_path
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .map(|s| s.to_string());
-
-    // Create shared state for daemon-to-web-server communication (Windows IPC replacement)
-    // This enables the web API to query daemon status without Unix sockets
-    let daemon_state = Arc::new(DaemonSharedState::from_daemon(&daemon, profile_name));
+    // Status/control shared with the web server thread (Windows has no Unix
+    // socket; the web API reads this directly).
+    let daemon_state = daemon.shared_state();
 
     // Create broadcast channel for event streaming to WebSocket clients
     let (event_tx, _event_rx) = tokio::sync::broadcast::channel(1000);
@@ -258,9 +236,6 @@ pub fn run_daemon(
     // Build web UI URL with actual port
     let web_ui_url = format!("http://127.0.0.1:{}", actual_port);
 
-    // Track current config path for hot-reload detection
-    let mut current_config_path = config_path.to_path_buf();
-
     // Track last tap-hold timeout check (must poll every ~10ms)
     let mut last_timeout_check = std::time::Instant::now();
 
@@ -312,56 +287,9 @@ pub fn run_daemon(
                 last_timeout_check = std::time::Instant::now();
             }
 
-            // Check for explicit reload requests (e.g., profile config saved via web UI)
-            if daemon_state.take_reload_request() {
-                log::info!("Reload requested, reloading configuration...");
-                if let Err(e) = daemon.reload() {
-                    log::error!("Failed to reload configuration: {}", e);
-                } else {
-                    log::info!("Configuration reloaded successfully");
-                }
-            }
-
-            // Check for profile changes from web API (Windows hot-reload mechanism)
-            // On Windows, we can't use Unix signals (SIGHUP), so the web API updates
-            // the shared daemon state, and we detect the change here to trigger reload
-            let active_profile_from_state = daemon_state.get_active_profile();
-            let current_profile_from_path = current_config_path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .map(|s| s.to_string());
-
-            if active_profile_from_state != current_profile_from_path {
-                // Profile changed via web API - trigger hot reload
-                log::info!(
-                    "Profile change detected: {:?} -> {:?}, reloading configuration...",
-                    current_profile_from_path,
-                    active_profile_from_state
-                );
-
-                // Build new config path from active profile
-                if let Some(new_profile) = &active_profile_from_state {
-                    let new_config_path = config_dir
-                        .join("profiles")
-                        .join(format!("{}.krx", new_profile));
-
-                    // Trigger daemon reload with new config
-                    if let Err(e) = daemon.reload() {
-                        log::error!("Failed to reload configuration: {}", e);
-                        // Reset shared state to previous profile on failure
-                        daemon_state.set_active_profile(current_profile_from_path.clone());
-                    } else {
-                        log::info!(
-                            "Configuration reloaded successfully for profile: {}",
-                            new_profile
-                        );
-                        // Atomically update both profile and config path
-                        current_config_path = new_config_path.clone();
-                        daemon_state
-                            .set_active_config(active_profile_from_state.clone(), new_config_path);
-                    }
-                }
-            }
+            // Profile activation, saved config of the loaded profile, reload:
+            // all raise the one reload flag; the daemon resolves what to load.
+            daemon.service_reload_request();
 
             // Check if daemon is still running
             if !daemon.is_running() {
@@ -376,7 +304,7 @@ pub fn run_daemon(
                     match event {
                         TrayControlEvent::Reload => {
                             log::info!("Reloading config...");
-                            let _ = daemon.reload();
+                            daemon_state.request_reload();
                         }
                         TrayControlEvent::OpenWebUI => {
                             log::info!("Opening web UI at {}...", web_ui_url);
@@ -418,7 +346,6 @@ pub fn run_daemon(
 
 /// Run the daemon in test mode (no keyboard capture).
 fn run_test_mode(
-    _config_path: &Path,
     _debug: bool,
     _container: Arc<crate::container::ServiceContainer>,
 ) -> Result<(), (i32, String)> {

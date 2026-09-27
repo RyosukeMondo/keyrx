@@ -67,10 +67,6 @@ pub async fn activate_profile(state: &AppState, name: &str) -> Result<String, St
         .await
         .map_err(|e| format!("Failed to activate profile: {}", e))?;
 
-    if result.success {
-        state.daemon_query.record_profile_activation(name);
-    }
-
     serde_json::to_string_pretty(&json!({
         "success": result.success,
         "compileTimeMs": result.compile_time_ms,

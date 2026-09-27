@@ -1,32 +1,8 @@
 //! Configuration file loading module.
 //!
-//! This module provides functionality to load and validate .krx binary configuration files.
-//!
-//! # Memory Management Warning
-//!
-//! **IMPORTANT**: This module intentionally leaks memory to satisfy rkyv's `'static` lifetime
-//! requirement. The `load_config()` function uses `Box::leak()` to convert the loaded
-//! configuration bytes into a static reference.
-//!
-//! ## Implications
-//!
-//! - **Single Load**: If you load a configuration once at startup (typical daemon usage),
-//!   this is safe and acceptable. The memory will be freed when the program exits.
-//!
-//! - **Config Reloading**: If you implement hot-reload functionality that calls `load_config()`
-//!   multiple times, **each call will leak memory**. Repeated reloads will accumulate leaked
-//!   memory until the process terminates.
-//!
-//! ## Alternative Approaches for Hot-Reload
-//!
-//! If you need to support configuration reloading, consider:
-//!
-//! 1. **mmap with cleanup**: Use memory-mapped files with proper cleanup handlers
-//! 2. **ConfigManager**: Implement a manager that tracks allocations and provides cleanup
-//! 3. **Arc with unsafe**: Use `Arc<[u8]>` with unsafe transmute (requires careful validation)
-//!
-//! For now, this simple implementation is sufficient for the typical use case of loading
-//! configuration once at daemon startup.
+//! Loads and validates `.krx` binary configuration files into an owned
+//! [`ConfigRoot`]. The file bytes are dropped after deserialization, so loading
+//! repeatedly (hot-reload on every profile activation) does not leak memory.
 
 use std::path::Path;
 
@@ -47,7 +23,7 @@ use crate::error::ConfigError;
 ///
 /// # Returns
 ///
-/// Returns a zero-copy reference to the archived ConfigRoot on success.
+/// Returns the owned, validated ConfigRoot on success.
 ///
 /// # Errors
 ///
@@ -78,9 +54,7 @@ use crate::error::ConfigError;
 /// }
 /// # Ok::<(), keyrx_daemon::error::ConfigError>(())
 /// ```
-pub fn load_config<P: AsRef<Path>>(
-    path: P,
-) -> Result<&'static rkyv::Archived<ConfigRoot>, ConfigError> {
+pub fn load_config<P: AsRef<Path>>(path: P) -> Result<ConfigRoot, ConfigError> {
     let path_ref = path.as_ref();
 
     // Check if file exists first for better error messages
@@ -93,24 +67,17 @@ pub fn load_config<P: AsRef<Path>>(
     // Read file bytes
     let bytes = std::fs::read(path_ref).map_err(ConfigError::Io)?;
 
-    // INTENTIONAL MEMORY LEAK: Leak the bytes to get a 'static lifetime.
-    //
-    // This is necessary because rkyv's zero-copy deserialization requires the
-    // backing bytes to live for the entire lifetime of the archived reference.
-    //
-    // SAFETY: The memory will live for the entire program duration. This is
-    // acceptable for single-load scenarios (typical daemon startup), but will
-    // accumulate leaked memory if load_config() is called multiple times (e.g.,
-    // hot-reload). See module documentation for alternatives if hot-reload is needed.
-    let static_bytes: &'static [u8] = Box::leak(bytes.into_boxed_slice());
-
-    // Deserialize and validate the .krx file
-    let config = keyrx_compiler::serialize::deserialize(static_bytes).map_err(|e| {
-        ConfigError::ParseError {
+    // Validate (magic, version, hash, rkyv structure), then copy out of the
+    // archive so the bytes can be freed.
+    let archived =
+        keyrx_compiler::serialize::deserialize(&bytes).map_err(|e| ConfigError::ParseError {
             path: path_ref.to_path_buf(),
             reason: e.to_string(),
-        }
-    })?;
+        })?;
+    let config: ConfigRoot = match rkyv::Deserialize::deserialize(archived, &mut rkyv::Infallible) {
+        Ok(config) => config,
+        Err(infallible) => match infallible {},
+    };
 
     Ok(config)
 }

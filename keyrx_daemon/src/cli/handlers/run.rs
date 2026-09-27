@@ -2,11 +2,12 @@
 //!
 //! This module delegates to platform-specific implementations for running the daemon.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::cli::dispatcher::exit_codes;
 use crate::container::ServiceContainerBuilder;
+use crate::daemon::ConfigSource;
 
 /// Handle the run command - delegates to platform-specific implementation.
 ///
@@ -33,47 +34,24 @@ pub fn handle_run(
         ));
     }
 
-    // Resolve config path: use provided path or active profile
-    let config_path = resolve_config_path(config.clone())?;
+    let config_dir = crate::cli::config_dir::get_config_dir()
+        .map_err(|e| (exit_codes::CONFIG_ERROR, format!("Error: {e}")))?;
 
-    // If user explicitly provided --config, validate the file exists and is valid
-    if config.is_some() {
-        if !config_path.exists() {
-            return Err((
-                exit_codes::CONFIG_ERROR,
-                format!("Error: Config file not found: {}", config_path.display()),
-            ));
+    // `--config FILE` overrides the active profile at startup; without it the
+    // daemon follows the active profile (see `daemon::live_config`).
+    let source = match config {
+        Some(path) => {
+            validate_config_file(&path)?;
+            ConfigSource::File(path)
         }
-        if !config_path.is_file() {
-            return Err((
-                exit_codes::CONFIG_ERROR,
-                format!("Error: Not a file: {}", config_path.display()),
-            ));
+        None => {
+            ensure_active_profile(&config_dir);
+            ConfigSource::ActiveProfile
         }
-        // Validate .krx content early to fail fast on invalid configs
-        let bytes = std::fs::read(&config_path).map_err(|e| {
-            (
-                exit_codes::CONFIG_ERROR,
-                format!("Error: Cannot read config file: {}", e),
-            )
-        })?;
-        keyrx_compiler::serialize::deserialize(&bytes).map_err(|e| {
-            (
-                exit_codes::CONFIG_ERROR,
-                format!("Error: Invalid config file: {}", e),
-            )
-        })?;
-    }
-
-    // Get config directory for ServiceContainer
-    let config_dir = {
-        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        path.push("keyrx");
-        path
     };
 
     // Build ServiceContainer with all dependencies wired
-    let mut builder = ServiceContainerBuilder::new(config_dir);
+    let mut builder = ServiceContainerBuilder::new(config_dir.clone());
 
     // Configure test mode if enabled
     if test_mode {
@@ -92,18 +70,12 @@ pub fn handle_run(
     // Delegate to platform-specific handler with ServiceContainer
     #[cfg(target_os = "linux")]
     return crate::daemon::platform_runners::linux::run_daemon(
-        &config_path,
-        debug,
-        test_mode,
-        container,
+        source, config_dir, debug, test_mode, container,
     );
 
     #[cfg(target_os = "windows")]
     return crate::daemon::platform_runners::windows::run_daemon(
-        &config_path,
-        debug,
-        test_mode,
-        container,
+        source, config_dir, debug, test_mode, container,
     );
 
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]
@@ -115,90 +87,47 @@ pub fn handle_run(
     ))
 }
 
-/// Resolve configuration file path from optional argument or active profile.
-fn resolve_config_path(config: Option<PathBuf>) -> Result<PathBuf, (i32, String)> {
-    match config {
-        Some(path) => Ok(path),
-        None => {
-            // Get config directory
-            let mut config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-            config_dir.push("keyrx");
+/// Fails fast on an explicit `--config` that is missing or not a valid `.krx`.
+fn validate_config_file(path: &Path) -> Result<(), (i32, String)> {
+    let err = |msg: String| (exit_codes::CONFIG_ERROR, msg);
+    if !path.is_file() {
+        return Err(err(format!(
+            "Error: Config file not found: {}",
+            path.display()
+        )));
+    }
+    let bytes =
+        std::fs::read(path).map_err(|e| err(format!("Error: Cannot read config file: {e}")))?;
+    keyrx_compiler::serialize::deserialize(&bytes)
+        .map_err(|e| err(format!("Error: Invalid config file: {e}")))?;
+    Ok(())
+}
 
-            // Try to initialize ProfileManager and get/create default profile
-            use crate::config::{ProfileManager, ProfileTemplate};
-            match ProfileManager::new(config_dir.clone()) {
-                Ok(manager) => {
-                    // Check if we have an active profile
-                    match manager.get_active() {
-                        Ok(Some(active)) => {
-                            eprintln!("[INFO] Using active profile: {}", active);
-                            let mut profile_path = config_dir.clone();
-                            profile_path.push("profiles");
-                            profile_path.push(format!("{}.krx", active));
-                            Ok(profile_path)
-                        }
-                        Ok(None) => {
-                            // No active profile - try to create and activate default
-                            eprintln!(
-                                "[INFO] No active profile found. Creating default profile..."
-                            );
+/// First run without `--config`: create and activate a blank `default`
+/// profile so the UI has something to edit. Failures only mean pass-through.
+fn ensure_active_profile(config_dir: &Path) {
+    use crate::config::{ProfileManager, ProfileTemplate};
 
-                            // Create default profile with blank template if it doesn't exist
-                            let profile_exists = manager.get("default").is_some();
-                            if !profile_exists {
-                                eprintln!("[INFO] Creating default profile with blank template...");
-                                if let Err(e) = manager.create("default", ProfileTemplate::Blank) {
-                                    eprintln!(
-                                        "[WARN] Failed to create default profile: {}. Running in pass-through mode.",
-                                        e
-                                    );
-                                }
-                            } else {
-                                eprintln!("[INFO] Default profile exists, activating...");
-                            }
-
-                            // Activate default profile
-                            if let Err(e) = manager.activate("default") {
-                                eprintln!(
-                                    "[WARN] Failed to activate default profile: {}. Running in pass-through mode.",
-                                    e
-                                );
-                            }
-
-                            // Return path to default.krx
-                            let mut profile_path = config_dir.clone();
-                            profile_path.push("profiles");
-                            profile_path.push("default.krx");
-                            eprintln!(
-                                "[INFO] Using default profile at: {}",
-                                profile_path.display()
-                            );
-                            Ok(profile_path)
-                        }
-                        Err(e) => {
-                            // Error reading active profile - fall back
-                            eprintln!(
-                                "[WARN] Failed to read active profile: {}. Using default.krx fallback.",
-                                e
-                            );
-                            let mut default_path = config_dir;
-                            default_path.push("default.krx");
-                            Ok(default_path)
-                        }
-                    }
-                }
-                Err(e) => {
-                    // Failed to initialize ProfileManager - fall back to old behavior
-                    eprintln!(
-                        "[WARN] Failed to initialize ProfileManager: {}. Using default.krx fallback.",
-                        e
-                    );
-                    let mut default_path = config_dir;
-                    default_path.push("default.krx");
-                    Ok(default_path)
-                }
-            }
+    let manager = match ProfileManager::new(config_dir.to_path_buf()) {
+        Ok(manager) => manager,
+        Err(e) => {
+            log::warn!("Cannot read profiles ({e}); starting in pass-through mode");
+            return;
         }
+    };
+    if let Ok(Some(active)) = manager.get_active() {
+        log::info!("Starting from active profile '{active}'");
+        return;
+    }
+    log::info!("No active profile; activating a blank 'default' profile");
+    if manager.get("default").is_none() {
+        if let Err(e) = manager.create("default", ProfileTemplate::Blank) {
+            log::warn!("Failed to create default profile: {e}");
+            return;
+        }
+    }
+    if let Err(e) = manager.activate("default") {
+        log::warn!("Failed to activate default profile: {e}");
     }
 }
 
@@ -207,10 +136,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_resolve_config_path_with_explicit_path() {
-        let path = PathBuf::from("/tmp/test.krx");
-        let result = resolve_config_path(Some(path.clone()));
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), path);
+    fn test_explicit_config_must_exist() {
+        let err = validate_config_file(Path::new("/nonexistent/test.krx")).unwrap_err();
+        assert_eq!(err.0, exit_codes::CONFIG_ERROR);
+        assert!(err.1.contains("not found"));
+    }
+
+    #[test]
+    fn test_explicit_config_must_be_krx() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("bogus.krx");
+        std::fs::write(&path, b"not a krx").unwrap();
+        let err = validate_config_file(&path).unwrap_err();
+        assert!(err.1.contains("Invalid config file"));
     }
 }

@@ -259,10 +259,6 @@ async fn activate_profile(
             ));
         }
 
-        // Record in the read model and request reload so status and the
-        // daemon loop pick it up (even if reactivating the same profile name).
-        state.daemon_query.record_profile_activation(&name);
-
         // Reload simulation service with the new profile
         if let Err(e) = state.simulation_service.load_profile(&name) {
             log::warn!("Failed to load profile into simulation service: {}", e);
@@ -309,12 +305,8 @@ async fn reload_active_profile(
         ));
     }
 
-    // If recompiled, signal the daemon to pick up the new config
+    // If recompiled (ProfileService already asked the daemon to reload)
     if result.recompiled {
-        if let Some(ref daemon_state) = state.daemon_state {
-            daemon_state.request_reload();
-        }
-
         // Broadcast event to WebSocket subscribers
         use crate::web::rpc_types::ServerMessage;
         let active = state.profile_service.get_active_profile().await;

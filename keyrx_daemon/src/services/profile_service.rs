@@ -29,7 +29,7 @@
 //! ```
 
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use crate::config::{ActivationResult, ProfileError, ProfileManager, ProfileTemplate};
 use crate::daemon::DaemonSharedState;
@@ -57,7 +57,10 @@ pub struct ProfileInfo {
 /// ProfileService is `Send + Sync` and can be shared across threads via `Arc`.
 pub struct ProfileService {
     profile_manager: Arc<ProfileManager>,
-    daemon_state: Option<Arc<DaemonSharedState>>,
+    /// The running daemon in this process, attached once by the web layer.
+    /// Activation / config changes are forwarded to it from here, so every
+    /// transport (REST, MCP, WS-RPC) reaches the daemon the same way.
+    daemon_state: OnceLock<Arc<DaemonSharedState>>,
 }
 
 impl ProfileService {
@@ -85,7 +88,7 @@ impl ProfileService {
         log::debug!("ProfileService initialized");
         Self {
             profile_manager,
-            daemon_state: None,
+            daemon_state: OnceLock::new(),
         }
     }
 
@@ -94,14 +97,12 @@ impl ProfileService {
         &self.profile_manager
     }
 
-    /// Sets the daemon shared state for automatic reload triggering.
-    ///
-    /// When set, `set_profile_config()` will automatically trigger a daemon
-    /// reload if the modified profile is the currently active one. This
-    /// eliminates the need for callers to handle reload logic.
-    pub fn with_daemon_state(mut self, state: Arc<DaemonSharedState>) -> Self {
-        self.daemon_state = Some(state);
-        self
+    /// Attaches the running daemon so activations and saved configs of the
+    /// loaded profile take effect. Only the first attachment counts.
+    pub fn attach_daemon_state(&self, state: Arc<DaemonSharedState>) {
+        if self.daemon_state.set(state).is_err() {
+            log::debug!("ProfileService already attached to a daemon");
+        }
     }
 
     /// Lists all available profiles.
@@ -273,70 +274,6 @@ impl ProfileService {
                     activation_result.compile_time_ms,
                     activation_result.reload_time_ms
                 );
-
-                // Configure Windows key blocking based on actual profile mappings
-                #[cfg(target_os = "windows")]
-                {
-                    use crate::platform::windows::platform_state::PlatformState;
-
-                    log::info!("Configuring key blocking for profile: {}", name_owned);
-
-                    // Load the activated profile's .krx file and extract all mapped keys
-                    // Note: This is also a blocking operation (file I/O + deserialization)
-                    let config_dir = crate::cli::config_dir::get_config_dir()
-                        .map_err(|e| ProfileError::NotFound(format!("Config dir error: {}", e)))?;
-                    let profiles_dir = config_dir.join("profiles");
-                    let krx_path = profiles_dir.join(format!("{}.krx", name_owned));
-
-                    if let Ok(config_data) = std::fs::read(&krx_path) {
-                        use keyrx_compiler::serialize::deserialize as deserialize_krx;
-                        use rkyv::Deserialize;
-
-                        // Deserialize .krx file (validates magic, version, hash)
-                        let archived = deserialize_krx(&config_data);
-                        match archived {
-                            Ok(archived_config) => {
-                                // Deserialize from archived format to ConfigRoot
-                                let config: keyrx_core::config::ConfigRoot = archived_config
-                                    .deserialize(&mut rkyv::Infallible)
-                                    .map_err(|_| {
-                                        ProfileError::NotFound("Deserialization failed".to_string())
-                                    })?;
-                                log::info!(
-                                    "✓ Loaded profile config: {} devices, {} total mappings",
-                                    config.devices.len(),
-                                    config
-                                        .devices
-                                        .iter()
-                                        .map(|d| d.mappings.len())
-                                        .sum::<usize>()
-                                );
-
-                                match PlatformState::configure_blocking(Some(&config)) {
-                                    Ok(()) => {
-                                        log::info!("✓ Key remapping configured successfully");
-                                    }
-                                    Err(e) => {
-                                        log::error!("✗ Failed to configure key remapping: {}", e);
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                log::error!("✗ Failed to deserialize profile config: {}", e);
-                                // Clear any existing blocks if config load fails
-                                if let Err(e) = PlatformState::configure_blocking(None) {
-                                    log::error!("✗ Failed to clear key blocking: {}", e);
-                                }
-                            }
-                        }
-                    } else {
-                        log::error!("✗ Failed to read .krx file: {:?}", krx_path);
-                        // Clear any existing blocks if file read fails
-                        if let Err(e) = PlatformState::configure_blocking(None) {
-                            log::error!("✗ Failed to clear key blocking: {}", e);
-                        }
-                    }
-                }
             } else {
                 log::error!(
                     "Profile '{}' activation failed: {}",
@@ -354,13 +291,18 @@ impl ProfileService {
         .await
         .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
+        if result.success {
+            if let Some(daemon_state) = self.daemon_state.get() {
+                daemon_state.request_activation(name);
+            }
+        }
         Ok(result)
     }
 
     /// Reload the active profile, recompiling if .rhai is newer than .krx.
     ///
-    /// Checks timestamps and only recompiles when needed. After recompilation,
-    /// configures Windows key blocking and signals the daemon to reload.
+    /// Checks timestamps and only recompiles when needed. After recompilation
+    /// the attached daemon (if any) is asked to reload.
     pub async fn reload_active_profile(&self) -> Result<crate::config::ReloadResult, ProfileError> {
         log::info!("Reloading active profile (with timestamp check)");
 
@@ -373,34 +315,6 @@ impl ProfileService {
                 // Get the active profile name for key blocking config
                 let active_name = manager.get_active()?.unwrap_or_default();
 
-                #[cfg(target_os = "windows")]
-                {
-                    use crate::platform::windows::platform_state::PlatformState;
-
-                    let config_dir = crate::cli::config_dir::get_config_dir()
-                        .map_err(|e| ProfileError::NotFound(format!("Config dir error: {}", e)))?;
-                    let krx_path = config_dir
-                        .join("profiles")
-                        .join(format!("{}.krx", active_name));
-
-                    if let Ok(config_data) = std::fs::read(&krx_path) {
-                        use keyrx_compiler::serialize::deserialize as deserialize_krx;
-                        use rkyv::Deserialize;
-
-                        if let Ok(archived_config) = deserialize_krx(&config_data) {
-                            let config: keyrx_core::config::ConfigRoot = archived_config
-                                .deserialize(&mut rkyv::Infallible)
-                                .map_err(|_| {
-                                    ProfileError::NotFound("Deserialization failed".to_string())
-                                })?;
-                            if let Err(e) = PlatformState::configure_blocking(Some(&config)) {
-                                log::error!("Failed to configure key remapping: {}", e);
-                            }
-                        }
-                    }
-                }
-
-                // The caller requests the daemon reload via DaemonSharedState.
                 log::info!(
                     "Active profile '{}' recompiled ({}ms)",
                     active_name,
@@ -413,6 +327,11 @@ impl ProfileService {
         .await
         .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
+        if result.recompiled && result.success {
+            if let Some(daemon_state) = self.daemon_state.get() {
+                daemon_state.request_reload();
+            }
+        }
         Ok(result)
     }
 
@@ -838,7 +757,7 @@ impl ProfileService {
         log::info!("Config saved and recompiled for profile '{}'", name);
 
         // Trigger daemon reload if the modified profile is currently active
-        if let Some(ref daemon_state) = self.daemon_state {
+        if let Some(daemon_state) = self.daemon_state.get() {
             let active = daemon_state.get_active_profile();
             if active.as_deref() == Some(name) {
                 log::info!(

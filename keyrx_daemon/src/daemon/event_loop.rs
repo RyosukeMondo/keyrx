@@ -175,7 +175,7 @@ fn inject_timeout_events(
 
 /// Handles timeout checks when no input event is available.
 fn handle_timeout_events(
-    remapping_state: &mut Option<&mut RemappingState>,
+    remapping_state: &mut Option<RemappingState>,
     platform: &mut Box<dyn Platform>,
     stats: &mut EventLoopStats,
 ) {
@@ -188,14 +188,17 @@ fn handle_timeout_events(
 
 /// Logs error when reload callback fails.
 fn log_reload_error(e: &DaemonError) {
-    warn!("Configuration reload failed: {}", e);
+    warn!(
+        "Configuration reload failed, keeping current mappings: {}",
+        e
+    );
 }
 
 /// Handles event capture errors by checking timeouts and sleeping.
 fn handle_capture_error(
     platform_waited: bool,
     last_timeout_check: &mut Instant,
-    remapping_state: &mut Option<&mut RemappingState>,
+    remapping_state: &mut Option<RemappingState>,
     platform: &mut Box<dyn Platform>,
     stats: &mut EventLoopStats,
 ) {
@@ -216,7 +219,7 @@ fn handle_capture_error(
 #[allow(clippy::too_many_arguments)]
 fn process_input_event(
     event: keyrx_core::runtime::KeyEvent,
-    remapping_state: &mut Option<&mut RemappingState>,
+    remapping_state: &mut Option<RemappingState>,
     platform: &mut Box<dyn Platform>,
     stats: &mut EventLoopStats,
     latency_recorder: Option<&LatencyRecorder>,
@@ -267,7 +270,7 @@ fn process_input_event(
     if let Some(t) = telemetry {
         t.push_event(event_description(&event, input_keycode, &output_desc));
         if mapping_triggered {
-            if let Some(rs) = remapping_state.as_deref() {
+            if let Some(rs) = remapping_state.as_ref() {
                 t.update_state(build_telemetry_state(rs.state()));
             }
         }
@@ -291,7 +294,7 @@ fn ensure_timestamp(event: keyrx_core::runtime::KeyEvent) -> keyrx_core::runtime
 
 fn process_remapping(
     event: &keyrx_core::runtime::KeyEvent,
-    remapping_state: &mut Option<&mut RemappingState>,
+    remapping_state: &mut Option<RemappingState>,
 ) -> (
     Vec<keyrx_core::runtime::KeyEvent>,
     Option<&'static str>,
@@ -390,9 +393,10 @@ fn broadcast_event(
 /// * `platform` - Platform abstraction for input/output operations
 /// * `running` - Atomic flag controlling loop execution
 /// * `signal_handler` - Signal handler for reload detection
-/// * `reload_callback` - Callback to invoke when reload is requested
+/// * `reload_callback` - Called when a reload is requested; returns the remapping
+///   state to switch to (`None` = pass-through). On `Err` the current state stays.
 /// * `event_broadcaster` - Optional broadcaster for real-time WebSocket updates
-/// * `remapping_state` - Optional remapping state for key remapping (KeyLookup + DeviceState)
+/// * `remapping_state` - The live remapping state, replaced in place on reload
 /// * `latency_recorder` - Optional lock-free latency recorder for metrics
 ///
 /// # Event Processing Flow
@@ -410,7 +414,7 @@ fn broadcast_event(
 /// # Signal Handling
 ///
 /// - **SIGTERM/SIGINT**: Sets the running flag to false, causing graceful exit
-/// - **SIGHUP**: Calls the reload callback to reload configuration
+/// - **SIGHUP** / reload flag: swaps in the state returned by the reload callback
 ///
 /// # Performance
 ///
@@ -442,8 +446,8 @@ fn broadcast_event(
 ///         running,
 ///         signal_handler,
 ///         || Err(DaemonError::RuntimeError("Reload not supported".to_string())),
-///         None, // No event broadcaster
-///         None, // No remapping state (pass-through mode)
+///         None,      // No event broadcaster
+///         &mut None, // No remapping state (pass-through mode)
 ///         None, // No latency recording
 ///         None, // No telemetry
 ///     )
@@ -456,12 +460,12 @@ pub fn run_event_loop<F>(
     signal_handler: &SignalHandler,
     mut reload_callback: F,
     event_broadcaster: Option<&EventBroadcaster>,
-    mut remapping_state: Option<&mut RemappingState>,
+    remapping_state: &mut Option<RemappingState>,
     latency_recorder: Option<&LatencyRecorder>,
     telemetry: Option<&DaemonTelemetry>,
 ) -> Result<(), DaemonError>
 where
-    F: FnMut() -> Result<(), DaemonError>,
+    F: FnMut() -> Result<Option<RemappingState>, DaemonError>,
 {
     info!("Starting event processing loop");
 
@@ -473,7 +477,15 @@ where
         // Check for SIGHUP (reload request)
         if signal_handler.check_reload() {
             info!("Reload requested (SIGHUP or profile activation)");
-            reload_callback().unwrap_or_else(|e| log_reload_error(&e));
+            match reload_callback() {
+                Ok(new_state) => {
+                    *remapping_state = new_state;
+                    if let Some(t) = telemetry {
+                        t.update_state(TelemetryState::empty());
+                    }
+                }
+                Err(e) => log_reload_error(&e),
+            }
         }
 
         // Capture and process input event from platform
@@ -481,7 +493,7 @@ where
             Ok(event) => {
                 process_input_event(
                     event,
-                    &mut remapping_state,
+                    remapping_state,
                     platform,
                     &mut stats,
                     latency_recorder,
@@ -499,7 +511,7 @@ where
                 handle_capture_error(
                     matches!(e, crate::platform::PlatformError::NoInput),
                     &mut last_timeout_check,
-                    &mut remapping_state,
+                    remapping_state,
                     platform,
                     &mut stats,
                 );

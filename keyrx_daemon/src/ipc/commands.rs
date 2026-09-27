@@ -81,7 +81,7 @@ impl IpcCommandHandler {
                     result.compile_time_ms,
                     result.reload_time_ms
                 );
-                self.query.record_profile_activation(&name);
+                self.query.request_profile_activation(&name);
                 return IpcResponse::ProfileActivated { name };
             }
             Ok(result) => format!(

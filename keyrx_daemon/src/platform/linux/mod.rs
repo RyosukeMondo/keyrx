@@ -72,15 +72,29 @@ pub struct LinuxPlatform {
     device_manager: Option<DeviceManager>,
     /// Virtual output device for injecting remapped events.
     output_device: Option<UinputOutput>,
+    /// Which keyboards to grab (glob on the device name; `*` = all).
+    device_pattern: String,
+    /// Name of the virtual output device.
+    output_name: String,
 }
 
 impl LinuxPlatform {
     /// Creates a new LinuxPlatform instance with no devices attached.
     #[must_use]
     pub fn new() -> Self {
+        Self::scoped("*", "keyrx")
+    }
+
+    /// Creates a platform that grabs only keyboards matching `device_pattern`
+    /// and injects through an output device called `output_name`. Lets tests
+    /// drive a real daemon without touching the user's keyboards.
+    #[must_use]
+    pub fn scoped(device_pattern: &str, output_name: &str) -> Self {
         Self {
             device_manager: None,
             output_device: None,
+            device_pattern: device_pattern.to_string(),
+            output_name: output_name.to_string(),
         }
     }
 
@@ -130,7 +144,7 @@ impl LinuxPlatform {
         }
 
         // Create virtual output device for event injection
-        let output_device = UinputOutput::create("keyrx")?;
+        let output_device = UinputOutput::create(&self.output_name)?;
         eprintln!(
             "[keyrx] Created virtual output device: {}",
             output_device.name()
@@ -360,10 +374,9 @@ impl crate::platform::Platform for LinuxPlatform {
         use crate::platform::PlatformError;
         use keyrx_core::config::mappings::DeviceIdentifier;
 
-        // Create a wildcard configuration that matches all keyboards
         let wildcard_config = DeviceConfig {
             identifier: DeviceIdentifier {
-                pattern: "*".to_string(),
+                pattern: self.device_pattern.clone(),
             },
             mappings: vec![],
         };

@@ -5,14 +5,15 @@
 
 #![cfg(target_os = "linux")]
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 /// Run the daemon on Linux.
 ///
 /// # Arguments
 ///
-/// * `config_path` - Path to configuration file
+/// * `source` - Where the startup configuration comes from (see `daemon::live_config`)
+/// * `config_dir` - The keyrx config directory (profiles, `.active`)
 /// * `debug` - Enable debug logging
 /// * `test_mode` - Enable test mode (no keyboard capture)
 /// * `container` - Service container with all dependencies wired
@@ -21,7 +22,8 @@ use std::sync::Arc;
 ///
 /// Returns `Ok(())` on success, or `Err((exit_code, message))` on failure.
 pub fn run_daemon(
-    config_path: &Path,
+    source: crate::daemon::ConfigSource,
+    config_dir: PathBuf,
     debug: bool,
     test_mode: bool,
     container: Arc<crate::container::ServiceContainer>,
@@ -55,13 +57,10 @@ pub fn run_daemon(
 
     if test_mode {
         log::info!("Test mode enabled - running with IPC infrastructure without keyboard capture");
-        return run_test_mode(config_path, debug, container);
+        return run_test_mode(config_dir);
     }
 
-    log::info!(
-        "Starting keyrx daemon with config: {}",
-        config_path.display()
-    );
+    log::info!("Starting keyrx daemon from {source:?}");
 
     // Create platform instance
     let platform = crate::platform::create_platform().map_err(|e| {
@@ -72,7 +71,7 @@ pub fn run_daemon(
     })?;
 
     // Create the daemon
-    let mut daemon = Daemon::new(platform, config_path).map_err(daemon_error_to_exit)?;
+    let mut daemon = Daemon::new(platform, source, config_dir).map_err(daemon_error_to_exit)?;
 
     log::info!(
         "Daemon initialized with {} device(s)",
@@ -111,18 +110,9 @@ pub fn run_daemon(
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
 
-    // Extract profile name from config path
-    let profile_name = config_path
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .map(|s| s.to_string());
-
     // The single read model shared by the web API and the IPC server (same
     // pattern as Windows), so both report identical status.
-    let daemon_state = Arc::new(crate::daemon::DaemonSharedState::from_daemon(
-        &daemon,
-        profile_name,
-    ));
+    let daemon_state = daemon.shared_state();
     let daemon_query = Arc::new(crate::services::DaemonQueryService::new(
         Arc::clone(&daemon_state),
         daemon.telemetry(),
@@ -186,7 +176,7 @@ pub fn run_daemon(
                 match event {
                     TrayControlEvent::Reload => {
                         log::info!("Reload requested via tray menu");
-                        // TODO: Implement config reload
+                        daemon_state.request_reload();
                     }
                     TrayControlEvent::OpenWebUI => {
                         log::info!("Open Web UI requested via tray menu");
@@ -257,11 +247,7 @@ fn start_production_ipc_server(
 }
 
 /// Run the daemon in test mode (no keyboard capture).
-fn run_test_mode(
-    _config_path: &Path,
-    _debug: bool,
-    _container: Arc<crate::container::ServiceContainer>,
-) -> Result<(), (i32, String)> {
+fn run_test_mode(config_dir: PathBuf) -> Result<(), (i32, String)> {
     use crate::config::ProfileManager;
     use crate::daemon::ExitCode;
     use crate::daemon_config::DaemonConfig;
@@ -284,13 +270,6 @@ fn run_test_mode(
             format!("Invalid configuration: {}", e),
         )
     })?;
-
-    // Determine config directory
-    let config_dir = {
-        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        path.push("keyrx");
-        path
-    };
 
     // Initialize ProfileManager (without RwLock - ProfileManager has internal mutability)
     let profile_manager = match ProfileManager::new(config_dir.clone()) {
