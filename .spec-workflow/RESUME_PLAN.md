@@ -180,7 +180,9 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 
 ## Phase D — UI functional gaps
 
-- [ ] **D1 — Device rename API + UI.**
+- [ ] **D1 — Device rename API + UI.** (2026-09-27: backend rename is
+  `PUT /api/devices/:id/name`; the UI device-*scope* chain was dead — scope was
+  removed from the backend in Task 27 — and was deleted in 6ff105a4.)
   Backend endpoint missing; UI TODOs at `DevicesPage.tsx:304,328,338,447`; tests
   skipped at `DevicesPage.test.tsx:1292,1381`. Action: add backend rename endpoint,
   wire UI, un-skip tests. *Accept:* rename works end-to-end; tests pass.
@@ -276,6 +278,25 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
     diagnostics/config ignored KEYRX_CONFIG_DIR) → one resolver, pure + tested
     without env mutation (fixed the HOME race). compile_time `> 0` and script
     cwd assumptions fixed.
+- [x] **G6 — Config-editing sprawl.** → DONE (c808cc18, 6ff105a4, a45c56a8).
+    REST /api/config* was a second copy of ConfigService with an IPC self-call;
+    neither copy compiled or reloaded. Now REST → ConfigService →
+    ProfileService::set_profile_config (compile + reload if loaded). Found the
+    wider class: UI called routes that don't exist (global layout, config
+    client, device scope) → REST global-layout added, dead UI code removed,
+    `tests/api_route_contract_test.rs` guards it. DevicesPage "Saved" feedback
+    restored (the 2 long-failing UI tests).
+    Still open: UI `validateConfig` POSTs `/api/profiles/validate` (server only
+    has `/profiles/:name/validate`; the GET-based route check can't see it
+    because `/profiles/:name` matches) → add after the profiles.rs split (G5).
+- [ ] **G7 — Profile swap with keys held.** Swapping RemappingState while a
+  remapped key is down can leave its output pressed (release maps differently).
+  Release held outputs before the swap.
+- [ ] **G8 — Only the first `device_start` block is applied** (warned at load);
+  the Linux platform grabs `*` regardless of config patterns.
+- [ ] **G9 — UI lint debt:** `npm run lint` has 14 errors in untouched files
+  (e.g. `MonitorPage.tsx` refs-during-render). EventRecord `layer` is always
+  `'Base'` (see D3). `scripts/verify/{ssot,contracts}.sh` are stubs (exit 0).
 - [NEXT] **G5 — Oversize files** (gate made real in dd1d1638; 14 files being
   split; `windows.rs` handed to the G3 request) (>500 code lines): `web/api/diagnostics.rs`,
   `platform_runners/windows.rs`, `web/api/profiles.rs`.
