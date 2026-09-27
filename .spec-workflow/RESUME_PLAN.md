@@ -196,17 +196,90 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 
 ## Phase E — Architecture remediation decision
 
-- [ ] **E1 — Decide fate of architecture-remediation / architecture-completion specs.**
+- [x] **E1 — Decide fate of architecture-remediation / architecture-completion specs.**
   `architecture-remediation/tasks.md` (52 open, 0 started) and
   `architecture-completion/tasks.md` (30 open) overlap heavily with the COMPLETED
   `comprehensive-architecture-refactoring` spec. Action: audit overlap; for each open
   task, mark it (a) already-done-elsewhere, (b) genuinely-still-needed, or (c) obsolete.
   Write the verdict into those tasks.md files. If genuinely-needed work remains, add
   concrete slices to Phase F below. *Accept:* clear documented verdict; no ambiguity.
+  → DONE (2026-09-27): verified all 82 tasks against code (4 parallel research passes,
+    no full builds). architecture-remediation: 35 done-elsewhere / 10 still-needed /
+    7 obsolete. architecture-completion: 21 done-elsewhere / 5 still-needed / 4 obsolete.
+    Most of both specs is stale — superseded by comprehensive-architecture-refactoring
+    plus the C/G/L work since. Genuinely-needed items promoted to Phase F below.
 
-## Phase F — Genuinely-needed architecture work (populated by E1, if any)
+## Phase F — Genuinely-needed architecture work (populated by E1)
 
-- [ ] *(empty until E1 determines what, if anything, is real)*
+- [ ] **F1 — Split `config/profile_manager.rs` (712 lines) into a ProfileRepository +
+  orchestrator; stop swallowing lock-poison errors.** It's the only file-size-gate
+  violation this repo controls directly (the other two are `platform_runners/windows.rs`,
+  delegated to the Windows session per G3/G5, and F6 below) and it still has 9
+  `.expect("...poisoned")`/`.unwrap()` calls in production code (e.g. lines 672, 710,
+  741, 856, 896, 929, 970, 1002) that don't propagate errors to the caller.
+  `config/profile_compiler.rs` already shows the pattern (compilation logic extracted,
+  `profile_manager.rs::compile_and_reload` delegates to it) — do the same for file I/O
+  (scan_profiles/create/list/load_active_profile/clear_active_profile_file).
+  *Accept:* `profile_manager.rs` ≤500 code lines; new `profile_repository.rs` owns the
+  I/O; 0 unwrap/expect outside `#[cfg(test)]`; `scripts/verify/file-sizes.sh --update`
+  drops it from the baseline.
+
+- [ ] **F2 — Finish or delete the orphaned e2e test-harness split.**
+  `keyrx_daemon/tests/harness/{mod,harness,error,config,assertions}.rs` and
+  `tests/virtual/{mod,basic,complex,layers,passthrough,advanced_output,advanced_sequences}.rs`
+  exist with real content (commit `90834f9d`) but are referenced by zero `mod`
+  declarations anywhere in the repo. The files that actually compile are still the
+  3386-line `tests/e2e_harness.rs` (pulled in via `mod e2e_harness;` from
+  `virtual_e2e_test.rs:33`, `tap_hold_e2e_test.rs`, `e2e_windows_basic_test.rs`,
+  `e2e_windows_bugs_test.rs`) and the 1904-line `tests/virtual_e2e_test.rs`. Someone
+  split the code once and never rewired the callers or deleted the old files — pick a
+  side. *Accept:* either (a) rewire the 4 dependent test files to `mod harness;`/
+  `mod virtual;` and delete both monoliths, verified by
+  `cargo check -p keyrx_daemon --tests`, or (b) delete the orphaned `tests/harness/`
+  and `tests/virtual/` trees. No dead duplicate code either way.
+
+- [ ] **F3 — Wire `EnvProvider`/`FileSystem` traits into `ProfileManager`/`ConfigService`,
+  or delete them.** `keyrx_daemon/src/traits/{env.rs,filesystem.rs}` define real
+  traits + Real/Mock impls but have zero consumers outside their own module; ~20 raw
+  `std::env::var`/`fs::` call sites remain scattered in `profile_manager.rs`/
+  `config_service.rs`. *Accept:* `ProfileManager`/`ConfigService` take an injected
+  `EnvProvider`/`FileSystem` (preferred — makes them mockable in tests), or the traits
+  are removed if injection isn't worth it here; either way
+  `grep -rl 'EnvProvider\|FileSystem' keyrx_daemon/src` shows real consumers or the
+  traits are gone.
+
+- [ ] **F4 — Adopt the frontend logger; remove raw `console.*` calls.**
+  `keyrx_ui/src/utils/logger.ts` exists but 96 raw `console.(log|error|warn|info)`
+  calls remain in non-test UI source (e.g. `ConfigurationPanel.tsx`,
+  `RhaiSyncEngine.tsx`, `metricsStore.ts`, `useSimulation.ts`) — the logger was built
+  but never adopted. *Accept:* `grep -rn "console\.\(log\|error\|warn\|info\)"
+  keyrx_ui/src --include=*.ts --include=*.tsx | grep -v test` returns 0 (or only
+  intentionally-excepted files); messages go through `logger.ts`'s structured format.
+
+- [ ] **F5 — Shrink the stale file-size baseline.**
+  `scripts/verify/file-size-baseline.list` still lists 15 files; 9 of them
+  (`cli/error.rs`, `cli/profiles.rs`, `daemon/error.rs` [now `error.rs`],
+  `platform/linux/keycode_map.rs`, `platform/windows/rawinput.rs`,
+  `web/api/diagnostics.rs`, `web/api/profiles.rs`, plus 2 UI files) were already
+  split in recent commits and no longer exist at those paths, so the baseline is
+  actively hiding how close the gate is to fully green. *Accept:* run
+  `scripts/verify/file-sizes.sh --update` after F1 and F6 land; the baseline shrinks
+  to only genuinely-outstanding files (`platform_runners/windows.rs`, pending G3).
+
+- [ ] **F6 — Split `config/simulation_engine.rs` (529 lines).** The one file-size-gate
+  violation with no open task anywhere tracking it (unlike `profile_manager.rs` → F1,
+  and `platform_runners/windows.rs` → delegated G3/G5). *Accept:*
+  `simulation_engine.rs` ≤500 code lines, logic extracted into a focused sibling
+  module, `scripts/verify/file-sizes.sh` passes without it in the baseline.
+
+- [ ] **F-backlog — lower-impact or process items, do opportunistically:** remove
+  `eprintln!` outside `cli/` (6 files: `config/layout_manager.rs`, `web/ws_rpc.rs`,
+  `platform/linux/{mod,input_capture,output_injection}.rs`, `main.rs`); add
+  architecture diagrams (doc-only, `.claude/CLAUDE.md` already covers the DI/SSOT
+  patterns in prose); reconcile `.claude/CLAUDE.md`'s "4 fail" backend test count and
+  the UI's "2 fail" (`DevicesPage`) against whether G4/G2's fixes actually cover them
+  — re-run `cargo test --workspace` and `npm test` once, update the table, and only
+  then treat architecture-completion 3.5.1–3.5.3 as closed.
 
 ---
 
@@ -338,3 +411,10 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
   (input group): 2020 pass / 4 fail (all G4) / 91 ignored. G2 [NEXT].
 - 2026-09-27: G2 DONE — one wire format for latency/events/state across WS,
   REST, WS-RPC, MCP, pinned by cross-language contract fixtures. G3 [NEXT].
+- 2026-09-27: E1 DONE — audited all 82 open tasks in architecture-remediation/
+  architecture-completion against current code; most is stale (superseded by
+  comprehensive-architecture-refactoring + the C/G/L work). 56 done-elsewhere,
+  15 still-needed, 11 obsolete. Verdicts written into both tasks.md. Real gaps
+  promoted to Phase F (F1-F6 + backlog): profile_manager.rs split, orphaned
+  e2e-harness split, dead EnvProvider/FileSystem traits, unadopted UI logger,
+  stale file-size baseline, simulation_engine.rs split.
