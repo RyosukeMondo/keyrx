@@ -269,11 +269,10 @@ impl Daemon {
         let signal_handler = install_signal_handlers(Arc::clone(&running))?;
         info!("Signal handlers installed");
 
-        // Create lock-free latency recorder for metrics collection
-        let latency_recorder = Arc::new(LatencyRecorder::new());
-
-        // Create shared telemetry source for IPC/web pull-based queries
+        // Shared telemetry (state, latency, events) for IPC/web queries. It owns
+        // the latency recorder so there is exactly one recorder + aggregator.
         let telemetry = Arc::new(DaemonTelemetry::new());
+        let latency_recorder = telemetry.latency_recorder();
 
         // Step 3: Load active profile and create remapping state (if any)
         let remapping_state = match Self::load_active_profile_config(&config_dir) {

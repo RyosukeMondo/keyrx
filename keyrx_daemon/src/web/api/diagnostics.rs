@@ -455,25 +455,18 @@ fn check_config_validation() -> ConfigStatus {
 
 /// GET /api/debug/state - Comprehensive daemon state snapshot for debugging
 async fn get_debug_state(State(state): State<Arc<AppState>>) -> Json<Value> {
-    let daemon_info = match state.daemon_state.as_ref() {
-        Some(daemon) => {
-            let active = daemon.get_active_profile();
-            let mapping_count = active
-                .as_ref()
-                .map(|n| count_mappings_for_profile(&state, n))
-                .unwrap_or(0);
-            serde_json::json!({
-                "running": daemon.is_running(), "uptime_secs": daemon.uptime_secs(),
-                "active_profile": active, "device_count": daemon.get_device_count(),
-                "mapping_count": mapping_count, "suspended": daemon.is_suspended(),
-            })
-        }
-        None => serde_json::json!({
-            "running": false, "uptime_secs": null, "active_profile": null,
-            "device_count": 0, "mapping_count": 0,
-            "note": "daemon_state not available (test mode or Linux IPC)",
-        }),
-    };
+    let status = state.daemon_query.get_status();
+    let mapping_count = status
+        .active_profile
+        .as_ref()
+        .map(|n| count_mappings_for_profile(&state, n))
+        .unwrap_or(0);
+    let daemon_info = serde_json::json!({
+        "running": status.daemon_running, "uptime_secs": status.uptime_secs,
+        "active_profile": status.active_profile, "device_count": status.device_count,
+        "mapping_count": mapping_count,
+        "suspended": state.daemon_state.as_ref().map(|d| d.is_suspended()),
+    });
     let config_info = build_config_info(&state).await;
     let profiles_info = build_profiles_info(&state).await;
     let hook = get_hook_status();
@@ -482,10 +475,7 @@ async fn get_debug_state(State(state): State<Arc<AppState>>) -> Json<Value> {
         "config": config_info,
         "profiles": profiles_info,
         "hook": { "installed": hook.installed, "remapped_keys_count": hook.remapped_keys_count },
-        "ws_info": {
-            "daemon_query_available": state.daemon_query.is_some(),
-            "daemon_state_available": state.daemon_state.is_some(),
-        },
+        "ws_info": { "daemon_state_available": state.daemon_state.is_some() },
     }))
 }
 

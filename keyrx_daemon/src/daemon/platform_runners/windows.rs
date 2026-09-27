@@ -145,28 +145,19 @@ pub fn run_daemon(
     // Create event broadcaster for real-time updates
     let event_broadcaster = crate::daemon::EventBroadcaster::new(event_tx_for_broadcaster);
     let running_for_broadcaster = daemon.running_flag();
-    let latency_recorder_for_broadcaster = daemon.latency_recorder();
     let telemetry_for_broadcaster = daemon.telemetry();
 
     // Wire the event broadcaster into the daemon for real-time event streaming
     daemon.set_event_broadcaster(event_broadcaster.clone());
 
-    // Create DaemonQueryService for REST endpoint metrics
-    let daemon_query = Arc::new(
-        crate::services::DaemonQueryService::new(
-            daemon.latency_recorder(),
-            Arc::clone(&daemon_state),
-        )
-        .with_telemetry(daemon.telemetry()),
-    );
-
-    // Create AppState from ServiceContainer with daemon shared state (dependency injection)
-    // Clone daemon_state since it will be used later in the event loop
+    // The single read model for the web API (see DaemonQueryService docs).
+    let daemon_query = Arc::new(crate::services::DaemonQueryService::new(
+        Arc::clone(&daemon_state),
+        daemon.telemetry(),
+    ));
     let app_state = Arc::new(crate::web::AppState::from_container_with_daemon(
         (*container).clone(),
-        None, // No test mode socket in production
-        Arc::clone(&daemon_state),
-        Some(Arc::clone(&daemon_query)),
+        daemon_query,
     ));
 
     // Find an available port, starting with configured port
@@ -186,8 +177,6 @@ pub fn run_daemon(
     let actual_port_for_thread = actual_port;
     let port_changed_for_thread = port_changed;
     let configured_port_for_thread = configured_port;
-    let daemon_query_for_thread = Arc::clone(&daemon_query);
-    let event_rx_for_collector = app_state.event_broadcaster.subscribe();
 
     std::thread::spawn(move || {
         let rt = match tokio::runtime::Runtime::new() {
@@ -203,12 +192,8 @@ pub fn run_daemon(
             tokio::spawn(crate::daemon::start_latency_broadcast_task(
                 event_broadcaster,
                 running_for_broadcaster,
-                Some(latency_recorder_for_broadcaster),
                 Some(telemetry_for_broadcaster),
             ));
-
-            // Start event collector for REST event log endpoint
-            daemon_query_for_thread.spawn_event_collector(event_rx_for_collector);
 
             let addr: std::net::SocketAddr = ([127, 0, 0, 1], actual_port_for_thread).into();
             if port_changed_for_thread {
@@ -441,9 +426,7 @@ fn run_test_mode(
     use crate::daemon::ExitCode;
     use crate::daemon_config::DaemonConfig;
     use crate::ipc::commands::IpcCommandHandler;
-    use crate::ipc::server::IpcServer;
     use std::sync::Arc;
-    use tokio::sync::{Mutex, RwLock};
 
     // Load configuration
     let config = DaemonConfig::from_env().map_err(|e| {
@@ -480,61 +463,30 @@ fn run_test_mode(
         }
     };
 
-    // Create daemon running flag
-    let daemon_running = Arc::new(RwLock::new(true));
-
-    // Create IPC command handler
+    // One read model shared by the IPC handler and the web API. Test mode has
+    // no keyboard daemon, so it reports "not running" consistently on both.
+    let daemon_query = Arc::new(crate::services::DaemonQueryService::without_daemon());
     let ipc_handler = Arc::new(IpcCommandHandler::new(
         Arc::clone(&profile_manager),
-        Arc::clone(&daemon_running),
+        Arc::clone(&daemon_query),
     ));
 
-    // Create IPC server with unique socket path (Windows uses named pipes)
-    let pid = std::process::id();
-    let test_socket_path = PathBuf::from(format!("keyrx-test-{}", pid));
-    let mut ipc_server = IpcServer::new(test_socket_path.clone()).map_err(|e| {
-        (
-            ExitCode::RuntimeError as i32,
-            format!("Failed to create IPC server: {}", e),
-        )
-    })?;
-
-    // Start IPC server
-    ipc_server.start().map_err(|e| {
+    // Windows uses named pipes
+    let test_socket_path = PathBuf::from(format!("keyrx-test-{}", std::process::id()));
+    crate::ipc::server::spawn(test_socket_path.clone(), ipc_handler).map_err(|e| {
         (
             ExitCode::RuntimeError as i32,
             format!("Failed to start IPC server: {}", e),
         )
     })?;
-
     log::info!("IPC server started on {}", test_socket_path.display());
 
-    // Create tokio runtime for async operations
     let rt = tokio::runtime::Runtime::new().map_err(|e| {
         (
             ExitCode::RuntimeError as i32,
             format!("Failed to create tokio runtime: {}", e),
         )
     })?;
-
-    // Clone handler for server thread
-    let ipc_handler_for_server = Arc::clone(&ipc_handler);
-
-    // Start IPC server connection handler in background
-    std::thread::spawn(move || {
-        let handler_fn = Arc::new(Mutex::new(
-            move |request: crate::ipc::IpcRequest| -> Result<crate::ipc::IpcResponse, String> {
-                // Create a new runtime for this handler call
-                let rt = tokio::runtime::Runtime::new().map_err(|e| e.to_string())?;
-                let handler = Arc::clone(&ipc_handler_for_server);
-                Ok(rt.block_on(async move { handler.handle(request).await }))
-            },
-        ));
-
-        if let Err(e) = ipc_server.handle_connections(handler_fn) {
-            log::error!("IPC server error: {}", e);
-        }
-    });
 
     // Create broadcast channel for event streaming
     let (event_tx, _event_rx) = tokio::sync::broadcast::channel(1000);
@@ -562,17 +514,6 @@ fn run_test_mode(
     // Create RPC event broadcaster
     let (rpc_event_tx, _) = tokio::sync::broadcast::channel(1000);
 
-    // Create minimal daemon shared state for test mode
-    // Even though no daemon is running, we create a minimal state for API consistency
-    use std::sync::atomic::AtomicBool;
-    let test_running_flag = Arc::new(AtomicBool::new(false)); // Not running in test mode
-    let test_daemon_state = Arc::new(DaemonSharedState::new(
-        test_running_flag,
-        None, // No active profile in test mode
-        PathBuf::from("test.krx"),
-        0, // No devices in test mode
-    ));
-
     let app_state = Arc::new(crate::web::AppState::new_with_test_mode(
         macro_recorder.clone(),
         profile_service,
@@ -582,8 +523,7 @@ fn run_test_mode(
         simulation_service,
         subscription_manager,
         rpc_event_tx,
-        test_socket_path.clone(),
-        Some(test_daemon_state),
+        daemon_query,
     ));
 
     // Start web server in background thread (main thread runs message loop for tray)

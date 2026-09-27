@@ -1,7 +1,5 @@
-//! IPC server implementation for test mode.
-//!
-//! This module provides a Unix socket server that listens for IPC commands
-//! in test mode, enabling profile activation and daemon status queries.
+//! IPC server: a local socket that answers [`IpcRequest`]s via
+//! [`IpcCommandHandler`](super::commands::IpcCommandHandler).
 
 use super::{IpcRequest, IpcResponse};
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream};
@@ -10,7 +8,28 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-/// IPC server for handling test mode commands
+/// Binds an IPC server at `socket_path` and serves `handler` on a background
+/// thread. The single way runners expose IPC (production and test mode).
+pub fn spawn(
+    socket_path: PathBuf,
+    handler: Arc<super::commands::IpcCommandHandler>,
+) -> Result<(), std::io::Error> {
+    let mut server = IpcServer::new(socket_path)?;
+    server.start()?;
+    std::thread::spawn(move || {
+        let handler_fn = Arc::new(Mutex::new(
+            move |request: IpcRequest| -> Result<IpcResponse, String> {
+                Ok(handler.handle(request))
+            },
+        ));
+        if let Err(e) = server.handle_connections(handler_fn) {
+            log::error!("IPC server error: {e}");
+        }
+    });
+    Ok(())
+}
+
+/// IPC server for daemon commands
 pub struct IpcServer {
     socket_path: PathBuf,
     listener: Option<LocalSocketListener>,

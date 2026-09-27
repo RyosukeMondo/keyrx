@@ -67,10 +67,8 @@ pub async fn activate_profile(state: &AppState, name: &str) -> Result<String, St
         .await
         .map_err(|e| format!("Failed to activate profile: {}", e))?;
 
-    // Update shared daemon state if available (Windows hot-reload)
-    if let Some(daemon_state) = &state.daemon_state {
-        daemon_state.set_active_profile(Some(name.to_string()));
-        daemon_state.request_reload();
+    if result.success {
+        state.daemon_query.record_profile_activation(name);
     }
 
     serde_json::to_string_pretty(&json!({
@@ -165,48 +163,26 @@ pub fn simulate(state: &AppState, scenario: Option<&str>) -> Result<String, Stri
 
 /// Get daemon status (running, version, active profile, devices).
 pub fn get_status(state: &AppState) -> Result<String, String> {
-    let (daemon_running, uptime_secs, active_profile, device_count) =
-        if let Some(query) = &state.daemon_query {
-            let s = query.get_status();
-            (
-                s.daemon_running,
-                Some(s.uptime_secs),
-                s.active_profile,
-                Some(s.device_count),
-            )
-        } else if let Some(ds) = &state.daemon_state {
-            (
-                ds.is_running(),
-                Some(ds.uptime_secs()),
-                ds.get_active_profile(),
-                Some(ds.get_device_count()),
-            )
-        } else {
-            (false, None, None, None)
-        };
-
+    let s = state.daemon_query.get_status();
     Ok(json!({
         "version": crate::version::VERSION,
-        "daemonRunning": daemon_running,
-        "uptimeSecs": uptime_secs,
-        "activeProfile": active_profile,
-        "deviceCount": device_count,
+        "daemonRunning": s.daemon_running,
+        "uptimeSecs": s.uptime_secs,
+        "activeProfile": s.active_profile,
+        "deviceCount": s.device_count,
     })
     .to_string())
 }
 
 /// Get daemon runtime state (modifiers, locks, layers).
 pub fn get_state(state: &AppState) -> Result<String, String> {
-    if let Some(ds) = &state.daemon_state {
-        Ok(json!({
-            "running": ds.is_running(),
-            "activeProfile": ds.get_active_profile(),
-            "deviceCount": ds.get_device_count(),
-        })
-        .to_string())
-    } else {
-        Ok(json!({"running": false, "activeProfile": null}).to_string())
-    }
+    let ts = state.daemon_query.get_state();
+    Ok(json!({
+        "activeLayer": ts.active_layer(),
+        "modifiers": ts.modifiers(),
+        "locks": ts.locks(),
+    })
+    .to_string())
 }
 
 /// List connected input devices.
@@ -248,21 +224,13 @@ pub fn get_diagnostics() -> Result<String, String> {
 
 /// Get latency statistics.
 pub fn get_latency(state: &AppState) -> Result<String, String> {
-    if let Some(query) = &state.daemon_query {
-        let snap = query.get_latency_snapshot();
-        Ok(json!({
-            "minUs": snap.min_us,
-            "avgUs": snap.avg_us,
-            "maxUs": snap.max_us,
-            "p95Us": snap.p95_us,
-            "p99Us": snap.p99_us,
-        })
-        .to_string())
-    } else {
-        Ok(json!({
-            "minUs": 0, "avgUs": 0, "maxUs": 0, "p95Us": 0, "p99Us": 0,
-            "note": "Latency data unavailable (no daemon query service)"
-        })
-        .to_string())
-    }
+    let snap = state.daemon_query.get_latency_snapshot();
+    Ok(json!({
+        "minUs": snap.min_us,
+        "avgUs": snap.avg_us,
+        "maxUs": snap.max_us,
+        "p95Us": snap.p95_us,
+        "p99Us": snap.p99_us,
+    })
+    .to_string())
 }

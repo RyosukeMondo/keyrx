@@ -26,7 +26,7 @@ pub use middleware::{
 };
 
 use crate::container::ServiceContainer;
-use crate::daemon::DaemonSharedState;
+use crate::daemon::{DaemonSharedState, DaemonTelemetry};
 use crate::daemon_config::DaemonConfig;
 use crate::macro_recorder::MacroRecorder;
 use crate::services::{
@@ -60,24 +60,18 @@ pub struct AppState {
     pub subscription_manager: Arc<SubscriptionManager>,
     /// Event broadcaster for sending events to WebSocket clients
     pub event_broadcaster: broadcast::Sender<ServerMessage>,
-    /// Test mode IPC socket path (None in production mode)
-    pub test_mode_socket: Option<std::path::PathBuf>,
-    /// Shared daemon state for Windows IPC replacement (None on Linux/macOS)
-    ///
-    /// On Windows, where Unix domain sockets are not available, this provides
-    /// direct access to daemon state from the web server thread. This enables
-    /// the status API to query daemon state without IPC.
-    ///
-    /// This is `Some(state)` on Windows in single-process mode, `None` on Linux/macOS
-    /// where IPC is used instead.
+    /// Control handle on the running keyboard daemon (suspend, reload).
+    /// `None` when this process has no daemon (test mode, unit tests). When
+    /// present it is the same state `daemon_query` reads.
     pub daemon_state: Option<Arc<DaemonSharedState>>,
-    /// Query service for daemon metrics (latency, events, status).
-    /// Available when running with a real daemon (not test mode).
-    pub daemon_query: Option<Arc<DaemonQueryService>>,
+    /// The single read model for status/state/latency/events. Always present:
+    /// handlers never fall back to IPC or to a second source.
+    pub daemon_query: Arc<DaemonQueryService>,
 }
 
 impl AppState {
-    /// Creates a new AppState with the given dependencies
+    /// Creates AppState from individual services. With `daemon_state`, status
+    /// reads that state; without it the process reports no running daemon.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         macro_recorder: Arc<MacroRecorder>,
@@ -90,6 +84,10 @@ impl AppState {
         event_broadcaster: broadcast::Sender<ServerMessage>,
         daemon_state: Option<Arc<DaemonSharedState>>,
     ) -> Self {
+        let daemon_query = Arc::new(match &daemon_state {
+            Some(ds) => DaemonQueryService::new(Arc::clone(ds), Arc::new(DaemonTelemetry::new())),
+            None => DaemonQueryService::without_daemon(),
+        });
         Self {
             macro_recorder,
             profile_service,
@@ -99,13 +97,13 @@ impl AppState {
             simulation_service,
             subscription_manager,
             event_broadcaster,
-            test_mode_socket: None,
             daemon_state,
-            daemon_query: None,
+            daemon_query,
         }
     }
 
-    /// Creates a new AppState with test mode enabled
+    /// Creates AppState for test mode (no keyboard daemon). `daemon_query` must
+    /// be the same instance the process's IPC handler uses.
     #[allow(clippy::too_many_arguments)]
     pub fn new_with_test_mode(
         macro_recorder: Arc<MacroRecorder>,
@@ -116,8 +114,7 @@ impl AppState {
         simulation_service: Arc<SimulationService>,
         subscription_manager: Arc<SubscriptionManager>,
         event_broadcaster: broadcast::Sender<ServerMessage>,
-        test_mode_socket: std::path::PathBuf,
-        daemon_state: Option<Arc<DaemonSharedState>>,
+        daemon_query: Arc<DaemonQueryService>,
     ) -> Self {
         Self {
             macro_recorder,
@@ -128,94 +125,46 @@ impl AppState {
             simulation_service,
             subscription_manager,
             event_broadcaster,
-            test_mode_socket: Some(test_mode_socket),
-            daemon_state,
-            daemon_query: None,
+            daemon_state: None,
+            daemon_query,
         }
     }
 
-    /// Creates a minimal AppState for testing with default services using ServiceContainer
-    ///
-    /// This method uses ServiceContainer for dependency injection, providing a cleaner
-    /// approach to test setup that matches production initialization patterns.
-    ///
-    /// Note: This is public for integration tests but gated with cfg(test).
+    /// Creates AppState for tests with a temporary config directory.
     pub fn new_for_testing(config_dir: std::path::PathBuf) -> Self {
         use crate::container::ServiceContainerBuilder;
 
-        // Use ServiceContainer for consistent dependency injection
         let container = ServiceContainerBuilder::new(config_dir)
             .build()
             .expect("Failed to build ServiceContainer for testing");
 
-        Self::from_container(container, None)
+        Self::from_container(container)
     }
 
-    /// Create AppState from ServiceContainer
-    ///
-    /// This is the recommended way to create AppState, as it uses the ServiceContainer
-    /// for proper dependency injection following the Dependency Inversion Principle.
-    ///
-    /// # Arguments
-    ///
-    /// * `container` - ServiceContainer with all dependencies wired
-    /// * `test_mode_socket` - Optional IPC socket path for test mode
-    pub fn from_container(
-        container: ServiceContainer,
-        test_mode_socket: Option<std::path::PathBuf>,
-    ) -> Self {
-        Self {
-            macro_recorder: container.macro_recorder(),
-            profile_service: container.profile_service(),
-            device_service: container.device_service(),
-            config_service: container.config_service(),
-            settings_service: container.settings_service(),
-            simulation_service: container.simulation_service(),
-            subscription_manager: container.subscription_manager(),
-            event_broadcaster: container.event_broadcaster(),
-            test_mode_socket,
-            daemon_state: None,
-            daemon_query: None,
-        }
+    /// Creates AppState from a ServiceContainer, with no keyboard daemon.
+    pub fn from_container(container: ServiceContainer) -> Self {
+        Self::build(
+            container,
+            None,
+            Arc::new(DaemonQueryService::without_daemon()),
+        )
     }
 
-    /// Create AppState from ServiceContainer with daemon shared state
-    ///
-    /// This is the Windows-specific constructor that includes daemon shared state
-    /// for direct daemon-to-web-server communication without IPC.
-    ///
-    /// # Arguments
-    ///
-    /// * `container` - ServiceContainer with all dependencies wired
-    /// * `test_mode_socket` - Optional IPC socket path for test mode
-    /// * `daemon_state` - Shared daemon state for Windows IPC replacement
-    ///
-    /// # Platform Support
-    ///
-    /// This method is primarily for Windows, where Unix domain sockets don't exist.
-    /// On Linux/macOS, pass `None` for `daemon_state` and use IPC instead.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use std::sync::Arc;
-    /// use keyrx_daemon::daemon::DaemonSharedState;
-    /// use keyrx_daemon::container::ServiceContainer;
-    /// use keyrx_daemon::web::AppState;
-    ///
-    /// # fn example(container: ServiceContainer, daemon_state: Arc<DaemonSharedState>) {
-    /// let app_state = Arc::new(AppState::from_container_with_daemon(
-    ///     container,
-    ///     None, // No test mode
-    ///     daemon_state,
-    /// ));
-    /// # }
-    /// ```
+    /// Creates AppState from a ServiceContainer for a running daemon. The
+    /// control handle is taken from `daemon_query`, so reads and control
+    /// operations always refer to the same daemon state.
     pub fn from_container_with_daemon(
         container: ServiceContainer,
-        test_mode_socket: Option<std::path::PathBuf>,
-        daemon_state: Arc<DaemonSharedState>,
-        daemon_query: Option<Arc<DaemonQueryService>>,
+        daemon_query: Arc<DaemonQueryService>,
+    ) -> Self {
+        let daemon_state = Some(Arc::clone(daemon_query.shared_state()));
+        Self::build(container, daemon_state, daemon_query)
+    }
+
+    fn build(
+        container: ServiceContainer,
+        daemon_state: Option<Arc<DaemonSharedState>>,
+        daemon_query: Arc<DaemonQueryService>,
     ) -> Self {
         Self {
             macro_recorder: container.macro_recorder(),
@@ -226,8 +175,7 @@ impl AppState {
             simulation_service: container.simulation_service(),
             subscription_manager: container.subscription_manager(),
             event_broadcaster: container.event_broadcaster(),
-            test_mode_socket,
-            daemon_state: Some(daemon_state),
+            daemon_state,
             daemon_query,
         }
     }
@@ -480,7 +428,18 @@ mod tests {
             2,
         ));
 
-        let state = AppState::from_container_with_daemon(container, None, daemon_state, None);
+        let query = Arc::new(DaemonQueryService::new(
+            Arc::clone(&daemon_state),
+            Arc::new(DaemonTelemetry::new()),
+        ));
+        let state = AppState::from_container_with_daemon(container, query);
+
+        // Invariant: the control handle and the read model are the same state.
+        assert!(Arc::ptr_eq(
+            state.daemon_state.as_ref().unwrap(),
+            state.daemon_query.shared_state()
+        ));
+        assert_eq!(state.daemon_query.get_status().device_count, 2);
 
         // With daemon state, should return true
         assert!(state.has_daemon_state());
@@ -504,7 +463,7 @@ mod tests {
             .build()
             .expect("Failed to build ServiceContainer");
 
-        let state = AppState::from_container(container, None);
+        let state = AppState::from_container(container);
 
         // Should have no daemon state
         assert!(!state.has_daemon_state());

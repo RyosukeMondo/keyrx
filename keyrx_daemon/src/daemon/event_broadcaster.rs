@@ -11,7 +11,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::broadcast;
 use tokio::time::interval;
 
-use super::metrics::{LatencyRecorder, MetricsAggregator};
+use super::metrics::LatencySnapshot;
 use super::telemetry::DaemonTelemetry;
 use crate::web::events::{DaemonEvent, DaemonState, ErrorData, KeyEventData, LatencyStats};
 
@@ -236,7 +236,7 @@ impl EventBroadcaster {
 ///
 /// * `broadcaster` - The event broadcaster to use
 /// * `running` - Atomic flag that controls task lifetime
-/// * `latency_recorder` - Optional lock-free latency recorder for real metrics
+/// * `telemetry` - Optional telemetry whose single aggregator supplies the stats
 ///
 /// # Performance
 ///
@@ -252,13 +252,12 @@ impl EventBroadcaster {
 ///
 /// let running = Arc::new(AtomicBool::new(true));
 /// let broadcaster = EventBroadcaster::new(event_tx);
-/// let latency_recorder = Arc::new(LatencyRecorder::new());
+/// let telemetry = Arc::new(DaemonTelemetry::new());
 ///
 /// tokio::spawn(start_latency_broadcast_task(
 ///     broadcaster,
 ///     Arc::clone(&running),
-///     Some(Arc::clone(&latency_recorder)),
-///     None, // optional telemetry sink
+///     Some(Arc::clone(&telemetry)),
 /// ));
 ///
 /// // Later...
@@ -267,16 +266,11 @@ impl EventBroadcaster {
 pub async fn start_latency_broadcast_task(
     broadcaster: EventBroadcaster,
     running: Arc<std::sync::atomic::AtomicBool>,
-    latency_recorder: Option<Arc<LatencyRecorder>>,
     telemetry: Option<Arc<DaemonTelemetry>>,
 ) {
     use std::sync::atomic::Ordering;
 
     log::info!("Starting latency broadcast task (1 second interval)");
-
-    // Create metrics aggregator for percentile computation
-    // This runs in the background task, NOT on the hot path
-    let mut aggregator = MetricsAggregator::new(Duration::from_secs(60));
 
     let mut ticker = interval(Duration::from_secs(1));
 
@@ -291,40 +285,26 @@ pub async fn start_latency_broadcast_task(
             continue;
         }
 
-        // Compute real latency statistics if recorder is available
-        let stats = if let Some(ref recorder) = latency_recorder {
-            let snapshot = aggregator.compute_snapshot(recorder);
-
-            let stats = LatencyStats {
-                min: snapshot.min_us,
-                avg: snapshot.avg_us,
-                max: snapshot.max_us,
-                p95: snapshot.p95_us,
-                p99: snapshot.p99_us,
-                timestamp: snapshot.timestamp_us,
-            };
-
-            // Feed the same snapshot to the pull-based telemetry source (CLI/web).
-            if let Some(ref t) = telemetry {
-                t.update_latency(snapshot);
-            }
-
-            stats
+        // Read from the single telemetry aggregator (shared with IPC/web).
+        let snapshot = telemetry
+            .as_ref()
+            .map(|t| t.latency())
+            .unwrap_or_else(LatencySnapshot::empty);
+        let timestamp = if snapshot.timestamp_us > 0 {
+            snapshot.timestamp_us
         } else {
-            // Fallback to placeholder zeros if no recorder
-            let timestamp = SystemTime::now()
+            SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_micros() as u64)
-                .unwrap_or(0);
-
-            LatencyStats {
-                min: 0,
-                avg: 0,
-                max: 0,
-                p95: 0,
-                p99: 0,
-                timestamp,
-            }
+                .unwrap_or(0)
+        };
+        let stats = LatencyStats {
+            min: snapshot.min_us,
+            avg: snapshot.avg_us,
+            max: snapshot.max_us,
+            p95: snapshot.p95_us,
+            p99: snapshot.p99_us,
+            timestamp,
         };
 
         broadcaster.broadcast_latency(stats);
@@ -453,7 +433,7 @@ mod tests {
 
         let task_running = Arc::clone(&running);
         let task = tokio::spawn(async move {
-            start_latency_broadcast_task(broadcaster, task_running, None, None).await;
+            start_latency_broadcast_task(broadcaster, task_running, None).await;
         });
 
         // Let it run for a bit
@@ -478,7 +458,7 @@ mod tests {
 
         let task_running = Arc::clone(&running);
         let task = tokio::spawn(async move {
-            start_latency_broadcast_task(broadcaster, task_running, None, None).await;
+            start_latency_broadcast_task(broadcaster, task_running, None).await;
         });
 
         // Wait for at least one broadcast (happens every 1 second)

@@ -259,12 +259,9 @@ async fn activate_profile(
             ));
         }
 
-        // Update shared daemon state and request reload so the message loop
-        // picks up the new config (even if reactivating the same profile name).
-        if let Some(ref daemon_state) = state.daemon_state {
-            daemon_state.set_active_profile(Some(name.clone()));
-            daemon_state.request_reload();
-        }
+        // Record in the read model and request reload so status and the
+        // daemon loop pick it up (even if reactivating the same profile name).
+        state.daemon_query.record_profile_activation(&name);
 
         // Reload simulation service with the new profile
         if let Err(e) = state.simulation_service.load_profile(&name) {

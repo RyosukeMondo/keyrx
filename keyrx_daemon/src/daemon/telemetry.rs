@@ -28,9 +28,10 @@
 //! duplicate it.
 
 use std::collections::VecDeque;
-use std::sync::{Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
+use std::time::Duration;
 
-use super::metrics::LatencySnapshot;
+use super::metrics::{LatencyRecorder, LatencySnapshot, MetricsAggregator};
 
 /// Total number of bits in the packed state vector.
 pub const STATE_BITS: usize = 255;
@@ -42,6 +43,9 @@ const LOCK_END: usize = 192;
 
 /// Default capacity of the recent-events ring buffer.
 const DEFAULT_EVENTS_CAPACITY: usize = 1000;
+
+/// Rolling window for latency percentiles.
+const LATENCY_WINDOW: Duration = Duration::from_secs(60);
 
 /// A point-in-time snapshot of daemon modifier/lock/layer state.
 ///
@@ -155,16 +159,30 @@ impl Default for TelemetryState {
 /// Thread-safe holder for live daemon telemetry, shared via `Arc`.
 ///
 /// The event loop calls [`update_state`](Self::update_state),
-/// [`update_latency`](Self::update_latency), and [`push_event`](Self::push_event);
-/// IPC/web read via [`state`](Self::state), [`latency`](Self::latency), and
+/// [`push_event`](Self::push_event) and records into
+/// [`latency_recorder`](Self::latency_recorder); readers use
+/// [`state`](Self::state), [`latency`](Self::latency), and
 /// [`recent_events`](Self::recent_events). All locks are held only briefly and
 /// recover from poisoning rather than panicking.
-#[derive(Debug)]
+///
+/// Latency has exactly one aggregator, owned here. `LatencyRecorder`'s
+/// "new samples since last snapshot" counter is destructive, so a second
+/// aggregator over the same recorder would steal samples from the first.
 pub struct DaemonTelemetry {
     state: RwLock<TelemetryState>,
-    latency: RwLock<LatencySnapshot>,
+    latency_recorder: Arc<LatencyRecorder>,
+    latency_aggregator: Mutex<MetricsAggregator>,
     events: Mutex<VecDeque<String>>,
     events_capacity: usize,
+}
+
+impl std::fmt::Debug for DaemonTelemetry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DaemonTelemetry")
+            .field("state", &self.state)
+            .field("events_capacity", &self.events_capacity)
+            .finish_non_exhaustive()
+    }
 }
 
 impl DaemonTelemetry {
@@ -177,7 +195,8 @@ impl DaemonTelemetry {
     pub fn with_events_capacity(events_capacity: usize) -> Self {
         Self {
             state: RwLock::new(TelemetryState::empty()),
-            latency: RwLock::new(LatencySnapshot::empty()),
+            latency_recorder: Arc::new(LatencyRecorder::new()),
+            latency_aggregator: Mutex::new(MetricsAggregator::new(LATENCY_WINDOW)),
             events: Mutex::new(VecDeque::with_capacity(events_capacity.min(1024))),
             events_capacity,
         }
@@ -202,17 +221,17 @@ impl DaemonTelemetry {
             .to_vec()
     }
 
-    /// Replaces the latest latency snapshot (called by the broadcast task ~1Hz).
-    pub fn update_latency(&self, snapshot: LatencySnapshot) {
-        *self.latency.write().unwrap_or_else(|e| e.into_inner()) = snapshot;
+    /// The recorder the event loop writes per-event latency into.
+    pub fn latency_recorder(&self) -> Arc<LatencyRecorder> {
+        Arc::clone(&self.latency_recorder)
     }
 
-    /// Returns the latest latency snapshot.
+    /// Aggregates newly recorded samples and returns current latency statistics.
     pub fn latency(&self) -> LatencySnapshot {
-        self.latency
-            .read()
+        self.latency_aggregator
+            .lock()
             .unwrap_or_else(|e| e.into_inner())
-            .clone()
+            .compute_snapshot(&self.latency_recorder)
     }
 
     /// Appends a recent-event description, evicting the oldest past capacity.
@@ -315,15 +334,25 @@ mod tests {
     }
 
     #[test]
-    fn test_latency_roundtrip() {
+    fn test_latency_aggregates_recorded_samples() {
         let t = DaemonTelemetry::new();
-        let mut snap = LatencySnapshot::empty();
-        snap.avg_us = 1234;
-        snap.p99_us = 5678;
-        t.update_latency(snap.clone());
+        t.latency_recorder().record(100);
+        t.latency_recorder().record(300);
         let got = t.latency();
-        assert_eq!(got.avg_us, 1234);
-        assert_eq!(got.p99_us, 5678);
+        assert_eq!(got.sample_count, 2);
+        assert!(got.min_us >= 100 && got.max_us >= 300);
+    }
+
+    #[test]
+    fn test_latency_repeated_reads_do_not_lose_samples() {
+        // Regression: two aggregators over one recorder used to steal samples.
+        let t = DaemonTelemetry::new();
+        t.latency_recorder().record(250);
+        let first = t.latency();
+        let second = t.latency();
+        assert_eq!(first.sample_count, 1);
+        assert_eq!(second.sample_count, 1);
+        assert_eq!(first.max_us, second.max_us);
     }
 
     #[test]

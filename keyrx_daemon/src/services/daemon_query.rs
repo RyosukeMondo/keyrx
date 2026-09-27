@@ -1,69 +1,55 @@
-//! Query service for daemon metrics and state.
+//! The daemon's single read model.
 //!
-//! Provides REST-accessible metrics (latency, events, status) by bridging
-//! the lock-free `LatencyRecorder` and `DaemonSharedState` to web handlers.
+//! Every transport that reports on the running daemon — the IPC server behind
+//! `keyrx_daemon status|state|metrics`, the REST API, MCP tools and the
+//! WebSocket latency feed — reads through one [`DaemonQueryService`]. It is a
+//! thin view over the two write-side sources:
+//!
+//! | Data                          | Source                 | Written by            |
+//! |-------------------------------|------------------------|-----------------------|
+//! | running / uptime / profile / devices | [`DaemonSharedState`] | daemon + runners  |
+//! | modifier/lock/layer state     | [`DaemonTelemetry`]    | event loop            |
+//! | latency statistics            | [`DaemonTelemetry`]    | event loop (recorder) |
+//! | recent events                 | [`DaemonTelemetry`]    | event loop            |
+//!
+//! Because there is exactly one instance per process and no transport keeps a
+//! copy or a fallback, two transports cannot disagree about the same fact.
 
-use std::collections::VecDeque;
-use std::sync::{Arc, Mutex, RwLock};
-use std::time::Duration;
+use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
-use serde_json::Value;
+use crate::daemon::{DaemonSharedState, DaemonTelemetry, LatencySnapshot, TelemetryState};
 
-use crate::daemon::{
-    DaemonSharedState, DaemonTelemetry, LatencyRecorder, LatencySnapshot, MetricsAggregator,
-    TelemetryState,
-};
-
-/// Maximum number of events stored in the ring buffer.
-const EVENT_LOG_CAPACITY: usize = 1000;
-
-/// Service for querying daemon metrics and state from REST endpoints.
-///
-/// This bridges the daemon's lock-free metrics infrastructure to the web
-/// layer, eliminating platform-specific branching in REST handlers.
+/// Read model for daemon status, live state, latency and recent events.
 pub struct DaemonQueryService {
-    latency_recorder: Arc<LatencyRecorder>,
-    aggregator: Mutex<MetricsAggregator>,
     daemon_state: Arc<DaemonSharedState>,
-    event_log: Arc<RwLock<VecDeque<Value>>>,
-    /// Live telemetry source for modifier/lock/layer state (set in production).
-    telemetry: Option<Arc<DaemonTelemetry>>,
+    telemetry: Arc<DaemonTelemetry>,
 }
 
 impl DaemonQueryService {
-    /// Creates a new query service.
-    pub fn new(
-        latency_recorder: Arc<LatencyRecorder>,
-        daemon_state: Arc<DaemonSharedState>,
-    ) -> Self {
+    /// Creates the read model over a running daemon's state and telemetry.
+    pub fn new(daemon_state: Arc<DaemonSharedState>, telemetry: Arc<DaemonTelemetry>) -> Self {
         Self {
-            latency_recorder,
-            aggregator: Mutex::new(MetricsAggregator::new(Duration::from_secs(60))),
             daemon_state,
-            event_log: Arc::new(RwLock::new(VecDeque::with_capacity(EVENT_LOG_CAPACITY))),
-            telemetry: None,
+            telemetry,
         }
     }
 
-    /// Attaches live telemetry as the source for modifier/lock/layer state.
-    #[must_use]
-    pub fn with_telemetry(mut self, telemetry: Arc<DaemonTelemetry>) -> Self {
-        self.telemetry = Some(telemetry);
-        self
+    /// Creates a read model for a process with no keyboard daemon (test mode,
+    /// unit tests): not running, no profile, no devices, empty telemetry.
+    pub fn without_daemon() -> Self {
+        let state =
+            DaemonSharedState::new(Arc::new(AtomicBool::new(false)), None, PathBuf::new(), 0);
+        Self::new(Arc::new(state), Arc::new(DaemonTelemetry::new()))
     }
 
-    /// Returns the current modifier/lock/layer state snapshot, if telemetry is wired.
-    pub fn get_state(&self) -> Option<TelemetryState> {
-        self.telemetry.as_ref().map(|t| t.state())
+    /// The shared daemon state this read model reports on.
+    pub fn shared_state(&self) -> &Arc<DaemonSharedState> {
+        &self.daemon_state
     }
 
-    /// Computes a latency statistics snapshot from the recorder.
-    pub fn get_latency_snapshot(&self) -> LatencySnapshot {
-        let mut aggregator = self.aggregator.lock().expect("aggregator lock poisoned");
-        aggregator.compute_snapshot(&self.latency_recorder)
-    }
-
-    /// Returns daemon status information.
+    /// Daemon status (running, uptime, active profile, device count).
     pub fn get_status(&self) -> StatusInfo {
         StatusInfo {
             daemon_running: self.daemon_state.is_running(),
@@ -73,57 +59,38 @@ impl DaemonQueryService {
         }
     }
 
-    /// Returns the most recent events from the ring buffer.
-    pub fn get_event_log(&self, count: usize) -> Vec<Value> {
-        let log = self.event_log.read().expect("event_log lock poisoned");
-        log.iter().rev().take(count).cloned().collect()
+    /// Current modifier/lock/layer state.
+    pub fn get_state(&self) -> TelemetryState {
+        self.telemetry.state()
     }
 
-    /// Clears the event ring buffer. Returns the number of events removed.
-    pub fn clear_event_log(&self) -> usize {
-        let mut log = self.event_log.write().expect("event_log lock poisoned");
-        let removed = log.len();
-        log.clear();
-        removed
+    /// Current latency statistics.
+    pub fn get_latency_snapshot(&self) -> LatencySnapshot {
+        self.telemetry.latency()
     }
 
-    /// Records an event into the ring buffer.
-    pub fn record_event(&self, event: Value) {
-        let mut log = self.event_log.write().expect("event_log lock poisoned");
-        if log.len() >= EVENT_LOG_CAPACITY {
-            log.pop_front();
-        }
-        log.push_back(event);
+    /// Up to `count` most recent event descriptions, oldest first.
+    pub fn get_recent_events(&self, count: usize) -> Vec<String> {
+        self.telemetry.recent_events(count)
     }
 
-    /// Spawns a background task that collects events from a broadcast channel.
-    pub fn spawn_event_collector(
-        self: &Arc<Self>,
-        mut event_rx: tokio::sync::broadcast::Receiver<crate::web::rpc_types::ServerMessage>,
-    ) {
-        let this = Arc::clone(self);
-        tokio::spawn(async move {
-            loop {
-                match event_rx.recv().await {
-                    Ok(msg) => {
-                        if let Ok(value) = serde_json::to_value(&msg) {
-                            this.record_event(value);
-                        }
-                    }
-                    Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
-                        log::warn!("Event collector lagged by {} messages", n);
-                    }
-                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
-                        log::info!("Event collector channel closed");
-                        break;
-                    }
-                }
-            }
-        });
+    /// Clears the recent-events history. Returns the number of events removed.
+    pub fn clear_events(&self) -> usize {
+        self.telemetry.clear_events()
+    }
+
+    /// Records that `name` was activated and asks the daemon to reload it.
+    ///
+    /// Every activation path (REST, IPC) must call this so status reflects the
+    /// activation regardless of which transport performed it.
+    pub fn record_profile_activation(&self, name: &str) {
+        self.daemon_state.set_active_profile(Some(name.to_string()));
+        self.daemon_state.request_reload();
     }
 }
 
-/// Status information returned by `get_status()`.
+/// Status information returned by [`DaemonQueryService::get_status`].
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatusInfo {
     pub daemon_running: bool,
     pub uptime_secs: u64,
@@ -134,93 +101,76 @@ pub struct StatusInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::AtomicBool;
 
-    fn make_test_service() -> DaemonQueryService {
-        let recorder = Arc::new(LatencyRecorder::new());
-        let running = Arc::new(AtomicBool::new(true));
+    fn make_test_service() -> (DaemonQueryService, Arc<DaemonTelemetry>) {
+        let telemetry = Arc::new(DaemonTelemetry::new());
         let state = Arc::new(DaemonSharedState::new(
-            running,
+            Arc::new(AtomicBool::new(true)),
             Some("test".to_string()),
-            std::path::PathBuf::from("/test.krx"),
-            1,
+            PathBuf::from("/test.krx"),
+            2,
         ));
-        DaemonQueryService::new(recorder, state)
+        (
+            DaemonQueryService::new(state, Arc::clone(&telemetry)),
+            telemetry,
+        )
     }
 
     #[test]
-    fn test_get_latency_snapshot_empty() {
-        let svc = make_test_service();
-        let snap = svc.get_latency_snapshot();
-        assert_eq!(snap.sample_count, 0);
+    fn test_get_status_reads_shared_state() {
+        let (svc, _) = make_test_service();
+        assert_eq!(
+            svc.get_status(),
+            StatusInfo {
+                daemon_running: true,
+                uptime_secs: 0,
+                active_profile: Some("test".to_string()),
+                device_count: 2,
+            }
+        );
     }
 
     #[test]
-    fn test_get_latency_snapshot_with_data() {
-        let svc = make_test_service();
-        svc.latency_recorder.record(100);
-        svc.latency_recorder.record(200);
+    fn test_without_daemon_reports_not_running() {
+        let status = DaemonQueryService::without_daemon().get_status();
+        assert!(!status.daemon_running);
+        assert_eq!(status.active_profile, None);
+        assert_eq!(status.device_count, 0);
+    }
+
+    #[test]
+    fn test_get_state_reads_telemetry() {
+        let (svc, telemetry) = make_test_service();
+        let mut s = TelemetryState::empty();
+        s.set_modifier(4, true);
+        telemetry.update_state(s);
+        assert_eq!(svc.get_state().modifiers(), vec!["MD_04"]);
+    }
+
+    #[test]
+    fn test_latency_reads_telemetry_recorder() {
+        let (svc, telemetry) = make_test_service();
+        telemetry.latency_recorder().record(100);
+        telemetry.latency_recorder().record(200);
         let snap = svc.get_latency_snapshot();
         assert_eq!(snap.sample_count, 2);
         assert!(snap.min_us >= 100);
     }
 
     #[test]
-    fn test_get_state_without_telemetry_is_none() {
-        let svc = make_test_service();
-        assert!(svc.get_state().is_none());
+    fn test_events_are_the_telemetry_ring() {
+        let (svc, telemetry) = make_test_service();
+        telemetry.push_event("press A".to_string());
+        telemetry.push_event("release A".to_string());
+        assert_eq!(svc.get_recent_events(10), vec!["press A", "release A"]);
+        assert_eq!(svc.clear_events(), 2);
+        assert!(telemetry.recent_events(10).is_empty());
     }
 
     #[test]
-    fn test_get_state_reads_telemetry() {
-        let telemetry = Arc::new(DaemonTelemetry::new());
-        let mut s = TelemetryState::empty();
-        s.set_modifier(4, true);
-        telemetry.update_state(s);
-
-        let svc = make_test_service().with_telemetry(telemetry);
-        let got = svc.get_state().expect("telemetry state present");
-        assert_eq!(got.modifiers(), vec!["MD_04"]);
-    }
-
-    #[test]
-    fn test_get_status() {
-        let svc = make_test_service();
-        let status = svc.get_status();
-        assert!(status.daemon_running);
-        assert_eq!(status.active_profile, Some("test".to_string()));
-        assert_eq!(status.device_count, 1);
-    }
-
-    #[test]
-    fn test_event_log() {
-        let svc = make_test_service();
-        svc.record_event(serde_json::json!({"type": "key", "code": 65}));
-        svc.record_event(serde_json::json!({"type": "key", "code": 66}));
-
-        let events = svc.get_event_log(10);
-        assert_eq!(events.len(), 2);
-        // Most recent first
-        assert_eq!(events[0]["code"], 66);
-    }
-
-    #[test]
-    fn test_clear_event_log() {
-        let svc = make_test_service();
-        svc.record_event(serde_json::json!({"i": 1}));
-        svc.record_event(serde_json::json!({"i": 2}));
-        assert_eq!(svc.clear_event_log(), 2);
-        assert!(svc.get_event_log(10).is_empty());
-        assert_eq!(svc.clear_event_log(), 0);
-    }
-
-    #[test]
-    fn test_event_log_capacity() {
-        let svc = make_test_service();
-        for i in 0..1100 {
-            svc.record_event(serde_json::json!({"i": i}));
-        }
-        let events = svc.get_event_log(2000);
-        assert_eq!(events.len(), EVENT_LOG_CAPACITY);
+    fn test_record_profile_activation_updates_status() {
+        let (svc, _) = make_test_service();
+        svc.record_profile_activation("gaming");
+        assert_eq!(svc.get_status().active_profile.as_deref(), Some("gaming"));
     }
 }

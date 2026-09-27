@@ -54,7 +54,7 @@ pub fn example_refactored_handle_run(
     let container = builder.build().map_err(|e| e.to_string())?;
 
     // Create AppState from container
-    let app_state = AppState::from_container(container, None);
+    let app_state = AppState::from_container(container);
 
     log::info!("Services initialized successfully");
     Ok(app_state)
@@ -82,7 +82,7 @@ pub fn example_refactored_test_mode(config_dir: PathBuf) -> Result<AppState, Str
         .map_err(|e| e.to_string())?;
 
     // Create AppState with test mode socket
-    let app_state = AppState::from_container(container, Some(test_socket));
+    let app_state = AppState::from_container(container);
 
     log::info!("Test mode initialized");
     Ok(app_state)
@@ -101,7 +101,7 @@ pub fn example_production_mode(config_dir: PathBuf) -> Result<AppState, String> 
         .build()
         .map_err(|e| e.to_string())?;
 
-    let app_state = AppState::from_container(container, None);
+    let app_state = AppState::from_container(container);
 
     log::info!("Production mode initialized");
     Ok(app_state)
@@ -122,7 +122,7 @@ pub fn example_windows_mode(
         .build()
         .map_err(|e| e.to_string())?;
 
-    let app_state = AppState::from_container(container, None);
+    let app_state = AppState::from_container(container);
 
     // Platform-specific logic (port finding, PID file) remains in main.rs
     // but service instantiation is centralized in ServiceContainer

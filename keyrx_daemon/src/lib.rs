@@ -23,7 +23,6 @@ pub mod macro_recorder;
 pub mod platform;
 pub mod processor;
 pub mod services;
-pub mod test_mode;
 pub mod traits;
 pub mod validation;
 pub mod version;

@@ -1,117 +1,64 @@
-//! IPC command handlers for test mode.
+//! IPC command handlers.
 //!
-//! This module provides command handling logic for IPC requests, including
-//! profile activation and daemon status queries.
+//! A thin adapter from [`IpcRequest`] to the daemon's single read model,
+//! [`DaemonQueryService`]. The handler keeps no state of its own, so what the
+//! `keyrx_daemon status|state|metrics` CLI reports is by construction what the
+//! REST API reports for the same daemon.
 
 use super::{IpcRequest, IpcResponse};
 use crate::config::profile_manager::ProfileManager;
-use crate::daemon::metrics::LatencySnapshot;
-use crate::daemon::telemetry::{DaemonTelemetry, STATE_BITS};
+use crate::services::DaemonQueryService;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
-/// Handler for IPC commands in test mode.
-///
-/// This struct manages the execution of IPC commands, coordinating with
-/// the ProfileManager and daemon state.
+/// Handler for IPC commands (production and test mode alike).
 pub struct IpcCommandHandler {
     profile_manager: Arc<ProfileManager>,
-    daemon_running: Arc<RwLock<bool>>,
-    /// Live runtime telemetry (state/latency/events). `None` in test mode where
-    /// no keyboard events are processed — telemetry queries then return defaults.
-    telemetry: Option<Arc<DaemonTelemetry>>,
+    query: Arc<DaemonQueryService>,
 }
 
 impl IpcCommandHandler {
-    /// Create a new command handler without live telemetry (test mode).
+    /// Creates a handler over the process's read model.
     ///
-    /// Telemetry queries (`GetState`/`GetLatencyMetrics`/`GetEventsTail`) return
-    /// well-formed empty/default responses.
-    ///
-    /// # Arguments
-    ///
-    /// * `profile_manager` - Shared ProfileManager for profile operations
-    /// * `daemon_running` - Shared flag indicating daemon running state
-    pub fn new(profile_manager: Arc<ProfileManager>, daemon_running: Arc<RwLock<bool>>) -> Self {
+    /// * `profile_manager` - performs `ActivateProfile`
+    /// * `query` - the same [`DaemonQueryService`] the web API uses
+    pub fn new(profile_manager: Arc<ProfileManager>, query: Arc<DaemonQueryService>) -> Self {
         Self {
             profile_manager,
-            daemon_running,
-            telemetry: None,
+            query,
         }
     }
 
-    /// Create a command handler wired to live daemon telemetry (production mode).
-    ///
-    /// # Arguments
-    ///
-    /// * `profile_manager` - Shared ProfileManager for profile operations
-    /// * `daemon_running` - Shared flag indicating daemon running state
-    /// * `telemetry` - Shared live telemetry updated by the event loop
-    pub fn with_telemetry(
-        profile_manager: Arc<ProfileManager>,
-        daemon_running: Arc<RwLock<bool>>,
-        telemetry: Arc<DaemonTelemetry>,
-    ) -> Self {
-        Self {
-            profile_manager,
-            daemon_running,
-            telemetry: Some(telemetry),
-        }
-    }
-
-    /// Handle an IPC request and return the appropriate response.
-    ///
-    /// # Arguments
-    ///
-    /// * `request` - The IPC request to handle
-    ///
-    /// # Returns
-    ///
-    /// Returns an IpcResponse containing the result of the request, or an error response.
-    pub async fn handle(&self, request: IpcRequest) -> IpcResponse {
+    /// Handles an IPC request and returns the response.
+    pub fn handle(&self, request: IpcRequest) -> IpcResponse {
         match request {
-            IpcRequest::ActivateProfile { name } => self.handle_activate_profile(name).await,
-            IpcRequest::GetStatus => self.handle_get_status().await,
-            IpcRequest::GetState => self.handle_get_state(),
+            IpcRequest::ActivateProfile { name } => self.handle_activate_profile(name),
+            IpcRequest::GetStatus => self.handle_get_status(),
+            IpcRequest::GetState => IpcResponse::State {
+                state: self.query.get_state().into_raw(),
+            },
             IpcRequest::GetLatencyMetrics => self.handle_get_latency(),
-            IpcRequest::GetEventsTail { count } => self.handle_get_events(count),
-            IpcRequest::ClearEvents => self.handle_clear_events(),
+            IpcRequest::GetEventsTail { count } => IpcResponse::Events {
+                events: self.query.get_recent_events(count),
+            },
+            IpcRequest::ClearEvents => IpcResponse::EventsCleared {
+                count: self.query.clear_events(),
+            },
         }
     }
 
-    /// Handle a clear-events request.
-    ///
-    /// Clears the recent-events ring and returns the number removed. Without live
-    /// telemetry (test mode) there is nothing to clear, so returns 0.
-    fn handle_clear_events(&self) -> IpcResponse {
-        let count = match self.telemetry {
-            Some(ref t) => t.clear_events(),
-            None => 0,
-        };
-        IpcResponse::EventsCleared { count }
+    fn handle_get_status(&self) -> IpcResponse {
+        let status = self.query.get_status();
+        log::debug!("IPC: status {status:?}");
+        IpcResponse::Status {
+            running: status.daemon_running,
+            uptime_secs: status.uptime_secs,
+            active_profile: status.active_profile,
+            device_count: status.device_count,
+        }
     }
 
-    /// Handle a live-state query.
-    ///
-    /// Returns the packed 255-bit modifier/lock/layer vector. Without live
-    /// telemetry (test mode), returns the all-inactive default.
-    fn handle_get_state(&self) -> IpcResponse {
-        let state = match self.telemetry {
-            Some(ref t) => t.raw_state(),
-            None => vec![false; STATE_BITS],
-        };
-        IpcResponse::State { state }
-    }
-
-    /// Handle a latency-metrics query.
-    ///
-    /// Returns the latest aggregated latency snapshot. Without live telemetry
-    /// (test mode), returns zeros.
     fn handle_get_latency(&self) -> IpcResponse {
-        let snapshot = match self.telemetry {
-            Some(ref t) => t.latency(),
-            None => LatencySnapshot::empty(),
-        };
+        let snapshot = self.query.get_latency_snapshot();
         IpcResponse::Latency {
             min_us: snapshot.min_us,
             avg_us: snapshot.avg_us,
@@ -121,77 +68,32 @@ impl IpcCommandHandler {
         }
     }
 
-    /// Handle a recent-events query.
-    ///
-    /// Returns up to `count` most recent event descriptions (oldest first).
-    /// Without live telemetry (test mode), returns an empty list.
-    fn handle_get_events(&self, count: usize) -> IpcResponse {
-        let events = match self.telemetry {
-            Some(ref t) => t.recent_events(count),
-            None => Vec::new(),
-        };
-        IpcResponse::Events { events }
-    }
-
-    /// Handle profile activation request.
-    ///
-    /// This activates the specified profile and returns the result.
-    /// The activation includes compilation and loading of the profile.
-    async fn handle_activate_profile(&self, name: String) -> IpcResponse {
+    /// Activates a profile (compile + load), then records it in the read model
+    /// so status and the daemon's reload loop see it — same as the REST path.
+    fn handle_activate_profile(&self, name: String) -> IpcResponse {
         log::info!("IPC: Activating profile '{}'", name);
 
-        // Attempt to activate the profile
-        match self.profile_manager.activate(&name) {
-            Ok(result) => {
-                if result.success {
-                    log::info!(
-                        "IPC: Profile '{}' activated successfully (compile: {}ms, reload: {}ms)",
-                        name,
-                        result.compile_time_ms,
-                        result.reload_time_ms
-                    );
-                    IpcResponse::ProfileActivated { name }
-                } else {
-                    let error_msg = result.error.unwrap_or_else(|| "Unknown error".to_string());
-                    log::error!("IPC: Profile '{}' activation failed: {}", name, error_msg);
-                    IpcResponse::Error {
-                        code: 5002,
-                        message: format!("Profile activation failed: {}", error_msg),
-                    }
-                }
+        let error = match self.profile_manager.activate(&name) {
+            Ok(result) if result.success => {
+                log::info!(
+                    "IPC: Profile '{}' activated (compile: {}ms, reload: {}ms)",
+                    name,
+                    result.compile_time_ms,
+                    result.reload_time_ms
+                );
+                self.query.record_profile_activation(&name);
+                return IpcResponse::ProfileActivated { name };
             }
-            Err(e) => {
-                log::error!("IPC: Profile '{}' activation error: {}", name, e);
-                IpcResponse::Error {
-                    code: 5002,
-                    message: format!("Profile activation error: {}", e),
-                }
-            }
-        }
-    }
-
-    /// Handle daemon status query.
-    ///
-    /// Returns the current daemon running state along with other status information.
-    async fn handle_get_status(&self) -> IpcResponse {
-        log::debug!("IPC: Querying daemon status");
-
-        let running = *self.daemon_running.read().await;
-
-        // Get active profile name (ProfileManager.get_active() is immutable, so no unsafe needed)
-        let active_profile = self.profile_manager.get_active().ok().flatten();
-
-        // Get device count (in test mode, this is always 0)
-        let device_count = 0;
-
-        // Get uptime (for now, just return 0 - we can add proper uptime tracking later)
-        let uptime_secs = 0;
-
-        IpcResponse::Status {
-            running,
-            uptime_secs,
-            active_profile,
-            device_count,
+            Ok(result) => format!(
+                "Profile activation failed: {}",
+                result.error.unwrap_or_else(|| "Unknown error".to_string())
+            ),
+            Err(e) => format!("Profile activation error: {}", e),
+        };
+        log::error!("IPC: Profile '{}': {}", name, error);
+        IpcResponse::Error {
+            code: 5002,
+            message: error,
         }
     }
 }
@@ -199,119 +101,109 @@ impl IpcCommandHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::profile_manager::ProfileManager;
+    use crate::daemon::telemetry::{DaemonTelemetry, TelemetryState, STATE_BITS};
+    use crate::daemon::DaemonSharedState;
+    use std::path::PathBuf;
+    use std::sync::atomic::AtomicBool;
     use tempfile::TempDir;
 
-    async fn setup_test_handler() -> (IpcCommandHandler, TempDir) {
-        let temp_dir = TempDir::new().unwrap();
-        let config_dir = temp_dir.path().to_path_buf();
-
-        let profile_manager = ProfileManager::new(config_dir).unwrap();
-        let profile_manager = Arc::new(profile_manager);
-        let daemon_running = Arc::new(RwLock::new(true));
-
-        let handler = IpcCommandHandler::new(profile_manager, daemon_running);
-        (handler, temp_dir)
+    struct Fixture {
+        handler: IpcCommandHandler,
+        query: Arc<DaemonQueryService>,
+        telemetry: Arc<DaemonTelemetry>,
+        _dir: TempDir,
     }
 
-    #[tokio::test]
-    async fn test_get_status() {
-        let (handler, _temp_dir) = setup_test_handler().await;
-
-        let response = handler.handle(IpcRequest::GetStatus).await;
-
-        match response {
-            IpcResponse::Status {
-                running,
-                uptime_secs: _,
-                active_profile: _,
-                device_count,
-            } => {
-                assert!(running);
-                assert_eq!(device_count, 0);
-            }
-            _ => panic!("Expected Status response"),
+    /// A handler over a "running daemon" with profile `work` and 2 devices.
+    fn fixture() -> Fixture {
+        let dir = TempDir::new().unwrap();
+        let profile_manager = Arc::new(ProfileManager::new(dir.path().to_path_buf()).unwrap());
+        let telemetry = Arc::new(DaemonTelemetry::new());
+        let state = Arc::new(DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            Some("work".to_string()),
+            PathBuf::from("work.krx"),
+            2,
+        ));
+        let query = Arc::new(DaemonQueryService::new(state, Arc::clone(&telemetry)));
+        Fixture {
+            handler: IpcCommandHandler::new(profile_manager, Arc::clone(&query)),
+            query,
+            telemetry,
+            _dir: dir,
         }
     }
 
-    #[tokio::test]
-    async fn test_activate_profile_not_found() {
-        let (handler, _temp_dir) = setup_test_handler().await;
+    /// Regression: IPC status used to report hardcoded zeros and the on-disk
+    /// profile instead of the live daemon state the web API reports.
+    #[test]
+    fn test_get_status_matches_read_model() {
+        let f = fixture();
+        let expected = f.query.get_status();
 
-        let response = handler
-            .handle(IpcRequest::ActivateProfile {
-                name: "nonexistent".to_string(),
-            })
-            .await;
+        match f.handler.handle(IpcRequest::GetStatus) {
+            IpcResponse::Status {
+                running,
+                uptime_secs,
+                active_profile,
+                device_count,
+            } => {
+                assert!(running);
+                assert_eq!(active_profile.as_deref(), Some("work"));
+                assert_eq!(device_count, 2);
+                assert_eq!(uptime_secs, expected.uptime_secs);
+            }
+            other => panic!("Expected Status response, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_get_status_without_daemon() {
+        let dir = TempDir::new().unwrap();
+        let pm = Arc::new(ProfileManager::new(dir.path().to_path_buf()).unwrap());
+        let handler = IpcCommandHandler::new(pm, Arc::new(DaemonQueryService::without_daemon()));
+
+        match handler.handle(IpcRequest::GetStatus) {
+            IpcResponse::Status {
+                running,
+                active_profile,
+                device_count,
+                ..
+            } => {
+                assert!(!running);
+                assert_eq!(active_profile, None);
+                assert_eq!(device_count, 0);
+            }
+            other => panic!("Expected Status response, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_activate_profile_not_found() {
+        let f = fixture();
+        let response = f.handler.handle(IpcRequest::ActivateProfile {
+            name: "nonexistent".to_string(),
+        });
 
         match response {
             IpcResponse::Error { code, message } => {
                 assert_eq!(code, 5002);
                 assert!(message.contains("not found") || message.contains("activation"));
             }
-            _ => panic!("Expected Error response"),
+            other => panic!("Expected Error response, got {other:?}"),
         }
+        // A failed activation must not change the reported profile.
+        assert_eq!(f.query.get_status().active_profile.as_deref(), Some("work"));
     }
 
-    #[tokio::test]
-    async fn test_telemetry_commands_default_empty() {
-        // Without telemetry (test mode), telemetry queries return empty defaults,
-        // NOT errors.
-        let (handler, _temp_dir) = setup_test_handler().await;
-
-        match handler.handle(IpcRequest::GetState).await {
-            IpcResponse::State { state } => {
-                assert_eq!(state.len(), STATE_BITS);
-                assert!(state.iter().all(|&b| !b));
-            }
-            other => panic!("Expected State response, got {other:?}"),
-        }
-
-        match handler.handle(IpcRequest::GetLatencyMetrics).await {
-            IpcResponse::Latency {
-                min_us,
-                avg_us,
-                max_us,
-                p95_us,
-                p99_us,
-            } => {
-                assert_eq!((min_us, avg_us, max_us, p95_us, p99_us), (0, 0, 0, 0, 0));
-            }
-            other => panic!("Expected Latency response, got {other:?}"),
-        }
-
-        match handler
-            .handle(IpcRequest::GetEventsTail { count: 10 })
-            .await
-        {
-            IpcResponse::Events { events } => assert!(events.is_empty()),
-            other => panic!("Expected Events response, got {other:?}"),
-        }
-    }
-
-    async fn setup_telemetry_handler() -> (IpcCommandHandler, Arc<DaemonTelemetry>, TempDir) {
-        let temp_dir = TempDir::new().unwrap();
-        let profile_manager = Arc::new(ProfileManager::new(temp_dir.path().to_path_buf()).unwrap());
-        let daemon_running = Arc::new(RwLock::new(true));
-        let telemetry = Arc::new(DaemonTelemetry::new());
-        let handler = IpcCommandHandler::with_telemetry(
-            profile_manager,
-            daemon_running,
-            Arc::clone(&telemetry),
-        );
-        (handler, telemetry, temp_dir)
-    }
-
-    #[tokio::test]
-    async fn test_get_state_reads_telemetry() {
-        use crate::daemon::telemetry::TelemetryState;
-        let (handler, telemetry, _temp_dir) = setup_telemetry_handler().await;
-
+    #[test]
+    fn test_get_state_reads_telemetry() {
+        let f = fixture();
         let mut s = TelemetryState::empty();
         s.set_modifier(7, true);
-        telemetry.update_state(s);
+        f.telemetry.update_state(s);
 
-        match handler.handle(IpcRequest::GetState).await {
+        match f.handler.handle(IpcRequest::GetState) {
             IpcResponse::State { state } => {
                 assert_eq!(state.len(), STATE_BITS);
                 assert!(state[7]);
@@ -320,69 +212,33 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn test_get_latency_reads_telemetry() {
-        let (handler, telemetry, _temp_dir) = setup_telemetry_handler().await;
+    #[test]
+    fn test_get_latency_reads_recorder() {
+        let f = fixture();
+        f.telemetry.latency_recorder().record(250);
 
-        let mut snap = LatencySnapshot::empty();
-        snap.avg_us = 250;
-        snap.p99_us = 900;
-        telemetry.update_latency(snap);
-
-        match handler.handle(IpcRequest::GetLatencyMetrics).await {
-            IpcResponse::Latency { avg_us, p99_us, .. } => {
-                assert_eq!(avg_us, 250);
-                assert_eq!(p99_us, 900);
+        match f.handler.handle(IpcRequest::GetLatencyMetrics) {
+            IpcResponse::Latency { min_us, max_us, .. } => {
+                assert!(min_us >= 250 && max_us >= 250, "{min_us}..{max_us}");
             }
             other => panic!("Expected Latency response, got {other:?}"),
         }
     }
 
-    #[tokio::test]
-    async fn test_get_events_reads_telemetry() {
-        let (handler, telemetry, _temp_dir) = setup_telemetry_handler().await;
+    #[test]
+    fn test_events_tail_and_clear() {
+        let f = fixture();
+        f.telemetry.push_event("press A".to_string());
+        f.telemetry.push_event("release A".to_string());
 
-        telemetry.push_event("press A".to_string());
-        telemetry.push_event("release A".to_string());
-
-        match handler
-            .handle(IpcRequest::GetEventsTail { count: 10 })
-            .await
-        {
-            IpcResponse::Events { events } => {
-                assert_eq!(events, vec!["press A", "release A"]);
-            }
+        match f.handler.handle(IpcRequest::GetEventsTail { count: 10 }) {
+            IpcResponse::Events { events } => assert_eq!(events, vec!["press A", "release A"]),
             other => panic!("Expected Events response, got {other:?}"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_clear_events_reads_telemetry() {
-        let (handler, telemetry, _temp_dir) = setup_telemetry_handler().await;
-        telemetry.push_event("a".to_string());
-        telemetry.push_event("b".to_string());
-
-        match handler.handle(IpcRequest::ClearEvents).await {
+        match f.handler.handle(IpcRequest::ClearEvents) {
             IpcResponse::EventsCleared { count } => assert_eq!(count, 2),
             other => panic!("Expected EventsCleared response, got {other:?}"),
         }
-        // Ring is now empty.
-        match handler
-            .handle(IpcRequest::GetEventsTail { count: 10 })
-            .await
-        {
-            IpcResponse::Events { events } => assert!(events.is_empty()),
-            other => panic!("Expected Events response, got {other:?}"),
-        }
-    }
-
-    #[tokio::test]
-    async fn test_clear_events_default_zero() {
-        // No telemetry (test mode) -> nothing to clear.
-        let (handler, _temp_dir) = setup_test_handler().await;
-        match handler.handle(IpcRequest::ClearEvents).await {
-            IpcResponse::EventsCleared { count } => assert_eq!(count, 0),
-            other => panic!("Expected EventsCleared response, got {other:?}"),
-        }
+        assert!(f.query.get_recent_events(10).is_empty());
     }
 }

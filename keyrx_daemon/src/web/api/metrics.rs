@@ -13,8 +13,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-use crate::error::{DaemonError, SocketError};
-use crate::ipc::{DaemonIpc, IpcRequest, IpcResponse, DEFAULT_SOCKET_PATH};
 use crate::web::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
@@ -94,97 +92,21 @@ struct StatusResponse {
     status: String,
     version: String,
     daemon_running: bool,
-    uptime_secs: Option<u64>,
+    uptime_secs: u64,
     active_profile: Option<String>,
-    device_count: Option<usize>,
+    device_count: usize,
 }
 
-async fn get_status(
-    State(state): State<Arc<crate::web::AppState>>,
-) -> Result<Json<StatusResponse>, DaemonError> {
-    // Check if test mode is enabled
-    if let Some(socket_path) = &state.test_mode_socket {
-        // Test mode: use IPC to query daemon status with timeout
-        use crate::ipc::{unix_socket::UnixSocketIpc, DaemonIpc, IpcRequest, IpcResponse};
-        use std::time::Duration;
-
-        let socket_path = socket_path.clone();
-        let result = tokio::time::timeout(Duration::from_secs(5), async move {
-            tokio::task::spawn_blocking(move || {
-                let mut ipc = UnixSocketIpc::new(socket_path);
-                ipc.send_request(&IpcRequest::GetStatus)
-            })
-            .await
-        })
-        .await;
-
-        let (daemon_running, uptime_secs, active_profile, device_count) = match result {
-            Ok(Ok(Ok(IpcResponse::Status {
-                running,
-                uptime_secs: uptime,
-                active_profile: profile,
-                device_count: count,
-            }))) => (running, Some(uptime), profile, Some(count)),
-            Ok(Ok(Err(e))) => {
-                log::warn!("IPC error querying daemon status: {}", e);
-                (false, None, None, None)
-            }
-            Ok(Err(e)) => {
-                log::warn!("Failed to join IPC task: {}", e);
-                (false, None, None, None)
-            }
-            Err(_) => {
-                log::warn!("IPC timeout querying daemon status");
-                (false, None, None, None)
-            }
-            _ => (false, None, None, None),
-        };
-
-        Ok(Json(StatusResponse {
-            status: "running".to_string(),
-            version: env!("CARGO_PKG_VERSION").to_string(),
-            daemon_running,
-            uptime_secs,
-            active_profile,
-            device_count,
-        }))
-    } else {
-        // Production mode: use DaemonQueryService, shared state, or IPC
-        let (daemon_running, uptime_secs, active_profile, device_count) =
-            if let Some(query) = &state.daemon_query {
-                // DaemonQueryService available (both Windows and Linux production)
-                let status = query.get_status();
-                (
-                    status.daemon_running,
-                    Some(status.uptime_secs),
-                    status.active_profile,
-                    Some(status.device_count),
-                )
-            } else if let Some(daemon_state) = &state.daemon_state {
-                // Fallback: shared state without query service
-                (
-                    daemon_state.is_running(),
-                    Some(daemon_state.uptime_secs()),
-                    daemon_state.get_active_profile(),
-                    Some(daemon_state.get_device_count()),
-                )
-            } else {
-                // IPC fallback (test mode without daemon)
-                match query_daemon_status() {
-                    Ok((uptime, profile, count)) => (true, Some(uptime), profile, Some(count)),
-                    Err(_) => (false, None, None, None),
-                }
-            };
-
-        Ok(Json(StatusResponse {
-            status: "running".to_string(),
-            version: env!("CARGO_PKG_VERSION").to_string(),
-            daemon_running,
-            uptime_secs,
-            active_profile,
-            device_count,
-        }))
-    }
+async fn get_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> {
+    let status = state.daemon_query.get_status();
+    Json(StatusResponse {
+        status: "running".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        daemon_running: status.daemon_running,
+        uptime_secs: status.uptime_secs,
+        active_profile: status.active_profile,
+        device_count: status.device_count,
+    })
 }
 
 #[derive(Serialize)]
@@ -197,54 +119,15 @@ struct LatencyStatsResponse {
 }
 
 /// GET /api/metrics/latency - Get latency statistics
-async fn get_latency_stats(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<LatencyStatsResponse>, DaemonError> {
-    use crate::error::WebError;
-
-    // Use DaemonQueryService if available (production mode with real daemon)
-    if let Some(query) = &state.daemon_query {
-        let snap = query.get_latency_snapshot();
-        return Ok(Json(LatencyStatsResponse {
-            min_us: snap.min_us,
-            avg_us: snap.avg_us,
-            max_us: snap.max_us,
-            p95_us: snap.p95_us,
-            p99_us: snap.p99_us,
-        }));
-    }
-
-    // IPC fallback (test mode only)
-    let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
-    let mut ipc = crate::ipc::unix_socket::UnixSocketIpc::new(socket_path);
-
-    let response = ipc
-        .send_request(&IpcRequest::GetLatencyMetrics)
-        .map_err(|_| SocketError::NotConnected)?;
-
-    match response {
-        IpcResponse::Latency {
-            min_us,
-            avg_us,
-            max_us,
-            p95_us,
-            p99_us,
-        } => Ok(Json(LatencyStatsResponse {
-            min_us,
-            avg_us,
-            max_us,
-            p95_us,
-            p99_us,
-        })),
-        IpcResponse::Error { code, message } => Err(WebError::InvalidRequest {
-            reason: format!("Daemon error {}: {}", code, message),
-        }
-        .into()),
-        _ => Err(WebError::InvalidRequest {
-            reason: "Unexpected response from daemon".to_string(),
-        }
-        .into()),
-    }
+async fn get_latency_stats(State(state): State<Arc<AppState>>) -> Json<LatencyStatsResponse> {
+    let snap = state.daemon_query.get_latency_snapshot();
+    Json(LatencyStatsResponse {
+        min_us: snap.min_us,
+        avg_us: snap.avg_us,
+        max_us: snap.max_us,
+        p95_us: snap.p95_us,
+        p99_us: snap.p99_us,
+    })
 }
 
 #[derive(Deserialize)]
@@ -252,77 +135,24 @@ struct EventLogQuery {
     count: Option<usize>,
 }
 
-/// GET /api/metrics/events - Get event log
+/// GET /api/metrics/events - Most recent event descriptions, oldest first
 async fn get_event_log(
     State(state): State<Arc<AppState>>,
     Query(params): Query<EventLogQuery>,
-) -> Result<Json<Value>, DaemonError> {
-    use crate::error::WebError;
-
-    let count = params.count.unwrap_or(100);
-
-    // Use DaemonQueryService if available (production mode with real daemon)
-    if let Some(query) = &state.daemon_query {
-        let events = query.get_event_log(count);
-        return Ok(Json(json!({
-            "count": events.len(),
-            "events": events,
-        })));
-    }
-
-    let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
-    let mut ipc = crate::ipc::unix_socket::UnixSocketIpc::new(socket_path);
-
-    let response = ipc
-        .send_request(&IpcRequest::GetEventsTail { count })
-        .map_err(|_| SocketError::NotConnected)?;
-
-    match response {
-        IpcResponse::Events { events } => Ok(Json(json!({
-            "count": events.len(),
-            "events": events,
-        }))),
-        IpcResponse::Error { code, message } => Err(WebError::InvalidRequest {
-            reason: format!("Daemon error {}: {}", code, message),
-        }
-        .into()),
-        _ => Err(WebError::InvalidRequest {
-            reason: "Unexpected response from daemon".to_string(),
-        }
-        .into()),
-    }
+) -> Json<Value> {
+    let events = state
+        .daemon_query
+        .get_recent_events(params.count.unwrap_or(100));
+    Json(json!({
+        "count": events.len(),
+        "events": events,
+    }))
 }
 
 /// DELETE /api/metrics/events - Clear event log
-async fn clear_event_log(State(state): State<Arc<AppState>>) -> Result<Json<Value>, DaemonError> {
-    use crate::error::WebError;
-
-    // Production path: clear the query service's event ring directly.
-    if let Some(query) = &state.daemon_query {
-        let cleared = query.clear_event_log();
-        return Ok(Json(json!({ "success": true, "cleared": cleared })));
-    }
-
-    // IPC fallback (test mode): ask the daemon to clear its telemetry ring.
-    let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
-    let mut ipc = crate::ipc::unix_socket::UnixSocketIpc::new(socket_path);
-    let response = ipc
-        .send_request(&IpcRequest::ClearEvents)
-        .map_err(|_| SocketError::NotConnected)?;
-
-    match response {
-        IpcResponse::EventsCleared { count } => {
-            Ok(Json(json!({ "success": true, "cleared": count })))
-        }
-        IpcResponse::Error { code, message } => Err(WebError::InvalidRequest {
-            reason: format!("Daemon error {}: {}", code, message),
-        }
-        .into()),
-        _ => Err(WebError::InvalidRequest {
-            reason: "Unexpected response from daemon".to_string(),
-        }
-        .into()),
-    }
+async fn clear_event_log(State(state): State<Arc<AppState>>) -> Json<Value> {
+    let cleared = state.daemon_query.clear_events();
+    Json(json!({ "success": true, "cleared": cleared }))
 }
 
 #[derive(Serialize)]
@@ -338,73 +168,18 @@ struct DaemonStateResponse {
     active_lock_count: usize,
 }
 
-/// Builds a state response from a telemetry snapshot.
-///
-/// `TelemetryState` is the single source of truth for the 255-bit packing
-/// (modifiers 0..128, locks 128..192, layers 192..255), so this avoids
-/// duplicating that layout in the handler.
-fn daemon_state_response(ts: &crate::daemon::TelemetryState) -> DaemonStateResponse {
-    DaemonStateResponse {
+/// GET /api/daemon/state - Current modifier/lock/layer state
+async fn get_daemon_state(State(state): State<Arc<AppState>>) -> Json<DaemonStateResponse> {
+    // `TelemetryState` owns the 255-bit layout; the handler only formats it.
+    let ts = state.daemon_query.get_state();
+    Json(DaemonStateResponse {
         active_layer: ts.active_layer(),
         modifiers: ts.modifiers(),
         locks: ts.locks(),
         raw_state: ts.raw().to_vec(),
         active_modifier_count: ts.active_modifier_count(),
         active_lock_count: ts.active_lock_count(),
-    }
-}
-
-/// GET /api/daemon/state - Get current daemon state
-async fn get_daemon_state(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<DaemonStateResponse>, DaemonError> {
-    use crate::error::WebError;
-
-    // Production path (both platforms): read live modifier/lock/layer state from
-    // telemetry via the query service. Falls through to IPC only in test mode.
-    if let Some(query) = &state.daemon_query {
-        let ts = query.get_state().unwrap_or_default();
-        return Ok(Json(daemon_state_response(&ts)));
-    }
-
-    let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
-    let mut ipc = crate::ipc::unix_socket::UnixSocketIpc::new(socket_path);
-
-    let response = ipc
-        .send_request(&IpcRequest::GetState)
-        .map_err(|_| SocketError::NotConnected)?;
-
-    match response {
-        IpcResponse::State { state } => Ok(Json(daemon_state_response(
-            &crate::daemon::TelemetryState::from_raw(state),
-        ))),
-        IpcResponse::Error { code, message } => Err(WebError::InvalidRequest {
-            reason: format!("Daemon error {}: {}", code, message),
-        }
-        .into()),
-        _ => Err(WebError::InvalidRequest {
-            reason: "Unexpected response from daemon".to_string(),
-        }
-        .into()),
-    }
-}
-
-/// Query daemon status via IPC
-fn query_daemon_status() -> Result<(u64, Option<String>, usize), Box<dyn std::error::Error>> {
-    let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
-    let mut ipc = crate::ipc::unix_socket::UnixSocketIpc::new(socket_path);
-
-    let response = ipc.send_request(&IpcRequest::GetStatus)?;
-
-    match response {
-        IpcResponse::Status {
-            running: _,
-            uptime_secs,
-            active_profile,
-            device_count,
-        } => Ok((uptime_secs, active_profile, device_count)),
-        _ => Err("Unexpected response from daemon".into()),
-    }
+    })
 }
 
 /// Check if running with administrator privileges

@@ -246,14 +246,10 @@ pub async fn activate_profile(state: &AppState, params: Value) -> Result<Value, 
         .await
         .map_err(|e| RpcError::new(INTERNAL_ERROR, format!("Failed to activate profile: {}", e)))?;
 
-    // Update shared daemon state if available (Windows hot-reload)
-    // This signals the daemon event loop to detect the profile change and reload
-    if let Some(daemon_state) = &state.daemon_state {
-        daemon_state.set_active_profile(Some(params.name.clone()));
-        log::debug!(
-            "Updated daemon shared state with active profile: {}",
-            params.name
-        );
+    // Record in the read model and request reload — the same side effects as
+    // the REST and IPC activation paths.
+    if result.success {
+        state.daemon_query.record_profile_activation(&params.name);
     }
 
     // Broadcast event to WebSocket subscribers
