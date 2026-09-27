@@ -443,6 +443,7 @@ impl ProfileService {
             .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
         log::info!("Profile '{}' deleted successfully", name);
+        self.reload_if_loaded(name);
         Ok(())
     }
 
@@ -496,6 +497,7 @@ impl ProfileService {
         let active_name = self.profile_manager.get_active().ok().flatten();
 
         log::info!("Profile renamed successfully");
+        self.reload_if_loaded(old_name);
 
         Ok(ProfileInfo {
             active: active_name.as_ref() == Some(&metadata.name),
@@ -756,19 +758,20 @@ impl ProfileService {
 
         log::info!("Config saved and recompiled for profile '{}'", name);
 
-        // Trigger daemon reload if the modified profile is currently active
-        if let Some(daemon_state) = self.daemon_state.get() {
-            let active = daemon_state.get_active_profile();
-            if active.as_deref() == Some(name) {
-                log::info!(
-                    "Active profile '{}' was modified, triggering daemon reload",
-                    name
-                );
-                daemon_state.request_reload();
-            }
-        }
-
+        self.reload_if_loaded(name);
         Ok(())
+    }
+
+    /// Asks the attached daemon to reload if `name` is the profile it has
+    /// loaded (its file changed, moved or disappeared).
+    fn reload_if_loaded(&self, name: &str) {
+        let Some(daemon_state) = self.daemon_state.get() else {
+            return;
+        };
+        if daemon_state.get_active_profile().as_deref() == Some(name) {
+            log::info!("Loaded profile '{name}' changed, triggering daemon reload");
+            daemon_state.request_reload();
+        }
     }
 }
 

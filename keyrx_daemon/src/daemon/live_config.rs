@@ -12,7 +12,7 @@
 //! - At runtime, activating a profile (REST, MCP, WS-RPC, IPC, CLI) **switches**
 //!   the daemon to that profile, whatever it started from.
 //! - Any other reload (SIGHUP, active profile's config saved, tray "Reload")
-//!   re-reads the source that is currently loaded.
+//!   re-reads a pinned `--config` file, or else re-resolves the active profile.
 //!
 //! [`LiveConfig`] remembers what is loaded; the daemon publishes it to
 //! [`DaemonSharedState`](super::DaemonSharedState) only after the new
@@ -82,19 +82,20 @@ impl LiveConfig {
     }
 
     /// The source a reload should read: the requested profile when one was
-    /// activated, otherwise whatever is loaded now (the active profile when
-    /// running pass-through).
+    /// activated; a pinned `--config` file (not a profile) is re-read as is;
+    /// otherwise the active profile, so a profile-based daemon follows
+    /// `.active` (CLI activation + SIGHUP, deleting the active profile).
     pub fn reload_source(&self, activation: Option<String>) -> ConfigSource {
         if let Some(name) = activation {
             return ConfigSource::Profile(name);
         }
         match &self.loaded {
             Some(LoadedConfig {
-                profile: Some(name),
+                profile: None,
+                path,
                 ..
-            }) => ConfigSource::Profile(name.clone()),
-            Some(loaded) => ConfigSource::File(loaded.path.clone()),
-            None => ConfigSource::ActiveProfile,
+            }) => ConfigSource::File(path.clone()),
+            _ => ConfigSource::ActiveProfile,
         }
     }
 

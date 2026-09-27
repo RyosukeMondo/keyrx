@@ -123,13 +123,11 @@ fn reload_source_prefers_activation_then_loaded_source() {
         ConfigSource::Profile("b".to_string())
     );
 
+    // A profile-based daemon follows .active on a plain reload.
     write_profile(dir.path(), "b", KeyCode::A, KeyCode::C);
     let loaded = live.load(&ConfigSource::Profile("b".to_string())).unwrap();
     live.set_loaded(loaded);
-    assert_eq!(
-        live.reload_source(None),
-        ConfigSource::Profile("b".to_string())
-    );
+    assert_eq!(live.reload_source(None), ConfigSource::ActiveProfile);
 }
 
 // ---- Daemon-side reload: what status reports vs. what is loaded ----------
@@ -183,7 +181,7 @@ fn failed_activation_keeps_previous_config_and_status() {
     assert!(reload_remapping(&mut live, &shared).is_err());
     assert_eq!(shared.get_active_profile().as_deref(), Some("a"));
     assert_eq!(live.loaded().and_then(|l| l.profile.as_deref()), Some("a"));
-    // The request was consumed: the next plain reload re-reads "a".
+    // The request was consumed: the next plain reload re-reads .active ("a").
     assert!(reload_remapping(&mut live, &shared).unwrap().is_some());
     assert_eq!(shared.get_active_profile().as_deref(), Some("a"));
 }
@@ -200,4 +198,26 @@ fn explicit_file_is_reported_without_a_profile_name() {
     apply_loaded(&mut live, &shared, start);
     assert_eq!(shared.get_active_profile(), None);
     assert_eq!(shared.get_config_path(), file);
+}
+
+#[test]
+fn plain_reload_follows_active_file_and_clears_on_delete() {
+    let dir = TempDir::new().unwrap();
+    write_profile(dir.path(), "a", KeyCode::CapsLock, KeyCode::Escape);
+    write_profile(dir.path(), "b", KeyCode::CapsLock, KeyCode::LCtrl);
+    set_active(dir.path(), "a");
+    let mut live = LiveConfig::new(dir.path().to_path_buf());
+    let shared = shared_state();
+    let start = live.load(&ConfigSource::ActiveProfile).unwrap();
+    apply_loaded(&mut live, &shared, start);
+
+    // Out-of-band activation (CLI without a daemon connection) + SIGHUP.
+    set_active(dir.path(), "b");
+    assert!(reload_remapping(&mut live, &shared).unwrap().is_some());
+    assert_eq!(shared.get_active_profile().as_deref(), Some("b"));
+
+    // Active profile deleted (ProfileManager removes .active) + reload.
+    fs::remove_file(dir.path().join(".active")).unwrap();
+    assert!(reload_remapping(&mut live, &shared).unwrap().is_none());
+    assert_eq!(shared.get_active_profile(), None);
 }

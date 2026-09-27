@@ -105,6 +105,8 @@ struct ActivationOutput {
     compile_time_ms: u64,
     reload_time_ms: u64,
     error: Option<String>,
+    /// What the running daemon did with the activation.
+    daemon: Option<String>,
 }
 
 /// JSON output structure for profile creation.
@@ -311,6 +313,28 @@ async fn handle_create(
     }
 }
 
+/// Asks a running daemon to switch to `name` — the same activation request
+/// REST, MCP and WS-RPC make in-process. Without a daemon, the persisted
+/// `.active` profile takes effect when it starts.
+fn notify_running_daemon(name: &str) -> String {
+    use crate::ipc::unix_socket::UnixSocketIpc;
+    use crate::ipc::{DaemonIpc, IpcError, IpcRequest, IpcResponse, DEFAULT_SOCKET_PATH};
+
+    let mut ipc = UnixSocketIpc::new(PathBuf::from(DEFAULT_SOCKET_PATH));
+    let request = IpcRequest::ActivateProfile {
+        name: name.to_string(),
+    };
+    match ipc.send_request(&request) {
+        Ok(IpcResponse::ProfileActivated { .. }) => "running daemon switched".to_string(),
+        Ok(IpcResponse::Error { message, .. }) => format!("running daemon refused: {message}"),
+        Ok(other) => format!("unexpected daemon response: {other:?}"),
+        Err(IpcError::SocketNotFound(_) | IpcError::StaleSocket(_)) => {
+            "not running; applies on next start".to_string()
+        }
+        Err(e) => format!("could not reach daemon: {e}"),
+    }
+}
+
 /// Handle the `activate` subcommand.
 async fn handle_activate(service: &ProfileService, name: &str, json: bool) -> DaemonResult<()> {
     logging::log_command_start("profiles activate", name);
@@ -318,6 +342,7 @@ async fn handle_activate(service: &ProfileService, name: &str, json: bool) -> Da
     match service.activate_profile(name).await {
         Ok(result) => {
             logging::log_profile_activate(name, result.success);
+            let daemon = result.success.then(|| notify_running_daemon(name));
             if result.success {
                 logging::log_command_success(
                     "profiles activate",
@@ -337,6 +362,7 @@ async fn handle_activate(service: &ProfileService, name: &str, json: bool) -> Da
                     compile_time_ms: result.compile_time_ms,
                     reload_time_ms: result.reload_time_ms,
                     error: result.error,
+                    daemon,
                 };
                 println!(
                     "{}",
@@ -350,6 +376,9 @@ async fn handle_activate(service: &ProfileService, name: &str, json: bool) -> Da
                     "  Total: {}ms",
                     result.compile_time_ms + result.reload_time_ms
                 );
+                if let Some(daemon) = daemon {
+                    println!("  Daemon: {daemon}");
+                }
             } else {
                 eprintln!("✗ Activation failed");
                 if let Some(ref error) = result.error {

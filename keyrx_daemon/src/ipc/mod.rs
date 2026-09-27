@@ -61,7 +61,7 @@ pub enum IpcResponse {
     Events { events: Vec<String> },
     /// Result of clearing the recent-events ring buffer (number removed)
     EventsCleared { count: usize },
-    /// Profile activation result (test mode only)
+    /// The profile was compiled and the daemon asked to switch to it
     ProfileActivated { name: String },
     /// Error response
     Error { code: u16, message: String },

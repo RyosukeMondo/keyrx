@@ -817,3 +817,17 @@ fn test_activate_after_delete() {
     manager.activate("profile2").unwrap();
     assert_eq!(manager.get_active().unwrap(), Some("profile2".to_string()));
 }
+
+/// Regression: renaming the active profile updated only the in-memory name;
+/// `.active` kept the old name, so a restart (or a daemon reload) found no profile.
+#[test]
+fn test_rename_active_profile_persists_active_name() {
+    let (temp, manager) = setup_test_manager();
+    manager.create("old", ProfileTemplate::Blank).unwrap();
+    assert!(manager.activate("old").unwrap().success);
+
+    manager.rename("old", "new").unwrap();
+
+    let reopened = ProfileManager::new(temp.path().to_path_buf()).unwrap();
+    assert_eq!(reopened.get_active().unwrap().as_deref(), Some("new"));
+}

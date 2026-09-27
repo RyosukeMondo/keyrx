@@ -651,6 +651,11 @@ impl ProfileManager {
             })?;
             if active.as_ref() == Some(&old_name.to_string()) {
                 *active = Some(new_name.to_string());
+                // Keep the persisted .active in step, or a restart (and the
+                // daemon's next reload) would look for the old name.
+                if let Err(e) = self.save_active_profile(new_name) {
+                    log::warn!("Failed to persist renamed active profile: {}", e);
+                }
             }
         }
 
