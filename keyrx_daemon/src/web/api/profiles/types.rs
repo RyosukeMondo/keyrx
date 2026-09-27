@@ -110,8 +110,12 @@ pub(super) struct SetProfileConfigRequest {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct ValidationError {
+    /// 1-based line (1 when the compiler reported no position).
     pub(super) line: usize,
-    pub(super) column: Option<usize>,
+    /// 1-based column (1 when unknown).
+    pub(super) column: usize,
+    /// Characters to highlight from `column` (the editor marks at least one).
+    pub(super) length: usize,
     pub(super) message: String,
 }
 

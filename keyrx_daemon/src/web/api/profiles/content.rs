@@ -164,12 +164,13 @@ fn validate_rhai_file(rhai: &std::path::Path) -> Result<ValidationResponse, ApiE
             errors: Vec::new(),
         }),
         Err(e) => {
-            let (line, column) = e.location().map_or((1, None), |(l, c)| (l, Some(c)));
+            let (line, column) = e.location().unwrap_or((1, 1));
             Ok(ValidationResponse {
                 valid: false,
                 errors: vec![ValidationError {
                     line,
                     column,
+                    length: 1,
                     message: e.short_message(),
                 }],
             })
