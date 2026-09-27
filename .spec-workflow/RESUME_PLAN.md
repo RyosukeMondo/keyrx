@@ -181,15 +181,17 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 
 ## Phase D — UI functional gaps
 
-- [NEXT] **D1 — Device rename API + UI.** (2026-09-27: backend rename is
+- [x] **D1 — Device rename API + UI.** (2026-09-27: backend rename is
   `PUT /api/devices/:id/name`; the UI device-*scope* chain was dead — scope was
   removed from the backend in Task 27 — and was deleted in 6ff105a4.)
   Backend endpoint missing; UI TODOs at `DevicesPage.tsx:304,328,338,447`; tests
   skipped at `DevicesPage.test.tsx:1292,1381`. Action: add backend rename endpoint,
   wire UI, un-skip tests. *Accept:* rename works end-to-end; tests pass.
+  → DONE (5170ae1f): the backend route existed but 404ed for never-registered devices; ensure_registered on first web edit; rename returns the DeviceEntry (pinned by a contract fixture); UI schemas/mocks aligned; 2 rename workflow tests un-skipped.
 
-- [ ] **D2 — KeyConfigModal mapping editing** (`KeyConfigModal.tsx:200`).
+- [x] **D2 — KeyConfigModal mapping editing** (`KeyConfigModal.tsx:200`).
   TODO stub. Implement edit flow. *Accept:* editing works; test.
+  → DONE by removal (29bee7d5): KeyConfigModal was never rendered - the live editor KeyConfigPanel already does edit/clear; the modal and its MappingConfigForm family were deleted (misgrouped: the deletions landed in 35eb7389).
 
 - [x] **D3 — metricsStore live layer** (`stores/metricsStore.ts:93`).
   Hardcodes `'Base'`. Source current layer from daemon state (depends on C1).
@@ -226,7 +228,7 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   I/O; 0 unwrap/expect outside `#[cfg(test)]`; `scripts/verify/file-sizes.sh --update`
   drops it from the baseline.
   → DONE (da9c7966 split, 95ae1830): split into mod/crud/activation/persistence/types; poisoned-lock expects replaced by recovery; 0 unwrap/expect outside tests.
-- [ ] **F2 — Finish or delete the orphaned e2e test-harness split.**
+- [x] **F2 — Finish or delete the orphaned e2e test-harness split.**
   `keyrx_daemon/tests/harness/{mod,harness,error,config,assertions}.rs` and
   `tests/virtual/{mod,basic,complex,layers,passthrough,advanced_output,advanced_sequences}.rs`
   exist with real content (commit `90834f9d`) but are referenced by zero `mod`
@@ -239,8 +241,9 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   `mod virtual;` and delete both monoliths, verified by
   `cargo check -p keyrx_daemon --tests`, or (b) delete the orphaned `tests/harness/`
   and `tests/virtual/` trees. No dead duplicate code either way.
+  → DONE (74cead68): deleted the orphaned split; the monoliths had changed after it (85c2dbbe), so the copies were stale.
 
-- [ ] **F3 — Wire `EnvProvider`/`FileSystem` traits into `ProfileManager`/`ConfigService`,
+- [x] **F3 — Wire `EnvProvider`/`FileSystem` traits into `ProfileManager`/`ConfigService`,
   or delete them.** `keyrx_daemon/src/traits/{env.rs,filesystem.rs}` define real
   traits + Real/Mock impls but have zero consumers outside their own module; ~20 raw
   `std::env::var`/`fs::` call sites remain scattered in `profile_manager.rs`/
@@ -249,6 +252,7 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   are removed if injection isn't worth it here; either way
   `grep -rl 'EnvProvider\|FileSystem' keyrx_daemon/src` shows real consumers or the
   traits are gone.
+  → DONE (b8aa2064): traits removed (only their own test used them); DI stays via constructor params.
 
 - [ ] **F4 — Adopt the frontend logger; remove raw `console.*` calls.**
   `keyrx_ui/src/utils/logger.ts` exists but 96 raw `console.(log|error|warn|info)`
@@ -274,12 +278,13 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   `simulation_engine.rs` ≤500 code lines, logic extracted into a focused sibling
   module, `scripts/verify/file-sizes.sh` passes without it in the baseline.
   → DONE (da9c7966): split into mod/types/scenarios/engine/tests.
-- [ ] **F-backlog — lower-impact or process items, do opportunistically:** remove
+- [NEXT] **F-backlog — lower-impact or process items, do opportunistically:** remove
   `eprintln!` outside `cli/` (6 files: `config/layout_manager.rs`, `web/ws_rpc.rs`,
   `platform/linux/{mod,input_capture,output_injection}.rs`, `main.rs`); add
   architecture diagrams (doc-only, `.claude/CLAUDE.md` already covers the DI/SSOT
   patterns in prose); reconcile `.claude/CLAUDE.md`'s "4 fail" backend test count and
   the UI's "2 fail" (`DevicesPage`) against whether G4/G2's fixes actually cover them
+  (eprintln! part DONE f9053d21; DevicesPage fixed a45c56a8)
   — re-run `cargo test --workspace` and `npm test` once, update the table, and only
   then treat architecture-completion 3.5.1–3.5.3 as closed.
 
@@ -371,9 +376,11 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
 - [x] **G8 — Only the first `device_start` block is applied** (warned at load);
   the Linux platform grabs `*` regardless of config patterns.
   → DONE (39758ae1, 9b0377e3): process_event never passed the device, so when_device never matched; one device-pattern rule in keyrx_core (case-insensitive, any identity) used by device_start and when_device; RemappingState routes each device to its first matching block with per-device state. Live e2e with two virtual keyboards. Limitation: Linux still grabs all keyboards and re-injects unmatched ones unchanged.
-- [ ] **G9 — UI lint debt:** `npm run lint` has 14 errors in untouched files
+- [x] **G9 — UI lint debt:** `npm run lint` has 14 errors in untouched files
   (e.g. `MonitorPage.tsx` refs-during-render). EventRecord `layer` is always
   `'Base'` (see D3). `scripts/verify/{ssot,contracts}.sh` are stubs (exit 0).
+  → DONE (21e1efd3): lint 0 errors / 0 warnings; fixed a real bug (the paused Monitor log silently un-froze); test-naming rule matched "spec" inside "special"/"Inspector".
+
 - [x] **G5 — Oversize files** (gate made real in dd1d1638; 14 files being
   split; `windows.rs` handed to the G3 request) (>500 code lines): `web/api/diagnostics.rs`,
   `platform_runners/windows.rs`, `web/api/profiles.rs`.
