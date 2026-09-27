@@ -142,7 +142,7 @@ impl TestApp {
         );
         let profile_service = Arc::new(ProfileService::new(profile_manager.clone()));
         let device_service = Arc::new(DeviceService::new(config_path.clone()));
-        let config_service = Arc::new(ConfigService::new(profile_manager.clone()));
+        let config_service = Arc::new(ConfigService::new(Arc::clone(&profile_service)));
         let settings_service = Arc::new(keyrx_daemon::services::SettingsService::new(
             config_path.clone(),
         ));

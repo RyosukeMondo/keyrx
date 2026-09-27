@@ -1,7 +1,12 @@
-//! Configuration management endpoints.
+//! Configuration management endpoints for the active profile.
+//!
+//! Thin adapters over [`ConfigService`](crate::services::ConfigService), the
+//! same service WS-RPC uses: it resolves the active profile from the profile
+//! manager, and every write compiles the profile and reloads the daemon if the
+//! profile is loaded.
 
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     routing::{delete, get, post},
     Json, Router,
 };
@@ -9,8 +14,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-use crate::config::rhai_generator::{KeyAction, RhaiGenerator};
-use crate::error::DaemonError;
+use super::error::ApiError;
+use crate::config::rhai_generator::KeyAction;
+use crate::services::config_service::ConfigError;
 use crate::web::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
@@ -21,47 +27,41 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/layers", get(list_layers))
 }
 
-/// GET /api/config - Get current configuration
-async fn get_config() -> Result<Json<Value>, DaemonError> {
-    use crate::error::ConfigError;
-
-    // Wrap all blocking operations in spawn_blocking to prevent runtime starvation
-    tokio::task::spawn_blocking(move || {
-        let config_dir = get_config_dir()?;
-        let active_profile = query_active_profile().unwrap_or_else(|| "default".to_string());
-
-        let rhai_path = config_dir
-            .join("profiles")
-            .join(format!("{}.rhai", active_profile));
-
-        if !rhai_path.exists() {
-            return Err(ConfigError::FileNotFound { path: rhai_path }.into());
+fn to_api_error(e: ConfigError) -> ApiError {
+    match e {
+        ConfigError::ProfileNotFound(_) | ConfigError::FileNotFound => {
+            ApiError::NotFound(e.to_string())
         }
+        ConfigError::ConfigTooLarge
+        | ConfigError::InvalidConfig(_)
+        | ConfigError::LayerNotFound(_)
+        | ConfigError::InvalidKeyName(_) => ApiError::BadRequest(e.to_string()),
+        ConfigError::IoError(_) | ConfigError::GeneratorError(_) => {
+            ApiError::InternalError(e.to_string())
+        }
+    }
+}
 
-        let generator =
-            RhaiGenerator::load(&rhai_path).map_err(|e| ConfigError::Generator(e.to_string()))?;
-
-        // Get base mappings and layers
-        let base_mappings = generator
-            .get_layer_mappings("base")
-            .map_err(|e| ConfigError::Generator(e.to_string()))?;
-
-        let layers = generator.list_layers();
-
-        Ok::<Json<Value>, DaemonError>(Json(json!({
-            "profile": active_profile,
-            "base_mappings": base_mappings,
-            "layers": layers.iter().map(|(id, count)| json!({
-                "id": id,
-                "mapping_count": count,
-            })).collect::<Vec<_>>(),
-        })))
-    })
-    .await
-    .map_err(|e| ConfigError::ParseError {
-        path: std::path::PathBuf::from("config"),
-        reason: format!("Task join error: {}", e),
-    })?
+/// GET /api/config - Base mappings and layers of the active profile
+async fn get_config(State(state): State<Arc<AppState>>) -> Result<Json<Value>, ApiError> {
+    let (profile, generator) = state
+        .config_service
+        .load_active()
+        .await
+        .map_err(to_api_error)?;
+    let base_mappings = generator
+        .get_layer_mappings("base")
+        .map_err(|e| ApiError::InternalError(e.to_string()))?;
+    let layers: Vec<Value> = generator
+        .list_layers()
+        .into_iter()
+        .map(|(id, count)| json!({ "id": id, "mapping_count": count }))
+        .collect();
+    Ok(Json(json!({
+        "profile": profile,
+        "base_mappings": base_mappings,
+        "layers": layers,
+    })))
 }
 
 /// POST /api/config/key-mappings - Set key mapping
@@ -69,186 +69,94 @@ async fn get_config() -> Result<Json<Value>, DaemonError> {
 struct SetKeyMappingRequest {
     layer: String,
     key: String,
-    action_type: String, // "simple", "tap_hold", "macro"
+    action_type: String, // "simple", "tap_hold"
     // For simple remap
     output: Option<String>,
     // For tap-hold
     tap: Option<String>,
     hold: Option<String>,
     threshold_ms: Option<u16>,
-    // For macros - simplified as string sequence for now (not yet implemented)
-    #[allow(dead_code)]
-    macro_sequence: Option<String>,
+}
+
+impl SetKeyMappingRequest {
+    fn action(&self) -> Result<KeyAction, ApiError> {
+        let missing = |field: &str| {
+            ApiError::BadRequest(format!("Missing '{field}' field for {}", self.action_type))
+        };
+        match self.action_type.as_str() {
+            "simple" => Ok(KeyAction::SimpleRemap {
+                output: self.output.clone().ok_or_else(|| missing("output"))?,
+            }),
+            "tap_hold" => Ok(KeyAction::TapHold {
+                tap: self.tap.clone().ok_or_else(|| missing("tap"))?,
+                hold: self.hold.clone().ok_or_else(|| missing("hold"))?,
+                threshold_ms: self.threshold_ms.unwrap_or(200),
+            }),
+            other => Err(ApiError::BadRequest(format!(
+                "Unsupported action type: {other}. Use 'simple' or 'tap_hold'"
+            ))),
+        }
+    }
 }
 
 async fn set_key_mapping(
+    State(state): State<Arc<AppState>>,
     Json(payload): Json<SetKeyMappingRequest>,
-) -> Result<Json<Value>, DaemonError> {
-    use crate::error::{ConfigError, WebError};
-
-    // Wrap all blocking operations in spawn_blocking
-    tokio::task::spawn_blocking(move || {
-        let config_dir = get_config_dir()?;
-        let active_profile = query_active_profile().unwrap_or_else(|| "default".to_string());
-
-        let rhai_path = config_dir
-            .join("profiles")
-            .join(format!("{}.rhai", active_profile));
-
-        if !rhai_path.exists() {
-            return Err(ConfigError::FileNotFound { path: rhai_path }.into());
-        }
-
-        let mut generator =
-            RhaiGenerator::load(&rhai_path).map_err(|e| ConfigError::Generator(e.to_string()))?;
-
-        // Parse action type
-        let action = match payload.action_type.as_str() {
-            "simple" => {
-                let output = payload.output.ok_or_else(|| WebError::InvalidRequest {
-                    reason: "Missing 'output' field for simple remap".to_string(),
-                })?;
-                KeyAction::SimpleRemap { output }
-            }
-            "tap_hold" => {
-                let tap = payload.tap.ok_or_else(|| WebError::InvalidRequest {
-                    reason: "Missing 'tap' field for tap_hold".to_string(),
-                })?;
-                let hold = payload.hold.ok_or_else(|| WebError::InvalidRequest {
-                    reason: "Missing 'hold' field for tap_hold".to_string(),
-                })?;
-                let threshold_ms = payload.threshold_ms.unwrap_or(200);
-                KeyAction::TapHold {
-                    tap,
-                    hold,
-                    threshold_ms,
-                }
-            }
-            _ => {
-                return Err(WebError::InvalidRequest {
-                    reason: format!(
-                        "Unsupported action type: {}. Use 'simple' or 'tap_hold'",
-                        payload.action_type
-                    ),
-                }
-                .into())
-            }
-        };
-
-        generator
-            .set_key_mapping(&payload.layer, &payload.key, action)
-            .map_err(|e| ConfigError::Generator(e.to_string()))?;
-
-        generator
-            .save(&rhai_path)
-            .map_err(|e| ConfigError::Generator(e.to_string()))?;
-
-        Ok::<Json<Value>, DaemonError>(Json(json!({ "success": true })))
-    })
-    .await
-    .map_err(|e| ConfigError::ParseError {
-        path: std::path::PathBuf::from("config"),
-        reason: format!("Task join error: {}", e),
-    })?
+) -> Result<Json<Value>, ApiError> {
+    let action = payload.action()?;
+    state
+        .config_service
+        .set_key_mapping(payload.layer, payload.key, action)
+        .await
+        .map_err(to_api_error)?;
+    Ok(Json(json!({ "success": true })))
 }
 
 /// DELETE /api/config/key-mappings/:id - Delete key mapping
 /// Format: layer:key (e.g., "base:A" or "MD_00:Space")
-async fn delete_key_mapping(Path(id): Path<String>) -> Result<Json<Value>, DaemonError> {
-    use crate::error::{ConfigError, WebError};
-
-    let parts: Vec<&str> = id.split(':').collect();
-    if parts.len() != 2 {
-        return Err(WebError::InvalidRequest {
-            reason: "Invalid mapping ID. Use format 'layer:key' (e.g., 'base:A')".to_string(),
-        }
-        .into());
-    }
-
-    let layer = parts[0].to_string();
-    let key = parts[1].to_string();
-
-    // Wrap all blocking operations in spawn_blocking
-    tokio::task::spawn_blocking(move || {
-        let config_dir = get_config_dir()?;
-        let active_profile = query_active_profile().unwrap_or_else(|| "default".to_string());
-
-        let rhai_path = config_dir
-            .join("profiles")
-            .join(format!("{}.rhai", active_profile));
-
-        if !rhai_path.exists() {
-            return Err(ConfigError::FileNotFound { path: rhai_path }.into());
-        }
-
-        let mut generator =
-            RhaiGenerator::load(&rhai_path).map_err(|e| ConfigError::Generator(e.to_string()))?;
-
-        generator
-            .delete_key_mapping(&layer, &key)
-            .map_err(|e| ConfigError::Generator(e.to_string()))?;
-
-        generator
-            .save(&rhai_path)
-            .map_err(|e| ConfigError::Generator(e.to_string()))?;
-
-        Ok::<Json<Value>, DaemonError>(Json(json!({ "success": true })))
-    })
-    .await
-    .map_err(|e| ConfigError::ParseError {
-        path: std::path::PathBuf::from("config"),
-        reason: format!("Task join error: {}", e),
-    })?
+async fn delete_key_mapping(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    let Some((layer, key)) = id.split_once(':').filter(|(_, k)| !k.contains(':')) else {
+        return Err(ApiError::BadRequest(
+            "Invalid mapping ID. Use format 'layer:key' (e.g., 'base:A')".to_string(),
+        ));
+    };
+    state
+        .config_service
+        .delete_key_mapping(layer.to_string(), key.to_string())
+        .await
+        .map_err(to_api_error)?;
+    Ok(Json(json!({ "success": true })))
 }
 
-/// PUT /api/config - Update configuration (save raw Rhai content)
+/// PUT /api/config - Replace the active profile's Rhai source
 #[derive(Deserialize)]
 struct UpdateConfigRequest {
     content: String,
 }
 
 async fn update_config(
+    State(state): State<Arc<AppState>>,
     Json(payload): Json<UpdateConfigRequest>,
-) -> Result<Json<Value>, DaemonError> {
-    use crate::error::ConfigError;
-
-    // Wrap all blocking operations in spawn_blocking
-    tokio::task::spawn_blocking(move || {
-        let config_dir = get_config_dir()?;
-        let active_profile = query_active_profile().unwrap_or_else(|| "default".to_string());
-
-        let rhai_path = config_dir
-            .join("profiles")
-            .join(format!("{}.rhai", active_profile));
-
-        // Write the configuration content to the file
-        std::fs::write(&rhai_path, payload.content.as_bytes()).map_err(ConfigError::Io)?;
-
-        // Validate the configuration by attempting to load it
-        // This ensures syntax errors are caught
-        match RhaiGenerator::load(&rhai_path) {
-            Ok(_) => Ok::<Json<Value>, DaemonError>(Json(json!({
-                "success": true,
-                "message": "Configuration saved successfully",
-                "profile": active_profile,
-            }))),
-            Err(e) => {
-                // If validation fails, the file has been written but is invalid
-                // Return success=true but include validation error
-                Ok(Json(json!({
-                    "success": true,
-                    "message": "Configuration saved but has validation errors",
-                    "profile": active_profile,
-                    "validation_error": e.to_string(),
-                })))
-            }
-        }
-    })
-    .await
-    .map_err(|e| ConfigError::ParseError {
-        path: std::path::PathBuf::from("config"),
-        reason: format!("Task join error: {}", e),
-    })?
+) -> Result<Json<Value>, ApiError> {
+    state
+        .config_service
+        .update_config(payload.content)
+        .await
+        .map_err(to_api_error)?;
+    let profile = state
+        .config_service
+        .get_config()
+        .await
+        .map(|c| c.profile)
+        .map_err(to_api_error)?;
+    Ok(Json(json!({
+        "success": true,
+        "message": "Configuration saved and compiled",
+        "profile": profile,
+    })))
 }
 
 #[derive(Serialize)]
@@ -258,88 +166,28 @@ struct LayerInfo {
     mappings: Vec<String>,
 }
 
-/// GET /api/layers - List layers
-async fn list_layers() -> Result<Json<Value>, DaemonError> {
-    use crate::error::ConfigError;
-
-    // Wrap all blocking operations in spawn_blocking
-    tokio::task::spawn_blocking(move || {
-        let config_dir = get_config_dir()?;
-        let active_profile = query_active_profile().unwrap_or_else(|| "default".to_string());
-
-        let rhai_path = config_dir
-            .join("profiles")
-            .join(format!("{}.rhai", active_profile));
-
-        if !rhai_path.exists() {
-            return Err(ConfigError::FileNotFound { path: rhai_path }.into());
-        }
-
-        let generator =
-            RhaiGenerator::load(&rhai_path).map_err(|e| ConfigError::Generator(e.to_string()))?;
-
-        // Get base layer
-        let base_mappings = generator
-            .get_layer_mappings("base")
-            .map_err(|e| ConfigError::Generator(e.to_string()))?;
-
-        let mut layers = vec![LayerInfo {
-            id: "base".to_string(),
-            mapping_count: base_mappings.len(),
-            mappings: base_mappings,
-        }];
-
-        // Get all other layers
-        for (layer_id, mapping_count) in generator.list_layers() {
-            let mappings = generator
-                .get_layer_mappings(&layer_id)
-                .unwrap_or_else(|_| vec![]);
-
-            layers.push(LayerInfo {
-                id: layer_id,
-                mapping_count,
-                mappings,
-            });
-        }
-
-        Ok::<Json<Value>, DaemonError>(Json(json!({ "layers": layers })))
-    })
-    .await
-    .map_err(|e| ConfigError::ParseError {
-        path: std::path::PathBuf::from("config"),
-        reason: format!("Task join error: {}", e),
-    })?
-}
-
-/// Get config directory path (cross-platform)
-fn get_config_dir() -> Result<std::path::PathBuf, DaemonError> {
-    use crate::error::ConfigError;
-
-    crate::cli::config_dir::get_config_dir().map_err(|e| {
-        ConfigError::ParseError {
-            path: std::path::PathBuf::from("~"),
-            reason: format!("Cannot determine config directory: {e}"),
-        }
-        .into()
-    })
-}
-
-/// Query active profile name
-fn query_active_profile() -> Option<String> {
-    use crate::ipc::{DaemonIpc, IpcRequest, IpcResponse, DEFAULT_SOCKET_PATH};
-
-    let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
-    let mut ipc = crate::ipc::unix_socket::UnixSocketIpc::new(socket_path);
-
-    let response = ipc.send_request(&IpcRequest::GetStatus).ok()?;
-
-    match response {
-        IpcResponse::Status {
-            running: _,
-            uptime_secs: _,
-            active_profile,
-            device_count: _,
-        } => active_profile,
-        _ => None,
+/// GET /api/layers - List layers with their mappings
+async fn list_layers(State(state): State<Arc<AppState>>) -> Result<Json<Value>, ApiError> {
+    let (_, generator) = state
+        .config_service
+        .load_active()
+        .await
+        .map_err(to_api_error)?;
+    let base = generator
+        .get_layer_mappings("base")
+        .map_err(|e| ApiError::InternalError(e.to_string()))?;
+    let mut layers = vec![LayerInfo {
+        id: "base".to_string(),
+        mapping_count: base.len(),
+        mappings: base,
+    }];
+    for (id, mapping_count) in generator.list_layers() {
+        let mappings = generator.get_layer_mappings(&id).unwrap_or_default();
+        layers.push(LayerInfo {
+            id,
+            mapping_count,
+            mappings,
+        });
     }
+    Ok(Json(json!({ "layers": layers })))
 }

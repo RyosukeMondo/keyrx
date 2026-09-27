@@ -103,7 +103,7 @@ impl RhaiGenerator {
     }
 
     /// Parse Rhai source into structured representation
-    fn parse(source: &str) -> Result<Self, GeneratorError> {
+    pub fn parse(source: &str) -> Result<Self, GeneratorError> {
         let mut header = Vec::new();
         let mut device_id = String::new();
         let mut base_mappings = Vec::new();

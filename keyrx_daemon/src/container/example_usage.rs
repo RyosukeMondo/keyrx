@@ -24,7 +24,7 @@ use crate::web::AppState;
 /// let macro_recorder = Arc::new(MacroRecorder::new());
 /// let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
 /// let device_service = Arc::new(DeviceService::new(config_dir.clone()));
-/// let config_service = Arc::new(ConfigService::new(Arc::clone(&profile_manager)));
+/// let config_service = Arc::new(ConfigService::new(Arc::clone(&profile_service)));
 /// // ... 10+ more lines
 /// ```
 ///

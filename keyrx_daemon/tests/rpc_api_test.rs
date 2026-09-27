@@ -39,7 +39,7 @@ async fn start_test_server() -> (u16, tokio::task::JoinHandle<()>) {
     let profile_manager = Arc::new(ProfileManager::new(config_dir.clone()).unwrap());
     let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
     let device_service = Arc::new(DeviceService::new(config_dir.clone()));
-    let config_service = Arc::new(ConfigService::new(profile_manager));
+    let config_service = Arc::new(ConfigService::new(Arc::clone(&profile_service)));
     let settings_service = Arc::new(SettingsService::new(config_dir.clone()));
     let simulation_service = Arc::new(SimulationService::new(config_dir.clone(), None));
     let subscription_manager = Arc::new(SubscriptionManager::new());

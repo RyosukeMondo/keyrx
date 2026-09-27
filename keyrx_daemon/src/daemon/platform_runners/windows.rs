@@ -430,7 +430,7 @@ fn run_test_mode(
     )));
     let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
     let config_service = Arc::new(crate::services::ConfigService::new(Arc::clone(
-        &profile_manager,
+        &profile_service,
     )));
     let settings_service = Arc::new(crate::services::SettingsService::new(config_dir.clone()));
     let simulation_service = Arc::new(crate::services::SimulationService::new(

@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use crate::config::rhai_generator::{GeneratorError, KeyAction, RhaiGenerator};
 use crate::config::ProfileManager;
+use crate::services::ProfileService;
 
 /// Configuration information returned by get_config.
 #[derive(Debug, Clone)]
@@ -53,23 +54,46 @@ pub enum ConfigError {
     InvalidKeyName(String),
 }
 
-/// Service for configuration operations.
+/// Service for configuration operations on the active profile.
 ///
-/// Provides a clean API for configuration management operations.
-/// All methods are async to support future async implementations.
+/// Every write goes through [`ProfileService::set_profile_config`], which
+/// compiles the profile and, if the daemon has it loaded, reloads it — so an
+/// edit from any transport (REST, WS-RPC) takes effect on the keyboard.
 ///
 /// # Thread Safety
 ///
 /// ConfigService is `Send + Sync` and can be shared across threads via `Arc`.
 pub struct ConfigService {
-    profile_manager: Arc<ProfileManager>,
+    profile_service: Arc<ProfileService>,
 }
 
 impl ConfigService {
-    /// Creates a new ConfigService.
-    pub fn new(profile_manager: Arc<ProfileManager>) -> Self {
+    /// Creates a new ConfigService writing through `profile_service`.
+    pub fn new(profile_service: Arc<ProfileService>) -> Self {
         log::debug!("ConfigService initialized");
-        Self { profile_manager }
+        Self { profile_service }
+    }
+
+    fn profile_manager(&self) -> &Arc<ProfileManager> {
+        self.profile_service.profile_manager()
+    }
+
+    /// Name and parsed source of the active profile.
+    pub async fn load_active(&self) -> Result<(String, RhaiGenerator), ConfigError> {
+        let (name, path) = self.active_rhai_path()?;
+        Ok((name, RhaiGenerator::load(&path)?))
+    }
+
+    fn active_rhai_path(&self) -> Result<(String, std::path::PathBuf), ConfigError> {
+        let manager = self.profile_manager();
+        let active = manager
+            .get_active()
+            .map_err(|_| ConfigError::ProfileNotFound("failed to get active profile".to_string()))?
+            .ok_or_else(|| ConfigError::ProfileNotFound("no active profile".to_string()))?;
+        let metadata = manager
+            .get(&active)
+            .ok_or_else(|| ConfigError::ProfileNotFound(active.clone()))?;
+        Ok((active, metadata.rhai_path))
     }
 
     /// Gets the current configuration for the active profile.
@@ -77,69 +101,28 @@ impl ConfigService {
     /// Returns the Rhai code, its hash, and the profile name.
     pub async fn get_config(&self) -> Result<ConfigInfo, ConfigError> {
         log::debug!("Getting current configuration");
-
-        let active_profile = self
-            .profile_manager
-            .get_active()
-            .map_err(|_| ConfigError::ProfileNotFound("failed to get active profile".to_string()))?
-            .ok_or_else(|| ConfigError::ProfileNotFound("no active profile".to_string()))?;
-
-        let metadata = self
-            .profile_manager
-            .get(&active_profile)
-            .ok_or_else(|| ConfigError::ProfileNotFound(active_profile.clone()))?;
-
-        let code = fs::read_to_string(&metadata.rhai_path)?;
+        let (profile, path) = self.active_rhai_path()?;
+        let code = fs::read_to_string(&path)?;
         let hash = Self::compute_hash(&code);
-
         Ok(ConfigInfo {
             code,
             hash,
-            profile: active_profile,
+            profile,
         })
     }
 
-    /// Updates the configuration for the active profile.
-    ///
-    /// Validates the configuration and enforces the 1MB size limit.
+    /// Replaces the active profile's source (max 1MB), compiles it and
+    /// reloads the daemon if the profile is loaded.
     pub async fn update_config(&self, code: String) -> Result<(), ConfigError> {
         log::info!("Updating configuration");
-
-        // Enforce 1MB size limit
         const MAX_CONFIG_SIZE: usize = 1024 * 1024; // 1MB
         if code.len() > MAX_CONFIG_SIZE {
             return Err(ConfigError::ConfigTooLarge);
         }
-
-        let active_profile = self
-            .profile_manager
-            .get_active()
-            .map_err(|_| ConfigError::ProfileNotFound("failed to get active profile".to_string()))?
-            .ok_or_else(|| ConfigError::ProfileNotFound("no active profile".to_string()))?;
-
-        let metadata = self
-            .profile_manager
-            .get(&active_profile)
-            .ok_or_else(|| ConfigError::ProfileNotFound(active_profile.clone()))?;
-
-        // Write the configuration to a temporary file first
-        let temp_path = metadata.rhai_path.with_extension("rhai.tmp");
-        fs::write(&temp_path, code.as_bytes())?;
-
-        // Validate by attempting to load it
-        match RhaiGenerator::load(&temp_path) {
-            Ok(_) => {
-                // Validation successful - move temp file to actual file
-                fs::rename(&temp_path, &metadata.rhai_path)?;
-                log::info!("Configuration updated successfully");
-                Ok(())
-            }
-            Err(e) => {
-                // Validation failed - remove temp file and return error
-                let _ = fs::remove_file(&temp_path);
-                Err(ConfigError::InvalidConfig(e.to_string()))
-            }
-        }
+        // Reject unparseable source before touching the file.
+        RhaiGenerator::parse(&code).map_err(|e| ConfigError::InvalidConfig(e.to_string()))?;
+        let (profile, _) = self.active_rhai_path()?;
+        self.save(&profile, &code).await
     }
 
     /// Sets a single key mapping in the active profile.
@@ -150,89 +133,50 @@ impl ConfigService {
         action: KeyAction,
     ) -> Result<(), ConfigError> {
         log::debug!("Setting key mapping: layer={}, key={}", layer, key);
-
-        let active_profile = self
-            .profile_manager
-            .get_active()
-            .map_err(|_| ConfigError::ProfileNotFound("failed to get active profile".to_string()))?
-            .ok_or_else(|| ConfigError::ProfileNotFound("no active profile".to_string()))?;
-
-        let metadata = self
-            .profile_manager
-            .get(&active_profile)
-            .ok_or_else(|| ConfigError::ProfileNotFound(active_profile.clone()))?;
-
-        let mut generator = RhaiGenerator::load(&metadata.rhai_path)?;
-
+        let (profile, mut generator) = self.load_active().await?;
         generator
             .set_key_mapping(&layer, &key, action)
-            .map_err(|e| match e {
-                GeneratorError::LayerNotFound(l) => ConfigError::LayerNotFound(l),
-                GeneratorError::InvalidKeyName(k) => ConfigError::InvalidKeyName(k),
-                _ => ConfigError::GeneratorError(e),
-            })?;
-
-        generator.save(&metadata.rhai_path)?;
-
-        log::info!("Key mapping updated successfully");
-        Ok(())
+            .map_err(Self::map_generator_error)?;
+        self.save(&profile, &generator.to_string()).await
     }
 
     /// Deletes a key mapping from the active profile.
     pub async fn delete_key_mapping(&self, layer: String, key: String) -> Result<(), ConfigError> {
         log::debug!("Deleting key mapping: layer={}, key={}", layer, key);
-
-        let active_profile = self
-            .profile_manager
-            .get_active()
-            .map_err(|_| ConfigError::ProfileNotFound("failed to get active profile".to_string()))?
-            .ok_or_else(|| ConfigError::ProfileNotFound("no active profile".to_string()))?;
-
-        let metadata = self
-            .profile_manager
-            .get(&active_profile)
-            .ok_or_else(|| ConfigError::ProfileNotFound(active_profile.clone()))?;
-
-        let mut generator = RhaiGenerator::load(&metadata.rhai_path)?;
-
+        let (profile, mut generator) = self.load_active().await?;
         generator
             .delete_key_mapping(&layer, &key)
-            .map_err(|e| match e {
-                GeneratorError::LayerNotFound(l) => ConfigError::LayerNotFound(l),
-                GeneratorError::InvalidKeyName(k) => ConfigError::InvalidKeyName(k),
-                _ => ConfigError::GeneratorError(e),
-            })?;
-
-        generator.save(&metadata.rhai_path)?;
-
-        log::info!("Key mapping deleted successfully");
-        Ok(())
+            .map_err(Self::map_generator_error)?;
+        self.save(&profile, &generator.to_string()).await
     }
 
     /// Gets all layers from the active profile.
     pub async fn get_layers(&self) -> Result<Vec<LayerInfo>, ConfigError> {
         log::debug!("Getting layers");
-
-        let active_profile = self
-            .profile_manager
-            .get_active()
-            .map_err(|_| ConfigError::ProfileNotFound("failed to get active profile".to_string()))?
-            .ok_or_else(|| ConfigError::ProfileNotFound("no active profile".to_string()))?;
-
-        let metadata = self
-            .profile_manager
-            .get(&active_profile)
-            .ok_or_else(|| ConfigError::ProfileNotFound(active_profile.clone()))?;
-
-        let generator = RhaiGenerator::load(&metadata.rhai_path)?;
-
-        let layers = generator
+        let (_, generator) = self.load_active().await?;
+        Ok(generator
             .list_layers()
             .into_iter()
             .map(|(id, mapping_count)| LayerInfo { id, mapping_count })
-            .collect();
+            .collect())
+    }
 
-        Ok(layers)
+    /// Writes, compiles and (if loaded) reloads `profile`.
+    async fn save(&self, profile: &str, source: &str) -> Result<(), ConfigError> {
+        self.profile_service
+            .set_profile_config(profile, source)
+            .await
+            .map_err(|e| ConfigError::InvalidConfig(e.to_string()))?;
+        log::info!("Configuration of '{profile}' saved and compiled");
+        Ok(())
+    }
+
+    fn map_generator_error(e: GeneratorError) -> ConfigError {
+        match e {
+            GeneratorError::LayerNotFound(l) => ConfigError::LayerNotFound(l),
+            GeneratorError::InvalidKeyName(k) => ConfigError::InvalidKeyName(k),
+            _ => ConfigError::GeneratorError(e),
+        }
     }
 
     /// Computes a hash of the configuration code.

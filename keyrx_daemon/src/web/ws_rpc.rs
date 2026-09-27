@@ -384,7 +384,7 @@ mod tests {
         };
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
         let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
-        let config_service = Arc::new(ConfigService::new(profile_manager));
+        let config_service = Arc::new(ConfigService::new(Arc::clone(&profile_service)));
         let settings_service = Arc::new(crate::services::SettingsService::new(config_dir.clone()));
         let simulation_service = Arc::new(crate::services::SimulationService::new(
             config_dir.clone(),

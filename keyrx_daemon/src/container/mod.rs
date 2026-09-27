@@ -217,7 +217,7 @@ impl ServiceContainerBuilder {
         // Create services with injected dependencies
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
         let device_service = Arc::new(DeviceService::new(self.config_dir.clone()));
-        let config_service = Arc::new(ConfigService::new(Arc::clone(&profile_manager)));
+        let config_service = Arc::new(ConfigService::new(Arc::clone(&profile_service)));
         let settings_service = Arc::new(SettingsService::new(self.config_dir.clone()));
 
         // Create SimulationService with optional event channel
