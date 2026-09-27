@@ -1,6 +1,5 @@
 use super::*;
 use std::io;
-use std::path::PathBuf;
 
 // ============================================================================
 // Error Construction Tests

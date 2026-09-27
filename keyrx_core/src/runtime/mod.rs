@@ -26,6 +26,7 @@
 //! ```
 
 pub mod clock;
+pub mod device_pattern;
 pub mod event;
 pub mod lookup;
 pub mod state;
@@ -33,7 +34,9 @@ pub mod tap_hold;
 
 // Re-export public API
 pub use clock::{Clock, SystemClock, VirtualClock};
-pub use event::{check_tap_hold_timeouts, process_event, KeyEvent, KeyEventType};
+pub use event::{
+    check_tap_hold_timeouts, process_event, process_event_for_identities, KeyEvent, KeyEventType,
+};
 pub use lookup::KeyLookup;
 pub use state::DeviceState;
 pub use tap_hold::{

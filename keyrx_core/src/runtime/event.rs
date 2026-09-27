@@ -225,6 +225,19 @@ pub fn process_event(
     lookup: &KeyLookup,
     state: &mut DeviceState,
 ) -> Vec<KeyEvent> {
+    let device_id = event.device_id().map(alloc::string::String::from);
+    let identities: Vec<&str> = device_id.as_deref().into_iter().collect();
+    process_event_for_identities(event, lookup, state, &identities)
+}
+
+/// [`process_event`] for an event whose device is known by several identities
+/// (id, name, path, serial): `when_device` conditions match any of them.
+pub fn process_event_for_identities(
+    event: KeyEvent,
+    lookup: &KeyLookup,
+    state: &mut DeviceState,
+    identities: &[&str],
+) -> Vec<KeyEvent> {
     use crate::config::BaseKeyMapping;
 
     // Cache event properties before event is potentially moved
@@ -253,7 +266,7 @@ pub fn process_event(
     }
 
     // Look up the mapping for this key
-    let mapping = lookup.find_mapping(event.keycode(), state);
+    let mapping = lookup.find_mapping_for_identities(event.keycode(), state, identities);
 
     // Check for permissive hold: if this is a press event and there are pending
     // tap-hold keys, we need to trigger permissive hold BEFORE processing this key.
@@ -284,7 +297,7 @@ pub fn process_event(
     // This fixes the bug where fast typing (permissive hold) would use the base layer
     // mapping instead of the conditional layer mapping.
     let mapping = if permissive_hold_triggered {
-        lookup.find_mapping(event.keycode(), state)
+        lookup.find_mapping_for_identities(event.keycode(), state, identities)
     } else {
         mapping
     };

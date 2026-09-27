@@ -29,115 +29,11 @@ pub use linux_enum::enumerate_keyboards;
 #[cfg(target_os = "windows")]
 pub use windows::{enumerate_keyboards, DeviceManager, ManagedDevice, RefreshResult};
 
-/// Matches a device against a pattern string.
+/// Matches a device against a `device_start` pattern: THE shared glob rule
+/// (`keyrx_core::runtime::device_pattern`) over the device's name, serial and
+/// physical path.
 pub fn match_device(device: &KeyboardInfo, pattern: &str) -> bool {
-    // Wildcard pattern matches everything
-    if pattern == "*" {
-        return true;
-    }
-
-    // Check for contains pattern (*substring*)
-    if pattern.starts_with('*') && pattern.ends_with('*') && pattern.len() > 2 {
-        let substring = &pattern[1..pattern.len() - 1];
-        let substring_lower = substring.to_lowercase();
-
-        // Match against device name
-        if device.name.to_lowercase().contains(&substring_lower) {
-            return true;
-        }
-
-        // Match against serial if available
-        if let Some(ref serial) = device.serial {
-            if serial.to_lowercase().contains(&substring_lower) {
-                return true;
-            }
-        }
-
-        // Match against physical path if available
-        if let Some(ref phys) = device.phys {
-            if phys.to_lowercase().contains(&substring_lower) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // Check for suffix pattern (*suffix)
-    if let Some(suffix) = pattern.strip_prefix('*') {
-        let suffix_lower = suffix.to_lowercase();
-
-        // Match against device name
-        if device.name.to_lowercase().ends_with(&suffix_lower) {
-            return true;
-        }
-
-        // Match against serial if available
-        if let Some(ref serial) = device.serial {
-            if serial.to_lowercase().ends_with(&suffix_lower) {
-                return true;
-            }
-        }
-
-        // Match against physical path if available
-        if let Some(ref phys) = device.phys {
-            if phys.to_lowercase().ends_with(&suffix_lower) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // Check for prefix pattern (prefix*)
-    if let Some(prefix) = pattern.strip_suffix('*') {
-        let prefix_lower = prefix.to_lowercase();
-
-        // Match against device name
-        if device.name.to_lowercase().starts_with(&prefix_lower) {
-            return true;
-        }
-
-        // Match against serial if available
-        if let Some(ref serial) = device.serial {
-            if serial.to_lowercase().starts_with(&prefix_lower) {
-                return true;
-            }
-        }
-
-        // Match against physical path if available
-        if let Some(ref phys) = device.phys {
-            if phys.to_lowercase().starts_with(&prefix_lower) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // Exact match (case-insensitive)
-    let pattern_lower = pattern.to_lowercase();
-
-    // Match against device name
-    if device.name.to_lowercase() == pattern_lower {
-        return true;
-    }
-
-    // Match against serial if available
-    if let Some(ref serial) = device.serial {
-        if serial.to_lowercase() == pattern_lower {
-            return true;
-        }
-    }
-
-    // Match against physical path if available
-    if let Some(ref phys) = device.phys {
-        if phys.to_lowercase() == pattern_lower {
-            return true;
-        }
-    }
-
-    false
+    keyrx_core::runtime::device_pattern::matches_any(&device.identities(), pattern)
 }
 
 /// Errors that can occur during device discovery.
@@ -178,6 +74,15 @@ impl KeyboardInfo {
     /// The ID is generated from the serial number if available, otherwise
     /// falls back to a path-based identifier for stability.
     #[must_use]
+    /// The strings device patterns are matched against: name, serial and
+    /// physical path (when known).
+    pub fn identities(&self) -> Vec<&str> {
+        let mut ids = vec![self.name.as_str()];
+        ids.extend(self.serial.as_deref());
+        ids.extend(self.phys.as_deref());
+        ids
+    }
+
     pub fn device_id(&self) -> String {
         if let Some(ref serial) = self.serial {
             if !serial.is_empty() {

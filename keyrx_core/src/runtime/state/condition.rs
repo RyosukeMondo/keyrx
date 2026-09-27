@@ -87,6 +87,17 @@ impl DeviceState {
         condition: &Condition,
         device_id: Option<&str>,
     ) -> bool {
+        self.evaluate_condition_for_identities(condition, device_id.as_slice())
+    }
+
+    /// Evaluates a condition for an event from a device known by several
+    /// identities (e.g. its id, name, path and serial): a `DeviceMatches`
+    /// pattern holds if it matches ANY of them (ASCII case-insensitive).
+    pub fn evaluate_condition_for_identities(
+        &self,
+        condition: &Condition,
+        identities: &[&str],
+    ) -> bool {
         match condition {
             // Single modifier active
             Condition::ModifierActive(id) => self.is_modifier_active(*id),
@@ -105,7 +116,9 @@ impl DeviceState {
             }
 
             // Device ID matches pattern
-            Condition::DeviceMatches(pattern) => Self::matches_device_pattern(device_id, pattern),
+            Condition::DeviceMatches(pattern) => {
+                crate::runtime::device_pattern::matches_any(identities, pattern)
+            }
 
             // IME is active
             Condition::ImeActive => self.is_ime_active(),
@@ -153,95 +166,5 @@ impl DeviceState {
             return target_lower.as_bytes().get(current_lower.len()) == Some(&b'-');
         }
         false
-    }
-}
-
-/// Device pattern matching module
-impl DeviceState {
-    /// Matches a device ID against a pattern
-    ///
-    /// Supports simple glob patterns with `*` wildcard:
-    /// - Exact match: "device-123" matches only "device-123"
-    /// - Prefix: "usb-*" matches "usb-keyboard", "usb-numpad", etc.
-    /// - Suffix: "*-keyboard" matches "usb-keyboard", "bt-keyboard", etc.
-    /// - Contains: "*numpad*" matches "usb-numpad-123", "my-numpad", etc.
-    ///
-    /// Returns false if device_id is None.
-    pub(super) fn matches_device_pattern(device_id: Option<&str>, pattern: &str) -> bool {
-        let Some(id) = device_id else {
-            return false;
-        };
-
-        // Handle glob patterns with *
-        if pattern.contains('*') {
-            let parts: alloc::vec::Vec<&str> = pattern.split('*').collect();
-            match parts.len() {
-                1 => {
-                    // No actual * (shouldn't happen but handle it)
-                    id == pattern
-                }
-                2 => {
-                    // Single * - either prefix, suffix, or empty on one side
-                    let (prefix, suffix) = (parts[0], parts[1]);
-                    if prefix.is_empty() && suffix.is_empty() {
-                        // Pattern is just "*" - matches everything
-                        true
-                    } else if prefix.is_empty() {
-                        // *suffix
-                        id.ends_with(suffix)
-                    } else if suffix.is_empty() {
-                        // prefix*
-                        id.starts_with(prefix)
-                    } else {
-                        // prefix*suffix
-                        id.starts_with(prefix) && id.ends_with(suffix)
-                    }
-                }
-                3 => {
-                    // Two *s - typically *contains*
-                    let (prefix, middle, suffix) = (parts[0], parts[1], parts[2]);
-                    if prefix.is_empty() && suffix.is_empty() {
-                        // *middle*
-                        id.contains(middle)
-                    } else {
-                        // More complex pattern - do simple check
-                        id.starts_with(prefix) && id.ends_with(suffix) && id.contains(middle)
-                    }
-                }
-                _ => {
-                    // Complex pattern with multiple * - just check if all parts exist in order
-                    // This is a simplified implementation
-                    let mut remaining = id;
-                    for (i, part) in parts.iter().enumerate() {
-                        if part.is_empty() {
-                            continue;
-                        }
-                        if i == 0 {
-                            // First part must be prefix
-                            if !remaining.starts_with(part) {
-                                return false;
-                            }
-                            remaining = &remaining[part.len()..];
-                        } else if i == parts.len() - 1 {
-                            // Last part must be suffix
-                            if !remaining.ends_with(part) {
-                                return false;
-                            }
-                        } else {
-                            // Middle parts must exist somewhere
-                            if let Some(pos) = remaining.find(part) {
-                                remaining = &remaining[pos + part.len()..];
-                            } else {
-                                return false;
-                            }
-                        }
-                    }
-                    true
-                }
-            }
-        } else {
-            // Exact match
-            id == pattern
-        }
     }
 }

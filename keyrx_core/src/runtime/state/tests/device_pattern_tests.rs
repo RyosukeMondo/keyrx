@@ -1,127 +1,87 @@
 use super::*;
 use alloc::string::String;
 
+/// An event from a device with (optionally) one identity.
+fn matches_device_pattern(device_id: Option<&str>, pattern: &str) -> bool {
+    device_id.is_some_and(|id| crate::runtime::device_pattern::matches(id, pattern))
+}
+
 #[test]
 fn test_exact_match() {
     // Exact match should work
-    assert!(DeviceState::matches_device_pattern(
+    assert!(matches_device_pattern(
         Some("usb-numpad-123"),
         "usb-numpad-123"
     ));
     // Different string should not match
-    assert!(!DeviceState::matches_device_pattern(
+    assert!(!matches_device_pattern(
         Some("usb-keyboard-456"),
         "usb-numpad-123"
     ));
     // None device_id should not match
-    assert!(!DeviceState::matches_device_pattern(None, "usb-numpad-123"));
+    assert!(!matches_device_pattern(None, "usb-numpad-123"));
 }
 
 #[test]
 fn test_wildcard_matches_all() {
     // Pattern "*" matches everything
-    assert!(DeviceState::matches_device_pattern(Some("anything"), "*"));
-    assert!(DeviceState::matches_device_pattern(Some(""), "*"));
-    assert!(DeviceState::matches_device_pattern(
-        Some("usb-numpad-123"),
-        "*"
-    ));
+    assert!(matches_device_pattern(Some("anything"), "*"));
+    assert!(matches_device_pattern(Some(""), "*"));
+    assert!(matches_device_pattern(Some("usb-numpad-123"), "*"));
     // But still not None
-    assert!(!DeviceState::matches_device_pattern(None, "*"));
+    assert!(!matches_device_pattern(None, "*"));
 }
 
 #[test]
 fn test_prefix_pattern() {
     // Pattern "usb-*" matches anything starting with "usb-"
-    assert!(DeviceState::matches_device_pattern(
-        Some("usb-numpad"),
-        "usb-*"
-    ));
-    assert!(DeviceState::matches_device_pattern(
-        Some("usb-keyboard"),
-        "usb-*"
-    ));
-    assert!(DeviceState::matches_device_pattern(Some("usb-"), "usb-*"));
+    assert!(matches_device_pattern(Some("usb-numpad"), "usb-*"));
+    assert!(matches_device_pattern(Some("usb-keyboard"), "usb-*"));
+    assert!(matches_device_pattern(Some("usb-"), "usb-*"));
     // But not things that don't start with "usb-"
-    assert!(!DeviceState::matches_device_pattern(
-        Some("bt-keyboard"),
-        "usb-*"
-    ));
-    assert!(!DeviceState::matches_device_pattern(
-        Some("keyboard-usb"),
-        "usb-*"
-    ));
+    assert!(!matches_device_pattern(Some("bt-keyboard"), "usb-*"));
+    assert!(!matches_device_pattern(Some("keyboard-usb"), "usb-*"));
 }
 
 #[test]
 fn test_suffix_pattern() {
     // Pattern "*-keyboard" matches anything ending with "-keyboard"
-    assert!(DeviceState::matches_device_pattern(
-        Some("usb-keyboard"),
-        "*-keyboard"
-    ));
-    assert!(DeviceState::matches_device_pattern(
-        Some("bt-keyboard"),
-        "*-keyboard"
-    ));
-    assert!(DeviceState::matches_device_pattern(
-        Some("-keyboard"),
-        "*-keyboard"
-    ));
+    assert!(matches_device_pattern(Some("usb-keyboard"), "*-keyboard"));
+    assert!(matches_device_pattern(Some("bt-keyboard"), "*-keyboard"));
+    assert!(matches_device_pattern(Some("-keyboard"), "*-keyboard"));
     // But not things that don't end with "-keyboard"
-    assert!(!DeviceState::matches_device_pattern(
-        Some("keyboard-usb"),
-        "*-keyboard"
-    ));
-    assert!(!DeviceState::matches_device_pattern(
-        Some("usb-numpad"),
-        "*-keyboard"
-    ));
+    assert!(!matches_device_pattern(Some("keyboard-usb"), "*-keyboard"));
+    assert!(!matches_device_pattern(Some("usb-numpad"), "*-keyboard"));
 }
 
 #[test]
 fn test_contains_pattern() {
     // Pattern "*numpad*" matches anything containing "numpad"
-    assert!(DeviceState::matches_device_pattern(
-        Some("usb-numpad-123"),
-        "*numpad*"
-    ));
-    assert!(DeviceState::matches_device_pattern(
-        Some("numpad"),
-        "*numpad*"
-    ));
-    assert!(DeviceState::matches_device_pattern(
-        Some("my-numpad-device"),
-        "*numpad*"
-    ));
+    assert!(matches_device_pattern(Some("usb-numpad-123"), "*numpad*"));
+    assert!(matches_device_pattern(Some("numpad"), "*numpad*"));
+    assert!(matches_device_pattern(Some("my-numpad-device"), "*numpad*"));
     // But not things that don't contain "numpad"
-    assert!(!DeviceState::matches_device_pattern(
-        Some("usb-keyboard"),
-        "*numpad*"
-    ));
-    assert!(!DeviceState::matches_device_pattern(
-        Some("numpd"),
-        "*numpad*"
-    ));
+    assert!(!matches_device_pattern(Some("usb-keyboard"), "*numpad*"));
+    assert!(!matches_device_pattern(Some("numpd"), "*numpad*"));
 }
 
 #[test]
 fn test_prefix_and_suffix_pattern() {
     // Pattern "usb-*-keyboard" matches "usb-...-keyboard"
-    assert!(DeviceState::matches_device_pattern(
+    assert!(matches_device_pattern(
         Some("usb-logitech-keyboard"),
         "usb-*-keyboard"
     ));
-    assert!(DeviceState::matches_device_pattern(
+    assert!(matches_device_pattern(
         Some("usb-keyboard"),
         "usb-*-keyboard"
     ));
     // But not mismatched
-    assert!(!DeviceState::matches_device_pattern(
+    assert!(!matches_device_pattern(
         Some("bt-logitech-keyboard"),
         "usb-*-keyboard"
     ));
-    assert!(!DeviceState::matches_device_pattern(
+    assert!(!matches_device_pattern(
         Some("usb-logitech-numpad"),
         "usb-*-keyboard"
     ));
@@ -188,16 +148,37 @@ fn test_device_pattern_contains() {
     assert!(!state.evaluate_condition_with_device(&cond, Some("keyboard")));
 }
 
+/// Device patterns are ASCII case-insensitive, like the daemon's device
+/// selection (`device_start`), so one pattern means the same thing in both.
 #[test]
-fn test_device_pattern_case_sensitive() {
+fn test_device_pattern_case_insensitive() {
     let state = DeviceState::new();
 
-    // Pattern matching should be case-sensitive
     let cond = Condition::DeviceMatches(String::from("USB-Keyboard"));
     assert!(state.evaluate_condition_with_device(&cond, Some("USB-Keyboard")));
-    assert!(!state.evaluate_condition_with_device(&cond, Some("usb-keyboard")));
-    assert!(!state.evaluate_condition_with_device(&cond, Some("USB-KEYBOARD")));
-    assert!(!state.evaluate_condition_with_device(&cond, Some("Usb-Keyboard")));
+    assert!(state.evaluate_condition_with_device(&cond, Some("usb-keyboard")));
+    assert!(state.evaluate_condition_with_device(&cond, Some("USB-KEYBOARD")));
+    assert!(!state.evaluate_condition_with_device(&cond, Some("USB-Mouse")));
+
+    let glob = Condition::DeviceMatches(String::from("*NumPad*"));
+    assert!(state.evaluate_condition_with_device(&glob, Some("usb numpad 123")));
+}
+
+/// A device is known by several identities (id, name, path, serial); a
+/// pattern matches if it matches any of them.
+#[test]
+fn test_device_pattern_matches_any_identity() {
+    let state = DeviceState::new();
+    let cond = Condition::DeviceMatches(String::from("*numpad*"));
+    let numpad = ["path-/dev/input/event7", "USB NumPad", "/dev/input/event7"];
+    let keyboard = [
+        "path-/dev/input/event3",
+        "USB Keyboard",
+        "/dev/input/event3",
+    ];
+    assert!(state.evaluate_condition_for_identities(&cond, &numpad));
+    assert!(!state.evaluate_condition_for_identities(&cond, &keyboard));
+    assert!(!state.evaluate_condition_for_identities(&cond, &[]));
 }
 
 #[test]

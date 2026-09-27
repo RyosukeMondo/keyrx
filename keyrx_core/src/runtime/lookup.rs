@@ -150,11 +150,11 @@ impl KeyLookup {
     fn find_matching_entry<'a>(
         entries: &'a [LookupEntry],
         state: &DeviceState,
-        device_id: Option<&str>,
+        identities: &[&str],
     ) -> Option<&'a LookupEntry> {
         entries
             .iter()
-            .find(|entry| Self::entry_matches(entry, state, device_id))
+            .find(|entry| Self::entry_matches(entry, state, identities))
     }
 
     /// Finds the appropriate mapping for a key based on current device state and device ID
@@ -198,23 +198,26 @@ impl KeyLookup {
         state: &DeviceState,
         device_id: Option<&str>,
     ) -> Option<&BaseKeyMapping> {
-        let entries = self.table.get(&key)?;
-        Self::find_matching_entry(entries, state, device_id).map(|entry| &entry.mapping)
+        self.find_mapping_for_identities(key, state, device_id.as_slice())
     }
 
-    /// Evaluates a condition against state and optional device ID.
-    fn evaluate_condition(
-        condition: &Condition,
+    /// Like [`find_mapping_with_device`](Self::find_mapping_with_device) for a
+    /// device known by several identities (id, name, path, serial): a
+    /// `DeviceMatches` condition holds if its pattern matches any of them.
+    pub fn find_mapping_for_identities(
+        &self,
+        key: KeyCode,
         state: &DeviceState,
-        device_id: Option<&str>,
-    ) -> bool {
-        state.evaluate_condition_with_device(condition, device_id)
+        identities: &[&str],
+    ) -> Option<&BaseKeyMapping> {
+        let entries = self.table.get(&key)?;
+        Self::find_matching_entry(entries, state, identities).map(|entry| &entry.mapping)
     }
 
     /// Checks if a mapping entry matches the current state.
-    fn entry_matches(entry: &LookupEntry, state: &DeviceState, device_id: Option<&str>) -> bool {
+    fn entry_matches(entry: &LookupEntry, state: &DeviceState, identities: &[&str]) -> bool {
         match &entry.condition {
-            Some(condition) => Self::evaluate_condition(condition, state, device_id),
+            Some(condition) => state.evaluate_condition_for_identities(condition, identities),
             None => true, // Unconditional mapping always matches
         }
     }
