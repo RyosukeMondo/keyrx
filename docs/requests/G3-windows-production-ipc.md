@@ -5,17 +5,19 @@
 **Deliverable:** commits on `main`, plus a filled-in **Result** section at the end
 of this file. Don't push unless the user says to.
 
-## 0. Get the current code first (Windows `main` is 17 commits behind)
+## 0. Code is already synced
 
-The Linux work (Phase L, G1, G2) is local-only and arrives as a git bundle:
+The Linux session fast-forwarded this checkout to its `main` over ssh
+(`git log --oneline -3` should show this request's commit). Future Linux
+commits arrive the same way: the Linux side has a `windows` remote, and this
+repo has `receive.denyCurrentBranch=updateInstead`. Keep the working tree clean
+between tasks, or the push is refused.
 
-```powershell
-cd D:\users\ryosu\repos\keyrx
-git status            # you have uncommitted edits to CLAUDE.md files: commit or stash them first
-git fetch D:\users\ryosu\bundles\keyrx-main.bundle main:linux-main
-git merge --ff-only linux-main     # main is an ancestor, so this fast-forwards
-git log --oneline -3              # expect 01f281b0 or later (docs: G2 done ...)
-```
+Your uncommitted CLAUDE.md edits (a slimming pass over `.claude/CLAUDE.md`,
+`CLAUDE.md` and `scripts/CLAUDE.md`) conflicted with the updated
+`.claude/CLAUDE.md`, so they were NOT merged. They are in
+`stash@{0}` ("pre-linux-sync WIP: CLAUDE.md slimming"). Re-apply them by hand
+if still wanted, and keep the Linux Host Notes lines added since then.
 
 Read `.claude/CLAUDE.md` → "Linux Host Notes" (the read-model and live-config
 rules apply to Windows too) and RESUME_PLAN Phases L and G.
