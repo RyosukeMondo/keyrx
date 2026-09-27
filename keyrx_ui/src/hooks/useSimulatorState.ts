@@ -3,6 +3,7 @@ import type { DaemonState, KeyEvent, SimulatorState } from '@/types/rpc';
 import type { SimulationInput, SimulationResult } from '@/hooks/useWasm';
 import type { KeyMapping } from '@/types';
 import { getErrorMessage } from '@/utils/errorUtils';
+import { logger } from '@/utils/logger';
 
 type SimulationOutput = SimulationResult['outputs'][number];
 
@@ -163,7 +164,10 @@ export function useSimulatorState(
             processWasmResult(result, keyCode);
           }
         } catch (err) {
-          console.error('WASM simulation error:', err);
+          logger.error('simulator_wasm_simulation_failed', err instanceof Error ? err : undefined, {
+            keyCode,
+            eventType: 'press',
+          });
           addEvent(
             'ERROR',
             'press',
@@ -232,7 +236,10 @@ export function useSimulatorState(
             processWasmResult(result, keyCode);
           }
         } catch (err) {
-          console.error('WASM simulation error:', err);
+          logger.error('simulator_wasm_simulation_failed', err instanceof Error ? err : undefined, {
+            keyCode,
+            eventType: 'release',
+          });
           addEvent(
             'ERROR',
             'release',

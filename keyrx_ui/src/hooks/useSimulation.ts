@@ -34,6 +34,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useUnifiedApi } from './useUnifiedApi';
 import type { KeyEvent } from '../types/rpc';
+import { logger } from '../utils/logger';
 
 /**
  * Options for useSimulation hook
@@ -157,7 +158,7 @@ export function useSimulation(
       ) {
         addEvent(data as KeyEvent);
       } else {
-        console.warn('[useSimulation] Received invalid event data:', data);
+        logger.warn('simulation_invalid_event_data', { data });
       }
     });
 

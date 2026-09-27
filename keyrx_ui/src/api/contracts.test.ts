@@ -645,9 +645,9 @@ describe('Validation Error Handling', () => {
     const logData = JSON.parse(logCall);
 
     expect(logData).toHaveProperty('timestamp');
-    expect(logData).toHaveProperty('level', 'error');
-    expect(logData).toHaveProperty('service', 'API Validation');
-    expect(logData).toHaveProperty('event', 'validation_failed');
+    expect(logData).toHaveProperty('level', 'ERROR');
+    expect(logData).toHaveProperty('service', 'keyrx-ui');
+    expect(logData).toHaveProperty('event', 'api_response_validation_failed');
     expect(logData.context).toHaveProperty('endpoint', 'GET /api/devices');
 
     consoleErrorSpy.mockRestore();

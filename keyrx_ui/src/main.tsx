@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { logger } from './utils/logger';
 import './styles/tokens.css';
 import './index.css';
 import App from './App.tsx';
@@ -15,7 +16,7 @@ if (import.meta.env.DEV) {
       axe.default(React, ReactDOM, 1000);
     })
     .catch((error) => {
-      console.error('Failed to load axe-core:', error);
+      logger.error('axe_core_load_failed', error);
     });
 }
 

@@ -7,6 +7,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useSimulation } from './useSimulation';
 import { useUnifiedApi } from './useUnifiedApi';
 import type { KeyEvent } from '../types/rpc';
+import { logger } from '../utils/logger';
 
 // Mock useUnifiedApi
 vi.mock('./useUnifiedApi');
@@ -316,7 +317,7 @@ describe('useSimulation', () => {
 
     it('ignores invalid WebSocket events', async () => {
       const { result } = renderHook(() => useSimulation());
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const loggerWarnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
       act(() => {
         result.current.start();
@@ -333,12 +334,11 @@ describe('useSimulation', () => {
       });
 
       expect(result.current.events).toHaveLength(0);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '[useSimulation] Received invalid event data:',
-        { invalid: 'data' }
-      );
+      expect(loggerWarnSpy).toHaveBeenCalledWith('simulation_invalid_event_data', {
+        data: { invalid: 'data' },
+      });
 
-      consoleSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
     });
   });
 

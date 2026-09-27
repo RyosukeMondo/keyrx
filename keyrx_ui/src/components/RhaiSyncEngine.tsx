@@ -24,6 +24,7 @@ import {
   type ParseError,
 } from '../utils/rhaiParser';
 import { generateRhaiScript } from '../utils/rhaiCodeGen';
+import { logger } from '../utils/logger';
 
 /**
  * Sync state machine states
@@ -168,7 +169,7 @@ export function useRhaiSyncEngine(
         }
       }
     } catch (err) {
-      console.warn('Failed to restore from localStorage:', err);
+      logger.warn('rhai_sync_restore_failed', { storageKey, error: String(err) });
     }
   }, [storageKey, enablePersistence]);
 
@@ -186,7 +187,7 @@ export function useRhaiSyncEngine(
           })
         );
       } catch (err) {
-        console.warn('Failed to save to localStorage:', err);
+        logger.warn('rhai_sync_persist_failed', { storageKey, error: String(err) });
       }
     },
     [storageKey, enablePersistence]

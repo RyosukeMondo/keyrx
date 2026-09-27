@@ -5,6 +5,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useCodePanel } from './useCodePanel';
+import { logger } from '@/utils/logger';
 
 const STORAGE_KEY_HEIGHT = 'codePanel.height';
 const DEFAULT_HEIGHT = 300;
@@ -60,8 +61,8 @@ describe('useCodePanel', () => {
     });
 
     it('should handle localStorage errors gracefully', () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
+      const loggerError = vi
+        .spyOn(logger, 'error')
         .mockImplementation(() => {});
       const getItemSpy = vi
         .spyOn(Storage.prototype, 'getItem')
@@ -72,12 +73,12 @@ describe('useCodePanel', () => {
       const { result } = renderHook(() => useCodePanel());
 
       expect(result.current.height).toBe(DEFAULT_HEIGHT);
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to load code panel height from localStorage:',
+      expect(loggerError).toHaveBeenCalledWith(
+        'code_panel_load_failed',
         expect.any(Error)
       );
 
-      consoleError.mockRestore();
+      loggerError.mockRestore();
       getItemSpy.mockRestore();
     });
   });
@@ -177,8 +178,8 @@ describe('useCodePanel', () => {
     });
 
     it('should handle localStorage errors gracefully when persisting', () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
+      const loggerError = vi
+        .spyOn(logger, 'error')
         .mockImplementation(() => {});
       const setItemSpy = vi
         .spyOn(Storage.prototype, 'setItem')
@@ -194,12 +195,12 @@ describe('useCodePanel', () => {
 
       // Height should still update in state even if persistence fails
       expect(result.current.height).toBe(400);
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to persist code panel height:',
+      expect(loggerError).toHaveBeenCalledWith(
+        'code_panel_persist_failed',
         expect.any(Error)
       );
 
-      consoleError.mockRestore();
+      loggerError.mockRestore();
       setItemSpy.mockRestore();
     });
 

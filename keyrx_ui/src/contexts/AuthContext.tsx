@@ -16,6 +16,7 @@ import React, {
   useCallback,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { logger } from '../utils/logger';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -78,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       return false;
     } catch (err) {
-      console.error('Token validation failed:', err);
+      logger.error('auth_token_validation_failed', err as Error);
       return false;
     }
   }, []);
@@ -118,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         navigate('/login');
       }
     } catch (err) {
-      console.error('Token refresh failed:', err);
+      logger.error('auth_token_refresh_failed', err as Error);
       setIsAuthenticated(false);
       navigate('/login');
     }
@@ -175,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       });
     } catch (err) {
-      console.error('Logout request failed:', err);
+      logger.error('auth_logout_request_failed', err as Error);
     }
 
     localStorage.removeItem(TOKEN_STORAGE_KEY);

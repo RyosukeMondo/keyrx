@@ -22,6 +22,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { logger } from '@/utils/logger';
 
 const STORAGE_KEY_HEIGHT = 'codePanel.height';
 const DEFAULT_HEIGHT = 300;
@@ -54,7 +55,10 @@ export function useCodePanel(): UseCodePanelReturn {
         }
       }
     } catch (err) {
-      console.error('Failed to load code panel height from localStorage:', err);
+      logger.error(
+        'code_panel_load_failed',
+        err instanceof Error ? err : undefined
+      );
     }
     return DEFAULT_HEIGHT;
   });
@@ -66,7 +70,10 @@ export function useCodePanel(): UseCodePanelReturn {
     try {
       localStorage.setItem(STORAGE_KEY_HEIGHT, height.toString());
     } catch (err) {
-      console.error('Failed to persist code panel height:', err);
+      logger.error(
+        'code_panel_persist_failed',
+        err instanceof Error ? err : undefined
+      );
     }
   }, [height]);
 

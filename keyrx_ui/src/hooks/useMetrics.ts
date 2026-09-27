@@ -4,6 +4,7 @@ import { queryKeys } from '../lib/queryClient';
 import * as metricsApi from '../api/metrics';
 import { toEventRecord } from '../api/eventRecord';
 import type { LatencyStats, EventRecord, WSMessage } from '../types';
+import { logger } from '../utils/logger';
 
 /**
  * Fetch latency statistics with React Query caching
@@ -42,10 +43,7 @@ export function useWebSocketMetrics() {
     const websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.log('WebSocket connected');
-      }
+      logger.debug('metrics_websocket_connected');
     };
 
     websocket.onmessage = (event) => {
@@ -85,24 +83,28 @@ export function useWebSocketMetrics() {
 
           case 'error': {
             const errorPayload = message.payload as { message: string };
-            console.error('WebSocket error:', errorPayload.message);
+            logger.error('metrics_websocket_server_error', undefined, {
+              message: errorPayload.message,
+            });
             break;
           }
         }
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+        logger.error(
+          'metrics_websocket_message_parse_failed',
+          error as Error
+        );
       }
     };
 
-    websocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
+    websocket.onerror = () => {
+      logger.error('metrics_websocket_error', undefined, {
+        wsUrl: websocket.url,
+      });
     };
 
     websocket.onclose = () => {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.log('WebSocket disconnected');
-      }
+      logger.debug('metrics_websocket_disconnected');
     };
 
     // Cleanup on unmount

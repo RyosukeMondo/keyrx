@@ -10,6 +10,7 @@ import type {
   SimulationResult,
   SimulationInput,
 } from '../hooks/useWasm';
+import { logger } from '../utils/logger';
 
 // Type definitions for WASM module
 interface WasmModule {
@@ -45,48 +46,34 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
     // Initialize WASM module ONCE for entire app lifecycle
     async function initWasm() {
       const startTime = performance.now();
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.info('[WASM] Starting global initialization...');
-      }
+      logger.debug('wasm_context_init_started');
       setIsLoading(true);
 
       try {
-        if (import.meta.env.DEV) {
-          // eslint-disable-next-line no-console
-          console.info('[WASM] Fetching module...');
-        }
+        logger.debug('wasm_context_module_fetch_started');
         const module = await import('@/wasm/pkg/keyrx_core.js').catch(() => {
           throw new Error(
             'WASM module not found. Run build:wasm to compile the WASM module.'
           );
         });
 
-        if (import.meta.env.DEV) {
-          // eslint-disable-next-line no-console
-          console.info('[WASM] Module loaded, initializing...');
-        }
+        logger.debug('wasm_context_module_loaded');
         module.wasm_init();
 
         const loadTime = performance.now() - startTime;
         setWasmModule(module as unknown as WasmModule);
         setIsWasmReady(true);
         setIsLoading(false);
-        if (import.meta.env.DEV) {
-          // eslint-disable-next-line no-console
-          console.info(
-            `[WASM] ✓ Global initialization complete in ${loadTime.toFixed(
-              0
-            )}ms`
-          );
-        }
+        logger.debug('wasm_context_init_succeeded', {
+          loadTimeMs: Math.round(loadTime),
+        });
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         const loadTime = performance.now() - startTime;
-        console.warn(
-          `[WASM] Initialization failed after ${loadTime.toFixed(0)}ms:`,
-          errorMessage
-        );
+        logger.warn('wasm_context_init_failed', {
+          loadTimeMs: Math.round(loadTime),
+          error: errorMessage,
+        });
         setError(err instanceof Error ? err : new Error(errorMessage));
         setIsWasmReady(false);
         setIsLoading(false);
@@ -99,10 +86,7 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
   const validateConfig = useCallback(
     async (code: string): Promise<ValidationError[]> => {
       if (!isWasmReady || !wasmModule) {
-        if (import.meta.env.DEV) {
-          // eslint-disable-next-line no-console
-          console.debug('WASM not ready, skipping validation');
-        }
+        logger.debug('wasm_context_validation_skipped');
         return [];
       }
 
@@ -111,10 +95,9 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
         return [];
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        if (import.meta.env.DEV) {
-          // eslint-disable-next-line no-console
-          console.debug('Validation error:', errorMessage);
-        }
+        logger.debug('wasm_context_validation_error', {
+          error: errorMessage,
+        });
 
         const lineMatch = errorMessage.match(/line (\d+)/i);
         const columnMatch = errorMessage.match(/column (\d+)/i);
@@ -141,10 +124,7 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
       input: SimulationInput
     ): Promise<SimulationResult | null> => {
       if (!isWasmReady || !wasmModule) {
-        if (import.meta.env.DEV) {
-          // eslint-disable-next-line no-console
-          console.debug('WASM not ready, skipping simulation');
-        }
+        logger.debug('wasm_context_simulation_skipped');
         return null;
       }
 
@@ -155,7 +135,9 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
         return result as SimulationResult;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        console.error('Simulation error:', errorMessage);
+        logger.error('wasm_context_simulation_failed', undefined, {
+          error: errorMessage,
+        });
         return null;
       }
     },

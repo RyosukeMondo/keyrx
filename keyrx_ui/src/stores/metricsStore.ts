@@ -8,6 +8,7 @@ import type {
 import * as metricsApi from '../api/metrics';
 import { ApiError } from '../api/client';
 import { toEventRecord } from '../api/eventRecord';
+import { logger } from '../utils/logger';
 
 interface MetricsStore {
   // State
@@ -119,12 +120,17 @@ export const useMetricsStore = create<MetricsStore>((set, get) => ({
           }
         }
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+        logger.error(
+          'metrics_store_ws_message_parse_failed',
+          error as Error
+        );
       }
     };
 
-    websocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
+    websocket.onerror = () => {
+      logger.error('metrics_store_ws_error', undefined, {
+        wsUrl: websocket.url,
+      });
       set({ error: 'WebSocket connection error', connected: false });
     };
 
