@@ -15,6 +15,14 @@ make verify     # Full quality checks (clippy, fmt, tests, coverage)
 - Node.js 18+
 - 80% test coverage minimum (90% for keyrx_core)
 
+### Linux Host Notes
+- System packages: `sudo apt install libgtk-3-dev libxdo-dev libayatana-appindicator3-dev libudev-dev libevdev-dev pkg-config`
+- Cargo tools beyond `make setup` defaults: `wasm-pack`, `typeshare-cli` (UI prebuild), target `wasm32-unknown-unknown`
+- Device access: `scripts/install.sh` adds you to `input`/`uinput` (needs re-login). Until then, run uinput tests as
+  `sudo setpriv --reuid=$(id -u) --regid=$(id -g) --groups=$(id -G|tr ' ' ,),$(getent group input|cut -d: -f3) env PATH=$PATH HOME=$HOME cargo test ...`
+- Type-check Windows code from Linux: `cargo clippy -p keyrx_daemon --target x86_64-pc-windows-gnu -- -D warnings` (checks only; not run)
+- The daemon's read side is ONE `DaemonQueryService` shared by IPC, REST, MCP and WS — add new status/metrics there, never per transport
+
 ## Project Structure
 
 ### 4-Crate Workspace
@@ -50,7 +58,7 @@ cargo test --workspace                     # All tests pass
 
 | Quality Gate | Threshold | Current | Enforcement |
 |--------------|-----------|---------|-------------|
-| Backend Tests | 100% pass | ~2,331 `#[test]`/`#[tokio::test]` fns (core 341 / compiler 277 / daemon 1,713); some daemon tests `#[ignore]`-gated on hardware/privileges | Local† |
+| Backend Tests | 100% pass | Linux run 2026-09-27: 2005 pass / 5 fail / 91 ignored (`cargo test --workspace`, input group). The 5 are known: 2 timing flakes, 2 script-cwd, 1 `/api/devices` perf — see RESUME_PLAN G4 | Local† |
 | Frontend Tests | ≥95% pass | ~1,874 test cases across 92 test files; WebSocket-mock instability resolved (commit d8694064) | Local† |
 | Frontend Coverage | ≥80% line/branch | Measured on demand (`npm run test:coverage`) | Local† |
 | Accessibility | Zero WCAG violations | axe a11y suite present (`npm run test:a11y`) | Local† |

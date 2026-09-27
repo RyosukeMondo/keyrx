@@ -1,6 +1,6 @@
 # Resume Plan — Finish 1.1.0 & Fix Outstanding Gaps
 
-**Branch:** `resume/finish-1.1.0`
+**Branch:** `main` (solo repo; the original `resume/finish-1.1.0` branch was merged)
 **Created:** 2026-06-21 (resumed after development pause)
 **Scope:** Everything from the resume assessment EXCEPT re-enabling CI
 (GitHub billing is currently out, so CI cannot run — explicitly deferred).
@@ -161,9 +161,11 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
     (`with_telemetry` + `handle`) is cross-platform unit-tested (C2); only the Linux
     glue is unverified. **⚠ MUST `cargo build` on Linux before release** (see risk note).
 
-- [NEXT] **C5 — `ClearEvents` IPC + web clear-events.** Add `IpcRequest::ClearEvents`,
+- [x] **C5 — `ClearEvents` IPC + web clear-events.** Add `IpcRequest::ClearEvents`,
   handle it via `telemetry.clear_events()`, and implement the web clear-events stub
   (`web/api/metrics.rs:300`) against it. *Accept:* working clear; test.
+  → DONE in 9f966b30 (C3c-3). Superseded 2026-09-27 by the single read model: IPC
+  and REST now clear the SAME telemetry ring (see Phase L).
 
 - [ ] **C5b — CLI events follow mode** (`cli/metrics.rs:40,69`). Replace the
   `Err("not implemented")` with a poll loop that repeatedly calls `GetEventsTail` and
@@ -206,14 +208,52 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 
 ---
 
-## ⚠ Cross-platform verification risk (MUST do before release)
+## Phase L — Linux bring-up & read-model redesign (2026-09-27, Linux host)
 
-This host is **Windows**, so `cfg(target_os = "linux")` code is NOT compiled by
-`cargo check`/`cargo build` here. The following Linux-only edits are written but
-UNVERIFIED — run `cargo build` (or CI) **on Linux** to confirm they compile:
-- `platform_runners/linux.rs`: C3b broadcast-task arg, C3c-1 `DaemonQueryService
-  .with_telemetry`, C3c-2 `start_production_ipc_server` helper + call site.
-The shared/cross-platform logic they depend on IS unit-tested on Windows.
+First session on a Linux host. The Linux build had never compiled (C3 edits were
+mirrored blind from Windows). Done, each verified live on a running daemon:
+
+- [x] **L1 — Linux release pipeline from a fresh setup** (06856e2c): rhai
+  `wasm-bindgen` feature (WASM link), `LC_ALL=C sort` in the WASM source hash
+  (ja_JP locale made every build "STALE WASM"), `typeshare-cli` in `make setup`.
+- [x] **L2 — Linux compile fixes** (d156ded0).
+- [x] **L3 — Single read model** (62894263): `DaemonQueryService` (over
+  `DaemonSharedState` + `DaemonTelemetry`) is the ONE source for IPC, REST, MCP and
+  the WS latency feed. Fixed: IPC status hardcoded zeros; two latency aggregators
+  stealing samples; two event rings; web→IPC silent fallbacks; per-transport
+  activation side effects.
+- [x] **L4 — One reload flag** (b93d6b13): `DaemonSharedState` shares the SIGHUP
+  `ReloadState` flag; removed `ProfileService`'s self-SIGHUP (killed test binaries
+  and `--test-mode` daemons).
+- [x] **L5 — Stale socket = "daemon not running"** (ace4ddcd).
+- [x] **L6 — Linux capture never blocks on an idle keyboard** (6eec2624): the
+  event loop sat in `read()` on the first grabbed device, swallowing all other
+  keyboards (incl. the physical one). Non-blocking fds + `poll()`, no lost batch
+  events, `PlatformError::NoInput`.
+
+Verification now: `cargo clippy --target x86_64-pc-windows-gnu` type-checks the
+Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
+
+## Phase G — Next (ordered by impact)
+
+- [NEXT] **G1 — Linux: activating a profile must actually change remapping.**
+  `Daemon::run` reload callback loads the new config and DISCARDS it ("Full
+  hot-reload requires daemon restart"); `--config` is only logged — mappings come
+  from ProfileManager's `.active`. Net: on Linux, UI/CLI/IPC activation changes
+  status but not the keyboard. Make the running remapping state follow the active
+  profile (one source of truth for "which config is live"), decide what `--config`
+  means, and prove it end to end by injecting keys and capturing the `keyrx`
+  output device. See the handover prompt in the 2026-09-27 session.
+- [ ] **G2 — UI↔API metrics contract.** UI `fetchEventLog` expects `EventRecord[]`,
+  API returns `{count, events: string[]}`; UI `fetchDaemonState` calls `/api/state`
+  which does not exist (`/api/daemon/state` does). Add a contract test.
+- [ ] **G3 — Windows production IPC server** (`keyrx_daemon status|metrics` cannot
+  work on Windows; `DEFAULT_SOCKET_PATH` is a Unix path). Use `ipc::server::spawn`.
+- [ ] **G4 — Test hygiene:** `profile_manager_test` asserts `compile_time_ms > 0`
+  (flaky: sub-ms compiles); `version_consistency_test` runs `scripts/sync-version.sh`
+  from the crate dir; `performance_test` `/api/devices` ≈440ms on this host.
+- [ ] **G5 — Oversize files** (>500 code lines): `web/api/diagnostics.rs`,
+  `platform_runners/windows.rs`, `web/api/profiles.rs`.
 
 ## Status Log
 - 2026-06-21: Plan created. A1 marked [NEXT].
@@ -243,3 +283,7 @@ The shared/cross-platform logic they depend on IS unit-tested on Windows.
 - 2026-06-22: C3c-2 DONE but UNVERIFIED (cfg-linux, can't compile on Windows) —
   start_production_ipc_server helper mirrors run_test_mode. C3 COMPLETE. Added
   cross-platform verification risk note. C5 (ClearEvents + web clear) [NEXT].
+- 2026-09-27: First Linux-host session. Linux build fixed + verified; Phase L
+  (L1–L6) done, see above. Live parity check: IPC == REST for status, latency,
+  events. Full suite on Linux: 2005 pass / 5 fail (all G4, pre-existing) / 91
+  ignored; needs `input` group for uinput tests. G1 [NEXT].

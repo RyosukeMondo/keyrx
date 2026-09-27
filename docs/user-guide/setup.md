@@ -112,9 +112,11 @@ cargo install cargo-watch
 cargo install cargo-tarpaulin
 cargo install cargo-fuzz
 cargo install wasm-pack
+cargo install typeshare-cli
 
 # Install system dependencies
-sudo apt-get install build-essential pkg-config libssl-dev libevdev-dev libudev-dev bats jq
+sudo apt-get install build-essential pkg-config libssl-dev libevdev-dev libudev-dev \
+    libgtk-3-dev libxdo-dev libayatana-appindicator3-dev bats jq
 
 # Setup hooks
 ./scripts/setup_hooks.sh
