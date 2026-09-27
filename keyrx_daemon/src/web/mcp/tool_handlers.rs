@@ -218,15 +218,7 @@ pub fn get_diagnostics() -> Result<String, String> {
     .to_string())
 }
 
-/// Get latency statistics.
+/// Get latency statistics (same `LatencyStats` as REST and the WS feed).
 pub fn get_latency(state: &AppState) -> Result<String, String> {
-    let snap = state.daemon_query.get_latency_snapshot();
-    Ok(json!({
-        "minUs": snap.min_us,
-        "avgUs": snap.avg_us,
-        "maxUs": snap.max_us,
-        "p95Us": snap.p95_us,
-        "p99Us": snap.p99_us,
-    })
-    .to_string())
+    serde_json::to_string_pretty(&state.daemon_query.get_latency_stats()).map_err(|e| e.to_string())
 }

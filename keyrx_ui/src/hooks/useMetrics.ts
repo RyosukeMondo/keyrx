@@ -2,33 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { queryKeys } from '../lib/queryClient';
 import * as metricsApi from '../api/metrics';
-import type {
-  LatencyStats,
-  EventRecord,
-  WSMessage,
-  KeyEventPayload,
-} from '../types';
-
-/**
- * Transform daemon's KeyEventPayload to frontend's EventRecord
- */
-function transformKeyEvent(payload: KeyEventPayload): EventRecord {
-  return {
-    id: `evt-${payload.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
-    timestamp: new Date(payload.timestamp / 1000).toISOString(),
-    type: payload.eventType === 'press' ? 'press' : 'release',
-    keyCode: payload.keyCode.replace(/^KEY_/, ''),
-    layer: 'Base',
-    latencyUs: payload.latency,
-    action: payload.mappingTriggered ? payload.output : undefined,
-    input: payload.input,
-    output: payload.output,
-    deviceId: payload.deviceId,
-    deviceName: payload.deviceName,
-    mappingType: payload.mappingType,
-    mappingTriggered: payload.mappingTriggered,
-  };
-}
+import { toEventRecord } from '../api/eventRecord';
+import type { LatencyStats, EventRecord, WSMessage } from '../types';
 
 /**
  * Fetch latency statistics with React Query caching
@@ -80,7 +55,7 @@ export function useWebSocketMetrics() {
         switch (message.type) {
           case 'event': {
             // Transform KeyEventPayload to EventRecord
-            const eventRecord = transformKeyEvent(message.payload);
+            const eventRecord = toEventRecord(message.payload);
 
             // Update event log cache
             queryClient.setQueryData<EventRecord[]>(

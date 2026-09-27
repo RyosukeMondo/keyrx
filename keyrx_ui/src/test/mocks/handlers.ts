@@ -5,6 +5,10 @@
 
 import { http, HttpResponse } from 'msw';
 import type { DeviceEntry } from '../../types';
+import latencyFixture from '../contract/metrics_latency.json';
+import eventsFixture from '../contract/metrics_events.json';
+import clearEventsFixture from '../contract/metrics_events_clear.json';
+import daemonStateFixture from '../contract/daemon_state.json';
 
 interface MockProfile {
   name: string;
@@ -350,40 +354,23 @@ export const handlers = [
     return HttpResponse.json({ success: true });
   }),
 
-  // Metrics endpoints
+  // Metrics endpoints — response bodies mirror the real handlers exactly
+  // (see src/test/contract/*.json, regenerated from a Rust test).
   http.get('/api/metrics/latency', () => {
-    return HttpResponse.json({
-      average: 1.2,
-      min: 0.5,
-      max: 3.8,
-      p50: 1.1,
-      p95: 2.5,
-      p99: 3.2,
-    });
+    return HttpResponse.json(latencyFixture);
   }),
 
   http.get('/api/metrics/events', () => {
-    return HttpResponse.json({
-      events: [
-        {
-          timestamp: Date.now() - 5000,
-          type: 'key_press',
-          keyCode: 'KEY_A',
-          outputCode: 'KEY_B',
-          layer: 'base',
-          latency: 1.2,
-        },
-        {
-          timestamp: Date.now() - 4000,
-          type: 'key_release',
-          keyCode: 'KEY_A',
-          outputCode: 'KEY_B',
-          layer: 'base',
-          latency: 1.1,
-        },
-      ],
-      total: 2,
-    });
+    return HttpResponse.json(eventsFixture);
+  }),
+
+  http.delete('/api/metrics/events', () => {
+    return HttpResponse.json(clearEventsFixture);
+  }),
+
+  // Daemon state endpoint
+  http.get('/api/daemon/state', () => {
+    return HttpResponse.json(daemonStateFixture);
   }),
 ];
 

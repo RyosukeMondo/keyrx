@@ -110,9 +110,12 @@ export function setDaemonState(
  * ```
  */
 export function sendLatencyUpdate(
-  stats: Omit<LatencyMetrics, 'timestamp'>
+  stats: Omit<LatencyMetrics, 'timestamp' | 'p50' | 'samples'> &
+    Partial<Pick<LatencyMetrics, 'p50' | 'samples'>>
 ): void {
   const metrics: LatencyMetrics = {
+    p50: stats.avg,
+    samples: 100,
     ...stats,
     timestamp: Date.now() * 1000, // Convert to microseconds
   };

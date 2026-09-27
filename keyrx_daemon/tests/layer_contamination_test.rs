@@ -72,7 +72,7 @@ device_end();
     // Get metrics
     let metrics_response = app.get("/api/metrics/events?count=100").await;
     let metrics: serde_json::Value = metrics_response.json().await.unwrap();
-    let events = metrics["events"].as_array().unwrap();
+    let events = metrics.as_array().unwrap();
 
     println!("Simple A->B mapping events:");
     for event in events {
@@ -81,10 +81,10 @@ device_end();
 
     // Check that we get EXACTLY 2 events: press B, release B
     // NOT: press A, press B, release B (which would indicate double processing)
-    let press_count = events.iter().filter(|e| e["event_type"] == "press").count();
+    let press_count = events.iter().filter(|e| e["eventType"] == "press").count();
     let release_count = events
         .iter()
-        .filter(|e| e["event_type"] == "release")
+        .filter(|e| e["eventType"] == "release")
         .count();
 
     assert_eq!(
@@ -158,7 +158,7 @@ device_end();
     // Get metrics
     let metrics_response = app.get("/api/metrics/events?count=100").await;
     let metrics: serde_json::Value = metrics_response.json().await.unwrap();
-    let events = metrics["events"].as_array().unwrap();
+    let events = metrics.as_array().unwrap();
 
     println!("Tap-hold A events:");
     for event in events {
@@ -167,10 +167,10 @@ device_end();
 
     // Check that we get EXACTLY 2 events: press Tab, release Tab
     // NOT: press A, press Tab, release Tab (which would indicate both original and remapped)
-    let press_count = events.iter().filter(|e| e["event_type"] == "press").count();
+    let press_count = events.iter().filter(|e| e["eventType"] == "press").count();
     let release_count = events
         .iter()
-        .filter(|e| e["event_type"] == "release")
+        .filter(|e| e["eventType"] == "release")
         .count();
 
     assert_eq!(
@@ -241,7 +241,7 @@ device_end();
     // Get metrics for A press
     let metrics_response = app.get("/api/metrics/events?count=100").await;
     let metrics: serde_json::Value = metrics_response.json().await.unwrap();
-    let events_a = metrics["events"].as_array().unwrap();
+    let events_a = metrics.as_array().unwrap();
 
     println!("Events when pressing A:");
     for event in events_a {
@@ -252,11 +252,11 @@ device_end();
     // NOT: Press A, Press Tab, Release Tab (double output)
     let press_count_a = events_a
         .iter()
-        .filter(|e| e["event_type"] == "press")
+        .filter(|e| e["eventType"] == "press")
         .count();
     let release_count_a = events_a
         .iter()
-        .filter(|e| e["event_type"] == "release")
+        .filter(|e| e["eventType"] == "release")
         .count();
 
     assert_eq!(
@@ -286,7 +286,7 @@ device_end();
     // Get metrics for W press
     let metrics_response = app.get("/api/metrics/events?count=100").await;
     let metrics: serde_json::Value = metrics_response.json().await.unwrap();
-    let events_w = metrics["events"].as_array().unwrap();
+    let events_w = metrics.as_array().unwrap();
 
     println!("Events when pressing W:");
     for event in events_w {
@@ -299,11 +299,11 @@ device_end();
     // NOT: Press W, Press A, Press Tab, Release Tab (multi-level contamination)
     let press_count_w = events_w
         .iter()
-        .filter(|e| e["event_type"] == "press")
+        .filter(|e| e["eventType"] == "press")
         .count();
     let release_count_w = events_w
         .iter()
-        .filter(|e| e["event_type"] == "release")
+        .filter(|e| e["eventType"] == "release")
         .count();
 
     assert_eq!(
@@ -368,7 +368,7 @@ device_end();
 
     let metrics_response = app.get("/api/metrics/events?count=100").await;
     let metrics: serde_json::Value = metrics_response.json().await.unwrap();
-    let events = metrics["events"].as_array().unwrap();
+    let events = metrics.as_array().unwrap();
 
     println!("J without layer:");
     for event in events {
@@ -378,7 +378,7 @@ device_end();
     // Should output J (no remapping)
     let has_j = events.iter().any(|e| {
         e["output"].as_str().unwrap_or("").contains("J")
-            || e["key_code"].as_u64() == Some(keyrx_core::config::KeyCode::J as u64)
+            || e["keyCode"].as_u64() == Some(keyrx_core::config::KeyCode::J as u64)
     });
     assert!(has_j, "J key not found in output without layer active");
 
@@ -399,7 +399,7 @@ device_end();
 
     let metrics_response = app.get("/api/metrics/events?count=100").await;
     let metrics: serde_json::Value = metrics_response.json().await.unwrap();
-    let events = metrics["events"].as_array().unwrap();
+    let events = metrics.as_array().unwrap();
 
     println!("J with layer MD_00 active:");
     for event in events {
@@ -409,7 +409,7 @@ device_end();
     // Should output Left Arrow (layer remapping)
     let has_left = events.iter().any(|e| {
         e["output"].as_str().unwrap_or("").contains("Left")
-            || e["key_code"].as_u64() == Some(keyrx_core::config::KeyCode::Left as u64)
+            || e["keyCode"].as_u64() == Some(keyrx_core::config::KeyCode::Left as u64)
     });
     assert!(
         has_left,
@@ -433,7 +433,7 @@ device_end();
 
     let metrics_response = app.get("/api/metrics/events?count=100").await;
     let metrics: serde_json::Value = metrics_response.json().await.unwrap();
-    let events = metrics["events"].as_array().unwrap();
+    let events = metrics.as_array().unwrap();
 
     println!("J after layer deactivation:");
     for event in events {
@@ -443,7 +443,7 @@ device_end();
     // Should output J again (layer deactivated)
     let has_j_again = events.iter().any(|e| {
         e["output"].as_str().unwrap_or("").contains("J")
-            || e["key_code"].as_u64() == Some(keyrx_core::config::KeyCode::J as u64)
+            || e["keyCode"].as_u64() == Some(keyrx_core::config::KeyCode::J as u64)
     });
     assert!(
         has_j_again,

@@ -1,10 +1,16 @@
-//! Event types for WebSocket broadcasting.
+//! Monitoring types shared by every transport.
 //!
-//! This module defines the event types that are broadcast from the daemon
-//! to connected WebSocket clients for real-time monitoring.
+//! `DaemonState`, `KeyEventData` and `LatencyStats` are THE wire format for
+//! live state, key events and latency — on the WebSocket push feed, the REST
+//! endpoints (`/api/daemon/state`, `/api/metrics/*`), WS-RPC and MCP. They are
+//! exported to TypeScript with typeshare (`keyrx_ui/src/types/generated.ts`),
+//! and `tests/api_contract_test.rs` pins real responses as fixtures the UI
+//! tests consume. Never hand-build these shapes with `json!`.
 
 use serde::{Deserialize, Serialize};
 use typeshare::typeshare;
+
+use crate::daemon::{LatencySnapshot, TelemetryState};
 
 /// Events broadcast from the daemon to WebSocket clients.
 /// Note: This enum uses #[serde(flatten)] which is not supported by typeshare,
@@ -133,9 +139,69 @@ pub struct LatencyStats {
     #[typeshare(serialized_as = "number")]
     pub p99: u64,
 
+    /// Median latency in microseconds.
+    #[typeshare(serialized_as = "number")]
+    pub p50: u64,
+
+    /// Number of samples the statistics were computed from.
+    #[typeshare(serialized_as = "number")]
+    pub samples: u64,
+
     /// Timestamp of this stats snapshot (microseconds since UNIX epoch).
     #[typeshare(serialized_as = "number")]
     pub timestamp: u64,
+}
+
+impl LatencyStats {
+    /// Wire form of a latency snapshot.
+    pub fn from_snapshot(snapshot: &LatencySnapshot) -> Self {
+        Self {
+            min: snapshot.min_us,
+            avg: snapshot.avg_us,
+            max: snapshot.max_us,
+            p95: snapshot.p95_us,
+            p99: snapshot.p99_us,
+            p50: snapshot.p50_us,
+            samples: snapshot.sample_count,
+            timestamp: snapshot.timestamp_us,
+        }
+    }
+}
+
+impl DaemonState {
+    /// Wire form of the packed telemetry state. The base layer is `"Base"`.
+    pub fn from_telemetry(state: &TelemetryState, active_profile: Option<String>) -> Self {
+        Self {
+            modifiers: state.modifiers(),
+            locks: state.locks(),
+            layer: state.active_layer().unwrap_or_else(|| "Base".to_string()),
+            active_profile,
+        }
+    }
+}
+
+impl KeyEventData {
+    /// One-line text form for the CLI / IPC events tail: `press A -> B`.
+    pub fn summary(&self) -> String {
+        format!("{} {} -> {}", self.event_type, self.input, self.output)
+    }
+
+    /// An unmapped key press of `input`, for tests.
+    #[cfg(test)]
+    pub(crate) fn test_press(input: &str) -> Self {
+        Self {
+            timestamp: 0,
+            key_code: input.to_string(),
+            event_type: "press".to_string(),
+            input: input.to_string(),
+            output: input.to_string(),
+            latency: 0,
+            device_id: None,
+            device_name: None,
+            mapping_type: None,
+            mapping_triggered: false,
+        }
+    }
 }
 
 /// Error notification data (WS-005).

@@ -32,6 +32,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
 
 use super::metrics::{LatencyRecorder, LatencySnapshot, MetricsAggregator};
+use crate::web::events::KeyEventData;
 
 /// Total number of bits in the packed state vector.
 pub const STATE_BITS: usize = 255;
@@ -172,7 +173,7 @@ pub struct DaemonTelemetry {
     state: RwLock<TelemetryState>,
     latency_recorder: Arc<LatencyRecorder>,
     latency_aggregator: Mutex<MetricsAggregator>,
-    events: Mutex<VecDeque<String>>,
+    events: Mutex<VecDeque<KeyEventData>>,
     events_capacity: usize,
 }
 
@@ -234,17 +235,17 @@ impl DaemonTelemetry {
             .compute_snapshot(&self.latency_recorder)
     }
 
-    /// Appends a recent-event description, evicting the oldest past capacity.
-    pub fn push_event(&self, description: String) {
+    /// Appends a recent key event, evicting the oldest past capacity.
+    pub fn push_event(&self, event: KeyEventData) {
         let mut events = self.events.lock().unwrap_or_else(|e| e.into_inner());
         if events.len() >= self.events_capacity {
             events.pop_front();
         }
-        events.push_back(description);
+        events.push_back(event);
     }
 
     /// Returns the most recent `count` events, oldest first.
-    pub fn recent_events(&self, count: usize) -> Vec<String> {
+    pub fn recent_events(&self, count: usize) -> Vec<KeyEventData> {
         let events = self.events.lock().unwrap_or_else(|e| e.into_inner());
         let start = events.len().saturating_sub(count);
         events.iter().skip(start).cloned().collect()
@@ -355,31 +356,39 @@ mod tests {
         assert_eq!(first.max_us, second.max_us);
     }
 
+    fn key_event(input: &str) -> KeyEventData {
+        KeyEventData::test_press(input)
+    }
+
+    fn inputs(events: Vec<KeyEventData>) -> Vec<String> {
+        events.into_iter().map(|e| e.input).collect()
+    }
+
     #[test]
     fn test_events_ring_buffer_bounded() {
         let t = DaemonTelemetry::with_events_capacity(3);
         for i in 0..5 {
-            t.push_event(format!("e{i}"));
+            t.push_event(key_event(&format!("e{i}")));
         }
         // Oldest two evicted; newest three remain, oldest first.
-        assert_eq!(t.recent_events(10), vec!["e2", "e3", "e4"]);
+        assert_eq!(inputs(t.recent_events(10)), vec!["e2", "e3", "e4"]);
     }
 
     #[test]
     fn test_recent_events_count_limit() {
         let t = DaemonTelemetry::new();
         for i in 0..10 {
-            t.push_event(format!("e{i}"));
+            t.push_event(key_event(&format!("e{i}")));
         }
-        assert_eq!(t.recent_events(2), vec!["e8", "e9"]);
-        assert_eq!(t.recent_events(0), Vec::<String>::new());
+        assert_eq!(inputs(t.recent_events(2)), vec!["e8", "e9"]);
+        assert!(t.recent_events(0).is_empty());
     }
 
     #[test]
     fn test_clear_events() {
         let t = DaemonTelemetry::new();
-        t.push_event("a".to_string());
-        t.push_event("b".to_string());
+        t.push_event(key_event("a"));
+        t.push_event(key_event("b"));
         assert_eq!(t.clear_events(), 2);
         assert!(t.recent_events(10).is_empty());
         assert_eq!(t.clear_events(), 0);

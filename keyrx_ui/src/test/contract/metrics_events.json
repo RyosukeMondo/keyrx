@@ -1,0 +1,37 @@
+[
+  {
+    "deviceId": "path-/dev/input/event3",
+    "deviceName": "path-/dev/input/event3",
+    "eventType": "press",
+    "input": "CapsLock",
+    "keyCode": "CapsLock",
+    "latency": 43,
+    "mappingTriggered": true,
+    "mappingType": "simple",
+    "output": "Escape",
+    "timestamp": 1790000000000001
+  },
+  {
+    "deviceId": "path-/dev/input/event3",
+    "deviceName": "path-/dev/input/event3",
+    "eventType": "release",
+    "input": "CapsLock",
+    "keyCode": "CapsLock",
+    "latency": 44,
+    "mappingTriggered": true,
+    "mappingType": "simple",
+    "output": "Escape",
+    "timestamp": 1790000000000002
+  },
+  {
+    "deviceId": "path-/dev/input/event3",
+    "deviceName": "path-/dev/input/event3",
+    "eventType": "press",
+    "input": "A",
+    "keyCode": "A",
+    "latency": 45,
+    "mappingTriggered": false,
+    "output": "A",
+    "timestamp": 1790000000000003
+  }
+]

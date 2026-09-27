@@ -137,7 +137,7 @@ async fn test_windows_key_remap_e2e() -> Result<(), Box<dyn std::error::Error>> 
 
     // Step 6: Verify remapping occurred
     println!("Step 5: Verifying remapping...");
-    let events = metrics["events"].as_array().expect("Expected events array");
+    let events = metrics.as_array().expect("Expected events array");
 
     assert!(!events.is_empty(), "No events recorded in metrics!");
 
@@ -147,8 +147,8 @@ async fn test_windows_key_remap_e2e() -> Result<(), Box<dyn std::error::Error>> 
     let mut found_output_b = false;
 
     for event in events {
-        let event_type = event["event_type"].as_str().unwrap_or("");
-        let key_code = event["key_code"].as_u64().unwrap_or(0);
+        let event_type = event["eventType"].as_str().unwrap_or("");
+        let key_code = event["keyCode"].as_u64().unwrap_or(0);
         let output = event["output"].as_str().unwrap_or("");
 
         println!(
@@ -195,7 +195,7 @@ async fn test_windows_key_remap_e2e() -> Result<(), Box<dyn std::error::Error>> 
         println!("✓ Latency stats: {:?}", latency);
 
         // Verify latency values are reasonable
-        if let Some(avg_us) = latency["avg_us"].as_u64() {
+        if let Some(avg_us) = latency["avg"].as_u64() {
             assert!(avg_us < 10_000, "Average latency too high: {}μs", avg_us);
             println!("✓ Average latency: {}μs", avg_us);
         }

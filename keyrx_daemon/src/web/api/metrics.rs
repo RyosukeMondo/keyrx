@@ -10,9 +10,10 @@ use axum::{
 #[allow(unused_imports)]
 use axum::routing::delete;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use std::sync::Arc;
+use typeshare::typeshare;
 
+use crate::web::events::{DaemonState, KeyEventData, LatencyStats};
 use crate::web::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
@@ -109,25 +110,9 @@ async fn get_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> 
     })
 }
 
-#[derive(Serialize)]
-struct LatencyStatsResponse {
-    min_us: u64,
-    avg_us: u64,
-    max_us: u64,
-    p95_us: u64,
-    p99_us: u64,
-}
-
-/// GET /api/metrics/latency - Get latency statistics
-async fn get_latency_stats(State(state): State<Arc<AppState>>) -> Json<LatencyStatsResponse> {
-    let snap = state.daemon_query.get_latency_snapshot();
-    Json(LatencyStatsResponse {
-        min_us: snap.min_us,
-        avg_us: snap.avg_us,
-        max_us: snap.max_us,
-        p95_us: snap.p95_us,
-        p99_us: snap.p99_us,
-    })
+/// GET /api/metrics/latency - Latency statistics (same type as the WS feed)
+async fn get_latency_stats(State(state): State<Arc<AppState>>) -> Json<LatencyStats> {
+    Json(state.daemon_query.get_latency_stats())
 }
 
 #[derive(Deserialize)]
@@ -135,51 +120,41 @@ struct EventLogQuery {
     count: Option<usize>,
 }
 
-/// GET /api/metrics/events - Most recent event descriptions, oldest first
+/// GET /api/metrics/events - Most recent key events, oldest first (same
+/// record as the WS `event` feed)
 async fn get_event_log(
     State(state): State<Arc<AppState>>,
     Query(params): Query<EventLogQuery>,
-) -> Json<Value> {
-    let events = state
-        .daemon_query
-        .get_recent_events(params.count.unwrap_or(100));
-    Json(json!({
-        "count": events.len(),
-        "events": events,
-    }))
+) -> Json<Vec<KeyEventData>> {
+    Json(
+        state
+            .daemon_query
+            .get_recent_events(params.count.unwrap_or(100)),
+    )
+}
+
+/// Result of clearing the event log.
+#[typeshare]
+#[derive(Serialize)]
+pub struct ClearEventsResult {
+    pub success: bool,
+    /// Number of events removed.
+    #[typeshare(serialized_as = "number")]
+    pub cleared: usize,
 }
 
 /// DELETE /api/metrics/events - Clear event log
-async fn clear_event_log(State(state): State<Arc<AppState>>) -> Json<Value> {
-    let cleared = state.daemon_query.clear_events();
-    Json(json!({ "success": true, "cleared": cleared }))
-}
-
-#[derive(Serialize)]
-struct DaemonStateResponse {
-    active_layer: Option<String>,
-    modifiers: Vec<String>,
-    locks: Vec<String>,
-    /// Raw 255-bit state vector
-    raw_state: Vec<bool>,
-    /// Number of active modifiers
-    active_modifier_count: usize,
-    /// Number of active locks
-    active_lock_count: usize,
-}
-
-/// GET /api/daemon/state - Current modifier/lock/layer state
-async fn get_daemon_state(State(state): State<Arc<AppState>>) -> Json<DaemonStateResponse> {
-    // `TelemetryState` owns the 255-bit layout; the handler only formats it.
-    let ts = state.daemon_query.get_state();
-    Json(DaemonStateResponse {
-        active_layer: ts.active_layer(),
-        modifiers: ts.modifiers(),
-        locks: ts.locks(),
-        raw_state: ts.raw().to_vec(),
-        active_modifier_count: ts.active_modifier_count(),
-        active_lock_count: ts.active_lock_count(),
+async fn clear_event_log(State(state): State<Arc<AppState>>) -> Json<ClearEventsResult> {
+    Json(ClearEventsResult {
+        success: true,
+        cleared: state.daemon_query.clear_events(),
     })
+}
+
+/// GET /api/daemon/state - Current modifier/lock/layer state (same type as
+/// the WS `state` feed)
+async fn get_daemon_state(State(state): State<Arc<AppState>>) -> Json<DaemonState> {
+    Json(state.daemon_query.get_daemon_state())
 }
 
 /// Check if running with administrator privileges

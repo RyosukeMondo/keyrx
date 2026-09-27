@@ -7,6 +7,7 @@ import type {
 } from '../types';
 import * as metricsApi from '../api/metrics';
 import { ApiError } from '../api/client';
+import { toEventRecord } from '../api/eventRecord';
 
 interface MetricsStore {
   // State
@@ -42,13 +43,15 @@ export const useMetricsStore = create<MetricsStore>((set, get) => ({
   fetchMetrics: async () => {
     set({ loading: true, error: null });
     try {
-      // Fetch latency stats and event log in parallel
-      const [latencyStats, eventLog] = await Promise.all([
+      // Seed from the REST read model (same types as the WS feed), so the
+      // page shows history and current state before any new event arrives.
+      const [latencyStats, eventLog, currentState] = await Promise.all([
         metricsApi.fetchLatencyStats(),
         metricsApi.fetchEventLog(),
+        metricsApi.fetchDaemonState(),
       ]);
 
-      set({ latencyStats, eventLog, loading: false });
+      set({ latencyStats, eventLog, currentState, loading: false });
     } catch (error) {
       const errorMessage =
         error instanceof ApiError ? error.message : 'Unknown error';
@@ -81,25 +84,7 @@ export const useMetricsStore = create<MetricsStore>((set, get) => ({
           case 'event': {
             // Transform daemon's KeyEventPayload to frontend's EventRecord
             // Type is automatically narrowed by discriminated union
-            const payload = message.payload;
-
-            const eventRecord: EventRecord = {
-              id: `evt-${payload.timestamp}-${Math.random()
-                .toString(36)
-                .slice(2, 8)}`,
-              timestamp: new Date(payload.timestamp / 1000).toISOString(), // Convert microseconds to ISO string
-              type: payload.eventType === 'press' ? 'press' : 'release',
-              keyCode: payload.keyCode.replace(/^KEY_/, ''), // Remove KEY_ prefix for display
-              layer: 'Base', // TODO: Get from daemon state
-              latencyUs: payload.latency,
-              action: payload.mappingTriggered ? payload.output : undefined,
-              input: payload.input,
-              output: payload.output,
-              deviceId: payload.deviceId,
-              deviceName: payload.deviceName,
-              mappingType: payload.mappingType,
-              mappingTriggered: payload.mappingTriggered,
-            };
+            const eventRecord: EventRecord = toEventRecord(message.payload);
 
             const { eventLog } = get();
             // Prepend new event (most recent first)

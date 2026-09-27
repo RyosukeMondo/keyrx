@@ -56,17 +56,8 @@ export const DeviceRpcInfoSchema = z
   })
   .passthrough();
 
-// Event in event log
-export const EventRpcEntrySchema = z
-  .object({
-    timestamp: z.number(),
-    key_code: z.number(),
-    event_type: z.string(),
-    device_id: z.string(),
-  })
-  .passthrough();
-
-// Individual key event data
+// Individual key event data.
+// Matches generated KeyEventData (keyrx_ui/src/types/generated.ts).
 export const KeyEventDataSchema = z
   .object({
     timestamp: z.number(),
@@ -75,30 +66,42 @@ export const KeyEventDataSchema = z
     input: z.string(),
     output: z.string(),
     latency: z.number(),
+    deviceId: z.string().optional(),
+    deviceName: z.string().optional(),
+    mappingType: z.string().optional(),
+    mappingTriggered: z.boolean(),
   })
   .passthrough();
 
-// Latency statistics from RPC
-export const LatencyRpcStatsSchema = z
+// A page of the live key-event log returned by GET /api/metrics/events and
+// get_events (oldest first). Matches generated EventPage.
+export const EventPageSchema = z
   .object({
-    min_us: z.number(),
-    avg_us: z.number(),
-    max_us: z.number(),
-    p50_us: z.number(),
-    p95_us: z.number(),
-    p99_us: z.number(),
-    count: z.number(),
+    events: z.array(KeyEventDataSchema),
+    total: z.number(),
+    limit: z.number(),
+    offset: z.number(),
   })
   .passthrough();
 
-// Latency statistics
+// Result of clearing the event log. Matches generated ClearEventsResult.
+export const ClearEventsResultSchema = z
+  .object({
+    success: z.boolean(),
+    cleared: z.number(),
+  })
+  .passthrough();
+
+// Latency statistics. Matches generated LatencyStats.
 export const LatencyStatsSchema = z
   .object({
     min: z.number(),
     avg: z.number(),
     max: z.number(),
+    p50: z.number(),
     p95: z.number(),
     p99: z.number(),
+    samples: z.number(),
     timestamp: z.number(),
   })
   .passthrough();
@@ -137,13 +140,13 @@ export const ActivationRpcResultSchema = z
   })
   .passthrough();
 
-// Daemon state snapshot
+// Daemon state snapshot. Matches generated DaemonState.
 export const DaemonStateSchema = z
   .object({
     modifiers: z.array(z.string()),
     locks: z.array(z.string()),
     layer: z.string(),
-    active_profile: z.string().optional(),
+    activeProfile: z.string().optional(),
   })
   .passthrough();
 

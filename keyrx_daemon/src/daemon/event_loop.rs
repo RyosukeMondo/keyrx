@@ -29,26 +29,6 @@ use super::signals::SignalHandler;
 use super::telemetry::{DaemonTelemetry, TelemetryState};
 use super::DaemonError;
 
-/// Extract current daemon state from DeviceState for WebSocket broadcasting.
-fn extract_daemon_state(state: &keyrx_core::runtime::DeviceState) -> DaemonState {
-    let modifiers: Vec<String> = (0..=254u8)
-        .filter(|&id| state.is_modifier_active(id))
-        .map(|id| format!("MD_{:02}", id))
-        .collect();
-
-    let locks: Vec<String> = (0..=254u8)
-        .filter(|&id| state.is_lock_active(id))
-        .map(|id| format!("LK_{:02}", id))
-        .collect();
-
-    DaemonState {
-        modifiers,
-        locks,
-        layer: "Base".to_string(),
-        active_profile: None,
-    }
-}
-
 /// Event loop statistics tracking.
 struct EventLoopStats {
     /// Total number of events processed.
@@ -144,17 +124,56 @@ fn build_telemetry_state(state: &keyrx_core::runtime::DeviceState) -> TelemetryS
     snapshot
 }
 
-/// Formats a concise event description for the telemetry recent-events ring.
-fn event_description(
+/// Builds the one wire record of a processed key event, shared by the
+/// telemetry ring (REST/IPC/RPC) and the WebSocket feed.
+#[allow(clippy::too_many_arguments)]
+fn key_event_data(
     event: &keyrx_core::runtime::KeyEvent,
     input_keycode: keyrx_core::config::KeyCode,
     output_desc: &str,
-) -> String {
-    let kind = match event.event_type() {
+    device_id: Option<String>,
+    mapping_type: Option<&'static str>,
+    mapping_triggered: bool,
+    latency_us: u64,
+) -> KeyEventData {
+    let event_type = match event.event_type() {
         keyrx_core::runtime::KeyEventType::Press => "press",
         keyrx_core::runtime::KeyEventType::Release => "release",
     };
-    format!("{kind} {input_keycode:?} -> {output_desc}")
+    KeyEventData {
+        timestamp: current_timestamp_us(),
+        key_code: format!("{input_keycode:?}"),
+        event_type: event_type.to_string(),
+        input: format!("{input_keycode:?}"),
+        output: output_desc.to_string(),
+        latency: latency_us,
+        device_id: device_id.clone(),
+        device_name: device_id,
+        mapping_type: mapping_type.map(String::from),
+        mapping_triggered,
+    }
+}
+
+/// Records a processed event for pull consumers (telemetry) and pushes it to
+/// WebSocket clients, with the state snapshot when a mapping fired.
+fn publish_event(
+    event_data: KeyEventData,
+    state: Option<TelemetryState>,
+    telemetry: Option<&DaemonTelemetry>,
+    event_broadcaster: Option<&EventBroadcaster>,
+) {
+    if let Some(t) = telemetry {
+        t.push_event(event_data.clone());
+        if let Some(state) = &state {
+            t.update_state(state.clone());
+        }
+    }
+    if let Some(broadcaster) = event_broadcaster {
+        broadcaster.broadcast_key_event(event_data);
+        if let Some(state) = &state {
+            broadcaster.broadcast_state(DaemonState::from_telemetry(state, None));
+        }
+    }
 }
 
 /// Injects timeout-generated events and records metrics.
@@ -254,8 +273,14 @@ fn process_input_event(
         recorder.record(latency_us);
     }
 
-    // Broadcast to WebSocket clients
-    broadcast_event(
+    let state = mapping_triggered
+        .then(|| {
+            remapping_state
+                .as_ref()
+                .map(|rs| build_telemetry_state(rs.state()))
+        })
+        .flatten();
+    let event_data = key_event_data(
         &event,
         input_keycode,
         &output_desc,
@@ -263,18 +288,8 @@ fn process_input_event(
         mapping_type,
         mapping_triggered,
         latency_us,
-        event_broadcaster,
     );
-
-    // Record live telemetry for pull-based consumers (CLI/web).
-    if let Some(t) = telemetry {
-        t.push_event(event_description(&event, input_keycode, &output_desc));
-        if mapping_triggered {
-            if let Some(rs) = remapping_state.as_ref() {
-                t.update_state(build_telemetry_state(rs.state()));
-            }
-        }
-    }
+    publish_event(event_data, state, telemetry, event_broadcaster);
 }
 
 /// Processes event through remapping engine if available.
@@ -336,49 +351,6 @@ fn inject_output_events(
         } else {
             stats.record_event();
         }
-    }
-}
-
-/// Broadcasts key event to WebSocket clients.
-#[allow(clippy::too_many_arguments)]
-fn broadcast_event(
-    event: &keyrx_core::runtime::KeyEvent,
-    input_keycode: keyrx_core::config::KeyCode,
-    output_desc: &str,
-    device_id: Option<String>,
-    mapping_type: Option<&'static str>,
-    mapping_triggered: bool,
-    latency_us: u64,
-    event_broadcaster: Option<&EventBroadcaster>,
-) {
-    if let Some(broadcaster) = event_broadcaster {
-        let timestamp = current_timestamp_us();
-
-        let event_data = KeyEventData {
-            timestamp,
-            key_code: format!("{:?}", input_keycode),
-            event_type: match event.event_type() {
-                keyrx_core::runtime::KeyEventType::Press => "press".to_string(),
-                keyrx_core::runtime::KeyEventType::Release => "release".to_string(),
-            },
-            input: format!("{:?}", input_keycode),
-            output: output_desc.to_string(),
-            latency: latency_us,
-            device_id: device_id.clone(),
-            device_name: device_id,
-            mapping_type: mapping_type.map(String::from),
-            mapping_triggered,
-        };
-
-        log::debug!(
-            "Event loop: About to broadcast {} event for key {:?} (mapping_triggered: {}, output: {})",
-            event_data.event_type, input_keycode, mapping_triggered, output_desc
-        );
-        broadcaster.broadcast_key_event(event_data);
-    } else {
-        log::warn!(
-            "Event loop: EventBroadcaster is None! Events will not be sent to WebSocket clients"
-        );
     }
 }
 
@@ -579,46 +551,20 @@ pub fn process_one_event(
             }
 
             // Process event through remapping engine if available
-            let (output_events, mapping_type, mapping_triggered, state_snapshot, telemetry_state) =
+            let (output_events, mapping_type, mapping_triggered, state) =
                 if let Some(remap_state) = remapping_state {
                     let (lookup, state) = remap_state.lookup_and_state_mut();
                     let mapping = lookup.find_mapping(input_keycode, state);
                     let mapping_type_str = mapping.map(get_mapping_type);
                     let triggered = mapping.is_some();
                     let outputs = process_event(event.clone(), lookup, state);
-                    // Capture state snapshots after processing (broadcast + telemetry)
-                    let (snapshot, telem) = if triggered {
-                        (
-                            Some(extract_daemon_state(state)),
-                            Some(build_telemetry_state(state)),
-                        )
-                    } else {
-                        (None, None)
-                    };
-                    (outputs, mapping_type_str, triggered, snapshot, telem)
+                    let snapshot = triggered.then(|| build_telemetry_state(state));
+                    (outputs, mapping_type_str, triggered, snapshot)
                 } else {
                     // Pass-through mode - no remapping
-                    (vec![event.clone()], None, false, None, None)
+                    (vec![event.clone()], None, false, None)
                 };
-
-            // Compute output description for broadcast
-            let output_desc = if output_events.is_empty() {
-                "(suppressed)".to_string()
-            } else {
-                output_events
-                    .iter()
-                    .map(|e| format!("{:?}", e.keycode()))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            };
-
-            // Record live telemetry for pull-based consumers (CLI/web).
-            if let Some(t) = telemetry {
-                t.push_event(event_description(&event, input_keycode, &output_desc));
-                if let Some(ts) = telemetry_state {
-                    t.update_state(ts);
-                }
-            }
+            let output_desc = format_output_description(&output_events);
 
             // Only inject output events if remapping was triggered
             // In pass-through mode (no remapping), we must NOT inject because:
@@ -638,32 +584,16 @@ pub fn process_one_event(
                 recorder.record(latency_us);
             }
 
-            // Broadcast key event to WebSocket clients if broadcaster is available
-            if let Some(broadcaster) = event_broadcaster {
-                let timestamp = current_timestamp_us();
-
-                let event_data = KeyEventData {
-                    timestamp,
-                    key_code: format!("{:?}", input_keycode),
-                    event_type: match event.event_type() {
-                        keyrx_core::runtime::KeyEventType::Press => "press".to_string(),
-                        keyrx_core::runtime::KeyEventType::Release => "release".to_string(),
-                    },
-                    input: format!("{:?}", input_keycode),
-                    output: output_desc,
-                    latency: latency_us,
-                    device_id: device_id.clone(),
-                    device_name: device_id,
-                    mapping_type: mapping_type.map(String::from),
-                    mapping_triggered,
-                };
-                broadcaster.broadcast_key_event(event_data);
-
-                // Broadcast state change if a mapping was triggered
-                if let Some(state_data) = state_snapshot {
-                    broadcaster.broadcast_state(state_data);
-                }
-            }
+            let event_data = key_event_data(
+                &event,
+                input_keycode,
+                &output_desc,
+                device_id,
+                mapping_type,
+                mapping_triggered,
+                latency_us,
+            );
+            publish_event(event_data, state, telemetry, event_broadcaster);
 
             Ok(true)
         }

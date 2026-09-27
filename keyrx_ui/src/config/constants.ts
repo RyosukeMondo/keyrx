@@ -90,8 +90,12 @@ export const API_ENDPOINTS = {
 
   // Metrics & Monitoring
   metrics: '/api/metrics',
+  metricsLatency: '/api/metrics/latency',
   metricsEvents: '/api/metrics/events',
   metricsEventsClear: '/api/metrics/events',
+
+  // Daemon state
+  daemonState: '/api/daemon/state',
 } as const;
 
 // ============================================================================

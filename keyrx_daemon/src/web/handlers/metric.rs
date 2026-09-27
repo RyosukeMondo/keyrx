@@ -2,7 +2,7 @@
 //!
 //! This module implements all metrics and simulation-related RPC methods for WebSocket communication.
 //! Each method accepts parameters as serde_json::Value, validates them, and delegates
-//! to the MacroRecorder or simulation engine for execution.
+//! to the daemon read model (latency, event log) or the simulation engine.
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -10,6 +10,8 @@ use typeshare::typeshare;
 
 use crate::config::simulation_engine::{BuiltinScenario, SimulatedEvent};
 use crate::macro_recorder::MacroRecorder;
+use crate::services::DaemonQueryService;
+use crate::web::events::KeyEventData;
 use crate::web::rpc_types::{RpcError, INTERNAL_ERROR, INVALID_PARAMS};
 
 /// Parameters for get_latency query
@@ -58,37 +60,18 @@ struct ResetSimulatorParams {
     // No parameters needed
 }
 
-/// Latency statistics returned by get_latency
+/// A page of the live key-event log returned by get_events (oldest first).
 #[typeshare]
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LatencyRpcStats {
+pub struct EventPage {
+    pub events: Vec<KeyEventData>,
+    /// Events in the log.
     #[typeshare(serialized_as = "number")]
-    pub min_us: u64,
+    pub total: usize,
     #[typeshare(serialized_as = "number")]
-    pub avg_us: u64,
+    pub limit: usize,
     #[typeshare(serialized_as = "number")]
-    pub max_us: u64,
-    #[typeshare(serialized_as = "number")]
-    pub p50_us: u64,
-    #[typeshare(serialized_as = "number")]
-    pub p95_us: u64,
-    #[typeshare(serialized_as = "number")]
-    pub p99_us: u64,
-    #[typeshare(serialized_as = "number")]
-    pub count: usize,
-}
-
-/// Event in event log
-#[typeshare]
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EventRpcEntry {
-    #[typeshare(serialized_as = "number")]
-    pub timestamp: u64,
-    pub key_code: u16,
-    pub event_type: String,
-    pub device_id: String,
+    pub offset: usize,
 }
 
 /// Simulation result
@@ -101,77 +84,41 @@ struct SimulationRpcResult {
     outputs: Vec<String>,
 }
 
-/// Get latency statistics
-pub async fn get_latency(
-    macro_recorder: &MacroRecorder,
-    _params: Value,
-) -> Result<Value, RpcError> {
-    // For now, return placeholder stats
-    // In the future, this would query the daemon's actual latency metrics
-    let stats = LatencyRpcStats {
-        min_us: 0,
-        avg_us: 0,
-        max_us: 0,
-        p50_us: 0,
-        p95_us: 0,
-        p99_us: 0,
-        count: macro_recorder.event_count(),
-    };
-
-    serde_json::to_value(&stats).map_err(|e| RpcError::new(INTERNAL_ERROR, e.to_string()))
+/// Get latency statistics (same `LatencyStats` as REST and the WS feed)
+pub async fn get_latency(query: &DaemonQueryService, _params: Value) -> Result<Value, RpcError> {
+    to_rpc_value(&query.get_latency_stats())
 }
 
-/// Get event log with pagination
-pub async fn get_events(macro_recorder: &MacroRecorder, params: Value) -> Result<Value, RpcError> {
+/// Get the live key-event log with pagination
+pub async fn get_events(query: &DaemonQueryService, params: Value) -> Result<Value, RpcError> {
     let params: GetEventsParams = serde_json::from_value(params)
         .map_err(|e| RpcError::new(INVALID_PARAMS, format!("Invalid parameters: {}", e)))?;
 
     // Enforce limits: default 100, max 1000
     const MAX_LIMIT: usize = 1000;
     let limit = params.limit.min(MAX_LIMIT);
-
     log::debug!("RPC: get_events limit={} offset={}", limit, params.offset);
 
-    // Get recorded events
-    let all_events = macro_recorder
-        .get_recorded_events()
-        .map_err(|e| RpcError::new(INTERNAL_ERROR, e.to_string()))?;
-
-    // Apply pagination
-    let total = all_events.len();
-    let events_page: Vec<EventRpcEntry> = all_events
-        .into_iter()
-        .skip(params.offset)
-        .take(limit)
-        .map(|e| EventRpcEntry {
-            timestamp: e.relative_timestamp_us,
-            key_code: e.event.keycode() as u16,
-            event_type: format!("{:?}", e.event.event_type()),
-            device_id: e.event.device_id().unwrap_or("default").to_string(),
-        })
-        .collect();
-
-    serde_json::to_value(serde_json::json!({
-        "events": events_page,
-        "total": total,
-        "limit": limit,
-        "offset": params.offset
-    }))
-    .map_err(|e| RpcError::new(INTERNAL_ERROR, e.to_string()))
+    let all = query.get_recent_events(usize::MAX);
+    let total = all.len();
+    let events = all.into_iter().skip(params.offset).take(limit).collect();
+    to_rpc_value(&EventPage {
+        events,
+        total,
+        limit,
+        offset: params.offset,
+    })
 }
 
-/// Clear event log
-pub async fn clear_events(
-    macro_recorder: &MacroRecorder,
-    _params: Value,
-) -> Result<Value, RpcError> {
-    log::info!("RPC: clear_events");
+/// Clear the live key-event log
+pub async fn clear_events(query: &DaemonQueryService, _params: Value) -> Result<Value, RpcError> {
+    let cleared = query.clear_events();
+    log::info!("RPC: clear_events ({cleared} removed)");
+    Ok(serde_json::json!({ "success": true, "cleared": cleared }))
+}
 
-    macro_recorder
-        .clear_events()
-        .map_err(|e| RpcError::new(INTERNAL_ERROR, e.to_string()))?;
-
-    Ok(serde_json::json!({ "success": true }))
+fn to_rpc_value<T: Serialize>(value: &T) -> Result<Value, RpcError> {
+    serde_json::to_value(value).map_err(|e| RpcError::new(INTERNAL_ERROR, e.to_string()))
 }
 
 /// Run simulation
@@ -290,20 +237,39 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_latency_stats_serialization() {
-        let stats = LatencyRpcStats {
-            min_us: 10,
-            avg_us: 50,
-            max_us: 100,
-            p50_us: 45,
-            p95_us: 90,
-            p99_us: 98,
-            count: 1000,
-        };
-        let json = serde_json::to_value(&stats).expect("Failed to serialize LatencyRpcStats");
-        assert_eq!(json["minUs"], 10);
-        assert_eq!(json["count"], 1000);
+    /// Regression: get_latency returned hard-coded zeros and get_events /
+    /// clear_events used the macro recorder instead of the live event log.
+    #[tokio::test]
+    async fn test_rpc_metrics_read_the_live_read_model() {
+        use crate::daemon::{DaemonSharedState, DaemonTelemetry};
+        use std::sync::atomic::AtomicBool;
+        use std::sync::Arc;
+
+        let telemetry = Arc::new(DaemonTelemetry::new());
+        telemetry.latency_recorder().record(250);
+        telemetry.push_event(KeyEventData::test_press("A"));
+        telemetry.push_event(KeyEventData::test_press("B"));
+        let shared = Arc::new(DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            None,
+            std::path::PathBuf::new(),
+            0,
+        ));
+        let query = DaemonQueryService::new(shared, Arc::clone(&telemetry));
+
+        let latency = get_latency(&query, json!({})).await.unwrap();
+        assert_eq!(latency["max"], 250);
+        assert_eq!(latency["samples"], 1);
+
+        let page = get_events(&query, json!({"limit": 1, "offset": 1}))
+            .await
+            .unwrap();
+        assert_eq!(page["total"], 2);
+        assert_eq!(page["events"][0]["input"], "B");
+
+        let cleared = clear_events(&query, json!({})).await.unwrap();
+        assert_eq!(cleared["cleared"], 2);
+        assert!(telemetry.recent_events(10).is_empty());
     }
 
     #[test]

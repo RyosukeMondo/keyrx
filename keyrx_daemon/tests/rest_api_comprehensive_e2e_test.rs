@@ -558,11 +558,18 @@ async fn test_get_latency_stats_structure() {
     if response.status().is_success() {
         let json: serde_json::Value = response.json().await.unwrap();
 
-        assert!(json["min_us"].is_number(), "Should have min_us");
-        assert!(json["avg_us"].is_number(), "Should have avg_us");
-        assert!(json["max_us"].is_number(), "Should have max_us");
-        assert!(json["p95_us"].is_number(), "Should have p95_us");
-        assert!(json["p99_us"].is_number(), "Should have p99_us");
+        for field in [
+            "min",
+            "avg",
+            "max",
+            "p50",
+            "p95",
+            "p99",
+            "samples",
+            "timestamp",
+        ] {
+            assert!(json[field].is_number(), "Should have {field}");
+        }
     }
 }
 
@@ -576,16 +583,8 @@ async fn test_get_event_log_structure() {
     if response.status().is_success() {
         let json: serde_json::Value = response.json().await.unwrap();
 
-        assert!(json["count"].is_number(), "Should have count");
-        assert!(json["events"].is_array(), "Should have events array");
-
-        let count = json["count"].as_u64().unwrap();
-        let events = json["events"].as_array().unwrap();
-        assert_eq!(
-            count as usize,
-            events.len(),
-            "Count should match events length"
-        );
+        let events = json.as_array().expect("event log is a KeyEventData array");
+        assert!(events.len() <= 10, "count limits the tail");
     }
 }
 
@@ -601,23 +600,7 @@ async fn test_get_daemon_state_structure() {
 
         assert!(json["modifiers"].is_array(), "Should have modifiers array");
         assert!(json["locks"].is_array(), "Should have locks array");
-        assert!(json["raw_state"].is_array(), "Should have raw_state array");
-        assert!(
-            json["active_modifier_count"].is_number(),
-            "Should have modifier count"
-        );
-        assert!(
-            json["active_lock_count"].is_number(),
-            "Should have lock count"
-        );
-
-        // Verify raw_state is 255 bits
-        let raw_state = json["raw_state"].as_array().unwrap();
-        assert_eq!(
-            raw_state.len(),
-            255,
-            "Raw state should be 255 bits (ExtendedState)"
-        );
+        assert!(json["layer"].is_string(), "Should have layer name");
     }
 }
 

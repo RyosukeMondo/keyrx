@@ -18,6 +18,13 @@ export interface ActivationRpcResult {
 	error?: string;
 }
 
+/** Result of clearing the event log. */
+export interface ClearEventsResult {
+	success: boolean;
+	/** Number of events removed. */
+	cleared: number;
+}
+
 /** Current daemon state snapshot. */
 export interface DaemonState {
 	/** Active modifier IDs (e.g., ["MD_00", "MD_01"]). */
@@ -69,14 +76,6 @@ export interface ErrorData {
 	timestamp: number;
 }
 
-/** Event in event log */
-export interface EventRpcEntry {
-	timestamp: number;
-	keyCode: number;
-	eventType: string;
-	deviceId: string;
-}
-
 /** Individual key event data. */
 export interface KeyEventData {
 	/** Timestamp in microseconds since UNIX epoch. */
@@ -101,15 +100,13 @@ export interface KeyEventData {
 	mappingTriggered: boolean;
 }
 
-/** Latency statistics returned by get_latency */
-export interface LatencyRpcStats {
-	minUs: number;
-	avgUs: number;
-	maxUs: number;
-	p50Us: number;
-	p95Us: number;
-	p99Us: number;
-	count: number;
+/** A page of the live key-event log returned by get_events (oldest first). */
+export interface EventPage {
+	events: KeyEventData[];
+	/** Events in the log. */
+	total: number;
+	limit: number;
+	offset: number;
 }
 
 /** Latency statistics. */
@@ -124,6 +121,10 @@ export interface LatencyStats {
 	p95: number;
 	/** 99th percentile latency in microseconds. */
 	p99: number;
+	/** Median latency in microseconds. */
+	p50: number;
+	/** Number of samples the statistics were computed from. */
+	samples: number;
 	/** Timestamp of this stats snapshot (microseconds since UNIX epoch). */
 	timestamp: number;
 }

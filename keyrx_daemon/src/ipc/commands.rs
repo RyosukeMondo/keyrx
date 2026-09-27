@@ -8,6 +8,7 @@
 use super::{IpcRequest, IpcResponse};
 use crate::config::profile_manager::ProfileManager;
 use crate::services::DaemonQueryService;
+use crate::web::events::KeyEventData;
 use std::sync::Arc;
 
 /// Handler for IPC commands (production and test mode alike).
@@ -38,7 +39,12 @@ impl IpcCommandHandler {
             },
             IpcRequest::GetLatencyMetrics => self.handle_get_latency(),
             IpcRequest::GetEventsTail { count } => IpcResponse::Events {
-                events: self.query.get_recent_events(count),
+                events: self
+                    .query
+                    .get_recent_events(count)
+                    .iter()
+                    .map(KeyEventData::summary)
+                    .collect(),
             },
             IpcRequest::ClearEvents => IpcResponse::EventsCleared {
                 count: self.query.clear_events(),
@@ -228,11 +234,13 @@ mod tests {
     #[test]
     fn test_events_tail_and_clear() {
         let f = fixture();
-        f.telemetry.push_event("press A".to_string());
-        f.telemetry.push_event("release A".to_string());
+        f.telemetry.push_event(KeyEventData::test_press("A"));
+        f.telemetry.push_event(KeyEventData::test_press("B"));
 
         match f.handler.handle(IpcRequest::GetEventsTail { count: 10 }) {
-            IpcResponse::Events { events } => assert_eq!(events, vec!["press A", "release A"]),
+            IpcResponse::Events { events } => {
+                assert_eq!(events, vec!["press A -> A", "press B -> B"])
+            }
             other => panic!("Expected Events response, got {other:?}"),
         }
         match f.handler.handle(IpcRequest::ClearEvents) {

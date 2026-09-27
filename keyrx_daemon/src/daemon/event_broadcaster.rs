@@ -290,22 +290,7 @@ pub async fn start_latency_broadcast_task(
             .as_ref()
             .map(|t| t.latency())
             .unwrap_or_else(LatencySnapshot::empty);
-        let timestamp = if snapshot.timestamp_us > 0 {
-            snapshot.timestamp_us
-        } else {
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map(|d| d.as_micros() as u64)
-                .unwrap_or(0)
-        };
-        let stats = LatencyStats {
-            min: snapshot.min_us,
-            avg: snapshot.avg_us,
-            max: snapshot.max_us,
-            p95: snapshot.p95_us,
-            p99: snapshot.p99_us,
-            timestamp,
-        };
+        let stats = LatencyStats::from_snapshot(&snapshot);
 
         broadcaster.broadcast_latency(stats);
     }
@@ -391,6 +376,8 @@ mod tests {
             max: 4500,
             p95: 3800,
             p99: 4200,
+            p50: 0,
+            samples: 0,
             timestamp: 1234567890,
         };
 

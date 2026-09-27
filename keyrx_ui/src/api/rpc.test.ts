@@ -293,8 +293,10 @@ describe('RpcClient', () => {
         min: 100,
         avg: 150,
         max: 200,
+        p50: 140,
         p95: 180,
         p99: 190,
+        samples: 42,
         timestamp: 1234567890,
       };
       vi.mocked(mockApi.query).mockResolvedValue(mockLatency);
@@ -619,8 +621,10 @@ describe('RpcClient', () => {
         min: 100,
         avg: 150,
         max: 200,
+        p50: 140,
         p95: 180,
         p99: 190,
+        samples: 42,
         timestamp: 1234567890,
       };
       vi.mocked(mockApi.query).mockResolvedValue(mockMetrics);

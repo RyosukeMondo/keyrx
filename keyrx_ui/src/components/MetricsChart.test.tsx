@@ -68,7 +68,8 @@ describe('MetricsChart', () => {
         p50: 1500,
         p95: 2500,
         p99: 2900,
-        count: 10,
+        samples: 10,
+        timestamp: 1700000000000000,
       },
     ];
 
@@ -85,7 +86,8 @@ describe('MetricsChart', () => {
         p50: 1500,
         p95: 2500,
         p99: 2900,
-        count: 10,
+        samples: 10,
+        timestamp: 1700000000000000,
       },
     ];
 
@@ -109,7 +111,8 @@ describe('MetricsChart', () => {
         p50: 1500,
         p95: 2500,
         p99: 2900,
-        count: 10,
+        samples: 10,
+        timestamp: 1700000000000000,
       },
     ];
 
@@ -129,7 +132,8 @@ describe('MetricsChart', () => {
         p50: 1500,
         p95: 2500,
         p99: 2900,
-        count: 10,
+        samples: 10,
+        timestamp: 1700000000000000,
       },
     ];
 
@@ -150,7 +154,8 @@ describe('MetricsChart', () => {
         p50: 1500,
         p95: 2500,
         p99: 2900,
-        count: 10,
+        samples: 10,
+        timestamp: 1700000000000000,
       },
       {
         min: 2000,
@@ -159,7 +164,8 @@ describe('MetricsChart', () => {
         p50: 3000,
         p95: 4500,
         p99: 4800,
-        count: 20,
+        samples: 20,
+        timestamp: 1700000000000000,
       },
     ];
 
@@ -189,7 +195,8 @@ describe('MetricsChart', () => {
         p50: 1500,
         p95: 2500,
         p99: 2900,
-        count: 10,
+        samples: 10,
+        timestamp: 1700000000000000,
       },
       {
         min: 2000,
@@ -198,7 +205,8 @@ describe('MetricsChart', () => {
         p50: 3000,
         p95: 4500,
         p99: 4800,
-        count: 20,
+        samples: 20,
+        timestamp: 1700000000000000,
       },
       {
         min: 3000,
@@ -207,7 +215,8 @@ describe('MetricsChart', () => {
         p50: 4000,
         p95: 5500,
         p99: 5900,
-        count: 30,
+        samples: 30,
+        timestamp: 1700000000000000,
       },
     ];
 
@@ -232,7 +241,8 @@ describe('MetricsChart', () => {
         p50: 1500,
         p95: 2500,
         p99: 2900,
-        count: 10,
+        samples: 10,
+        timestamp: 1700000000000000,
       },
     ];
 
@@ -256,7 +266,8 @@ describe('MetricsChart', () => {
         p50: 1500,
         p95: 2500,
         p99: 2900,
-        count: 10,
+        samples: 10,
+        timestamp: 1700000000000000,
       },
     ];
 
@@ -280,7 +291,8 @@ describe('MetricsChart', () => {
         p50: 1500,
         p95: 2500,
         p99: 2900,
-        count: 10,
+        samples: 10,
+        timestamp: 1700000000000000,
       },
     ];
 
@@ -308,7 +320,8 @@ describe('MetricsChart', () => {
       p50: 1500 + i * 100,
       p95: 2500 + i * 100,
       p99: 2900 + i * 100,
-      count: 10 + i,
+      samples: 10 + i,
+      timestamp: 1700000000000000,
     }));
 
     renderWithProviders(<MetricsChart data={data} />);
@@ -332,7 +345,8 @@ describe('MetricsChart', () => {
         p50: 1500,
         p95: 2500,
         p99: 2900,
-        count: 10,
+        samples: 10,
+        timestamp: 1700000000000000,
       },
     ];
 

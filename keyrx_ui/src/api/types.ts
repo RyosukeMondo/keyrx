@@ -59,16 +59,6 @@ export interface SimulationResult {
 }
 
 // Pagination Types
-export interface PaginatedEvents {
-  events: Array<{
-    timestamp: number;
-    keyCode: string;
-    eventType: 'press' | 'release';
-    input: string;
-    output: string;
-    latency: number;
-  }>;
-  total: number;
-  limit: number;
-  offset: number;
-}
+// Alias of the generated EventPage (SSOT from Rust typeshare) — this used to
+// be a hand-written type that drifted from the wire format (wrong event shape).
+export type { EventPage as PaginatedEvents } from '../types/generated';

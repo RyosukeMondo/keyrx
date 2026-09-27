@@ -315,12 +315,14 @@ test.describe('Metrics Endpoints', () => {
 
     expect(Array.isArray(events)).toBe(true);
 
-    // Events may be empty if none have been logged
+    // Events may be empty if none have been logged. Bare KeyEventData[],
+    // oldest first, camelCase fields (see keyrx_ui/src/types/generated.ts).
     if (events.length > 0) {
       expect(events[0]).toHaveProperty('timestamp');
-      expect(events[0]).toHaveProperty('key_code');
-      expect(events[0]).toHaveProperty('event_type');
-      expect(events[0]).toHaveProperty('device_id');
+      expect(events[0]).toHaveProperty('keyCode');
+      expect(events[0]).toHaveProperty('eventType');
+      expect(events[0]).toHaveProperty('input');
+      expect(events[0]).toHaveProperty('output');
     }
   });
 
@@ -328,6 +330,7 @@ test.describe('Metrics Endpoints', () => {
     const result = await api.clearEventLog();
 
     expect(result.success).toBe(true);
+    expect(result).toHaveProperty('cleared');
 
     // Verify events cleared
     const events = await api.getEventLog();

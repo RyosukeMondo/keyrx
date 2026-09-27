@@ -126,9 +126,7 @@ fn test_keyboard_interception_active() {
 
     let metrics: serde_json::Value = response.json().expect("Failed to parse metrics");
 
-    let events = metrics["events"]
-        .as_array()
-        .expect("Events is not an array");
+    let events = metrics.as_array().expect("Events is not an array");
 
     assert!(
         !events.is_empty(),
@@ -164,9 +162,7 @@ fn test_metrics_reset_and_capture() {
 
     let metrics: serde_json::Value = response.json().expect("Failed to parse metrics");
 
-    let events = metrics["events"]
-        .as_array()
-        .expect("Events is not an array");
+    let events = metrics.as_array().expect("Events is not an array");
 
     assert_eq!(events.len(), 0, "Metrics not empty after clear");
 

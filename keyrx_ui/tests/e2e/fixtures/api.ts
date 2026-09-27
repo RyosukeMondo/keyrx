@@ -13,7 +13,8 @@ import type {
   ProfileMetadata,
   ActivationResult,
   LatencyStats,
-  EventRecord,
+  KeyEventData,
+  ClearEventsResult,
   DaemonState,
   DeviceScope,
   Template
@@ -382,8 +383,10 @@ export class ApiHelpers {
 
   /**
    * GET /api/metrics/events - Get event log
+   *
+   * Returns the bare KeyEventData[] the daemon sends, oldest first.
    */
-  async getEventLog(): Promise<EventRecord[]> {
+  async getEventLog(): Promise<KeyEventData[]> {
     const response = await this.request.get(`${this.baseUrl}/api/metrics/events`);
     if (!response.ok()) {
       throw new Error(`GET /api/metrics/events failed: ${response.status()} ${response.statusText()}`);
@@ -394,7 +397,7 @@ export class ApiHelpers {
   /**
    * DELETE /api/metrics/events - Clear event log
    */
-  async clearEventLog(): Promise<{ success: boolean }> {
+  async clearEventLog(): Promise<ClearEventsResult> {
     const response = await this.request.delete(`${this.baseUrl}/api/metrics/events`);
     if (!response.ok()) {
       throw new Error(`DELETE /api/metrics/events failed: ${response.status()} ${response.statusText()}`);

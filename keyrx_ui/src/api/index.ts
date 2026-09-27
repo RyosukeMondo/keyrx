@@ -38,7 +38,6 @@ export {
   fetchEventLog,
   fetchDaemonState,
   clearEventLog,
-  fetchHealthStatus,
 } from './metrics';
 
 // WebSocket connection management

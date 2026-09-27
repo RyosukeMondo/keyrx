@@ -10,13 +10,20 @@ export type {
   ActivationRpcResult,
   KeyEventData,
   ErrorData,
-  LatencyRpcStats,
-  EventRpcEntry,
   RestartResult,
+  DaemonState,
+  LatencyStats,
+  ClearEventsResult,
+  EventPage,
 } from './generated';
 
 // Import types used locally in this file
-import type { KeyEventData, ErrorData } from './generated';
+import type {
+  KeyEventData,
+  ErrorData,
+  DaemonState,
+  LatencyStats,
+} from './generated';
 
 // Re-export ProfileTemplate enum (both type and value)
 export { ProfileTemplate } from './generated';
@@ -62,28 +69,6 @@ export interface ActivationResult {
   compiledSize: number;
   compileTimeMs: number;
   errors: string[];
-}
-
-// Frontend DaemonState — union of generated fields + REST /api/daemon/state extras
-export interface DaemonState {
-  modifiers: string[];
-  locks: string[];
-  layer: string;
-  activeProfile?: string;
-  activeLayer?: string;
-  tapHoldPending?: boolean;
-}
-
-// Frontend LatencyStats — REST /api/metrics/latency response
-export interface LatencyStats {
-  min: number;
-  avg: number;
-  max: number;
-  p50?: number;
-  p95: number;
-  p99: number;
-  timestamp: number;
-  samples?: number;
 }
 
 export type DeviceScope = 'global' | 'device-specific';

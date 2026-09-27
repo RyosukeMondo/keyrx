@@ -333,6 +333,8 @@ async fn test_ws004_different_event_types_share_sequence() {
         max: 300,
         p95: 250,
         p99: 280,
+        p50: 0,
+        samples: 0,
         timestamp: 1234567890,
     });
 

@@ -38,6 +38,7 @@ export const MonitorPage: React.FC = () => {
     connected,
     loading,
     error,
+    fetchMetrics,
     subscribeToEvents,
     unsubscribeFromEvents,
   } = useMetricsStore();
@@ -53,11 +54,18 @@ export const MonitorPage: React.FC = () => {
   const [keyFilter, setKeyFilter] = useState('');
   const pausedEventsRef = useRef<EventLogEntry[]>([]);
 
-  // Subscribe to WebSocket on mount
+  // Seed history/state from REST, then follow the WebSocket feed. (Seeding
+  // first: fetchMetrics replaces the log, which would drop live events.)
   useEffect(() => {
-    subscribeToEvents();
-    return () => unsubscribeFromEvents();
-  }, [subscribeToEvents, unsubscribeFromEvents]);
+    let cancelled = false;
+    void fetchMetrics().finally(() => {
+      if (!cancelled) subscribeToEvents();
+    });
+    return () => {
+      cancelled = true;
+      unsubscribeFromEvents();
+    };
+  }, [fetchMetrics, subscribeToEvents, unsubscribeFromEvents]);
 
   // Update latency history when new stats arrive (skip when paused)
   useEffect(() => {
@@ -153,10 +161,10 @@ export const MonitorPage: React.FC = () => {
       };
     }
     return {
-      activeLayer: storeState.layer ?? storeState.activeLayer ?? 'Base',
+      activeLayer: storeState.layer,
       modifiers: storeState.modifiers,
       locks: storeState.locks,
-      tapHoldTimers: storeState.tapHoldPending ? 1 : 0,
+      tapHoldTimers: 0, // Not tracked by DaemonState yet
       queuedEvents: 0, // Not tracked yet
     };
   }, [storeState]);

@@ -305,8 +305,10 @@ export function createLatencyMetrics(
     min,
     max,
     avg,
+    p50: overrides?.p50 ?? faker.number.int({ min: min, max: avg }),
     p95: overrides?.p95 ?? faker.number.int({ min: avg, max: max }),
     p99: overrides?.p99 ?? faker.number.int({ min: avg, max: max }),
+    samples: overrides?.samples ?? faker.number.int({ min: 100, max: 10000 }),
     timestamp: overrides?.timestamp ?? Date.now() * 1000, // microseconds
   };
 }
@@ -345,10 +347,8 @@ export function createDaemonState(
 ): DaemonState {
   return {
     layer: overrides?.layer ?? 'base',
-    activeLayer: overrides?.activeLayer ?? 'base',
     modifiers: overrides?.modifiers ?? [],
     locks: overrides?.locks ?? [],
-    tapHoldPending: overrides?.tapHoldPending ?? false,
     activeProfile: overrides?.activeProfile ?? faker.word.noun(),
   };
 }

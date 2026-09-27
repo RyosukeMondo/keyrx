@@ -209,21 +209,12 @@ export interface KeyEvent {
 /**
  * Latency statistics.
  * Broadcast on "latency" channel periodically (every 1 second).
+ *
+ * Alias of the generated LatencyStats (SSOT from Rust typeshare) — this used
+ * to be a hand-written type that drifted from the wire format (missing p50
+ * and samples).
  */
-export interface LatencyMetrics {
-  /** Minimum latency in microseconds */
-  min: number;
-  /** Average latency in microseconds */
-  avg: number;
-  /** Maximum latency in microseconds */
-  max: number;
-  /** 95th percentile latency in microseconds */
-  p95: number;
-  /** 99th percentile latency in microseconds */
-  p99: number;
-  /** Timestamp of this stats snapshot (microseconds since UNIX epoch) */
-  timestamp: number;
-}
+export type { LatencyStats as LatencyMetrics } from './generated';
 
 /**
  * Type guard to check if a ServerMessage is a Response.

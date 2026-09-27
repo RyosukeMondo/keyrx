@@ -20,6 +20,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use crate::daemon::{DaemonSharedState, DaemonTelemetry, LatencySnapshot, TelemetryState};
+use crate::web::events::{DaemonState, KeyEventData, LatencyStats};
 
 /// Read model for daemon status, live state, latency and recent events.
 pub struct DaemonQueryService {
@@ -69,8 +70,21 @@ impl DaemonQueryService {
         self.telemetry.latency()
     }
 
-    /// Up to `count` most recent event descriptions, oldest first.
-    pub fn get_recent_events(&self, count: usize) -> Vec<String> {
+    /// Current latency statistics in wire form (REST, WS-RPC, MCP, WS push).
+    pub fn get_latency_stats(&self) -> LatencyStats {
+        LatencyStats::from_snapshot(&self.telemetry.latency())
+    }
+
+    /// Current modifier/lock/layer state plus the loaded profile, in wire form.
+    pub fn get_daemon_state(&self) -> DaemonState {
+        DaemonState::from_telemetry(
+            &self.telemetry.state(),
+            self.daemon_state.get_active_profile(),
+        )
+    }
+
+    /// Up to `count` most recent key events, oldest first.
+    pub fn get_recent_events(&self, count: usize) -> Vec<KeyEventData> {
         self.telemetry.recent_events(count)
     }
 
@@ -159,9 +173,14 @@ mod tests {
     #[test]
     fn test_events_are_the_telemetry_ring() {
         let (svc, telemetry) = make_test_service();
-        telemetry.push_event("press A".to_string());
-        telemetry.push_event("release A".to_string());
-        assert_eq!(svc.get_recent_events(10), vec!["press A", "release A"]);
+        telemetry.push_event(KeyEventData::test_press("A"));
+        telemetry.push_event(KeyEventData::test_press("B"));
+        let inputs: Vec<_> = svc
+            .get_recent_events(10)
+            .into_iter()
+            .map(|e| e.input)
+            .collect();
+        assert_eq!(inputs, vec!["A", "B"]);
         assert_eq!(svc.clear_events(), 2);
         assert!(telemetry.recent_events(10).is_empty());
     }

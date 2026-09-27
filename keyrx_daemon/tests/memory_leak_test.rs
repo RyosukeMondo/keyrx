@@ -456,6 +456,8 @@ async fn test_mem_003_lag_detection() {
                 max: 3000,
                 p95: 2500,
                 p99: 2800,
+                p50: 0,
+                samples: 0,
                 timestamp: i as u64,
             },
         };

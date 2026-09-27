@@ -8,39 +8,13 @@
  * - Resource cleanup
  */
 
-import type {
-  WSMessage,
-  EventRecord,
-  DaemonState,
-  LatencyStats,
-  KeyEventPayload,
-} from '../types';
+import type { WSMessage, EventRecord, DaemonState, LatencyStats } from '../types';
 import { buildWsUrl, WS_RECONNECT_CONFIG } from '../config/constants';
+import { toEventRecord } from './eventRecord';
 
 /** Exponential backoff intervals in ms (WS-002) */
 const RECONNECT_INTERVALS = [100, 200, 400, 800, 1600];
 const MAX_RECONNECT_INTERVAL = 5000;
-
-/**
- * Transform daemon's KeyEventPayload to frontend's EventRecord
- */
-function transformKeyEvent(payload: KeyEventPayload): EventRecord {
-  return {
-    id: `evt-${payload.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
-    timestamp: new Date(payload.timestamp / 1000).toISOString(),
-    type: payload.eventType === 'press' ? 'press' : 'release',
-    keyCode: payload.keyCode.replace(/^KEY_/, ''),
-    layer: 'Base',
-    latencyUs: payload.latency,
-    action: payload.mappingTriggered ? payload.output : undefined,
-    input: payload.input,
-    output: payload.output,
-    deviceId: payload.deviceId,
-    deviceName: payload.deviceName,
-    mappingType: payload.mappingType,
-    mappingTriggered: payload.mappingTriggered,
-  };
-}
 
 export type ConnectionState =
   | 'connecting'
@@ -222,7 +196,7 @@ export class WebSocketManager {
         case 'event':
           if (this.callbacks.onEvent) {
             // Transform KeyEventPayload to EventRecord
-            this.callbacks.onEvent(transformKeyEvent(message.payload));
+            this.callbacks.onEvent(toEventRecord(message.payload));
           }
           break;
 
