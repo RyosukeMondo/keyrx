@@ -784,6 +784,8 @@ mod tests {
                 krx_path: PathBuf::from(format!("/mock/{}.krx", name)),
                 modified_at: std::time::SystemTime::now(),
                 layer_count,
+                device_count: 0,
+                key_count: 0,
                 activated_at: None,
                 activated_by: None,
             };
