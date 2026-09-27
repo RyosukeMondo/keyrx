@@ -1,20 +1,22 @@
-//! IPC server: a local socket that answers [`IpcRequest`]s via
+//! IPC server: an [`IpcEndpoint`] that answers [`IpcRequest`]s via
 //! [`IpcCommandHandler`](super::commands::IpcCommandHandler).
 
-use super::{IpcRequest, IpcResponse};
+use super::{IpcEndpoint, IpcRequest, IpcResponse};
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream};
 use std::io::{BufRead, BufReader, Write};
-use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-/// Binds an IPC server at `socket_path` and serves `handler` on a background
+/// Binds an IPC server at `endpoint` and serves `handler` on a background
 /// thread. The single way runners expose IPC (production and test mode).
+///
+/// Fails if the endpoint cannot be bound, e.g. on Windows when another
+/// daemon already owns the pipe.
 pub fn spawn(
-    socket_path: PathBuf,
+    endpoint: IpcEndpoint,
     handler: Arc<super::commands::IpcCommandHandler>,
 ) -> Result<(), std::io::Error> {
-    let mut server = IpcServer::new(socket_path)?;
+    let mut server = IpcServer::new(endpoint);
     server.start()?;
     std::thread::spawn(move || {
         let handler_fn = Arc::new(Mutex::new(
@@ -31,39 +33,27 @@ pub fn spawn(
 
 /// IPC server for daemon commands
 pub struct IpcServer {
-    socket_path: PathBuf,
+    endpoint: IpcEndpoint,
     listener: Option<LocalSocketListener>,
 }
 
 impl IpcServer {
-    /// Create a new IPC server with the given socket path
-    pub fn new(socket_path: PathBuf) -> Result<Self, std::io::Error> {
-        Ok(Self {
-            socket_path,
+    /// Create a new IPC server for `endpoint` (not bound until [`Self::start`])
+    pub fn new(endpoint: IpcEndpoint) -> Self {
+        Self {
+            endpoint,
             listener: None,
-        })
+        }
     }
 
-    /// Start the IPC server and bind to the socket
+    /// Start the IPC server and bind to its endpoint
     pub fn start(&mut self) -> Result<(), std::io::Error> {
-        // Remove socket file if it exists
-        if self.socket_path.exists() {
-            std::fs::remove_file(&self.socket_path)?;
-        }
-
-        // Bind to the socket
-        let listener = LocalSocketListener::bind(self.socket_path.to_string_lossy().as_ref())?;
-
-        // Set socket permissions to 600 (owner only) on Unix
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let perms = std::fs::Permissions::from_mode(0o600);
-            std::fs::set_permissions(&self.socket_path, perms)?;
-        }
+        self.endpoint.prepare_bind()?;
+        let listener = LocalSocketListener::bind(self.endpoint.local_socket_name())?;
+        self.endpoint.restrict_access()?;
 
         self.listener = Some(listener);
-        log::info!("IPC server listening on {}", self.socket_path.display());
+        log::info!("IPC server listening on {}", self.endpoint);
         Ok(())
     }
 
@@ -137,79 +127,89 @@ impl IpcServer {
         }
     }
 
-    /// Get the socket path
-    pub fn socket_path(&self) -> &PathBuf {
-        &self.socket_path
+    /// The endpoint this server serves
+    pub fn endpoint(&self) -> &IpcEndpoint {
+        &self.endpoint
     }
 }
 
 impl Drop for IpcServer {
     fn drop(&mut self) {
-        // Clean up socket file
-        if self.socket_path.exists() {
-            if let Err(e) = std::fs::remove_file(&self.socket_path) {
-                log::warn!(
-                    "Failed to remove socket file {}: {}",
-                    self.socket_path.display(),
-                    e
-                );
-            } else {
-                log::info!("Cleaned up socket file {}", self.socket_path.display());
-            }
+        // Only a server that bound its endpoint may remove it
+        if self.listener.is_some() {
+            self.endpoint.remove();
         }
     }
-}
-
-/// Get the test mode IPC socket path for the current process
-pub fn get_test_socket_path() -> PathBuf {
-    let pid = std::process::id();
-    PathBuf::from(format!("/tmp/keyrx-test-{}.sock", pid))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ipc::client::IpcClient;
+    use crate::ipc::{DaemonIpc, IpcError};
+    use crate::services::DaemonQueryService;
 
-    #[test]
-    fn test_socket_path_format() {
-        let path = get_test_socket_path();
-        let path_str = path.to_str().unwrap();
-        assert!(path_str.starts_with("/tmp/keyrx-test-"));
-        assert!(path_str.ends_with(".sock"));
+    /// A unique endpoint per test (socket file in `dir`, or a named pipe).
+    fn test_endpoint(dir: &std::path::Path, tag: &str) -> IpcEndpoint {
+        let name = format!("keyrx-server-test-{tag}-{}", std::process::id());
+        if cfg!(windows) {
+            IpcEndpoint::NamedPipe(name)
+        } else {
+            IpcEndpoint::SocketFile(dir.join(format!("{name}.sock")))
+        }
     }
 
-    #[test]
-    fn test_server_creation() {
-        let socket_path = PathBuf::from("/tmp/keyrx-test-unittest.sock");
-        let server = IpcServer::new(socket_path.clone());
-        assert!(server.is_ok());
-        let server = server.unwrap();
-        assert_eq!(server.socket_path(), &socket_path);
-    }
-
-    // Integration test for start/stop would require actual socket creation
-    // which is tested at a higher level
-
-    /// Regression: the server answered one request per connection, so a
-    /// client reusing its connection (`metrics events --follow`) got EPIPE.
-    #[test]
-    #[cfg(unix)]
-    fn test_several_requests_on_one_connection() {
-        use crate::ipc::unix_socket::UnixSocketIpc;
-        use crate::ipc::DaemonIpc;
-        use crate::services::DaemonQueryService;
-
-        let dir = tempfile::tempdir().unwrap();
-        let socket = dir.path().join("reuse.sock");
-        let manager =
-            Arc::new(crate::config::ProfileManager::new(dir.path().to_path_buf()).unwrap());
+    fn spawn_handler(dir: &std::path::Path, endpoint: &IpcEndpoint) {
+        let manager = Arc::new(crate::config::ProfileManager::new(dir.to_path_buf()).unwrap());
         let handler = Arc::new(super::super::commands::IpcCommandHandler::new(
             manager,
             Arc::new(DaemonQueryService::without_daemon()),
         ));
-        spawn(socket.clone(), handler).unwrap();
+        spawn(endpoint.clone(), handler).unwrap();
+    }
 
-        let mut client = UnixSocketIpc::new(socket);
+    #[test]
+    fn test_server_creation() {
+        let endpoint = IpcEndpoint::test_for_process(1);
+        let server = IpcServer::new(endpoint.clone());
+        assert_eq!(server.endpoint(), &endpoint);
+    }
+
+    /// The production path end to end: `spawn` -> `IpcClient` on the
+    /// platform's transport (named pipe on Windows).
+    #[test]
+    fn test_spawned_server_roundtrip() {
+        let dir = tempfile::tempdir().unwrap();
+        let endpoint = test_endpoint(dir.path(), "roundtrip");
+        spawn_handler(dir.path(), &endpoint);
+
+        let mut client = IpcClient::new(endpoint);
+        let status = client.send_request(&IpcRequest::GetStatus);
+        assert!(
+            matches!(status, Ok(IpcResponse::Status { running: false, .. })),
+            "{status:?}"
+        );
+        let events = client.send_request(&IpcRequest::GetEventsTail { count: 5 });
+        assert!(
+            matches!(events, Ok(IpcResponse::Events { .. })),
+            "{events:?}"
+        );
+        let cleared = client.send_request(&IpcRequest::ClearEvents);
+        assert!(
+            matches!(cleared, Ok(IpcResponse::EventsCleared { .. })),
+            "{cleared:?}"
+        );
+    }
+
+    /// Regression: the server answered one request per connection, so a
+    /// client reusing its connection (`metrics events --follow`) got EPIPE.
+    #[test]
+    fn test_several_requests_on_one_connection() {
+        let dir = tempfile::tempdir().unwrap();
+        let endpoint = test_endpoint(dir.path(), "reuse");
+        spawn_handler(dir.path(), &endpoint);
+
+        let mut client = IpcClient::new(endpoint);
         for _ in 0..3 {
             let response = client.send_request(&IpcRequest::GetEventsTail { count: 5 });
             assert!(
@@ -217,5 +217,27 @@ mod tests {
                 "{response:?}"
             );
         }
+    }
+
+    /// A second daemon on the same pipe fails to bind (the runner logs it and
+    /// runs without IPC) instead of taking the endpoint over. Unix replaces
+    /// stale socket files, so this is a named-pipe property.
+    #[test]
+    #[cfg(windows)]
+    fn test_second_server_on_same_pipe_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let endpoint = test_endpoint(dir.path(), "single");
+        spawn_handler(dir.path(), &endpoint);
+
+        let mut second = IpcServer::new(endpoint);
+        assert!(second.start().is_err());
+    }
+
+    #[test]
+    fn test_no_server_is_socket_not_found() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut client = IpcClient::new(test_endpoint(dir.path(), "absent"));
+        let err = client.send_request(&IpcRequest::GetStatus).unwrap_err();
+        assert!(matches!(err, IpcError::SocketNotFound(_)), "{err:?}");
     }
 }

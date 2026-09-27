@@ -5,12 +5,11 @@
 //! followed). The records are the same `LatencyStats` / `KeyEventData` the REST
 //! API returns.
 
-use crate::ipc::unix_socket::UnixSocketIpc;
-use crate::ipc::{DaemonIpc, IpcRequest, IpcResponse, DEFAULT_SOCKET_PATH};
+use crate::ipc::client::IpcClient;
+use crate::ipc::{DaemonIpc, IpcEndpoint, IpcRequest, IpcResponse};
 use crate::web::events::{KeyEventData, LatencyStats};
 use clap::{Args, Subcommand};
 use serde::Serialize;
-use std::path::PathBuf;
 use std::time::Duration;
 
 /// Metrics subcommands.
@@ -24,9 +23,10 @@ pub struct MetricsArgs {
     #[arg(long, global = true)]
     pub json: bool,
 
-    /// Custom socket path (defaults to /tmp/keyrx-daemon.sock).
+    /// Custom IPC endpoint: socket path, or pipe name on Windows (defaults to
+    /// /tmp/keyrx-daemon.sock, or the keyrx-daemon named pipe on Windows).
     #[arg(long, global = true)]
-    pub socket: Option<PathBuf>,
+    pub socket: Option<String>,
 }
 
 /// Metrics subcommands.
@@ -61,10 +61,7 @@ struct EventsOutput<'a> {
 
 /// Execute the metrics command.
 pub fn execute(args: MetricsArgs) -> Result<(), Box<dyn std::error::Error>> {
-    let socket_path = args
-        .socket
-        .unwrap_or_else(|| PathBuf::from(DEFAULT_SOCKET_PATH));
-    let mut ipc = UnixSocketIpc::new(socket_path);
+    let mut ipc = IpcClient::new(IpcEndpoint::from_cli(args.socket.as_deref()));
     match args.command {
         MetricsCommand::Latency => execute_latency(&mut ipc, args.json),
         MetricsCommand::Events { count, follow } => {
@@ -79,7 +76,7 @@ pub fn execute(args: MetricsArgs) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Execute the latency subcommand.
-fn execute_latency(ipc: &mut UnixSocketIpc, json: bool) -> Result<(), Box<dyn std::error::Error>> {
+fn execute_latency(ipc: &mut IpcClient, json: bool) -> Result<(), Box<dyn std::error::Error>> {
     match ipc.send_request(&IpcRequest::GetLatencyMetrics)? {
         IpcResponse::Latency { stats } => {
             if json {
@@ -98,7 +95,7 @@ fn execute_latency(ipc: &mut UnixSocketIpc, json: bool) -> Result<(), Box<dyn st
 
 /// The `count` most recent events, oldest first.
 fn fetch_events(
-    ipc: &mut UnixSocketIpc,
+    ipc: &mut IpcClient,
     count: usize,
 ) -> Result<Vec<KeyEventData>, Box<dyn std::error::Error>> {
     match ipc.send_request(&IpcRequest::GetEventsTail { count })? {
@@ -112,7 +109,7 @@ fn fetch_events(
 
 /// Polls the daemon and prints events newer than `last` until interrupted.
 fn follow_events(
-    ipc: &mut UnixSocketIpc,
+    ipc: &mut IpcClient,
     last: Option<&KeyEventData>,
     json: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {

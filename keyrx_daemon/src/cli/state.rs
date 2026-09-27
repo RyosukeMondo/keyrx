@@ -4,11 +4,10 @@
 //! daemon's current runtime state via IPC. Displays the 255-bit modifier/lock
 //! state as a JSON array or human-readable format.
 
-use crate::ipc::unix_socket::UnixSocketIpc;
-use crate::ipc::{DaemonIpc, IpcRequest, IpcResponse, DEFAULT_SOCKET_PATH};
+use crate::ipc::client::IpcClient;
+use crate::ipc::{DaemonIpc, IpcEndpoint, IpcRequest, IpcResponse};
 use clap::Args;
 use serde::Serialize;
-use std::path::PathBuf;
 
 /// State subcommand arguments.
 #[derive(Args, Debug)]
@@ -32,9 +31,10 @@ pub struct InspectArgs {
     #[arg(long)]
     pub json: bool,
 
-    /// Custom socket path (defaults to /tmp/keyrx-daemon.sock).
+    /// Custom IPC endpoint: socket path, or pipe name on Windows (defaults to
+    /// /tmp/keyrx-daemon.sock, or the keyrx-daemon named pipe on Windows).
     #[arg(long)]
-    pub socket: Option<PathBuf>,
+    pub socket: Option<String>,
 }
 
 /// JSON output structure for state.
@@ -55,13 +55,7 @@ pub fn execute(args: StateArgs) -> Result<(), Box<dyn std::error::Error>> {
 
 /// Execute the inspect subcommand.
 fn execute_inspect(args: InspectArgs) -> Result<(), Box<dyn std::error::Error>> {
-    // Determine socket path
-    let socket_path = args
-        .socket
-        .unwrap_or_else(|| PathBuf::from(DEFAULT_SOCKET_PATH));
-
-    // Create IPC client
-    let mut ipc = UnixSocketIpc::new(socket_path);
+    let mut ipc = IpcClient::new(IpcEndpoint::from_cli(args.socket.as_deref()));
 
     // Send GetState request
     let response = ipc.send_request(&IpcRequest::GetState)?;

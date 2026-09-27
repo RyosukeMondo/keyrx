@@ -121,7 +121,38 @@ otherwise say so and the Linux session will verify after merging.
 
 ## Result
 
-- Commits:
-- Tests (pass/fail/ignored):
-- Live check 1–4:
+- Commits: on branch `windows` (not `main`, at the user's request), one commit
+  "feat(ipc): Windows production IPC over a named pipe (G3, G5)". PR open against `main`.
+- Tests (pass/fail/ignored): **NOT RUN.** The Windows host ran out of memory
+  compiling `keyrx_daemon` (clippy killed mid-build) and no build has finished,
+  so the code is uncompiled. `cargo fmt` done; `scripts/verify/file-sizes.sh`
+  passes and the baseline is now empty (0 files over 500).
+- Live check 1–4: not run (no build; KeyRx not installed on this host).
+- Implementation:
+  - `ipc/endpoint.rs`: `IpcEndpoint { SocketFile(PathBuf) | NamedPipe(String) }`
+    with `default_for_platform()`, `test_for_process(pid)`, `parse/from_cli`
+    (CLI `--socket` is a pipe name on Windows). Owns stale-file removal,
+    chmod 0600, removal on exit (no-ops for pipes) and connect-error mapping:
+    `NotFound` -> `SocketNotFound` on both, `ConnectionRefused` -> `StaleSocket`
+    for socket files only. `DEFAULT_SOCKET_PATH` removed.
+  - `SocketNotFound` now prints "Daemon not running: no IPC endpoint at ...
+    (error code 3005)" on both platforms.
+  - `UnixSocketIpc` -> `IpcClient`, `ipc/unix_socket.rs` -> `ipc/client.rs`;
+    any failure now drops the connection. Its tests run on Windows too.
+  - `platform_runners/mod.rs`: shared `start_production_ipc_server` /
+    `remove_production_ipc_endpoint`; both runners call them with the web
+    `AppState`'s `daemon_query`. Second instance on the pipe: bind fails,
+    warning, daemon runs without IPC.
+  - G5: `windows.rs` -> `windows/{mod,message_loop,instance,shell,test_mode}.rs`
+    (largest 191 code lines). Test mode uses `IpcEndpoint::test_for_process`.
+  - New tests: named-pipe round trip via `server::spawn` (GetStatus,
+    GetEventsTail, ClearEvents), no server -> `SocketNotFound`, second server
+    on the same pipe fails (Windows), endpoint unit tests.
 - Deviations / open issues:
+  - Endpoint type lives in `ipc/endpoint.rs`, re-exported from `ipc/mod.rs`.
+  - Linux side please: `cargo clippy --workspace -- -D warnings`,
+    `cargo clippy -p keyrx_daemon --target x86_64-pc-windows-gnu -- -D warnings`,
+    `cargo test -p keyrx_daemon ipc::`. The Windows named-pipe tests and live
+    checks still need a Windows run with enough memory (try `-j 2`).
+  - `ipc::client` `test_timeout_handling` kept Unix-only: the client has no
+    real read timeout (pre-existing).

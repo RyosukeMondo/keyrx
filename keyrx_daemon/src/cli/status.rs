@@ -3,11 +3,10 @@
 //! This module implements the `keyrx status` command for querying daemon status
 //! via IPC. Displays running state, uptime, active profile, and device count.
 
-use crate::ipc::unix_socket::UnixSocketIpc;
-use crate::ipc::{DaemonIpc, IpcRequest, IpcResponse, DEFAULT_SOCKET_PATH};
+use crate::ipc::client::IpcClient;
+use crate::ipc::{DaemonIpc, IpcEndpoint, IpcRequest, IpcResponse};
 use clap::Args;
 use serde::Serialize;
-use std::path::PathBuf;
 
 /// Status subcommands.
 #[derive(Args, Debug)]
@@ -16,9 +15,10 @@ pub struct StatusArgs {
     #[arg(long)]
     pub json: bool,
 
-    /// Custom socket path (defaults to /tmp/keyrx-daemon.sock).
+    /// Custom IPC endpoint: socket path, or pipe name on Windows (defaults to
+    /// /tmp/keyrx-daemon.sock, or the keyrx-daemon named pipe on Windows).
     #[arg(long)]
-    pub socket: Option<PathBuf>,
+    pub socket: Option<String>,
 }
 
 /// JSON output structure for status.
@@ -32,13 +32,7 @@ struct StatusOutput {
 
 /// Execute the status command.
 pub fn execute(args: StatusArgs) -> Result<(), Box<dyn std::error::Error>> {
-    // Determine socket path
-    let socket_path = args
-        .socket
-        .unwrap_or_else(|| PathBuf::from(DEFAULT_SOCKET_PATH));
-
-    // Create IPC client
-    let mut ipc = UnixSocketIpc::new(socket_path);
+    let mut ipc = IpcClient::new(IpcEndpoint::from_cli(args.socket.as_deref()));
 
     // Send GetStatus request
     let response = ipc.send_request(&IpcRequest::GetStatus)?;
