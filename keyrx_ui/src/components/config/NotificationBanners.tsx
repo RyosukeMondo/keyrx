@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 
 interface NotificationBannersProps {
@@ -10,6 +10,18 @@ interface NotificationBannersProps {
   isConnected: boolean;
   onCreateProfile: () => void;
 }
+
+/** Dismiss (X) button for a banner. Declared outside the render body so it
+ * isn't re-created as a new component on every render. */
+const DismissButton: React.FC<{ onDismiss: () => void }> = ({ onDismiss }) => (
+  <button
+    onClick={onDismiss}
+    className="ml-auto flex-shrink-0 p-1 rounded hover:bg-white/10 transition-colors"
+    aria-label="Dismiss notification"
+  >
+    <X className="w-4 h-4" />
+  </button>
+);
 
 /**
  * Displays informational banners for profile and config status.
@@ -26,12 +38,36 @@ export const NotificationBanners: React.FC<NotificationBannersProps> = ({
   isConnected,
   onCreateProfile,
 }) => {
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  // Dismissed keys are tagged with the profile they were dismissed under.
+  // When `profileName` changes, the tag no longer matches, so `dismissed`
+  // derives back to empty on the next render — no effect needed to reset it.
+  const [dismissedState, setDismissedState] = useState<{
+    profileName: string;
+    keys: Set<string>;
+  }>({ profileName, keys: new Set() });
 
-  // Reset dismissed state when profile changes
-  useEffect(() => {
-    setDismissed(new Set());
-  }, [profileName]);
+  // Memoized so the derived Set has a stable identity across renders that
+  // don't actually change it — otherwise the auto-dismiss effect below would
+  // see a "new" dependency (and re-run) on every render while dismissedState
+  // is stale for the current profile.
+  const dismissed = useMemo(
+    () =>
+      dismissedState.profileName === profileName
+        ? dismissedState.keys
+        : new Set<string>(),
+    [dismissedState, profileName]
+  );
+
+  const dismiss = useCallback(
+    (key: string) => {
+      setDismissedState((prev) => {
+        const keys =
+          prev.profileName === profileName ? prev.keys : new Set<string>();
+        return { profileName, keys: new Set(keys).add(key) };
+      });
+    },
+    [profileName]
+  );
 
   // Auto-dismiss timers
   useEffect(() => {
@@ -40,21 +76,7 @@ export const NotificationBanners: React.FC<NotificationBannersProps> = ({
       timers.push(setTimeout(() => dismiss('configMissing'), 8000));
     }
     return () => timers.forEach(clearTimeout);
-  }, [configMissing, dismissed]);
-
-  const dismiss = useCallback((key: string) => {
-    setDismissed(prev => new Set(prev).add(key));
-  }, []);
-
-  const DismissButton: React.FC<{ bannerKey: string }> = ({ bannerKey }) => (
-    <button
-      onClick={() => dismiss(bannerKey)}
-      className="ml-auto flex-shrink-0 p-1 rounded hover:bg-white/10 transition-colors"
-      aria-label="Dismiss notification"
-    >
-      <X className="w-4 h-4" />
-    </button>
-  );
+  }, [configMissing, dismissed, dismiss]);
 
   return (
     <>
@@ -72,7 +94,7 @@ export const NotificationBanners: React.FC<NotificationBannersProps> = ({
               Create Profile "{profileName}"
             </button>
           </div>
-          <DismissButton bannerKey="noProfile" />
+          <DismissButton onDismiss={() => dismiss('noProfile')} />
         </div>
       )}
 
@@ -83,7 +105,7 @@ export const NotificationBanners: React.FC<NotificationBannersProps> = ({
             No configuration file found for "{profileName}". A template has
             been loaded — click <strong>Save</strong> to create it.
           </p>
-          <DismissButton bannerKey="configMissing" />
+          <DismissButton onDismiss={() => dismiss('configMissing')} />
         </div>
       )}
 
@@ -95,7 +117,7 @@ export const NotificationBanners: React.FC<NotificationBannersProps> = ({
               ? error.message
               : 'Failed to load configuration'}
           </p>
-          <DismissButton bannerKey="error" />
+          <DismissButton onDismiss={() => dismiss('error')} />
         </div>
       )}
     </>

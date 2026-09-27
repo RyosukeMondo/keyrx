@@ -341,7 +341,7 @@ const ConfigPage: React.FC = () => {
             profileExists={profileExists}
             configMissing={configMissing}
             error={error}
-            isLoading={isLoading}
+            isLoading={isLoading || isLoadingProfiles}
             isConnected={api.isConnected}
             onCreateProfile={handleCreateProfile}
           />

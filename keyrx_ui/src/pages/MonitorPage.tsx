@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/Card';
 import { Activity, FileCode, Pause, Play, Download, Search } from 'lucide-react';
@@ -52,7 +52,13 @@ export const MonitorPage: React.FC = () => {
   // Pause / filter state
   const [isPaused, setIsPaused] = useState(false);
   const [keyFilter, setKeyFilter] = useState('');
-  const pausedEventsRef = useRef<EventLogEntry[]>([]);
+  // Snapshot of the event log captured at the moment pausing started; null
+  // while live. Set from the pause toggle handler (not an effect) so the
+  // snapshot is exactly "what the log looked like when Pause was clicked",
+  // and reading it during render never touches a ref.
+  const [pausedEvents, setPausedEvents] = useState<EventLogEntry[] | null>(
+    null
+  );
 
   // Seed history/state from REST, then follow the WebSocket feed. (Seeding
   // first: fetchMetrics replaces the log, which would drop live events.)
@@ -106,16 +112,9 @@ export const MonitorPage: React.FC = () => {
     }));
   }, [storeEventLog]);
 
-  // Snapshot events when pausing
-  useEffect(() => {
-    if (isPaused) {
-      pausedEventsRef.current = eventLog;
-    }
-  }, [isPaused, eventLog]);
-
   // Use paused snapshot or live feed, then apply key filter
   const filteredEventLog: EventLogEntry[] = useMemo(() => {
-    const source = isPaused ? pausedEventsRef.current : eventLog;
+    const source = isPaused && pausedEvents ? pausedEvents : eventLog;
     if (!keyFilter) return source;
     const lowerFilter = keyFilter.toLowerCase();
     return source.filter(
@@ -124,7 +123,18 @@ export const MonitorPage: React.FC = () => {
         (e.input?.toLowerCase().includes(lowerFilter) ?? false) ||
         (e.output?.toLowerCase().includes(lowerFilter) ?? false),
     );
-  }, [isPaused, eventLog, keyFilter]);
+  }, [isPaused, pausedEvents, eventLog, keyFilter]);
+
+  // Toggle pause, capturing a snapshot of the live log at the moment pausing
+  // starts. Runs in the click handler (not an effect), so the snapshot is
+  // frozen exactly as of this click rather than drifting with later
+  // `eventLog` updates while still paused.
+  const handleTogglePause = useCallback(() => {
+    if (!isPaused) {
+      setPausedEvents(eventLog);
+    }
+    setIsPaused((prev) => !prev);
+  }, [isPaused, eventLog]);
 
   // Export handlers
   const handleExportCSV = useCallback(() => {
@@ -384,7 +394,7 @@ export const MonitorPage: React.FC = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
-                  onClick={() => setIsPaused((p) => !p)}
+                  onClick={handleTogglePause}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
                   aria-label={isPaused ? 'Resume event stream' : 'Pause event stream'}
                 >
