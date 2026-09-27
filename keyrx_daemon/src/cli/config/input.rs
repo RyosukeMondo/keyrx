@@ -7,12 +7,8 @@ use std::path::PathBuf;
 /// Determines the config directory from various sources.
 pub fn determine_config_dir(config_dir: Option<PathBuf>) -> PathBuf {
     config_dir
-        .or_else(|| std::env::var("KEYRX_CONFIG_DIR").ok().map(PathBuf::from))
-        .unwrap_or_else(|| {
-            let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-            path.push("keyrx");
-            path
-        })
+        .or_else(|| crate::cli::config_dir::get_config_dir().ok())
+        .unwrap_or_else(|| PathBuf::from("."))
 }
 
 /// Parses a macro sequence from string format.

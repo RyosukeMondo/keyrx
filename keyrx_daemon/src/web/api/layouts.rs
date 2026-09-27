@@ -52,8 +52,6 @@ async fn get_layout(Path(name): Path<String>) -> Result<Json<Value>, ApiError> {
 
 /// Get config directory path (cross-platform)
 fn get_config_dir() -> Result<std::path::PathBuf, ApiError> {
-    let config_dir = dirs::config_dir()
-        .ok_or_else(|| ApiError::InternalError("Cannot determine config directory".to_string()))?;
-
-    Ok(config_dir.join("keyrx"))
+    crate::cli::config_dir::get_config_dir()
+        .map_err(|e| ApiError::InternalError(format!("Cannot determine config directory: {e}")))
 }

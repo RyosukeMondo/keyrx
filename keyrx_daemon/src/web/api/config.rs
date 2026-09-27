@@ -315,12 +315,13 @@ async fn list_layers() -> Result<Json<Value>, DaemonError> {
 fn get_config_dir() -> Result<std::path::PathBuf, DaemonError> {
     use crate::error::ConfigError;
 
-    let config_dir = dirs::config_dir().ok_or_else(|| ConfigError::ParseError {
-        path: std::path::PathBuf::from("~"),
-        reason: "Cannot determine config directory".to_string(),
-    })?;
-
-    Ok(config_dir.join("keyrx"))
+    crate::cli::config_dir::get_config_dir().map_err(|e| {
+        ConfigError::ParseError {
+            path: std::path::PathBuf::from("~"),
+            reason: format!("Cannot determine config directory: {e}"),
+        }
+        .into()
+    })
 }
 
 /// Query active profile name

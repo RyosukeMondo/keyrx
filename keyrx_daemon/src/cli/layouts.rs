@@ -289,14 +289,7 @@ fn handle_delete(
 
 /// Get the layouts directory path.
 fn get_layouts_dir() -> PathBuf {
-    // Use environment variable if set, otherwise use default
-    if let Ok(config_dir) = std::env::var("KEYRX_CONFIG_DIR") {
-        PathBuf::from(config_dir).join("layouts")
-    } else {
-        // Default to ~/.config/keyrx/layouts
-        dirs::config_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("keyrx")
-            .join("layouts")
-    }
+    crate::cli::config_dir::get_config_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join("layouts")
 }

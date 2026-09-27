@@ -413,13 +413,12 @@ fn get_frontend_info() -> Value {
 fn check_config_validation() -> ConfigStatus {
     use crate::config::ProfileManager;
 
-    let Some(mut config_dir) = dirs::config_dir() else {
+    let Ok(config_dir) = crate::cli::config_dir::get_config_dir() else {
         return ConfigStatus {
             valid: false,
             message: "Cannot determine config directory".into(),
         };
     };
-    config_dir.push("keyrx");
 
     let profile_manager = match ProfileManager::new(config_dir) {
         Ok(mgr) => mgr,

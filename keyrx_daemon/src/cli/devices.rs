@@ -91,13 +91,7 @@ pub fn execute(args: DevicesArgs, registry_path: Option<PathBuf>) -> DaemonResul
 fn execute_inner(args: DevicesArgs, registry_path: Option<PathBuf>) -> DaemonResult<()> {
     // Determine registry path (KEYRX_CONFIG_DIR > dirs::config_dir)
     let registry_path = registry_path.unwrap_or_else(|| {
-        let base = if let Ok(dir) = std::env::var("KEYRX_CONFIG_DIR") {
-            PathBuf::from(dir)
-        } else {
-            let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-            path.push("keyrx");
-            path
-        };
+        let base = crate::cli::config_dir::get_config_dir().unwrap_or_else(|_| PathBuf::from("."));
         base.join("devices.json")
     });
 

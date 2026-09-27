@@ -29,7 +29,7 @@
 //! use keyrx_daemon::platform::create_platform;
 //!
 //! // Start from the active profile in ~/.config/keyrx
-//! let config_dir = dirs::config_dir().unwrap().join("keyrx");
+//! let config_dir = keyrx_daemon::cli::config_dir::get_config_dir()?;
 //! let mut daemon = Daemon::new(create_platform()?, ConfigSource::ActiveProfile, config_dir)?;
 //!
 //! // Run the event loop (blocks until shutdown signal)

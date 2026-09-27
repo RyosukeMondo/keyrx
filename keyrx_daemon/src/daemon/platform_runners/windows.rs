@@ -373,11 +373,12 @@ fn run_test_mode(
     log::info!("Starting daemon in test mode (no keyboard capture)");
 
     // Determine config directory
-    let config_dir = {
-        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        path.push("keyrx");
-        path
-    };
+    let config_dir = crate::cli::config_dir::get_config_dir().map_err(|e| {
+        (
+            ExitCode::ConfigError as i32,
+            format!("Cannot determine config directory: {e}"),
+        )
+    })?;
 
     // Initialize ProfileManager (without RwLock - ProfileManager has internal mutability)
     let profile_manager = match ProfileManager::new(config_dir.clone()) {

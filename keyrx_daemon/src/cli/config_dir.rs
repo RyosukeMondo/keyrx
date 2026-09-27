@@ -38,138 +38,89 @@ use std::path::PathBuf;
 /// # }
 /// ```
 pub fn get_config_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    // 1. Check for explicit override (used by tests and custom setups)
-    if let Ok(dir) = std::env::var("KEYRX_CONFIG_DIR") {
-        return Ok(PathBuf::from(dir));
-    }
+    resolve_config_dir(|name| std::env::var(name).ok(), dirs::config_dir())
+        .ok_or_else(|| "Could not determine home directory".into())
+}
 
-    // 2. Check XDG_CONFIG_HOME (Linux standard)
-    #[cfg(target_os = "linux")]
-    {
-        if let Ok(xdg_config) = std::env::var("XDG_CONFIG_HOME") {
-            return Ok(PathBuf::from(xdg_config).join("keyrx"));
+/// The resolution rules of [`get_config_dir`] over an injected environment
+/// (`env`) and platform config dir (`platform_config`, i.e.
+/// `dirs::config_dir()`), so they are testable without mutating process env.
+fn resolve_config_dir(
+    env: impl Fn(&str) -> Option<String>,
+    platform_config: Option<PathBuf>,
+) -> Option<PathBuf> {
+    // 1. Explicit override (tests and custom setups)
+    if let Some(dir) = env("KEYRX_CONFIG_DIR") {
+        return Some(PathBuf::from(dir));
+    }
+    // 2. XDG_CONFIG_HOME (Linux standard)
+    if cfg!(target_os = "linux") {
+        if let Some(xdg) = env("XDG_CONFIG_HOME") {
+            return Some(PathBuf::from(xdg).join("keyrx"));
         }
     }
-
-    // 3. Platform-specific default config directory
-    //    - Windows: %APPDATA%/keyrx (via dirs::config_dir, typically AppData/Roaming)
-    //    - Linux:   $HOME/.config/keyrx
-    #[cfg(target_os = "windows")]
-    {
-        if let Some(config) = dirs::config_dir() {
-            return Ok(config.join("keyrx"));
+    // 3. Windows: %APPDATA%\keyrx
+    if cfg!(target_os = "windows") {
+        if let Some(config) = platform_config {
+            return Some(config.join("keyrx"));
         }
     }
-
-    let home = std::env::var("HOME")
-        .or_else(|_| std::env::var("USERPROFILE"))
-        .map_err(|_| "Could not determine home directory")?;
-
-    Ok(PathBuf::from(home).join(".config").join("keyrx"))
+    // 4. $HOME/.config/keyrx
+    let home = env("HOME").or_else(|| env("USERPROFILE"))?;
+    Some(PathBuf::from(home).join(".config").join("keyrx"))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
-    use std::env;
+    use std::collections::HashMap;
+
+    fn resolve(vars: &[(&str, &str)]) -> Option<PathBuf> {
+        let vars: HashMap<String, String> = vars
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+        resolve_config_dir(|k| vars.get(k).cloned(), Some(PathBuf::from("/appdata")))
+    }
 
     #[test]
-    #[serial]
-    fn test_keyrx_config_dir_override() {
-        // Save and clear other env vars
-        let old_keyrx = env::var("KEYRX_CONFIG_DIR").ok();
-        let old_xdg = env::var("XDG_CONFIG_HOME").ok();
-
-        env::set_var("KEYRX_CONFIG_DIR", "/custom/config");
-        env::set_var("XDG_CONFIG_HOME", "/should/not/be/used");
-
-        let dir = get_config_dir().unwrap();
-        assert_eq!(dir, PathBuf::from("/custom/config"));
-
-        // Restore
-        if let Some(val) = old_keyrx {
-            env::set_var("KEYRX_CONFIG_DIR", val);
-        } else {
-            env::remove_var("KEYRX_CONFIG_DIR");
-        }
-        if let Some(val) = old_xdg {
-            env::set_var("XDG_CONFIG_HOME", val);
-        } else {
-            env::remove_var("XDG_CONFIG_HOME");
-        }
+    fn test_keyrx_config_dir_override_wins() {
+        let dir = resolve(&[
+            ("KEYRX_CONFIG_DIR", "/custom/config"),
+            ("XDG_CONFIG_HOME", "/should/not/be/used"),
+            ("HOME", "/home/u"),
+        ]);
+        assert_eq!(dir, Some(PathBuf::from("/custom/config")));
     }
 
     #[test]
     #[cfg(target_os = "linux")]
     fn test_xdg_config_home() {
-        let old_keyrx = env::var("KEYRX_CONFIG_DIR").ok();
-        let old_xdg = env::var("XDG_CONFIG_HOME").ok();
-
-        env::remove_var("KEYRX_CONFIG_DIR");
-        env::set_var("XDG_CONFIG_HOME", "/xdg/config");
-
-        let dir = get_config_dir().unwrap();
-        assert_eq!(dir, PathBuf::from("/xdg/config/keyrx"));
-
-        // Restore
-        if let Some(val) = old_keyrx {
-            env::set_var("KEYRX_CONFIG_DIR", val);
-        }
-        if let Some(val) = old_xdg {
-            env::set_var("XDG_CONFIG_HOME", val);
-        } else {
-            env::remove_var("XDG_CONFIG_HOME");
-        }
+        let dir = resolve(&[("XDG_CONFIG_HOME", "/xdg/config"), ("HOME", "/home/u")]);
+        assert_eq!(dir, Some(PathBuf::from("/xdg/config/keyrx")));
     }
 
     #[test]
-    #[serial]
+    #[cfg(unix)]
     fn test_home_fallback() {
-        // Clear KEYRX_CONFIG_DIR to ensure we test the fallback
-        let old_keyrx = env::var("KEYRX_CONFIG_DIR").ok();
-        env::remove_var("KEYRX_CONFIG_DIR");
+        assert_eq!(
+            resolve(&[("HOME", "/home/testuser")]),
+            Some(PathBuf::from("/home/testuser/.config/keyrx"))
+        );
+    }
 
-        let old_xdg = env::var("XDG_CONFIG_HOME").ok();
-        let old_home = env::var("HOME").ok();
-        let old_userprofile = env::var("USERPROFILE").ok();
+    #[test]
+    #[cfg(windows)]
+    fn test_windows_uses_appdata() {
+        assert_eq!(
+            resolve(&[("USERPROFILE", "C:\\Users\\u")]),
+            Some(PathBuf::from("/appdata").join("keyrx"))
+        );
+    }
 
-        env::remove_var("XDG_CONFIG_HOME");
-        env::remove_var("HOME");
-        env::remove_var("USERPROFILE");
-
-        #[cfg(unix)]
-        env::set_var("HOME", "/home/testuser");
-        #[cfg(windows)]
-        env::set_var("USERPROFILE", "C:\\Users\\testuser");
-
-        let dir = get_config_dir().unwrap();
-
-        #[cfg(unix)]
-        assert_eq!(dir, PathBuf::from("/home/testuser/.config/keyrx"));
-        #[cfg(windows)]
-        {
-            // When HOME/USERPROFILE are set but dirs::config_dir() returns AppData/Roaming,
-            // the result depends on system state. Just verify it ends with "keyrx".
-            assert!(
-                dir.ends_with("keyrx"),
-                "Expected dir ending with keyrx, got {:?}",
-                dir
-            );
-        }
-
-        // Restore
-        if let Some(val) = old_keyrx {
-            env::set_var("KEYRX_CONFIG_DIR", val);
-        }
-        if let Some(val) = old_xdg {
-            env::set_var("XDG_CONFIG_HOME", val);
-        }
-        if let Some(val) = old_home {
-            env::set_var("HOME", val);
-        }
-        if let Some(val) = old_userprofile {
-            env::set_var("USERPROFILE", val);
-        }
+    #[test]
+    #[cfg(unix)]
+    fn test_no_home_is_none() {
+        assert_eq!(resolve(&[]), None);
     }
 }
