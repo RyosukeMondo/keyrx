@@ -4,185 +4,14 @@
 //! based on their capabilities (presence of alphabetic keys). It also
 //! provides pattern matching for selecting devices based on configuration.
 
-use std::fs;
-use std::path::Path;
-
-use evdev::{Device, EventType, Key};
 use log::warn;
 
 use keyrx_core::config::DeviceConfig;
 use keyrx_core::runtime::{DeviceState, KeyLookup};
 
+use super::linux_enum::enumerate_keyboards;
 use super::{DiscoveryError, KeyboardInfo};
 use crate::platform::linux::EvdevInput;
-
-/// Required alphabetic keys that a keyboard must have.
-const REQUIRED_KEYS: &[Key] = &[
-    Key::KEY_A,
-    Key::KEY_B,
-    Key::KEY_C,
-    Key::KEY_D,
-    Key::KEY_E,
-    Key::KEY_F,
-    Key::KEY_G,
-    Key::KEY_H,
-    Key::KEY_I,
-    Key::KEY_J,
-    Key::KEY_K,
-    Key::KEY_L,
-    Key::KEY_M,
-    Key::KEY_N,
-    Key::KEY_O,
-    Key::KEY_P,
-    Key::KEY_Q,
-    Key::KEY_R,
-    Key::KEY_S,
-    Key::KEY_T,
-    Key::KEY_U,
-    Key::KEY_V,
-    Key::KEY_W,
-    Key::KEY_X,
-    Key::KEY_Y,
-    Key::KEY_Z,
-];
-
-const MIN_REQUIRED_KEYS: usize = 20;
-
-fn is_keyboard(device: &Device) -> bool {
-    let supported_events = device.supported_events();
-    if !supported_events.contains(EventType::KEY) {
-        return false;
-    }
-
-    let Some(supported_keys) = device.supported_keys() else {
-        return false;
-    };
-
-    let key_count = REQUIRED_KEYS
-        .iter()
-        .filter(|key| supported_keys.contains(**key))
-        .count();
-
-    key_count >= MIN_REQUIRED_KEYS
-}
-
-/// Deduplicates keyboards by filtering out secondary interfaces.
-///
-/// Many USB keyboards register as multiple `/dev/input/event*` devices:
-/// - One for the main keyboard (input0)
-/// - One for consumer controls/media keys (input1, input2, etc.)
-///
-/// This function filters by preferring devices with physical path ending in `/input0`.
-fn deduplicate_keyboards(keyboards: &mut Vec<KeyboardInfo>) {
-    use std::collections::HashMap;
-
-    // Group keyboards by their base physical path (without /inputN suffix)
-    let mut grouped: HashMap<String, Vec<usize>> = HashMap::new();
-
-    for (idx, kb) in keyboards.iter().enumerate() {
-        if let Some(ref phys) = kb.phys {
-            // Get the base path (everything before /inputN)
-            let base_path = if let Some(pos) = phys.rfind("/input") {
-                phys[..pos].to_string()
-            } else {
-                phys.clone()
-            };
-
-            grouped.entry(base_path).or_default().push(idx);
-        } else {
-            // No physical path - keep the device (can't deduplicate)
-            continue;
-        }
-    }
-
-    // For each group, find the primary interface (input0) or keep the first one
-    let mut to_remove: Vec<usize> = Vec::new();
-
-    for indices in grouped.values() {
-        if indices.len() <= 1 {
-            // Only one device in this group - keep it
-            continue;
-        }
-
-        // Find the primary interface (input0)
-        let primary_idx = indices.iter().find(|&&idx| {
-            keyboards[idx]
-                .phys
-                .as_ref()
-                .map(|p| p.ends_with("/input0"))
-                .unwrap_or(false)
-        });
-
-        // Mark all others for removal
-        for &idx in indices {
-            if let Some(&primary) = primary_idx {
-                if idx != primary {
-                    to_remove.push(idx);
-                }
-            } else {
-                // No primary found - keep only the first one
-                if idx != indices[0] {
-                    to_remove.push(idx);
-                }
-            }
-        }
-    }
-
-    // Sort removal indices in reverse order to maintain validity during removal
-    to_remove.sort_unstable_by(|a, b| b.cmp(a));
-
-    // Remove marked devices
-    for idx in to_remove {
-        keyboards.remove(idx);
-    }
-}
-
-pub fn enumerate_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
-    let input_dir = Path::new("/dev/input");
-    let entries = fs::read_dir(input_dir)?;
-
-    let mut keyboards = Vec::new();
-    for entry in entries {
-        let entry = entry.map_err(DiscoveryError::Io)?;
-        let path = entry.path();
-
-        let device = match Device::open(&path) {
-            Ok(d) => d,
-            Err(_) => continue,
-        };
-
-        if !is_keyboard(&device) {
-            continue;
-        }
-
-        let name = device.name().unwrap_or("Unknown Device").to_string();
-
-        // Skip the daemon's own virtual output device to prevent grabbing it
-        // The virtual device name is "keyrx" as set in platform/linux/mod.rs
-        if name == "keyrx" {
-            continue;
-        }
-
-        let serial = device.unique_name().map(|s| s.to_string());
-        let phys = device.physical_path().map(|s| s.to_string());
-
-        keyboards.push(KeyboardInfo {
-            path,
-            name,
-            serial,
-            phys,
-        });
-    }
-
-    keyboards.sort_by(|a, b| a.path.cmp(&b.path));
-
-    // Deduplicate devices: Many USB keyboards register as multiple event devices
-    // (one for keyboard, one for consumer controls/media keys). We filter these
-    // by preferring input0 interfaces and removing duplicates with " Keyboard" suffix.
-    deduplicate_keyboards(&mut keyboards);
-
-    Ok(keyboards)
-}
 
 pub struct ManagedDevice {
     info: KeyboardInfo,
@@ -460,21 +289,6 @@ mod tests {
         };
 
         assert!(device_id.starts_with("path-"));
-    }
-
-    #[test]
-    fn test_is_keyboard_requires_key_events() {
-        // is_keyboard function exists and filters by key capability
-        // This is a documentation test - the function is tested implicitly
-        // through enumerate_keyboards() which uses it
-        const _: () = assert!(MIN_REQUIRED_KEYS > 0);
-    }
-
-    #[test]
-    fn test_required_keys_coverage() {
-        // Ensure we have a reasonable set of required keys
-        assert_eq!(REQUIRED_KEYS.len(), 26); // A-Z
-        assert!(MIN_REQUIRED_KEYS <= REQUIRED_KEYS.len());
     }
 
     #[test]

@@ -17,11 +17,15 @@ use crate::platform::DeviceError;
 
 #[cfg(target_os = "linux")]
 mod linux;
+#[cfg(target_os = "linux")]
+mod linux_enum;
 #[cfg(target_os = "windows")]
 mod windows;
 
 #[cfg(target_os = "linux")]
-pub use linux::{enumerate_keyboards, DeviceManager, ManagedDevice, RefreshResult};
+pub use linux::{DeviceManager, ManagedDevice, RefreshResult};
+#[cfg(target_os = "linux")]
+pub use linux_enum::enumerate_keyboards;
 #[cfg(target_os = "windows")]
 pub use windows::{enumerate_keyboards, DeviceManager, ManagedDevice, RefreshResult};
 
