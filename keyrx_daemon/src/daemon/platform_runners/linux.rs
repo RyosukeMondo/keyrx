@@ -162,7 +162,7 @@ pub fn run_daemon(
 
     // Serve the same read model over IPC for the `status|state|metrics` CLI.
     // Best-effort; the daemon runs regardless.
-    start_production_ipc_server(&container, daemon_query);
+    super::start_production_ipc_server(&container, daemon_query);
 
     // Run the daemon event loop with tray polling
     let running = daemon.running_flag();
@@ -212,7 +212,7 @@ pub fn run_daemon(
 
     // Wait for daemon thread to finish
     let joined = result.join();
-    remove_ipc_socket();
+    super::remove_production_ipc_endpoint();
     match joined {
         Ok(daemon_result) => daemon_result.map_err(daemon_error_to_exit)?,
         Err(panic_payload) => {
@@ -228,34 +228,6 @@ pub fn run_daemon(
 
     log::info!("Daemon stopped gracefully");
     Ok(())
-}
-
-/// Serves `daemon_query` over IPC on the default Unix socket so the
-/// `keyrx_daemon status|state|metrics` CLI reports exactly what the web API
-/// reports. Best-effort: failures are logged and the daemon keeps running.
-fn start_production_ipc_server(
-    container: &crate::container::ServiceContainer,
-    daemon_query: Arc<crate::services::DaemonQueryService>,
-) {
-    use crate::ipc::commands::IpcCommandHandler;
-    use crate::ipc::DEFAULT_SOCKET_PATH;
-
-    let profile_manager = Arc::clone(container.profile_service().profile_manager());
-    let handler = Arc::new(IpcCommandHandler::new(profile_manager, daemon_query));
-    match crate::ipc::server::spawn(PathBuf::from(DEFAULT_SOCKET_PATH), handler) {
-        Ok(()) => log::info!("Production IPC server listening on {DEFAULT_SOCKET_PATH}"),
-        Err(e) => log::warn!("Production IPC server disabled: {e}"),
-    }
-}
-
-/// Removes the production IPC socket so the CLI does not find a stale one.
-fn remove_ipc_socket() {
-    let path = crate::ipc::DEFAULT_SOCKET_PATH;
-    match std::fs::remove_file(path) {
-        Ok(()) => log::info!("Removed IPC socket {path}"),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-        Err(e) => log::warn!("Failed to remove IPC socket {path}: {e}"),
-    }
 }
 
 /// Run the daemon in test mode (no keyboard capture).
@@ -302,14 +274,14 @@ fn run_test_mode(config_dir: PathBuf) -> Result<(), (i32, String)> {
         Arc::clone(&daemon_query),
     ));
 
-    let test_socket_path = PathBuf::from(format!("/tmp/keyrx-test-{}.sock", std::process::id()));
-    crate::ipc::server::spawn(test_socket_path.clone(), ipc_handler).map_err(|e| {
+    let test_endpoint = crate::ipc::IpcEndpoint::test_for_process(std::process::id());
+    crate::ipc::server::spawn(test_endpoint.clone(), ipc_handler).map_err(|e| {
         (
             ExitCode::RuntimeError as i32,
             format!("Failed to start IPC server: {}", e),
         )
     })?;
-    log::info!("IPC server started on {}", test_socket_path.display());
+    log::info!("IPC server started on {test_endpoint}");
 
     let rt = tokio::runtime::Runtime::new().map_err(|e| {
         (

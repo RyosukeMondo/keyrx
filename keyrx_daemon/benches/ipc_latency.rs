@@ -1,8 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 #[cfg(unix)]
-use keyrx_daemon::ipc::unix_socket::UnixSocketIpc;
+use keyrx_daemon::ipc::client::IpcClient;
 #[cfg(unix)]
-use keyrx_daemon::ipc::{DaemonIpc, IpcRequest, IpcResponse};
+use keyrx_daemon::ipc::{DaemonIpc, IpcEndpoint, IpcRequest, IpcResponse};
 #[cfg(unix)]
 use std::path::PathBuf;
 #[cfg(unix)]
@@ -116,7 +116,7 @@ fn benchmark_ipc_status_query(c: &mut Criterion) {
         thread::sleep(Duration::from_millis(100));
 
         // Create IPC client
-        let mut client = UnixSocketIpc::new(socket_path.clone());
+        let mut client = IpcClient::new(IpcEndpoint::SocketFile(socket_path.clone()));
 
         c.bench_function("ipc_status_query_roundtrip", |b| {
             b.iter(|| {
@@ -161,7 +161,7 @@ fn benchmark_ipc_latency_metrics(c: &mut Criterion) {
         let server_handle = start_mock_ipc_server(socket_path.clone());
         thread::sleep(Duration::from_millis(100));
 
-        let mut client = UnixSocketIpc::new(socket_path.clone());
+        let mut client = IpcClient::new(IpcEndpoint::SocketFile(socket_path.clone()));
 
         c.bench_function("ipc_latency_metrics_roundtrip", |b| {
             b.iter(|| {
@@ -202,7 +202,7 @@ fn benchmark_ipc_state_query(c: &mut Criterion) {
         let server_handle = start_mock_ipc_server(socket_path.clone());
         thread::sleep(Duration::from_millis(100));
 
-        let mut client = UnixSocketIpc::new(socket_path.clone());
+        let mut client = IpcClient::new(IpcEndpoint::SocketFile(socket_path.clone()));
 
         c.bench_function("ipc_state_query_roundtrip", |b| {
             b.iter(|| {

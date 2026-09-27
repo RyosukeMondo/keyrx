@@ -1,8 +1,9 @@
 //! Inter-Process Communication (IPC) infrastructure for CLI-daemon communication.
 //!
-//! This module provides a Unix socket-based IPC mechanism for the KeyRX daemon
-//! to communicate with CLI commands. The daemon listens on a Unix socket at
-//! `/tmp/keyrx-daemon.sock` and responds to requests for status, state, and metrics.
+//! The daemon serves newline-delimited JSON requests for status, state and
+//! metrics on an [`IpcEndpoint`]: a Unix socket file (`/tmp/keyrx-daemon.sock`)
+//! or a Windows named pipe (`\\.\pipe\keyrx-daemon`). [`client::IpcClient`]
+//! is the CLI side, [`server::spawn`] the daemon side.
 
 use serde::{Deserialize, Serialize};
 
@@ -10,12 +11,12 @@ use crate::web::events::{KeyEventData, LatencyStats};
 use std::time::Duration;
 use thiserror::Error;
 
+pub mod client;
 pub mod commands;
+mod endpoint;
 pub mod server;
-pub mod unix_socket;
 
-/// Default Unix socket path for daemon IPC
-pub const DEFAULT_SOCKET_PATH: &str = "/tmp/keyrx-daemon.sock";
+pub use endpoint::IpcEndpoint;
 
 /// Default timeout for IPC requests (5 seconds)
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -66,8 +67,8 @@ pub enum IpcResponse {
 /// IPC error types
 #[derive(Debug, Error)]
 pub enum IpcError {
-    /// Socket file not found (daemon not running)
-    #[error("Daemon socket not found at {0} (error code 3005)")]
+    /// No IPC endpoint (socket file or named pipe): the daemon is not running
+    #[error("Daemon not running: no IPC endpoint at {0} (error code 3005)")]
     SocketNotFound(String),
 
     /// Socket file exists but nothing listens on it: the daemon exited without

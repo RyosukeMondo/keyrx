@@ -11,10 +11,10 @@ use crate::services::ProfileService;
 /// REST, MCP and WS-RPC make in-process. Without a daemon, the persisted
 /// `.active` profile takes effect when it starts.
 fn notify_running_daemon(name: &str) -> String {
-    use crate::ipc::unix_socket::UnixSocketIpc;
-    use crate::ipc::{DaemonIpc, IpcError, IpcRequest, IpcResponse, DEFAULT_SOCKET_PATH};
+    use crate::ipc::client::IpcClient;
+    use crate::ipc::{DaemonIpc, IpcEndpoint, IpcError, IpcRequest, IpcResponse};
 
-    let mut ipc = UnixSocketIpc::new(std::path::PathBuf::from(DEFAULT_SOCKET_PATH));
+    let mut ipc = IpcClient::new(IpcEndpoint::default_for_platform());
     let request = IpcRequest::ActivateProfile {
         name: name.to_string(),
     };
