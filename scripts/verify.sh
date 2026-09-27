@@ -15,7 +15,7 @@ SKIP_COVERAGE=false
 
 # Check results tracking
 declare -A CHECK_RESULTS
-CHECK_ORDER=("build" "clippy" "fmt" "test" "coverage" "ui_test" "e2e")
+CHECK_ORDER=("build" "clippy" "fmt" "file_sizes" "test" "coverage" "ui_test" "e2e")
 
 # Usage information
 usage() {
@@ -115,6 +115,21 @@ check_clippy() {
     else
         CHECK_RESULTS["clippy"]="FAIL"
         log_error "Clippy check: FAIL"
+        return 1
+    fi
+}
+
+# Run file size check (max 500 code lines; baselined files may not grow)
+check_file_sizes() {
+    log_info "Running file size check..."
+
+    if "$SCRIPT_DIR/verify/file-sizes.sh" 2>&1; then
+        CHECK_RESULTS["file_sizes"]="PASS"
+        log_info "File size check: PASS"
+        return 0
+    else
+        CHECK_RESULTS["file_sizes"]="FAIL"
+        log_error "File size check: FAIL - split the file (see scripts/verify/file-sizes.sh)"
         return 1
     fi
 }
@@ -405,6 +420,9 @@ main() {
     separator
 
     check_fmt || exit_code=1
+    separator
+
+    check_file_sizes || exit_code=1
     separator
 
     check_test || exit_code=1

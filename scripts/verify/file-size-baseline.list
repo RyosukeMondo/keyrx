@@ -1,0 +1,15 @@
+689 keyrx_compiler/src/cli/view.rs
+643 keyrx_compiler/src/error/formatting.rs
+620 keyrx_core/src/runtime/state/mod.rs
+554 keyrx_daemon/src/cli/error.rs
+657 keyrx_daemon/src/cli/profiles.rs
+712 keyrx_daemon/src/config/profile_manager.rs
+529 keyrx_daemon/src/config/simulation_engine.rs
+537 keyrx_daemon/src/daemon/platform_runners/windows.rs
+653 keyrx_daemon/src/error.rs
+683 keyrx_daemon/src/platform/linux/keycode_map.rs
+545 keyrx_daemon/src/platform/windows/rawinput.rs
+640 keyrx_daemon/src/web/api/diagnostics.rs
+554 keyrx_daemon/src/web/api/profiles.rs
+759 keyrx_ui/src/components/KeyAssignmentPanel.tsx
+650 keyrx_ui/src/components/keyConfig/MappingConfigForm.tsx
