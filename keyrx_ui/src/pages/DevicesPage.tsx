@@ -167,8 +167,15 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     setDeviceEnabledMutation({ id: deviceId, enabled });
   };
 
+  const [globalLayoutSaved, setGlobalLayoutSaved] = useState(false);
   const handleGlobalLayoutChange = (newLayout: string) => {
-    setGlobalLayoutMutation(newLayout);
+    setGlobalLayoutMutation(newLayout, {
+      onSuccess: () => {
+        setGlobalLayoutSaved(true);
+        // Clear the success indicator after 2 seconds (same as DeviceRow)
+        setTimeout(() => setGlobalLayoutSaved(false), 2000);
+      },
+    });
   };
 
   const handleForgetDevice = () => {
@@ -244,6 +251,9 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                 <span className="animate-spin h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full" />
                 Saving...
               </span>
+            )}
+            {!isSavingGlobalLayout && globalLayoutSaved && (
+              <span className="text-xs text-green-500">✓ Saved</span>
             )}
             {globalLayoutError && (
               <span
