@@ -193,6 +193,7 @@ fn log_reload_error(e: &DaemonError) {
 
 /// Handles event capture errors by checking timeouts and sleeping.
 fn handle_capture_error(
+    platform_waited: bool,
     last_timeout_check: &mut Instant,
     remapping_state: &mut Option<&mut RemappingState>,
     platform: &mut Box<dyn Platform>,
@@ -204,8 +205,11 @@ fn handle_capture_error(
         *last_timeout_check = Instant::now();
     }
 
-    // Small sleep to prevent busy loop
-    std::thread::sleep(Duration::from_millis(10));
+    // Avoid a busy loop, unless the platform already blocked waiting for
+    // input (sleeping then would only add input latency).
+    if !platform_waited {
+        std::thread::sleep(Duration::from_millis(10));
+    }
 }
 
 /// Processes a single input event through remapping and injection pipeline.
@@ -468,7 +472,7 @@ where
     while running.load(Ordering::SeqCst) {
         // Check for SIGHUP (reload request)
         if signal_handler.check_reload() {
-            info!("Reload signal received (SIGHUP)");
+            info!("Reload requested (SIGHUP or profile activation)");
             reload_callback().unwrap_or_else(|e| log_reload_error(&e));
         }
 
@@ -493,6 +497,7 @@ where
 
                 trace!("Event capture returned error (may be timeout): {}", e);
                 handle_capture_error(
+                    matches!(e, crate::platform::PlatformError::NoInput),
                     &mut last_timeout_check,
                     &mut remapping_state,
                     platform,

@@ -77,6 +77,11 @@ pub enum PlatformError {
     #[error("Device not found: {0}")]
     DeviceNotFound(String),
 
+    /// No input arrived while the platform waited for it. The platform has
+    /// already blocked for its wait interval, so callers need not sleep.
+    #[error("No input within the wait interval")]
+    NoInput,
+
     /// Failed to access a device.
     ///
     /// This error occurs when device access is denied or fails.

@@ -2,6 +2,8 @@
 //!
 //! This module provides keyboard event capture from Linux input devices via the evdev subsystem.
 
+use std::collections::VecDeque;
+use std::os::fd::{AsRawFd, BorrowedFd};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -62,6 +64,10 @@ pub struct EvdevInput {
     grabbed: bool,
     /// Path to the device node (for identification).
     path: PathBuf,
+    /// Key events already read from the kernel but not yet returned. One
+    /// `read()` can return several key events; all of them are kept here so
+    /// none are lost (a lost release is a stuck key).
+    pending: VecDeque<KeyEvent>,
 }
 
 impl EvdevInput {
@@ -119,10 +125,12 @@ impl EvdevInput {
             }
         })?;
 
+        set_nonblocking(&device)?;
         Ok(Self {
             device,
             grabbed: false,
             path: path.to_path_buf(),
+            pending: VecDeque::new(),
         })
     }
 
@@ -161,10 +169,14 @@ impl EvdevInput {
             .map(PathBuf::from)
             .unwrap_or_default();
 
+        if let Err(e) = set_nonblocking(&device) {
+            log::warn!("Could not make {} non-blocking: {e}", path.display());
+        }
         Self {
             device,
             grabbed: false,
             path,
+            pending: VecDeque::new(),
         }
     }
 
@@ -320,74 +332,68 @@ impl EvdevInput {
 /// keyboard.release()?;
 /// # Ok::<(), DeviceError>(())
 /// ```
+impl EvdevInput {
+    /// Borrowed fd for `poll(2)` across devices.
+    pub fn poll_fd(&self) -> BorrowedFd<'_> {
+        // SAFETY: `self.device` owns this fd and outlives the returned borrow.
+        unsafe { BorrowedFd::borrow_raw(self.device.as_raw_fd()) }
+    }
+
+    /// Reads everything the kernel has buffered (non-blocking) and queues the
+    /// key presses/releases. Returns `Ok` with nothing queued when idle.
+    fn read_available(&mut self) -> Result<(), DeviceError> {
+        let events = match self.device.fetch_events() {
+            Ok(events) => events,
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(()),
+            Err(e) => return Err(DeviceError::Io(e)),
+        };
+        for event in events {
+            let InputEventKind::Key(key) = event.kind() else {
+                continue; // EV_SYN, EV_MSC, ...
+            };
+            let Some(keycode) = evdev_to_keycode(key.code()) else {
+                continue; // unknown key
+            };
+            let timestamp_us = systemtime_to_micros(event.timestamp());
+            // value: 1 = press, 0 = release, 2 = autorepeat (ignored)
+            let key_event = match event.value() {
+                1 => KeyEvent::press(keycode),
+                0 => KeyEvent::release(keycode),
+                _ => continue,
+            };
+            self.pending
+                .push_back(key_event.with_timestamp(timestamp_us));
+        }
+        Ok(())
+    }
+}
+
+/// Puts the device fd in non-blocking mode so one idle keyboard can never
+/// stall reads from the others; waiting is done with `poll(2)` instead.
+fn set_nonblocking(device: &Device) -> Result<(), DeviceError> {
+    use nix::fcntl::{fcntl, FcntlArg, OFlag};
+    let fd = device.as_raw_fd();
+    let flags = fcntl(fd, FcntlArg::F_GETFL).map_err(|e| DeviceError::Io(e.into()))?;
+    let flags = OFlag::from_bits_truncate(flags) | OFlag::O_NONBLOCK;
+    fcntl(fd, FcntlArg::F_SETFL(flags)).map_err(|e| DeviceError::Io(e.into()))?;
+    Ok(())
+}
+
 impl InputDevice for EvdevInput {
-    /// Reads the next keyboard event from the device.
+    /// Returns the next queued key press/release without blocking.
     ///
-    /// This method blocks until a key press or release event is available.
-    /// Repeat events (value=2) are automatically filtered out.
+    /// Autorepeat (value=2) and keys without a `KeyCode` are skipped.
     ///
     /// # Returns
     ///
-    /// - `Ok(KeyEvent::Press(keycode))` for key press events
-    /// - `Ok(KeyEvent::Release(keycode))` for key release events
-    /// - `Err(DeviceError::EndOfStream)` when no more events (device disconnected)
-    /// - `Err(DeviceError::Io)` on I/O errors
-    ///
-    /// # Unknown Keys
-    ///
-    /// Keys that don't map to a `KeyCode` are skipped (the method continues
-    /// reading until it finds a known key). This allows unknown keys to be
-    /// handled at a higher level (passthrough to output).
+    /// - `Ok(event)` for the oldest pending press/release
+    /// - `Err(DeviceError::EndOfStream)` when no input is available right now
+    /// - `Err(DeviceError::Io)` on I/O errors (e.g. device unplugged)
     fn next_event(&mut self) -> Result<KeyEvent, DeviceError> {
-        loop {
-            // Fetch events from the device
-            // evdev::Device::fetch_events returns an iterator over events
-            let events = self.device.fetch_events().map_err(|e| {
-                if e.kind() == std::io::ErrorKind::WouldBlock {
-                    DeviceError::EndOfStream
-                } else {
-                    DeviceError::Io(e)
-                }
-            })?;
-
-            for event in events {
-                // Only process EV_KEY events (keyboard key presses/releases)
-                if let InputEventKind::Key(key) = event.kind() {
-                    let value = event.value();
-
-                    // Extract timestamp from the event and convert to microseconds.
-                    // The evdev timestamp() returns SystemTime; we convert to microseconds
-                    // since UNIX epoch. If the conversion fails, fall back to 0.
-                    let timestamp_us = systemtime_to_micros(event.timestamp());
-
-                    // value: 0 = release, 1 = press, 2 = repeat (ignored)
-                    match value {
-                        1 => {
-                            // Key press
-                            if let Some(keycode) = evdev_to_keycode(key.code()) {
-                                return Ok(KeyEvent::press(keycode).with_timestamp(timestamp_us));
-                            }
-                            // Unknown key - continue reading for known keys
-                        }
-                        0 => {
-                            // Key release
-                            if let Some(keycode) = evdev_to_keycode(key.code()) {
-                                return Ok(KeyEvent::release(keycode).with_timestamp(timestamp_us));
-                            }
-                            // Unknown key - continue reading for known keys
-                        }
-                        2 => {
-                            // Key repeat - ignore, continue reading
-                        }
-                        _ => {
-                            // Unknown event value - ignore
-                        }
-                    }
-                }
-                // Non-key events (EV_SYN, EV_MSC, etc.) are ignored
-            }
-            // If we processed all events and found no key events, loop to fetch more
+        if self.pending.is_empty() {
+            self.read_available()?;
         }
+        self.pending.pop_front().ok_or(DeviceError::EndOfStream)
     }
 
     /// Grabs exclusive access to the device using EVIOCGRAB ioctl.
@@ -663,5 +669,46 @@ mod tests {
         }
 
         panic!("No accessible input devices for testing");
+    }
+
+    /// Regression: reads used to block, so one idle keyboard stalled every
+    /// other grabbed keyboard, and events after the first key of a `read()`
+    /// batch were held back (a release stuck until the next keystroke).
+    #[test]
+    fn test_nonblocking_reads_and_no_lost_batch_events() {
+        crate::skip_if_no_uinput!();
+        use crate::test_utils::output_capture::OutputCapture;
+        use crate::test_utils::VirtualKeyboard;
+        use keyrx_core::config::KeyCode;
+        use std::time::{Duration, Instant};
+
+        let mut keyboard = VirtualKeyboard::create("nonblocking-capture-test").unwrap();
+        std::thread::sleep(Duration::from_millis(250));
+        let path = OutputCapture::find_by_name(keyboard.name(), Duration::from_secs(5))
+            .unwrap()
+            .device_path()
+            .to_path_buf();
+        let mut input = EvdevInput::open(&path).unwrap();
+
+        // Idle device: returns at once instead of blocking.
+        let start = Instant::now();
+        assert!(matches!(input.next_event(), Err(DeviceError::EndOfStream)));
+        assert!(start.elapsed() < Duration::from_millis(100));
+
+        // Press + release land in one kernel read; both must be delivered.
+        keyboard.inject(KeyEvent::press(KeyCode::A)).unwrap();
+        keyboard.inject(KeyEvent::release(KeyCode::A)).unwrap();
+        std::thread::sleep(Duration::from_millis(50));
+        let first = input.next_event().unwrap();
+        let second = input.next_event().unwrap();
+        assert!(
+            first.is_press() && first.keycode() == KeyCode::A,
+            "{first:?}"
+        );
+        assert!(
+            !second.is_press() && second.keycode() == KeyCode::A,
+            "{second:?}"
+        );
+        assert!(matches!(input.next_event(), Err(DeviceError::EndOfStream)));
     }
 }

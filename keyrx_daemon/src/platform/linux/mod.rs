@@ -380,7 +380,6 @@ impl crate::platform::Platform for LinuxPlatform {
     ) -> crate::platform::PlatformResult<keyrx_core::runtime::event::KeyEvent> {
         use crate::platform::PlatformError;
 
-        // Get device manager
         let device_manager =
             self.device_manager
                 .as_mut()
@@ -388,29 +387,11 @@ impl crate::platform::Platform for LinuxPlatform {
                     reason: "device manager not initialized".to_string(),
                 })?;
 
-        // Try to get the next event from any device
-        // In the Platform trait model, we need to return ONE event, not process all devices
-        for device in device_manager.devices_mut() {
-            match device.input_mut().next_event() {
-                Ok(event) => {
-                    // Tag the event with the device ID
-                    let device_id = device.device_id();
-                    return Ok(event.with_device_id(device_id));
-                }
-                Err(DeviceError::EndOfStream) => {
-                    // No events from this device, try the next one
-                    continue;
-                }
-                Err(e) => {
-                    return Err(PlatformError::Io(std::io::Error::other(e.to_string())));
-                }
-            }
+        if let Some(event) = take_next_event(device_manager)? {
+            return Ok(event);
         }
-
-        // No events available from any device
-        Err(PlatformError::DeviceNotFound(
-            "No events available".to_string(),
-        ))
+        wait_for_input(device_manager, INPUT_WAIT)?;
+        take_next_event(device_manager)?.ok_or(PlatformError::NoInput)
     }
 
     fn inject_output(
@@ -469,6 +450,49 @@ impl crate::platform::Platform for LinuxPlatform {
         // Call existing shutdown method
         self.shutdown()
             .map_err(|e| PlatformError::Io(std::io::Error::other(e.to_string())))
+    }
+}
+
+/// Longest `capture_input` waits for input before returning `NoInput`, which
+/// bounds how late the event loop services reloads and tap-hold timeouts.
+const INPUT_WAIT: std::time::Duration = std::time::Duration::from_millis(10);
+
+/// Returns the next pending key event from any device without blocking.
+fn take_next_event(
+    device_manager: &mut DeviceManager,
+) -> crate::platform::PlatformResult<Option<keyrx_core::runtime::event::KeyEvent>> {
+    for device in device_manager.devices_mut() {
+        match device.input_mut().next_event() {
+            Ok(event) => return Ok(Some(event.with_device_id(device.device_id()))),
+            Err(DeviceError::EndOfStream) => continue,
+            Err(e) => {
+                return Err(crate::platform::PlatformError::Io(std::io::Error::other(
+                    format!("{}: {e}", device.device_id()),
+                )))
+            }
+        }
+    }
+    Ok(None)
+}
+
+/// Blocks until any device is readable or `timeout` elapses.
+///
+/// Devices are non-blocking, so this is the only place the capture thread
+/// waits: an idle keyboard can no longer starve the others.
+fn wait_for_input(
+    device_manager: &DeviceManager,
+    timeout: std::time::Duration,
+) -> crate::platform::PlatformResult<()> {
+    use nix::poll::{poll, PollFd, PollFlags, PollTimeout};
+
+    let mut fds: Vec<PollFd> = device_manager
+        .devices()
+        .map(|d| PollFd::new(d.input().poll_fd(), PollFlags::POLLIN))
+        .collect();
+    let timeout_ms = u16::try_from(timeout.as_millis()).unwrap_or(u16::MAX);
+    match poll(&mut fds, PollTimeout::from(timeout_ms)) {
+        Ok(_) | Err(nix::errno::Errno::EINTR) => Ok(()),
+        Err(e) => Err(crate::platform::PlatformError::Io(e.into())),
     }
 }
 
