@@ -265,9 +265,11 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
     page seeds history/state from REST. Verified live (headless Chromium
     screenshot of /monitor with injected keys). UI suite 1916 pass / 2 fail
     (pre-existing DevicesPage, same at HEAD).
-- [NEXT] **G3 — Windows production IPC server** (`keyrx_daemon status|metrics` cannot
+- [delegated] **G3 — Windows production IPC server** → request
+  `docs/requests/G3-windows-production-ipc.md` (Windows session implements;
+  code shipped as bundle `D:\users\ryosu\bundles\keyrx-main.bundle`). (`keyrx_daemon status|metrics` cannot
   work on Windows; `DEFAULT_SOCKET_PATH` is a Unix path). Use `ipc::server::spawn`.
-- [ ] **G4 — Test hygiene:** `profile_manager_test` asserts `compile_time_ms > 0`
+- [NEXT] **G4 — Test hygiene:** `profile_manager_test` asserts `compile_time_ms > 0`
   (flaky: sub-ms compiles); `version_consistency_test` runs `scripts/sync-version.sh`
   from the crate dir; `performance_test` `/api/devices` ≈440ms on this host.
   Also: `cli::config_dir::test_home_fallback` races other tests on HOME/env
