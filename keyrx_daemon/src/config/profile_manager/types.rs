@@ -28,6 +28,12 @@ pub struct ProfileMetadata {
     pub modified_at: SystemTime,
     #[typeshare(serialized_as = "number")]
     pub layer_count: usize,
+    /// `device_start` blocks in the compiled profile.
+    #[typeshare(serialized_as = "number")]
+    pub device_count: usize,
+    /// Key mappings in the compiled profile (all blocks and layers).
+    #[typeshare(serialized_as = "number")]
+    pub key_count: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[typeshare(skip)]
     pub activated_at: Option<SystemTime>,

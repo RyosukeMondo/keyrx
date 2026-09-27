@@ -237,27 +237,22 @@ fn test_get_nonexistent_profile() {
     assert!(manager.get("nonexistent").is_none());
 }
 
+/// A profile that was never compiled has only its base layer and no devices
+/// or keys to report (counts come from the compiled .krx).
 #[test]
-fn test_layer_count_heuristic() {
-    let (_temp, manager) = setup_test_manager();
+fn test_uncompiled_profile_counts() {
+    let (temp, manager) = setup_test_manager();
+    let profiles_dir = temp.path().join("profiles");
+    fs::write(
+        profiles_dir.join("raw.rhai"),
+        "device_start(\"*\");\ndevice_end();\n",
+    )
+    .unwrap();
 
-    // Create profile with multiple layers
-    let multi_layer = r#"
-layer("base", #{});
-layer("layer1", #{});
-layer("layer2", #{});
-"#;
-
-    let profiles_dir = _temp.path().join("profiles");
-    let multi_path = profiles_dir.join("multi.rhai");
-    fs::write(&multi_path, multi_layer).unwrap();
-
-    let metadata = manager.load_profile_metadata_for_testing("multi").unwrap();
-    assert_eq!(metadata.layer_count, 3);
-
-    manager.scan_profiles().unwrap();
-    let profile = manager.get("multi").unwrap();
-    assert_eq!(profile.layer_count, 3);
+    let metadata = manager.load_profile_metadata_for_testing("raw").unwrap();
+    assert_eq!(metadata.layer_count, 1);
+    assert_eq!(metadata.device_count, 0);
+    assert_eq!(metadata.key_count, 0);
 }
 
 #[test]
@@ -503,33 +498,30 @@ fn test_load_profile_metadata_nonexistent() {
     assert!(matches!(result, Err(ProfileError::NotFound(_))));
 }
 
+/// C6: list counts come from the compiled profile (device blocks, mappings
+/// including layer ones, base + one layer per `when` modifier).
 #[test]
-fn test_count_layers_multiple() {
-    let temp_dir = TempDir::new().unwrap();
-    let test_file = temp_dir.path().join("test.rhai");
-
-    let content = r#"
-layer("base", #{});
-layer("layer1", #{});
-layer("layer2", #{});
-layer("layer3", #{});
+fn test_profile_counts_from_compiled_config() {
+    let (_temp, manager) = setup_test_manager();
+    manager.create("counts", ProfileTemplate::Blank).unwrap();
+    let source = r#"
+device_start("*numpad*");
+  map("VK_A", "VK_B");
+device_end();
+device_start("*");
+  map("VK_CapsLock", "MD_00");
+  map("VK_A", "VK_C");
+  when_start("MD_00");
+    map("VK_H", "VK_Left");
+    map("VK_L", "VK_Right");
+  when_end();
+device_end();
 "#;
-    fs::write(&test_file, content).unwrap();
-
-    let count = ProfileManager::count_layers_for_testing(&test_file).unwrap();
-    assert_eq!(count, 4);
-}
-
-#[test]
-fn test_count_layers_empty_file() {
-    let temp_dir = TempDir::new().unwrap();
-    let test_file = temp_dir.path().join("empty.rhai");
-
-    fs::write(&test_file, "").unwrap();
-
-    let count = ProfileManager::count_layers_for_testing(&test_file).unwrap();
-    // Should default to at least 1
-    assert_eq!(count, 1);
+    manager.set_config("counts", source).unwrap();
+    let meta = manager.get("counts").unwrap();
+    assert_eq!(meta.device_count, 2);
+    assert_eq!(meta.key_count, 5);
+    assert_eq!(meta.layer_count, 2); // base + MD_00
 }
 
 #[test]

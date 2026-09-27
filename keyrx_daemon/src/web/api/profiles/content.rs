@@ -49,8 +49,8 @@ pub(super) async fn list_profiles(
                 modified_at: info.modified_at,
                 created_at: info.modified_at, // Use modified_at as created_at for now
                 layer_count: info.layer_count,
-                device_count: 0, // TODO: Track device count per profile
-                key_count: 0,    // TODO: Parse Rhai config to count key mappings
+                device_count: info.device_count,
+                key_count: info.key_count,
                 active: info.active,
                 activated_at: info.activated_at,
                 activated_by: info.activated_by.clone(),

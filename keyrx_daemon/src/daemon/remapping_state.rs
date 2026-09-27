@@ -58,7 +58,7 @@ pub fn active_layer(state: &DeviceState, layers: &[u8]) -> Option<u8> {
 }
 
 /// Modifiers a config uses as positive `when` conditions, first use first.
-fn layer_modifiers(config: &DeviceConfig) -> Vec<u8> {
+pub(crate) fn layer_modifiers(config: &DeviceConfig) -> Vec<u8> {
     use keyrx_core::config::{Condition, ConditionItem, KeyMapping};
     let mut layers = Vec::new();
     let mut add = |id: u8| {

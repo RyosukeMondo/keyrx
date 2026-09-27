@@ -130,8 +130,7 @@ impl ProfileManager {
 
         let modified_at = rhai_path.metadata()?.modified()?;
 
-        // Try to read layer count from file (simple heuristic for now)
-        let layer_count = Self::count_layers(&rhai_path)?;
+        let stats = ProfileStats::of_compiled(&krx_path);
 
         // PROF-004: Load activation metadata if this is the active profile
         let (activated_at, activated_by) = self.load_activation_metadata(name);
@@ -141,17 +140,12 @@ impl ProfileManager {
             rhai_path,
             krx_path,
             modified_at,
-            layer_count,
+            layer_count: stats.layers,
+            device_count: stats.devices,
+            key_count: stats.keys,
             activated_at,
             activated_by,
         })
-    }
-
-    /// Count layers in a Rhai file (simple heuristic).
-    fn count_layers(path: &Path) -> Result<usize, ProfileError> {
-        let content = fs::read_to_string(path)?;
-        let count = content.matches("layer(").count();
-        Ok(count.max(1)) // At least one layer
     }
 
     /// Validate profile name.
@@ -354,9 +348,48 @@ impl ProfileManager {
     pub fn load_template_for_testing(name: &str) -> String {
         Self::load_template(name)
     }
+}
 
-    #[doc(hidden)]
-    pub fn count_layers_for_testing(path: &Path) -> Result<usize, ProfileError> {
-        Self::count_layers(path)
+/// Counts shown in the profile list, read from the compiled `.krx` (what the
+/// daemon would run). A profile that was never compiled reports one (base)
+/// layer and no devices or keys.
+struct ProfileStats {
+    layers: usize,
+    devices: usize,
+    keys: usize,
+}
+
+impl ProfileStats {
+    fn of_compiled(krx_path: &Path) -> Self {
+        use keyrx_core::config::KeyMapping;
+
+        let Ok(config) = crate::config_loader::load_config(krx_path) else {
+            return Self {
+                layers: 1,
+                devices: 0,
+                keys: 0,
+            };
+        };
+        let keys = config
+            .devices
+            .iter()
+            .flat_map(|d| &d.mappings)
+            .map(|m| match m {
+                KeyMapping::Base(_) => 1,
+                KeyMapping::Conditional { mappings, .. } => mappings.len(),
+            })
+            .sum();
+        let mut layers: Vec<u8> = config
+            .devices
+            .iter()
+            .flat_map(crate::daemon::remapping_state::layer_modifiers)
+            .collect();
+        layers.sort_unstable();
+        layers.dedup();
+        Self {
+            layers: 1 + layers.len(), // base + one per layer modifier
+            devices: config.devices.len(),
+            keys,
+        }
     }
 }

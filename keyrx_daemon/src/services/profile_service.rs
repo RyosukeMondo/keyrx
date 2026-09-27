@@ -31,7 +31,9 @@
 use std::path::Path;
 use std::sync::{Arc, OnceLock};
 
-use crate::config::{ActivationResult, ProfileError, ProfileManager, ProfileTemplate};
+use crate::config::{
+    ActivationResult, ProfileError, ProfileManager, ProfileMetadata, ProfileTemplate,
+};
 use crate::daemon::DaemonSharedState;
 
 /// Profile information returned by list operations.
@@ -40,10 +42,28 @@ use crate::daemon::DaemonSharedState;
 pub struct ProfileInfo {
     pub name: String,
     pub layer_count: usize,
+    pub device_count: usize,
+    pub key_count: usize,
     pub active: bool,
     pub modified_at: std::time::SystemTime,
     pub activated_at: Option<std::time::SystemTime>,
     pub activated_by: Option<String>,
+}
+
+impl ProfileInfo {
+    /// Info for `metadata`, marked active when it is `active_name`.
+    pub fn from_metadata(metadata: ProfileMetadata, active_name: Option<&str>) -> Self {
+        Self {
+            active: active_name == Some(metadata.name.as_str()),
+            modified_at: metadata.modified_at,
+            activated_at: metadata.activated_at,
+            activated_by: metadata.activated_by,
+            layer_count: metadata.layer_count,
+            device_count: metadata.device_count,
+            key_count: metadata.key_count,
+            name: metadata.name,
+        }
+    }
 }
 
 /// Service for profile operations.
@@ -141,14 +161,7 @@ impl ProfileService {
 
         let mut result: Vec<ProfileInfo> = profiles
             .into_iter()
-            .map(|metadata| ProfileInfo {
-                active: active_name.as_ref() == Some(&metadata.name),
-                modified_at: metadata.modified_at,
-                activated_at: metadata.activated_at,
-                activated_by: metadata.activated_by,
-                layer_count: metadata.layer_count,
-                name: metadata.name,
-            })
+            .map(|metadata| ProfileInfo::from_metadata(metadata, active_name.as_deref()))
             .collect();
 
         // Sort by name
@@ -197,14 +210,7 @@ impl ProfileService {
 
         let active_name = self.profile_manager.get_active().ok().flatten();
 
-        Ok(ProfileInfo {
-            active: active_name.as_ref() == Some(&metadata.name),
-            modified_at: metadata.modified_at,
-            activated_at: metadata.activated_at,
-            activated_by: metadata.activated_by,
-            layer_count: metadata.layer_count,
-            name: metadata.name,
-        })
+        Ok(ProfileInfo::from_metadata(metadata, active_name.as_deref()))
     }
 
     /// Activates a profile.
@@ -394,14 +400,7 @@ impl ProfileService {
 
         log::info!("Profile '{}' created successfully", name);
 
-        Ok(ProfileInfo {
-            name: metadata.name,
-            layer_count: metadata.layer_count,
-            active: false,
-            modified_at: metadata.modified_at,
-            activated_at: None,
-            activated_by: None,
-        })
+        Ok(ProfileInfo::from_metadata(metadata, None))
     }
 
     /// Deletes a profile.
@@ -499,14 +498,7 @@ impl ProfileService {
         log::info!("Profile renamed successfully");
         self.reload_if_loaded(old_name);
 
-        Ok(ProfileInfo {
-            active: active_name.as_ref() == Some(&metadata.name),
-            modified_at: metadata.modified_at,
-            activated_at: metadata.activated_at,
-            activated_by: metadata.activated_by,
-            layer_count: metadata.layer_count,
-            name: metadata.name,
-        })
+        Ok(ProfileInfo::from_metadata(metadata, active_name.as_deref()))
     }
 
     /// Duplicates a profile.
@@ -559,14 +551,7 @@ impl ProfileService {
 
         log::info!("Profile duplicated successfully");
 
-        Ok(ProfileInfo {
-            name: metadata.name,
-            layer_count: metadata.layer_count,
-            active: false,
-            modified_at: metadata.modified_at,
-            activated_at: None,
-            activated_by: None,
-        })
+        Ok(ProfileInfo::from_metadata(metadata, None))
     }
 
     /// Exports a profile to a file.
@@ -654,14 +639,7 @@ impl ProfileService {
 
         log::info!("Profile imported successfully");
 
-        Ok(ProfileInfo {
-            name: metadata.name,
-            layer_count: metadata.layer_count,
-            active: false,
-            modified_at: metadata.modified_at,
-            activated_at: None,
-            activated_by: None,
-        })
+        Ok(ProfileInfo::from_metadata(metadata, None))
     }
 
     /// Gets the currently active profile name.

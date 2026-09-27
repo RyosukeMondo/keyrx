@@ -145,6 +145,10 @@ export interface ProfileConfigRpc {
 export interface ProfileMetadata {
 	name: string;
 	layerCount: number;
+	/** `device_start` blocks in the compiled profile. */
+	deviceCount: number;
+	/** Key mappings in the compiled profile (all blocks and layers). */
+	keyCount: number;
 	activatedBy?: string;
 }
 
