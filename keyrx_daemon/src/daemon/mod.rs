@@ -50,6 +50,7 @@ use keyrx_core::config::DeviceConfig;
 use log::{info, warn};
 
 use crate::error::ConfigError;
+use crate::platform::held_outputs::HeldOutputs;
 use crate::platform::{Platform, PlatformError};
 
 // Submodules
@@ -186,10 +187,12 @@ impl Daemon {
     /// - `DaemonError::Platform`: platform initialization failed
     /// - `DaemonError::SignalError`: signal handlers could not be installed
     pub fn new(
-        mut platform: Box<dyn Platform>,
+        platform: Box<dyn Platform>,
         source: ConfigSource,
         config_dir: PathBuf,
     ) -> Result<Self, DaemonError> {
+        // Track held output keys so a config swap can release them.
+        let mut platform: Box<dyn Platform> = Box::new(HeldOutputs::new(platform));
         info!("Initializing keyrx daemon from {source:?}");
         let mut live = LiveConfig::new(config_dir);
         let loaded = Self::load_startup_config(&live, &source)?;
@@ -305,7 +308,9 @@ impl Daemon {
     /// Reloads now: switches to a pending activation if one was requested,
     /// otherwise re-reads the loaded source. On error the current mappings stay.
     pub fn reload(&mut self) -> Result<(), DaemonError> {
-        self.remapping_state = reload_remapping(&mut self.live, &self.shared_state)?;
+        let new_state = reload_remapping(&mut self.live, &self.shared_state)?;
+        release_held_outputs(&mut self.platform);
+        self.remapping_state = new_state;
         self.telemetry.update_state(TelemetryState::empty());
         Ok(())
     }
@@ -387,12 +392,24 @@ impl Daemon {
     /// output). Errors are logged; cleanup continues. Called by `Drop`.
     pub fn shutdown(&mut self) {
         info!("Initiating graceful shutdown...");
+        release_held_outputs(&mut self.platform);
         match self.platform.shutdown() {
             Ok(()) => info!("Platform shutdown successfully"),
             Err(e) => warn!("Failed to shutdown platform: {}", e),
         }
         self.running.store(false, Ordering::SeqCst);
         info!("Shutdown complete");
+    }
+}
+
+/// Releases output keys still held under the outgoing config (see
+/// [`HeldOutputs`]). Failure is logged: a stuck key is bad, but not a reason
+/// to keep the old config.
+pub(crate) fn release_held_outputs(platform: &mut Box<dyn Platform>) {
+    match platform.release_held_outputs() {
+        Ok(0) => {}
+        Ok(n) => info!("Released {n} held output key(s) before the config swap"),
+        Err(e) => warn!("Failed to release held output keys: {e}"),
     }
 }
 

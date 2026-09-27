@@ -451,6 +451,7 @@ where
             info!("Reload requested (SIGHUP or profile activation)");
             match reload_callback() {
                 Ok(new_state) => {
+                    super::release_held_outputs(platform);
                     *remapping_state = new_state;
                     if let Some(t) = telemetry {
                         t.update_state(TelemetryState::empty());

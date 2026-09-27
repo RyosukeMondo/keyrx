@@ -43,6 +43,7 @@ use keyrx_core::runtime::event::KeyEvent;
 use thiserror::Error;
 
 pub mod common;
+pub mod held_outputs;
 pub mod recovery;
 pub use common::{DeviceInfo, PlatformError, Result as PlatformResult};
 
@@ -266,6 +267,14 @@ pub trait Platform: Send + Sync {
     /// Default implementation returns `None` (no IME support).
     fn query_ime_state(&self) -> Option<keyrx_core::config::ImeState> {
         None
+    }
+
+    /// Releases every output key this platform pressed and has not released,
+    /// returning how many. Called before a config swap so no output stays
+    /// stuck. Platforms that do not track output state release nothing; the
+    /// daemon wraps its platform in [`held_outputs::HeldOutputs`], which does.
+    fn release_held_outputs(&mut self) -> PlatformResult<usize> {
+        Ok(0)
     }
 }
 

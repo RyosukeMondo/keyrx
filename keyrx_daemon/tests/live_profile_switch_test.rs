@@ -194,3 +194,48 @@ fn explicit_config_applies_without_active_profile_and_activation_overrides_it() 
     h.wait_for_profile("b");
     assert_eq!(h.tap(KeyCode::CapsLock), tapped(KeyCode::LCtrl));
 }
+
+/// G7: switching profiles while a remapped key is held must not leave the old
+/// output stuck. Hold CapsLock (→ Escape down), switch to "b", and Escape must
+/// come up at the swap, before CapsLock is released.
+#[test]
+fn profile_switch_releases_outputs_held_under_the_old_mapping() {
+    if !devices_accessible() {
+        return;
+    }
+    let dir = TempDir::new().unwrap();
+    let manager = profiles(dir.path());
+    assert!(manager.activate("a").expect("activate a").success);
+    let mut h = Harness::start("held", ConfigSource::ActiveProfile, dir.path());
+
+    h.capture.drain().expect("drain");
+    h.keyboard
+        .inject(keyrx_core::runtime::KeyEvent::press(KeyCode::CapsLock))
+        .expect("press");
+    let down = h
+        .capture
+        .collect_events(Duration::from_millis(300))
+        .expect("capture");
+    assert_eq!(down.len(), 1);
+    assert_eq!(down[0].keycode(), KeyCode::Escape);
+
+    let service = ProfileService::new(manager);
+    service.attach_daemon_state(Arc::clone(&h.shared));
+    activate(&service, "b");
+    h.wait_for_profile("b");
+    // The daemon releases held outputs right after publishing the switch.
+    let all: Vec<(KeyCode, bool)> = h
+        .capture
+        .collect_events(Duration::from_millis(300))
+        .expect("capture")
+        .iter()
+        .map(|e| (e.keycode(), e.event_type() == KeyEventType::Press))
+        .collect();
+    assert!(
+        all.contains(&(KeyCode::Escape, false)),
+        "Escape was left held after the switch: {all:?}"
+    );
+    h.keyboard
+        .inject(keyrx_core::runtime::KeyEvent::release(KeyCode::CapsLock))
+        .expect("release");
+}
