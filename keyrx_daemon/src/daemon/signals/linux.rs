@@ -5,8 +5,8 @@
 //!
 //! # Signal Handling Strategy
 //!
-//! - **SIGTERM/SIGINT**: Sets the `running` flag to `false` via `signal_hook::flag::register`.
-//!   This is async-signal-safe and allows the main event loop to detect shutdown requests.
+//! - **SIGTERM/SIGINT**: The first clears the `running` flag (graceful stop: the
+//!   event loop exits and `Drop` cleans up); a second one exits immediately.
 //!
 //! - **SIGHUP**: Sets a reload flag that can be polled by the daemon. This enables
 //!   hot-reloading of configuration without restarting the daemon.
@@ -40,11 +40,10 @@
 //! ```
 
 use std::io;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use signal_hook::consts::{SIGHUP, SIGINT, SIGTERM};
-use signal_hook::flag::register_conditional_default;
 
 use crate::daemon::state::ReloadState;
 
@@ -129,12 +128,27 @@ impl SignalHandler {
 /// - Signal handler registration fails (rare, typically due to system limits)
 /// - Invalid signal number (should not happen with constants)
 pub fn install_signal_handlers(running: Arc<AtomicBool>) -> io::Result<SignalHandler> {
-    // Register SIGTERM handler - sets running to FALSE on signal
-    // Uses register_conditional_default which sets flag to false (the "default" value)
-    register_conditional_default(SIGTERM, Arc::clone(&running))?;
-
-    // Register SIGINT handler - sets running to FALSE on signal (Ctrl+C)
-    register_conditional_default(SIGINT, Arc::clone(&running))?;
+    // SIGTERM / SIGINT: the first one asks for a graceful stop (clears
+    // `running`, so the event loop exits and Drop releases devices and the
+    // socket); a second one while stopping exits immediately.
+    //
+    // (This used to be `register_conditional_default(sig, running)`, which
+    // runs the *default* action — kill the process — whenever `running` is
+    // true, i.e. always: graceful shutdown never ran.)
+    let stopping = Arc::new(AtomicBool::new(false));
+    for signal in [SIGTERM, SIGINT] {
+        signal_hook::flag::register_conditional_shutdown(signal, 1, Arc::clone(&stopping))?;
+        let running = Arc::clone(&running);
+        let stopping = Arc::clone(&stopping);
+        // SAFETY: the action only performs atomic stores, which are
+        // async-signal-safe (no allocation, locking or I/O).
+        unsafe {
+            signal_hook::low_level::register(signal, move || {
+                running.store(false, Ordering::SeqCst);
+                stopping.store(true, Ordering::SeqCst);
+            })?;
+        }
+    }
 
     // Create reload state for SIGHUP
     let reload_state = ReloadState::new();

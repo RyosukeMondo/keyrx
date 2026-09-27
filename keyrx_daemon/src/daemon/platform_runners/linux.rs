@@ -211,7 +211,9 @@ pub fn run_daemon(
     }
 
     // Wait for daemon thread to finish
-    match result.join() {
+    let joined = result.join();
+    remove_ipc_socket();
+    match joined {
         Ok(daemon_result) => daemon_result.map_err(daemon_error_to_exit)?,
         Err(panic_payload) => {
             let panic_msg = panic_payload
@@ -243,6 +245,16 @@ fn start_production_ipc_server(
     match crate::ipc::server::spawn(PathBuf::from(DEFAULT_SOCKET_PATH), handler) {
         Ok(()) => log::info!("Production IPC server listening on {DEFAULT_SOCKET_PATH}"),
         Err(e) => log::warn!("Production IPC server disabled: {e}"),
+    }
+}
+
+/// Removes the production IPC socket so the CLI does not find a stale one.
+fn remove_ipc_socket() {
+    let path = crate::ipc::DEFAULT_SOCKET_PATH;
+    match std::fs::remove_file(path) {
+        Ok(()) => log::info!("Removed IPC socket {path}"),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => log::warn!("Failed to remove IPC socket {path}: {e}"),
     }
 }
 
