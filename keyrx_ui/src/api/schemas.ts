@@ -28,17 +28,15 @@ export const ValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
 );
 
 // Device scope enum
-export const DeviceScopeSchema = z.enum(['DeviceSpecific', 'Global']);
-
-// Device metadata entry
+// Device registry entry (PUT /api/devices/:id/name response). Mirrors the
+// typeshare DeviceEntry; serial/layout are null when unset.
 export const DeviceEntrySchema = z
   .object({
     id: z.string().max(256),
     name: z.string().max(64),
-    serial: z.string().optional(),
-    scope: DeviceScopeSchema,
-    layout: z.string().max(32).optional(),
-    last_seen: z.number(),
+    serial: z.string().nullish(),
+    layout: z.string().max(32).nullish(),
+    lastSeen: z.number(),
   })
   .passthrough(); // Allow unexpected fields (log warning in validator)
 
@@ -345,3 +343,8 @@ export function validateRpcMessage(
 
   return result.data;
 }
+
+// `{ "success": true }` acknowledgements (e.g. DELETE /api/devices/:id).
+export const SuccessResponseSchema = z
+  .object({ success: z.literal(true) })
+  .passthrough();

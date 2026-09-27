@@ -106,7 +106,7 @@ async fn rename_device(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
     Json(payload): Json<RenameDeviceRequest>,
-) -> Result<Json<Value>, ApiError> {
+) -> Result<Json<DeviceEntry>, ApiError> {
     payload
         .validate()
         .map_err(|e| ApiError::BadRequest(format!("Validation failed: {}", e)))?;
@@ -115,10 +115,13 @@ async fn rename_device(
     let name_clone = payload.name.clone();
     let registry_path = state.device_service.registry_path().to_path_buf();
 
-    tokio::task::spawn_blocking(move || {
+    let entry = tokio::task::spawn_blocking(move || {
         let mut registry = DeviceRegistry::load(&registry_path)
             .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
+        registry
+            .ensure_registered(&id_clone, &connected_device_name(&id_clone))
+            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
         registry
             .rename(&id_clone, &name_clone)
             .map_err(|e| match e {
@@ -130,7 +133,10 @@ async fn rename_device(
             .save()
             .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
-        Ok::<(), ApiError>(())
+        registry
+            .get(&id_clone)
+            .cloned()
+            .ok_or_else(|| ApiError::InternalError(format!("device {id_clone} vanished")))
     })
     .await
     .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))??;
@@ -149,7 +155,7 @@ async fn rename_device(
         log::warn!("Failed to broadcast device renamed event: {}", e);
     }
 
-    Ok(Json(json!({ "success": true })))
+    Ok(Json(entry))
 }
 
 /// PUT /api/devices/:id/layout - Set device layout
@@ -176,6 +182,9 @@ async fn set_device_layout(
         let mut registry = DeviceRegistry::load(&registry_path)
             .map_err(|e| ApiError::InternalError(e.to_string()))?;
 
+        registry
+            .ensure_registered(&id_clone, &connected_device_name(&id_clone))
+            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
         registry
             .set_layout(&id_clone, &layout_clone)
             .map_err(|e| match e {
@@ -247,34 +256,12 @@ async fn update_device_config(
     tokio::task::spawn_blocking(move || {
         let mut registry = DeviceRegistry::load(&registry_path)?;
 
-        // Auto-register device if it doesn't exist
-        if registry.get(&id_clone).is_none() {
-            log::info!("Auto-registering device: {}", id_clone);
-            let sanitized_name = id_clone
-                .chars()
-                .map(|c| {
-                    if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' {
-                        c
-                    } else {
-                        '-'
-                    }
-                })
-                .collect::<String>();
-            let entry = DeviceEntry::new(
-                id_clone.clone(),
-                sanitized_name,
-                None,
-                None,
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
-            );
-            registry.register(entry).map_err(|e| {
+        registry
+            .ensure_registered(&id_clone, &connected_device_name(&id_clone))
+            .map_err(|e| {
                 use crate::error::RegistryError;
                 RegistryError::CorruptedRegistry(e.to_string())
             })?;
-        }
 
         if let Some(layout) = &layout_clone {
             registry.set_layout(&id_clone, layout).map_err(|e| {
@@ -335,4 +322,16 @@ async fn forget_device(
     })
     .await
     .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
+}
+
+/// The name a connected device reports (its `device_id` in the device list),
+/// used when a device is registered by its first edit; the id otherwise.
+fn connected_device_name(device_id: &str) -> String {
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    if let Ok(keyboards) = crate::device_manager::enumerate_keyboards() {
+        if let Some(kb) = keyboards.into_iter().find(|kb| kb.device_id() == device_id) {
+            return kb.name;
+        }
+    }
+    device_id.to_string()
 }

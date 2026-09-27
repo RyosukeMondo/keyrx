@@ -113,16 +113,15 @@ export const handlers = [
     }
 
     device.name = body.name;
-    // Return the updated device in DeviceEntry format
-    const response: any = {
-      ...device,
-      last_seen: device.lastSeen || Date.now(),
-    };
-    // Remove null serial field to pass validation
-    if (response.serial === null) {
-      delete response.serial;
-    }
-    return HttpResponse.json(response);
+    // The registry entry, as the real handler returns it (contract fixture
+    // src/test/contract/device_rename.json): camelCase, unset fields omitted.
+    return HttpResponse.json({
+      id: device.id,
+      name: device.name,
+      ...(device.serial ? { serial: device.serial } : {}),
+      ...(device.layout ? { layout: device.layout } : {}),
+      lastSeen: device.lastSeen ?? Math.floor(Date.now() / 1000),
+    });
   }),
 
   http.patch('/api/devices/:id', async ({ request, params }) => {
@@ -181,20 +180,9 @@ export const handlers = [
       );
     }
 
-    // Save the device before removing it
-    const deletedDevice = mockDevices[index];
     mockDevices.splice(index, 1);
-
-    // Return device in DeviceEntry format (with last_seen as snake_case)
-    // Remove null serial field to pass validation (optional means omit, not null)
-    const response: any = {
-      ...deletedDevice,
-      last_seen: deletedDevice.lastSeen || Date.now(),
-    };
-    if (response.serial === null) {
-      delete response.serial;
-    }
-    return HttpResponse.json(response);
+    // Same body as the real handler (web/api/devices.rs forget_device).
+    return HttpResponse.json({ success: true });
   }),
 
   // Profile endpoints

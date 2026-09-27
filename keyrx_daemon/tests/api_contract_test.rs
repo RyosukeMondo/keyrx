@@ -78,10 +78,15 @@ fn seeded_app() -> (Arc<AppState>, tempfile::TempDir) {
 }
 
 async fn call(app: &Arc<AppState>, method: Method, path: &str) -> Value {
+    call_with(app, method, path, None).await
+}
+
+async fn call_with(app: &Arc<AppState>, method: Method, path: &str, body: Option<Value>) -> Value {
     let request = Request::builder()
         .method(method)
         .uri(path)
-        .body(Body::empty())
+        .header("content-type", "application/json")
+        .body(body.map_or_else(Body::empty, |b| Body::from(b.to_string())))
         .unwrap();
     let response = create_router(Arc::clone(app))
         .oneshot(request)
@@ -147,4 +152,20 @@ async fn daemon_state_contract() {
     let (app, _dir) = seeded_app();
     let body = call(&app, Method::GET, "/api/daemon/state").await;
     assert_fixture("daemon_state.json", &body);
+}
+
+/// Renaming a (never registered) connected device returns its registry entry.
+#[tokio::test]
+async fn device_rename_contract() {
+    let (app, _dir) = seeded_app();
+    let mut body = call_with(
+        &app,
+        Method::PUT,
+        "/api/devices/path-%2Fdev%2Finput%2Fevent3/name",
+        Some(serde_json::json!({ "name": "Left Board" })),
+    )
+    .await;
+    assert!(body["lastSeen"].as_u64().unwrap() > 0);
+    body["lastSeen"] = (FIXED_TIMESTAMP_US / 1_000_000).into();
+    assert_fixture("device_rename.json", &body);
 }

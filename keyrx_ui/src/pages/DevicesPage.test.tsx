@@ -1288,8 +1288,7 @@ describe('DevicesPage - Integration Tests', () => {
   // Integration Workflow Tests
   // ========================================================================
   describe('End-to-End Workflows', () => {
-    // TODO: Unskip when rename API is implemented (see DevicesPage.tsx line 338)
-    it.skip('complete device management workflow: rename, change layout, verify persistence', async () => {
+    it('complete device management workflow: rename, change layout, verify persistence', async () => {
       const user = userEvent.setup();
       let savedName = '';
       let savedLayout = '';
@@ -1377,8 +1376,7 @@ describe('DevicesPage - Integration Tests', () => {
       });
     });
 
-    // TODO: Unskip when rename API is implemented (see DevicesPage.tsx line 338)
-    it.skip('multi-device management: edit multiple devices independently', async () => {
+    it('multi-device management: edit multiple devices independently', async () => {
       const user = userEvent.setup();
       renderWithProviders(<DevicesPage />);
 

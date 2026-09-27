@@ -28,8 +28,10 @@ pub struct DeviceEntry {
     /// User-friendly name (max 64 chars)
     pub name: String,
     /// Serial number if available
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub serial: Option<String>,
     /// Associated layout name (max 32 chars)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub layout: Option<String>,
     /// Last seen timestamp (Unix seconds)
     #[typeshare(serialized_as = "number")]
@@ -212,6 +214,44 @@ impl DeviceRegistry {
     /// Get device by ID
     pub fn get(&self, id: &str) -> Option<&DeviceEntry> {
         self.devices.get(id)
+    }
+
+    /// Registers `id` if unknown, named after `default_name` made valid
+    /// (invalid characters become '-', cut to 64 chars). The web UI edits
+    /// connected devices, which need not have been registered before.
+    pub fn ensure_registered(
+        &mut self,
+        id: &str,
+        default_name: &str,
+    ) -> Result<(), DeviceValidationError> {
+        if self.devices.contains_key(id) {
+            return Ok(());
+        }
+        let mut name: String = default_name
+            .chars()
+            .map(|c| {
+                if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' {
+                    c
+                } else {
+                    '-'
+                }
+            })
+            .take(64)
+            .collect();
+        if name.trim().is_empty() {
+            name = "Keyboard".to_string();
+        }
+        let last_seen = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or_default();
+        self.register(DeviceEntry::new(
+            id.to_string(),
+            name,
+            None,
+            None,
+            last_seen,
+        ))
     }
 
     /// Update last_seen timestamp for a device
@@ -608,5 +648,24 @@ mod tests {
         let device = create_test_device("dev1", "Test Device");
         registry.register(device).unwrap();
         assert_eq!(registry.list().len(), 1);
+    }
+
+    #[test]
+    fn test_ensure_registered_sanitizes_and_keeps_existing() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut registry = DeviceRegistry::load(&dir.path().join("devices.json")).unwrap();
+        let long = format!("Sunshine (libvirtualhid) X-Box {}", "x".repeat(80));
+        registry
+            .ensure_registered("path-/dev/input/event26", &long)
+            .unwrap();
+        let entry = registry.get("path-/dev/input/event26").unwrap();
+        assert!(entry.name.starts_with("Sunshine -libvirtualhid- X-Box"));
+        assert_eq!(entry.name.chars().count(), 64);
+
+        registry.rename("path-/dev/input/event26", "Pad").unwrap();
+        registry
+            .ensure_registered("path-/dev/input/event26", "Other")
+            .unwrap();
+        assert_eq!(registry.get("path-/dev/input/event26").unwrap().name, "Pad");
     }
 }

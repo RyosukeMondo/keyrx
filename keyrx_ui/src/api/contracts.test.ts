@@ -714,17 +714,15 @@ describe('Schema Completeness', () => {
     }
   });
 
-  it('validates all required device entry fields are enforced (storage format)', () => {
-    // DeviceEntrySchema is used for device metadata storage
-    // Required: id, name, scope, last_seen
-    const requiredFields = ['id', 'name', 'scope', 'last_seen'];
+  it('validates all required device entry fields are enforced', () => {
+    // DeviceEntrySchema mirrors the typeshare DeviceEntry (PUT /api/devices/:id/name)
+    const requiredFields = ['id', 'name', 'lastSeen'];
 
     for (const field of requiredFields) {
-      const incompleteDevice: any = {
+      const incompleteDevice: Record<string, unknown> = {
         id: 'device-1',
         name: 'Test',
-        scope: 'Global',
-        last_seen: Date.now(),
+        lastSeen: 1790000000,
       };
 
       delete incompleteDevice[field];
@@ -780,32 +778,14 @@ describe('Schema Completeness', () => {
     }
   });
 
-  it('validates DeviceScope enum values (for storage format)', () => {
-    const validScopes = ['Global', 'DeviceSpecific'];
-
-    for (const scope of validScopes) {
-      const device = {
-        id: 'device-1',
-        name: 'Test',
-        scope,
-        last_seen: Date.now(),
-      };
-
-      expect(() => {
-        validateApiResponse(DeviceEntrySchema, device, 'TEST');
-      }).not.toThrow();
+  it('accepts device entries with unset serial/layout omitted or null', () => {
+    const omitted = { id: 'device-1', name: 'Test', lastSeen: 1790000000 };
+    const nulls = { ...omitted, serial: null, layout: null };
+    const full = { ...omitted, serial: 'SN1', layout: 'ANSI_104' };
+    for (const device of [omitted, nulls, full]) {
+      expect(() =>
+        validateApiResponse(DeviceEntrySchema, device, 'TEST')
+      ).not.toThrow();
     }
-
-    // Invalid scope
-    const invalidDevice = {
-      id: 'device-1',
-      name: 'Test',
-      scope: 'InvalidScope',
-      last_seen: Date.now(),
-    };
-
-    expect(() => {
-      validateApiResponse(DeviceEntrySchema, invalidDevice, 'TEST');
-    }).toThrow('API validation failed');
   });
 });

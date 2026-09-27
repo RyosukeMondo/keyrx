@@ -7,6 +7,7 @@ import {
   validateApiResponse,
   DeviceListResponseSchema,
   DeviceEntrySchema,
+  SuccessResponseSchema,
 } from './schemas';
 import type { DeviceEntry } from '../types';
 import type { GlobalLayout } from '../types/generated';
@@ -80,9 +81,14 @@ export async function renameDevice(
  * Forget a device (remove from device list)
  */
 export async function forgetDevice(id: string): Promise<DeviceResponse> {
-  const response = await apiClient.delete<DeviceEntry>(`/api/devices/${id}`);
-  // Validate the returned device entry
-  validateApiResponse(DeviceEntrySchema, response, `DELETE /api/devices/${id}`);
+  const response = await apiClient.delete<{ success: boolean }>(
+    `/api/devices/${id}`
+  );
+  validateApiResponse(
+    SuccessResponseSchema,
+    response,
+    `DELETE /api/devices/${id}`
+  );
   // Clean up enabled state from localStorage
   deviceStorage.removeDeviceEnabledState(id);
   return { success: true };

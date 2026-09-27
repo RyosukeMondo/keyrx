@@ -10,9 +10,11 @@ import latency from '../test/contract/metrics_latency.json';
 import events from '../test/contract/metrics_events.json';
 import clearEvents from '../test/contract/metrics_events_clear.json';
 import daemonState from '../test/contract/daemon_state.json';
+import deviceRename from '../test/contract/device_rename.json';
 import type {
   ClearEventsResult,
   DaemonState,
+  DeviceEntry,
   KeyEventData,
   LatencyStats,
 } from './generated';
@@ -22,4 +24,5 @@ export const contractFixtures = {
   events: events satisfies KeyEventData[],
   clearEvents: clearEvents satisfies ClearEventsResult,
   daemonState: daemonState satisfies DaemonState,
+  deviceRename: deviceRename satisfies DeviceEntry,
 };
