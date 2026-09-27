@@ -450,7 +450,7 @@ async fn test_mem_003_lag_detection() {
     for i in 0..(CAPACITY * 3) {
         let event = DaemonEvent::Latency {
             sequence: i as u64,
-            data: LatencyStats {
+            payload: LatencyStats {
                 min: 1000,
                 avg: 2000,
                 max: 3000,
@@ -492,7 +492,7 @@ async fn test_mem_003_queue_bounded() {
             for i in 0..1000u64 {
                 let event = DaemonEvent::KeyEvent {
                     sequence: i,
-                    data: KeyEventData {
+                    payload: KeyEventData {
                         timestamp: i,
                         key_code: "KEY_A".to_string(),
                         event_type: "press".to_string(),
@@ -568,7 +568,7 @@ async fn test_mem_002_003_subscription_lifecycle() {
             while running.load(Ordering::Relaxed) {
                 let event = DaemonEvent::KeyEvent {
                     sequence: seq,
-                    data: KeyEventData {
+                    payload: KeyEventData {
                         timestamp: seq,
                         key_code: "KEY_A".to_string(),
                         event_type: "press".to_string(),

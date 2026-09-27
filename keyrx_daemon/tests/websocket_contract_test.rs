@@ -17,7 +17,7 @@ use serde_json::Value;
 #[test]
 fn test_latency_event_serialization_format() {
     let event = DaemonEvent::Latency {
-        data: LatencyStats {
+        payload: LatencyStats {
             min: 100,
             avg: 250,
             max: 500,
@@ -32,12 +32,12 @@ fn test_latency_event_serialization_format() {
     let parsed: Value = serde_json::from_str(&json).expect("Failed to parse");
 
     assert_eq!(parsed["type"], "latency", "Message type must be 'latency'");
-    assert_eq!(parsed["min"], 100);
-    assert_eq!(parsed["avg"], 250);
-    assert_eq!(parsed["max"], 500);
-    assert_eq!(parsed["p95"], 400);
-    assert_eq!(parsed["p99"], 480);
-    assert_eq!(parsed["timestamp"], 1234567890);
+    assert_eq!(parsed["payload"]["min"], 100);
+    assert_eq!(parsed["payload"]["avg"], 250);
+    assert_eq!(parsed["payload"]["max"], 500);
+    assert_eq!(parsed["payload"]["p95"], 400);
+    assert_eq!(parsed["payload"]["p99"], 480);
+    assert_eq!(parsed["payload"]["timestamp"], 1234567890);
     assert_eq!(parsed["seq"], 1);
 }
 
@@ -45,7 +45,7 @@ fn test_latency_event_serialization_format() {
 #[test]
 fn test_state_event_serialization_format() {
     let event = DaemonEvent::State {
-        data: DaemonState {
+        payload: DaemonState {
             modifiers: vec!["MD_00".to_string()],
             locks: vec!["LK_00".to_string()],
             layer: "base".to_string(),
@@ -58,9 +58,9 @@ fn test_state_event_serialization_format() {
     let parsed: Value = serde_json::from_str(&json).expect("Failed to parse");
 
     assert_eq!(parsed["type"], "state");
-    assert_eq!(parsed["modifiers"][0], "MD_00");
-    assert_eq!(parsed["locks"][0], "LK_00");
-    assert_eq!(parsed["layer"], "base");
+    assert_eq!(parsed["payload"]["modifiers"][0], "MD_00");
+    assert_eq!(parsed["payload"]["locks"][0], "LK_00");
+    assert_eq!(parsed["payload"]["layer"], "base");
     assert_eq!(parsed["seq"], 1);
 }
 
@@ -68,7 +68,7 @@ fn test_state_event_serialization_format() {
 #[test]
 fn test_key_event_serialization_format() {
     let event = DaemonEvent::KeyEvent {
-        data: KeyEventData {
+        payload: KeyEventData {
             timestamp: 1234567890,
             key_code: "KEY_A".to_string(),
             event_type: "press".to_string(),
@@ -87,8 +87,8 @@ fn test_key_event_serialization_format() {
     let parsed: Value = serde_json::from_str(&json).expect("Failed to parse");
 
     assert_eq!(parsed["type"], "event");
-    assert_eq!(parsed["timestamp"], 1234567890);
-    assert_eq!(parsed["latency"], 150);
+    assert_eq!(parsed["payload"]["timestamp"], 1234567890);
+    assert_eq!(parsed["payload"]["latency"], 150);
     assert_eq!(parsed["seq"], 1);
 }
 
@@ -97,7 +97,7 @@ fn test_key_event_serialization_format() {
 fn test_all_daemon_events_serialize() {
     let events = vec![
         DaemonEvent::State {
-            data: DaemonState {
+            payload: DaemonState {
                 modifiers: vec![],
                 locks: vec![],
                 layer: "base".to_string(),
@@ -106,7 +106,7 @@ fn test_all_daemon_events_serialize() {
             sequence: 1,
         },
         DaemonEvent::KeyEvent {
-            data: KeyEventData {
+            payload: KeyEventData {
                 timestamp: 0,
                 key_code: "KEY_A".to_string(),
                 event_type: "press".to_string(),
@@ -121,7 +121,7 @@ fn test_all_daemon_events_serialize() {
             sequence: 2,
         },
         DaemonEvent::Latency {
-            data: LatencyStats {
+            payload: LatencyStats {
                 min: 0,
                 avg: 0,
                 max: 0,
