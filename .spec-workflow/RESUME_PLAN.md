@@ -167,20 +167,21 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   → DONE in 9f966b30 (C3c-3). Superseded 2026-09-27 by the single read model: IPC
   and REST now clear the SAME telemetry ring (see Phase L).
 
-- [ ] **C5b — CLI events follow mode** (`cli/metrics.rs:40,69`). Replace the
+- [x] **C5b — CLI events follow mode** (`cli/metrics.rs:40,69`). Replace the
   `Err("not implemented")` with a poll loop that repeatedly calls `GetEventsTail` and
   prints new events until interrupted. *Accept:* follow streams; test or manual note.
-
-- [ ] **C6 — Real profile counts** (`src/web/api/profiles.rs:169,170`).
+  → DONE (bd4e869f, 732bfb69): `--follow` polls with a timestamp cursor; found and fixed the IPC server answering one request per connection (EPIPE for reused clients); IPC now carries LatencyStats/KeyEventData.
+- [x] **C6 — Real profile counts** (`src/web/api/profiles.rs:169,170`).
   device count and key-mapping count hardcoded to 0. Compute device count per profile
   and parse Rhai config to count mappings. *Accept:* non-zero correct counts; test.
-
-- [ ] **C7 — Parse error line number** (`src/web/api/profiles.rs:563`).
+  → DONE (0e9a8031): device/key/layer counts from the compiled .krx (layer_count was a `layer(` text heuristic, always 1).
+- [x] **C7 — Parse error line number** (`src/web/api/profiles.rs:563`).
   Hardcoded line 1. Parse actual line from compiler error. *Accept:* correct line; test.
+  → DONE (cc615a50, 22825a8c): CompilationError::location() parses "(line N, position M)"; POST /api/profiles/validate {config} added (the UI called it, it did not exist); errors carry column + length like the UI expects.
 
 ## Phase D — UI functional gaps
 
-- [ ] **D1 — Device rename API + UI.** (2026-09-27: backend rename is
+- [NEXT] **D1 — Device rename API + UI.** (2026-09-27: backend rename is
   `PUT /api/devices/:id/name`; the UI device-*scope* chain was dead — scope was
   removed from the backend in Task 27 — and was deleted in 6ff105a4.)
   Backend endpoint missing; UI TODOs at `DevicesPage.tsx:304,328,338,447`; tests
@@ -190,9 +191,10 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 - [ ] **D2 — KeyConfigModal mapping editing** (`KeyConfigModal.tsx:200`).
   TODO stub. Implement edit flow. *Accept:* editing works; test.
 
-- [ ] **D3 — metricsStore live layer** (`stores/metricsStore.ts:93`).
+- [x] **D3 — metricsStore live layer** (`stores/metricsStore.ts:93`).
   Hardcodes `'Base'`. Source current layer from daemon state (depends on C1).
   *Accept:* shows real active layer; test.
+  → DONE (f05751b5): daemon derives the active layer from the block's when-modifiers; labels are hex like the DSL (were decimal); UI event records carry the live layer. Verified live.
 
 ## Phase E — Architecture remediation decision
 
@@ -211,7 +213,7 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
 
 ## Phase F — Genuinely-needed architecture work (populated by E1)
 
-- [ ] **F1 — Split `config/profile_manager.rs` (712 lines) into a ProfileRepository +
+- [x] **F1 — Split `config/profile_manager.rs` (712 lines) into a ProfileRepository +
   orchestrator; stop swallowing lock-poison errors.** It's the only file-size-gate
   violation this repo controls directly (the other two are `platform_runners/windows.rs`,
   delegated to the Windows session per G3/G5, and F6 below) and it still has 9
@@ -223,7 +225,7 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   *Accept:* `profile_manager.rs` ≤500 code lines; new `profile_repository.rs` owns the
   I/O; 0 unwrap/expect outside `#[cfg(test)]`; `scripts/verify/file-sizes.sh --update`
   drops it from the baseline.
-
+  → DONE (da9c7966 split, 95ae1830): split into mod/crud/activation/persistence/types; poisoned-lock expects replaced by recovery; 0 unwrap/expect outside tests.
 - [ ] **F2 — Finish or delete the orphaned e2e test-harness split.**
   `keyrx_daemon/tests/harness/{mod,harness,error,config,assertions}.rs` and
   `tests/virtual/{mod,basic,complex,layers,passthrough,advanced_output,advanced_sequences}.rs`
@@ -256,7 +258,7 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   keyrx_ui/src --include=*.ts --include=*.tsx | grep -v test` returns 0 (or only
   intentionally-excepted files); messages go through `logger.ts`'s structured format.
 
-- [ ] **F5 — Shrink the stale file-size baseline.**
+- [x] **F5 — Shrink the stale file-size baseline.**
   `scripts/verify/file-size-baseline.list` still lists 15 files; 9 of them
   (`cli/error.rs`, `cli/profiles.rs`, `daemon/error.rs` [now `error.rs`],
   `platform/linux/keycode_map.rs`, `platform/windows/rawinput.rs`,
@@ -265,13 +267,13 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   actively hiding how close the gate is to fully green. *Accept:* run
   `scripts/verify/file-sizes.sh --update` after F1 and F6 land; the baseline shrinks
   to only genuinely-outstanding files (`platform_runners/windows.rs`, pending G3).
-
-- [ ] **F6 — Split `config/simulation_engine.rs` (529 lines).** The one file-size-gate
+  → DONE (57bede41): baseline shrunk to `platform_runners/windows.rs` only (G3).
+- [x] **F6 — Split `config/simulation_engine.rs` (529 lines).** The one file-size-gate
   violation with no open task anywhere tracking it (unlike `profile_manager.rs` → F1,
   and `platform_runners/windows.rs` → delegated G3/G5). *Accept:*
   `simulation_engine.rs` ≤500 code lines, logic extracted into a focused sibling
   module, `scripts/verify/file-sizes.sh` passes without it in the baseline.
-
+  → DONE (da9c7966): split into mod/types/scenarios/engine/tests.
 - [ ] **F-backlog — lower-impact or process items, do opportunistically:** remove
   `eprintln!` outside `cli/` (6 files: `config/layout_manager.rs`, `web/ws_rpc.rs`,
   `platform/linux/{mod,input_capture,output_injection}.rs`, `main.rs`); add
@@ -362,17 +364,20 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
     Still open: UI `validateConfig` POSTs `/api/profiles/validate` (server only
     has `/profiles/:name/validate`; the GET-based route check can't see it
     because `/profiles/:name` matches) → add after the profiles.rs split (G5).
-- [ ] **G7 — Profile swap with keys held.** Swapping RemappingState while a
+- [x] **G7 — Profile swap with keys held.** Swapping RemappingState while a
   remapped key is down can leave its output pressed (release maps differently).
   Release held outputs before the swap.
-- [ ] **G8 — Only the first `device_start` block is applied** (warned at load);
+  → DONE (b37e1a66): HeldOutputs platform decorator releases held outputs before any config swap (both platforms) and on shutdown; live e2e holds CapsLock across a switch.
+- [x] **G8 — Only the first `device_start` block is applied** (warned at load);
   the Linux platform grabs `*` regardless of config patterns.
+  → DONE (39758ae1, 9b0377e3): process_event never passed the device, so when_device never matched; one device-pattern rule in keyrx_core (case-insensitive, any identity) used by device_start and when_device; RemappingState routes each device to its first matching block with per-device state. Live e2e with two virtual keyboards. Limitation: Linux still grabs all keyboards and re-injects unmatched ones unchanged.
 - [ ] **G9 — UI lint debt:** `npm run lint` has 14 errors in untouched files
   (e.g. `MonitorPage.tsx` refs-during-render). EventRecord `layer` is always
   `'Base'` (see D3). `scripts/verify/{ssot,contracts}.sh` are stubs (exit 0).
-- [NEXT] **G5 — Oversize files** (gate made real in dd1d1638; 14 files being
+- [x] **G5 — Oversize files** (gate made real in dd1d1638; 14 files being
   split; `windows.rs` handed to the G3 request) (>500 code lines): `web/api/diagnostics.rs`,
   `platform_runners/windows.rs`, `web/api/profiles.rs`.
+  → DONE except `platform_runners/windows.rs` (in the G3 request): the gate was a stub (exit 0) - made real with a shrink-only baseline (dd1d1638, 57bede41); 14 files split by 6 parallel agents, each verified and merged (stale worktree bases re-applied by hand).
 
 ## Status Log
 - 2026-06-21: Plan created. A1 marked [NEXT].
@@ -418,3 +423,6 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
   promoted to Phase F (F1-F6 + backlog): profile_manager.rs split, orphaned
   e2e-harness split, dead EnvProvider/FileSystem traits, unadopted UI logger,
   stale file-size baseline, simulation_engine.rs split.
+- 2026-09-27: G3 request written for the Windows session (code synced by
+  push-to-checkout over ssh). G4-G8, C5b, C6, C7, D3, E1, F1, F5, F6 DONE;
+  G5 done except windows.rs (G3). G9 (UI lint) running. D1 [NEXT].
