@@ -44,7 +44,7 @@ getrandom_02 = { workspace = true, optional = true }
 
 [features]
 default = []
-wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_cell", "web-sys", "rhai", "sha2", "serde_json", "getrandom_02", "spin"]
+wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_cell", "web-sys", "rhai", "rhai/wasm-bindgen", "sha2", "serde_json", "getrandom_02", "spin"]
 
 [dev-dependencies]
 wasm-bindgen-test = { workspace = true }

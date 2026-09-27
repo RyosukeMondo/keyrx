@@ -194,7 +194,7 @@ fi
 # Compute source hash of keyrx_core (for staleness detection in build.rs)
 # Algorithm (must match keyrx_daemon/build.rs::compute_source_hash):
 # 1. Collect all *.rs in keyrx_core/src/ + keyrx_core/Cargo.toml
-# 2. Sort by forward-slash relative path
+# 2. Sort by forward-slash relative path, bytewise (LC_ALL=C, like Rust's sort)
 # 3. For each: feed "path\n" + content (with \r stripped) to SHA256
 log_info "Computing keyrx_core source hash..."
 SOURCE_HASH=$(
@@ -202,7 +202,7 @@ SOURCE_HASH=$(
     {
         find keyrx_core/src -name "*.rs" -type f
         echo "keyrx_core/Cargo.toml"
-    } | sed 's|\\|/|g' | sort | while IFS= read -r f; do
+    } | sed 's|\\|/|g' | LC_ALL=C sort | while IFS= read -r f; do
         printf '%s\n' "$f"
         tr -d '\r' < "$f"
     done | sha256sum | awk '{print $1}'

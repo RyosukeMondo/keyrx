@@ -140,7 +140,7 @@ check_dev_tools_status() {
     fi
 
     # Cargo tools
-    for tool in cargo-watch cargo-llvm-cov wasm-pack; do
+    for tool in cargo-watch cargo-llvm-cov wasm-pack typeshare-cli; do
         if cargo install --list 2>/dev/null | grep -q "^$tool"; then
             log_info "  $tool: installed"
         else
@@ -325,7 +325,7 @@ install_dev_tools() {
     fi
 
     # Install cargo tools
-    local tools=("cargo-watch" "cargo-llvm-cov" "wasm-pack")
+    local tools=("cargo-watch" "cargo-llvm-cov" "wasm-pack" "typeshare-cli")
     for tool in "${tools[@]}"; do
         if ! cargo install --list 2>/dev/null | grep -q "^$tool"; then
             log_info "Installing $tool..."

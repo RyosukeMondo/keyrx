@@ -56,6 +56,14 @@ if ! command_exists npm; then
     exit 1
 fi
 
+# typeshare generates src/types/generated.ts during `npm run prebuild`
+if ! command_exists typeshare; then
+    log_error "typeshare is not installed (needed to generate UI types)"
+    log_error "Install it with: cargo install typeshare-cli  (or: make setup)"
+    log_failed
+    exit 1
+fi
+
 log_info "Node.js found: $(node --version)"
 log_info "npm found: $(npm --version)"
 
