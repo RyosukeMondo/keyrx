@@ -518,11 +518,7 @@ impl ProfileManager {
                 })
             }
             Err(e) => {
-                log::error!(
-                    "Compilation failed for profile '{}': {}",
-                    active_name,
-                    e
-                );
+                log::error!("Compilation failed for profile '{}': {}", active_name, e);
                 Ok(ReloadResult {
                     recompiled: false,
                     compile_time_ms: 0,

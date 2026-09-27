@@ -43,9 +43,7 @@ fn validate_version_consistency(workspace_root: &Path) {
         );
         std::fs::write(&package_json, updated)
             .unwrap_or_else(|e| panic!("Failed to write {}: {e}", package_json.display()));
-        println!(
-            "cargo:warning=Auto-synced package.json version: {pkg_version} → {cargo_version}"
-        );
+        println!("cargo:warning=Auto-synced package.json version: {pkg_version} → {cargo_version}");
     }
 }
 

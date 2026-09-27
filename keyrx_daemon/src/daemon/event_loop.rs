@@ -571,7 +571,10 @@ pub fn process_one_event(
                     let outputs = process_event(event.clone(), lookup, state);
                     // Capture state snapshots after processing (broadcast + telemetry)
                     let (snapshot, telem) = if triggered {
-                        (Some(extract_daemon_state(state)), Some(build_telemetry_state(state)))
+                        (
+                            Some(extract_daemon_state(state)),
+                            Some(build_telemetry_state(state)),
+                        )
                     } else {
                         (None, None)
                     };

@@ -106,7 +106,8 @@ impl TelemetryState {
         self.raw[..MODIFIER_END]
             .iter()
             .enumerate()
-            .filter_map(|(i, &on)| on.then(|| format!("MD_{i:02}")))
+            .filter(|(_, &on)| on)
+            .map(|(i, _)| format!("MD_{i:02}"))
             .collect()
     }
 
@@ -115,7 +116,8 @@ impl TelemetryState {
         self.raw[MODIFIER_END..LOCK_END]
             .iter()
             .enumerate()
-            .filter_map(|(i, &on)| on.then(|| format!("LK_{i:02}")))
+            .filter(|(_, &on)| on)
+            .map(|(i, _)| format!("LK_{i:02}"))
             .collect()
     }
 

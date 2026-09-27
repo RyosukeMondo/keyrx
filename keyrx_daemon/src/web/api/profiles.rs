@@ -306,7 +306,9 @@ async fn reload_active_profile(
 
     if !result.success {
         return Err(ApiError::InternalError(
-            result.error.unwrap_or_else(|| "Compilation failed".to_string()),
+            result
+                .error
+                .unwrap_or_else(|| "Compilation failed".to_string()),
         ));
     }
 

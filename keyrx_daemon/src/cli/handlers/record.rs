@@ -6,8 +6,8 @@ use std::path::Path;
 #[cfg(target_os = "linux")]
 /// Handles the `record` subcommand.
 pub fn handle_record(output_path: &Path, device_path: Option<&Path>) -> Result<(), (i32, String)> {
-    use keyrx_core::runtime::KeyEvent;
     use crate::platform::linux::evdev_to_keycode;
+    use keyrx_core::runtime::KeyEvent;
     use serde::{Deserialize, Serialize};
     use std::fs::File;
     use std::io::Write;

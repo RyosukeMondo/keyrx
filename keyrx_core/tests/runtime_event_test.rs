@@ -1110,7 +1110,12 @@ fn test_sequence_press_emits_press_release_pairs() {
     );
 
     // Should emit 4 events: Press(Y), Release(Y), Press(A), Release(A)
-    assert_eq!(output.len(), 4, "Sequence should emit 4 events, got {:?}", output);
+    assert_eq!(
+        output.len(),
+        4,
+        "Sequence should emit 4 events, got {:?}",
+        output
+    );
     assert_eq!(output[0].keycode(), KeyCode::Y);
     assert!(output[0].is_press());
     assert_eq!(output[1].keycode(), KeyCode::Y);
@@ -1154,17 +1159,17 @@ fn test_sequence_release_emits_nothing_or_harmless() {
     // The tracking records [Y, A] from press, so release emits Release(A), Release(Y)
     // These are harmless since Y and A were already released during the press sequence
     for e in &release_output {
-        assert!(e.is_release(), "Release output should only contain releases");
+        assert!(
+            e.is_release(),
+            "Release output should only contain releases"
+        );
     }
 }
 
 #[test]
 fn test_sequence_single_key() {
     // Sequence with single key: C -> [K] (ka-row prefix)
-    let config = create_test_config(vec![KeyMapping::sequence(
-        KeyCode::C,
-        vec![KeyCode::K],
-    )]);
+    let config = create_test_config(vec![KeyMapping::sequence(KeyCode::C, vec![KeyCode::K])]);
     let lookup = KeyLookup::from_device_config(&config);
     let mut state = DeviceState::new();
 
@@ -1174,7 +1179,11 @@ fn test_sequence_single_key() {
         &mut state,
     );
 
-    assert_eq!(output.len(), 2, "Single-key sequence should emit press+release");
+    assert_eq!(
+        output.len(),
+        2,
+        "Single-key sequence should emit press+release"
+    );
     assert_eq!(output[0].keycode(), KeyCode::K);
     assert!(output[0].is_press());
     assert_eq!(output[1].keycode(), KeyCode::K);
@@ -1232,8 +1241,14 @@ fn test_sequence_does_not_affect_modifier_state() {
         &mut state,
     );
 
-    assert!(!state.is_modifier_active(0), "Sequence should not activate any modifier");
-    assert!(!state.is_lock_active(0), "Sequence should not activate any lock");
+    assert!(
+        !state.is_modifier_active(0),
+        "Sequence should not activate any modifier"
+    );
+    assert!(
+        !state.is_lock_active(0),
+        "Sequence should not activate any lock"
+    );
 }
 
 #[test]
@@ -1241,18 +1256,16 @@ fn test_sequence_with_conditional_ime() {
     // Test sequence inside IME conditional block
     use keyrx_core::config::{Condition, ConditionItem, ImeState};
 
-    let config = create_test_config(vec![
-        KeyMapping::conditional(
-            Condition::AllActive(vec![
-                ConditionItem::ImeActive,
-                ConditionItem::InputLanguage(String::from("ja")),
-            ]),
-            vec![BaseKeyMapping::Sequence {
-                from: KeyCode::Semicolon,
-                keys: vec![KeyCode::Y, KeyCode::A],
-            }],
-        ),
-    ]);
+    let config = create_test_config(vec![KeyMapping::conditional(
+        Condition::AllActive(vec![
+            ConditionItem::ImeActive,
+            ConditionItem::InputLanguage(String::from("ja")),
+        ]),
+        vec![BaseKeyMapping::Sequence {
+            from: KeyCode::Semicolon,
+            keys: vec![KeyCode::Y, KeyCode::A],
+        }],
+    )]);
     let lookup = KeyLookup::from_device_config(&config);
     let mut state = DeviceState::new();
 
@@ -1284,7 +1297,11 @@ fn test_sequence_with_conditional_ime() {
         &lookup,
         &mut state,
     );
-    assert_eq!(output.len(), 4, "With IME, should emit sequence of 4 events");
+    assert_eq!(
+        output.len(),
+        4,
+        "With IME, should emit sequence of 4 events"
+    );
     assert_eq!(output[0].keycode(), KeyCode::Y);
     assert!(output[0].is_press());
     assert_eq!(output[2].keycode(), KeyCode::A);
@@ -1311,8 +1328,10 @@ fn test_sequence_rapid_press_release_cycles() {
             &mut state,
         );
         assert_eq!(
-            press_output.len(), 4,
-            "Cycle {}: press should emit 4 events", i
+            press_output.len(),
+            4,
+            "Cycle {}: press should emit 4 events",
+            i
         );
 
         let _ = process_event(

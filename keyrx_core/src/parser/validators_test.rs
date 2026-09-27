@@ -284,7 +284,11 @@ use crate::parser::builders::{build_sequence, MAX_SEQUENCE_LENGTH};
 fn test_build_sequence_valid() {
     let keys = vec![String::from("VK_Y"), String::from("VK_A")];
     let result = build_sequence("VK_Semicolon", &keys);
-    assert!(result.is_ok(), "Valid sequence should succeed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Valid sequence should succeed: {:?}",
+        result
+    );
 }
 
 #[test]
@@ -307,7 +311,10 @@ fn test_build_sequence_too_long_rejected() {
         .map(|_| String::from("VK_A"))
         .collect();
     let result = build_sequence("VK_A", &keys);
-    assert!(result.is_err(), "Sequence exceeding max length should be rejected");
+    assert!(
+        result.is_err(),
+        "Sequence exceeding max length should be rejected"
+    );
 }
 
 #[test]

@@ -428,9 +428,9 @@ fn run_test_mode(
     // Create services for web API
     let macro_recorder = Arc::new(crate::macro_recorder::MacroRecorder::new());
     // Reuse the same ProfileManager instance for IPC and REST API
-    let profile_service = Arc::new(
-        crate::services::ProfileService::new(Arc::clone(&profile_manager)),
-    );
+    let profile_service = Arc::new(crate::services::ProfileService::new(Arc::clone(
+        &profile_manager,
+    )));
     let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
     let config_service = Arc::new(crate::services::ConfigService::new(Arc::clone(
         &profile_manager,

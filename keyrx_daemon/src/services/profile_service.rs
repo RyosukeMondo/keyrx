@@ -365,9 +365,7 @@ impl ProfileService {
     ///
     /// Checks timestamps and only recompiles when needed. After recompilation,
     /// configures Windows key blocking and signals the daemon to reload.
-    pub async fn reload_active_profile(
-        &self,
-    ) -> Result<crate::config::ReloadResult, ProfileError> {
+    pub async fn reload_active_profile(&self) -> Result<crate::config::ReloadResult, ProfileError> {
         log::info!("Reloading active profile (with timestamp check)");
 
         let manager = Arc::clone(&self.profile_manager);
