@@ -337,10 +337,6 @@ impl ProfileService {
                         }
                     }
                 }
-
-                // Signal the daemon to reload configuration via SIGHUP
-                // This triggers the reload callback in the event loop
-                Self::signal_daemon_reload();
             } else {
                 log::error!(
                     "Profile '{}' activation failed: {}",
@@ -404,9 +400,9 @@ impl ProfileService {
                     }
                 }
 
-                Self::signal_daemon_reload();
+                // The caller requests the daemon reload via DaemonSharedState.
                 log::info!(
-                    "Active profile '{}' recompiled and reloaded ({}ms)",
+                    "Active profile '{}' recompiled ({}ms)",
                     active_name,
                     reload_result.compile_time_ms
                 );
@@ -418,34 +414,6 @@ impl ProfileService {
         .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
 
         Ok(result)
-    }
-
-    /// Signals the daemon to reload its configuration.
-    ///
-    /// On Unix, this sends SIGHUP to the current process.
-    /// On Windows, this is a no-op (reload happens via other mechanisms).
-    fn signal_daemon_reload() {
-        #[cfg(unix)]
-        {
-            use nix::libc;
-
-            let pid = std::process::id();
-            log::debug!("Sending SIGHUP to daemon (pid: {})", pid);
-            // SIGHUP = 1 on all Unix systems
-            // SAFETY: Sending a signal to our own process is safe
-            let result = unsafe { libc::kill(pid as i32, libc::SIGHUP) };
-            if result != 0 {
-                log::warn!(
-                    "Failed to send SIGHUP for daemon reload: {}",
-                    std::io::Error::last_os_error()
-                );
-            }
-        }
-
-        #[cfg(not(unix))]
-        {
-            log::info!("Profile activated. Daemon reload signal not available on this platform.");
-        }
     }
 
     /// Loads and deserializes a profile's .krx config file.

@@ -118,9 +118,10 @@ pub struct DaemonSharedState {
     /// API uses this to calculate and report daemon uptime.
     start_time: Instant,
 
-    /// Flag set by the web API when the active profile's config is modified.
-    /// The message loop checks and clears this to trigger a daemon reload.
-    reload_requested: AtomicBool,
+    /// Reload request flag. For a real daemon this is the SAME flag SIGHUP sets
+    /// (the signal handler's `ReloadState`), so `request_reload()` reaches the
+    /// Linux event loop and the Windows message loop through one mechanism.
+    reload_requested: Arc<AtomicBool>,
 
     /// Suspended flag — when true, the daemon passes all keys through unchanged.
     ///
@@ -172,7 +173,7 @@ impl DaemonSharedState {
             config_path: Arc::new(RwLock::new(config_path)),
             device_count: Arc::new(AtomicUsize::new(device_count)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -212,15 +213,21 @@ impl DaemonSharedState {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn from_daemon(daemon: &Daemon, profile_name: Option<String>) -> Self {
-        Self {
-            running: daemon.running_flag(),
-            active_profile: Arc::new(RwLock::new(profile_name)),
-            config_path: Arc::new(RwLock::new(daemon.config_path().to_path_buf())),
-            device_count: Arc::new(AtomicUsize::new(daemon.device_count())),
-            start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
-            suspended: Arc::new(AtomicBool::new(false)),
-        }
+        Self::new(
+            daemon.running_flag(),
+            profile_name,
+            daemon.config_path().to_path_buf(),
+            daemon.device_count(),
+        )
+        .sharing_reload_flag(daemon.signal_handler().reload_state().flag())
+    }
+
+    /// Uses `flag` as the reload-request flag, so [`request_reload`](Self::request_reload)
+    /// and SIGHUP set the same flag the event loop consumes.
+    #[must_use]
+    pub fn sharing_reload_flag(mut self, flag: Arc<AtomicBool>) -> Self {
+        self.reload_requested = flag;
+        self
     }
 
     /// Returns whether the daemon is currently running.
@@ -514,7 +521,7 @@ mod tests {
             config_path,
             device_count,
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         };
 
@@ -535,7 +542,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         };
 
@@ -554,7 +561,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         };
 
@@ -578,7 +585,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/initial/config.krx"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         };
 
@@ -600,7 +607,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(2)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         };
 
@@ -619,7 +626,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         };
 
@@ -642,7 +649,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(5)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         });
 
@@ -673,7 +680,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         });
 
@@ -709,7 +716,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/old/config.krx"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         });
 
@@ -736,7 +743,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         });
 
@@ -772,7 +779,7 @@ mod tests {
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(1)),
             start_time: Instant::now(),
-            reload_requested: AtomicBool::new(false),
+            reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
         });
 
@@ -805,5 +812,24 @@ mod tests {
         for handle in handles {
             handle.join().expect("Thread panicked");
         }
+    }
+
+    /// Regression: `request_reload()` used to set a private flag the Linux
+    /// event loop never read, so activation relied on SIGHUP-ing its own
+    /// process (killing any process without a SIGHUP handler).
+    #[test]
+    fn test_request_reload_reaches_signal_reload_state() {
+        let reload_state = crate::daemon::state::ReloadState::new();
+        let state = DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            None,
+            PathBuf::from("/test.krx"),
+            0,
+        )
+        .sharing_reload_flag(reload_state.flag());
+
+        state.request_reload();
+        assert!(reload_state.check_and_clear());
+        assert!(!state.take_reload_request());
     }
 }
