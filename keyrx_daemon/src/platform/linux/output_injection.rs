@@ -252,17 +252,11 @@ impl UinputOutput {
             if let Some(ref mut dev) = self.device {
                 if let Err(e) = dev.release(&key) {
                     // Log at debug level - cleanup errors shouldn't be fatal
-                    eprintln!(
-                        "Warning: failed to release key {:?} during cleanup: {}",
-                        keycode, e
-                    );
+                    log::debug!("Failed to release key {:?} during cleanup: {}", keycode, e);
                 }
                 // Try to synchronize after each release
                 if let Err(e) = dev.synchronize() {
-                    eprintln!(
-                        "Warning: failed to synchronize after releasing {:?}: {}",
-                        keycode, e
-                    );
+                    log::debug!("Failed to synchronize after releasing {:?}: {}", keycode, e);
                 }
             }
         }
@@ -377,7 +371,7 @@ impl Drop for UinputOutput {
         // Call destroy to release held keys and cleanup
         // Errors during drop are logged but cannot be propagated
         if let Err(e) = self.destroy() {
-            eprintln!("Warning: error during UinputOutput cleanup: {}", e);
+            log::warn!("Error during UinputOutput cleanup: {}", e);
         }
     }
 }

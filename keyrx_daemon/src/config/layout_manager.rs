@@ -151,7 +151,7 @@ impl LayoutManager {
                             self.custom_layouts.insert(name.to_string(), layout);
                         }
                         Err(e) => {
-                            eprintln!("Warning: Failed to load layout {}: {}", name, e);
+                            log::warn!("Failed to load layout {}: {}", name, e);
                         }
                     }
                 }

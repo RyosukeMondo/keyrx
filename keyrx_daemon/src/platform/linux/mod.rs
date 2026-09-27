@@ -131,24 +131,17 @@ impl LinuxPlatform {
         // Discover and open all matching keyboard devices
         let device_manager = DeviceManager::discover(configs)?;
 
-        eprintln!(
-            "[keyrx] Discovered {} keyboard device(s)",
+        log::info!(
+            "Discovered {} keyboard device(s)",
             device_manager.device_count()
         );
         for device in device_manager.devices() {
-            eprintln!(
-                "[keyrx]   - {} ({})",
-                device.info().name,
-                device.device_id()
-            );
+            log::info!("  - {} ({})", device.info().name, device.device_id());
         }
 
         // Create virtual output device for event injection
         let output_device = UinputOutput::create(&self.output_name)?;
-        eprintln!(
-            "[keyrx] Created virtual output device: {}",
-            output_device.name()
-        );
+        log::info!("Created virtual output device: {}", output_device.name());
 
         // Note: System tray is now managed in main.rs to ensure proper GTK event loop integration
         // LinuxPlatform no longer manages the tray directly
@@ -311,7 +304,7 @@ impl LinuxPlatform {
                 }
                 Err(e) => {
                     // Log error but continue with other devices
-                    eprintln!("[keyrx] Error reading from device: {}", e);
+                    log::warn!("Error reading from device: {}", e);
                 }
             }
         }
@@ -351,7 +344,7 @@ impl LinuxPlatform {
 
         // Output device cleanup happens automatically via Drop
 
-        eprintln!("[keyrx] Daemon shutdown complete");
+        log::info!("Platform shutdown complete");
         Ok(())
     }
 }
