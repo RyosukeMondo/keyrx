@@ -66,6 +66,7 @@ fn start_mock_ipc_server(socket_path: PathBuf) -> thread::JoinHandle<()> {
                     IpcRequest::GetEventsTail { count: _ } => {
                         IpcResponse::Events { events: vec![] }
                     }
+                    IpcRequest::ClearEvents => IpcResponse::EventsCleared { count: 0 },
                     IpcRequest::ActivateProfile { name } => IpcResponse::ProfileActivated { name },
                 };
 

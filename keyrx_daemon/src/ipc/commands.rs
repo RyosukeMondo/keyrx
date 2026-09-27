@@ -75,7 +75,20 @@ impl IpcCommandHandler {
             IpcRequest::GetState => self.handle_get_state(),
             IpcRequest::GetLatencyMetrics => self.handle_get_latency(),
             IpcRequest::GetEventsTail { count } => self.handle_get_events(count),
+            IpcRequest::ClearEvents => self.handle_clear_events(),
         }
+    }
+
+    /// Handle a clear-events request.
+    ///
+    /// Clears the recent-events ring and returns the number removed. Without live
+    /// telemetry (test mode) there is nothing to clear, so returns 0.
+    fn handle_clear_events(&self) -> IpcResponse {
+        let count = match self.telemetry {
+            Some(ref t) => t.clear_events(),
+            None => 0,
+        };
+        IpcResponse::EventsCleared { count }
     }
 
     /// Handle a live-state query.
@@ -267,7 +280,10 @@ mod tests {
             other => panic!("Expected Latency response, got {other:?}"),
         }
 
-        match handler.handle(IpcRequest::GetEventsTail { count: 10 }).await {
+        match handler
+            .handle(IpcRequest::GetEventsTail { count: 10 })
+            .await
+        {
             IpcResponse::Events { events } => assert!(events.is_empty()),
             other => panic!("Expected Events response, got {other:?}"),
         }
@@ -329,11 +345,44 @@ mod tests {
         telemetry.push_event("press A".to_string());
         telemetry.push_event("release A".to_string());
 
-        match handler.handle(IpcRequest::GetEventsTail { count: 10 }).await {
+        match handler
+            .handle(IpcRequest::GetEventsTail { count: 10 })
+            .await
+        {
             IpcResponse::Events { events } => {
                 assert_eq!(events, vec!["press A", "release A"]);
             }
             other => panic!("Expected Events response, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_clear_events_reads_telemetry() {
+        let (handler, telemetry, _temp_dir) = setup_telemetry_handler().await;
+        telemetry.push_event("a".to_string());
+        telemetry.push_event("b".to_string());
+
+        match handler.handle(IpcRequest::ClearEvents).await {
+            IpcResponse::EventsCleared { count } => assert_eq!(count, 2),
+            other => panic!("Expected EventsCleared response, got {other:?}"),
+        }
+        // Ring is now empty.
+        match handler
+            .handle(IpcRequest::GetEventsTail { count: 10 })
+            .await
+        {
+            IpcResponse::Events { events } => assert!(events.is_empty()),
+            other => panic!("Expected Events response, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_clear_events_default_zero() {
+        // No telemetry (test mode) -> nothing to clear.
+        let (handler, _temp_dir) = setup_test_handler().await;
+        match handler.handle(IpcRequest::ClearEvents).await {
+            IpcResponse::EventsCleared { count } => assert_eq!(count, 0),
+            other => panic!("Expected EventsCleared response, got {other:?}"),
         }
     }
 }

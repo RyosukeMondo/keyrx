@@ -294,14 +294,35 @@ async fn get_event_log(
 }
 
 /// DELETE /api/metrics/events - Clear event log
-async fn clear_event_log() -> Result<Json<Value>, DaemonError> {
-    // Note: The daemon doesn't currently have a "clear events" IPC command
-    // This would require adding a new IpcRequest::ClearEvents variant
-    // For now, return a not implemented response
-    Ok(Json(json!({
-        "success": false,
-        "error": "Event log clearing requires daemon support (not yet implemented in IPC protocol)"
-    })))
+async fn clear_event_log(State(state): State<Arc<AppState>>) -> Result<Json<Value>, DaemonError> {
+    use crate::error::WebError;
+
+    // Production path: clear the query service's event ring directly.
+    if let Some(query) = &state.daemon_query {
+        let cleared = query.clear_event_log();
+        return Ok(Json(json!({ "success": true, "cleared": cleared })));
+    }
+
+    // IPC fallback (test mode): ask the daemon to clear its telemetry ring.
+    let socket_path = std::path::PathBuf::from(DEFAULT_SOCKET_PATH);
+    let mut ipc = crate::ipc::unix_socket::UnixSocketIpc::new(socket_path);
+    let response = ipc
+        .send_request(&IpcRequest::ClearEvents)
+        .map_err(|_| SocketError::NotConnected)?;
+
+    match response {
+        IpcResponse::EventsCleared { count } => {
+            Ok(Json(json!({ "success": true, "cleared": count })))
+        }
+        IpcResponse::Error { code, message } => Err(WebError::InvalidRequest {
+            reason: format!("Daemon error {}: {}", code, message),
+        }
+        .into()),
+        _ => Err(WebError::InvalidRequest {
+            reason: "Unexpected response from daemon".to_string(),
+        }
+        .into()),
+    }
 }
 
 #[derive(Serialize)]

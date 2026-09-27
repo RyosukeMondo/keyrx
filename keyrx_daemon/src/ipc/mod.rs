@@ -30,6 +30,8 @@ pub enum IpcRequest {
     GetLatencyMetrics,
     /// Get tail of recent events (last N events)
     GetEventsTail { count: usize },
+    /// Clear the recent-events ring buffer
+    ClearEvents,
     /// Activate a profile by name (test mode only)
     ActivateProfile { name: String },
 }
@@ -57,6 +59,8 @@ pub enum IpcResponse {
     },
     /// Recent events
     Events { events: Vec<String> },
+    /// Result of clearing the recent-events ring buffer (number removed)
+    EventsCleared { count: usize },
     /// Profile activation result (test mode only)
     ProfileActivated { name: String },
     /// Error response

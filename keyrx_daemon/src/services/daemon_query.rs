@@ -79,6 +79,14 @@ impl DaemonQueryService {
         log.iter().rev().take(count).cloned().collect()
     }
 
+    /// Clears the event ring buffer. Returns the number of events removed.
+    pub fn clear_event_log(&self) -> usize {
+        let mut log = self.event_log.write().expect("event_log lock poisoned");
+        let removed = log.len();
+        log.clear();
+        removed
+    }
+
     /// Records an event into the ring buffer.
     pub fn record_event(&self, event: Value) {
         let mut log = self.event_log.write().expect("event_log lock poisoned");
@@ -194,6 +202,16 @@ mod tests {
         assert_eq!(events.len(), 2);
         // Most recent first
         assert_eq!(events[0]["code"], 66);
+    }
+
+    #[test]
+    fn test_clear_event_log() {
+        let svc = make_test_service();
+        svc.record_event(serde_json::json!({"i": 1}));
+        svc.record_event(serde_json::json!({"i": 2}));
+        assert_eq!(svc.clear_event_log(), 2);
+        assert!(svc.get_event_log(10).is_empty());
+        assert_eq!(svc.clear_event_log(), 0);
     }
 
     #[test]
