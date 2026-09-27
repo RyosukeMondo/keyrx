@@ -20,9 +20,13 @@
 //!
 //! | Bits      | Meaning                  |
 //! |-----------|--------------------------|
-//! | `0..128`  | Modifiers `MD_00..MD_127`|
-//! | `128..192`| Locks `LK_00..LK_63`     |
-//! | `192..255`| Active layers            |
+//! | `0..128`  | Modifiers `MD_00..MD_7F` |
+//! | `128..192`| Locks `LK_00..LK_3F`     |
+//! | `192..255`| Reserved (always 0)      |
+//!
+//! Labels are hex, as the DSL writes them. The active layer is not a bit: it
+//! is the first modifier, in config order, that the device's block uses as a
+//! `when` condition and that is active ([`TelemetryState::active_layer`]).
 //!
 //! [`TelemetryState`] owns the parse/format of this layout so callers don't
 //! duplicate it.
@@ -56,6 +60,9 @@ const LATENCY_WINDOW: Duration = Duration::from_secs(60);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TelemetryState {
     raw: Vec<bool>,
+    /// Modifier id of the active layer (a modifier the config uses as a
+    /// `when` condition); `None` = base layer.
+    layer: Option<u8>,
 }
 
 impl TelemetryState {
@@ -63,13 +70,14 @@ impl TelemetryState {
     pub fn empty() -> Self {
         Self {
             raw: vec![false; STATE_BITS],
+            layer: None,
         }
     }
 
     /// Builds a state from a raw bit vector, padding/truncating to [`STATE_BITS`].
     pub fn from_raw(mut raw: Vec<bool>) -> Self {
         raw.resize(STATE_BITS, false);
-        Self { raw }
+        Self { raw, layer: None }
     }
 
     /// Marks modifier `id` (0-based, 0..128) active or inactive.
@@ -88,12 +96,9 @@ impl TelemetryState {
         }
     }
 
-    /// Marks layer `id` (0-based, 0..63) active or inactive.
-    pub fn set_layer(&mut self, id: u8, active: bool) {
-        let idx = LOCK_END + id as usize;
-        if idx < STATE_BITS {
-            self.raw[idx] = active;
-        }
+    /// Sets the active layer (a layer modifier id), `None` for the base layer.
+    pub fn set_active_layer(&mut self, modifier: Option<u8>) {
+        self.layer = modifier;
     }
 
     /// Returns the packed 255-bit vector (the IPC `GetState` payload).
@@ -106,35 +111,29 @@ impl TelemetryState {
         self.raw
     }
 
-    /// Returns active modifier labels (`MD_00`..`MD_127`).
+    /// Returns active modifier labels as the DSL writes them (hex: `MD_00`..`MD_7F`).
     pub fn modifiers(&self) -> Vec<String> {
         self.raw[..MODIFIER_END]
             .iter()
             .enumerate()
             .filter(|(_, &on)| on)
-            .map(|(i, _)| format!("MD_{i:02}"))
+            .map(|(i, _)| format!("MD_{i:02X}"))
             .collect()
     }
 
-    /// Returns active lock labels (`LK_00`..`LK_63`).
+    /// Returns active lock labels as the DSL writes them (hex: `LK_00`..`LK_3F`).
     pub fn locks(&self) -> Vec<String> {
         self.raw[MODIFIER_END..LOCK_END]
             .iter()
             .enumerate()
             .filter(|(_, &on)| on)
-            .map(|(i, _)| format!("LK_{i:02}"))
+            .map(|(i, _)| format!("LK_{i:02X}"))
             .collect()
     }
 
-    /// Returns the active layer label, if any layer bit is set.
-    ///
-    /// Returns the lowest-indexed active layer (`layer_<n>`), or `None` for the
-    /// implicit base layer (no layer bits set).
+    /// The active layer as the DSL names it (`MD_0A`), `None` on the base layer.
     pub fn active_layer(&self) -> Option<String> {
-        self.raw[LOCK_END..STATE_BITS]
-            .iter()
-            .position(|&on| on)
-            .map(|i| format!("layer_{i}"))
+        self.layer.map(|id| format!("MD_{id:02X}"))
     }
 
     /// Number of active modifiers.
@@ -295,13 +294,15 @@ mod tests {
         let mut s = TelemetryState::empty();
         s.set_modifier(0, true);
         s.set_modifier(5, true);
+        s.set_modifier(10, true);
         s.set_lock(1, true);
-        s.set_layer(2, true);
+        s.set_active_layer(Some(10));
 
-        assert_eq!(s.modifiers(), vec!["MD_00", "MD_05"]);
+        // Hex, as the DSL writes them (MD_0A is modifier 10).
+        assert_eq!(s.modifiers(), vec!["MD_00", "MD_05", "MD_0A"]);
         assert_eq!(s.locks(), vec!["LK_01"]);
-        assert_eq!(s.active_layer(), Some("layer_2".to_string()));
-        assert_eq!(s.active_modifier_count(), 2);
+        assert_eq!(s.active_layer(), Some("MD_0A".to_string()));
+        assert_eq!(s.active_modifier_count(), 3);
         assert_eq!(s.active_lock_count(), 1);
     }
 
@@ -318,9 +319,9 @@ mod tests {
     fn test_raw_layout_matches_packing() {
         let mut s = TelemetryState::empty();
         s.set_lock(0, true); // -> raw index 128
-        s.set_layer(0, true); // -> raw index 192
+        s.set_active_layer(Some(0)); // not part of the packed bits
         assert!(s.raw()[128]);
-        assert!(s.raw()[192]);
+        assert!(!s.raw()[192]);
         assert!(!s.raw()[0]);
     }
 

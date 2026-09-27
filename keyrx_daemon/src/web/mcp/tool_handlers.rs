@@ -170,15 +170,9 @@ pub fn get_status(state: &AppState) -> Result<String, String> {
     .to_string())
 }
 
-/// Get daemon runtime state (modifiers, locks, layers).
+/// Get daemon runtime state (the same `DaemonState` as REST and the WS feed).
 pub fn get_state(state: &AppState) -> Result<String, String> {
-    let ts = state.daemon_query.get_state();
-    Ok(json!({
-        "activeLayer": ts.active_layer(),
-        "modifiers": ts.modifiers(),
-        "locks": ts.locks(),
-    })
-    .to_string())
+    serde_json::to_string_pretty(&state.daemon_query.get_daemon_state()).map_err(|e| e.to_string())
 }
 
 /// List connected input devices.

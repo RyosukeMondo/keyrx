@@ -45,14 +45,16 @@ fn key_event(event_type: &str, input: &str, output: &str, mapped: bool, t: u64) 
     }
 }
 
-/// A read model with a loaded profile, one modifier + one lock active, three
+/// A read model with a loaded profile, two modifiers (one a layer) + one lock, three
 /// key events and some latency samples.
 fn seeded_app() -> (Arc<AppState>, tempfile::TempDir) {
     let dir = tempfile::tempdir().unwrap();
     let telemetry = Arc::new(DaemonTelemetry::new());
     let mut state = TelemetryState::empty();
     state.set_modifier(0, true);
+    state.set_modifier(0x0A, true); // hex labels: MD_0A, not MD_10
     state.set_lock(1, true);
+    state.set_active_layer(Some(0x0A));
     telemetry.update_state(state);
     telemetry.push_event(key_event("press", "CapsLock", "Escape", true, 1));
     telemetry.push_event(key_event("release", "CapsLock", "Escape", true, 2));

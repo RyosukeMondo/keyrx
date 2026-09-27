@@ -19,6 +19,9 @@ use keyrx_core::runtime::{DeviceState, KeyLookup};
 struct Block {
     pattern: String,
     lookup: KeyLookup,
+    /// Modifiers the block uses as `when` conditions (its layers), in
+    /// declaration order - the order the lookup tries them in.
+    layers: Vec<u8>,
 }
 
 /// A device seen by the event loop.
@@ -41,6 +44,42 @@ pub struct Routed<'a> {
     pub lookup: &'a KeyLookup,
     pub state: &'a mut DeviceState,
     pub identities: &'a [String],
+    /// The block's layer modifiers (see [`active_layer`]).
+    pub layers: &'a [u8],
+}
+
+/// The layer a device is on: the first of the block's layer modifiers that is
+/// active, i.e. the layer whose mappings the lookup applies first.
+pub fn active_layer(state: &DeviceState, layers: &[u8]) -> Option<u8> {
+    layers
+        .iter()
+        .copied()
+        .find(|&id| state.is_modifier_active(id))
+}
+
+/// Modifiers a config uses as positive `when` conditions, first use first.
+fn layer_modifiers(config: &DeviceConfig) -> Vec<u8> {
+    use keyrx_core::config::{Condition, ConditionItem, KeyMapping};
+    let mut layers = Vec::new();
+    let mut add = |id: u8| {
+        if !layers.contains(&id) {
+            layers.push(id);
+        }
+    };
+    for mapping in &config.mappings {
+        if let KeyMapping::Conditional { condition, .. } = mapping {
+            match condition {
+                Condition::ModifierActive(id) => add(*id),
+                Condition::AllActive(items) => items.iter().for_each(|item| {
+                    if let ConditionItem::ModifierActive(id) = item {
+                        add(*id);
+                    }
+                }),
+                _ => {}
+            }
+        }
+    }
+    layers
 }
 
 impl RemappingState {
@@ -57,6 +96,7 @@ impl RemappingState {
                 .map(|config| Block {
                     pattern: config.identifier.pattern.clone(),
                     lookup: KeyLookup::from_device_config(config),
+                    layers: layer_modifiers(config),
                 })
                 .collect(),
             devices: HashMap::new(),
@@ -94,6 +134,7 @@ impl RemappingState {
             lookup: &block.lookup,
             state: &mut slot.state,
             identities: &slot.identities,
+            layers: &block.layers,
         })
     }
 
@@ -205,5 +246,39 @@ mod tests {
         assert!(wildcard.route(None, |_| unreachable!()).is_some());
         let mut specific = RemappingState::new(&block("*numpad*", KeyCode::A, KeyCode::B));
         assert!(specific.route(None, |_| unreachable!()).is_none());
+    }
+
+    #[test]
+    fn active_layer_is_the_first_active_layer_modifier() {
+        use keyrx_core::config::{BaseKeyMapping, Condition, KeyMapping};
+        let config = DeviceConfig {
+            identifier: DeviceIdentifier {
+                pattern: "*".to_string(),
+            },
+            mappings: vec![
+                KeyMapping::Conditional {
+                    condition: Condition::ModifierActive(0x0A),
+                    mappings: vec![BaseKeyMapping::Simple {
+                        from: KeyCode::H,
+                        to: KeyCode::Left,
+                    }],
+                },
+                KeyMapping::Conditional {
+                    condition: Condition::ModifierActive(0x02),
+                    mappings: vec![BaseKeyMapping::Simple {
+                        from: KeyCode::J,
+                        to: KeyCode::Down,
+                    }],
+                },
+            ],
+        };
+        let mut remap = RemappingState::new(&config);
+        let routed = remap.route(Some("kbd"), |id| vec![id.to_string()]).unwrap();
+        assert_eq!(routed.layers, &[0x0A, 0x02]);
+        assert_eq!(active_layer(routed.state, routed.layers), None);
+        routed.state.set_modifier(0x02);
+        assert_eq!(active_layer(routed.state, routed.layers), Some(0x02));
+        routed.state.set_modifier(0x0A);
+        assert_eq!(active_layer(routed.state, routed.layers), Some(0x0A));
     }
 }

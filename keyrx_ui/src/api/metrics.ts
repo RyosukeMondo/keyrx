@@ -31,7 +31,7 @@ export async function fetchEventLog(): Promise<EventRecord[]> {
   const events = await apiClient.get<KeyEventData[]>(
     API_ENDPOINTS.metricsEvents
   );
-  return events.map(toEventRecord).reverse();
+  return events.map((event) => toEventRecord(event)).reverse();
 }
 
 /**

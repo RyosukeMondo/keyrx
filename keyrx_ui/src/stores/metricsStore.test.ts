@@ -33,9 +33,9 @@ describe('metricsStore.fetchMetrics', () => {
       mappingTriggered: true,
     });
     expect(currentState).toEqual({
-      modifiers: ['MD_00'],
+      modifiers: ['MD_00', 'MD_0A'],
       locks: ['LK_01'],
-      layer: 'Base',
+      layer: 'MD_0A',
       activeProfile: 'default',
     });
   });

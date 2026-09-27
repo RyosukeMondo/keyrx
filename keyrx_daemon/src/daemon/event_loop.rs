@@ -108,8 +108,12 @@ fn format_output_description(output_events: &[keyrx_core::runtime::KeyEvent]) ->
 
 /// Builds a packed telemetry state snapshot from the live device state.
 ///
-/// Mirrors the [`TelemetryState`] bit layout: modifiers 0..128, locks 0..64.
-fn build_telemetry_state(state: &keyrx_core::runtime::DeviceState) -> TelemetryState {
+/// Mirrors the [`TelemetryState`] bit layout: modifiers 0..128, locks 0..64;
+/// the active layer comes from the device block's layer modifiers.
+fn build_telemetry_state(
+    state: &keyrx_core::runtime::DeviceState,
+    layers: &[u8],
+) -> TelemetryState {
     let mut snapshot = TelemetryState::empty();
     for id in 0u8..128 {
         if state.is_modifier_active(id) {
@@ -121,6 +125,7 @@ fn build_telemetry_state(state: &keyrx_core::runtime::DeviceState) -> TelemetryS
             snapshot.set_lock(id, true);
         }
     }
+    snapshot.set_active_layer(super::remapping_state::active_layer(state, layers));
     snapshot
 }
 
@@ -343,7 +348,7 @@ fn remap_event(
         routed.state,
         &identities,
     );
-    let state = triggered.then(|| build_telemetry_state(routed.state));
+    let state = triggered.then(|| build_telemetry_state(routed.state, routed.layers));
     Remapped {
         outputs,
         mapping_type,

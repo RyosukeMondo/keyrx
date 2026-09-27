@@ -84,7 +84,10 @@ export const useMetricsStore = create<MetricsStore>((set, get) => ({
           case 'event': {
             // Transform daemon's KeyEventPayload to frontend's EventRecord
             // Type is automatically narrowed by discriminated union
-            const eventRecord: EventRecord = toEventRecord(message.payload);
+            const eventRecord: EventRecord = toEventRecord(
+              message.payload,
+              get().currentState?.layer
+            );
 
             const { eventLog } = get();
             // Prepend new event (most recent first)
