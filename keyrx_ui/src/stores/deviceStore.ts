@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { DeviceEntry, DeviceScope } from '../types';
+import type { DeviceEntry } from '../types';
 import * as deviceApi from '../api/devices';
 import { ApiError } from '../api/client';
 
@@ -12,7 +12,6 @@ interface DeviceStore {
   // Actions
   fetchDevices: () => Promise<void>;
   renameDevice: (id: string, name: string) => Promise<void>;
-  setScope: (id: string, scope: DeviceScope) => Promise<void>;
   forgetDevice: (id: string) => Promise<void>;
   clearError: () => void;
 }
@@ -49,29 +48,6 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
 
     try {
       await deviceApi.renameDevice(id, name);
-    } catch (error) {
-      // Rollback on error
-      set({ devices: oldDevices });
-      const errorMessage =
-        error instanceof ApiError ? error.message : 'Unknown error';
-      set({ error: errorMessage });
-      throw error;
-    }
-  },
-
-  // Set device scope
-  setScope: async (id: string, scope: DeviceScope) => {
-    const { devices } = get();
-    const oldDevices = [...devices];
-
-    // Optimistic update
-    const updatedDevices = devices.map((device) =>
-      device.id === id ? { ...device, scope } : device
-    );
-    set({ devices: updatedDevices, error: null });
-
-    try {
-      await deviceApi.setDeviceScope(id, scope);
     } catch (error) {
       // Rollback on error
       set({ devices: oldDevices });

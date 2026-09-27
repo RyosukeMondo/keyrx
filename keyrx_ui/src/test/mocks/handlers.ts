@@ -318,42 +318,6 @@ export const handlers = [
     });
   }),
 
-  // Config endpoints
-  http.get('/api/config/:profile', ({ params }) => {
-    const { profile } = params;
-
-    if (!mockProfiles.find((p) => p.name === profile)) {
-      return HttpResponse.json(
-        { error: 'Profile not found', errorCode: 'PROFILE_NOT_FOUND' },
-        { status: 404 }
-      );
-    }
-
-    return HttpResponse.json({
-      layers: [
-        {
-          id: 'base',
-          name: 'Base Layer',
-          mappings: {},
-        },
-      ],
-    });
-  }),
-
-  http.put('/api/config/:profile/key', async ({ request, params }) => {
-    const { profile } = params;
-    const body = await request.json();
-
-    if (!mockProfiles.find((p) => p.name === profile)) {
-      return HttpResponse.json(
-        { error: 'Profile not found', errorCode: 'PROFILE_NOT_FOUND' },
-        { status: 404 }
-      );
-    }
-
-    return HttpResponse.json({ success: true });
-  }),
-
   // Metrics endpoints — response bodies mirror the real handlers exactly
   // (see src/test/contract/*.json, regenerated from a Rust test).
   http.get('/api/metrics/latency', () => {

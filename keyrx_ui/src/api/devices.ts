@@ -8,15 +8,12 @@ import {
   DeviceListResponseSchema,
   DeviceEntrySchema,
 } from './schemas';
-import type { DeviceEntry, DeviceScope } from '../types';
+import type { DeviceEntry } from '../types';
+import type { GlobalLayout } from '../types/generated';
 import * as deviceStorage from '../utils/deviceStorage';
 
 interface RenameDeviceRequest {
   name: string;
-}
-
-interface SetScopeRequest {
-  scope: DeviceScope;
 }
 
 interface DeviceResponse {
@@ -80,27 +77,6 @@ export async function renameDevice(
 }
 
 /**
- * Set device scope (global or local)
- */
-export async function setDeviceScope(
-  id: string,
-  scope: DeviceScope
-): Promise<DeviceResponse> {
-  const request: SetScopeRequest = { scope };
-  const response = await apiClient.put<DeviceEntry>(
-    `/api/devices/${id}/scope`,
-    request
-  );
-  // Validate the returned device entry
-  validateApiResponse(
-    DeviceEntrySchema,
-    response,
-    `PUT /api/devices/${id}/scope`
-  );
-  return { success: true };
-}
-
-/**
  * Forget a device (remove from device list)
  */
 export async function forgetDevice(id: string): Promise<DeviceResponse> {
@@ -112,23 +88,14 @@ export async function forgetDevice(id: string): Promise<DeviceResponse> {
   return { success: true };
 }
 
-interface GlobalLayoutResponse {
-  layout: string;
-}
-
 /**
- * Fetch the global default keyboard layout
+ * Fetch the global default keyboard layout (`ANSI_104` when unset)
  */
 export async function fetchGlobalLayout(): Promise<string> {
-  try {
-    const response = await apiClient.get<GlobalLayoutResponse>(
-      '/api/settings/global-layout'
-    );
-    return response.layout || 'ANSI_104';
-  } catch {
-    // Endpoint may not exist yet, use default
-    return 'ANSI_104';
-  }
+  const response = await apiClient.get<GlobalLayout>(
+    '/api/settings/global-layout'
+  );
+  return response.layout ?? 'ANSI_104';
 }
 
 /**

@@ -10,7 +10,6 @@ export { apiClient, ApiError } from './client';
 export {
   fetchDevices,
   renameDevice,
-  setDeviceScope,
   forgetDevice,
 } from './devices';
 
@@ -22,15 +21,6 @@ export {
   deleteProfile,
   duplicateProfile,
 } from './profiles';
-
-// Configuration management
-export {
-  fetchConfig,
-  setKeyMapping,
-  deleteKeyMapping,
-  exportConfig,
-  importConfig,
-} from './config';
 
 // Metrics and monitoring
 export {

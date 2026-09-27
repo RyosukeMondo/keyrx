@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
 import * as deviceApi from '../api/devices';
-import type { DeviceEntry, DeviceScope } from '../types';
+import type { DeviceEntry } from '../types';
 
 /**
  * Fetch all devices with React Query caching
@@ -86,42 +86,6 @@ export function useRenameDevice() {
     },
 
     // Refetch on success to ensure data consistency
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.devices });
-    },
-  });
-}
-
-/**
- * Set device scope with optimistic updates
- */
-export function useSetDeviceScope() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, scope }: { id: string; scope: DeviceScope }) =>
-      deviceApi.setDeviceScope(id, scope),
-
-    onMutate: async ({ id, scope }) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.devices });
-
-      const previousDevices = queryClient.getQueryData<DeviceEntry[]>(
-        queryKeys.devices
-      );
-
-      queryClient.setQueryData<DeviceEntry[]>(queryKeys.devices, (old) =>
-        old?.map((device) => (device.id === id ? { ...device, scope } : device))
-      );
-
-      return { previousDevices };
-    },
-
-    onError: (_error, _variables, context) => {
-      if (context?.previousDevices) {
-        queryClient.setQueryData(queryKeys.devices, context.previousDevices);
-      }
-    },
-
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.devices });
     },

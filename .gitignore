@@ -89,3 +89,6 @@ pubspec.lock
 # Session logs and debug output
 *.txt
 !LICENSE.txt
+
+# Agent worktrees
+.claude/worktrees/

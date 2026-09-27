@@ -109,6 +109,12 @@ export interface EventPage {
 	offset: number;
 }
 
+/** The default keyboard layout for devices without their own. */
+export interface GlobalLayout {
+	/** Layout name (e.g. `ANSI_104`), or none when unset. */
+	layout?: string;
+}
+
 /** Latency statistics. */
 export interface LatencyStats {
 	/** Minimum latency in microseconds. */

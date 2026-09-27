@@ -27,6 +27,7 @@ pub mod layouts;
 pub mod macros;
 pub mod metrics;
 pub mod profiles;
+pub mod settings;
 pub mod simulator;
 pub mod validation;
 
@@ -53,6 +54,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .merge(layouts::routes())
         .merge(simulator::routes())
         .merge(macros::routes())
+        .merge(settings::routes())
         .with_state(state)
 }
 
@@ -74,7 +76,9 @@ mod tests {
         let profile_manager = Arc::new(ProfileManager::new(config_dir.clone()).unwrap());
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
         let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
-        let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
+        let config_service = Arc::new(crate::services::ConfigService::new(Arc::clone(
+            &profile_service,
+        )));
         let settings_service = Arc::new(crate::services::SettingsService::new(config_dir.clone()));
         let simulation_service = Arc::new(crate::services::SimulationService::new(
             config_dir.clone(),
@@ -106,7 +110,9 @@ mod tests {
         let profile_manager = Arc::new(ProfileManager::new(config_dir.clone()).unwrap());
         let profile_service = Arc::new(ProfileService::new(Arc::clone(&profile_manager)));
         let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
-        let config_service = Arc::new(crate::services::ConfigService::new(profile_manager));
+        let config_service = Arc::new(crate::services::ConfigService::new(Arc::clone(
+            &profile_service,
+        )));
         let settings_service = Arc::new(crate::services::SettingsService::new(config_dir.clone()));
         let simulation_service = Arc::new(crate::services::SimulationService::new(
             config_dir.clone(),

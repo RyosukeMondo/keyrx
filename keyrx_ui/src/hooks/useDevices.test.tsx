@@ -4,7 +4,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   useDevices,
   useRenameDevice,
-  useSetDeviceScope,
   useForgetDevice,
 } from './useDevices';
 import * as deviceApi from '../api/devices';
@@ -184,49 +183,6 @@ describe('useRenameDevice', () => {
 
     // Data should be rolled back
     expect(devicesResult.current.data?.[0].name).toBe('Original Name');
-  });
-});
-
-describe('useSetDeviceScope', () => {
-  it('sets device scope with optimistic update', async () => {
-    const mockDevices: DeviceEntry[] = [
-      {
-        id: 'device-1',
-        name: 'Keyboard',
-        path: '/dev/input/event0',
-        serial: null,
-        active: true,
-        scope: 'global',
-        layout: 'ANSI_104',
-        isVirtual: false,
-      },
-    ];
-
-    vi.mocked(deviceApi.fetchDevices).mockResolvedValue(mockDevices);
-    vi.mocked(deviceApi.setDeviceScope).mockResolvedValue();
-
-    const wrapper = createWrapper();
-
-    const { result: devicesResult } = renderHook(() => useDevices(), {
-      wrapper,
-    });
-    await waitFor(() => expect(devicesResult.current.isSuccess).toBe(true));
-
-    const { result: mutationResult } = renderHook(() => useSetDeviceScope(), {
-      wrapper,
-    });
-
-    mutationResult.current.mutate({
-      id: 'device-1',
-      scope: 'profile' as DeviceScope,
-    });
-
-    await waitFor(() => expect(mutationResult.current.isSuccess).toBe(true));
-
-    expect(deviceApi.setDeviceScope).toHaveBeenCalledWith(
-      'device-1',
-      'profile'
-    );
   });
 });
 

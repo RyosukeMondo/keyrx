@@ -7,7 +7,6 @@
 export {
   useDevices,
   useRenameDevice,
-  useSetDeviceScope,
   useForgetDevice,
 } from './useDevices';
 
@@ -24,7 +23,6 @@ export {
 export { useValidateConfig } from './useValidateConfig';
 
 // Config hooks
-export { useConfig, useSetKeyMapping, useDeleteKeyMapping } from './useConfig';
 
 // Metrics hooks
 export {

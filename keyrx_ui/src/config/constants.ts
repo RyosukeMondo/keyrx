@@ -69,27 +69,18 @@ export const API_ENDPOINTS = {
   // Profiles
   profiles: '/api/profiles',
   profileActivate: (profileId: string) => `/api/profiles/${profileId}/activate`,
-  profileDeactivate: (profileId: string) =>
-    `/api/profiles/${profileId}/deactivate`,
   profileDelete: (profileId: string) => `/api/profiles/${profileId}`,
 
   // Configuration
-  config: (profile: string) => `/api/config/${profile}`,
-  configKey: (profile: string) => `/api/config/${profile}/key`,
-  configExport: (profile: string) => `/api/config/${profile}/export`,
-  configImport: (profile: string) => `/api/config/${profile}/import`,
 
   // Devices
   devices: '/api/devices',
-  deviceRename: (deviceId: string) => `/api/devices/${deviceId}/rename`,
-  deviceScope: (deviceId: string) => `/api/devices/${deviceId}/scope`,
   deviceLayout: (deviceId: string) => `/api/devices/${deviceId}/layout`,
 
   // Keyboard Simulator
   simulatorEvents: '/api/simulator/events',
 
   // Metrics & Monitoring
-  metrics: '/api/metrics',
   metricsLatency: '/api/metrics/latency',
   metricsEvents: '/api/metrics/events',
   metricsEventsClear: '/api/metrics/events',
