@@ -349,10 +349,17 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
     page seeds history/state from REST. Verified live (headless Chromium
     screenshot of /monitor with injected keys). UI suite 1916 pass / 2 fail
     (pre-existing DevicesPage, same at HEAD).
-- [delegated] **G3 — Windows production IPC server** → request
+- [x] **G3 — Windows production IPC server** → request
   `docs/requests/G3-windows-production-ipc.md` (Windows session implements;
   code shipped as bundle `D:\users\ryosu\bundles\keyrx-main.bundle`). (`keyrx_daemon status|metrics` cannot
   work on Windows; `DEFAULT_SOCKET_PATH` is a Unix path). Use `ipc::server::spawn`.
+  → DONE (PR #1 f928a51f, merged 01b3f1df; 26bc4ac8 test wording). IpcEndpoint
+    (socket file / named pipe), one spawn helper, IpcClient; windows.rs split.
+    Verified: Linux clippy + windows-gnu clippy, full suite 2032/0/91, live
+    Linux IPC; on Windows the cross-built lib tests (31 ipc:: incl. named-pipe
+    round trip + second-server refused) and CLI<->pipe<->REST in test mode.
+    NOT verified: production `run` with keyboard hooks on the Windows desktop
+    (needs the interactive session; the host was too memory-starved to build).
 - [x] **G4 — Test hygiene.** → DONE (02b0747c, c3589cd2, 3979abba). Root causes:
     `/api/devices` opened+closed every evdev node (close waits an RCU grace
     period, ~15 ms × 32) → sysfs enumeration, 440 ms → <1 ms, works without the
@@ -437,3 +444,5 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
   G5 done except windows.rs (G3). G9 (UI lint) running. D1 [NEXT].
 - 2026-09-28: Phases D, E, F, G complete except G3 (Windows session, see
   docs/requests/G3-windows-production-ipc.md). Nothing is [NEXT] on Linux.
+- 2026-09-28: G3 merged (PR #1). All phases done; only the Windows desktop live
+  check (real keys through the hook) remains for the user.
