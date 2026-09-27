@@ -236,15 +236,24 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
 
 ## Phase G — Next (ordered by impact)
 
-- [NEXT] **G1 — Linux: activating a profile must actually change remapping.**
-  `Daemon::run` reload callback loads the new config and DISCARDS it ("Full
-  hot-reload requires daemon restart"); `--config` is only logged — mappings come
-  from ProfileManager's `.active`. Net: on Linux, UI/CLI/IPC activation changes
-  status but not the keyboard. Make the running remapping state follow the active
-  profile (one source of truth for "which config is live"), decide what `--config`
-  means, and prove it end to end by injecting keys and capturing the `keyrx`
-  output device. See the handover prompt in the 2026-09-27 session.
-- [ ] **G2 — UI↔API metrics contract.** UI `fetchEventLog` expects `EventRecord[]`,
+- [x] **G1 — Linux: activating a profile must actually change remapping.**
+  → DONE (e58f05bf..da39d296). `daemon/live_config.rs` is the one resolver:
+    `run` follows the active profile, `run --config FILE` pins FILE at startup,
+    a runtime activation switches profile, other reloads re-read a pinned file
+    or re-resolve `.active`. Transports *request* an activation; the daemon
+    publishes active_profile/config_path only after swapping the event loop's
+    RemappingState (failed load = old mappings + old status). Linux loop and
+    Windows message loop share `Daemon`'s reload path. Also fixed on the same
+    path: ProfileService never attached to the daemon (config saves never
+    reloaded); CLI `profiles activate` never told a running daemon (now IPC);
+    rename of the active profile not persisted to `.active`; `load_config`
+    leaked the file on every load; SIGTERM killed the daemon outright (no
+    graceful shutdown, stale socket). Units/.desktop run `keyrx_daemon run`.
+    Proof: `tests/live_profile_switch_test.rs` (real event loop, virtual kbd +
+    captured output; fails when the swap is removed) and a live run of the
+    installed binary: F23→F24, REST activate → F22, CLI activate → F24,
+    SIGHUP after `.active` edit → F22, `--config` startup → F24.
+- [NEXT] **G2 — UI↔API metrics contract.** UI `fetchEventLog` expects `EventRecord[]`,
   API returns `{count, events: string[]}`; UI `fetchDaemonState` calls `/api/state`
   which does not exist (`/api/daemon/state` does). Add a contract test.
 - [ ] **G3 — Windows production IPC server** (`keyrx_daemon status|metrics` cannot
@@ -252,6 +261,17 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
 - [ ] **G4 — Test hygiene:** `profile_manager_test` asserts `compile_time_ms > 0`
   (flaky: sub-ms compiles); `version_consistency_test` runs `scripts/sync-version.sh`
   from the crate dir; `performance_test` `/api/devices` ≈440ms on this host.
+  Also: `cli::config_dir::test_home_fallback` races other tests on HOME/env
+  (failed once in a lib run, passes alone).
+- [ ] **G6 — Config-editing sprawl.** `PUT /api/config` writes the active
+  profile's `.rhai` without compiling or reloading (unlike
+  `PUT /api/profiles/:name/config` → ProfileService). Route every config edit
+  through ProfileService.
+- [ ] **G7 — Profile swap with keys held.** Swapping RemappingState while a
+  remapped key is down can leave its output pressed (release maps differently).
+  Release held outputs before the swap.
+- [ ] **G8 — Only the first `device_start` block is applied** (warned at load);
+  the Linux platform grabs `*` regardless of config patterns.
 - [ ] **G5 — Oversize files** (>500 code lines): `web/api/diagnostics.rs`,
   `platform_runners/windows.rs`, `web/api/profiles.rs`.
 
@@ -287,3 +307,6 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
   (L1–L6) done, see above. Live parity check: IPC == REST for status, latency,
   events. Full suite on Linux: 2005 pass / 5 fail (all G4, pre-existing) / 91
   ignored; needs `input` group for uinput tests. G1 [NEXT].
+- 2026-09-27: G1 DONE — profile activation swaps live remapping on Linux (and
+  Windows via the same Daemon path); proven by e2e test + live run. Full suite
+  (input group): 2020 pass / 4 fail (all G4) / 91 ignored. G2 [NEXT].

@@ -22,6 +22,8 @@ make verify     # Full quality checks (clippy, fmt, tests, coverage)
   `sudo setpriv --reuid=$(id -u) --regid=$(id -g) --groups=$(id -G|tr ' ' ,),$(getent group input|cut -d: -f3) env PATH=$PATH HOME=$HOME cargo test ...`
 - Type-check Windows code from Linux: `cargo clippy -p keyrx_daemon --target x86_64-pc-windows-gnu -- -D warnings` (checks only; not run)
 - The daemon's read side is ONE `DaemonQueryService` shared by IPC, REST, MCP and WS — add new status/metrics there, never per transport
+- Which config is live is decided ONLY in `daemon/live_config.rs`: `run` follows the active profile, `run --config FILE` pins FILE at startup, a runtime activation (`DaemonSharedState::request_activation`, via `ProfileService`/IPC) switches profile; status is published only after the swap
+- In-process e2e against the real event loop: `LinuxPlatform::scoped(<test kbd name>, <unique output name>)` — see `tests/live_profile_switch_test.rs`
 
 ## Project Structure
 
@@ -58,7 +60,7 @@ cargo test --workspace                     # All tests pass
 
 | Quality Gate | Threshold | Current | Enforcement |
 |--------------|-----------|---------|-------------|
-| Backend Tests | 100% pass | Linux run 2026-09-27: 2005 pass / 5 fail / 91 ignored (`cargo test --workspace`, input group). The 5 are known: 2 timing flakes, 2 script-cwd, 1 `/api/devices` perf — see RESUME_PLAN G4 | Local† |
+| Backend Tests | 100% pass | Linux run 2026-09-27 (after G1): 2020 pass / 4 fail / 91 ignored (`cargo test --workspace`, input group). The 4 are known: 1 timing flake, 2 script-cwd, 1 `/api/devices` perf — see RESUME_PLAN G4 | Local† |
 | Frontend Tests | ≥95% pass | ~1,874 test cases across 92 test files; WebSocket-mock instability resolved (commit d8694064) | Local† |
 | Frontend Coverage | ≥80% line/branch | Measured on demand (`npm run test:coverage`) | Local† |
 | Accessibility | Zero WCAG violations | axe a11y suite present (`npm run test:a11y`) | Local† |
