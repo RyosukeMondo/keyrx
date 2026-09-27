@@ -102,44 +102,39 @@ impl IpcServer {
 
     /// Handle a single client connection
     fn handle_client<F>(
-        mut stream: LocalSocketStream,
+        stream: LocalSocketStream,
         handler: Arc<Mutex<F>>,
     ) -> Result<(), Box<dyn std::error::Error>>
     where
         F: Fn(IpcRequest) -> Result<IpcResponse, String> + Send + 'static,
     {
-        // Read request (newline-delimited JSON)
-        let mut request_line = String::new();
-        {
-            let mut reader = BufReader::new(&mut stream);
-            reader.read_line(&mut request_line)?;
-        }
-
-        // Parse request
-        let request: IpcRequest = serde_json::from_str(request_line.trim())?;
-
-        log::debug!("Received IPC request: {:?}", request);
-
-        // Call handler - need to use blocking context since we're in a std::thread
-        let response = {
-            let handler_guard = handler.blocking_lock();
-            match handler_guard(request) {
-                Ok(resp) => resp,
-                Err(err_msg) => IpcResponse::Error {
-                    code: 5000,
-                    message: err_msg,
-                },
+        // Newline-delimited JSON, any number of requests per connection until
+        // the client hangs up. (Answering one request and dropping the stream
+        // broke clients that reuse their connection, e.g. `metrics --follow`.)
+        let mut reader = BufReader::new(stream);
+        loop {
+            let mut request_line = String::new();
+            if reader.read_line(&mut request_line)? == 0 {
+                return Ok(()); // EOF: client closed the connection
             }
-        };
+            let request: IpcRequest = serde_json::from_str(request_line.trim())?;
+            log::debug!("Received IPC request: {:?}", request);
 
-        // Serialize and send response
-        let response_json = serde_json::to_string(&response)?;
-        stream.write_all(response_json.as_bytes())?;
-        stream.write_all(b"\n")?;
-        stream.flush()?;
+            let response = {
+                let handler_guard = handler.blocking_lock();
+                handler_guard(request).unwrap_or_else(|message| IpcResponse::Error {
+                    code: 5000,
+                    message,
+                })
+            };
 
-        log::debug!("Sent IPC response");
-        Ok(())
+            let stream = reader.get_mut();
+            let response_json = serde_json::to_string(&response)?;
+            stream.write_all(response_json.as_bytes())?;
+            stream.write_all(b"\n")?;
+            stream.flush()?;
+            log::debug!("Sent IPC response");
+        }
     }
 
     /// Get the socket path
@@ -194,4 +189,33 @@ mod tests {
 
     // Integration test for start/stop would require actual socket creation
     // which is tested at a higher level
+
+    /// Regression: the server answered one request per connection, so a
+    /// client reusing its connection (`metrics events --follow`) got EPIPE.
+    #[test]
+    #[cfg(unix)]
+    fn test_several_requests_on_one_connection() {
+        use crate::ipc::unix_socket::UnixSocketIpc;
+        use crate::ipc::DaemonIpc;
+        use crate::services::DaemonQueryService;
+
+        let dir = tempfile::tempdir().unwrap();
+        let socket = dir.path().join("reuse.sock");
+        let manager =
+            Arc::new(crate::config::ProfileManager::new(dir.path().to_path_buf()).unwrap());
+        let handler = Arc::new(super::super::commands::IpcCommandHandler::new(
+            manager,
+            Arc::new(DaemonQueryService::without_daemon()),
+        ));
+        spawn(socket.clone(), handler).unwrap();
+
+        let mut client = UnixSocketIpc::new(socket);
+        for _ in 0..3 {
+            let response = client.send_request(&IpcRequest::GetEventsTail { count: 5 });
+            assert!(
+                matches!(response, Ok(IpcResponse::Events { .. })),
+                "{response:?}"
+            );
+        }
+    }
 }
