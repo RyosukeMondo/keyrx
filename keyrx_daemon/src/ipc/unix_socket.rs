@@ -75,7 +75,8 @@ impl UnixSocketIpc {
         let stream = LocalSocketStream::connect(name.as_ref()).map_err(|e| {
             self.state = ConnectionState::Disconnected;
             if e.kind() == std::io::ErrorKind::ConnectionRefused {
-                IpcError::ConnectionRefused
+                // The file exists (checked above) but nobody is listening.
+                IpcError::StaleSocket(self.socket_path.display().to_string())
             } else {
                 IpcError::IoError(e)
             }
@@ -224,6 +225,21 @@ mod tests {
 
         let result = client.send_request(&IpcRequest::GetStatus);
         assert!(matches!(result, Err(IpcError::SocketNotFound(_))));
+    }
+
+    /// Regression: a socket left behind by a crashed/killed daemon used to
+    /// surface as "connection refused" instead of "daemon not running".
+    #[cfg(unix)]
+    #[test]
+    fn test_stale_socket_reports_daemon_not_running() {
+        let (_temp_dir, socket_path) = setup_test_socket();
+        drop(std::os::unix::net::UnixListener::bind(&socket_path).unwrap());
+        assert!(socket_path.exists(), "listener drop leaves the file behind");
+
+        let mut client = UnixSocketIpc::new(socket_path.clone());
+        let err = client.send_request(&IpcRequest::GetStatus).unwrap_err();
+        assert!(matches!(err, IpcError::StaleSocket(_)), "{err:?}");
+        assert_eq!(err.code(), 3005);
     }
 
     #[test]

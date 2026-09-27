@@ -74,9 +74,10 @@ pub enum IpcError {
     #[error("Daemon socket not found at {0} (error code 3005)")]
     SocketNotFound(String),
 
-    /// Connection refused (daemon not accepting connections)
-    #[error("Connection refused to daemon socket (error code 3006)")]
-    ConnectionRefused,
+    /// Socket file exists but nothing listens on it: the daemon exited without
+    /// removing it (crash, kill). Same meaning as `SocketNotFound`.
+    #[error("Daemon not running: stale socket at {0} (error code 3005)")]
+    StaleSocket(String),
 
     /// Request timeout (daemon not responding)
     #[error("Request timeout after {0:?} (error code 3007)")]
@@ -99,8 +100,7 @@ impl IpcError {
     /// Get the error code for this error
     pub fn code(&self) -> u16 {
         match self {
-            IpcError::SocketNotFound(_) => 3005,
-            IpcError::ConnectionRefused => 3006,
+            IpcError::SocketNotFound(_) | IpcError::StaleSocket(_) => 3005,
             IpcError::Timeout(_) => 3007,
             IpcError::DeserializeError(_) => 1009,
             IpcError::SerializeError(_) => 1008,
@@ -168,7 +168,6 @@ mod tests {
             IpcError::SocketNotFound("/tmp/test.sock".to_string()).code(),
             3005
         );
-        assert_eq!(IpcError::ConnectionRefused.code(), 3006);
         assert_eq!(IpcError::Timeout(Duration::from_secs(5)).code(), 3007);
         assert_eq!(IpcError::DeserializeError("test".to_string()).code(), 1009);
     }
