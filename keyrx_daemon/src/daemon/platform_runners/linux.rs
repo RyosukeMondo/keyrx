@@ -317,7 +317,7 @@ fn start_production_ipc_server(telemetry: Arc<crate::daemon::DaemonTelemetry>) {
 fn run_test_mode(
     _config_path: &Path,
     _debug: bool,
-    container: Arc<crate::container::ServiceContainer>,
+    _container: Arc<crate::container::ServiceContainer>,
 ) -> Result<(), (i32, String)> {
     use crate::config::ProfileManager;
     use crate::daemon::ExitCode;
@@ -429,8 +429,7 @@ fn run_test_mode(
     let macro_recorder = Arc::new(crate::macro_recorder::MacroRecorder::new());
     // Reuse the same ProfileManager instance for IPC and REST API
     let profile_service = Arc::new(
-        crate::services::ProfileService::new(Arc::clone(&profile_manager))
-            .with_daemon_state(Arc::clone(&daemon_state)),
+        crate::services::ProfileService::new(Arc::clone(&profile_manager)),
     );
     let device_service = Arc::new(crate::services::DeviceService::new(config_dir.clone()));
     let config_service = Arc::new(crate::services::ConfigService::new(Arc::clone(
