@@ -57,11 +57,16 @@ fn start_mock_ipc_server(socket_path: PathBuf) -> thread::JoinHandle<()> {
                         state: vec![false; 255],
                     },
                     IpcRequest::GetLatencyMetrics => IpcResponse::Latency {
-                        min_us: 50,
-                        avg_us: 100,
-                        max_us: 500,
-                        p95_us: 200,
-                        p99_us: 300,
+                        stats: keyrx_daemon::web::events::LatencyStats {
+                            min: 50,
+                            avg: 100,
+                            max: 500,
+                            p95: 200,
+                            p99: 300,
+                            p50: 90,
+                            samples: 1000,
+                            timestamp: 0,
+                        },
                     },
                     IpcRequest::GetEventsTail { count: _ } => {
                         IpcResponse::Events { events: vec![] }

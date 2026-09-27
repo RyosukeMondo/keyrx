@@ -8,7 +8,6 @@
 use super::{IpcRequest, IpcResponse};
 use crate::config::profile_manager::ProfileManager;
 use crate::services::DaemonQueryService;
-use crate::web::events::KeyEventData;
 use std::sync::Arc;
 
 /// Handler for IPC commands (production and test mode alike).
@@ -39,12 +38,7 @@ impl IpcCommandHandler {
             },
             IpcRequest::GetLatencyMetrics => self.handle_get_latency(),
             IpcRequest::GetEventsTail { count } => IpcResponse::Events {
-                events: self
-                    .query
-                    .get_recent_events(count)
-                    .iter()
-                    .map(KeyEventData::summary)
-                    .collect(),
+                events: self.query.get_recent_events(count),
             },
             IpcRequest::ClearEvents => IpcResponse::EventsCleared {
                 count: self.query.clear_events(),
@@ -64,13 +58,8 @@ impl IpcCommandHandler {
     }
 
     fn handle_get_latency(&self) -> IpcResponse {
-        let snapshot = self.query.get_latency_snapshot();
         IpcResponse::Latency {
-            min_us: snapshot.min_us,
-            avg_us: snapshot.avg_us,
-            max_us: snapshot.max_us,
-            p95_us: snapshot.p95_us,
-            p99_us: snapshot.p99_us,
+            stats: self.query.get_latency_stats(),
         }
     }
 
@@ -109,6 +98,7 @@ mod tests {
     use super::*;
     use crate::daemon::telemetry::{DaemonTelemetry, TelemetryState, STATE_BITS};
     use crate::daemon::DaemonSharedState;
+    use crate::web::events::KeyEventData;
     use std::path::PathBuf;
     use std::sync::atomic::AtomicBool;
     use tempfile::TempDir;
@@ -224,7 +214,8 @@ mod tests {
         f.telemetry.latency_recorder().record(250);
 
         match f.handler.handle(IpcRequest::GetLatencyMetrics) {
-            IpcResponse::Latency { min_us, max_us, .. } => {
+            IpcResponse::Latency { stats } => {
+                let (min_us, max_us) = (stats.min, stats.max);
                 assert!(min_us >= 250 && max_us >= 250, "{min_us}..{max_us}");
             }
             other => panic!("Expected Latency response, got {other:?}"),
@@ -239,7 +230,8 @@ mod tests {
 
         match f.handler.handle(IpcRequest::GetEventsTail { count: 10 }) {
             IpcResponse::Events { events } => {
-                assert_eq!(events, vec!["press A -> A", "press B -> B"])
+                let lines: Vec<_> = events.iter().map(KeyEventData::summary).collect();
+                assert_eq!(lines, vec!["press A -> A", "press B -> B"])
             }
             other => panic!("Expected Events response, got {other:?}"),
         }

@@ -5,6 +5,8 @@
 //! `/tmp/keyrx-daemon.sock` and responds to requests for status, state, and metrics.
 
 use serde::{Deserialize, Serialize};
+
+use crate::web::events::{KeyEventData, LatencyStats};
 use std::time::Duration;
 use thiserror::Error;
 
@@ -50,15 +52,9 @@ pub enum IpcResponse {
     /// Current state (255-bit modifier/lock state)
     State { state: Vec<bool> },
     /// Latency metrics in microseconds
-    Latency {
-        min_us: u64,
-        avg_us: u64,
-        max_us: u64,
-        p95_us: u64,
-        p99_us: u64,
-    },
-    /// Recent events
-    Events { events: Vec<String> },
+    Latency { stats: LatencyStats },
+    /// Recent key events, oldest first (same records as REST and the WS feed)
+    Events { events: Vec<KeyEventData> },
     /// Result of clearing the recent-events ring buffer (number removed)
     EventsCleared { count: usize },
     /// The profile was compiled and the daemon asked to switch to it

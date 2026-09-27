@@ -110,20 +110,21 @@ fn test_metrics_events_custom_count() {
 }
 
 #[test]
-fn test_metrics_events_follow_not_implemented() {
+fn test_metrics_events_follow_without_daemon_fails_fast() {
     let temp_dir = TempDir::new().unwrap();
     let socket_path = temp_dir.path().join("test-daemon.sock");
 
-    // Follow mode should fail with "not implemented" message
+    // Follow mode needs a daemon; it must not hang polling a missing socket.
     metrics_cmd()
         .arg("metrics")
         .arg("events")
         .arg("--follow")
         .arg("--socket")
         .arg(&socket_path)
+        .timeout(std::time::Duration::from_secs(10))
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Follow mode is not implemented"));
+        .stderr(predicate::str::contains("Daemon socket not found"));
 }
 
 #[test]

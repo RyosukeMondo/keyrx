@@ -76,7 +76,7 @@ pub struct DaemonState {
 
 /// Individual key event data.
 #[typeshare]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KeyEventData {
     /// Timestamp in microseconds since UNIX epoch.
@@ -117,7 +117,7 @@ pub struct KeyEventData {
 
 /// Latency statistics.
 #[typeshare]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LatencyStats {
     /// Minimum latency in microseconds.
     #[typeshare(serialized_as = "number")]
