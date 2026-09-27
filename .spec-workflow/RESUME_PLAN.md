@@ -254,13 +254,14 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   traits are gone.
   → DONE (b8aa2064): traits removed (only their own test used them); DI stays via constructor params.
 
-- [ ] **F4 — Adopt the frontend logger; remove raw `console.*` calls.**
+- [x] **F4 — Adopt the frontend logger; remove raw `console.*` calls.**
   `keyrx_ui/src/utils/logger.ts` exists but 96 raw `console.(log|error|warn|info)`
   calls remain in non-test UI source (e.g. `ConfigurationPanel.tsx`,
   `RhaiSyncEngine.tsx`, `metricsStore.ts`, `useSimulation.ts`) — the logger was built
   but never adopted. *Accept:* `grep -rn "console\.\(log\|error\|warn\|info\)"
   keyrx_ui/src --include=*.ts --include=*.tsx | grep -v test` returns 0 (or only
   intentionally-excepted files); messages go through `logger.ts`'s structured format.
+  → DONE (273dd679): ~78 calls in 24 files go through utils/logger.ts; only GlobalDebugPanel (intentional console capture) and JSDoc examples remain. Also vite drop_console:true was stripping logger.warn/error from production builds.
 
 - [x] **F5 — Shrink the stale file-size baseline.**
   `scripts/verify/file-size-baseline.list` still lists 15 files; 9 of them
@@ -278,7 +279,7 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   `simulation_engine.rs` ≤500 code lines, logic extracted into a focused sibling
   module, `scripts/verify/file-sizes.sh` passes without it in the baseline.
   → DONE (da9c7966): split into mod/types/scenarios/engine/tests.
-- [NEXT] **F-backlog — lower-impact or process items, do opportunistically:** remove
+- [x] **F-backlog — lower-impact or process items, do opportunistically:** remove
   `eprintln!` outside `cli/` (6 files: `config/layout_manager.rs`, `web/ws_rpc.rs`,
   `platform/linux/{mod,input_capture,output_injection}.rs`, `main.rs`); add
   architecture diagrams (doc-only, `.claude/CLAUDE.md` already covers the DI/SSOT
@@ -287,6 +288,7 @@ mark it `[blocked]` with the reason and move the `[NEXT]` marker to the next tas
   (eprintln! part DONE f9053d21; DevicesPage fixed a45c56a8)
   — re-run `cargo test --workspace` and `npm test` once, update the table, and only
   then treat architecture-completion 3.5.1–3.5.3 as closed.
+  → DONE: eprintln! cleanup (f9053d21); counts reconciled - full suite 2024 pass / 0 fail / 91 ignored, UI 1844 / 0 / 23, lint 0 (7c0705cb fixed the last stale test). Architecture diagrams skipped (no doc requested).
 
 ---
 
@@ -433,3 +435,5 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
 - 2026-09-27: G3 request written for the Windows session (code synced by
   push-to-checkout over ssh). G4-G8, C5b, C6, C7, D3, E1, F1, F5, F6 DONE;
   G5 done except windows.rs (G3). G9 (UI lint) running. D1 [NEXT].
+- 2026-09-28: Phases D, E, F, G complete except G3 (Windows session, see
+  docs/requests/G3-windows-production-ipc.md). Nothing is [NEXT] on Linux.

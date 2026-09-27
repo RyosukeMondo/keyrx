@@ -61,8 +61,8 @@ cargo test --workspace                     # All tests pass
 
 | Quality Gate | Threshold | Current | Enforcement |
 |--------------|-----------|---------|-------------|
-| Backend Tests | 100% pass | Linux run 2026-09-27 (after G1): 2020 pass / 4 fail / 91 ignored (`cargo test --workspace`, input group). The 4 are known: 1 timing flake, 2 script-cwd, 1 `/api/devices` perf — see RESUME_PLAN G4 | Local† |
-| Frontend Tests | ≥95% pass | ~1,874 test cases across 92 test files; WebSocket-mock instability resolved (commit d8694064) | Local† |
+| Backend Tests | 100% pass | Linux run 2026-09-27 (end of Phase G): 2024 pass / 0 fail / 91 ignored (`cargo test --workspace`, input group) — see RESUME_PLAN G4 | Local† |
+| Frontend Tests | ≥95% pass | 2026-09-27: 1844 pass / 0 fail / 23 skipped (87 files); `npm run lint` 0 problems | Local† |
 | Frontend Coverage | ≥80% line/branch | Measured on demand (`npm run test:coverage`) | Local† |
 | Accessibility | Zero WCAG violations | axe a11y suite present (`npm run test:a11y`) | Local† |
 
