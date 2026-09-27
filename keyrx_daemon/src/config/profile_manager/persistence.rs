@@ -4,6 +4,7 @@
 //! fallback to the legacy plain-text format for files written before that change.
 
 use std::fs;
+use std::sync::PoisonError;
 use std::time::SystemTime;
 
 use super::types::ProfileError;
@@ -23,8 +24,8 @@ impl ProfileManager {
             "name": name,
             "activated_at": SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
+                .map(|d| d.as_secs())
+                .unwrap_or_default(),
             "activated_by": "user", // Default to user activation
         });
 
@@ -141,7 +142,7 @@ impl ProfileManager {
                 if self
                     .profiles
                     .read()
-                    .expect("profiles RwLock poisoned")
+                    .unwrap_or_else(PoisonError::into_inner)
                     .contains_key(&name)
                 {
                     log::info!("Restored active profile '{}' from {:?}", name, active_file);

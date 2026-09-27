@@ -3,6 +3,7 @@
 
 use std::fs;
 use std::path::Path;
+use std::sync::PoisonError;
 
 use super::types::{ProfileError, ProfileMetadata, ProfileTemplate};
 use super::{ProfileManager, MAX_PROFILES};
@@ -206,7 +207,7 @@ impl ProfileManager {
 
     /// Export a profile to a file.
     pub fn export(&self, name: &str, dest: &Path) -> Result<(), ProfileError> {
-        let profiles = self.profiles.read().expect("profiles RwLock poisoned");
+        let profiles = self.profiles.read().unwrap_or_else(PoisonError::into_inner);
         let profile = profiles
             .get(name)
             .ok_or_else(|| ProfileError::NotFound(name.to_string()))?;

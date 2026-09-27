@@ -19,7 +19,7 @@ pub use types::{ActivationResult, ProfileError, ProfileMetadata, ProfileTemplate
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use super::profile_compiler::ProfileCompiler;
 
@@ -189,7 +189,7 @@ impl ProfileManager {
     pub fn list(&self) -> Vec<ProfileMetadata> {
         self.profiles
             .read()
-            .expect("profiles RwLock poisoned")
+            .unwrap_or_else(PoisonError::into_inner)
             .values()
             .cloned()
             .collect()
@@ -211,7 +211,7 @@ impl ProfileManager {
     pub fn get(&self, name: &str) -> Option<ProfileMetadata> {
         self.profiles
             .read()
-            .expect("profiles RwLock poisoned")
+            .unwrap_or_else(PoisonError::into_inner)
             .get(name)
             .cloned()
     }
@@ -244,7 +244,7 @@ impl ProfileManager {
     /// # }
     /// ```
     pub fn get_config(&self, name: &str) -> Result<String, ProfileError> {
-        let profiles = self.profiles.read().expect("profiles RwLock poisoned");
+        let profiles = self.profiles.read().unwrap_or_else(PoisonError::into_inner);
         let profile = profiles
             .get(name)
             .ok_or_else(|| ProfileError::NotFound(name.to_string()))?;
@@ -285,7 +285,7 @@ impl ProfileManager {
     /// ```
     pub fn set_config(&self, name: &str, content: &str) -> Result<(), ProfileError> {
         let profile = {
-            let profiles = self.profiles.read().expect("profiles RwLock poisoned");
+            let profiles = self.profiles.read().unwrap_or_else(PoisonError::into_inner);
             profiles
                 .get(name)
                 .ok_or_else(|| ProfileError::NotFound(name.to_string()))?
@@ -317,7 +317,7 @@ impl ProfileManager {
         let updated_metadata = self.load_profile_metadata(name)?;
         self.profiles
             .write()
-            .expect("profiles RwLock poisoned")
+            .unwrap_or_else(PoisonError::into_inner)
             .insert(name.to_string(), updated_metadata);
 
         Ok(())
@@ -332,7 +332,7 @@ impl ProfileManager {
             *self
                 .active_profile
                 .write()
-                .expect("Test helper: RwLock poisoned") = Some(name);
+                .unwrap_or_else(PoisonError::into_inner) = Some(name);
         }
     }
 
