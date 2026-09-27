@@ -78,13 +78,24 @@ Only the transport endpoint and the runner wiring are missing.
   daemon over IPC from inside the daemon, which violates the one-read-model
   rule, and the Linux session is removing it (G6).
 
+## 2b. While in `windows.rs`: bring it under the size limit (G5)
+
+`daemon/platform_runners/windows.rs` has 537 code lines against a 500 limit.
+`scripts/verify/file-sizes.sh` is a real gate now, with a shrink-only baseline
+in `scripts/verify/file-size-baseline.list`. Moving the IPC helper out already
+helps. Split by responsibility (message loop, tray handling, single-instance and
+PID file, test mode) until the file is under 500. Then run
+`bash scripts/verify/file-sizes.sh --update` (from Git Bash) and commit the
+shrunk baseline.
+
 ## 3. Acceptance
 
 Automated, on Windows:
 - `cargo test -p keyrx_daemon ipc::` passes, including a named-pipe round trip
   (server spawn → `IpcClient` GetStatus, GetEventsTail, ClearEvents) and "no
   server → `SocketNotFound`".
-- `cargo clippy --workspace -- -D warnings` and `cargo fmt --check` pass.
+- `cargo clippy --workspace -- -D warnings`, `cargo fmt --check` and
+  `bash scripts/verify/file-sizes.sh` pass.
 - `cargo test --workspace`: report pass/fail/ignored counts, and list any
   failure that isn't in the known-flaky G4 set.
 

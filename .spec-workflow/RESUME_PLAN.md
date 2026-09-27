@@ -269,24 +269,15 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
   `docs/requests/G3-windows-production-ipc.md` (Windows session implements;
   code shipped as bundle `D:\users\ryosu\bundles\keyrx-main.bundle`). (`keyrx_daemon status|metrics` cannot
   work on Windows; `DEFAULT_SOCKET_PATH` is a Unix path). Use `ipc::server::spawn`.
-- [NEXT] **G4 — Test hygiene:** `profile_manager_test` asserts `compile_time_ms > 0`
-  (flaky: sub-ms compiles); `version_consistency_test` runs `scripts/sync-version.sh`
-  from the crate dir; `performance_test` `/api/devices` ≈440ms on this host.
-  Also: `cli::config_dir::test_home_fallback` races other tests on HOME/env
-  (failed once in a lib run, passes alone).
-- [ ] **G6 — Config-editing sprawl.** `PUT /api/config` writes the active
-  profile's `.rhai` without compiling or reloading (unlike
-  `PUT /api/profiles/:name/config` → ProfileService). Route every config edit
-  through ProfileService.
-- [ ] **G7 — Profile swap with keys held.** Swapping RemappingState while a
-  remapped key is down can leave its output pressed (release maps differently).
-  Release held outputs before the swap.
-- [ ] **G8 — Only the first `device_start` block is applied** (warned at load);
-  the Linux platform grabs `*` regardless of config patterns.
-- [ ] **G9 — UI lint debt:** `npm run lint` has 14 errors in untouched files
-  (e.g. `MonitorPage.tsx` refs-during-render); `DevicesPage.test.tsx` 2 failures
-  (save-checkmark timing). EventRecord `layer` is always `'Base'` (see D3).
-- [ ] **G5 — Oversize files** (>500 code lines): `web/api/diagnostics.rs`,
+- [x] **G4 — Test hygiene.** → DONE (02b0747c, c3589cd2, 3979abba). Root causes:
+    `/api/devices` opened+closed every evdev node (close waits an RCU grace
+    period, ~15 ms × 32) → sysfs enumeration, 440 ms → <1 ms, works without the
+    input group. Config-dir: 9 callers bypassed `get_config_dir` (web layouts/
+    diagnostics/config ignored KEYRX_CONFIG_DIR) → one resolver, pure + tested
+    without env mutation (fixed the HOME race). compile_time `> 0` and script
+    cwd assumptions fixed.
+- [NEXT] **G5 — Oversize files** (gate made real in dd1d1638; 14 files being
+  split; `windows.rs` handed to the G3 request) (>500 code lines): `web/api/diagnostics.rs`,
   `platform_runners/windows.rs`, `web/api/profiles.rs`.
 
 ## Status Log
