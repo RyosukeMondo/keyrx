@@ -357,11 +357,13 @@ impl Daemon {
     pub fn check_tap_hold_timeouts(&mut self) {
         if let Some(ref mut remap_state) = self.remapping_state {
             let current_time = event_loop::current_timestamp_us();
-            let timeout_events =
-                keyrx_core::runtime::check_tap_hold_timeouts(current_time, remap_state.state_mut());
-            for output_event in &timeout_events {
-                if let Err(e) = self.platform.inject_output(output_event.clone()) {
-                    log::warn!("Failed to inject timeout event: {}", e);
+            for state in remap_state.states_mut() {
+                let timeout_events =
+                    keyrx_core::runtime::check_tap_hold_timeouts(current_time, state);
+                for output_event in &timeout_events {
+                    if let Err(e) = self.platform.inject_output(output_event.clone()) {
+                        log::warn!("Failed to inject timeout event: {}", e);
+                    }
                 }
             }
         }
@@ -432,18 +434,19 @@ fn apply_loaded(
     shared_state: &DaemonSharedState,
     loaded: Option<LoadedConfig>,
 ) -> Option<RemappingState> {
-    let device_config = loaded.as_ref().map(|l| &l.device_config);
-    configure_platform_blocking(device_config);
-    let remapping_state = device_config.map(RemappingState::new);
+    let devices = loaded.as_ref().map(|l| l.devices.as_slice());
+    configure_platform_blocking(devices);
+    let remapping_state = devices.map(RemappingState::from_blocks);
     shared_state.set_active_config(
         loaded.as_ref().and_then(|l| l.profile.clone()),
         loaded.as_ref().map(|l| l.path.clone()).unwrap_or_default(),
     );
     match &loaded {
         Some(l) => info!(
-            "Live config: {} ({} mappings, profile: {})",
+            "Live config: {} ({} mappings in {} block(s), profile: {})",
             l.path.display(),
-            l.device_config.mappings.len(),
+            l.devices.iter().map(|d| d.mappings.len()).sum::<usize>(),
+            l.devices.len(),
             l.profile.as_deref().unwrap_or("-")
         ),
         None => info!("Live config: none (pass-through)"),
@@ -452,17 +455,18 @@ fn apply_loaded(
     remapping_state
 }
 
-/// Windows: the low-level hook must block exactly the remapped source keys,
+/// Windows: the low-level hook must block exactly the remapped source keys
+/// (of every block - the hook does not know which device a key came from),
 /// otherwise the original keystroke leaks through (double input). Linux grabs
 /// the devices, so there is nothing to configure.
 #[cfg(target_os = "windows")]
-fn configure_platform_blocking(device_config: Option<&DeviceConfig>) {
+fn configure_platform_blocking(devices: Option<&[DeviceConfig]>) {
     use crate::platform::windows::platform_state::PlatformState;
     use keyrx_core::config::{ConfigRoot, Metadata, Version};
 
-    let config_root = device_config.map(|dc| ConfigRoot {
+    let config_root = devices.map(|devices| ConfigRoot {
         version: Version::current(),
-        devices: vec![dc.clone()],
+        devices: devices.to_vec(),
         metadata: Metadata {
             compilation_timestamp: 0,
             compiler_version: String::new(),
@@ -475,7 +479,7 @@ fn configure_platform_blocking(device_config: Option<&DeviceConfig>) {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn configure_platform_blocking(_device_config: Option<&DeviceConfig>) {}
+fn configure_platform_blocking(_devices: Option<&[DeviceConfig]>) {}
 
 /// Drop implementation to ensure automatic cleanup on daemon exit.
 ///

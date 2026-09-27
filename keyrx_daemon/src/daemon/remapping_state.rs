@@ -1,90 +1,128 @@
-//! Remapping state management for the event loop.
+//! Remapping state for the event loop: every `device_start` block of the live
+//! config, and the runtime state of each input device.
 //!
-//! This module contains the state needed for event processing:
-//! - `KeyLookup`: O(1) key-to-mapping resolution
-//! - `DeviceState`: Modifier/lock bits + tap-hold processor
-//!
-//! The state is maintained across events and can be reloaded on SIGHUP.
+//! A config is a list of blocks (`device_start(pattern) ... device_end()`).
+//! Each input device is routed to the FIRST block whose pattern matches one of
+//! its identities (name, serial, path, id - see
+//! `keyrx_core::runtime::device_pattern`) and gets its own `DeviceState`
+//! (modifiers, locks, tap-hold). A device no block matches is passed through.
+//! Routing is decided once per device and cached, so the hot path is a hash
+//! lookup plus the block's O(1) key lookup.
+
+use std::collections::HashMap;
 
 use keyrx_core::config::DeviceConfig;
+use keyrx_core::runtime::device_pattern;
 use keyrx_core::runtime::{DeviceState, KeyLookup};
 
-/// Container for remapping state.
-///
-/// Holds all state needed for event processing in the hot path:
-/// - KeyLookup provides O(1) constant-time key→mapping resolution
-/// - DeviceState tracks 255 modifiers + 255 locks + tap-hold processor
-///
-/// # Performance
-///
-/// - Key lookup: O(1), ~5ns average (HashMap with robin hood hashing)
-/// - State access: O(1), direct field access
-pub struct RemappingState {
-    /// O(1) key-to-mapping lookup table.
+/// One `device_start` block.
+struct Block {
+    pattern: String,
     lookup: KeyLookup,
-    /// Device state (modifiers, locks, tap-hold).
+}
+
+/// A device seen by the event loop.
+struct DeviceSlot {
+    /// Index into `blocks`; `None` = no block matches (pass-through).
+    block: Option<usize>,
+    identities: Vec<String>,
     state: DeviceState,
 }
 
+/// The lookup tables of the live config and the state of each device.
+pub struct RemappingState {
+    blocks: Vec<Block>,
+    /// Keyed by the event's device id (`""` for events without one).
+    devices: HashMap<String, DeviceSlot>,
+}
+
+/// What the event loop needs to process one event of a routed device.
+pub struct Routed<'a> {
+    pub lookup: &'a KeyLookup,
+    pub state: &'a mut DeviceState,
+    pub identities: &'a [String],
+}
+
 impl RemappingState {
-    /// Creates a new remapping state from device configuration.
-    ///
-    /// # Arguments
-    ///
-    /// * `config` - Device configuration containing key mappings
+    /// A config with a single block (e.g. one `device_start("*")`).
     pub fn new(config: &DeviceConfig) -> Self {
+        Self::from_blocks(std::slice::from_ref(config))
+    }
+
+    /// All blocks of a config, in declaration order (first match wins).
+    pub fn from_blocks(configs: &[DeviceConfig]) -> Self {
         Self {
-            lookup: KeyLookup::from_device_config(config),
-            state: DeviceState::new(),
+            blocks: configs
+                .iter()
+                .map(|config| Block {
+                    pattern: config.identifier.pattern.clone(),
+                    lookup: KeyLookup::from_device_config(config),
+                })
+                .collect(),
+            devices: HashMap::new(),
         }
     }
 
-    /// Returns a reference to the key lookup table.
-    #[inline]
-    pub fn lookup(&self) -> &KeyLookup {
-        &self.lookup
+    /// Routes an event from `device_id` to its block. `identities` resolves a
+    /// device seen for the first time (name, serial, path...); it is not
+    /// called again for that device. `None` means: pass the event through.
+    pub fn route(
+        &mut self,
+        device_id: Option<&str>,
+        identities: impl FnOnce(&str) -> Vec<String>,
+    ) -> Option<Routed<'_>> {
+        let key = device_id.unwrap_or_default();
+        if !self.devices.contains_key(key) {
+            let ids = if key.is_empty() {
+                Vec::new()
+            } else {
+                identities(key)
+            };
+            let block = self.block_for(&ids);
+            self.devices.insert(
+                key.to_string(),
+                DeviceSlot {
+                    block,
+                    identities: ids,
+                    state: DeviceState::new(),
+                },
+            );
+        }
+        let slot = self.devices.get_mut(key)?;
+        let block = &self.blocks[slot.block?];
+        Some(Routed {
+            lookup: &block.lookup,
+            state: &mut slot.state,
+            identities: &slot.identities,
+        })
     }
 
-    /// Returns a mutable reference to the device state.
-    #[inline]
-    pub fn state_mut(&mut self) -> &mut DeviceState {
-        &mut self.state
+    /// First block whose pattern matches the device. `"*"` also matches a
+    /// device with no known identity (e.g. an event without a device id).
+    fn block_for(&self, identities: &[String]) -> Option<usize> {
+        let ids: Vec<&str> = identities.iter().map(String::as_str).collect();
+        self.blocks
+            .iter()
+            .position(|b| b.pattern == "*" || device_pattern::matches_any(&ids, &b.pattern))
     }
 
-    /// Returns a reference to the device state.
-    #[inline]
-    pub fn state(&self) -> &DeviceState {
-        &self.state
+    /// Runtime state of `device_id`, if it has been routed to a block.
+    pub fn state_of(&self, device_id: Option<&str>) -> Option<&DeviceState> {
+        let slot = self.devices.get(device_id.unwrap_or_default())?;
+        slot.block.map(|_| &slot.state)
     }
 
-    /// Returns both the lookup table reference and mutable state reference.
-    ///
-    /// This method allows borrowing the lookup and state simultaneously,
-    /// which is required for `process_event()` calls. Using separate
-    /// `lookup()` and `state_mut()` calls would cause a borrow conflict.
-    #[inline]
-    pub fn lookup_and_state_mut(&mut self) -> (&KeyLookup, &mut DeviceState) {
-        (&self.lookup, &mut self.state)
+    /// Runtime states of every routed device (tap-hold timeouts, IME).
+    pub fn states_mut(&mut self) -> impl Iterator<Item = &mut DeviceState> {
+        self.devices
+            .values_mut()
+            .filter(|slot| slot.block.is_some())
+            .map(|slot| &mut slot.state)
     }
 
-    /// Reloads the remapping state with new configuration.
-    ///
-    /// Called on SIGHUP to apply configuration changes.
-    /// This creates a fresh lookup table and resets device state.
-    ///
-    /// # Arguments
-    ///
-    /// * `config` - New device configuration
-    pub fn reload(&mut self, config: &DeviceConfig) {
-        self.lookup = KeyLookup::from_device_config(config);
-        self.state = DeviceState::new();
-    }
-
-    /// Resets only the device state (preserves lookup table).
-    ///
-    /// Useful for testing or recovering from stuck state.
-    pub fn reset_state(&mut self) {
-        self.state = DeviceState::new();
+    /// Number of `device_start` blocks.
+    pub fn block_count(&self) -> usize {
+        self.blocks.len()
     }
 }
 
@@ -93,57 +131,79 @@ mod tests {
     use super::*;
     use keyrx_core::config::{DeviceIdentifier, KeyCode, KeyMapping};
 
-    fn create_test_config() -> DeviceConfig {
+    fn block(pattern: &str, from: KeyCode, to: KeyCode) -> DeviceConfig {
         DeviceConfig {
             identifier: DeviceIdentifier {
-                pattern: "*".to_string(), // Match all devices (global)
+                pattern: pattern.to_string(),
             },
-            mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+            mappings: vec![KeyMapping::simple(from, to)],
+        }
+    }
+
+    fn names(name: &'static str) -> impl FnOnce(&str) -> Vec<String> {
+        move |id| vec![id.to_string(), name.to_string()]
+    }
+
+    fn output(state: &mut RemappingState, id: &str, name: &'static str) -> Option<KeyCode> {
+        let routed = state.route(Some(id), names(name))?;
+        match routed.lookup.find_mapping(KeyCode::A, routed.state)? {
+            keyrx_core::config::BaseKeyMapping::Simple { to, .. } => Some(*to),
+            _ => None,
         }
     }
 
     #[test]
-    fn test_remapping_state_new() {
-        let config = create_test_config();
-        let state = RemappingState::new(&config);
-
-        // Should have created lookup table
-        assert!(state
-            .lookup()
-            .find_mapping(KeyCode::A, state.state())
-            .is_some());
+    fn devices_use_the_first_matching_block() {
+        let mut state = RemappingState::from_blocks(&[
+            block("*numpad*", KeyCode::A, KeyCode::B),
+            block("*", KeyCode::A, KeyCode::C),
+        ]);
+        assert_eq!(output(&mut state, "path-7", "USB NumPad"), Some(KeyCode::B));
+        assert_eq!(
+            output(&mut state, "path-3", "USB Keyboard"),
+            Some(KeyCode::C)
+        );
     }
 
     #[test]
-    fn test_remapping_state_reload() {
-        let config = create_test_config();
-        let mut state = RemappingState::new(&config);
-
-        // Modify state
-        state.state_mut().set_modifier(0);
-        assert!(state.state().is_modifier_active(0));
-
-        // Reload should reset state
-        state.reload(&config);
-        assert!(!state.state().is_modifier_active(0));
+    fn unmatched_devices_pass_through() {
+        let mut state = RemappingState::from_blocks(&[block("*numpad*", KeyCode::A, KeyCode::B)]);
+        assert!(state.route(Some("path-3"), names("USB Keyboard")).is_none());
+        assert!(state.state_of(Some("path-3")).is_none());
+        assert_eq!(state.states_mut().count(), 0);
     }
 
     #[test]
-    fn test_remapping_state_reset_state() {
-        let config = create_test_config();
-        let mut state = RemappingState::new(&config);
+    fn each_device_has_its_own_state() {
+        let mut state = RemappingState::new(&block("*", KeyCode::A, KeyCode::B));
+        state
+            .route(Some("kbd-1"), names("One"))
+            .unwrap()
+            .state
+            .set_modifier(0);
+        let other = state.route(Some("kbd-2"), names("Two")).unwrap();
+        assert!(!other.state.is_modifier_active(0));
+        assert!(state.state_of(Some("kbd-1")).unwrap().is_modifier_active(0));
+    }
 
-        // Set modifier
-        state.state_mut().set_modifier(0);
-        assert!(state.state().is_modifier_active(0));
+    #[test]
+    fn identities_are_resolved_once_per_device() {
+        let mut state = RemappingState::new(&block("*", KeyCode::A, KeyCode::B));
+        let mut calls = 0;
+        for _ in 0..3 {
+            state.route(Some("kbd"), |id| {
+                calls += 1;
+                vec![id.to_string()]
+            });
+        }
+        assert_eq!(calls, 1);
+    }
 
-        // Reset should clear modifier but preserve lookup
-        state.reset_state();
-        assert!(!state.state().is_modifier_active(0));
-        // Lookup should still work
-        assert!(state
-            .lookup()
-            .find_mapping(KeyCode::A, state.state())
-            .is_some());
+    #[test]
+    fn events_without_device_use_a_wildcard_block() {
+        let mut wildcard = RemappingState::new(&block("*", KeyCode::A, KeyCode::B));
+        assert!(wildcard.route(None, |_| unreachable!()).is_some());
+        let mut specific = RemappingState::new(&block("*numpad*", KeyCode::A, KeyCode::B));
+        assert!(specific.route(None, |_| unreachable!()).is_none());
     }
 }

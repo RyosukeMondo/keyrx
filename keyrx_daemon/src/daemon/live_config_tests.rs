@@ -37,7 +37,7 @@ fn set_active(dir: &Path, name: &str) {
 }
 
 fn first_mapping_output(loaded: &LoadedConfig) -> KeyMapping {
-    loaded.device_config.mappings[0].clone()
+    loaded.devices[0].mappings[0].clone()
 }
 
 #[test]
@@ -154,10 +154,11 @@ fn activation_switches_mappings_and_status_together() {
     assert_eq!(shared.get_active_profile().as_deref(), Some("a"));
 
     shared.request_activation("b");
-    let state = reload_remapping(&mut live, &shared).unwrap().unwrap();
-    assert!(state
-        .lookup()
-        .find_mapping(KeyCode::CapsLock, &keyrx_core::runtime::DeviceState::new())
+    let mut state = reload_remapping(&mut live, &shared).unwrap().unwrap();
+    let routed = state.route(Some("kbd"), |id| vec![id.to_string()]).unwrap();
+    assert!(routed
+        .lookup
+        .find_mapping(KeyCode::CapsLock, routed.state)
         .is_some());
     assert_eq!(shared.get_active_profile().as_deref(), Some("b"));
     assert_eq!(shared.get_config_path(), b_path);

@@ -16,7 +16,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::time::Instant;
 
 use keyrx_core::config::BaseKeyMapping;
-use keyrx_core::runtime::{check_tap_hold_timeouts, process_event};
+use keyrx_core::runtime::{check_tap_hold_timeouts, process_event_for_identities};
 use log::{info, trace, warn};
 
 use crate::platform::Platform;
@@ -200,8 +200,10 @@ fn handle_timeout_events(
 ) {
     if let Some(ref mut remap_state) = remapping_state {
         let current_time = current_timestamp_us();
-        let timeout_events = check_tap_hold_timeouts(current_time, remap_state.state_mut());
-        inject_timeout_events(&timeout_events, platform, stats);
+        for state in remap_state.states_mut() {
+            let timeout_events = check_tap_hold_timeouts(current_time, state);
+            inject_timeout_events(&timeout_events, platform, stats);
+        }
     }
 }
 
@@ -251,16 +253,9 @@ fn process_input_event(
     let device_id = event.device_id().map(String::from);
     let input_keycode = event.keycode();
 
-    // Update IME state from platform before processing
-    if let Some(ref mut remap_state) = remapping_state {
-        if let Some(ime) = platform.query_ime_state() {
-            remap_state.state_mut().set_ime_state(ime);
-        }
-    }
-
-    // Process event through remapping engine
+    let remapped = remap_event(&event, remapping_state.as_mut(), platform.as_ref());
     let (output_events, mapping_type, mapping_triggered) =
-        process_remapping(&event, remapping_state);
+        (remapped.outputs, remapped.mapping_type, remapped.triggered);
 
     let output_desc = format_output_description(&output_events);
 
@@ -273,13 +268,7 @@ fn process_input_event(
         recorder.record(latency_us);
     }
 
-    let state = mapping_triggered
-        .then(|| {
-            remapping_state
-                .as_ref()
-                .map(|rs| build_telemetry_state(rs.state()))
-        })
-        .flatten();
+    let state = remapped.state;
     let event_data = key_event_data(
         &event,
         input_keycode,
@@ -307,34 +296,77 @@ fn ensure_timestamp(event: keyrx_core::runtime::KeyEvent) -> keyrx_core::runtime
     }
 }
 
-fn process_remapping(
+/// The result of running one event through the live config.
+struct Remapped {
+    outputs: Vec<keyrx_core::runtime::KeyEvent>,
+    mapping_type: Option<&'static str>,
+    triggered: bool,
+    /// The device's state after the event, when a mapping fired.
+    state: Option<TelemetryState>,
+}
+
+/// Routes `event` to its device's block and runs it through the remapping
+/// engine (both platforms). Unmatched devices and pass-through mode return the
+/// event unchanged.
+fn remap_event(
     event: &keyrx_core::runtime::KeyEvent,
-    remapping_state: &mut Option<RemappingState>,
-) -> (
-    Vec<keyrx_core::runtime::KeyEvent>,
-    Option<&'static str>,
-    bool,
-) {
-    if let Some(ref mut remap_state) = remapping_state {
-        let (lookup, state) = remap_state.lookup_and_state_mut();
-        let input_keycode = event.keycode();
-
-        // Look up mapping to determine type before processing
-        let mapping = lookup.find_mapping(input_keycode, state);
-        let mapping_type_str = mapping.map(get_mapping_type);
-        let triggered = mapping.is_some();
-
-        // Ensure real timestamp for tap-hold timeout resolution
-        let event = ensure_timestamp(event.clone());
-
-        // Process the event through the remapping engine
-        let outputs = process_event(event, lookup, state);
-
-        (outputs, mapping_type_str, triggered)
-    } else {
-        // Pass-through mode - no remapping
-        (vec![event.clone()], None, false)
+    remapping_state: Option<&mut RemappingState>,
+    platform: &dyn Platform,
+) -> Remapped {
+    let pass_through = || Remapped {
+        outputs: vec![event.clone()],
+        mapping_type: None,
+        triggered: false,
+        state: None,
+    };
+    let Some(remap_state) = remapping_state else {
+        return pass_through();
+    };
+    let Some(routed) = remap_state.route(event.device_id(), |id| device_identities(platform, id))
+    else {
+        return pass_through();
+    };
+    if let Some(ime) = platform.query_ime_state() {
+        routed.state.set_ime_state(ime);
     }
+    let identities: Vec<&str> = routed.identities.iter().map(String::as_str).collect();
+    let mapping =
+        routed
+            .lookup
+            .find_mapping_for_identities(event.keycode(), routed.state, &identities);
+    let mapping_type = mapping.map(get_mapping_type);
+    let triggered = mapping.is_some();
+    // Ensure real timestamp for tap-hold timeout resolution
+    let outputs = process_event_for_identities(
+        ensure_timestamp(event.clone()),
+        routed.lookup,
+        routed.state,
+        &identities,
+    );
+    let state = triggered.then(|| build_telemetry_state(routed.state));
+    Remapped {
+        outputs,
+        mapping_type,
+        triggered,
+        state,
+    }
+}
+
+/// The strings device patterns are matched against for `device_id`: its id,
+/// name, path and serial, from the platform's device list (just the id when
+/// the platform does not know it).
+fn device_identities(platform: &dyn Platform, device_id: &str) -> Vec<String> {
+    let mut ids = vec![device_id.to_string()];
+    if let Some(serial) = device_id.strip_prefix("serial-") {
+        ids.push(serial.to_string());
+    }
+    if let Ok(devices) = platform.list_devices() {
+        if let Some(info) = devices.into_iter().find(|d| d.id == device_id) {
+            ids.push(info.name);
+            ids.push(info.path);
+        }
+    }
+    ids
 }
 
 /// Injects output events through platform.
@@ -542,29 +574,14 @@ pub fn process_one_event(
             let device_id = event.device_id().map(String::from);
             let input_keycode = event.keycode();
 
-            // Update IME state from platform before processing
-            // (mut binding needed to inject IME state then pass to remap block)
-            let mut remapping_state = remapping_state;
-            if let Some(ref mut remap_state) = remapping_state {
-                if let Some(ime) = platform.query_ime_state() {
-                    remap_state.state_mut().set_ime_state(ime);
-                }
-            }
-
-            // Process event through remapping engine if available
-            let (output_events, mapping_type, mapping_triggered, state) =
-                if let Some(remap_state) = remapping_state {
-                    let (lookup, state) = remap_state.lookup_and_state_mut();
-                    let mapping = lookup.find_mapping(input_keycode, state);
-                    let mapping_type_str = mapping.map(get_mapping_type);
-                    let triggered = mapping.is_some();
-                    let outputs = process_event(event.clone(), lookup, state);
-                    let snapshot = triggered.then(|| build_telemetry_state(state));
-                    (outputs, mapping_type_str, triggered, snapshot)
-                } else {
-                    // Pass-through mode - no remapping
-                    (vec![event.clone()], None, false, None)
-                };
+            // Process event through remapping engine (routed per device)
+            let remapped = remap_event(&event, remapping_state, platform.as_ref());
+            let (output_events, mapping_type, mapping_triggered, state) = (
+                remapped.outputs,
+                remapped.mapping_type,
+                remapped.triggered,
+                remapped.state,
+            );
             let output_desc = format_output_description(&output_events);
 
             // Only inject output events if remapping was triggered

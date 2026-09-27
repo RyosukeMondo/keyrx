@@ -23,7 +23,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use keyrx_core::config::DeviceConfig;
-use log::{info, warn};
+use log::info;
 
 use super::DaemonError;
 use crate::config_loader::load_config;
@@ -46,8 +46,8 @@ pub struct LoadedConfig {
     pub profile: Option<String>,
     /// The `.krx` file the mappings came from.
     pub path: PathBuf,
-    /// The global (first) device configuration.
-    pub device_config: DeviceConfig,
+    /// Every `device_start` block, in declaration order (first match wins).
+    pub devices: Vec<DeviceConfig>,
 }
 
 /// Tracks which configuration is live and resolves reloads against it.
@@ -159,29 +159,27 @@ fn read_active_profile_name(config_dir: &Path) -> Result<Option<String>, DaemonE
 /// configurations is an error: the caller keeps whatever was live before.
 fn load_krx(path: &Path, profile: Option<String>) -> Result<LoadedConfig, DaemonError> {
     let config = load_config(path)?;
-    let device_blocks = config.devices.len();
-    let Some(device_config) = config.devices.into_iter().next() else {
+    if config.devices.is_empty() {
         return Err(DaemonError::RuntimeError(format!(
             "{} has no device configurations",
             path.display()
         )));
-    };
-    if device_blocks > 1 {
-        warn!(
-            "{} has {device_blocks} device blocks; only the first is applied",
-            path.display()
-        );
     }
     info!(
-        "Loaded {} mappings from {} (profile: {})",
-        device_config.mappings.len(),
+        "Loaded {} mappings in {} device block(s) from {} (profile: {})",
+        config
+            .devices
+            .iter()
+            .map(|d| d.mappings.len())
+            .sum::<usize>(),
+        config.devices.len(),
         path.display(),
         profile.as_deref().unwrap_or("-")
     );
     Ok(LoadedConfig {
         profile,
         path: path.to_path_buf(),
-        device_config,
+        devices: config.devices,
     })
 }
 
