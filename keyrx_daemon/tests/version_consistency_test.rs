@@ -107,6 +107,7 @@ mod version_consistency_tests {
     #[cfg(unix)]
     fn test_sync_version_script_check_mode() {
         let output = Command::new("bash")
+            .current_dir(workspace_root())
             .arg("scripts/sync-version.sh")
             .arg("--check")
             .output()
@@ -134,6 +135,7 @@ mod version_consistency_tests {
     #[cfg(unix)]
     fn test_sync_version_script_dry_run() {
         let output = Command::new("bash")
+            .current_dir(workspace_root())
             .arg("scripts/sync-version.sh")
             .arg("--dry-run")
             .output()
@@ -393,4 +395,14 @@ mod version_consistency_tests {
             println!("⚠ Could not extract version from package.json");
         }
     }
+}
+
+/// The workspace root (the script paths are relative to it; cargo runs tests
+/// from the crate directory).
+#[cfg(unix)]
+fn workspace_root() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("crate has a parent directory")
+        .to_path_buf()
 }

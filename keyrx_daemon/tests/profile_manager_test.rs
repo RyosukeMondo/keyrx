@@ -600,7 +600,8 @@ fn test_activate_success() {
     // The important thing is that activate() returns Ok and provides error details if needed
     if activation_result.success {
         assert_eq!(activation_result.error, None);
-        assert!(activation_result.compile_time_ms > 0);
+        // Millisecond resolution: a small profile legitimately compiles in 0 ms.
+        assert!(activation_result.compile_time_ms < 10_000);
         assert_eq!(manager.get_active().unwrap(), Some("test".to_string()));
     } else {
         // Compilation failed - this is acceptable in test environment
@@ -741,7 +742,7 @@ fn test_activate_timing_metrics() {
 
     // Timing metrics should be captured even on failure
     if result.success {
-        assert!(result.compile_time_ms > 0);
+        // Millisecond resolution: a small profile legitimately compiles in 0 ms.
         assert!(result.compile_time_ms < 10000); // Should not take more than 10 seconds
         assert!(result.reload_time_ms < 1000); // Reload should be very fast
     } else {
