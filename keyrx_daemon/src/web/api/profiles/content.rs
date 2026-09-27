@@ -5,6 +5,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
+use serde::Deserialize;
 use serde_json::{json, Value};
 use std::sync::Arc;
 
@@ -115,63 +116,87 @@ pub(super) async fn validate_profile(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> Result<Json<ValidationResponse>, ApiError> {
-    use crate::config::profile_compiler::ProfileCompiler;
-
-    // Validate profile name
     validate_profile_name(&name)?;
-
     let pm = Arc::clone(state.profile_service.profile_manager());
-
-    // Wrap all blocking operations in spawn_blocking
     tokio::task::spawn_blocking(move || {
-        // Get profile metadata to find the .rhai file path
         let profile = pm
             .get(&name)
-            .ok_or_else(|| format!("Profile '{}' not found", name))?;
-
-        // Compile the profile to validate it
-        let compiler = ProfileCompiler::new();
-        // Use timestamp + profile name for temporary file to avoid collisions
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let temp_krx = std::env::temp_dir().join(format!("{}_{}.krx", name, timestamp));
-
-        let validation_result = compiler.compile_profile(&profile.rhai_path, &temp_krx);
-
-        // Clean up temporary file
-        let _ = std::fs::remove_file(&temp_krx);
-
-        match validation_result {
-            Ok(_) => {
-                // Compilation succeeded - profile is valid
-                Ok::<ValidationResponse, String>(ValidationResponse {
-                    valid: true,
-                    errors: Vec::new(),
-                })
-            }
-            Err(e) => {
-                // Compilation failed - extract error information
-                let error_message = e.to_string();
-
-                // Parse error message to extract line/column information
-                // The error format from the compiler is user-friendly and may include line numbers
-                let errors = vec![ValidationError {
-                    line: 1, // TODO: Parse actual line number from error message
-                    column: None,
-                    message: error_message,
-                }];
-
-                Ok(ValidationResponse {
-                    valid: false,
-                    errors,
-                })
-            }
-        }
+            .ok_or_else(|| ApiError::NotFound(format!("Profile '{name}' not found")))?;
+        validate_rhai_file(&profile.rhai_path)
     })
     .await
-    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
-    .map_err(ApiError::InternalError)
+    .map_err(|e| ApiError::InternalError(format!("Task join error: {e}")))?
     .map(Json)
+}
+
+/// Body of POST /api/profiles/validate.
+#[derive(Deserialize)]
+pub(super) struct ValidateSourceRequest {
+    config: String,
+}
+
+/// POST /api/profiles/validate - Compile unsaved source (the editor's buffer)
+/// and report errors with their line/column, without touching any profile.
+pub(super) async fn validate_source(
+    Json(payload): Json<ValidateSourceRequest>,
+) -> Result<Json<ValidationResponse>, ApiError> {
+    validate_config_source(&payload.config)?;
+    tokio::task::spawn_blocking(move || {
+        let dir = ScratchDir::new()?;
+        let rhai = dir.0.join("buffer.rhai");
+        std::fs::write(&rhai, payload.config)
+            .map_err(|e| ApiError::InternalError(format!("write temp source: {e}")))?;
+        validate_rhai_file(&rhai)
+    })
+    .await
+    .map_err(|e| ApiError::InternalError(format!("Task join error: {e}")))?
+    .map(Json)
+}
+
+/// Compiles `rhai` to a throwaway `.krx` and reports the result.
+fn validate_rhai_file(rhai: &std::path::Path) -> Result<ValidationResponse, ApiError> {
+    use crate::config::profile_compiler::ProfileCompiler;
+
+    let out = ScratchDir::new()?;
+    match ProfileCompiler::new().compile_profile(rhai, &out.0.join("check.krx")) {
+        Ok(_) => Ok(ValidationResponse {
+            valid: true,
+            errors: Vec::new(),
+        }),
+        Err(e) => {
+            let (line, column) = e.location().map_or((1, None), |(l, c)| (l, Some(c)));
+            Ok(ValidationResponse {
+                valid: false,
+                errors: vec![ValidationError {
+                    line,
+                    column,
+                    message: e.short_message(),
+                }],
+            })
+        }
+    }
+}
+
+/// A unique temporary directory, removed on drop.
+struct ScratchDir(std::path::PathBuf);
+
+impl ScratchDir {
+    fn new() -> Result<Self, ApiError> {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+        let dir = std::env::temp_dir().join(format!(
+            "keyrx-validate-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        std::fs::create_dir_all(&dir)
+            .map_err(|e| ApiError::InternalError(format!("temp dir {}: {e}", dir.display())))?;
+        Ok(Self(dir))
+    }
+}
+
+impl Drop for ScratchDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
 }

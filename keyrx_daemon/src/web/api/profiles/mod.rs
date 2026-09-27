@@ -21,6 +21,7 @@ mod types;
 
 use content::{
     get_active_profile, get_profile_config, list_profiles, set_profile_config, validate_profile,
+    validate_source,
 };
 use lifecycle::{
     activate_profile, create_profile, delete_profile, duplicate_profile, reload_active_profile,
@@ -35,6 +36,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/profiles", get(list_profiles).post(create_profile))
         .route("/profiles/active", get(get_active_profile))
         .route("/profiles/active/reload", post(reload_active_profile))
+        .route("/profiles/validate", post(validate_source))
         // More specific routes first (with path suffix)
         .route("/profiles/:name/activate", post(activate_profile))
         .route("/profiles/:name/validate", post(validate_profile))

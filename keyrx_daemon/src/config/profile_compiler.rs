@@ -31,6 +31,36 @@ pub enum CompilationError {
     IoError(#[from] std::io::Error),
 }
 
+impl CompilationError {
+    /// Source position (line, column) of the error, when the compiler reported
+    /// one. Compiler messages end with `(line N, position M)`.
+    pub fn location(&self) -> Option<(usize, usize)> {
+        let CompilationError::CompilationFailed(message) = self else {
+            return None;
+        };
+        let tail = &message[message.rfind("(line ")? + "(line ".len()..];
+        let (line, rest) = tail.split_once(", position ")?;
+        let column = rest.split(')').next()?;
+        Some((line.trim().parse().ok()?, column.trim().parse().ok()?))
+    }
+
+    /// The message without the file path prefix and position suffix, for
+    /// display next to the editor line.
+    pub fn short_message(&self) -> String {
+        let text = self.to_string();
+        let body = text.rfind(" (line ").map_or(text.as_str(), |i| &text[..i]);
+        // "<path>:<line>:<col>: Syntax error: ..." -> "Syntax error: ..."
+        match body.find(".rhai:") {
+            Some(i) => body[i + ".rhai:".len()..]
+                .splitn(3, ':')
+                .nth(2)
+                .map_or(body, str::trim)
+                .to_string(),
+            None => body.trim().to_string(),
+        }
+    }
+}
+
 /// Profile compiler for converting Rhai to binary format.
 pub struct ProfileCompiler;
 
@@ -215,6 +245,28 @@ mod tests {
             error_message.contains("Compilation failed") || error_message.contains("line"),
             "Should contain useful error information\nGot: {}",
             error_message
+        );
+    }
+
+    #[test]
+    fn test_compilation_error_location() {
+        let e = CompilationError::CompilationFailed(
+            "/x/p.rhai:4:1: Syntax error: Syntax error: Expecting ',' (line 4, position 1)".into(),
+        );
+        assert_eq!(e.location(), Some((4, 1)));
+        assert_eq!(
+            e.short_message(),
+            "Syntax error: Syntax error: Expecting ','"
+        );
+
+        let multiline = CompilationError::CompilationFailed(
+            "/x/p.rhai:2:3: Syntax error: Runtime error: Unknown key name: 'NOPE'\n (line 2, position 3)".into(),
+        );
+        assert_eq!(multiline.location(), Some((2, 3)));
+        assert_eq!(CompilationError::CompilationTimeout.location(), None);
+        assert_eq!(
+            CompilationError::CompilationFailed("no position".into()).location(),
+            None
         );
     }
 }
