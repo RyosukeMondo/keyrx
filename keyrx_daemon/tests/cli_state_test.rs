@@ -23,7 +23,7 @@ fn test_state_inspect_daemon_not_running() {
         .arg(&socket_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Daemon socket not found"))
+        .stderr(predicate::str::contains("Daemon not running"))
         .stderr(predicate::str::contains("error code 3005"));
 }
 
@@ -47,7 +47,7 @@ fn test_state_inspect_daemon_not_running_json() {
 
     // Should still fail with error message
     let stderr = String::from_utf8_lossy(&output);
-    assert!(stderr.contains("Daemon socket not found") || stderr.contains("error code 3005"));
+    assert!(stderr.contains("Daemon not running") || stderr.contains("error code 3005"));
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn test_state_inspect_default_socket_not_running() {
         .assert()
         .failure()
         .stderr(
-            predicate::str::contains("Daemon socket not found")
+            predicate::str::contains("Daemon not running")
                 .or(predicate::str::contains("error code 3005")),
         );
 }
@@ -106,7 +106,7 @@ fn test_state_inspect_json_flag_parsing() {
         .arg(&socket_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Daemon socket not found"));
+        .stderr(predicate::str::contains("Daemon not running"));
 }
 
 #[test]

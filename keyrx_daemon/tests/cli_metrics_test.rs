@@ -24,7 +24,7 @@ fn test_metrics_latency_daemon_not_running() {
         .arg(&socket_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Daemon socket not found"))
+        .stderr(predicate::str::contains("Daemon not running"))
         .stderr(predicate::str::contains("error code 3005"));
 }
 
@@ -41,7 +41,7 @@ fn test_metrics_events_daemon_not_running() {
         .arg(&socket_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Daemon socket not found"))
+        .stderr(predicate::str::contains("Daemon not running"))
         .stderr(predicate::str::contains("error code 3005"));
 }
 
@@ -65,7 +65,7 @@ fn test_metrics_latency_json_daemon_not_running() {
 
     // Should still fail with error message
     let stderr = String::from_utf8_lossy(&output);
-    assert!(stderr.contains("Daemon socket not found") || stderr.contains("error code 3005"));
+    assert!(stderr.contains("Daemon not running") || stderr.contains("error code 3005"));
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn test_metrics_events_json_daemon_not_running() {
 
     // Should still fail with error message
     let stderr = String::from_utf8_lossy(&output);
-    assert!(stderr.contains("Daemon socket not found") || stderr.contains("error code 3005"));
+    assert!(stderr.contains("Daemon not running") || stderr.contains("error code 3005"));
 }
 
 #[test]
@@ -106,7 +106,7 @@ fn test_metrics_events_custom_count() {
         .arg(&socket_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Daemon socket not found"));
+        .stderr(predicate::str::contains("Daemon not running"));
 }
 
 #[test]
@@ -124,7 +124,7 @@ fn test_metrics_events_follow_without_daemon_fails_fast() {
         .timeout(std::time::Duration::from_secs(10))
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Daemon socket not found"));
+        .stderr(predicate::str::contains("Daemon not running"));
 }
 
 #[test]
@@ -175,7 +175,7 @@ fn test_metrics_default_socket_not_running() {
         .assert()
         .failure()
         .stderr(
-            predicate::str::contains("Daemon socket not found")
+            predicate::str::contains("Daemon not running")
                 .or(predicate::str::contains("error code 3005")),
         );
 }
@@ -194,7 +194,7 @@ fn test_metrics_events_default_count() {
         .arg(&socket_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Daemon socket not found"));
+        .stderr(predicate::str::contains("Daemon not running"));
 }
 
 // Note: Testing with a real running daemon requires:
