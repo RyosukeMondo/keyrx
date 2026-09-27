@@ -24,6 +24,7 @@ make verify     # Full quality checks (clippy, fmt, tests, coverage)
 - The daemon's read side is ONE `DaemonQueryService` shared by IPC, REST, MCP and WS — add new status/metrics there, never per transport
 - Which config is live is decided ONLY in `daemon/live_config.rs`: `run` follows the active profile, `run --config FILE` pins FILE at startup, a runtime activation (`DaemonSharedState::request_activation`, via `ProfileService`/IPC) switches profile; status is published only after the swap
 - In-process e2e against the real event loop: `LinuxPlatform::scoped(<test kbd name>, <unique output name>)` — see `tests/live_profile_switch_test.rs`
+- Monitoring wire types (latency, key events, state) are the typeshare structs in `keyrx_daemon/src/web/events.rs` for EVERY transport; if a REST response changes, regenerate `UPDATE_CONTRACT_FIXTURES=1 cargo test -p keyrx_daemon --test api_contract_test` and `npm run typeshare`, then fix the UI until `npm run type-check` passes
 
 ## Project Structure
 

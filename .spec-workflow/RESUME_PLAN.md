@@ -253,10 +253,19 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
     captured output; fails when the swap is removed) and a live run of the
     installed binary: F23→F24, REST activate → F22, CLI activate → F24,
     SIGHUP after `.active` edit → F22, `--config` startup → F24.
-- [NEXT] **G2 — UI↔API metrics contract.** UI `fetchEventLog` expects `EventRecord[]`,
-  API returns `{count, events: string[]}`; UI `fetchDaemonState` calls `/api/state`
-  which does not exist (`/api/daemon/state` does). Add a contract test.
-- [ ] **G3 — Windows production IPC server** (`keyrx_daemon status|metrics` cannot
+- [x] **G2 — UI↔API metrics contract.**
+  → DONE (be4b2673). Worse than listed: latency had 4 shapes (REST `min_us`,
+    WS `min`, WS-RPC zeros, MCP `minUs`), WS-RPC events read the macro
+    recorder, the Monitor page never called REST. Now `web/events.rs`
+    typeshare types (LatencyStats/KeyEventData/DaemonState) are the wire
+    format on WS push, REST, WS-RPC and MCP; telemetry ring holds KeyEventData;
+    IPC renders `summary()`. Contract: `tests/api_contract_test.rs` pins real
+    responses → `keyrx_ui/src/test/contract/*.json`, `src/types/contract.check.ts`
+    fails `npm run type-check` on drift, MSW mocks serve the fixtures. Monitor
+    page seeds history/state from REST. Verified live (headless Chromium
+    screenshot of /monitor with injected keys). UI suite 1916 pass / 2 fail
+    (pre-existing DevicesPage, same at HEAD).
+- [NEXT] **G3 — Windows production IPC server** (`keyrx_daemon status|metrics` cannot
   work on Windows; `DEFAULT_SOCKET_PATH` is a Unix path). Use `ipc::server::spawn`.
 - [ ] **G4 — Test hygiene:** `profile_manager_test` asserts `compile_time_ms > 0`
   (flaky: sub-ms compiles); `version_consistency_test` runs `scripts/sync-version.sh`
@@ -272,6 +281,9 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
   Release held outputs before the swap.
 - [ ] **G8 — Only the first `device_start` block is applied** (warned at load);
   the Linux platform grabs `*` regardless of config patterns.
+- [ ] **G9 — UI lint debt:** `npm run lint` has 14 errors in untouched files
+  (e.g. `MonitorPage.tsx` refs-during-render); `DevicesPage.test.tsx` 2 failures
+  (save-checkmark timing). EventRecord `layer` is always `'Base'` (see D3).
 - [ ] **G5 — Oversize files** (>500 code lines): `web/api/diagnostics.rs`,
   `platform_runners/windows.rs`, `web/api/profiles.rs`.
 
@@ -310,3 +322,5 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
 - 2026-09-27: G1 DONE — profile activation swaps live remapping on Linux (and
   Windows via the same Daemon path); proven by e2e test + live run. Full suite
   (input group): 2020 pass / 4 fail (all G4) / 91 ignored. G2 [NEXT].
+- 2026-09-27: G2 DONE — one wire format for latency/events/state across WS,
+  REST, WS-RPC, MCP, pinned by cross-language contract fixtures. G3 [NEXT].
