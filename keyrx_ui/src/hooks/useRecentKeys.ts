@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { logger } from '@/utils/logger';
 
 const STORAGE_KEY_RECENT = 'keyrx_recent_keys';
 const MAX_RECENT_KEYS = 10;
@@ -14,7 +15,7 @@ function loadFromStorage(key: string): string[] {
       return Array.isArray(parsed) ? parsed : [];
     }
   } catch (err) {
-    console.warn(`Failed to load ${key} from localStorage:`, err);
+    logger.warn('recent_keys_load_failed', { key, error: String(err) });
   }
   return [];
 }
@@ -26,7 +27,9 @@ function saveToStorage(key: string, data: string[]): void {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (err) {
-    console.error(`Failed to save ${key} to localStorage:`, err);
+    logger.error('recent_keys_save_failed', err instanceof Error ? err : undefined, {
+      key,
+    });
   }
 }
 

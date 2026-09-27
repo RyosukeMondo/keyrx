@@ -11,6 +11,7 @@
 import type { WSMessage, EventRecord, DaemonState, LatencyStats } from '../types';
 import { buildWsUrl, WS_RECONNECT_CONFIG } from '../config/constants';
 import { toEventRecord } from './eventRecord';
+import { logger } from '../utils/logger';
 
 /** Exponential backoff intervals in ms (WS-002) */
 const RECONNECT_INTERVALS = [100, 200, 400, 800, 1600];
@@ -144,7 +145,7 @@ export class WebSocketManager {
    */
   public send(data: string | object): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn('Cannot send message: WebSocket is not connected');
+      logger.warn('websocket_send_failed', { reason: 'not_connected' });
       return;
     }
 
@@ -220,7 +221,7 @@ export class WebSocketManager {
         // Unknown message type received
       }
     } catch (error) {
-      console.error('Failed to parse WebSocket message:', error);
+      logger.error('websocket_message_parse_failed', error as Error);
     }
   }
 

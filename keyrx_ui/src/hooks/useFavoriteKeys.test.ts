@@ -1,5 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { useFavoriteKeys } from './useFavoriteKeys';
+import { logger } from '@/utils/logger';
 
 describe('useFavoriteKeys', () => {
   beforeEach(() => {
@@ -120,8 +121,8 @@ describe('useFavoriteKeys', () => {
   });
 
   it('handles localStorage errors during save', () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
+    const loggerErrorSpy = vi
+      .spyOn(logger, 'error')
       .mockImplementation(() => {});
     const setItemSpy = vi
       .spyOn(Storage.prototype, 'setItem')
@@ -135,19 +136,18 @@ describe('useFavoriteKeys', () => {
       result.current.toggleFavorite('KeyA');
     });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Failed to save keyrx_favorite_keys to localStorage:',
-      expect.any(Error)
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      'favorite_keys_save_failed',
+      expect.any(Error),
+      { key: 'keyrx_favorite_keys' }
     );
 
-    consoleErrorSpy.mockRestore();
+    loggerErrorSpy.mockRestore();
     setItemSpy.mockRestore();
   });
 
   it('handles localStorage errors during load', () => {
-    const consoleWarnSpy = vi
-      .spyOn(console, 'warn')
-      .mockImplementation(() => {});
+    const loggerWarnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
     const getItemSpy = vi
       .spyOn(Storage.prototype, 'getItem')
       .mockImplementation(() => {
@@ -157,12 +157,12 @@ describe('useFavoriteKeys', () => {
     const { result } = renderHook(() => useFavoriteKeys());
 
     expect(result.current.favoriteKeys).toEqual([]);
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      'Failed to load keyrx_favorite_keys from localStorage:',
-      expect.any(Error)
-    );
+    expect(loggerWarnSpy).toHaveBeenCalledWith('favorite_keys_load_failed', {
+      key: 'keyrx_favorite_keys',
+      error: expect.stringContaining('Storage unavailable'),
+    });
 
-    consoleWarnSpy.mockRestore();
+    loggerWarnSpy.mockRestore();
     getItemSpy.mockRestore();
   });
 

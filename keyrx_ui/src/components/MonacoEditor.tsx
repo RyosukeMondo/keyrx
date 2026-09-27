@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { editor } from 'monaco-editor';
 import type { ValidationError } from '../hooks/useWasm';
 import { useWasmContext } from '../contexts/WasmContext';
+import { logger } from '../utils/logger';
 
 /**
  * Monaco Editor component for Rhai configuration editing
@@ -321,7 +322,7 @@ export function MonacoEditor({
           }
         }
       } catch (err) {
-        console.error('Validation failed:', err);
+        logger.error('monaco_editor_validation_failed', err as Error);
         setValidationStatus('Validation failed');
       }
     },

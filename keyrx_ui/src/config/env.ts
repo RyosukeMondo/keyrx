@@ -10,6 +10,7 @@ import {
   DEFAULT_DAEMON_HOST,
   WS_RPC_PATH,
 } from './constants';
+import { logger } from '../utils/logger';
 
 /**
  * Get the API base URL
@@ -77,13 +78,10 @@ export const env = {
   isProd: import.meta.env.PROD,
 } as const;
 
-// Log configuration in debug mode
-if (import.meta.env.DEV && isDebugMode()) {
-  // eslint-disable-next-line no-console
-  console.log('[ENV] Configuration:', {
-    apiUrl: env.apiUrl,
-    wsUrl: env.wsUrl,
-    environment: env.environment,
-    debug: env.debug,
-  });
-}
+// Log configuration in debug mode (logger.debug is itself DEV-gated)
+logger.debug('env_configuration', {
+  apiUrl: env.apiUrl,
+  wsUrl: env.wsUrl,
+  environment: env.environment,
+  debug: env.debug,
+});

@@ -9,6 +9,7 @@ import {
   LAYER_KEYS,
   SPECIAL_KEYS,
 } from '../data/paletteKeys';
+import { logger } from './logger';
 
 /**
  * LocalStorage keys for view mode persistence
@@ -79,7 +80,7 @@ export function loadViewMode(): ViewMode {
       return stored;
     }
   } catch (err) {
-    console.warn(`Failed to load view mode from localStorage:`, err);
+    logger.warn('palette_view_mode_load_failed', { error: String(err) });
   }
   return 'grid'; // Default to grid view
 }
@@ -91,7 +92,10 @@ export function saveViewMode(mode: ViewMode): void {
   try {
     localStorage.setItem(STORAGE_KEY_VIEW_MODE, mode);
   } catch (err) {
-    console.error(`Failed to save view mode to localStorage:`, err);
+    logger.error(
+      'palette_view_mode_save_failed',
+      err instanceof Error ? err : undefined
+    );
   }
 }
 

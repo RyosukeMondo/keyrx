@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { mapDomCodeToKeyId } from '../utils/paletteHelpers.tsx';
 import type { PaletteKey } from '../components/KeyPalette';
+import { logger } from '../utils/logger';
 
 interface UsePhysicalKeyCaptureProps {
   isCapturingKey: boolean;
@@ -35,7 +36,7 @@ export function usePhysicalKeyCapture({
         onCapturedKey(mappedKey);
       } else {
         // Unknown key - show error state
-        console.warn('Unknown key code:', e.code);
+        logger.warn('physical_key_capture_unknown_code', { code: e.code });
       }
     };
 

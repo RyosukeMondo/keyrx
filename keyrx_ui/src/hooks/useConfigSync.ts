@@ -3,6 +3,7 @@ import {
   useRhaiSyncEngine,
   type RhaiSyncEngineResult,
 } from '@/components/RhaiSyncEngine';
+import { logger } from '@/utils/logger';
 
 export type SyncStatus = 'saved' | 'unsaved' | 'saving';
 
@@ -48,11 +49,7 @@ export function useConfigSync(profileName: string): UseConfigSyncReturn {
       // Sync state changed
     },
     onError: (error, direction) => {
-      // Log error to console in development
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.error('Sync error:', { error, direction });
-      }
+      logger.error('rhai_sync_error', undefined, { error, direction });
     },
   });
 

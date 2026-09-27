@@ -5,6 +5,7 @@ import type {
   RhaiSyncEngineResult,
   SyncState,
 } from '@/components/RhaiSyncEngine';
+import { logger } from '@/utils/logger';
 
 // Mock the useRhaiSyncEngine hook
 vi.mock('@/components/RhaiSyncEngine', () => ({
@@ -189,12 +190,9 @@ describe('useConfigSync', () => {
     expect(true).toBe(true);
   });
 
-  it('should log errors in development mode when onError is called', () => {
-    const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = 'development';
-
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
+  it('should log sync errors via the structured logger when onError is called', () => {
+    const loggerErrorSpy = vi
+      .spyOn(logger, 'error')
       .mockImplementation(() => {});
 
     renderHook(() => useConfigSync('TestProfile'));
@@ -207,13 +205,12 @@ describe('useConfigSync', () => {
       mockOnError(mockError, direction);
     });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Sync error:', {
+    expect(loggerErrorSpy).toHaveBeenCalledWith('rhai_sync_error', undefined, {
       error: mockError,
       direction,
     });
 
-    consoleErrorSpy.mockRestore();
-    process.env.NODE_ENV = originalEnv;
+    loggerErrorSpy.mockRestore();
   });
 
   it('should maintain stable references for setters', () => {

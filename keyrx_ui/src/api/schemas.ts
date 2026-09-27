@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { logger } from '../utils/logger';
 
 /**
  * Zod schemas for runtime validation of API responses.
@@ -298,22 +299,16 @@ export function validateApiResponse<T>(
 
   if (!result.success) {
     const errorMessage = `API validation failed for ${endpoint}: ${result.error.message}`;
-    console.error(
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'error',
-        service: 'API Validation',
-        event: 'validation_failed',
-        context: { endpoint, error: result.error.message },
-      })
-    );
+    logger.error('api_response_validation_failed', undefined, {
+      endpoint,
+      error: result.error.message,
+    });
     throw new Error(errorMessage);
   }
 
   // Passthrough schemas allow unexpected fields for forward compatibility.
   // Log at debug level so consumers can trace API evolution.
-  // eslint-disable-next-line no-console
-  console.debug(`API response validated for ${endpoint}`);
+  logger.debug('api_response_validated', { endpoint });
 
   return result.data;
 }

@@ -5,6 +5,8 @@
  * we persist this state client-side using localStorage.
  */
 
+import { logger } from './logger';
+
 const STORAGE_KEY = 'keyrx:device:enabled';
 
 interface DeviceEnabledState {
@@ -22,10 +24,7 @@ export function getDeviceEnabledStates(): DeviceEnabledState {
     }
     return JSON.parse(stored) as DeviceEnabledState;
   } catch (err) {
-    console.error(
-      'Failed to parse device enabled states from localStorage:',
-      err
-    );
+    logger.error('device_storage_parse_failed', err as Error);
     return {};
   }
 }
@@ -49,7 +48,7 @@ export function setDeviceEnabled(deviceId: string, enabled: boolean): void {
     states[deviceId] = enabled;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
   } catch (err) {
-    console.error('Failed to persist device enabled state:', err);
+    logger.error('device_storage_persist_failed', err as Error, { deviceId });
     throw err;
   }
 }
@@ -63,7 +62,7 @@ export function removeDeviceEnabledState(deviceId: string): void {
     delete states[deviceId];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
   } catch (err) {
-    console.error('Failed to remove device enabled state:', err);
+    logger.error('device_storage_remove_failed', err as Error, { deviceId });
   }
 }
 
@@ -74,6 +73,6 @@ export function clearDeviceEnabledStates(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (err) {
-    console.error('Failed to clear device enabled states:', err);
+    logger.error('device_storage_clear_failed', err as Error);
   }
 }

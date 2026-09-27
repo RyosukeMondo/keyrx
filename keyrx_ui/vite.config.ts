@@ -114,7 +114,11 @@ export default defineConfig({
     sourcemap: true, // Generate source maps for debugging production issues
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.log in production
+        // Strip dev-only chatter (console.log/debug) but keep console.warn/error,
+        // since the structured logger (src/utils/logger.ts) relies on them for
+        // production error visibility - drop_console:true would silently erase
+        // every logger.warn/error call in the production bundle.
+        pure_funcs: ['console.log', 'console.debug'],
         drop_debugger: true, // Remove debugger statements
         passes: 2, // Multiple passes for better compression
       },

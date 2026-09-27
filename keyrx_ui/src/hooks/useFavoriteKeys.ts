@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { logger } from '@/utils/logger';
 
 const STORAGE_KEY_FAVORITES = 'keyrx_favorite_keys';
 
@@ -13,7 +14,7 @@ function loadFromStorage(key: string): string[] {
       return Array.isArray(parsed) ? parsed : [];
     }
   } catch (err) {
-    console.warn(`Failed to load ${key} from localStorage:`, err);
+    logger.warn('favorite_keys_load_failed', { key, error: String(err) });
   }
   return [];
 }
@@ -25,7 +26,9 @@ function saveToStorage(key: string, data: string[]): void {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (err) {
-    console.error(`Failed to save ${key} to localStorage:`, err);
+    logger.error('favorite_keys_save_failed', err instanceof Error ? err : undefined, {
+      key,
+    });
   }
 }
 

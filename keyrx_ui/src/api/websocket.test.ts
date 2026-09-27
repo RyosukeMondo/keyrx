@@ -13,6 +13,7 @@ import {
   simulateConnected,
   WS_URL,
 } from '../../tests/testUtils';
+import { logger } from '../utils/logger';
 
 describe('WebSocketManager', () => {
   let wsManager: WebSocketManager;
@@ -423,15 +424,15 @@ describe('WebSocketManager', () => {
     });
 
     it('should not send when disconnected', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const loggerWarnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
       wsManager = new WebSocketManager({ url: WS_URL });
 
       wsManager.send('test');
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Cannot send message')
-      );
-      consoleSpy.mockRestore();
+      expect(loggerWarnSpy).toHaveBeenCalledWith('websocket_send_failed', {
+        reason: 'not_connected',
+      });
+      loggerWarnSpy.mockRestore();
     });
   });
 });

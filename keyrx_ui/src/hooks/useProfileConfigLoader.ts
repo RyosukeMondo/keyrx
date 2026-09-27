@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getErrorMessage } from '../utils/errorUtils';
+import { logger } from '../utils/logger';
 
 interface ProfileConfig {
   source: string;
@@ -41,7 +42,9 @@ export function useProfileConfigLoader({
             .join('; ');
           setConfigLoadError(errorMsg);
           setIsUsingProfileConfig(false);
-          console.error('Profile config validation failed:', errorMsg);
+          logger.error('profile_config_validation_failed', undefined, {
+            errorMsg,
+          });
         } else {
           setConfigLoadError(null);
           setIsUsingProfileConfig(true);
@@ -50,7 +53,10 @@ export function useProfileConfigLoader({
         const errorMsg = getErrorMessage(err, 'Failed to load profile config');
         setConfigLoadError(errorMsg);
         setIsUsingProfileConfig(false);
-        console.error('Failed to load profile config:', err);
+        logger.error(
+          'profile_config_load_failed',
+          err instanceof Error ? err : undefined
+        );
       }
     }
 

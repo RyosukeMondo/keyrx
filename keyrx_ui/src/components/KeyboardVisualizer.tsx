@@ -10,6 +10,7 @@ import { SVGKeyboard } from './SVGKeyboard';
 import type { KeyMapping } from '@/types';
 import { parseKLEToSVG } from '../utils/kle-parser';
 import { cn } from '../utils/cn';
+import { logger } from '../utils/logger';
 
 // Import layout data
 import ANSI_104 from '../data/layouts/ANSI_104.json';
@@ -85,7 +86,7 @@ export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
 
   // Debug: log keys count
   if (svgKeys.length === 0) {
-    console.warn('KeyboardVisualizer: No keys parsed from layout', layout);
+    logger.warn('keyboard_visualizer_no_keys_parsed', { layout });
   }
 
   const layoutName = layoutData[layout].name;

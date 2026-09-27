@@ -14,6 +14,7 @@ import type { RhaiSyncEngineResult } from '@/components/RhaiSyncEngine';
 import type { SyncStatus } from '@/hooks/useConfigSync';
 import type { KeyMapping } from '@/types';
 import { env } from '@/config/env';
+import { logger } from '@/utils/logger';
 
 type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
@@ -105,7 +106,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = (props) => {
         setTimeout(() => setCopyFeedback(false), 1500);
       })
       .catch((err) => {
-        console.error('Failed to copy diagnostics:', err);
+        logger.error('diagnostics_copy_failed', err);
       });
   }, [diagnosticData]);
 
@@ -118,7 +119,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = (props) => {
       });
       setLogLevel(level);
     } catch (e) {
-      console.error('Failed to set log level:', e);
+      logger.error('diagnostics_log_level_set_failed', e as Error, { level });
     }
   }, []);
 

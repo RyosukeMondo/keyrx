@@ -38,6 +38,7 @@ import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { v4 as uuidv4 } from 'uuid';
 import { env } from '../config/env';
 import { validateRpcMessage } from '../api/schemas';
+import { logger } from '../utils/logger';
 import type {
   ClientMessage,
   ServerMessage,
@@ -124,25 +125,21 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
         RECONNECT_MAX_DELAY_MS,
         RECONNECT_BASE_DELAY_MS * Math.pow(2, attemptNumber)
       );
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.log(
-          `[useUnifiedApi] Reconnect attempt ${attemptNumber + 1}/${MAX_RECONNECT_ATTEMPTS}, delay: ${delay}ms`
-        );
-      }
+      logger.debug('unified_api_reconnect_attempt', {
+        attempt: attemptNumber + 1,
+        maxAttempts: MAX_RECONNECT_ATTEMPTS,
+        delayMs: delay,
+      });
       return delay;
     },
     reconnectAttempts: MAX_RECONNECT_ATTEMPTS,
-    onError: (event) => {
-      console.error('[useUnifiedApi] WebSocket error:', event);
+    onError: () => {
+      logger.error('unified_api_websocket_error', undefined, { wsUrl });
       setLastError(new Error('WebSocket connection error'));
       setIsConnected(false);
     },
     onClose: () => {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.log('[useUnifiedApi] WebSocket closed');
-      }
+      logger.debug('unified_api_websocket_closed');
       setIsConnected(false);
 
       // Reject all pending requests on disconnect
@@ -166,9 +163,9 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
       try {
         message = validateRpcMessage(parsedData, 'server') as ServerMessage;
       } catch (validationError) {
-        console.error(
-          '[useUnifiedApi] Message validation failed:',
-          validationError
+        logger.error(
+          'unified_api_message_validation_failed',
+          validationError instanceof Error ? validationError : undefined
         );
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setLastError(
@@ -181,10 +178,7 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
 
       // Handle Connected handshake
       if (checkIsConnected(message)) {
-        if (import.meta.env.DEV) {
-          // eslint-disable-next-line no-console
-          console.log('[useUnifiedApi] Connected:', message);
-        }
+        logger.debug('unified_api_connected', { message });
         setIsConnected(true);
         setLastError(null);
         return;
@@ -203,10 +197,9 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
             pending.resolve(message.content.result);
           }
         } else {
-          console.warn(
-            '[useUnifiedApi] Received response for unknown request:',
-            message.content.id
-          );
+          logger.warn('unified_api_unknown_response', {
+            requestId: message.content.id,
+          });
         }
         return;
       }
@@ -219,10 +212,9 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
             try {
               handler(message.content.data);
             } catch (error) {
-              console.error(
-                '[useUnifiedApi] Subscription handler error:',
-                error
-              );
+              logger.error('unified_api_subscription_handler_failed', error as Error, {
+                channel: message.content.channel,
+              });
             }
           });
         }
@@ -264,10 +256,10 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
               try {
                 handler(legacyPayload);
               } catch (error) {
-                console.error(
-                  '[useUnifiedApi] Subscription handler error:',
-                  error
-                );
+                logger.error('unified_api_subscription_handler_failed', error as Error, {
+                  channel,
+                  legacyType,
+                });
               }
             });
           }
@@ -275,9 +267,9 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
         return;
       }
 
-      console.warn('[useUnifiedApi] Unknown message type:', message);
+      logger.warn('unified_api_unknown_message_type', { message });
     } catch (error) {
-      console.error('[useUnifiedApi] Failed to parse message:', error);
+      logger.error('unified_api_message_parse_failed', error as Error);
       setLastError(
         error instanceof Error ? error : new Error('Failed to parse message')
       );
@@ -316,9 +308,9 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
         } catch (validationError) {
           clearTimeout(timeoutId);
           pendingRequests.current.delete(id);
-          console.error(
-            '[useUnifiedApi] Outgoing message validation failed:',
-            validationError
+          logger.error(
+            'unified_api_outgoing_validation_failed',
+            validationError instanceof Error ? validationError : undefined
           );
           reject(
             validationError instanceof Error
@@ -495,9 +487,10 @@ export function useUnifiedApi(url?: string): UseUnifiedApiReturn {
           try {
             sendMessage(JSON.stringify(message));
           } catch (error) {
-            console.error(
-              '[useUnifiedApi] Failed to send unsubscribe on unmount:',
-              error
+            logger.error(
+              'unified_api_unsubscribe_on_unmount_failed',
+              error as Error,
+              { channel }
             );
           }
         }
