@@ -325,19 +325,14 @@ EXAMPLE_CONFIG="$CONFIG_DIR/example.rhai"
 if [[ ! -f "$EXAMPLE_CONFIG" ]]; then
     info "Creating example configuration..."
     cat > "$EXAMPLE_CONFIG" <<'EOF'
-// KeyRx Example Configuration
-// Save as: ~/.config/keyrx/config.rhai
+// KeyRx example profile source.
+// Import it:   keyrx_daemon profiles import ~/.config/keyrx/example.rhai example
+// Activate it: keyrx_daemon profiles activate example
 
-// Example: Swap Caps Lock and Escape
-// Uncomment to enable:
-// map(KEY_CAPSLOCK, KEY_ESC)
-// map(KEY_ESC, KEY_CAPSLOCK)
-
-// Example: Make Caps Lock a Ctrl when held
-// tap_hold(KEY_CAPSLOCK, KEY_ESC, KEY_LEFTCTRL)
-
-info("KeyRx configuration loaded successfully!");
-info("Edit this file to customize your keyboard remapping");
+device_start("*");
+  // Caps Lock acts as Escape
+  map("VK_CapsLock", "VK_Escape");
+device_end();
 EOF
     success "Created example configuration at $EXAMPLE_CONFIG"
     info "Edit $EXAMPLE_CONFIG to configure your key mappings"
@@ -354,11 +349,13 @@ success "KeyRx has been installed successfully"
 echo ""
 info "Next steps:"
 echo ""
-echo "  1. Configure your key mappings:"
+echo "  1. Configure your key mappings as a profile (or use the web UI"
+echo "     at http://127.0.0.1:9867 once the daemon runs):"
 echo "     \$ nano $CONFIG_DIR/example.rhai"
+echo "     \$ keyrx_daemon profiles import $CONFIG_DIR/example.rhai example"
 echo ""
-echo "  2. Compile your configuration:"
-echo "     \$ keyrx_compiler $CONFIG_DIR/example.rhai -o $CONFIG_DIR/config.krx"
+echo "  2. Make it the active profile (the daemon always runs the active one):"
+echo "     \$ keyrx_daemon profiles activate example"
 echo ""
 echo "  3. Start the daemon:"
 echo "     \$ systemctl --user start keyrx"

@@ -41,6 +41,9 @@
 #   Logs:     journalctl -u keyrx -f
 #
 # CONFIGURATION:
+#   This unit pins a file with `run --config` (headless, no per-user profiles).
+#   A profile activated at runtime still switches the running daemon until the
+#   next restart, which returns to this file.
 #   Config path: /etc/keyrx/config.krx (default)
 #   Override via: Environment=KEYRX_CONFIG=/path/to/config.krx
 #   Or via drop-in: sudo systemctl edit keyrx

@@ -29,8 +29,12 @@
 #   4. Create configuration directory:
 #      mkdir -p ~/.config/keyrx
 #
-#   5. Compile your configuration:
-#      keyrx_compiler config.rhai -o ~/.config/keyrx/config.krx
+#   5. Pick the profile to run (web UI at http://127.0.0.1:9867, or CLI):
+#      keyrx_daemon profiles create my --template blank
+#      keyrx_daemon profiles activate my
+#      The service runs the ACTIVE profile (~/.config/keyrx/.active). Activating
+#      another profile later switches the running daemon immediately and is
+#      remembered across restarts. (`run --config FILE` pins a file instead.)
 #
 #   6. Reload user systemd and enable the service:
 #      systemctl --user daemon-reload
@@ -44,14 +48,14 @@
 #   Start:    systemctl --user start keyrx
 #   Stop:     systemctl --user stop keyrx
 #   Restart:  systemctl --user restart keyrx
-#   Reload:   systemctl --user reload keyrx  (reloads config without restart)
+#   Reload:   systemctl --user reload keyrx  (re-reads the active profile)
 #   Status:   systemctl --user status keyrx
 #   Logs:     journalctl --user -u keyrx -f
 #
 # TROUBLESHOOTING:
 #   - Check status: systemctl --user status keyrx
 #   - View logs: journalctl --user -u keyrx --no-pager -n 50
-#   - Test config: ~/.local/bin/keyrx_daemon validate --config ~/.config/keyrx/config.krx
+#   - Which profile is live: ~/.local/bin/keyrx_daemon status
 #   - List devices: ~/.local/bin/keyrx_daemon list-devices
 #   - Check permissions: ls -la /dev/input/event* /dev/uinput
 #   - Verify group membership: groups $USER
@@ -79,9 +83,10 @@ StartLimitBurst=5
 [Service]
 Type=simple
 
-# Main daemon command
+# Main daemon command: follow the active profile (no --config, so a profile
+# activated in the UI/CLI survives restarts).
 # %h expands to user's home directory
-ExecStart=%h/.local/bin/keyrx_daemon run --config %h/.config/keyrx/config.krx
+ExecStart=%h/.local/bin/keyrx_daemon run
 
 # Reload configuration on SIGHUP (systemctl --user reload keyrx)
 ExecReload=/bin/kill -HUP $MAINPID
