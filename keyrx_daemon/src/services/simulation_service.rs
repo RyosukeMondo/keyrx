@@ -333,15 +333,34 @@ impl SimulationService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use keyrx_core::config::{ConfigRoot, DeviceConfig, DeviceIdentifier, Metadata, Version};
     use std::io::Write;
     use tempfile::TempDir;
 
+    /// Writes a real, valid `.krx` file: `SimulationEngine::new` (via
+    /// `load_profile`) now loads and validates the config like the daemon
+    /// does, so a placeholder byte string is no longer a valid fixture.
     fn create_test_profile(dir: &TempDir, name: &str) -> PathBuf {
         let profiles_dir = dir.path().join("profiles");
         std::fs::create_dir_all(&profiles_dir).unwrap();
         let krx_path = profiles_dir.join(format!("{}.krx", name));
+        let config = ConfigRoot {
+            version: Version::current(),
+            devices: vec![DeviceConfig {
+                identifier: DeviceIdentifier {
+                    pattern: "*".to_string(),
+                },
+                mappings: vec![],
+            }],
+            metadata: Metadata {
+                compilation_timestamp: 0,
+                compiler_version: "test".to_string(),
+                source_hash: "test".to_string(),
+            },
+        };
+        let bytes = keyrx_compiler::serialize::serialize(&config).unwrap();
         let mut file = std::fs::File::create(&krx_path).unwrap();
-        file.write_all(b"test krx data").unwrap();
+        file.write_all(&bytes).unwrap();
         krx_path
     }
 

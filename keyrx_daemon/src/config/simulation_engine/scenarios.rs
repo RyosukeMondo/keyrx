@@ -109,7 +109,7 @@ impl BuiltinScenario {
                     SimulatedEvent {
                         device_id: Some("device1".to_string()),
                         timestamp_us: 0,
-                        key: "Shift".to_string(),
+                        key: "LShift".to_string(),
                         event_type: EventType::Press,
                     },
                     SimulatedEvent {
@@ -127,7 +127,7 @@ impl BuiltinScenario {
                     SimulatedEvent {
                         device_id: Some("device1".to_string()),
                         timestamp_us: 150_000,
-                        key: "Shift".to_string(),
+                        key: "LShift".to_string(),
                         event_type: EventType::Release,
                     },
                 ],

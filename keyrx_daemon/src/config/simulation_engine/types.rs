@@ -1,41 +1,12 @@
-//! Data types for the simulation engine: virtual clock, event/result shapes, and errors.
+//! Data types for the simulation engine: event/result shapes and errors.
+//!
+//! Timing itself is virtual-time driven by `keyrx_core::simulate` (the same
+//! engine the daemon's live event loop uses); this module no longer has its
+//! own clock.
 
 use serde::{Deserialize, Serialize};
 
 use super::{MAX_EVENT_COUNT, MAX_EVENT_FILE_SIZE};
-
-/// Virtual clock for deterministic timing in simulations
-#[derive(Debug, Clone)]
-pub struct VirtualClock {
-    current_time_us: u64,
-    #[allow(dead_code)]
-    seed: u64,
-}
-
-impl VirtualClock {
-    /// Create a new virtual clock with the given seed
-    pub fn new(seed: u64) -> Self {
-        Self {
-            current_time_us: 0,
-            seed,
-        }
-    }
-
-    /// Advance the clock by the specified microseconds
-    pub fn advance(&mut self, delta_us: u64) {
-        self.current_time_us += delta_us;
-    }
-
-    /// Get the current time in microseconds
-    pub fn now_us(&self) -> u64 {
-        self.current_time_us
-    }
-
-    /// Reset the clock to zero
-    pub fn reset(&mut self) {
-        self.current_time_us = 0;
-    }
-}
 
 /// Type of keyboard event
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

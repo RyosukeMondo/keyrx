@@ -19,7 +19,6 @@ pub use engine::SimulationEngine;
 pub use scenarios::BuiltinScenario;
 pub use types::{
     EventSequence, EventType, OutputEvent, ScenarioResult, SimulatedEvent, SimulationError,
-    VirtualClock,
 };
 
 /// Maximum number of events allowed in a sequence (prevents DoS)

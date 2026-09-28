@@ -21,5 +21,5 @@ pub use profile_manager::{
 pub use rhai_generator::{GeneratorError, KeyAction, LayerMode, MacroStep, RhaiGenerator};
 pub use simulation_engine::{
     BuiltinScenario, EventSequence, EventType, OutputEvent, ScenarioResult, SimulatedEvent,
-    SimulationEngine, SimulationError, VirtualClock,
+    SimulationEngine, SimulationError,
 };
