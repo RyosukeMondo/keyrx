@@ -70,12 +70,14 @@ pub fn dispatch(command: Command) -> CommandResult {
             // Delegate to run handler (defined in handlers/run.rs)
             crate::cli::handlers::run::handle_run(config, debug, test_mode)
         }
+        // `devices` and `config` report their own errors (text or --json), so
+        // only the exit code is passed on: main would print them twice.
         Command::Devices(args) => {
-            devices::execute(args, None).map_err(|e| (exit_codes::CONFIG_ERROR, e.to_string()))
+            devices::execute(args, None).map_err(|_| (exit_codes::CONFIG_ERROR, String::new()))
         }
         Command::Profiles(args) => crate::cli::handlers::profiles::handle_profiles(args),
         Command::Config(args) => {
-            config::execute(args, None).map_err(|e| (exit_codes::CONFIG_ERROR, e.to_string()))
+            config::execute(args, None).map_err(|_| (exit_codes::CONFIG_ERROR, String::new()))
         }
         Command::Layers(args) => {
             layers::execute(args).map_err(|e| (exit_codes::CONFIG_ERROR, e.to_string()))

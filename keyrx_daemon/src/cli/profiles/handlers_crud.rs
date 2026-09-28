@@ -39,7 +39,7 @@ pub(super) async fn handle_create(
                 println!("  $EDITOR ~/.config/keyrx/profiles/{}.rhai", profile.name);
                 println!();
                 println!("Activate the profile:");
-                println!("  keyrx profiles activate {}", name);
+                println!("  keyrx_daemon profiles activate {}", name);
             }
             Ok(())
         }

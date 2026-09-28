@@ -40,7 +40,7 @@ pub(super) async fn handle_list(service: &ProfileService, json: bool) -> DaemonR
             println!("No profiles found.");
             println!();
             println!("Create a new profile with:");
-            println!("  keyrx profiles create <name>");
+            println!("  keyrx_daemon profiles create <name>");
             return Ok(());
         }
 
