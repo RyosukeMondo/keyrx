@@ -4,6 +4,7 @@
 //!
 //! Note: These tests use thread-local HOME override via scoped environment changes.
 
+use keyrx_core::config::{ConfigRoot, DeviceConfig, DeviceIdentifier, Metadata, Version};
 use std::fs;
 use std::io::Write;
 use std::sync::Mutex;
@@ -12,16 +13,35 @@ use tempfile::TempDir;
 // Global mutex to serialize tests that modify environment variables
 static ENV_LOCK: Mutex<()> = Mutex::new(());
 
-/// Create a test profile directory with a dummy KRX file.
+/// Create a test profile directory with a real, valid KRX file.
 /// Returns the config dir path for use with KEYRX_CONFIG_DIR.
+///
+/// Writes a real, valid `.krx` file: the CLI's `execute` now loads and
+/// validates the config like the daemon does, so a placeholder byte string
+/// is no longer a valid fixture.
 fn create_test_profile(dir: &TempDir, name: &str) -> std::path::PathBuf {
     let config_dir = dir.path().join("keyrx");
     let profiles_dir = config_dir.join("profiles");
     fs::create_dir_all(&profiles_dir).unwrap();
 
     let krx_path = profiles_dir.join(format!("{}.krx", name));
+    let config = ConfigRoot {
+        version: Version::current(),
+        devices: vec![DeviceConfig {
+            identifier: DeviceIdentifier {
+                pattern: "*".to_string(),
+            },
+            mappings: vec![],
+        }],
+        metadata: Metadata {
+            compilation_timestamp: 0,
+            compiler_version: "test".to_string(),
+            source_hash: "test".to_string(),
+        },
+    };
+    let bytes = keyrx_compiler::serialize::serialize(&config).unwrap();
     let mut file = fs::File::create(&krx_path).unwrap();
-    file.write_all(b"test krx data").unwrap();
+    file.write_all(&bytes).unwrap();
 
     config_dir
 }
@@ -169,15 +189,19 @@ fn test_all_scenario_names() {
 }
 
 #[test]
-fn test_default_profile_fallback() {
+fn test_none_profile_falls_back_to_active_profile() {
     let _lock = ENV_LOCK.lock().unwrap();
     let temp_dir = TempDir::new().unwrap();
     let config_dir = create_test_profile(&temp_dir, "default");
+    // `profile: None` no longer guesses "default" - it resolves the actual
+    // active profile via `<config_dir>/.active` (see
+    // `daemon::live_config::read_active_profile_name`).
+    fs::write(config_dir.join(".active"), b"default").unwrap();
     std::env::set_var("KEYRX_CONFIG_DIR", &config_dir);
 
     use keyrx_daemon::cli::test::{execute, TestArgs};
 
-    // Don't specify a profile - should use "default"
+    // Don't specify a profile - should fall back to the active profile
     let args = TestArgs {
         profile: None,
         scenario: "all".to_string(),

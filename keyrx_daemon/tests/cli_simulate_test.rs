@@ -1,5 +1,6 @@
 //! Integration tests for the `keyrx simulate` CLI command.
 
+use keyrx_core::config::{ConfigRoot, DeviceConfig, DeviceIdentifier, Metadata, Version};
 use serde_json::Value;
 use std::fs;
 use std::io::Write;
@@ -17,15 +18,35 @@ fn get_binary_path() -> PathBuf {
 }
 
 /// Create a test environment with config directory and KRX file.
+///
+/// Writes a real, valid `.krx` file: `SimulationEngine::new` now loads and
+/// validates the config like the daemon does, so a placeholder byte string
+/// is no longer a valid fixture.
 fn create_test_environment() -> (TempDir, PathBuf) {
     let temp_dir = TempDir::new().unwrap();
     let config_dir = temp_dir.path().to_path_buf();
     let profiles_dir = config_dir.join("profiles");
     fs::create_dir_all(&profiles_dir).unwrap();
 
-    // Create a test KRX file
+    // Create a real, valid test KRX file
     let krx_path = profiles_dir.join("default.krx");
-    fs::write(&krx_path, b"test krx data").unwrap();
+    let config = ConfigRoot {
+        version: Version::current(),
+        devices: vec![DeviceConfig {
+            identifier: DeviceIdentifier {
+                pattern: "*".to_string(),
+            },
+            mappings: vec![],
+        }],
+        metadata: Metadata {
+            compilation_timestamp: 0,
+            compiler_version: "test".to_string(),
+            source_hash: "test".to_string(),
+        },
+    };
+    let bytes = keyrx_compiler::serialize::serialize(&config).unwrap();
+    let mut file = fs::File::create(&krx_path).unwrap();
+    file.write_all(&bytes).unwrap();
 
     (temp_dir, config_dir)
 }
