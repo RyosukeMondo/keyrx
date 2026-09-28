@@ -267,62 +267,55 @@ device_end();
     println!("Error message: {}", error);
 }
 
-/// Benchmark profile compilation performance
+/// Compiling a large profile stays fast, and every mapping survives.
+///
+/// Uses real mappings over distinct keys (a Rhai `fn` that is never called
+/// would compile to an empty config and time nothing). The bound is loose
+/// on purpose - it catches an order-of-magnitude regression without flaking
+/// when the machine is busy running other test binaries in parallel.
 #[test]
 fn test_profile_compilation_performance() {
-    let temp_dir = TempDir::new().unwrap();
-
-    let test_cases = vec![
-        ("tiny", 10),    // 10 remappings
-        ("small", 50),   // 50 remappings
-        ("medium", 200), // 200 remappings
-        ("large", 500),  // 500 remappings
-        ("huge", 1000),  // 1000 remappings
+    const KEYS: [&str; 26] = [
+        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R",
+        "S", "T", "U", "V", "W", "X", "Y", "Z",
     ];
-
-    for (name, count) in test_cases {
-        let config_path = temp_dir.path().join(format!("{}.rhai", name));
-
-        let mut config = String::from("fn main() {\n");
-        for i in 0..count {
-            config.push_str(&format!(
-                "    remap_key(KEY_{}, KEY_{});\n",
-                i % 26,
-                (i + 1) % 26
-            ));
-        }
-        config.push_str("}\n");
-
-        fs::write(&config_path, &config).unwrap();
-
-        let krx_path = temp_dir.path().join(format!("{}.krx", name));
-        let start = std::time::Instant::now();
-        let result = compile_file(&config_path, &krx_path);
-        let elapsed = start.elapsed();
-
-        assert!(
-            result.is_ok(),
-            "{} profile compilation failed: {:?}",
-            name,
-            result.err()
-        );
-
-        println!(
-            "{:6} ({:4} remaps, {:5} bytes): {:6.2?}",
-            name,
-            count,
-            config.len(),
-            elapsed
-        );
-
-        // Performance threshold: <5ms per 100 remappings, minimum 50ms
-        let max_time = Duration::from_millis(((count / 100) * 5).max(50));
-        assert!(
-            elapsed < max_time,
-            "{} profile took too long: {:?} (max: {:?})",
-            name,
-            elapsed,
-            max_time
-        );
+    let temp_dir = TempDir::new().unwrap();
+    // 26 base mappings + 26 in each of 38 layers = 1014 mappings.
+    let mut config = String::from("device_start(\"*\");\n");
+    for (i, key) in KEYS.iter().enumerate() {
+        let to = KEYS[(i + 1) % KEYS.len()];
+        config.push_str(&format!("map(\"VK_{key}\", \"VK_{to}\");\n"));
     }
+    for layer in 0..38 {
+        config.push_str(&format!("when_start(\"MD_{layer:02X}\");\n"));
+        for (i, key) in KEYS.iter().enumerate() {
+            let to = KEYS[(i + 3) % KEYS.len()];
+            config.push_str(&format!("map(\"VK_{key}\", \"VK_{to}\");\n"));
+        }
+        config.push_str("when_end();\n");
+    }
+    config.push_str("device_end();\n");
+    let rhai = temp_dir.path().join("huge.rhai");
+    let krx = temp_dir.path().join("huge.krx");
+    fs::write(&rhai, &config).unwrap();
+
+    let start = std::time::Instant::now();
+    compile_file(&rhai, &krx).expect("compiles");
+    let elapsed = start.elapsed();
+
+    let root = keyrx_daemon::config_loader::load_config(&krx).expect("loads");
+    let device = &root.devices[0];
+    let layered: usize = device
+        .mappings
+        .iter()
+        .map(|m| match m {
+            keyrx_core::config::KeyMapping::Conditional { mappings, .. } => mappings.len(),
+            keyrx_core::config::KeyMapping::Base(_) => 1,
+        })
+        .sum();
+    assert_eq!(layered, 26 + 26 * 38, "every mapping compiled");
+    assert!(
+        elapsed < Duration::from_secs(2),
+        "1014 mappings took {elapsed:?} to compile"
+    );
 }
