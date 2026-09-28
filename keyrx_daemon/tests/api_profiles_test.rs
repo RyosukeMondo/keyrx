@@ -42,8 +42,13 @@ async fn create_profile_with_config(app: &TestApp, name: &str, content: &str) {
             &json!({ "config": content }),
         )
         .await;
-    // Config set may fail if content is invalid Rhai - that's OK for validation tests
-    let _ = config_response;
+    // The API refuses to save source that does not compile (the file keeps
+    // its last good content). Tests about invalid profiles then put the
+    // source on disk directly, as a hand edit in a text editor would.
+    if !config_response.status().is_success() {
+        let rhai = app.config_path().join("profiles").join(format!("{name}.rhai"));
+        std::fs::write(rhai, content).expect("write profile source");
+    }
 }
 
 /// Test that a valid profile template compiles successfully.
