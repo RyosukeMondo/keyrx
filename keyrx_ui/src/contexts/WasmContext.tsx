@@ -58,6 +58,20 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
         });
 
         logger.debug('wasm_context_module_loaded');
+        // For the wasm-pack "web" target, the module's default export is the
+        // async initializer that fetches + instantiates the .wasm binary and
+        // sets up the glue code's internal `wasm` binding; every other
+        // export (including `wasm_init`) is unusable until this resolves.
+        // This call was missing here, so `module.wasm_init()` always threw
+        // "Cannot read properties of undefined (reading 'wasm_init')" and
+        // WASM never became ready anywhere `useWasmContext()` is used (the
+        // Monaco editor's inline validation, the simulator) -- see the
+        // correct sequence already used by the standalone `useWasm` hook.
+        const init = (module as unknown as { default?: () => Promise<unknown> })
+          .default;
+        if (typeof init === 'function') {
+          await init();
+        }
         module.wasm_init();
 
         const loadTime = performance.now() - startTime;
