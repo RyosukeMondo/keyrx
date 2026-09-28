@@ -137,7 +137,7 @@ impl DeviceManager {
     /// devices rather than crash-looping).
     pub fn discover(configs: &[DeviceConfig]) -> Result<Self, DiscoveryError> {
         let mut manager = Self::empty();
-        let result = manager.reconcile(configs, "*")?;
+        let result = manager.reconcile(configs, "*", None)?;
         if manager.devices.is_empty() {
             return Err(DiscoveryError::NoDevicesFound);
         }
@@ -189,13 +189,19 @@ impl DeviceManager {
     /// alive so IPC/web/`doctor` remain usable. A device that matched a
     /// pattern but could not be opened or grabbed is logged with the reason
     /// and counted in [`RefreshResult::denied`], not silently dropped.
+    ///
+    /// `own_output` names the daemon's own virtual output keyboard: it is
+    /// never managed. It appears in /dev/input after startup, so hotplug
+    /// would otherwise grab it and swallow every remapped key.
     pub fn reconcile(
         &mut self,
         configs: &[DeviceConfig],
         scope: &str,
+        own_output: Option<&str>,
     ) -> Result<RefreshResult, DiscoveryError> {
         let current_keyboards: Vec<KeyboardInfo> = enumerate_keyboards()?
             .into_iter()
+            .filter(|k| own_output != Some(k.name.as_str()))
             .filter(|k| scope == "*" || super::match_device(k, scope))
             .collect();
         let by_path: HashMap<&std::path::Path, &KeyboardInfo> = current_keyboards

@@ -204,8 +204,9 @@ impl LinuxPlatform {
         let device_manager = self
             .device_manager
             .as_mut()
-            .expect("ensure_output_device sets device_manager");
-        let result = device_manager.reconcile(effective, &self.device_pattern)?;
+            .ok_or("device manager missing after ensure_output_device")?;
+        let result =
+            device_manager.reconcile(effective, &self.device_pattern, Some(&self.output_name))?;
         self.active_configs = effective.to_vec();
         if result.added > 0 || result.removed > 0 {
             log::info!(
