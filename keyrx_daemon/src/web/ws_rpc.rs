@@ -291,8 +291,8 @@ async fn handle_command(
         "delete_key_mapping" => config::delete_key_mapping(&state.config_service, params).await,
         "set_global_layout" => setting::set_global_layout(&state.settings_service, params).await,
         "clear_events" => metric::clear_events(&state.daemon_query, params).await,
-        "simulate" => metric::simulate(&state.macro_recorder, params).await,
-        "reset_simulator" => metric::reset_simulator(&state.macro_recorder, params).await,
+        "simulate" => metric::simulate(&state.simulation_service, params).await,
+        "reset_simulator" => metric::reset_simulator(&state.simulation_service, params).await,
         "restart_daemon" => daemon::restart_daemon(params).await,
         _ => Err(RpcError::method_not_found(&method)),
     };

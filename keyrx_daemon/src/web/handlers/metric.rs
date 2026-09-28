@@ -8,9 +8,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use typeshare::typeshare;
 
-use crate::config::simulation_engine::{BuiltinScenario, SimulatedEvent};
-use crate::macro_recorder::MacroRecorder;
-use crate::services::DaemonQueryService;
+use crate::config::simulation_engine::{EventSequence, SimulatedEvent};
+use crate::services::{DaemonQueryService, SimulationService};
 use crate::web::events::KeyEventData;
 use crate::web::rpc_types::{RpcError, INTERNAL_ERROR, INVALID_PARAMS};
 
@@ -121,33 +120,36 @@ fn to_rpc_value<T: Serialize>(value: &T) -> Result<Value, RpcError> {
     serde_json::to_value(value).map_err(|e| RpcError::new(INTERNAL_ERROR, e.to_string()))
 }
 
-/// Run simulation
-pub async fn simulate(_macro_recorder: &MacroRecorder, params: Value) -> Result<Value, RpcError> {
+/// Run a simulation through the real engine (the same `Remapper` the live
+/// event loop uses - see `keyrx_core::runtime::remapper`), against whichever
+/// profile is currently loaded in `simulation_service` (loaded on profile
+/// activation, see `web/api/profiles/lifecycle.rs` and
+/// `web/api/simulator.rs`'s `/simulator/load-profile`).
+pub async fn simulate(
+    simulation_service: &SimulationService,
+    params: Value,
+) -> Result<Value, RpcError> {
     let params: SimulateParams = serde_json::from_value(params)
         .map_err(|e| RpcError::new(INVALID_PARAMS, format!("Invalid parameters: {}", e)))?;
 
     log::debug!("RPC: simulate scenario={:?}", params.scenario);
 
-    // Determine event sequence
-    let events = if let Some(scenario_name) = params.scenario {
-        // Use built-in scenario
-        let scenario = match scenario_name.as_str() {
-            "tap-hold-under-threshold" => BuiltinScenario::TapHoldUnderThreshold,
-            "tap-hold-over-threshold" => BuiltinScenario::TapHoldOverThreshold,
-            "permissive-hold" => BuiltinScenario::PermissiveHold,
-            "cross-device-modifiers" => BuiltinScenario::CrossDeviceModifiers,
-            "macro-sequence" => BuiltinScenario::MacroSequence,
-            _ => {
-                return Err(RpcError::new(
-                    INVALID_PARAMS,
-                    format!("Unknown scenario: {}", scenario_name),
-                ))
-            }
-        };
-        scenario.generate_events().events
+    let (event_count, outputs) = if let Some(scenario_name) = params.scenario {
+        let result = simulation_service
+            .run_scenario(&scenario_name)
+            .map_err(|e| RpcError::new(INVALID_PARAMS, e.to_string()))?;
+        (result.input.len(), result.output)
     } else if let Some(events) = params.events {
-        // Use custom event sequence
-        events
+        let event_count = events.len();
+        let sequence = EventSequence {
+            events,
+            seed: params.seed.unwrap_or(0),
+        };
+        let outputs = simulation_service
+            .replay(&sequence)
+            .await
+            .map_err(|e| RpcError::new(INTERNAL_ERROR, e.to_string()))?;
+        (event_count, outputs)
     } else {
         return Err(RpcError::new(
             INVALID_PARAMS,
@@ -155,17 +157,13 @@ pub async fn simulate(_macro_recorder: &MacroRecorder, params: Value) -> Result<
         ));
     };
 
-    // Note: Actual simulation would require running the events through
-    // the keyrx_core processor with the active profile's config.
-    // For now, return a placeholder result showing the input events.
-    let duration_us = events.last().map(|e| e.timestamp_us).unwrap_or(0);
-
+    let duration_us = outputs.last().map(|e| e.timestamp_us).unwrap_or(0);
     let result = SimulationRpcResult {
         success: true,
-        event_count: events.len(),
-        output_count: events.len(), // Placeholder: would be actual output count
+        event_count,
+        output_count: outputs.len(),
         duration_us,
-        outputs: events
+        outputs: outputs
             .iter()
             .map(|e| format!("{:?} {} at {}μs", e.event_type, e.key, e.timestamp_us))
             .collect(),
@@ -174,17 +172,17 @@ pub async fn simulate(_macro_recorder: &MacroRecorder, params: Value) -> Result<
     serde_json::to_value(&result).map_err(|e| RpcError::new(INTERNAL_ERROR, e.to_string()))
 }
 
-/// Reset simulator state
+/// Reset simulator state (drops the loaded profile; the next `simulate`
+/// call needs a scenario/events against a freshly-loaded profile).
 pub async fn reset_simulator(
-    _macro_recorder: &MacroRecorder,
+    simulation_service: &SimulationService,
     _params: Value,
 ) -> Result<Value, RpcError> {
     log::debug!("RPC: reset_simulator");
-
-    // Simulator state is ephemeral (no persistent state)
+    simulation_service.reset();
     Ok(serde_json::json!({
         "success": true,
-        "message": "Simulator state is ephemeral"
+        "message": "Simulator state reset"
     }))
 }
 
@@ -235,6 +233,57 @@ mod tests {
             params.scenario.expect("Scenario should be present"),
             "tap-hold-under-threshold"
         );
+    }
+
+    /// Regression: the RPC `simulate` handler used to be a placeholder that
+    /// echoed the input events back as "output" without running them
+    /// through any remapping engine at all. It now delegates to
+    /// `SimulationService`, the same real engine REST's `/simulator/events`
+    /// and the CLI `simulate` command use.
+    #[tokio::test]
+    async fn test_simulate_runs_the_real_engine_not_a_placeholder() {
+        use crate::services::SimulationService;
+        use keyrx_core::config::{
+            ConfigRoot, DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping, Metadata, Version,
+        };
+        use tempfile::TempDir;
+
+        let dir = TempDir::new().expect("temp dir");
+        let profiles_dir = dir.path().join("profiles");
+        std::fs::create_dir_all(&profiles_dir).unwrap();
+        let config = ConfigRoot {
+            version: Version::current(),
+            devices: vec![DeviceConfig {
+                identifier: DeviceIdentifier {
+                    pattern: "*".to_string(),
+                },
+                mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+            }],
+            metadata: Metadata {
+                compilation_timestamp: 0,
+                compiler_version: "test".to_string(),
+                source_hash: "test".to_string(),
+            },
+        };
+        let bytes = keyrx_compiler::serialize::serialize(&config).unwrap();
+        std::fs::write(profiles_dir.join("test.krx"), &bytes).unwrap();
+
+        let service = SimulationService::new(dir.path().to_path_buf(), None);
+        service.load_profile("test").unwrap();
+
+        let params = json!({ "events": [
+            { "device_id": null, "timestamp_us": 0, "key": "A", "event_type": "press" },
+            { "device_id": null, "timestamp_us": 10, "key": "A", "event_type": "release" }
+        ] });
+        let result = simulate(&service, params).await.unwrap();
+
+        assert_eq!(result["success"], true);
+        assert_eq!(result["event_count"], 2);
+        assert_eq!(result["output_count"], 2);
+        // A was remapped to B by the loaded config - not echoed back as A,
+        // and not a hardcoded placeholder value.
+        let outputs = result["outputs"].as_array().unwrap();
+        assert!(outputs[0].as_str().unwrap().contains('B'));
     }
 
     /// Regression: get_latency returned hard-coded zeros and get_events /
