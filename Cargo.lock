@@ -2581,6 +2581,7 @@ dependencies = [
  "tray-icon",
  "typeshare",
  "uinput",
+ "uinput-sys",
  "uuid",
  "validator",
  "windows-sys 0.59.0",

@@ -125,34 +125,21 @@ impl VirtualKeyboard {
 
         #[cfg(target_os = "linux")]
         {
-            // Create uinput device with keyboard capabilities
-            let device = uinput::default()
-                .map_err(|e| {
-                    let err_str = e.to_string();
-                    if err_str.contains("Permission denied") || err_str.contains("EACCES") {
-                        VirtualDeviceError::uinput_permission_denied()
-                    } else {
-                        VirtualDeviceError::CreationFailed {
-                            message: format!("failed to open uinput: {}", e),
+            // Every EV_KEY code and EV_REL axis, not just the ones the
+            // `uinput` crate's `Keyboard::All` models - tests inject probes
+            // (e.g. KEY_BRIGHTNESSUP, REL_X) that have no `KeyCode` at all
+            // (H6), so this virtual keyboard must be able to emit them.
+            let device =
+                crate::platform::linux::uinput_device::create_full_capability_device(&unique_name)
+                    .map_err(|e| {
+                        if e.kind() == std::io::ErrorKind::PermissionDenied {
+                            VirtualDeviceError::uinput_permission_denied()
+                        } else {
+                            VirtualDeviceError::CreationFailed {
+                                message: format!("failed to create device: {}", e),
+                            }
                         }
-                    }
-                })?
-                .name(&unique_name)
-                .map_err(|e| {
-                    VirtualDeviceError::creation_failed(format!("failed to set name: {}", e))
-                })?
-                // Enable all keyboard events for full capability
-                .event(uinput::event::Keyboard::All)
-                .map_err(|e| {
-                    VirtualDeviceError::creation_failed(format!(
-                        "failed to enable keyboard events: {}",
-                        e
-                    ))
-                })?
-                .create()
-                .map_err(|e| {
-                    VirtualDeviceError::creation_failed(format!("failed to create device: {}", e))
-                })?;
+                    })?;
 
             Ok(Self {
                 device: Some(device),
@@ -331,6 +318,33 @@ impl VirtualKeyboard {
         }
 
         Ok(())
+    }
+
+    /// Injects a raw `(type, code, value)` triple, bypassing `KeyCode`
+    /// entirely. For test probes H6 needs: codes keyrx has no `KeyCode`
+    /// for (e.g. `KEY_BRIGHTNESSUP`) and non-key events (e.g. `REL_X`).
+    /// Linux only - this device is created with every `EV_KEY`/`EV_REL`
+    /// capability enabled (see [`crate::platform::linux::uinput_device`]).
+    #[cfg(target_os = "linux")]
+    pub fn inject_raw(
+        &mut self,
+        event_type: u16,
+        code: u16,
+        value: i32,
+    ) -> Result<(), VirtualDeviceError> {
+        let device = self
+            .device
+            .as_mut()
+            .ok_or_else(|| VirtualDeviceError::creation_failed("device has been destroyed"))?;
+
+        crate::platform::linux::uinput_device::write_raw(device, event_type, code, value).map_err(
+            |e| {
+                VirtualDeviceError::Io(std::io::Error::other(format!(
+                    "raw injection failed: {}",
+                    e
+                )))
+            },
+        )
     }
 }
 

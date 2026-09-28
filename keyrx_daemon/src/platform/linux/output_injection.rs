@@ -12,6 +12,7 @@ use keyrx_core::runtime::event::KeyEvent;
 use crate::platform::{DeviceError, OutputDevice};
 
 use super::keycode_map::keycode_to_uinput_key;
+use super::uinput_device;
 
 /// Virtual keyboard device for injecting keyboard events via uinput.
 ///
@@ -104,49 +105,31 @@ impl UinputOutput {
     /// }
     /// ```
     pub fn create(name: &str) -> Result<Self, DeviceError> {
-        // Create uinput device with keyboard capabilities
-        let device = uinput::default()
-            .map_err(|e| {
-                let err_str = e.to_string();
-                if err_str.contains("Permission denied") || err_str.contains("EACCES") {
-                    DeviceError::PermissionDenied(
-                        "cannot access /dev/uinput: permission denied.\n\
-                        To fix this, either:\n\
-                        1. Run as root, OR\n\
-                        2. Create udev rules:\n\
-                           echo 'KERNEL==\"uinput\", MODE=\"0660\", GROUP=\"uinput\"' | \\\n\
-                           sudo tee /etc/udev/rules.d/99-keyrx.rules\n\
-                           sudo groupadd -f uinput\n\
-                           sudo usermod -aG uinput $USER\n\
-                           (log out and back in)"
-                            .to_string(),
-                    )
-                } else {
-                    DeviceError::Io(std::io::Error::other(format!("uinput open failed: {}", e)))
-                }
-            })?
-            .name(name)
-            .map_err(|e| {
-                DeviceError::Io(std::io::Error::other(format!(
-                    "failed to set device name: {}",
-                    e
-                )))
-            })?
-            // Enable all keyboard events
-            .event(uinput::event::Keyboard::All)
-            .map_err(|e| {
-                DeviceError::Io(std::io::Error::other(format!(
-                    "failed to configure keyboard events: {}",
-                    e
-                )))
-            })?
-            .create()
-            .map_err(|e| {
+        // Full EV_KEY + EV_REL capability range (see `uinput_device` docs):
+        // a grabbed keyboard can carry vendor/consumer keys or, if it
+        // doubles as a pointer, relative motion, and none of that may be
+        // silently dropped just because it has no `KeyCode` (H6).
+        let device = uinput_device::create_full_capability_device(name).map_err(|e| {
+            if e.kind() == std::io::ErrorKind::PermissionDenied {
+                DeviceError::PermissionDenied(
+                    "cannot access /dev/uinput: permission denied.\n\
+                    To fix this, either:\n\
+                    1. Run as root, OR\n\
+                    2. Create udev rules:\n\
+                       echo 'KERNEL==\"uinput\", MODE=\"0660\", GROUP=\"uinput\"' | \\\n\
+                       sudo tee /etc/udev/rules.d/99-keyrx.rules\n\
+                       sudo groupadd -f uinput\n\
+                       sudo usermod -aG uinput $USER\n\
+                       (log out and back in)"
+                        .to_string(),
+                )
+            } else {
                 DeviceError::Io(std::io::Error::other(format!(
                     "failed to create uinput device: {}",
                     e
                 )))
-            })?;
+            }
+        })?;
 
         Ok(Self {
             device: Some(device),
@@ -354,6 +337,38 @@ impl OutputDevice for UinputOutput {
         })?;
 
         Ok(())
+    }
+}
+
+impl UinputOutput {
+    /// Forwards a captured event this daemon could not turn into a
+    /// `KeyCode`-based [`KeyEvent`] straight to the output device,
+    /// unchanged (H6): an `EV_KEY` code with no `KeyCode` (brightness,
+    /// mic-mute, vendor keys) or a non-key event (e.g. `EV_REL` from a
+    /// keyboard that doubles as a pointer). The device is created with
+    /// every `EV_KEY`/`EV_REL` capability enabled (see
+    /// [`super::uinput_device`]), so this does not fail just because the
+    /// code was never registered.
+    ///
+    /// Unlike [`inject_event`](OutputDevice::inject_event), this does not
+    /// track `held_keys`: a raw code has no `KeyCode` to track or release
+    /// by. A raw key left physically held across a config swap is a known,
+    /// accepted gap - vendor/media keys are normally momentary, unlike the
+    /// mapped keys `held_keys` exists for.
+    pub fn inject_raw(
+        &mut self,
+        event_type: u16,
+        code: u16,
+        value: i32,
+    ) -> Result<(), DeviceError> {
+        let device = self
+            .device
+            .as_mut()
+            .ok_or_else(|| DeviceError::InjectionFailed("device has been destroyed".to_string()))?;
+
+        uinput_device::write_raw(device, event_type, code, value).map_err(|e| {
+            DeviceError::InjectionFailed(format!("failed to forward raw event: {}", e))
+        })
     }
 }
 
