@@ -22,7 +22,7 @@ export const Card = React.memo<CardProps>(
     footer,
     children,
     className = '',
-    role = 'region',
+    role,
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
     'data-testid': dataTestId,
@@ -30,6 +30,17 @@ export const Card = React.memo<CardProps>(
   }) => {
     const baseClasses =
       'bg-slate-800 border border-slate-700 rounded-md overflow-hidden';
+
+    // Default to the "region" landmark role only when there's an accessible
+    // name to go with it. Every Card used to get role="region" unconditionally,
+    // so a page with two or more unlabelled Cards produced multiple anonymous
+    // "region" landmarks -- axe's landmark-unique rule (a region landmark
+    // needs a name once there's more than one) and, worse, actual screen
+    // reader users landing on a wall of unnamed "region" stops when
+    // navigating by landmark. A Card that's just a visual grouping
+    // (no aria-label/aria-labelledby) is a plain <div>; callers that want a
+    // real landmark still get one by passing `role` and a label explicitly.
+    const resolvedRole = role ?? (ariaLabel || ariaLabelledBy ? 'region' : undefined);
 
     const variantClasses = {
       default: 'shadow-md',
@@ -45,7 +56,7 @@ export const Card = React.memo<CardProps>(
     return (
       <div
         className={`${baseClasses} ${variantClasses[variant]} ${className}`}
-        role={role}
+        role={resolvedRole}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
         data-testid={dataTestId}
