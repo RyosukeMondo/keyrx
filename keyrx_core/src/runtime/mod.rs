@@ -28,6 +28,7 @@
 pub mod clock;
 pub mod device_pattern;
 pub mod event;
+pub mod held_outputs;
 pub mod lookup;
 pub mod remapper;
 pub mod state;

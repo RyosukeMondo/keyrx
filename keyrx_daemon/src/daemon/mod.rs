@@ -356,14 +356,10 @@ impl Daemon {
     /// key press), never via timeout — breaking hold-to-activate-layer behavior.
     pub fn check_tap_hold_timeouts(&mut self) {
         if let Some(ref mut remap_state) = self.remapping_state {
-            let current_time = event_loop::current_timestamp_us();
-            for state in remap_state.states_mut() {
-                let timeout_events =
-                    keyrx_core::runtime::check_tap_hold_timeouts(current_time, state);
-                for output_event in &timeout_events {
-                    if let Err(e) = self.platform.inject_output(output_event.clone()) {
-                        log::warn!("Failed to inject timeout event: {}", e);
-                    }
+            let timeout_events = remap_state.tick(event_loop::current_timestamp_us());
+            for output_event in &timeout_events {
+                if let Err(e) = self.platform.inject_output(output_event.clone()) {
+                    log::warn!("Failed to inject timeout event: {}", e);
                 }
             }
         }

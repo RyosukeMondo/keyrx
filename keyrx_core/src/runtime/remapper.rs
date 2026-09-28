@@ -32,6 +32,7 @@ use hashbrown::HashMap;
 use crate::config::{BaseKeyMapping, DeviceConfig, ImeState};
 use crate::runtime::device_pattern;
 use crate::runtime::event::{check_tap_hold_timeouts, process_event_for_identities};
+use crate::runtime::held_outputs::HeldOutputs;
 use crate::runtime::state::{SharedModifierState, SharedState};
 use crate::runtime::{DeviceState, KeyEvent, KeyLookup};
 
@@ -60,6 +61,8 @@ pub struct Remapper {
     devices: HashMap<String, DeviceSlot>,
     /// Modifier/lock bits shared by every device in `devices`.
     shared: SharedState,
+    /// Output keys held, across all devices (one output device).
+    held: HeldOutputs,
 }
 
 /// What the caller needs to process one event of a routed device.
@@ -151,6 +154,7 @@ impl Remapper {
                 .collect(),
             devices: HashMap::new(),
             shared: SharedModifierState::new_handle(),
+            held: HeldOutputs::new(),
         }
     }
 
@@ -195,7 +199,20 @@ impl Remapper {
     /// device no block matches (or when there are no blocks at all) passes
     /// through unchanged. `ime`, when given, is applied to the device's
     /// state before the mapping lookup (conditions may test `IME`/`LANG_*`).
+    ///
+    /// The outputs are the transitions the OS must see: see [`HeldOutputs`].
     pub fn process(
+        &mut self,
+        event: KeyEvent,
+        identities: impl FnOnce(&str) -> Vec<String>,
+        ime: Option<ImeState>,
+    ) -> Remapped {
+        let mut remapped = self.process_raw(event, identities, ime);
+        remapped.outputs = self.held.normalize(remapped.outputs);
+        remapped
+    }
+
+    fn process_raw(
         &mut self,
         event: KeyEvent,
         identities: impl FnOnce(&str) -> Vec<String>,
@@ -238,7 +255,7 @@ impl Remapper {
         for state in self.states_mut() {
             events.extend(check_tap_hold_timeouts(now_us, state));
         }
-        events
+        self.held.normalize(events)
     }
 
     /// First block whose pattern matches the device. `"*"` also matches a
