@@ -5,7 +5,8 @@
 //! - KeyLookup: Build lookup tables from configuration
 //! - KeyEvent: Represent keyboard events
 //! - process_event(): Process events through the runtime
-//! - EventProcessor: Complete event processing pipeline with mock devices
+//! - Remapper: the SAME production remapping/routing engine the daemon's
+//!   live event loop uses, driven here through `keyrx_core::simulate::run`
 //!
 //! Run with: cargo run --example runtime_example -p keyrx_daemon
 
@@ -15,8 +16,8 @@ use keyrx_core::config::{
 use keyrx_core::runtime::event::{process_event, KeyEvent};
 use keyrx_core::runtime::lookup::KeyLookup;
 use keyrx_core::runtime::state::DeviceState;
-use keyrx_daemon::platform::mock::{MockInput, MockOutput};
-use keyrx_daemon::processor::EventProcessor;
+use keyrx_core::runtime::Remapper;
+use keyrx_core::simulate::{self, SimInput};
 
 fn main() {
     println!("=== KeyRx Runtime API Example ===\n");
@@ -33,9 +34,9 @@ fn main() {
     println!("\n--- Example 3: Event Processing ---");
     example_event_processing();
 
-    // Example 4: Complete event processor pipeline
-    println!("\n--- Example 4: EventProcessor Pipeline ---");
-    example_event_processor();
+    // Example 4: Complete production engine, driven deterministically
+    println!("\n--- Example 4: Remapper via keyrx_core::simulate ---");
+    example_remapper_simulation();
 
     println!("\n=== All Examples Complete ===");
 }
@@ -214,8 +215,12 @@ fn example_event_processing() {
     assert_eq!(output[0], KeyEvent::Press(KeyCode::Z));
 }
 
-/// Example 4: EventProcessor - Complete pipeline with mock devices
-fn example_event_processor() {
+/// Example 4: `Remapper` - the SAME engine the daemon's live event loop uses,
+/// driven deterministically via `keyrx_core::simulate::run` (also used by the
+/// daemon's `simulate`/`test` CLI and the WASM simulator - see its module
+/// docs). There is exactly one implementation of "what does this config do
+/// with this event".
+fn example_remapper_simulation() {
     // Create a Vim navigation layer config
     // CapsLock → MD_00
     // When MD_00: H→Left, J→Down, K→Up, L→Right
@@ -256,36 +261,62 @@ fn example_event_processor() {
 
     let config = DeviceConfig {
         identifier: DeviceIdentifier {
-            pattern: ".*".to_string(),
+            pattern: "*".to_string(),
         },
         mappings,
     };
 
-    // Create mock input with test events
-    let input_events = vec![
-        KeyEvent::Press(KeyCode::CapsLock),   // Activate MD_00
-        KeyEvent::Press(KeyCode::H),          // Should output Left
-        KeyEvent::Release(KeyCode::H),        // Should output Left release
-        KeyEvent::Press(KeyCode::J),          // Should output Down
-        KeyEvent::Release(KeyCode::J),        // Should output Down release
-        KeyEvent::Release(KeyCode::CapsLock), // Deactivate MD_00
+    // Build the production engine and drive it with virtual time.
+    let mut remapper = Remapper::new(&config);
+    let input_events = [
+        SimInput {
+            at_us: 0,
+            device: None,
+            press: true,
+            key: KeyCode::CapsLock,
+        }, // Activate MD_00
+        SimInput {
+            at_us: 10_000,
+            device: None,
+            press: true,
+            key: KeyCode::H,
+        }, // Should output Left
+        SimInput {
+            at_us: 20_000,
+            device: None,
+            press: false,
+            key: KeyCode::H,
+        }, // Should output Left release
+        SimInput {
+            at_us: 30_000,
+            device: None,
+            press: true,
+            key: KeyCode::J,
+        }, // Should output Down
+        SimInput {
+            at_us: 40_000,
+            device: None,
+            press: false,
+            key: KeyCode::J,
+        }, // Should output Down release
+        SimInput {
+            at_us: 50_000,
+            device: None,
+            press: false,
+            key: KeyCode::CapsLock,
+        }, // Deactivate MD_00
     ];
-    let input = MockInput::new(input_events);
-    let output = MockOutput::new();
-
-    // Create event processor
-    let mut processor = EventProcessor::new(&config, input, output);
-    println!("Created EventProcessor with Vim navigation config");
+    println!("Created Remapper with Vim navigation config");
 
     // Process all events
     println!("Processing input events...");
-    processor.run().expect("Failed to run processor");
-
-    // Verify output
-    let output_events = processor.output().events();
+    let steps = simulate::run(&mut remapper, &input_events, 60_000, |id| {
+        vec![id.to_string()]
+    });
+    let output_events: Vec<_> = steps.iter().flat_map(|s| s.outputs.clone()).collect();
     println!("Output events: {} events generated", output_events.len());
     for (i, event) in output_events.iter().enumerate() {
-        println!("  [{}] {:?}", i, event);
+        println!("  [{}] {:?} {:?}", i, event.key, event.press);
     }
 
     // Expected output:
@@ -295,10 +326,18 @@ fn example_event_processor() {
     // J press → Down press
     // J release → Down release
     assert_eq!(output_events.len(), 4);
-    assert_eq!(output_events[0], KeyEvent::Press(KeyCode::Left));
-    assert_eq!(output_events[1], KeyEvent::Release(KeyCode::Left));
-    assert_eq!(output_events[2], KeyEvent::Press(KeyCode::Down));
-    assert_eq!(output_events[3], KeyEvent::Release(KeyCode::Down));
+    assert_eq!(output_events[0].key, KeyCode::Left);
+    assert!(output_events[0].press);
+    assert_eq!(output_events[1].key, KeyCode::Left);
+    assert!(!output_events[1].press);
+    assert_eq!(output_events[2].key, KeyCode::Down);
+    assert!(output_events[2].press);
+    assert_eq!(output_events[3].key, KeyCode::Down);
+    assert!(!output_events[3].press);
+    assert!(
+        simulate::stuck_keys(&steps).is_empty(),
+        "no output key should be left held"
+    );
 
     println!("✓ Vim navigation layer working correctly!");
 }

@@ -60,8 +60,6 @@ colored = "2.1"
 # UUID generation for WebSocket client IDs
 uuid = { version = "1.0", features = ["v4"] }
 tower = { version = "0.5.3", features = ["util"] }
-tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.22", features = ["json", "env-filter"] }
 # MCP (Model Context Protocol) server for AI agent integration
 rmcp = { version = "1.2", features = ["server", "transport-streamable-http-server"] }
 
