@@ -12,6 +12,9 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// Metadata written alongside a recording, for humans reading the file.
+// Written only by the Linux recorder (evdev); the format is still tested
+// on every platform.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct RecordingMetadata {
     pub version: String,
@@ -23,6 +26,7 @@ pub(crate) struct RecordingMetadata {
 /// loads it directly) plus [`RecordingMetadata`]. `#[serde(flatten)]` puts
 /// `seed`/`events` at the top level alongside `metadata`, so the file IS an
 /// `EventSequence` with one extra, ignorable key.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Recording {
     pub metadata: RecordingMetadata,
@@ -34,6 +38,7 @@ pub(crate) struct Recording {
 /// [`SimulatedEvent`], formatting its key name with the SAME `{:?}` codec
 /// `SimulationEngine` parses back (`keyrx_core::parser::validators::parse_physical_key`
 /// accepts every `KeyCode`'s Debug spelling).
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) fn key_event_to_simulated(event: &keyrx_core::runtime::KeyEvent) -> SimulatedEvent {
     SimulatedEvent {
         device_id: event.device_id().map(str::to_string),
