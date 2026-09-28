@@ -435,8 +435,14 @@ make each one analyzable/debuggable, speed up iteration, fix real bugs.
   Monitor, Simulator tab); ConfigPage test failures from the handover.
 - [x] **H3 — Linux ops & debuggability**: grab only devices a block matches
   (G8 limitation), permission diagnostics, install/unit flow, help text.
-- [ ] **H4 — Iteration speed**: measure test/build loops, cut the slow ones.
-- [ ] **H5 — Engine output semantics** (after H1; verified with a scratch
+- [x] **H4 — Iteration speed**: measure test/build loops, cut the slow ones.
+  → DONE: full suite 84 s serial → ~20 s with `cargo nextest run --workspace`
+  (installed); a keyrx_core edit no longer breaks dev/check/test builds
+  (stale WASM only fails release, eaf83f95); tests no longer collide with a
+  running daemon (per-user socket, bf4b3a7d) or flake on live device counts;
+  `RUST_LOG` honoured, `--debug` limited to keyrx crates (f3711451).
+- [x] **H5 — Engine output semantics** → DONE: (a) 15d97bdb HeldOutputs
+  refcount; (b) b3660c37 QMK permissive hold with buffered replay. (after H1; verified with a scratch
   harness on the real core):
   (a) a `with_shift`/`with_ctrl` mapping pressed while the user physically
   holds that modifier releases it: real LShift held + `/`→with_shift(2) + H
