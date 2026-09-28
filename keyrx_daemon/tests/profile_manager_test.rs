@@ -524,6 +524,48 @@ device_end();
     assert_eq!(meta.layer_count, 2); // base + MD_00
 }
 
+/// A rejected `set_config` (invalid Rhai) must not corrupt the on-disk
+/// `.rhai`/`.krx` pair: the last-known-good source has to survive so the
+/// daemon can still parse it on its next startup. Regression test for a bug
+/// where the new (invalid) source was written to the real `.rhai` path
+/// before compilation was attempted, so a failed save silently replaced a
+/// working config with a broken one.
+#[test]
+fn test_set_config_rejects_invalid_source_without_corrupting_disk() {
+    let (_temp, manager) = setup_test_manager();
+    let good_source = r#"
+device_start("*");
+  map("VK_CapsLock", "VK_Escape");
+device_end();
+"#;
+    manager.create("guarded", ProfileTemplate::Blank).unwrap();
+    manager.set_config("guarded", good_source).unwrap();
+
+    let profile = manager.get("guarded").unwrap();
+    let rhai_path = profile.rhai_path.clone();
+    let krx_path = profile.krx_path.clone();
+    let good_rhai_on_disk = fs::read_to_string(&rhai_path).unwrap();
+    let good_krx_on_disk = fs::read(&krx_path).unwrap();
+    assert_eq!(good_rhai_on_disk, good_source);
+
+    // Invalid key name -- must fail to compile.
+    let bad_source = r#"
+device_start("*");
+  map("VK_NOT_A_REAL_KEY", "VK_Escape");
+device_end();
+"#;
+    let result = manager.set_config("guarded", bad_source);
+    assert!(matches!(result, Err(ProfileError::Compilation(_))));
+
+    // The real files must be untouched -- still the last-known-good config.
+    assert_eq!(fs::read_to_string(&rhai_path).unwrap(), good_rhai_on_disk);
+    assert_eq!(fs::read(&krx_path).unwrap(), good_krx_on_disk);
+
+    // No leftover temp files.
+    assert!(!rhai_path.with_extension("rhai.tmp").exists());
+    assert!(!krx_path.with_extension("krx.tmp").exists());
+}
+
 #[test]
 fn test_list_returns_all_profiles() {
     let (_temp, manager) = setup_test_manager();

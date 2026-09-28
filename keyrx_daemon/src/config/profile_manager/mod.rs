@@ -292,26 +292,37 @@ impl ProfileManager {
                 .clone()
         };
 
-        // Write to a temporary file first (atomic write pattern)
-        let temp_path = profile.rhai_path.with_extension("rhai.tmp");
-        fs::write(&temp_path, content)?;
+        // Write the new source to temp files and compile FROM THERE first.
+        // Previously this wrote `content` straight to the real `.rhai` path
+        // and only then tried to compile it: an invalid save still replaced
+        // the last-known-good source on disk, so the *next* daemon startup
+        // (which parses `.rhai` fresh) would fail even though this request
+        // correctly reported an error and the running daemon kept using its
+        // already-loaded `.krx`. Compiling the temp copy first means a
+        // rejected save never touches the real `.rhai`/`.krx` pair.
+        let temp_rhai_path = profile.rhai_path.with_extension("rhai.tmp");
+        let temp_krx_path = profile.krx_path.with_extension("krx.tmp");
+        fs::write(&temp_rhai_path, content)?;
 
-        // Rename to final location (atomic on most filesystems)
-        fs::rename(&temp_path, &profile.rhai_path)?;
-
-        // Recompile .rhai → .krx so the daemon can reload the updated config
-        let compile_result = self
+        if let Err(e) = self
             .compiler
-            .compile_profile(&profile.rhai_path, &profile.krx_path);
-        if let Err(e) = compile_result {
+            .compile_profile(&temp_rhai_path, &temp_krx_path)
+        {
             log::error!(
-                "Failed to compile profile '{}' after config update: {}",
+                "Rejected config update for profile '{}': compilation failed: {}",
                 name,
                 e
             );
+            let _ = fs::remove_file(&temp_rhai_path);
+            let _ = fs::remove_file(&temp_krx_path);
             return Err(ProfileError::Compilation(e));
         }
-        log::info!("Recompiled profile '{}' after config update", name);
+
+        // Compilation succeeded — commit both files (each rename is atomic
+        // on the same filesystem, which `with_extension` guarantees here).
+        fs::rename(&temp_rhai_path, &profile.rhai_path)?;
+        fs::rename(&temp_krx_path, &profile.krx_path)?;
+        log::info!("Config saved and recompiled for profile '{}'", name);
 
         // Update metadata (modified time will have changed)
         let updated_metadata = self.load_profile_metadata(name)?;
