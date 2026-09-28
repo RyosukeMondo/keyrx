@@ -44,34 +44,54 @@ export const ProfileSidebarItem: React.FC<ProfileSidebarItemProps> = ({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      aria-label={`Select profile ${name}`}
-      aria-current={isSelected ? 'true' : undefined}
-      onClick={onSelect}
-      onKeyDown={handleKeyDown}
       className={cn(
-        'group relative flex items-center gap-2 px-3 py-2 cursor-pointer',
+        'group relative flex items-center gap-2 px-3 py-2',
         'rounded-md transition-colors duration-100',
-        'focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-[-2px]',
         isSelected
           ? 'bg-primary-600/20 border-l-2 border-primary-500'
           : 'border-l-2 border-transparent hover:bg-slate-700',
       )}
     >
-      {/* Active dot */}
-      {isActive && (
-        <span
-          className="shrink-0 w-2 h-2 rounded-full bg-green-500"
-          aria-label="Active profile"
-        />
-      )}
+      {/*
+        Select control. A plain <button> (not a div with role="button" wrapping
+        real buttons below) -- axe's nested-interactive rule flags interactive
+        controls nested inside another interactive control, and it also breaks
+        real keyboard/screen-reader behavior: Enter/Space on the outer control
+        and on the inner Activate/Delete buttons compete for the same event.
+      */}
+      <button
+        type="button"
+        tabIndex={0}
+        aria-label={`Select profile ${name}`}
+        aria-current={isSelected ? 'true' : undefined}
+        onClick={onSelect}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          'flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer',
+          'focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-[-2px]',
+        )}
+      >
+        {/* Active dot */}
+        {isActive && (
+          <span
+            role="status"
+            className="shrink-0 w-2 h-2 rounded-full bg-green-500"
+            aria-label="Active profile"
+          />
+        )}
 
-      {/* Name + timestamp */}
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-slate-100 truncate">{name}</p>
-        <p className="text-xs text-slate-400 truncate">{lastModified}</p>
-      </div>
+        {/* Name + timestamp -- <span>, not <p>: <button>'s content model is
+            phrasing content only, and <p> (flow content) isn't allowed
+            inside it. */}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-slate-100">
+            {name}
+          </span>
+          <span className="block truncate text-xs text-slate-400">
+            {lastModified}
+          </span>
+        </span>
+      </button>
 
       {/* Action buttons -- visible on hover, hidden for the active profile */}
       {!isActive && (
