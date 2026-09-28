@@ -138,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             <span className="min-w-0">
                               <span className="block">{item.label}</span>
                               <span
-                                className={`block text-[11px] font-normal ${actuallyActive ? 'text-primary-100' : 'text-slate-500'}`}
+                                className={`block text-[11px] font-normal ${actuallyActive ? 'text-primary-50' : 'text-slate-400'}`}
                               >
                                 {item.description}
                               </span>
@@ -166,7 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center justify-between gap-2">
           {/* Version text - always show, even when collapsed */}
           {!isCollapsed && (
-            <p className="text-[11px] text-slate-500 flex-1">
+            <p className="text-[11px] text-slate-400 flex-1">
               KeyRx v{VERSION} · local
             </p>
           )}
