@@ -22,9 +22,7 @@ use keyrx_daemon::config::{ProfileManager, ProfileTemplate};
 use keyrx_daemon::daemon::{ConfigSource, Daemon, DaemonError, DaemonSharedState};
 use keyrx_daemon::platform::linux::LinuxPlatform;
 use keyrx_daemon::services::ProfileService;
-use keyrx_daemon::test_utils::{
-    can_access_input_devices, can_access_uinput, OutputCapture, VirtualKeyboard,
-};
+use keyrx_daemon::test_utils::{OutputCapture, VirtualKeyboard};
 use tempfile::TempDir;
 
 const CAPS_TO_LCTRL: &str = r#"
@@ -115,14 +113,6 @@ fn tapped(key: KeyCode) -> Vec<(KeyCode, bool)> {
     vec![(key, true), (key, false)]
 }
 
-fn devices_accessible() -> bool {
-    if can_access_uinput() && can_access_input_devices() {
-        return true;
-    }
-    eprintln!("SKIPPED: needs /dev/uinput and /dev/input access (input group)");
-    false
-}
-
 /// Profiles "a" (CapsLock→Escape, active) and "b" (CapsLock→LCtrl), compiled
 /// by the real ProfileManager.
 fn profiles(dir: &Path) -> Arc<ProfileManager> {
@@ -148,9 +138,7 @@ fn activate(service: &ProfileService, name: &str) {
 
 #[test]
 fn activating_a_profile_changes_live_remapping_without_restart() {
-    if !devices_accessible() {
-        return;
-    }
+    keyrx_daemon::skip_if_no_uinput!();
     let dir = TempDir::new().unwrap();
     let manager = profiles(dir.path());
     assert!(manager.activate("a").expect("activate a").success);
@@ -171,9 +159,7 @@ fn activating_a_profile_changes_live_remapping_without_restart() {
 
 #[test]
 fn explicit_config_applies_without_active_profile_and_activation_overrides_it() {
-    if !devices_accessible() {
-        return;
-    }
+    keyrx_daemon::skip_if_no_uinput!();
     let dir = TempDir::new().unwrap();
     let manager = profiles(dir.path());
     // `run --config FILE` with no .active: the file must be live. (Activating
@@ -200,9 +186,7 @@ fn explicit_config_applies_without_active_profile_and_activation_overrides_it() 
 /// come up at the swap, before CapsLock is released.
 #[test]
 fn profile_switch_releases_outputs_held_under_the_old_mapping() {
-    if !devices_accessible() {
-        return;
-    }
+    keyrx_daemon::skip_if_no_uinput!();
     let dir = TempDir::new().unwrap();
     let manager = profiles(dir.path());
     assert!(manager.activate("a").expect("activate a").success);

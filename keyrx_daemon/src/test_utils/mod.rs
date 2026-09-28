@@ -155,17 +155,11 @@ pub use virtual_keyboard::VirtualKeyboard;
 pub fn can_access_uinput() -> bool {
     #[cfg(target_os = "linux")]
     {
-        // Check uinput access (for creating virtual devices)
-        let uinput_ok = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open("/dev/uinput")
-            .is_ok();
-
-        // Check input device access (for reading events from virtual devices)
-        let input_ok = can_access_input_devices();
-
-        uinput_ok && input_ok
+        // Cached: a real round-trip (below) creates and destroys an actual
+        // uinput device, which is slow enough (~100-200ms) that we do not
+        // want to pay it on every test in a binary.
+        static RESULT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        *RESULT.get_or_init(probe_uinput_round_trip)
     }
 
     #[cfg(target_os = "windows")]
@@ -175,6 +169,43 @@ pub fn can_access_uinput() -> bool {
         // Only enable if KEYRX_TEST_INTERACTIVE environment variable is set
         std::env::var("KEYRX_TEST_INTERACTIVE").is_ok()
     }
+}
+
+/// Actually creates and reads back a throwaway virtual keyboard instead of
+/// only checking permission bits.
+///
+/// A cheap check (open `/dev/uinput`, open some existing
+/// `/dev/input/eventN`) is not sufficient: `/etc/group` can list this
+/// process's user in `input`/`uinput` (`getent group`) while the *running
+/// process*'s credentials predate that membership - group changes need a
+/// fresh login to take effect - so `/dev/uinput` can still open, and some
+/// pre-existing, unrelated `/dev/input/eventN` can still be readable
+/// (e.g. a world-readable virtual device already in the session), even
+/// though the node a *freshly created* virtual keyboard gets (owned
+/// `root:input`, mode 660) is not actually readable by this process. Only
+/// a real create-and-open proves the thing E2E tests need.
+#[cfg(target_os = "linux")]
+fn probe_uinput_round_trip() -> bool {
+    // Fails fast on the common case (no /dev/uinput access at all) without
+    // paying for a virtual device creation attempt.
+    if OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/uinput")
+        .is_err()
+    {
+        return false;
+    }
+
+    let probe_name = format!("keyrx-uinput-probe-{}", std::process::id());
+    let Ok(keyboard) = virtual_keyboard::VirtualKeyboard::create(&probe_name) else {
+        return false;
+    };
+    output_capture::OutputCapture::find_by_name(
+        keyboard.name(),
+        std::time::Duration::from_millis(800),
+    )
+    .is_ok()
 }
 
 /// Checks if input devices are accessible for reading.
@@ -201,10 +232,16 @@ pub fn can_access_input_devices() -> bool {
 
 /// Skips the current test if uinput is not accessible.
 ///
-/// This macro checks for uinput access at runtime and returns early from the test
-/// function with a skip message if access is not available. This allows E2E tests
-/// to run automatically when permissions are configured, while gracefully skipping
-/// on systems without uinput access.
+/// This macro creates and reads back a real throwaway virtual keyboard at
+/// runtime (see [`can_access_uinput`] / `probe_uinput_round_trip`) and
+/// returns early with a skip message if that fails. This allows E2E tests
+/// to run automatically when permissions are configured, while gracefully
+/// skipping on systems without uinput access - including a session whose
+/// `input`/`uinput` group membership needs a fresh login to take effect,
+/// which a permission-bits-only check cannot detect (see H8 in
+/// `RESUME_PLAN.md`: such a session can still open `/dev/uinput` and some
+/// pre-existing `/dev/input/eventN`, just not the node a virtual keyboard
+/// created right now gets).
 ///
 /// # Usage
 ///
