@@ -255,17 +255,21 @@ describe('measureAsync', () => {
   });
 
   it('should measure successful async operation', async () => {
-    const result = await measureAsync('fetch_data', async () => {
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      return 'success';
-    });
+    // A stubbed clock: timers and performance.now() drift apart by a few
+    // tenths of a millisecond, which made a real 10ms wait flaky.
+    const now = vi
+      .spyOn(performance, 'now')
+      .mockReturnValueOnce(100)
+      .mockReturnValueOnce(125);
+    const result = await measureAsync('fetch_data', async () => 'success');
+    now.mockRestore();
 
     expect(result).toBe('success');
     expect(consoleInfoSpy).toHaveBeenCalled();
 
     const logEntry = JSON.parse(consoleInfoSpy.mock.calls[0][0]);
     expect(logEntry.event).toBe('fetch_data_completed');
-    expect(logEntry.context.duration).toBeGreaterThanOrEqual(10);
+    expect(logEntry.context.duration).toBe(25);
   });
 
   it('should measure failed async operation', async () => {
