@@ -39,6 +39,9 @@ pub enum Command {
     State(state::StateArgs),
     Metrics(metrics::MetricsArgs),
     ListDevices,
+    Doctor {
+        json: bool,
+    },
     Validate {
         config: PathBuf,
     },
@@ -99,6 +102,7 @@ pub fn dispatch(command: Command) -> CommandResult {
             metrics::execute(args).map_err(|e| (exit_codes::CONFIG_ERROR, e.to_string()))
         }
         Command::ListDevices => crate::cli::handlers::list_devices::handle_list_devices(),
+        Command::Doctor { json } => crate::cli::handlers::doctor::handle_doctor(json),
         Command::Validate { config } => crate::cli::handlers::validate::handle_validate(&config),
         Command::Record { output, device } => {
             crate::cli::handlers::record::handle_record(&output, device.as_deref())
