@@ -473,15 +473,28 @@ make each one analyzable/debuggable, speed up iteration, fix real bugs.
   and rewritten onto `SimulationEngine`/`keyrx_core::simulate::run`. No bugs
   found by the ported tests; all gates green (`cargo nextest run --workspace`
   2008/2008, UI 1846/1869 pass/23 skipped).
-- [ ] **H8 — Device status tells the truth.** `services/device_service.rs:65`
+- [x] **H8 — Device status tells the truth.** `services/device_service.rs:65`
   reports `active: true` for every enumerated keyboard (even in test mode);
   the Devices page Enable/Disable toggle only writes localStorage; the
   shared device_count is not refreshed on hotplug; live uinput tests panic
   instead of skipping without the input group.
-- [ ] **H6 — Linux capture drops what it cannot map**: EV_KEY codes without
+- [x] **H6 — Linux capture drops what it cannot map**: EV_KEY codes without
   a `KeyCode` (brightness, mic-mute, vendor keys) and non-key events on a
   grabbed node (EV_REL of a keyboard with a pointer) are silently eaten.
   Forward them raw to the output device.
+
+**Phase H result (2026-09-28):** all H items done. Also found and fixed on
+the way: web origin guard (any web page could read the keystroke WS stream
+and switch profiles - 5fc9600c); daemon grabbing its own output device via
+hotplug (8eec867d); REST device list/edits bypassing DeviceService
+(be9b834d, 4c2017a8); per-user IPC socket (bf4b3a7d); dead layer
+mappings + more-specific-layer precedence (38302865). Verified live with
+the release binary against a virtual keyboard (tap, hold, rollover,
+timeout, held Shift, pass-through, IPC/REST/doctor). Gates: nextest
+2021/2021, UI unit 1858/0, clippy linux+windows, fmt, file sizes.
+Open, small: the config page lists all 257 layers instead of the used
+ones; UI integration suite (`npm run test:integration`) has ~16
+pre-existing failures (websocket-msw, tests needing a daemon on 13030).
 
 ## Handover (2026-09-28, end of Linux session)
 
