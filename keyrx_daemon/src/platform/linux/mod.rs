@@ -9,6 +9,8 @@
 //! D-Bus protocol (using the `ksni` crate).
 
 mod device_discovery;
+mod emergency_stop;
+mod hotplug;
 mod input_capture;
 mod keycode_map;
 mod output_injection;
@@ -25,8 +27,10 @@ pub use keycode_map::{evdev_to_keycode, keycode_to_evdev, keycode_to_uinput_key}
 
 use keyrx_core::config::DeviceConfig;
 
-use crate::device_manager::DeviceManager;
+use crate::device_manager::{DeviceManager, RefreshResult};
 use crate::platform::{DeviceError, InputDevice, OutputDevice, ProcessResult};
+use emergency_stop::EmergencyChord;
+use hotplug::HotplugWatcher;
 
 /// Linux platform structure for keyboard input/output operations.
 ///
@@ -76,6 +80,16 @@ pub struct LinuxPlatform {
     device_pattern: String,
     /// Name of the virtual output device.
     output_name: String,
+    /// The `device_start` blocks from the last successful
+    /// [`reconfigure`](Self::reconfigure): hotplug re-grabs against these
+    /// without the caller re-supplying them on every rescan.
+    active_configs: Vec<DeviceConfig>,
+    /// Watches `/dev/input` for plugged-in/unplugged keyboards. `None` when
+    /// inotify could not be started (logged once at startup); hotplug is
+    /// then simply off.
+    hotplug: Option<HotplugWatcher>,
+    /// Detects the emergency escape chord on the raw (pre-remap) stream.
+    emergency: EmergencyChord,
 }
 
 impl LinuxPlatform {
@@ -95,6 +109,9 @@ impl LinuxPlatform {
             output_device: None,
             device_pattern: device_pattern.to_string(),
             output_name: output_name.to_string(),
+            active_configs: Vec::new(),
+            hotplug: None,
+            emergency: EmergencyChord::new(),
         }
     }
 
@@ -128,49 +145,134 @@ impl LinuxPlatform {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn init(&mut self, configs: &[DeviceConfig]) -> Result<(), Box<dyn std::error::Error>> {
-        // Discover and open all matching keyboard devices
-        let device_manager = DeviceManager::discover(configs)?;
-
-        log::info!(
-            "Discovered {} keyboard device(s)",
-            device_manager.device_count()
-        );
-        for device in device_manager.devices() {
-            log::info!("  - {} ({})", device.info().name, device.device_id());
+        self.ensure_output_device()?;
+        let result = self.reconfigure(configs)?;
+        if self.device_count() == 0 {
+            return Err(format!(
+                "no keyboard devices could be grabbed (0 matched and opened, {} matched but \
+                 denied - see the warnings above for why)",
+                result.denied
+            )
+            .into());
         }
-
-        // Create virtual output device for event injection
-        let output_device = UinputOutput::create(&self.output_name)?;
-        log::info!("Created virtual output device: {}", output_device.name());
-
-        // Note: System tray is now managed in main.rs to ensure proper GTK event loop integration
-        // LinuxPlatform no longer manages the tray directly
-
-        self.device_manager = Some(device_manager);
-        self.output_device = Some(output_device);
-
-        // Grab exclusive access to all input devices
-        self.grab_all_devices()?;
-
         Ok(())
     }
 
-    /// Grabs exclusive access to all managed input devices.
+    /// One-time setup: the virtual output device, an empty device manager,
+    /// and (best-effort) the hotplug watcher. Safe to call more than once.
     ///
     /// # Errors
     ///
-    /// Returns an error if grabbing any device fails.
-    fn grab_all_devices(&mut self) -> Result<(), DeviceError> {
+    /// Returns an error if the virtual output device cannot be created
+    /// (e.g. `/dev/uinput` is not accessible).
+    fn ensure_output_device(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        if self.device_manager.is_none() {
+            self.device_manager = Some(DeviceManager::empty());
+        }
+        if self.output_device.is_none() {
+            let output_device = UinputOutput::create(&self.output_name)?;
+            log::info!("Created virtual output device: {}", output_device.name());
+            self.output_device = Some(output_device);
+        }
+        if self.hotplug.is_none() {
+            self.hotplug = HotplugWatcher::start();
+        }
+        Ok(())
+    }
+
+    /// Re-evaluates which physical keyboards are grabbed against `configs`
+    /// (an empty slice falls back to `"*"` - grab-everything pass-through).
+    /// Remembers `configs` as [`Self::active_configs`] so a later hotplug
+    /// rescan can reuse them. Never fails just because 0 devices ended up
+    /// grabbed; see [`Self::init`] for the fatal startup variant.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error only if enumerating `/dev/input` itself fails.
+    pub fn reconfigure(
+        &mut self,
+        configs: &[DeviceConfig],
+    ) -> Result<RefreshResult, Box<dyn std::error::Error>> {
+        self.ensure_output_device()?;
+        let owned_wildcard;
+        let effective: &[DeviceConfig] = if configs.is_empty() {
+            owned_wildcard = wildcard_configs();
+            &owned_wildcard
+        } else {
+            configs
+        };
         let device_manager = self
             .device_manager
             .as_mut()
-            .ok_or_else(|| DeviceError::NotFound("device manager not initialized".to_string()))?;
-
-        for device in device_manager.devices_mut() {
-            device.input_mut().grab()?;
+            .expect("ensure_output_device sets device_manager");
+        let result = device_manager.reconcile(effective, &self.device_pattern)?;
+        self.active_configs = effective.to_vec();
+        if result.added > 0 || result.removed > 0 {
+            log::info!(
+                "Device reconfigure: {} grabbed, {} released, {} device(s) now managed",
+                result.added,
+                result.removed,
+                device_manager.device_count()
+            );
         }
+        Ok(result)
+    }
 
-        Ok(())
+    /// Drains the hotplug watcher and, if `/dev/input` actually changed,
+    /// re-grabs against [`Self::active_configs`]. Only called from the idle
+    /// branch of [`capture_input`](crate::platform::Platform::capture_input)
+    /// (no event was ready), so it never adds latency to the hot path.
+    fn rescan_if_hotplugged(&mut self) {
+        let changed = self.hotplug.as_ref().is_some_and(HotplugWatcher::drain);
+        if !changed {
+            return;
+        }
+        let configs = self.active_configs.clone();
+        if let Err(e) = self.reconfigure(&configs) {
+            log::warn!("Hotplug rescan failed: {e}");
+        }
+    }
+
+    /// Returns the next pending raw event, if any, without blocking.
+    fn next_raw_event(
+        &mut self,
+    ) -> crate::platform::PlatformResult<Option<keyrx_core::runtime::event::KeyEvent>> {
+        use crate::platform::PlatformError;
+
+        let device_manager =
+            self.device_manager
+                .as_mut()
+                .ok_or_else(|| PlatformError::InitializationFailed {
+                    reason: "device manager not initialized".to_string(),
+                })?;
+        take_next_event(device_manager)
+    }
+
+    /// Feeds `event` to the emergency-escape detector before handing it back
+    /// to the caller for remapping. On a completed chord, ungrabs every
+    /// device (best-effort) and turns the event into
+    /// [`PlatformError::EmergencyStop`] so the event loop stops instead of
+    /// remapping it.
+    fn finish_capture(
+        &mut self,
+        event: keyrx_core::runtime::event::KeyEvent,
+    ) -> crate::platform::PlatformResult<keyrx_core::runtime::event::KeyEvent> {
+        use crate::platform::PlatformError;
+
+        if self.emergency.observe(&event) {
+            log::error!(
+                "EMERGENCY ESCAPE chord ({}+{}+{}) held: releasing every grabbed keyboard \
+                 and stopping the event loop.",
+                format_args!("{:?}", emergency_stop::CHORD[0]),
+                format_args!("{:?}", emergency_stop::CHORD[1]),
+                format_args!("{:?}", emergency_stop::CHORD[2]),
+            );
+            if let Err(e) = self.release_all_devices() {
+                log::warn!("Emergency stop: failed to release a device cleanly: {e}");
+            }
+            return Err(PlatformError::EmergencyStop);
+        }
+        Ok(event)
     }
 
     /// Releases exclusive access to all managed input devices.
@@ -363,19 +465,29 @@ unsafe impl Sync for LinuxPlatform {}
 
 // Platform trait implementation
 impl crate::platform::Platform for LinuxPlatform {
+    /// One-time setup only (output device, hotplug watcher). Does **not**
+    /// grab any keyboard - the caller must follow up with
+    /// [`reconfigure_devices`](crate::platform::Platform::reconfigure_devices)
+    /// once it knows the live config's `device_start` patterns, so only
+    /// devices a pattern actually matches get grabbed (an empty/no config
+    /// falls back to `"*"`, i.e. grab-everything pass-through).
     fn initialize(&mut self) -> crate::platform::PlatformResult<()> {
         use crate::platform::PlatformError;
-        use keyrx_core::config::mappings::DeviceIdentifier;
 
-        let wildcard_config = DeviceConfig {
-            identifier: DeviceIdentifier {
-                pattern: self.device_pattern.clone(),
-            },
-            mappings: vec![],
-        };
+        self.ensure_output_device()
+            .map_err(|e| PlatformError::InitializationFailed {
+                reason: e.to_string(),
+            })
+    }
 
-        // Call the existing init method
-        self.init(&[wildcard_config])
+    fn reconfigure_devices(
+        &mut self,
+        configs: &[DeviceConfig],
+    ) -> crate::platform::PlatformResult<()> {
+        use crate::platform::PlatformError;
+
+        self.reconfigure(configs)
+            .map(|_| ())
             .map_err(|e| PlatformError::InitializationFailed {
                 reason: e.to_string(),
             })
@@ -386,18 +498,22 @@ impl crate::platform::Platform for LinuxPlatform {
     ) -> crate::platform::PlatformResult<keyrx_core::runtime::event::KeyEvent> {
         use crate::platform::PlatformError;
 
-        let device_manager =
-            self.device_manager
-                .as_mut()
-                .ok_or_else(|| PlatformError::InitializationFailed {
-                    reason: "device manager not initialized".to_string(),
-                })?;
-
-        if let Some(event) = take_next_event(device_manager)? {
-            return Ok(event);
+        if let Some(event) = self.next_raw_event()? {
+            return self.finish_capture(event);
         }
-        wait_for_input(device_manager, INPUT_WAIT)?;
-        take_next_event(device_manager)?.ok_or(PlatformError::NoInput)
+        {
+            let device_manager = self.device_manager.as_ref().ok_or_else(|| {
+                PlatformError::InitializationFailed {
+                    reason: "device manager not initialized".to_string(),
+                }
+            })?;
+            wait_for_input(device_manager, INPUT_WAIT)?;
+        }
+        self.rescan_if_hotplugged();
+        match self.next_raw_event()? {
+            Some(event) => self.finish_capture(event),
+            None => Err(PlatformError::NoInput),
+        }
     }
 
     fn inject_output(
@@ -463,22 +579,52 @@ impl crate::platform::Platform for LinuxPlatform {
 /// bounds how late the event loop services reloads and tap-hold timeouts.
 const INPUT_WAIT: std::time::Duration = std::time::Duration::from_millis(10);
 
+/// The single `"*"` block used when no config is loaded (pass-through):
+/// grab and pass through every keyboard in scope, same as before a config
+/// existed.
+fn wildcard_configs() -> Vec<DeviceConfig> {
+    use keyrx_core::config::mappings::DeviceIdentifier;
+    vec![DeviceConfig {
+        identifier: DeviceIdentifier {
+            pattern: "*".to_string(),
+        },
+        mappings: vec![],
+    }]
+}
+
 /// Returns the next pending key event from any device without blocking.
+///
+/// A device whose read errors (not [`DeviceError::EndOfStream`], which just
+/// means "no event right now") is dropped immediately with one log line -
+/// almost always `ENODEV` from an unplugged keyboard - instead of that one
+/// dead fd starving every other device's events behind it every poll. It is
+/// re-grabbed automatically if it comes back (hotplug).
 fn take_next_event(
     device_manager: &mut DeviceManager,
 ) -> crate::platform::PlatformResult<Option<keyrx_core::runtime::event::KeyEvent>> {
+    let mut found = None;
+    let mut vanished: Vec<String> = Vec::new();
     for device in device_manager.devices_mut() {
         match device.input_mut().next_event() {
-            Ok(event) => return Ok(Some(event.with_device_id(device.device_id()))),
+            Ok(event) => {
+                found = Some(event.with_device_id(device.device_id()));
+                break;
+            }
             Err(DeviceError::EndOfStream) => continue,
             Err(e) => {
-                return Err(crate::platform::PlatformError::Io(std::io::Error::other(
-                    format!("{}: {e}", device.device_id()),
-                )))
+                log::warn!(
+                    "Keyboard '{}' ({}) disappeared: {e}. Releasing it.",
+                    device.info().name,
+                    device.info().path.display()
+                );
+                vanished.push(device.device_id());
             }
         }
     }
-    Ok(None)
+    for id in vanished {
+        device_manager.drop_by_id(&id);
+    }
+    Ok(found)
 }
 
 /// Blocks until any device is readable or `timeout` elapses.

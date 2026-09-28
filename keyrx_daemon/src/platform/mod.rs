@@ -276,6 +276,19 @@ pub trait Platform: Send + Sync {
     fn release_held_outputs(&mut self) -> PlatformResult<usize> {
         Ok(0)
     }
+
+    /// Re-evaluates which input devices should be captured against the live
+    /// config's `device_start` blocks (`configs`; empty means pass-through -
+    /// implementations should fall back to matching everything). Called once
+    /// after [`initialize()`](Platform::initialize) with the startup config,
+    /// again after every reload/profile switch, and periodically to pick up
+    /// hotplugged keyboards.
+    ///
+    /// Platforms that do not grab individual devices (their capture is
+    /// already scoped some other way) can keep the default no-op.
+    fn reconfigure_devices(&mut self, _configs: &[DeviceConfig]) -> PlatformResult<()> {
+        Ok(())
+    }
 }
 
 /// Creates a platform-specific implementation of the Platform trait.
