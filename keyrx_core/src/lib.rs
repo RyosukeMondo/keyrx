@@ -10,6 +10,7 @@ extern crate alloc;
 pub mod config;
 pub mod error;
 pub mod runtime;
+pub mod simulate;
 
 // Parser module: error + validators are always available (no external deps).
 // Full Parser type requires the "wasm" feature (rhai, sha2, spin).
