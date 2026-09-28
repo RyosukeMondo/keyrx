@@ -31,8 +31,8 @@ use hashbrown::HashMap;
 
 use crate::config::{BaseKeyMapping, DeviceConfig, ImeState};
 use crate::runtime::device_pattern;
-use crate::runtime::event::{check_tap_hold_timeouts, process_event_for_identities};
 use crate::runtime::held_outputs::HeldOutputs;
+use crate::runtime::permissive_hold::{self, DeviceCtx};
 use crate::runtime::state::{SharedModifierState, SharedState};
 use crate::runtime::{DeviceState, KeyEvent, KeyLookup};
 
@@ -51,6 +51,9 @@ struct DeviceSlot {
     block: Option<usize>,
     identities: Vec<String>,
     state: DeviceState,
+    /// Events held back while a tap-hold key is undecided (see
+    /// [`crate::runtime::permissive_hold`]).
+    buffer: Vec<KeyEvent>,
 }
 
 /// The lookup tables of a config, the state of every device it has routed,
@@ -69,6 +72,8 @@ pub struct Remapper {
 pub struct Routed<'a> {
     pub lookup: &'a KeyLookup,
     pub state: &'a mut DeviceState,
+    /// See [`crate::runtime::permissive_hold`].
+    pub buffer: &'a mut Vec<KeyEvent>,
     pub identities: &'a [String],
     /// The block's layer modifiers (see [`active_layer`]).
     pub layers: &'a [u8],
@@ -180,6 +185,7 @@ impl Remapper {
                     block,
                     identities: ids,
                     state: DeviceState::new_sharing(&self.shared),
+                    buffer: Vec::new(),
                 },
             );
         }
@@ -188,6 +194,7 @@ impl Remapper {
         Some(Routed {
             lookup: &block.lookup,
             state: &mut slot.state,
+            buffer: &mut slot.buffer,
             identities: &slot.identities,
             layers: &block.layers,
         })
@@ -236,7 +243,17 @@ impl Remapper {
                 .find_mapping_for_identities(event.keycode(), routed.state, &identities);
         let mapping_type = mapping.map(mapping_type_name);
         let triggered = mapping.is_some();
-        let outputs = process_event_for_identities(event, routed.lookup, routed.state, &identities);
+        let now = event.timestamp_us();
+        let mut ctx = DeviceCtx {
+            lookup: routed.lookup,
+            state: routed.state,
+            identities: &identities,
+            buffer: routed.buffer,
+        };
+        // Decide tap-holds whose threshold passed before this event, so the
+        // live loop and the simulator agree however often the idle tick runs.
+        let mut outputs = permissive_hold::tick(&mut ctx, now);
+        outputs.extend(permissive_hold::feed(&mut ctx, event));
         let active_layer = active_layer(routed.state, routed.layers);
         Remapped {
             outputs,
@@ -252,8 +269,18 @@ impl Remapper {
     /// virtual time, before each simulated input (see [`crate::simulate`]).
     pub fn tick(&mut self, now_us: u64) -> Vec<KeyEvent> {
         let mut events = Vec::new();
-        for state in self.states_mut() {
-            events.extend(check_tap_hold_timeouts(now_us, state));
+        for slot in self.devices.values_mut() {
+            let Some(block) = slot.block.and_then(|b| self.blocks.get(b)) else {
+                continue;
+            };
+            let identities: Vec<&str> = slot.identities.iter().map(String::as_str).collect();
+            let mut ctx = DeviceCtx {
+                lookup: &block.lookup,
+                state: &mut slot.state,
+                identities: &identities,
+                buffer: &mut slot.buffer,
+            };
+            events.extend(permissive_hold::tick(&mut ctx, now_us));
         }
         self.held.normalize(events)
     }

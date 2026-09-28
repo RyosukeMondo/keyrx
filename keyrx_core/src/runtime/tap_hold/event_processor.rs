@@ -381,27 +381,29 @@ impl<const N: usize> TapHoldProcessor<N> {
         &mut self,
         key: KeyCode,
     ) -> ArrayVec<TapHoldOutput, MAX_OUTPUT_EVENTS> {
-        let mut outputs = ArrayVec::new();
-
         // If the pressed key is itself a pending tap-hold key, don't trigger permissive hold
         // (This handles the case where user presses another tap-hold key)
         if self.pending.contains(key) {
-            return outputs;
+            return ArrayVec::new();
         }
 
-        // Trigger permissive hold for all pending keys
-        let results = self.pending.trigger_permissive_hold();
+        log_event!("tap-hold: pending keys resolved as hold by {:?}", key);
+        self.hold_all_pending()
+    }
 
-        for result in results {
+    /// Resolves every pending tap-hold key as HOLD now (their modifiers are
+    /// activated), e.g. because a key pressed after them was released while
+    /// they were still down (permissive hold).
+    pub fn hold_all_pending(&mut self) -> ArrayVec<TapHoldOutput, MAX_OUTPUT_EVENTS> {
+        let mut outputs = ArrayVec::new();
+        for result in self.pending.trigger_permissive_hold() {
             log_event!(
-                "tap-hold: {:?} permissive hold triggered by {:?}, activating modifier {}",
+                "tap-hold: {:?} resolved as hold, activating modifier {}",
                 result.key,
-                key,
                 result.hold_modifier
             );
             let _ = outputs.try_push(TapHoldOutput::activate_modifier(result.hold_modifier));
         }
-
         outputs
     }
 

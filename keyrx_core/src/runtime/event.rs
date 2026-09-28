@@ -500,6 +500,14 @@ pub fn check_tap_hold_timeouts(current_time_us: u64, state: &mut DeviceState) ->
     convert_tap_hold_outputs(outputs, state, current_time_us)
 }
 
+/// Resolves every pending tap-hold key of `state` as HOLD (permissive hold:
+/// a key pressed after it was released while it was still down) and returns
+/// the events that produces.
+pub fn resolve_pending_as_hold(state: &mut DeviceState, timestamp_us: u64) -> Vec<KeyEvent> {
+    let outputs = state.tap_hold_processor().hold_all_pending();
+    convert_tap_hold_outputs(outputs, state, timestamp_us)
+}
+
 /// Converts TapHoldOutput events to KeyEvents and applies state changes
 ///
 /// This helper handles the conversion of tap-hold processor outputs:

@@ -338,6 +338,15 @@ tap_hold("Enter", "VK_Enter", "MD_01")
 tap_hold("Escape", "VK_Escape", "MD_02", 100)
 ```
 
+**Tap or hold** (permissive hold, as QMK's `PERMISSIVE_HOLD`):
+- Released before anything else → **tap**.
+- Held past `threshold_ms` → **hold**.
+- Another key pressed *and released* while it is still down → **hold**
+  (that key gets the layer: fast combos need no waiting).
+- Released while another key pressed after it is still down → **tap**, then
+  that key (typing rollover stays typing). Keys pressed while it is
+  undecided are held back until then.
+
 **Restrictions**:
 - `tap_output` MUST have `VK_` prefix
 - `hold_modifier` MUST have `MD_` prefix (NO physical names like `MD_LCtrl`)

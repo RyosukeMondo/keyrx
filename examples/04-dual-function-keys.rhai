@@ -25,14 +25,17 @@
 // State Machine:
 //   1. IDLE: Key not pressed
 //   2. PENDING: Key pressed, waiting to determine tap or hold
-//   3. HOLD: Threshold exceeded OR another key pressed (Permissive Hold)
+//   3. HOLD: Threshold exceeded OR a key pressed after it is released
+//      while it is still down (Permissive Hold)
 //
 // Decision Flow:
 //   - Press key → Enter PENDING state, start timer
 //   - Release before threshold → TAP: Output tap_output key
 //   - Hold past threshold → HOLD: Activate hold_modifier
-//   - Another key pressed while PENDING → HOLD: Immediately activate modifier
-//     (This is "Permissive Hold" - enables natural typing flow)
+//   - Another key pressed AND released while PENDING → HOLD: that key gets
+//     the hold layer ("Permissive Hold")
+//   - Released while another key is still down → TAP, then the other key
+//     (typing rollover stays typing)
 //
 // Timing:
 //   - threshold_ms: Time in milliseconds to distinguish tap from hold
@@ -88,16 +91,16 @@ when_end();
 //   - Hold (>= 200ms): Activates MD_00 for Vim-style navigation
 //
 // Permissive Hold example:
-//   - Press Space, then quickly press H (before 200ms)
-//   - MD_00 activates immediately, H becomes Left arrow
-//   - This enables fast "Space+H" navigation without waiting
+//   - Press Space, then quickly tap H (before 200ms) while Space is down
+//   - MD_00 applies to H: H becomes Left arrow, without waiting
+//   - Rolling Space into the next letter (Space up first) types " h"
 //
 tap_hold("VK_Space", "VK_Space", "MD_00", 200);
 
 // When holding Space (MD_00), activate Vim-style navigation
 // The modifier is activated either by:
 //   1. Holding Space for 200ms, OR
-//   2. Pressing another key while Space is held (Permissive Hold)
+//   2. Tapping another key while Space is held (Permissive Hold)
 when_start("MD_00");
   // Arrow keys on HJKL (Vim-style)
   map("VK_H", "VK_Left");   // H → Left
@@ -225,7 +228,7 @@ device_end();
 // State Transitions:
 //   IDLE → PENDING (on key press)
 //   PENDING → TAP (release before threshold) → output tap key
-//   PENDING → HOLD (threshold exceeded OR another key pressed)
+//   PENDING → HOLD (threshold exceeded OR another key tapped inside it)
 //   HOLD → IDLE (on key release) → deactivate modifier
 //
 // ============================================================================
@@ -251,18 +254,18 @@ device_end();
 // PERMISSIVE HOLD EXPLAINED
 // ============================================================================
 //
-// When you press a tap-hold key and then another key before the threshold:
+// When you press a tap-hold key and then another key before the threshold,
+// that key is held back until it is clear which one you meant:
 //
 //   1. Press CapsLock (enters PENDING state)
-//   2. Press C (before 200ms threshold)
-//   3. System immediately:
-//      a. Transitions CapsLock to HOLD state
-//      b. Activates MD_01 modifier
-//      c. Processes C with MD_01 active → outputs Ctrl+C
+//   2. Press C (before 200ms threshold) - C is buffered
+//   3a. Release C while CapsLock is still down → HOLD:
+//       MD_01 activates and C is processed with it → outputs Ctrl+C
+//   3b. Release CapsLock first → TAP: Escape, then C
 //
-// This enables fast modifier combos without waiting for the threshold.
-// Called "Permissive Hold" because it permits the hold interpretation
-// when interrupted by another keypress.
+// This enables fast modifier combos without waiting for the threshold,
+// while fast typing that merely overlaps keys (rollover) still types.
+// Same rule as QMK's PERMISSIVE_HOLD.
 //
 // Without Permissive Hold, you'd have to:
 //   1. Press CapsLock
