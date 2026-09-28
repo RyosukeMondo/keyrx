@@ -48,7 +48,6 @@ struct SimulateParams {
     /// Custom event sequence (if not using scenario)
     events: Option<Vec<SimulatedEvent>>,
     /// Optional seed for deterministic simulation
-    #[allow(dead_code)]
     seed: Option<u64>,
 }
 
