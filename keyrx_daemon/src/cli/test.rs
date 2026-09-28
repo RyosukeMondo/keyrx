@@ -95,14 +95,17 @@ fn parse_scenario_name(name: &str) -> Result<BuiltinScenario, Box<dyn std::error
     }
 }
 
-/// Resolve KRX file path from profile name or use active profile.
+/// Resolve KRX file path from profile name, or the active profile (the same
+/// resolver `run` uses - see [`crate::daemon::live_config`]).
 fn resolve_krx_path(profile: Option<&str>) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let config_dir = get_config_dir()?;
 
-    let profile_name = if let Some(name) = profile {
-        name.to_string()
-    } else {
-        "default".to_string()
+    let profile_name = match profile {
+        Some(name) => name.to_string(),
+        None => crate::daemon::live_config::read_active_profile_name(&config_dir)?.ok_or(
+            "No active profile. Pass --profile <name>, or run \
+             `keyrx_daemon profiles activate <name>` first.",
+        )?,
     };
 
     let krx_path = config_dir
@@ -187,6 +190,7 @@ fn print_human_output(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::io::Write;
     use tempfile::TempDir;
 
@@ -200,6 +204,32 @@ mod tests {
         file.write_all(b"test krx data").unwrap();
 
         krx_path
+    }
+
+    /// Regression: `test` with no `--profile` must follow the ACTIVE
+    /// profile, not a hardcoded "default" (same bug as `simulate`, see
+    /// cli/simulate.rs's equivalent test).
+    #[test]
+    #[serial]
+    fn test_resolve_krx_path_defaults_to_the_active_profile() {
+        let dir = TempDir::new().expect("Failed to create temp directory for test");
+        create_test_profile(&dir, "work");
+        std::fs::write(dir.path().join(".active"), b"work").expect("Failed to write .active");
+
+        let old = std::env::var("KEYRX_CONFIG_DIR").ok();
+        std::env::set_var("KEYRX_CONFIG_DIR", dir.path());
+
+        let result = resolve_krx_path(None);
+
+        match old {
+            Some(v) => std::env::set_var("KEYRX_CONFIG_DIR", v),
+            None => std::env::remove_var("KEYRX_CONFIG_DIR"),
+        }
+
+        assert!(
+            result.as_ref().is_ok_and(|p| p.ends_with("work.krx")),
+            "expected profiles/work.krx, got {result:?}"
+        );
     }
 
     #[test]

@@ -135,7 +135,13 @@ impl LiveConfig {
 
 /// Reads the profile name from `<config_dir>/.active` (JSON `{"name":..}` or
 /// the legacy plain-text name). `Ok(None)` when no profile is active.
-fn read_active_profile_name(config_dir: &Path) -> Result<Option<String>, DaemonError> {
+///
+/// This is the ONE resolver for "the active profile" - `run` (no
+/// `--config`) uses it via [`ConfigSource::ActiveProfile`], and the
+/// `simulate`/`test` CLI commands use it directly so "defaults to the
+/// active profile" (as their `--help` says) means the same profile the
+/// daemon would actually run.
+pub fn read_active_profile_name(config_dir: &Path) -> Result<Option<String>, DaemonError> {
     let active_file = config_dir.join(".active");
     if !active_file.exists() {
         return Ok(None);
