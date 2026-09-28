@@ -416,12 +416,6 @@ async fn test_device_registry_concurrent_modifications() {
     // Tests concurrent modifications to device registry for race conditions
     let app = TestApp::new().await;
 
-    // Get current devices
-    let initial_response = app.get("/api/devices").await;
-    assert_eq!(initial_response.status(), 200);
-    let initial_body: serde_json::Value = initial_response.json().await.unwrap();
-    let initial_count = initial_body["devices"].as_array().unwrap().len();
-
     // Spawn 20 concurrent requests that might modify device state
     let handles: Vec<_> = (0..20)
         .map(|i| {
@@ -461,12 +455,13 @@ async fn test_device_registry_concurrent_modifications() {
     let final_response = app.get("/api/devices").await;
     assert_eq!(final_response.status(), 200);
     let final_body: serde_json::Value = final_response.json().await.unwrap();
-    let final_count = final_body["devices"].as_array().unwrap().len();
-
-    // Device count should be consistent
-    assert_eq!(
-        initial_count, final_count,
-        "Device count should remain consistent after concurrent operations"
+    // The list is live hardware (other tests plug virtual keyboards in and
+    // out concurrently), so compare what the toggles could corrupt: they
+    // must not invent the unknown device they targeted.
+    let devices = final_body["devices"].as_array().unwrap();
+    assert!(
+        devices.iter().all(|d| d["id"] != "test-device"),
+        "toggling an unknown device must not register it: {devices:?}"
     );
 
     println!(
