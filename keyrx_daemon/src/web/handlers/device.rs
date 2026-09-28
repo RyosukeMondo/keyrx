@@ -44,8 +44,6 @@ pub struct DeviceRpcInfo {
     pub active: bool,
     pub layout: Option<String>,
     pub is_virtual: bool,
-    pub enabled: bool,
-    pub scope: Option<String>,
 }
 
 /// Validate device ID to prevent injection attacks
@@ -87,8 +85,6 @@ pub async fn get_devices(device_service: &DeviceService, params: Value) -> Resul
             active: d.active,
             layout: d.layout.clone(),
             is_virtual: d.name.starts_with("keyrx") || d.path.contains("uinput"),
-            enabled: true, // All devices are enabled by default
-            scope: None,   // Scope is deprecated
         })
         .collect();
 

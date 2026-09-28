@@ -60,8 +60,6 @@ export interface DeviceRpcInfo {
 	active: boolean;
 	layout?: string;
 	isVirtual: boolean;
-	enabled: boolean;
-	scope?: string;
 }
 
 /** Error notification data (WS-005). */
