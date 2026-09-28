@@ -454,12 +454,25 @@ make each one analyzable/debuggable, speed up iteration, fix real bugs.
   yields the MD_00 layer's E (Num2) instead of Enter,E. Implement QMK
   permissive hold (buffer the interrupting press; hold only if it is
   released while the tap-hold key is still down; timeout still → hold).
-- [ ] **H7 — Delete the test-only engine.** `keyrx_daemon::processor::EventProcessor`
-  is used by no production path, only by tests (integration_test,
-  processor_test, multi_device_integration_test, ...): those suites verify an
-  engine the daemon never runs. After H1, port what they assert onto the one
-  engine and delete `processor/` and the dead `src/logging.rs` (JSON tracing
-  setup nothing initializes).
+- [x] **H7 — Delete the test-only engine.** → DONE: `keyrx_daemon::processor`
+  (`EventProcessor`, its `logging`/`test_utils`/`tests_coverage`) deleted, plus
+  the dead `keyrx_daemon/src/logging.rs` (JSON tracing setup nothing called;
+  `tracing`/`tracing-subscriber` deps dropped) and the unused
+  `keyrx_ui/src/components/config/DiagnosticsPanel.tsx`. `processor_test.rs`,
+  `integration_test.rs`, `multi_device_integration_test.rs` deleted - most of
+  their assertions were already covered by `keyrx_core/tests/runtime_event_test.rs`
+  and `keyrx_core/src/runtime/lookup_tests.rs` (which exercise the same
+  `process_event`/`KeyLookup` those suites drove); the genuine gaps ported onto
+  the real engine: a lock-gated-mapping persistence test
+  (`runtime_event_test.rs`) and a two-`device_start`-block routing test through
+  ONE production `Remapper` with interleaved events
+  (`runtime/remapper_tests.rs::two_devices_routed_by_one_remapper_stay_independent_when_interleaved`
+  - the old suites gave false confidence here via two separate
+  `EventProcessor`s, which proves nothing about routing).
+  `story_acceptance_test.rs` (Rhai→compile→engine pipeline, hot-reload) kept
+  and rewritten onto `SimulationEngine`/`keyrx_core::simulate::run`. No bugs
+  found by the ported tests; all gates green (`cargo nextest run --workspace`
+  2008/2008, UI 1846/1869 pass/23 skipped).
 - [ ] **H8 — Device status tells the truth.** `services/device_service.rs:65`
   reports `active: true` for every enumerated keyboard (even in test mode);
   the Devices page Enable/Disable toggle only writes localStorage; the

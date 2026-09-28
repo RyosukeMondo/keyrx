@@ -3,6 +3,14 @@
 **Reviewer:** Claude Code
 **Scope:** Recent implementations (config_loader, mock platform, processor)
 
+> **Historical note (2026-09-28):** `keyrx_daemon::processor::EventProcessor`
+> discussed below was deleted (RESUME_PLAN H7) - it was a second, test-only
+> remapping engine no production path used. The daemon's live event loop and
+> `keyrx_core::simulate` both drive `keyrx_core::runtime::Remapper` instead.
+> This report is kept as a historical record of the review that led to
+> splitting `processor/logging.rs` and `processor/test_utils.rs`, not as
+> current architecture documentation.
+
 ## Executive Summary
 
 **Overall Status:** ⚠️ **VIOLATIONS FOUND**

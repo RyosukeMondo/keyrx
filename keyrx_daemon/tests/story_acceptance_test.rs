@@ -1,71 +1,59 @@
-//! Story-driven acceptance tests: Rhai → compile → deserialize → EventProcessor → output.
+//! Story-driven acceptance tests: Rhai -> compile -> .krx -> SimulationEngine -> output.
 //!
 //! These tests verify the full pipeline from user-written Rhai scripts through
-//! compilation, deserialization, and runtime event processing. They catch
-//! contract breaks between any layer (parser, compiler, serializer, runtime).
+//! compilation, serialization, and the SAME production remapping engine the
+//! daemon's live event loop uses (`keyrx_core::runtime::Remapper`, driven via
+//! `SimulationEngine`/`keyrx_core::simulate` - see their module docs). They
+//! catch contract breaks between any layer (parser, compiler, serializer,
+//! engine) and, unlike the deleted `EventProcessor`-based version of this
+//! file, cannot drift from what the daemon actually does.
 
 use keyrx_compiler::parser::Parser;
-use keyrx_compiler::serialize::{deserialize, serialize};
-use keyrx_core::config::mappings::{DeviceConfig, DeviceIdentifier, KeyMapping};
-use keyrx_core::config::KeyCode;
-use keyrx_core::runtime::KeyEvent;
-use keyrx_daemon::platform::{MockInput, MockOutput};
-use keyrx_daemon::processor::EventProcessor;
+use keyrx_compiler::serialize::deserialize;
+use keyrx_daemon::config::simulation_engine::{
+    EventSequence, EventType, SimulatedEvent, SimulationEngine,
+};
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-extern crate alloc;
-use alloc::string::String;
-
 // ============================================================================
 // Helpers
 // ============================================================================
 
-/// Parse a Rhai script, serialize to .krx bytes, deserialize, and return
-/// the device configs as owned types suitable for EventProcessor.
-fn compile_rhai_to_configs(script: &str) -> Vec<DeviceConfig> {
-    let temp_dir = TempDir::new().unwrap();
-    let source_path = temp_dir.path().join("test.rhai");
-
-    let mut parser = Parser::new();
-    let config = parser
-        .parse_string(script, &source_path)
-        .expect("Rhai parse should succeed");
-
-    let bytes = serialize(&config).expect("serialize should succeed");
-    let archived = deserialize(&bytes).expect("deserialize should succeed");
-
-    // Convert archived devices to owned DeviceConfig
-    archived
-        .devices
-        .iter()
-        .map(|d| {
-            let pattern: String = d.identifier.pattern.to_string();
-            let mappings: Vec<KeyMapping> = config
-                .devices
-                .iter()
-                .find(|dev| dev.identifier.pattern == pattern)
-                .expect("device should exist in original config")
-                .mappings
-                .clone();
-            DeviceConfig {
-                identifier: DeviceIdentifier { pattern },
-                mappings,
-            }
-        })
-        .collect()
+/// Compiles a Rhai script to a real `.krx` file and loads it into a fresh
+/// [`SimulationEngine`] - the same load path the daemon's `run`/`simulate`
+/// commands use. Returns the `TempDir` too, so callers that need to edit and
+/// recompile the same path (hot-reload tests) can keep it alive.
+fn compile_and_load(
+    dir: &TempDir,
+    name: &str,
+    script: &str,
+) -> (PathBuf, PathBuf, SimulationEngine) {
+    let rhai_path = dir.path().join(format!("{name}.rhai"));
+    let krx_path = dir.path().join(format!("{name}.krx"));
+    fs::write(&rhai_path, script).expect("write rhai source");
+    keyrx_compiler::compile_file(&rhai_path, &krx_path).expect("compile_file should succeed");
+    let engine = SimulationEngine::new(&krx_path).expect("SimulationEngine should load the .krx");
+    (rhai_path, krx_path, engine)
 }
 
-/// Build an EventProcessor from a DeviceConfig with given input events.
-fn build_processor(
-    config: &DeviceConfig,
-    events: Vec<KeyEvent>,
-) -> EventProcessor<MockInput, MockOutput> {
-    let input = MockInput::new(events);
-    let output = MockOutput::new();
-    EventProcessor::new(config, input, output)
+fn ev(device: Option<&str>, key: &str, press: bool, at_us: u64) -> SimulatedEvent {
+    SimulatedEvent {
+        device_id: device.map(str::to_string),
+        timestamp_us: at_us,
+        key: key.to_string(),
+        event_type: if press {
+            EventType::Press
+        } else {
+            EventType::Release
+        },
+    }
+}
+
+fn sequence(events: Vec<SimulatedEvent>) -> EventSequence {
+    EventSequence { events, seed: 0 }
 }
 
 fn create_temp_file(dir: &TempDir, name: &str, content: &str) -> PathBuf {
@@ -81,27 +69,28 @@ fn create_temp_file(dir: &TempDir, name: &str, content: &str) -> PathBuf {
 
 #[test]
 fn test_s1_simple_remap_capslock_to_escape() {
-    let configs = compile_rhai_to_configs(
+    let dir = TempDir::new().unwrap();
+    let (_, _, mut engine) = compile_and_load(
+        &dir,
+        "s1",
         r#"
 device_start("*");
 map("CapsLock", "VK_Escape");
 device_end();
 "#,
     );
-    let config = &configs[0];
 
-    let mut proc = build_processor(
-        config,
-        vec![
-            KeyEvent::Press(KeyCode::CapsLock),
-            KeyEvent::Release(KeyCode::CapsLock),
-        ],
-    );
-    proc.run().unwrap();
+    let output = engine
+        .replay(&sequence(vec![
+            ev(None, "CapsLock", true, 0),
+            ev(None, "CapsLock", false, 10_000),
+        ]))
+        .unwrap();
 
-    let events = proc.output().events();
-    assert_eq!(events[0], KeyEvent::Press(KeyCode::Escape));
-    assert_eq!(events[1], KeyEvent::Release(KeyCode::Escape));
+    assert_eq!(output[0].key, "Escape");
+    assert_eq!(output[0].event_type, EventType::Press);
+    assert_eq!(output[1].key, "Escape");
+    assert_eq!(output[1].event_type, EventType::Release);
 }
 
 // ============================================================================
@@ -110,65 +99,57 @@ device_end();
 
 #[test]
 fn test_s2_tap_hold_quick_tap_sends_escape() {
-    let configs = compile_rhai_to_configs(
+    let dir = TempDir::new().unwrap();
+    let (_, _, mut engine) = compile_and_load(
+        &dir,
+        "s2a",
         r#"
 device_start("*");
 tap_hold("CapsLock", "VK_Escape", "MD_00", 200);
 device_end();
 "#,
     );
-    let config = &configs[0];
 
-    // Quick tap: press then release immediately (timestamp 0 = instant)
-    let mut proc = build_processor(
-        config,
-        vec![
-            KeyEvent::Press(KeyCode::CapsLock),
-            KeyEvent::Release(KeyCode::CapsLock),
-        ],
-    );
-    proc.run().unwrap();
+    // Quick tap: press then release well inside the 200ms threshold.
+    let output = engine
+        .replay(&sequence(vec![
+            ev(None, "CapsLock", true, 0),
+            ev(None, "CapsLock", false, 50_000),
+        ]))
+        .unwrap();
 
-    let events = proc.output().events();
-    // On quick release, tap-hold should produce the tap key (Escape)
-    let has_escape = events
-        .iter()
-        .any(|e| *e == KeyEvent::Press(KeyCode::Escape));
     assert!(
-        has_escape,
-        "Quick tap should produce Escape press, got: {events:?}"
+        output
+            .iter()
+            .any(|e| e.key == "Escape" && e.event_type == EventType::Press),
+        "quick tap should produce an Escape press, got: {output:?}"
     );
 }
 
 #[test]
 fn test_s2_tap_hold_long_hold_activates_modifier() {
-    let configs = compile_rhai_to_configs(
+    let dir = TempDir::new().unwrap();
+    let (_, _, mut engine) = compile_and_load(
+        &dir,
+        "s2b",
         r#"
 device_start("*");
 tap_hold("CapsLock", "VK_Escape", "MD_00", 200);
 device_end();
 "#,
     );
-    let config = &configs[0];
 
-    // Hold past threshold: press with timestamp 0, release with timestamp > 200ms
-    let mut proc = build_processor(
-        config,
-        vec![
-            KeyEvent::press(KeyCode::CapsLock).with_timestamp(0),
-            KeyEvent::release(KeyCode::CapsLock).with_timestamp(300_000),
-        ],
-    );
-    proc.run().unwrap();
+    // Hold past the threshold, released only after the hold has resolved.
+    let output = engine
+        .replay(&sequence(vec![
+            ev(None, "CapsLock", true, 0),
+            ev(None, "CapsLock", false, 300_000),
+        ]))
+        .unwrap();
 
-    let events = proc.output().events();
-    // Hold should NOT produce Escape tap
-    let has_escape = events
-        .iter()
-        .any(|e| *e == KeyEvent::Press(KeyCode::Escape));
     assert!(
-        !has_escape,
-        "Long hold should NOT produce Escape, got: {events:?}"
+        !output.iter().any(|e| e.key == "Escape"),
+        "a long hold must NOT produce the tap output, got: {output:?}"
     );
 }
 
@@ -178,7 +159,10 @@ device_end();
 
 #[test]
 fn test_s3_vim_navigation_with_modifier_layer() {
-    let configs = compile_rhai_to_configs(
+    let dir = TempDir::new().unwrap();
+    let (_, _, mut engine) = compile_and_load(
+        &dir,
+        "s3",
         r#"
 device_start("*");
 map("CapsLock", "MD_00");
@@ -191,49 +175,41 @@ when_end();
 device_end();
 "#,
     );
-    let config = &configs[0];
 
-    let mut proc = build_processor(
-        config,
-        vec![
-            // Activate modifier layer
-            KeyEvent::Press(KeyCode::CapsLock),
-            // Press H → should get Left
-            KeyEvent::Press(KeyCode::H),
-            KeyEvent::Release(KeyCode::H),
-            // Press J → should get Down
-            KeyEvent::Press(KeyCode::J),
-            KeyEvent::Release(KeyCode::J),
-            // Release modifier
-            KeyEvent::Release(KeyCode::CapsLock),
-            // Press H without modifier → should pass through as H
-            KeyEvent::Press(KeyCode::H),
-            KeyEvent::Release(KeyCode::H),
-        ],
-    );
-    proc.run().unwrap();
+    let output = engine
+        .replay(&sequence(vec![
+            ev(None, "CapsLock", true, 0),
+            ev(None, "H", true, 10_000),
+            ev(None, "H", false, 20_000),
+            ev(None, "J", true, 30_000),
+            ev(None, "J", false, 40_000),
+            ev(None, "CapsLock", false, 50_000),
+            ev(None, "H", true, 60_000),
+            ev(None, "H", false, 70_000),
+        ]))
+        .unwrap();
 
-    let events = proc.output().events();
-    // CapsLock press → no output (modifier activation)
-    // H press → Left press
-    assert_eq!(events[0], KeyEvent::Press(KeyCode::Left));
-    assert_eq!(events[1], KeyEvent::Release(KeyCode::Left));
-    // J press → Down press
-    assert_eq!(events[2], KeyEvent::Press(KeyCode::Down));
-    assert_eq!(events[3], KeyEvent::Release(KeyCode::Down));
-    // CapsLock release → no output
-    // H press without modifier → H pass-through
-    assert_eq!(events[4], KeyEvent::Press(KeyCode::H));
-    assert_eq!(events[5], KeyEvent::Release(KeyCode::H));
+    // H with the layer active -> Left.
+    assert_eq!(output[0].key, "Left");
+    assert_eq!(output[1].key, "Left");
+    // J with the layer active -> Down.
+    assert_eq!(output[2].key, "Down");
+    assert_eq!(output[3].key, "Down");
+    // H without the layer -> passthrough.
+    assert_eq!(output[4].key, "H");
+    assert_eq!(output[5].key, "H");
 }
 
 // ============================================================================
-// S4: Device-Specific Config
+// S4: Device-Specific Config — two device_start blocks, ONE engine
 // ============================================================================
 
 #[test]
 fn test_s4_device_specific_different_keyboards() {
-    let configs = compile_rhai_to_configs(
+    let dir = TempDir::new().unwrap();
+    let (_, _, mut engine) = compile_and_load(
+        &dir,
+        "s4",
         r#"
 device_start("work-*");
 map("CapsLock", "VK_Escape");
@@ -245,21 +221,20 @@ device_end();
 "#,
     );
 
-    assert_eq!(configs.len(), 2, "Should have 2 device configs");
+    // Both devices' events go through the SAME engine (the same `Remapper`
+    // the daemon's one event loop would route them through), not two
+    // separately-configured instances.
+    let output = engine
+        .replay(&sequence(vec![
+            ev(Some("work-kbd-1"), "CapsLock", true, 0),
+            ev(Some("work-kbd-1"), "CapsLock", false, 10_000),
+            ev(Some("game-pad-1"), "CapsLock", true, 20_000),
+            ev(Some("game-pad-1"), "CapsLock", false, 30_000),
+        ]))
+        .unwrap();
 
-    // Work keyboard: CapsLock → Escape
-    let work = &configs[0];
-    assert_eq!(work.identifier.pattern, "work-*");
-    let mut proc = build_processor(work, vec![KeyEvent::Press(KeyCode::CapsLock)]);
-    proc.run().unwrap();
-    assert_eq!(proc.output().events()[0], KeyEvent::Press(KeyCode::Escape));
-
-    // Game keyboard: CapsLock → LCtrl
-    let game = &configs[1];
-    assert_eq!(game.identifier.pattern, "game-*");
-    let mut proc = build_processor(game, vec![KeyEvent::Press(KeyCode::CapsLock)]);
-    proc.run().unwrap();
-    assert_eq!(proc.output().events()[0], KeyEvent::Press(KeyCode::LCtrl));
+    assert_eq!(output[0].key, "Escape", "work keyboard: CapsLock -> Escape");
+    assert_eq!(output[2].key, "LCtrl", "game pad: CapsLock -> LCtrl");
 }
 
 // ============================================================================
@@ -268,28 +243,32 @@ device_end();
 
 #[test]
 fn test_s5_modified_output_ctrl_z() {
-    let configs = compile_rhai_to_configs(
+    let dir = TempDir::new().unwrap();
+    let (_, _, mut engine) = compile_and_load(
+        &dir,
+        "s5",
         r#"
 device_start("*");
 map("VK_Z", with_ctrl("VK_Z"));
 device_end();
 "#,
     );
-    let config = &configs[0];
 
-    let mut proc = build_processor(
-        config,
-        vec![KeyEvent::Press(KeyCode::Z), KeyEvent::Release(KeyCode::Z)],
-    );
-    proc.run().unwrap();
+    let output = engine
+        .replay(&sequence(vec![
+            ev(None, "Z", true, 0),
+            ev(None, "Z", false, 10_000),
+        ]))
+        .unwrap();
 
-    let events = proc.output().events();
-    // Press: LCtrl down, then Z down
-    assert_eq!(events[0], KeyEvent::Press(KeyCode::LCtrl));
-    assert_eq!(events[1], KeyEvent::Press(KeyCode::Z));
-    // Release: Z up, then LCtrl up
-    assert_eq!(events[2], KeyEvent::Release(KeyCode::Z));
-    assert_eq!(events[3], KeyEvent::Release(KeyCode::LCtrl));
+    assert_eq!(output[0].key, "LCtrl");
+    assert_eq!(output[0].event_type, EventType::Press);
+    assert_eq!(output[1].key, "Z");
+    assert_eq!(output[1].event_type, EventType::Press);
+    assert_eq!(output[2].key, "Z");
+    assert_eq!(output[2].event_type, EventType::Release);
+    assert_eq!(output[3].key, "LCtrl");
+    assert_eq!(output[3].event_type, EventType::Release);
 }
 
 // ============================================================================
@@ -298,7 +277,10 @@ device_end();
 
 #[test]
 fn test_s6_lock_toggle_activates_conditional() {
-    let configs = compile_rhai_to_configs(
+    let dir = TempDir::new().unwrap();
+    let (_, _, mut engine) = compile_and_load(
+        &dir,
+        "s6",
         r#"
 device_start("*");
 map("ScrollLock", "LK_00");
@@ -308,46 +290,35 @@ when_end();
 device_end();
 "#,
     );
-    let config = &configs[0];
 
-    let mut proc = build_processor(
-        config,
-        vec![
-            // A before lock → passes through
-            KeyEvent::Press(KeyCode::A),
-            KeyEvent::Release(KeyCode::A),
-            // Toggle lock ON
-            KeyEvent::Press(KeyCode::ScrollLock),
-            KeyEvent::Release(KeyCode::ScrollLock),
-            // A after lock → should map to B
-            KeyEvent::Press(KeyCode::A),
-            KeyEvent::Release(KeyCode::A),
-            // Toggle lock OFF
-            KeyEvent::Press(KeyCode::ScrollLock),
-            KeyEvent::Release(KeyCode::ScrollLock),
-            // A after lock off → passes through again
-            KeyEvent::Press(KeyCode::A),
-            KeyEvent::Release(KeyCode::A),
-        ],
-    );
-    proc.run().unwrap();
+    let output = engine
+        .replay(&sequence(vec![
+            ev(None, "A", true, 0),
+            ev(None, "A", false, 10_000),
+            ev(None, "ScrollLock", true, 20_000),
+            ev(None, "ScrollLock", false, 30_000),
+            ev(None, "A", true, 40_000),
+            ev(None, "A", false, 50_000),
+            ev(None, "ScrollLock", true, 60_000),
+            ev(None, "ScrollLock", false, 70_000),
+            ev(None, "A", true, 80_000),
+            ev(None, "A", false, 90_000),
+        ]))
+        .unwrap();
 
-    let events = proc.output().events();
-    // Before lock: A passes through
-    assert_eq!(events[0], KeyEvent::Press(KeyCode::A));
-    assert_eq!(events[1], KeyEvent::Release(KeyCode::A));
-    // ScrollLock press/release → no output (lock toggle)
-    // After lock ON: A → B
-    assert_eq!(events[2], KeyEvent::Press(KeyCode::B));
-    assert_eq!(events[3], KeyEvent::Release(KeyCode::B));
-    // ScrollLock again → no output (lock toggle off)
-    // After lock OFF: A passes through
-    assert_eq!(events[4], KeyEvent::Press(KeyCode::A));
-    assert_eq!(events[5], KeyEvent::Release(KeyCode::A));
+    // Before lock: A passes through.
+    assert_eq!(output[0].key, "A");
+    assert_eq!(output[1].key, "A");
+    // After lock ON: A -> B.
+    assert_eq!(output[2].key, "B");
+    assert_eq!(output[3].key, "B");
+    // After lock OFF: A passes through again.
+    assert_eq!(output[4].key, "A");
+    assert_eq!(output[5].key, "A");
 }
 
 // ============================================================================
-// S7: Config Validation (Error Paths)
+// S7: Config Validation (Error Paths) — pure parser, no engine involved
 // ============================================================================
 
 #[test]
@@ -390,7 +361,7 @@ map("VK_A", "VK_B");
 }
 
 // ============================================================================
-// S8: Full Pipeline File Round-Trip
+// S8: Full Pipeline File Round-Trip — pure compiler/serializer, no engine
 // ============================================================================
 
 #[test]
@@ -441,261 +412,166 @@ device_end();
 /// 3. Also verifies other mappings survive the reload unchanged
 #[test]
 fn test_s9_hot_reload_edit_and_reload_effective_immediately() {
-    let temp_dir = TempDir::new().unwrap();
-    let rhai_path = temp_dir.path().join("profile.rhai");
-    let krx_path = temp_dir.path().join("profile.krx");
+    let dir = TempDir::new().unwrap();
 
     // --- Phase 1: Initial profile (CapsLock → Escape, A → B) ---
-    fs::write(
-        &rhai_path,
+    let (_, _, mut engine_v1) = compile_and_load(
+        &dir,
+        "profile",
         r#"
 device_start("*");
 map("CapsLock", "VK_Escape");
 map("VK_A", "VK_B");
 device_end();
 "#,
-    )
-    .unwrap();
-
-    keyrx_compiler::compile_file(&rhai_path, &krx_path).expect("Initial compile should succeed");
-
-    let configs_v1 = load_configs_from_krx(&krx_path);
-    let mut proc = build_processor(
-        &configs_v1[0],
-        vec![
-            KeyEvent::Press(KeyCode::CapsLock),
-            KeyEvent::Release(KeyCode::CapsLock),
-            KeyEvent::Press(KeyCode::A),
-            KeyEvent::Release(KeyCode::A),
-        ],
     );
-    proc.run().unwrap();
 
-    let events_v1 = proc.output().events();
+    let events_v1 = engine_v1
+        .replay(&sequence(vec![
+            ev(None, "CapsLock", true, 0),
+            ev(None, "CapsLock", false, 10_000),
+            ev(None, "A", true, 20_000),
+            ev(None, "A", false, 30_000),
+        ]))
+        .unwrap();
     assert_eq!(
-        events_v1[0],
-        KeyEvent::Press(KeyCode::Escape),
+        events_v1[0].key, "Escape",
         "v1: CapsLock should map to Escape"
     );
-    assert_eq!(events_v1[1], KeyEvent::Release(KeyCode::Escape));
-    assert_eq!(
-        events_v1[2],
-        KeyEvent::Press(KeyCode::B),
-        "v1: A should map to B"
-    );
-    assert_eq!(events_v1[3], KeyEvent::Release(KeyCode::B));
+    assert_eq!(events_v1[2].key, "B", "v1: A should map to B");
 
     // --- Phase 2: User edits profile (CapsLock → Tab, A → B unchanged) ---
-    fs::write(
-        &rhai_path,
+    let (_, _, mut engine_v2) = compile_and_load(
+        &dir,
+        "profile",
         r#"
 device_start("*");
 map("CapsLock", "VK_Tab");
 map("VK_A", "VK_B");
 device_end();
 "#,
-    )
-    .unwrap();
-
-    keyrx_compiler::compile_file(&rhai_path, &krx_path)
-        .expect("Recompile after edit should succeed");
-
-    let configs_v2 = load_configs_from_krx(&krx_path);
-    let mut proc = build_processor(
-        &configs_v2[0],
-        vec![
-            KeyEvent::Press(KeyCode::CapsLock),
-            KeyEvent::Release(KeyCode::CapsLock),
-            KeyEvent::Press(KeyCode::A),
-            KeyEvent::Release(KeyCode::A),
-        ],
     );
-    proc.run().unwrap();
 
-    let events_v2 = proc.output().events();
+    let events_v2 = engine_v2
+        .replay(&sequence(vec![
+            ev(None, "CapsLock", true, 0),
+            ev(None, "CapsLock", false, 10_000),
+            ev(None, "A", true, 20_000),
+            ev(None, "A", false, 30_000),
+        ]))
+        .unwrap();
     assert_eq!(
-        events_v2[0],
-        KeyEvent::Press(KeyCode::Tab),
+        events_v2[0].key, "Tab",
         "v2: CapsLock should now map to Tab after reload"
     );
-    assert_eq!(events_v2[1], KeyEvent::Release(KeyCode::Tab));
     assert_eq!(
-        events_v2[2],
-        KeyEvent::Press(KeyCode::B),
+        events_v2[2].key, "B",
         "v2: A→B should survive reload unchanged"
     );
-    assert_eq!(events_v2[3], KeyEvent::Release(KeyCode::B));
 }
 
 /// Simulates adding a new mapping to an existing profile and reloading.
 /// Verifies the new mapping works and existing mappings are unaffected.
 #[test]
 fn test_s9_hot_reload_add_mapping_to_existing_profile() {
-    let temp_dir = TempDir::new().unwrap();
-    let rhai_path = temp_dir.path().join("profile.rhai");
-    let krx_path = temp_dir.path().join("profile.krx");
+    let dir = TempDir::new().unwrap();
 
     // --- Phase 1: Simple profile with one mapping ---
-    fs::write(
-        &rhai_path,
+    let (_, _, mut engine_v1) = compile_and_load(
+        &dir,
+        "profile",
         r#"
 device_start("*");
 map("VK_A", "VK_B");
 device_end();
 "#,
-    )
-    .unwrap();
-
-    keyrx_compiler::compile_file(&rhai_path, &krx_path).unwrap();
-    let configs_v1 = load_configs_from_krx(&krx_path);
-
-    // A → B works, Z passes through
-    let mut proc = build_processor(
-        &configs_v1[0],
-        vec![KeyEvent::Press(KeyCode::A), KeyEvent::Press(KeyCode::Z)],
     );
-    proc.run().unwrap();
-    let events = proc.output().events();
-    assert_eq!(events[0], KeyEvent::Press(KeyCode::B), "v1: A→B");
-    assert_eq!(
-        events[1],
-        KeyEvent::Press(KeyCode::Z),
-        "v1: Z passes through"
-    );
+
+    let events = engine_v1
+        .replay(&sequence(vec![
+            ev(None, "A", true, 0),
+            ev(None, "A", false, 10_000),
+            ev(None, "Z", true, 20_000),
+            ev(None, "Z", false, 30_000),
+        ]))
+        .unwrap();
+    assert_eq!(events[0].key, "B", "v1: A→B");
+    assert_eq!(events[2].key, "Z", "v1: Z passes through");
 
     // --- Phase 2: User adds Ctrl+Z shortcut, reloads ---
-    fs::write(
-        &rhai_path,
+    let (_, _, mut engine_v2) = compile_and_load(
+        &dir,
+        "profile",
         r#"
 device_start("*");
 map("VK_A", "VK_B");
 map("VK_Z", with_ctrl("VK_Z"));
 device_end();
 "#,
-    )
-    .unwrap();
+    );
 
-    keyrx_compiler::compile_file(&rhai_path, &krx_path).unwrap();
-    let configs_v2 = load_configs_from_krx(&krx_path);
-
-    let mut proc = build_processor(
-        &configs_v2[0],
-        vec![KeyEvent::Press(KeyCode::A), KeyEvent::Press(KeyCode::Z)],
-    );
-    proc.run().unwrap();
-    let events = proc.output().events();
-    assert_eq!(
-        events[0],
-        KeyEvent::Press(KeyCode::B),
-        "v2: A→B still works"
-    );
-    // Z now produces Ctrl+Z
-    assert_eq!(
-        events[1],
-        KeyEvent::Press(KeyCode::LCtrl),
-        "v2: Z now triggers LCtrl"
-    );
-    assert_eq!(
-        events[2],
-        KeyEvent::Press(KeyCode::Z),
-        "v2: Z now triggers Ctrl+Z"
-    );
+    let events = engine_v2
+        .replay(&sequence(vec![
+            ev(None, "A", true, 0),
+            ev(None, "A", false, 10_000),
+            ev(None, "Z", true, 20_000),
+            ev(None, "Z", false, 30_000),
+        ]))
+        .unwrap();
+    assert_eq!(events[0].key, "B", "v2: A→B still works");
+    // Z now produces Ctrl+Z.
+    assert_eq!(events[2].key, "LCtrl", "v2: Z now triggers LCtrl");
+    assert_eq!(events[3].key, "Z", "v2: Z now triggers Ctrl+Z");
 }
 
 /// Simulates removing a mapping from a profile. After reload, the removed
 /// mapping should no longer be active (key passes through).
 #[test]
 fn test_s9_hot_reload_remove_mapping_effective_immediately() {
-    let temp_dir = TempDir::new().unwrap();
-    let rhai_path = temp_dir.path().join("profile.rhai");
-    let krx_path = temp_dir.path().join("profile.krx");
+    let dir = TempDir::new().unwrap();
 
     // --- Phase 1: Two mappings ---
-    fs::write(
-        &rhai_path,
+    let (_, _, mut engine_v1) = compile_and_load(
+        &dir,
+        "profile",
         r#"
 device_start("*");
 map("VK_A", "VK_B");
 map("CapsLock", "VK_Escape");
 device_end();
 "#,
-    )
-    .unwrap();
-
-    keyrx_compiler::compile_file(&rhai_path, &krx_path).unwrap();
-    let configs_v1 = load_configs_from_krx(&krx_path);
-
-    let mut proc = build_processor(&configs_v1[0], vec![KeyEvent::Press(KeyCode::CapsLock)]);
-    proc.run().unwrap();
-    assert_eq!(
-        proc.output().events()[0],
-        KeyEvent::Press(KeyCode::Escape),
-        "v1: CapsLock→Escape active"
     );
 
+    let events = engine_v1
+        .replay(&sequence(vec![
+            ev(None, "CapsLock", true, 0),
+            ev(None, "CapsLock", false, 10_000),
+        ]))
+        .unwrap();
+    assert_eq!(events[0].key, "Escape", "v1: CapsLock→Escape active");
+
     // --- Phase 2: Remove CapsLock mapping, keep A→B ---
-    fs::write(
-        &rhai_path,
+    let (_, _, mut engine_v2) = compile_and_load(
+        &dir,
+        "profile",
         r#"
 device_start("*");
 map("VK_A", "VK_B");
 device_end();
 "#,
-    )
-    .unwrap();
-
-    keyrx_compiler::compile_file(&rhai_path, &krx_path).unwrap();
-    let configs_v2 = load_configs_from_krx(&krx_path);
-
-    let mut proc = build_processor(
-        &configs_v2[0],
-        vec![
-            KeyEvent::Press(KeyCode::CapsLock),
-            KeyEvent::Press(KeyCode::A),
-        ],
     );
-    proc.run().unwrap();
-    let events = proc.output().events();
+
+    let events = engine_v2
+        .replay(&sequence(vec![
+            ev(None, "CapsLock", true, 0),
+            ev(None, "CapsLock", false, 10_000),
+            ev(None, "A", true, 20_000),
+            ev(None, "A", false, 30_000),
+        ]))
+        .unwrap();
     assert_eq!(
-        events[0],
-        KeyEvent::Press(KeyCode::CapsLock),
+        events[0].key, "CapsLock",
         "v2: CapsLock passes through (mapping removed)"
     );
-    assert_eq!(
-        events[1],
-        KeyEvent::Press(KeyCode::B),
-        "v2: A→B still works"
-    );
-}
-
-// ============================================================================
-// S9 Helpers
-// ============================================================================
-
-/// Load configs from a .krx file on disk (simulates daemon reload).
-fn load_configs_from_krx(krx_path: &std::path::Path) -> Vec<DeviceConfig> {
-    let bytes = fs::read(krx_path).expect("Should read .krx file");
-    // Validate .krx integrity before loading
-    let _archived = deserialize(&bytes).expect("deserialize should succeed");
-
-    // Re-parse to get owned configs (same approach as daemon reload)
-    let mut parser = Parser::new();
-    // Read the original .rhai to get owned types
-    // In real daemon, this comes from ProfileManager::activate()
-    // Here we re-parse from the .rhai file that was just compiled
-    let rhai_path = krx_path.with_extension("rhai");
-    let config = parser
-        .parse_script(&rhai_path)
-        .expect("parse_script should succeed");
-
-    config
-        .devices
-        .iter()
-        .map(|d| DeviceConfig {
-            identifier: DeviceIdentifier {
-                pattern: d.identifier.pattern.clone(),
-            },
-            mappings: d.mappings.clone(),
-        })
-        .collect()
+    assert_eq!(events[2].key, "B", "v2: A→B still works");
 }

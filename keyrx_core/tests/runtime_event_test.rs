@@ -279,6 +279,72 @@ fn test_process_event_lock_mapping() {
     assert!(state.is_lock_active(1));
 }
 
+/// Ported from the now-deleted `keyrx_daemon` EventProcessor test suite
+/// (`integration_test::test_lock_persistence` + `test_rapid_lock_toggling`):
+/// a lock-gated conditional mapping must stay correct across MULTIPLE
+/// unrelated key presses while the lock is held, and across repeated
+/// toggle cycles - not just the lock bit itself (already covered by
+/// `test_process_event_lock_mapping`), but its downstream effect on the
+/// lookup for several different keys.
+#[test]
+fn test_lock_gated_mapping_persists_across_keys_and_toggle_cycles() {
+    let config = create_test_config(vec![
+        KeyMapping::lock(KeyCode::ScrollLock, 1),
+        KeyMapping::conditional(
+            Condition::LockActive(1),
+            vec![BaseKeyMapping::Simple {
+                from: KeyCode::Num1,
+                to: KeyCode::F1,
+            }],
+        ),
+        KeyMapping::conditional(
+            Condition::LockActive(1),
+            vec![BaseKeyMapping::Simple {
+                from: KeyCode::Num2,
+                to: KeyCode::F2,
+            }],
+        ),
+    ]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+
+    // Three toggle cycles; each ON phase re-checks BOTH gated keys (not just
+    // the same one every time) to prove the lock's effect on the lookup
+    // persists across several distinct key presses, not just a single one.
+    for cycle in 0..3 {
+        // Before the lock: both keys pass through.
+        let out1 = process_event(KeyEvent::Press(KeyCode::Num1), &lookup, &mut state);
+        assert_eq!(
+            out1,
+            vec![KeyEvent::Press(KeyCode::Num1)],
+            "cycle {cycle}: Num1 must pass through while LK_01 is off"
+        );
+
+        // Toggle ON.
+        let _ = process_event(KeyEvent::Press(KeyCode::ScrollLock), &lookup, &mut state);
+        let _ = process_event(KeyEvent::Release(KeyCode::ScrollLock), &lookup, &mut state);
+        assert!(state.is_lock_active(1), "cycle {cycle}: LK_01 must be on");
+
+        let out1_locked = process_event(KeyEvent::Press(KeyCode::Num1), &lookup, &mut state);
+        assert_eq!(
+            out1_locked,
+            vec![KeyEvent::Press(KeyCode::F1)],
+            "cycle {cycle}: Num1 -> F1 while LK_01 is on"
+        );
+        let out2_locked = process_event(KeyEvent::Press(KeyCode::Num2), &lookup, &mut state);
+        assert_eq!(
+            out2_locked,
+            vec![KeyEvent::Press(KeyCode::F2)],
+            "cycle {cycle}: Num2 -> F2 while LK_01 is on (persists across a second key)"
+        );
+
+        // Toggle OFF.
+        let _ = process_event(KeyEvent::Press(KeyCode::ScrollLock), &lookup, &mut state);
+        let _ = process_event(KeyEvent::Release(KeyCode::ScrollLock), &lookup, &mut state);
+        assert!(!state.is_lock_active(1), "cycle {cycle}: LK_01 must be off");
+    }
+}
+
 #[test]
 fn test_process_event_modified_output_shift() {
     // Test ModifiedOutput: Shift+1 sequence
