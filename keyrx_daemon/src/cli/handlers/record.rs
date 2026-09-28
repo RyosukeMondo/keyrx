@@ -1,14 +1,56 @@
 //! Event recording command handler.
+//!
+//! Writes the SAME `EventSequence` format `simulate --events-file` reads
+//! (`crate::config::simulation_engine::EventSequence`), plus a `metadata`
+//! object for humans - so "record on real hardware, then replay it" is one
+//! file format, not two that drifted apart (the loader ignores the unknown
+//! `metadata` key).
 
 use crate::cli::dispatcher::exit_codes;
+use crate::config::simulation_engine::{EventSequence, EventType, SimulatedEvent};
+use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+/// Metadata written alongside a recording, for humans reading the file.
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct RecordingMetadata {
+    pub version: String,
+    pub timestamp: String,
+    pub device_name: String,
+}
+
+/// What `record` writes: an [`EventSequence`] (so `simulate --events-file`
+/// loads it directly) plus [`RecordingMetadata`]. `#[serde(flatten)]` puts
+/// `seed`/`events` at the top level alongside `metadata`, so the file IS an
+/// `EventSequence` with one extra, ignorable key.
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct Recording {
+    pub metadata: RecordingMetadata,
+    #[serde(flatten)]
+    pub sequence: EventSequence,
+}
+
+/// Converts a captured [`keyrx_core::runtime::KeyEvent`] to a
+/// [`SimulatedEvent`], formatting its key name with the SAME `{:?}` codec
+/// `SimulationEngine` parses back (`keyrx_core::parser::validators::parse_physical_key`
+/// accepts every `KeyCode`'s Debug spelling).
+pub(crate) fn key_event_to_simulated(event: &keyrx_core::runtime::KeyEvent) -> SimulatedEvent {
+    SimulatedEvent {
+        device_id: event.device_id().map(str::to_string),
+        timestamp_us: event.timestamp_us(),
+        key: format!("{:?}", event.keycode()),
+        event_type: match event.event_type() {
+            keyrx_core::runtime::KeyEventType::Press => EventType::Press,
+            keyrx_core::runtime::KeyEventType::Release => EventType::Release,
+        },
+    }
+}
 
 #[cfg(target_os = "linux")]
 /// Handles the `record` subcommand.
 pub fn handle_record(output_path: &Path, device_path: Option<&Path>) -> Result<(), (i32, String)> {
     use crate::platform::linux::evdev_to_keycode;
     use keyrx_core::runtime::KeyEvent;
-    use serde::{Deserialize, Serialize};
     use std::fs::File;
     use std::io::Write;
     use std::sync::atomic::{AtomicBool, Ordering};
@@ -45,19 +87,6 @@ pub fn handle_record(output_path: &Path, device_path: Option<&Path>) -> Result<(
 
     if let Err(e) = signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&running)) {
         eprintln!("Failed to register signal handler: {}", e);
-    }
-
-    #[derive(Serialize, Deserialize)]
-    struct Metadata {
-        version: String,
-        timestamp: String,
-        device_name: String,
-    }
-
-    #[derive(Serialize, Deserialize)]
-    struct Recording {
-        metadata: Metadata,
-        events: Vec<KeyEvent>,
     }
 
     let mut captured_events = Vec::new();
@@ -97,7 +126,7 @@ pub fn handle_record(output_path: &Path, device_path: Option<&Path>) -> Result<(
                             print!("\rCaptured: {:?}     ", final_event.keycode());
                             std::io::stdout().flush().ok();
 
-                            captured_events.push(final_event);
+                            captured_events.push(key_event_to_simulated(&final_event));
                         }
                     }
                 }
@@ -122,12 +151,15 @@ pub fn handle_record(output_path: &Path, device_path: Option<&Path>) -> Result<(
     );
 
     let recording = Recording {
-        metadata: Metadata {
+        metadata: RecordingMetadata {
             version: "1.0".to_string(),
             timestamp: humantime::format_rfc3339(SystemTime::now()).to_string(),
             device_name: device.name().unwrap_or("Unknown").to_string(),
         },
-        events: captured_events,
+        sequence: EventSequence {
+            events: captured_events,
+            seed: 0,
+        },
     };
 
     let json = serde_json::to_string_pretty(&recording).map_err(|e| {
@@ -163,4 +195,81 @@ pub fn handle_record(_output: &Path, _device: Option<&Path>) -> Result<(), (i32,
          Build with --features linux to enable."
             .to_string(),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::simulation_engine::SimulationEngine;
+    use keyrx_core::runtime::KeyEvent;
+    use std::io::Write;
+
+    /// The whole point of writing `EventSequence` from `record`: a file it
+    /// writes must be loadable by `simulate --events-file` unchanged. This
+    /// builds a `Recording` exactly as `handle_record` would, serializes it,
+    /// loads it back through `SimulationEngine::load_events_from_file`
+    /// (the `metadata` key must be ignored, not rejected), and replays it.
+    #[test]
+    fn a_recording_round_trips_through_load_events_from_file_and_replays() {
+        let events = vec![
+            key_event_to_simulated(
+                &KeyEvent::press(keyrx_core::config::KeyCode::A).with_timestamp(0),
+            ),
+            key_event_to_simulated(
+                &KeyEvent::release(keyrx_core::config::KeyCode::A).with_timestamp(50_000),
+            ),
+        ];
+        let recording = Recording {
+            metadata: RecordingMetadata {
+                version: "1.0".to_string(),
+                timestamp: "2026-01-01T00:00:00Z".to_string(),
+                device_name: "Test Keyboard".to_string(),
+            },
+            sequence: EventSequence {
+                events: events.clone(),
+                seed: 0,
+            },
+        };
+
+        let json = serde_json::to_string_pretty(&recording).expect("serialize recording");
+        let mut file = tempfile::NamedTempFile::new().expect("create temp file");
+        file.write_all(json.as_bytes()).expect("write temp file");
+
+        let loaded = SimulationEngine::load_events_from_file(file.path())
+            .expect("a recording must load as an EventSequence (metadata is ignored)");
+        assert_eq!(loaded.events.len(), events.len());
+        assert_eq!(loaded.events[0].key, "A");
+        assert_eq!(loaded.events[0].event_type, EventType::Press);
+        assert_eq!(loaded.events[1].event_type, EventType::Release);
+
+        // And it replays through the real engine (a pass-through "*" config
+        // with no mappings, so A stays A).
+        let krx = write_passthrough_krx();
+        let mut engine = SimulationEngine::new(krx.path()).expect("load test config");
+        let output = engine.replay(&loaded).expect("replay a recorded sequence");
+        assert_eq!(output.len(), 2);
+        assert_eq!(output[0].key, "A");
+    }
+
+    fn write_passthrough_krx() -> tempfile::NamedTempFile {
+        use keyrx_core::config::{ConfigRoot, DeviceConfig, DeviceIdentifier, Metadata, Version};
+        let config = ConfigRoot {
+            version: Version::current(),
+            devices: vec![DeviceConfig {
+                identifier: DeviceIdentifier {
+                    pattern: "*".to_string(),
+                },
+                mappings: vec![],
+            }],
+            metadata: Metadata {
+                compilation_timestamp: 0,
+                compiler_version: "test".to_string(),
+                source_hash: "test".to_string(),
+            },
+        };
+        let bytes = keyrx_compiler::serialize::serialize(&config).expect("serialize test config");
+        let mut file = tempfile::NamedTempFile::new().expect("create temp krx file");
+        file.write_all(&bytes).expect("write temp krx file");
+        file
+    }
 }
