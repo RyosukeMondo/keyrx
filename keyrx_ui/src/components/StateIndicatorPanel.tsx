@@ -51,6 +51,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
               state.modifiers.map((modId) => (
                 <span
                   key={`mod-${modId}`}
+                  role="status"
                   className="px-3 py-1 bg-blue-600 text-white text-sm rounded-full font-medium"
                   aria-label={`Modifier ${modId} active`}
                 >
@@ -59,6 +60,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
               ))
             ) : (
               <span
+                role="status"
                 className="text-slate-500 text-sm"
                 aria-label="No modifiers active"
               >
@@ -81,6 +83,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
               state.locks.map((lockId) => (
                 <span
                   key={`lock-${lockId}`}
+                  role="status"
                   className="px-3 py-1 bg-orange-600 text-white text-sm rounded-full font-medium"
                   aria-label={`Lock ${lockId} active`}
                 >
@@ -89,6 +92,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
               ))
             ) : (
               <span
+                role="status"
                 className="text-slate-500 text-sm"
                 aria-label="No locks active"
               >
@@ -108,6 +112,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
           </h3>
           <div className="flex flex-wrap gap-2">
             <span
+              role="status"
               className="px-3 py-1 bg-green-600 text-white text-sm rounded-full font-medium"
               aria-label={`Layer ${state.layer} active`}
             >
@@ -127,6 +132,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
           <div className="flex flex-wrap gap-2">
             {devicesLoading ? (
               <span
+                role="status"
                 className="text-slate-500 text-sm"
                 aria-label="Loading devices"
               >
@@ -138,6 +144,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
                 .map((device) => (
                   <div
                     key={device.id}
+                    role="status"
                     className="flex items-center gap-1.5 px-3 py-1 bg-slate-700 text-white text-sm rounded-full font-medium"
                     aria-label={`Device ${device.name} - ${
                       device.isVirtual ? 'Virtual' : 'Hardware'
@@ -194,6 +201,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
                 ))
             ) : (
               <span
+                role="status"
                 className="text-slate-500 text-sm"
                 aria-label="No devices connected"
               >

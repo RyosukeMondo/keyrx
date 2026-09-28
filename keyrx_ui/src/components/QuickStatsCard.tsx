@@ -94,6 +94,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
           <div className="flex items-center gap-xs" role="listitem">
             <span className="font-medium text-slate-100">Latency:</span>
             <span
+              role="status"
               aria-label={`Average latency ${stats.latencyAvg.toFixed(
                 1
               )} milliseconds`}
@@ -105,6 +106,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
           <div className="flex items-center gap-xs" role="listitem">
             <span className="font-medium text-slate-100">Events:</span>
             <span
+              role="status"
               aria-label={`${formatNumber(
                 stats.eventsToday
               )} events processed today`}
@@ -116,6 +118,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
           <div className="flex items-center gap-xs" role="listitem">
             <span className="font-medium text-slate-100">Uptime:</span>
             <span
+              role="status"
               aria-label={`Daemon uptime ${formatUptime(stats.uptimeSeconds)}`}
             >
               {formatUptime(stats.uptimeSeconds)}

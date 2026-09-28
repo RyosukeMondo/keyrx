@@ -129,12 +129,11 @@ export function DeviceSelector({
                           ? 'bg-green-900/30 text-green-300 border border-green-700/50'
                           : 'bg-gray-700/30 text-gray-400 border border-gray-600/50'
                       }`}
-                      aria-label={
-                        device.connected
-                          ? 'Device connected'
-                          : 'Device disconnected'
-                      }
                     >
+                      {/* Visible text already gives this span its accessible
+                          name; an aria-label here would be both redundant
+                          and (on a role-less span) an axe aria-prohibited-attr
+                          violation. */}
                       {device.connected ? 'Connected' : 'Disconnected'}
                     </span>
                   )}

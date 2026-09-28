@@ -109,7 +109,14 @@ export const CodePanelContainer: React.FC<CodePanelContainerProps> = ({
       </div>
 
       {/* Resize Handle */}
+      {/* role="separator" gives this a valid role for aria-label (axe
+          aria-prohibited-attr) and is the correct ARIA role for a resize
+          handle between two panes. Full keyboard resizing (arrow keys via
+          a widget-pattern separator) isn't implemented -- this only fixes
+          the accessible-name violation, drag-only resize is unchanged. */}
       <div
+        role="separator"
+        aria-orientation="horizontal"
         className="h-1 bg-slate-600 hover:bg-primary-500 cursor-ns-resize transition-colors"
         onMouseDown={handleResizeMouseDown}
         title="Drag to resize"

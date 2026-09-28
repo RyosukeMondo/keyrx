@@ -75,6 +75,7 @@ export const DeviceSelectionPanel: React.FC<DeviceSelectionPanelProps> = ({
                 <span className="text-sm text-slate-200">{device.name}</span>
                 {device.connected !== undefined && (
                   <span
+                    role="status"
                     className={`w-2 h-2 rounded-full ${
                       device.connected ? 'bg-green-400' : 'bg-gray-500'
                     }`}

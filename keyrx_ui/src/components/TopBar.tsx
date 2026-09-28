@@ -22,6 +22,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       <div className="flex items-center gap-3">
         {/* Logo */}
         <div
+          role="img"
           className="flex items-center justify-center w-10 h-10 bg-primary-500 rounded-lg"
           aria-label="KeyRx2 Logo"
         >
