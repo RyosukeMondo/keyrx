@@ -46,7 +46,10 @@ async fn create_profile_with_config(app: &TestApp, name: &str, content: &str) {
     // its last good content). Tests about invalid profiles then put the
     // source on disk directly, as a hand edit in a text editor would.
     if !config_response.status().is_success() {
-        let rhai = app.config_path().join("profiles").join(format!("{name}.rhai"));
+        let rhai = app
+            .config_path()
+            .join("profiles")
+            .join(format!("{name}.rhai"));
         std::fs::write(rhai, content).expect("write profile source");
     }
 }
