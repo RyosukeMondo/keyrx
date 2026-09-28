@@ -395,6 +395,24 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
   `platform_runners/windows.rs`, `web/api/profiles.rs`.
   → DONE except `platform_runners/windows.rs` (in the G3 request): the gate was a stub (exit 0) - made real with a shrink-only baseline (dd1d1638, 57bede41); 14 files split by 6 parallel agents, each verified and merged (stale worktree bases re-applied by hand).
 
+## Handover (2026-09-28, end of Linux session)
+
+State: every phase above is `[x]`. `main` pushed to GitHub (PR #1 merged) and to
+the `windows` remote. Open items, none blocking:
+
+- **Windows desktop live check (user).** G3 was verified with cross-built test
+  exes and test-mode CLI↔pipe↔REST, not with a production `run` on the
+  interactive desktop (real keys through the hook). Steps 1–4 are in
+  `docs/requests/G3-windows-production-ipc.md`.
+- **ConfigPage UI tests:** `ConfigPage.integration.test.tsx` (31) and
+  `ConfigPage.a11y.test.tsx` (2) fail at fe151cbe and later. They are not in the
+  gate table's run, and the a11y ones include `aria-label` on a role-less
+  status `<span>`. Next UI item.
+- **Installed Linux binary** (`~/.local/bin/keyrx_daemon`) predates G3; to
+  pick up the IpcEndpoint changes, rebuild with `make build` and reinstall.
+- **Branch `g3-review`** (local, Linux) is the PR #1 review checkout and can be
+  deleted.
+
 ## Status Log
 - 2026-06-21: Plan created. A1 marked [NEXT].
 - 2026-06-22: A1 done (installer/release fixes committed). B1 [NEXT].
@@ -446,3 +464,5 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
   docs/requests/G3-windows-production-ipc.md). Nothing is [NEXT] on Linux.
 - 2026-09-28: G3 merged (PR #1). All phases done; only the Windows desktop live
   check (real keys through the hook) remains for the user.
+- 2026-09-28: Wrap-up. UI use-case guide and ConfigPage work committed; main
+  pushed to origin and windows. See Handover.

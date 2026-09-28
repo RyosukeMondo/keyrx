@@ -21,9 +21,13 @@ make verify     # Full quality checks (clippy, fmt, tests, coverage)
 - Device access: `scripts/install.sh` adds you to `input`/`uinput` (needs re-login). Until then, run uinput tests as
   `sudo setpriv --reuid=$(id -u) --regid=$(id -g) --groups=$(id -G|tr ' ' ,),$(getent group input|cut -d: -f3) env PATH=$PATH HOME=$HOME cargo test ...`
 - Type-check Windows code from Linux: `cargo clippy -p keyrx_daemon --target x86_64-pc-windows-gnu -- -D warnings` (checks only; not run)
+- Run Windows tests without building on Windows: `cargo test -p keyrx_daemon --lib --target x86_64-pc-windows-gnu --no-run` (mingw linker installed), `scp` the printed `.exe` to `windows:` and run it there (e.g. `lib-tests.exe ipc::`). The Windows box is often too memory-starved to build `keyrx_daemon`
 - The daemon's read side is ONE `DaemonQueryService` shared by IPC, REST, MCP and WS — add new status/metrics there, never per transport
 - Which config is live is decided ONLY in `daemon/live_config.rs`: `run` follows the active profile, `run --config FILE` pins FILE at startup, a runtime activation (`DaemonSharedState::request_activation`, via `ProfileService`/IPC) switches profile; status is published only after the swap
 - In-process e2e against the real event loop: `LinuxPlatform::scoped(<test kbd name>, <unique output name>)` — see `tests/live_profile_switch_test.rs`
+- IPC endpoint = `ipc::IpcEndpoint` (Unix socket file / Windows named pipe `\\.\pipe\keyrx-daemon`); client is `ipc::IpcClient`; both runners use `platform_runners::start_production_ipc_server`. Test mode listens on `keyrx-test-<pid>`
+- Device patterns (`device_start`, `when_device`) have ONE rule: `keyrx_core::runtime::device_pattern` (glob, case-insensitive, matched against id/name/serial/path). Each device is routed to its first matching block (`daemon::remapping_state`)
+- `scripts/verify/file-sizes.sh` is the real 500-line gate (run by `make verify`); `scripts/verify/file-size-baseline.list` may only shrink
 - Monitoring wire types (latency, key events, state) are the typeshare structs in `keyrx_daemon/src/web/events.rs` for EVERY transport; if a REST response changes, regenerate `UPDATE_CONTRACT_FIXTURES=1 cargo test -p keyrx_daemon --test api_contract_test` and `npm run typeshare`, then fix the UI until `npm run type-check` passes
 
 ## Project Structure
