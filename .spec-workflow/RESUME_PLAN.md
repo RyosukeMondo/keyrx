@@ -431,9 +431,9 @@ make each one analyzable/debuggable, speed up iteration, fix real bugs.
   pre-existing, not touched here): `keyrx_core/src/runtime/lookup.rs` is
   1 line over the file-size gate (main commit 38302865, not in the
   baseline list).
-- [NEXT] **H2 — UI walkthrough on a live Linux daemon** (Config, Devices,
+- [x] **H2 — UI walkthrough on a live Linux daemon** (Config, Devices,
   Monitor, Simulator tab); ConfigPage test failures from the handover.
-- [ ] **H3 — Linux ops & debuggability**: grab only devices a block matches
+- [x] **H3 — Linux ops & debuggability**: grab only devices a block matches
   (G8 limitation), permission diagnostics, install/unit flow, help text.
 - [ ] **H4 — Iteration speed**: measure test/build loops, cut the slow ones.
 - [ ] **H5 — Engine output semantics** (after H1; verified with a scratch
@@ -454,6 +454,11 @@ make each one analyzable/debuggable, speed up iteration, fix real bugs.
   engine the daemon never runs. After H1, port what they assert onto the one
   engine and delete `processor/` and the dead `src/logging.rs` (JSON tracing
   setup nothing initializes).
+- [ ] **H8 — Device status tells the truth.** `services/device_service.rs:65`
+  reports `active: true` for every enumerated keyboard (even in test mode);
+  the Devices page Enable/Disable toggle only writes localStorage; the
+  shared device_count is not refreshed on hotplug; live uinput tests panic
+  instead of skipping without the input group.
 - [ ] **H6 — Linux capture drops what it cannot map**: EV_KEY codes without
   a `KeyCode` (brightness, mic-mute, vendor keys) and non-key events on a
   grabbed node (EV_REL of a keyboard with a pointer) are silently eaten.
