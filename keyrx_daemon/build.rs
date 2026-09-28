@@ -114,10 +114,11 @@ fn embed_windows_resources() {
 
 // ── Frontend freshness enforcement ───────────────────────────────────
 
-/// Fail the build if WASM or UI dist is stale.
+/// Fail a release build if WASM or UI dist is stale; warn in other profiles.
 ///
-/// This prevents embedding outdated frontend artifacts into the daemon.
-/// Bypass with: KEYRX_SKIP_FRONTEND_CHECK=1 cargo build
+/// This prevents shipping outdated frontend artifacts in the daemon, while
+/// `cargo check/clippy/test` after a keyrx_core edit keep working without a
+/// WASM rebuild. Bypass with: KEYRX_SKIP_FRONTEND_CHECK=1 cargo build
 fn enforce_frontend_freshness(workspace_root: &Path) {
     if std::env::var("KEYRX_SKIP_FRONTEND_CHECK").is_ok() {
         println!(
@@ -127,27 +128,38 @@ fn enforce_frontend_freshness(workspace_root: &Path) {
         return;
     }
 
-    check_wasm_freshness(workspace_root);
-    check_ui_freshness(workspace_root);
+    let stale = [
+        check_wasm_freshness(workspace_root),
+        check_ui_freshness(workspace_root),
+    ];
+    for problem in stale.into_iter().flatten() {
+        if std::env::var("PROFILE").as_deref() == Ok("release") {
+            panic!("{problem}");
+        }
+        for line in problem.lines().filter(|l| !l.trim().is_empty()) {
+            println!("cargo:warning={line}");
+        }
+    }
 }
 
-/// Fail if keyrx_core source has changed since the WASM binary was built.
+/// A message when keyrx_core source has changed since the WASM binary was
+/// built.
 ///
 /// Uses content-based hashing (SHA256 of source files) stored in
 /// `wasm-manifest.json` instead of unreliable file modification times.
-fn check_wasm_freshness(workspace_root: &Path) {
+fn check_wasm_freshness(workspace_root: &Path) -> Option<String> {
     let manifest = workspace_root.join("keyrx_ui/src/wasm/pkg/wasm-manifest.json");
     let core_src = workspace_root.join("keyrx_core/src");
 
     if !core_src.exists() {
-        return;
+        return None;
     }
     if !manifest.exists() {
         println!(
             "cargo:warning=WASM manifest not found. \
              Run 'make build' for full build with WASM."
         );
-        return;
+        return None;
     }
 
     let manifest_hash = read_manifest_source_hash(&manifest);
@@ -156,12 +168,12 @@ fn check_wasm_freshness(workspace_root: &Path) {
             "cargo:warning=WASM manifest missing source_hash field. \
              Rebuild WASM with 'make build' to enable staleness detection."
         );
-        return;
+        return None;
     };
 
     let current = compute_source_hash(workspace_root);
-    if current != expected {
-        panic!(
+    (current != expected).then(|| {
+        format!(
             "\n\n\
             STALE WASM: keyrx_core source hash changed.\n\
             \n\
@@ -171,12 +183,12 @@ fn check_wasm_freshness(workspace_root: &Path) {
             The WASM binary was built from different source code.\n\n\
             Fix:  make build\n\
             Skip: KEYRX_SKIP_FRONTEND_CHECK=1 cargo build\n"
-        );
-    }
+        )
+    })
 }
 
-/// Fail if UI source files are newer than the built dist.
-fn check_ui_freshness(workspace_root: &Path) {
+/// A message when UI source files are newer than the built dist.
+fn check_ui_freshness(workspace_root: &Path) -> Option<String> {
     let dist_index = workspace_root.join("keyrx_ui/dist/index.html");
 
     if !dist_index.exists() {
@@ -184,7 +196,7 @@ fn check_ui_freshness(workspace_root: &Path) {
             "cargo:warning=UI dist not found. \
              Run 'make build' for full build with embedded UI."
         );
-        return;
+        return None;
     }
 
     println!("cargo:warning=UI dist found and will be embedded");
@@ -206,16 +218,16 @@ fn check_ui_freshness(workspace_root: &Path) {
         }
     }
 
-    if let (Some(dist_t), Some(src_t)) = (dist_mtime, newest_src) {
-        if src_t > dist_t {
-            panic!(
-                "\n\n\
+    match (dist_mtime, newest_src) {
+        (Some(dist_t), Some(src_t)) if src_t > dist_t => Some(
+            "\n\n\
                 STALE UI: source files are newer than dist/index.html.\n\
                 The daemon would embed outdated frontend chunks.\n\n\
                 Fix:  make build\n\
                 Skip: KEYRX_SKIP_FRONTEND_CHECK=1 cargo build\n"
-            );
-        }
+                .to_string(),
+        ),
+        _ => None,
     }
 }
 
