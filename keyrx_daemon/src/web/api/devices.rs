@@ -10,8 +10,9 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 use validator::Validate;
 
-use crate::config::device_registry::{DeviceEntry, DeviceRegistry, DeviceValidationError};
+use crate::config::device_registry::DeviceEntry;
 use crate::error::DaemonError;
+use crate::services::device_service::DeviceEditError;
 use crate::web::api::error::ApiError;
 use crate::web::AppState;
 
@@ -83,52 +84,37 @@ async fn rename_device(
     payload
         .validate()
         .map_err(|e| ApiError::BadRequest(format!("Validation failed: {}", e)))?;
+    let entry = state
+        .device_service
+        .rename_device(&id, &payload.name)
+        .await
+        .map_err(api_error)?;
+    broadcast(
+        &state,
+        json!({ "action": "renamed", "id": id, "name": payload.name }),
+    );
+    Ok(Json(entry))
+}
 
-    let id_clone = id.clone();
-    let name_clone = payload.name.clone();
-    let registry_path = state.device_service.registry_path().to_path_buf();
+/// Maps a `DeviceService` edit error to its HTTP status.
+fn api_error(e: DeviceEditError) -> ApiError {
+    match e {
+        DeviceEditError::NotFound(msg) => ApiError::NotFound(msg),
+        DeviceEditError::Invalid(msg) => ApiError::BadRequest(msg),
+        DeviceEditError::Storage(msg) => ApiError::InternalError(msg),
+    }
+}
 
-    let entry = tokio::task::spawn_blocking(move || {
-        let mut registry = DeviceRegistry::load(&registry_path)
-            .map_err(|e| ApiError::InternalError(e.to_string()))?;
-
-        registry
-            .ensure_registered(&id_clone, &connected_device_name(&id_clone))
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-        registry
-            .rename(&id_clone, &name_clone)
-            .map_err(|e| match e {
-                DeviceValidationError::DeviceNotFound(msg) => ApiError::NotFound(msg),
-                _ => ApiError::BadRequest(e.to_string()),
-            })?;
-
-        registry
-            .save()
-            .map_err(|e| ApiError::InternalError(e.to_string()))?;
-
-        registry
-            .get(&id_clone)
-            .cloned()
-            .ok_or_else(|| ApiError::InternalError(format!("device {id_clone} vanished")))
-    })
-    .await
-    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))??;
-
-    // Broadcast event to WebSocket subscribers
+/// Tells WebSocket subscribers of the `devices` channel about a change.
+fn broadcast(state: &AppState, data: Value) {
     use crate::web::rpc_types::ServerMessage;
     let event = ServerMessage::Event {
         channel: "devices".to_string(),
-        data: serde_json::json!({
-            "action": "renamed",
-            "id": id,
-            "name": payload.name
-        }),
+        data,
     };
     if let Err(e) = state.event_broadcaster.send(event) {
-        log::warn!("Failed to broadcast device renamed event: {}", e);
+        log::warn!("Failed to broadcast device event: {}", e);
     }
-
-    Ok(Json(entry))
 }
 
 /// PUT /api/devices/:id/layout - Set device layout
@@ -146,33 +132,12 @@ async fn set_device_layout(
     payload
         .validate()
         .map_err(|e| ApiError::BadRequest(format!("Validation failed: {}", e)))?;
-
-    let id_clone = id.clone();
-    let layout_clone = payload.layout.clone();
-    let registry_path = state.device_service.registry_path().to_path_buf();
-
-    tokio::task::spawn_blocking(move || {
-        let mut registry = DeviceRegistry::load(&registry_path)
-            .map_err(|e| ApiError::InternalError(e.to_string()))?;
-
-        registry
-            .ensure_registered(&id_clone, &connected_device_name(&id_clone))
-            .map_err(|e| ApiError::BadRequest(e.to_string()))?;
-        registry
-            .set_layout(&id_clone, &layout_clone)
-            .map_err(|e| match e {
-                DeviceValidationError::DeviceNotFound(msg) => ApiError::NotFound(msg),
-                _ => ApiError::BadRequest(e.to_string()),
-            })?;
-
-        registry
-            .save()
-            .map_err(|e| ApiError::InternalError(e.to_string()))?;
-
-        Ok::<Json<Value>, ApiError>(Json(json!({ "success": true })))
-    })
-    .await
-    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
+    state
+        .device_service
+        .set_layout(&id, &payload.layout)
+        .await
+        .map_err(api_error)?;
+    Ok(Json(json!({ "success": true })))
 }
 
 /// GET /api/devices/:id/layout - Get device layout
@@ -185,23 +150,12 @@ async fn get_device_layout(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> Result<Json<GetDeviceLayoutResponse>, ApiError> {
-    let id_clone = id.clone();
-    let registry_path = state.device_service.registry_path().to_path_buf();
-
-    tokio::task::spawn_blocking(move || {
-        let registry = DeviceRegistry::load(&registry_path)
-            .map_err(|e| ApiError::InternalError(e.to_string()))?;
-
-        let device = registry
-            .get(&id_clone)
-            .ok_or_else(|| ApiError::NotFound(format!("Device not found: {}", id_clone)))?;
-
-        Ok::<Json<GetDeviceLayoutResponse>, ApiError>(Json(GetDeviceLayoutResponse {
-            layout: device.layout.clone(),
-        }))
-    })
-    .await
-    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
+    let layout = state
+        .device_service
+        .get_layout(&id)
+        .await
+        .map_err(api_error)?;
+    Ok(Json(GetDeviceLayoutResponse { layout }))
 }
 
 /// PATCH /api/devices/:id - Update device configuration
@@ -215,58 +169,21 @@ async fn update_device_config(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateDeviceConfigRequest>,
-) -> Result<Json<Value>, DaemonError> {
-    use crate::error::{ConfigError, WebError};
-
-    payload.validate().map_err(|e| WebError::InvalidRequest {
-        reason: format!("Validation failed: {}", e),
-    })?;
-
-    let id_clone = id.clone();
-    let layout_clone = payload.layout.clone();
-    let registry_path = state.device_service.registry_path().to_path_buf();
-
-    tokio::task::spawn_blocking(move || {
-        let mut registry = DeviceRegistry::load(&registry_path)?;
-
-        registry
-            .ensure_registered(&id_clone, &connected_device_name(&id_clone))
-            .map_err(|e| {
-                use crate::error::RegistryError;
-                RegistryError::CorruptedRegistry(e.to_string())
-            })?;
-
-        if let Some(layout) = &layout_clone {
-            registry.set_layout(&id_clone, layout).map_err(|e| {
-                use crate::error::RegistryError;
-                RegistryError::CorruptedRegistry(e.to_string())
-            })?;
-        }
-
-        registry.save()?;
-
-        Ok::<(), DaemonError>(())
-    })
-    .await
-    .map_err(|e| ConfigError::ParseError {
-        path: std::path::PathBuf::from("devices"),
-        reason: format!("Task join error: {}", e),
-    })??;
-
-    // Broadcast event to WebSocket subscribers
-    use crate::web::rpc_types::ServerMessage;
-    let event = ServerMessage::Event {
-        channel: "devices".to_string(),
-        data: serde_json::json!({
-            "action": "updated",
-            "id": id,
-            "layout": payload.layout
-        }),
-    };
-    if let Err(e) = state.event_broadcaster.send(event) {
-        log::warn!("Failed to broadcast device updated event: {}", e);
+) -> Result<Json<Value>, ApiError> {
+    payload
+        .validate()
+        .map_err(|e| ApiError::BadRequest(format!("Validation failed: {}", e)))?;
+    if let Some(layout) = &payload.layout {
+        state
+            .device_service
+            .set_layout(&id, layout)
+            .await
+            .map_err(api_error)?;
     }
-
+    broadcast(
+        &state,
+        json!({ "action": "updated", "id": id, "layout": payload.layout }),
+    );
     Ok(Json(json!({ "success": true })))
 }
 
@@ -275,36 +192,10 @@ async fn forget_device(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> Result<Json<Value>, ApiError> {
-    let id_clone = id.clone();
-    let registry_path = state.device_service.registry_path().to_path_buf();
-
-    tokio::task::spawn_blocking(move || {
-        let mut registry = DeviceRegistry::load(&registry_path)
-            .map_err(|e| ApiError::InternalError(e.to_string()))?;
-
-        registry.forget(&id_clone).map_err(|e| match e {
-            DeviceValidationError::DeviceNotFound(msg) => ApiError::NotFound(msg),
-            _ => ApiError::InternalError(e.to_string()),
-        })?;
-
-        registry
-            .save()
-            .map_err(|e| ApiError::InternalError(e.to_string()))?;
-
-        Ok::<Json<Value>, ApiError>(Json(json!({ "success": true })))
-    })
-    .await
-    .map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))?
-}
-
-/// The name a connected device reports (its `device_id` in the device list),
-/// used when a device is registered by its first edit; the id otherwise.
-fn connected_device_name(device_id: &str) -> String {
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
-    if let Ok(keyboards) = crate::device_manager::enumerate_keyboards() {
-        if let Some(kb) = keyboards.into_iter().find(|kb| kb.device_id() == device_id) {
-            return kb.name;
-        }
-    }
-    device_id.to_string()
+    state
+        .device_service
+        .forget_device(&id)
+        .await
+        .map_err(api_error)?;
+    Ok(Json(json!({ "success": true })))
 }

@@ -7,7 +7,7 @@
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
 
-use crate::config::device_registry::DeviceRegistry;
+use crate::config::device_registry::{DeviceEntry, DeviceRegistry, DeviceValidationError};
 use crate::daemon::DaemonSharedState;
 
 /// Device information returned by service methods
@@ -19,6 +19,46 @@ pub struct DeviceInfo {
     pub serial: Option<String>,
     pub active: bool,
     pub layout: Option<String>,
+}
+
+/// Why a device edit failed - REST and RPC map this to their own errors.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DeviceEditError {
+    /// No such device in the registry.
+    NotFound(String),
+    /// The requested name/layout is not valid.
+    Invalid(String),
+    /// The registry file could not be read or written.
+    Storage(String),
+}
+
+impl std::fmt::Display for DeviceEditError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotFound(m) | Self::Invalid(m) | Self::Storage(m) => f.write_str(m),
+        }
+    }
+}
+
+impl From<DeviceValidationError> for DeviceEditError {
+    fn from(e: DeviceValidationError) -> Self {
+        match e {
+            DeviceValidationError::DeviceNotFound(msg) => Self::NotFound(msg),
+            other => Self::Invalid(other.to_string()),
+        }
+    }
+}
+
+/// The name a connected device reports, used when a device is registered by
+/// its first edit; the id otherwise.
+fn connected_device_name(device_id: &str) -> String {
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    if let Ok(keyboards) = crate::device_manager::enumerate_keyboards() {
+        if let Some(kb) = keyboards.into_iter().find(|kb| kb.device_id() == device_id) {
+            return kb.name;
+        }
+    }
+    device_id.to_string()
 }
 
 /// Device management service
@@ -106,36 +146,63 @@ impl DeviceService {
         Ok(Vec::new())
     }
 
-    /// Rename a device
-    pub async fn rename_device(&self, id: &str, name: &str) -> Result<(), String> {
-        let mut registry = DeviceRegistry::load(&self.registry_path)
-            .map_err(|e| format!("Failed to load device registry: {}", e))?;
-
-        registry
-            .rename(id, name)
-            .map_err(|e| format!("Failed to rename device: {}", e))?;
-
-        registry
-            .save()
-            .map_err(|e| format!("Failed to save device registry: {}", e))?;
-
-        Ok(())
+    /// Renames a device. A connected keyboard that was never edited is
+    /// registered first (named after what it reports), so any listed device
+    /// can be renamed.
+    pub async fn rename_device(
+        &self,
+        id: &str,
+        name: &str,
+    ) -> Result<DeviceEntry, DeviceEditError> {
+        self.edit(id, |registry| registry.rename(id, name))
     }
 
-    /// Forget a device
-    pub async fn forget_device(&self, id: &str) -> Result<(), String> {
-        let mut registry = DeviceRegistry::load(&self.registry_path)
-            .map_err(|e| format!("Failed to load device registry: {}", e))?;
+    /// Sets a device's keyboard layout (registering it first, as above).
+    pub async fn set_layout(&self, id: &str, layout: &str) -> Result<DeviceEntry, DeviceEditError> {
+        self.edit(id, |registry| registry.set_layout(id, layout))
+    }
 
-        registry
-            .forget(id)
-            .map_err(|e| format!("Failed to forget device: {}", e))?;
+    /// The layout of a registered device (`None` = inherits the default).
+    pub async fn get_layout(&self, id: &str) -> Result<Option<String>, DeviceEditError> {
+        let registry = self.load()?;
+        let device = registry
+            .get(id)
+            .ok_or_else(|| DeviceEditError::NotFound(format!("Device not found: {id}")))?;
+        Ok(device.layout.clone())
+    }
 
+    /// Removes a device's saved name and layout.
+    pub async fn forget_device(&self, id: &str) -> Result<(), DeviceEditError> {
+        let mut registry = self.load()?;
+        registry.forget(id).map_err(DeviceEditError::from)?;
         registry
             .save()
-            .map_err(|e| format!("Failed to save device registry: {}", e))?;
+            .map_err(|e| DeviceEditError::Storage(e.to_string()))
+    }
 
-        Ok(())
+    fn load(&self) -> Result<DeviceRegistry, DeviceEditError> {
+        DeviceRegistry::load(&self.registry_path)
+            .map_err(|e| DeviceEditError::Storage(e.to_string()))
+    }
+
+    /// Load, register `id` if needed, apply `change`, save; returns the entry.
+    fn edit(
+        &self,
+        id: &str,
+        change: impl FnOnce(&mut DeviceRegistry) -> Result<(), DeviceValidationError>,
+    ) -> Result<DeviceEntry, DeviceEditError> {
+        let mut registry = self.load()?;
+        registry
+            .ensure_registered(id, &connected_device_name(id))
+            .map_err(DeviceEditError::from)?;
+        change(&mut registry).map_err(DeviceEditError::from)?;
+        registry
+            .save()
+            .map_err(|e| DeviceEditError::Storage(e.to_string()))?;
+        registry
+            .get(id)
+            .cloned()
+            .ok_or_else(|| DeviceEditError::Storage(format!("device {id} vanished")))
     }
 }
 
@@ -178,5 +245,31 @@ mod tests {
             "must not report a device active after it drops out of the published set"
         );
         assert!(service.is_active("dev-b"));
+    }
+
+    /// Every transport (REST, WS-RPC) edits through these methods: renaming
+    /// or re-laying-out a keyboard that was never edited must register it
+    /// instead of failing (the RPC path used to skip that step).
+    #[tokio::test]
+    async fn editing_an_unregistered_device_registers_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let service = DeviceService::new(dir.path().to_path_buf());
+        let entry = service.rename_device("usb-kbd-1", "Desk").await.unwrap();
+        assert_eq!(entry.name, "Desk");
+        let entry = service.set_layout("usb-kbd-2", "jis_109").await.unwrap();
+        assert_eq!(entry.layout.as_deref(), Some("jis_109"));
+        assert_eq!(
+            service.get_layout("usb-kbd-2").await.unwrap().as_deref(),
+            Some("jis_109")
+        );
+        service.forget_device("usb-kbd-1").await.unwrap();
+        assert!(matches!(
+            service.forget_device("usb-kbd-1").await,
+            Err(DeviceEditError::NotFound(_))
+        ));
+        assert!(matches!(
+            service.rename_device("usb-kbd-3", "").await,
+            Err(DeviceEditError::Invalid(_))
+        ));
     }
 }
