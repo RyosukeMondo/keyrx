@@ -15,7 +15,8 @@ interface GlobalKeyboardPanelProps {
   keyMappings: Map<string, KeyMapping>;
   onKeyClick: (keyCode: string) => void;
   selectedKeyCode: string | null;
-  initialLayout: LayoutType | undefined;
+  layout: LayoutType;
+  onLayoutChange: (layout: LayoutType) => void;
   isVisible: boolean;
 }
 
@@ -32,7 +33,8 @@ export const GlobalKeyboardPanel: React.FC<GlobalKeyboardPanelProps> = ({
   keyMappings,
   onKeyClick,
   selectedKeyCode,
-  initialLayout,
+  layout,
+  onLayoutChange,
   isVisible,
 }) => {
   if (!globalSelected) return null;
@@ -81,7 +83,8 @@ export const GlobalKeyboardPanel: React.FC<GlobalKeyboardPanelProps> = ({
             mappings={keyMappings}
             onKeyClick={onKeyClick}
             selectedKeyCode={selectedKeyCode}
-            initialLayout={initialLayout}
+            layout={layout}
+            onLayoutChange={onLayoutChange}
           />
         </Card>
       </div>

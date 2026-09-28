@@ -428,6 +428,7 @@ const ConfigPage: React.FC = () => {
                 setSyncStatus={setSyncStatus}
                 configStore={configStore}
                 keyboardLayout={keyboardLayout}
+                onKeyboardLayoutChange={setLayout}
                 layoutKeys={layoutKeys}
                 onOpenAdvanced={() => {
                   if (!isCodePanelOpen) toggleCodePanel();
