@@ -1,29 +1,38 @@
-//! Event simulation types and logic for WASM module.
+//! Event simulation types and logic for the WASM module.
 //!
-//! This module provides the simulation engine that processes keyboard event
-//! sequences and tracks state changes and performance metrics.
+//! This is not a second remapping implementation: it drives the SAME
+//! [`crate::runtime::remapper::Remapper`] + [`crate::simulate::run`]
+//! deterministic driver the daemon's `simulate`/`test` CLI and REST/RPC
+//! simulator use (see `keyrx_daemon/src/config/simulation_engine/engine.rs`),
+//! just fed the events the browser sends. A discrepancy between "what the
+//! daemon would do" and "what the WASM simulator shows" is a bug in the
+//! shared engine, not two implementations that drifted apart.
 
 extern crate std;
 
 use serde::{Deserialize, Serialize};
 use std::{format, string::String, string::ToString, vec::Vec};
 
-use crate::config::KeyCode;
-use crate::runtime::{process_event, DeviceState, KeyEvent, KeyEventType, KeyLookup};
+use crate::config::DeviceConfig;
+use crate::parser::validators::parse_physical_key;
+use crate::runtime::Remapper;
+use crate::simulate::{self, SimInput, SimOutput};
 
 /// Input event sequence for simulation.
-///
-/// This structure defines a sequence of keyboard events to simulate.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventSequence {
     /// List of events to simulate
     pub events: Vec<SimKeyEvent>,
 }
 
-/// A single keyboard event for simulation.
+/// A single keyboard event, as JSON to/from the browser. Used for both input
+/// events and output events - same wire shape either way.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimKeyEvent {
-    /// Key code (e.g., "A", "B", "LeftShift")
+    /// Key name (e.g. "A", "CapsLock", "VK_CapsLock", "LCtrl") - parsed with
+    /// the SAME parser the `.rhai` config compiler uses
+    /// ([`parse_physical_key`]), so anything a profile accepts is accepted
+    /// here too.
     pub keycode: String,
     /// Event type: "press" or "release"
     pub event_type: String,
@@ -31,35 +40,45 @@ pub struct SimKeyEvent {
     pub timestamp_us: u64,
 }
 
-/// Result of a simulation run.
-///
-/// Contains the full timeline of events, state changes, and performance metrics.
+/// Result of a simulation run. Field names/shape match the UI's declared
+/// `SimulationResult` TypeScript interface (`keyrx_ui/src/hooks/useWasm.ts`)
+/// exactly, so no UI changes are needed to consume it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimulationResult {
-    /// Timeline of all events (input and output)
-    pub timeline: Vec<TimelineEntry>,
-    /// Latency statistics in microseconds
-    pub latency_stats: LatencyStats,
-    /// Final state after simulation
+    /// One state snapshot per timeline step (one per input processed, plus
+    /// one for any tap-hold timeout that fires on its own - see
+    /// [`crate::simulate::run`]).
+    pub states: Vec<StateTransition>,
+    /// Every output event produced, across all steps, in order.
+    pub outputs: Vec<SimKeyEvent>,
+    /// Per-step processing latency in microseconds - always `0`.
+    /// `std::time::Instant::now()` traps at runtime on
+    /// `wasm32-unknown-unknown` (verified empirically: it compiles to an
+    /// `unreachable` instruction when there is no JS shim under it), so
+    /// wall-clock timing is not measured in the browser simulator.
+    pub latency: Vec<u64>,
+    /// State after the final step.
     pub final_state: SimulationState,
 }
 
-/// Entry in the simulation timeline.
+/// One state snapshot in the timeline.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TimelineEntry {
+pub struct StateTransition {
     /// Timestamp in microseconds
     pub timestamp_us: u64,
-    /// Input event (if this was an input)
-    pub input: Option<SimKeyEvent>,
-    /// Output events generated from this input
-    pub outputs: Vec<SimKeyEvent>,
-    /// State snapshot after processing this event
-    pub state: SimulationState,
-    /// Processing latency for this event in microseconds
-    pub latency_us: u64,
+    /// Active modifiers (list of modifier IDs) - shared across every device
+    /// the config routes (see `runtime::remapper` docs).
+    pub active_modifiers: Vec<u8>,
+    /// Active locks (list of lock IDs)
+    pub active_locks: Vec<u8>,
+    /// Current active layer, formatted like [`crate::wasm::get_state`]
+    /// formats modifiers (`"MD_XX"`) - a layer IS a modifier id, there is no
+    /// separate layer-name concept anywhere in `keyrx_core`.
+    pub active_layer: Option<String>,
 }
 
-/// State snapshot during simulation.
+/// State snapshot used by `get_state()` (matches `DaemonStateResponse`'s
+/// `active_layer`/modifier/lock fields).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimulationState {
     /// Active modifiers (list of modifier IDs)
@@ -70,189 +89,224 @@ pub struct SimulationState {
     pub active_layer: Option<String>,
 }
 
-/// Latency statistics for the simulation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LatencyStats {
-    /// Minimum latency in microseconds
-    pub min_us: u64,
-    /// Average latency in microseconds
-    pub avg_us: u64,
-    /// Maximum latency in microseconds
-    pub max_us: u64,
-    /// 95th percentile latency in microseconds
-    pub p95_us: u64,
-    /// 99th percentile latency in microseconds
-    pub p99_us: u64,
-}
-
-/// Run simulation on event sequence.
-///
-/// This is the core simulation logic that processes events and tracks metrics.
+/// Runs `event_sequence` through a fresh [`Remapper`] built from ALL of
+/// `devices`'s blocks (not just the first - routing then behaves exactly
+/// like the daemon's), driven by [`crate::simulate::run`]. There is no real
+/// platform device list in a browser simulation, so every input is routed
+/// with no device id (the wildcard/no-identity block).
 pub fn run_simulation(
-    lookup: &KeyLookup,
+    devices: &[DeviceConfig],
     event_sequence: &EventSequence,
 ) -> Result<SimulationResult, String> {
-    use std::time::Instant;
+    let inputs = event_sequence
+        .events
+        .iter()
+        .map(to_sim_input)
+        .collect::<Result<Vec<_>, _>>()?;
+    let end_us = event_sequence
+        .events
+        .iter()
+        .map(|e| e.timestamp_us)
+        .max()
+        .unwrap_or(0);
 
-    // Initialize state
-    let mut state = DeviceState::new();
-    let mut timeline = Vec::new();
-    let mut latencies = Vec::new();
+    let mut remapper = Remapper::from_blocks(devices);
+    let steps = simulate::run(&mut remapper, &inputs, end_us, |id| {
+        std::vec![id.to_string()]
+    });
 
-    for sim_event in &event_sequence.events {
-        // Convert SimKeyEvent to KeyEvent
-        let keycode = parse_keycode(&sim_event.keycode)?;
-        let event_type = match sim_event.event_type.as_str() {
-            "press" => KeyEventType::Press,
-            "release" => KeyEventType::Release,
-            _ => return Err(format!("Invalid event type: {}", sim_event.event_type)),
-        };
-
-        let key_event = match event_type {
-            KeyEventType::Press => KeyEvent::press(keycode).with_timestamp(sim_event.timestamp_us),
-            KeyEventType::Release => {
-                KeyEvent::release(keycode).with_timestamp(sim_event.timestamp_us)
-            }
-        };
-
-        // Measure processing latency
-        let start = Instant::now();
-        let output_events = process_event(key_event.clone(), lookup, &mut state);
-        let latency_us = start.elapsed().as_micros() as u64;
-
-        latencies.push(latency_us);
-
-        // Capture state snapshot
-        let state_snapshot = capture_state(&state);
-
-        // Convert output events to SimKeyEvent
-        let outputs: Vec<SimKeyEvent> = output_events
-            .iter()
-            .map(|e| SimKeyEvent {
-                keycode: format!("{:?}", e.keycode()),
-                event_type: match e.event_type() {
-                    KeyEventType::Press => "press".to_string(),
-                    KeyEventType::Release => "release".to_string(),
-                },
-                timestamp_us: e.timestamp_us(),
-            })
-            .collect();
-
-        timeline.push(TimelineEntry {
-            timestamp_us: sim_event.timestamp_us,
-            input: Some(sim_event.clone()),
-            outputs,
-            state: state_snapshot,
-            latency_us,
+    let mut states = Vec::with_capacity(steps.len());
+    let mut outputs = Vec::new();
+    for step in &steps {
+        // An input step's timestamp is its input's; a tap-hold-timeout step
+        // (input: None) has none of its own, but its fired events (if any)
+        // carry the tick time, and the one timeout step with no fired events
+        // is always the trailing end-of-run tick (see `simulate::run`).
+        let timestamp_us = step
+            .input
+            .as_ref()
+            .map(|i| i.at_us)
+            .or_else(|| step.outputs.first().map(|o| o.at_us))
+            .unwrap_or(end_us);
+        states.push(StateTransition {
+            timestamp_us,
+            active_modifiers: step.active_modifiers.clone(),
+            active_locks: step.active_locks.clone(),
+            active_layer: step.active_layer.map(format_layer),
         });
+        outputs.extend(step.outputs.iter().map(to_sim_key_event));
     }
 
-    // Calculate latency statistics
-    let latency_stats = calculate_latency_stats(&latencies);
+    let final_state = states
+        .last()
+        .map(|s| SimulationState {
+            active_modifiers: s.active_modifiers.clone(),
+            active_locks: s.active_locks.clone(),
+            active_layer: s.active_layer.clone(),
+        })
+        .unwrap_or(SimulationState {
+            active_modifiers: Vec::new(),
+            active_locks: Vec::new(),
+            active_layer: None,
+        });
 
-    // Capture final state
-    let final_state = capture_state(&state);
+    let latency = std::vec![0u64; states.len()];
 
     Ok(SimulationResult {
-        timeline,
-        latency_stats,
+        states,
+        outputs,
+        latency,
         final_state,
     })
 }
 
-/// Parse keycode string to KeyCode enum.
-///
-/// Supports common key names like "A", "B", "LeftShift", etc.
-fn parse_keycode(keycode_str: &str) -> Result<KeyCode, String> {
-    match keycode_str {
-        "A" => Ok(KeyCode::A),
-        "B" => Ok(KeyCode::B),
-        "C" => Ok(KeyCode::C),
-        "D" => Ok(KeyCode::D),
-        "E" => Ok(KeyCode::E),
-        "F" => Ok(KeyCode::F),
-        "G" => Ok(KeyCode::G),
-        "H" => Ok(KeyCode::H),
-        "I" => Ok(KeyCode::I),
-        "J" => Ok(KeyCode::J),
-        "K" => Ok(KeyCode::K),
-        "L" => Ok(KeyCode::L),
-        "M" => Ok(KeyCode::M),
-        "N" => Ok(KeyCode::N),
-        "O" => Ok(KeyCode::O),
-        "P" => Ok(KeyCode::P),
-        "Q" => Ok(KeyCode::Q),
-        "R" => Ok(KeyCode::R),
-        "S" => Ok(KeyCode::S),
-        "T" => Ok(KeyCode::T),
-        "U" => Ok(KeyCode::U),
-        "V" => Ok(KeyCode::V),
-        "W" => Ok(KeyCode::W),
-        "X" => Ok(KeyCode::X),
-        "Y" => Ok(KeyCode::Y),
-        "Z" => Ok(KeyCode::Z),
-        _ => Err(format!("Unsupported keycode: {}", keycode_str)),
+/// Formats an active layer/modifier id the same way `get_state()` formats
+/// active modifiers.
+fn format_layer(id: u8) -> String {
+    format!("MD_{:02X}", id)
+}
+
+/// Parses a `SimKeyEvent`'s string key name with the SAME parser the DSL
+/// config compiler uses, so "CapsLock", "VK_CapsLock", "LCtrl", "A", etc. all
+/// resolve exactly as they would in a `.rhai` profile.
+fn to_sim_input(event: &SimKeyEvent) -> Result<SimInput, String> {
+    let key = parse_physical_key(&event.keycode)
+        .map_err(|e| format!("invalid key '{}': {e}", event.keycode))?;
+    let press = match event.event_type.as_str() {
+        "press" => true,
+        "release" => false,
+        other => return Err(format!("Invalid event type: {other}")),
+    };
+    Ok(SimInput {
+        at_us: event.timestamp_us,
+        device: None,
+        press,
+        key,
+    })
+}
+
+fn to_sim_key_event(output: &SimOutput) -> SimKeyEvent {
+    SimKeyEvent {
+        keycode: format!("{:?}", output.key),
+        event_type: if output.press { "press" } else { "release" }.to_string(),
+        timestamp_us: output.at_us,
     }
 }
 
-/// Capture current simulation state.
-fn capture_state(state: &DeviceState) -> SimulationState {
-    // Extract active modifiers (IDs 0-254)
-    let mut active_modifiers = Vec::new();
-    for id in 0..255 {
-        if state.is_modifier_active(id) {
-            active_modifiers.push(id);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{DeviceIdentifier, KeyCode, KeyMapping};
+    use std::vec;
+
+    fn block(pattern: &str, from: KeyCode, to: KeyCode) -> DeviceConfig {
+        DeviceConfig {
+            identifier: DeviceIdentifier {
+                pattern: pattern.to_string(),
+            },
+            mappings: vec![KeyMapping::simple(from, to)],
         }
     }
 
-    // Extract active locks (IDs 0-254)
-    let mut active_locks = Vec::new();
-    for id in 0..255 {
-        if state.is_lock_active(id) {
-            active_locks.push(id);
+    fn event(keycode: &str, event_type: &str, timestamp_us: u64) -> SimKeyEvent {
+        SimKeyEvent {
+            keycode: keycode.to_string(),
+            event_type: event_type.to_string(),
+            timestamp_us,
         }
     }
 
-    // TODO: Extract active layer from state once layer support is added
-    let active_layer = None;
-
-    SimulationState {
-        active_modifiers,
-        active_locks,
-        active_layer,
-    }
-}
-
-/// Calculate latency statistics from recorded latencies.
-fn calculate_latency_stats(latencies: &[u64]) -> LatencyStats {
-    if latencies.is_empty() {
-        return LatencyStats {
-            min_us: 0,
-            avg_us: 0,
-            max_us: 0,
-            p95_us: 0,
-            p99_us: 0,
+    #[test]
+    fn run_simulation_maps_press_and_release() {
+        let devices = vec![block("*", KeyCode::A, KeyCode::B)];
+        let events = EventSequence {
+            events: vec![event("A", "press", 0), event("A", "release", 50_000)],
         };
+
+        let result = run_simulation(&devices, &events).expect("simulation should succeed");
+
+        assert_eq!(result.outputs.len(), 2);
+        assert_eq!(result.outputs[0].keycode, "B");
+        assert_eq!(result.outputs[0].event_type, "press");
+        assert_eq!(result.outputs[1].event_type, "release");
+        // Trailing forced tick adds one more state snapshot beyond the two
+        // input steps.
+        assert_eq!(result.states.len(), 3);
+        assert_eq!(result.states.last().unwrap().timestamp_us, 50_000);
+        assert_eq!(result.latency, vec![0, 0, 0]);
     }
 
-    let mut sorted = latencies.to_vec();
-    sorted.sort_unstable();
+    #[test]
+    fn run_simulation_uses_every_block_not_just_the_first() {
+        // A specific-pattern block first, then a wildcard fallback: with no
+        // real device identity, only the wildcard block can ever match. If
+        // the engine only loaded `devices.first()`, the wildcard block (and
+        // its A->B mapping) would never be reachable.
+        let devices = vec![
+            block("*numpad*", KeyCode::A, KeyCode::X),
+            block("*", KeyCode::A, KeyCode::B),
+        ];
+        let events = EventSequence {
+            events: vec![event("A", "press", 0)],
+        };
 
-    let min_us = sorted[0];
-    let max_us = sorted[sorted.len() - 1];
-    let avg_us = sorted.iter().sum::<u64>() / sorted.len() as u64;
+        let result = run_simulation(&devices, &events).expect("simulation should succeed");
 
-    let p95_idx = ((sorted.len() as f64) * 0.95) as usize;
-    let p99_idx = ((sorted.len() as f64) * 0.99) as usize;
+        assert_eq!(result.outputs.len(), 1);
+        assert_eq!(result.outputs[0].keycode, "B");
+    }
 
-    let p95_us = sorted[p95_idx.min(sorted.len() - 1)];
-    let p99_us = sorted[p99_idx.min(sorted.len() - 1)];
+    #[test]
+    fn run_simulation_accepts_named_keys_not_just_single_letters() {
+        let devices = vec![block("*", KeyCode::CapsLock, KeyCode::Escape)];
+        let events = EventSequence {
+            events: vec![event("CapsLock", "press", 0)],
+        };
 
-    LatencyStats {
-        min_us,
-        avg_us,
-        max_us,
-        p95_us,
-        p99_us,
+        let result = run_simulation(&devices, &events).expect("simulation should succeed");
+
+        assert_eq!(result.outputs.len(), 1);
+        assert_eq!(result.outputs[0].keycode, "Escape");
+    }
+
+    #[test]
+    fn run_simulation_rejects_unknown_key_names() {
+        let devices = vec![block("*", KeyCode::A, KeyCode::B)];
+        let events = EventSequence {
+            events: vec![event("NotAKey", "press", 0)],
+        };
+
+        let err = run_simulation(&devices, &events).expect_err("unknown key should error");
+        assert!(err.contains("NotAKey"));
+    }
+
+    #[test]
+    fn run_simulation_rejects_unknown_event_type() {
+        let devices = vec![block("*", KeyCode::A, KeyCode::B)];
+        let events = EventSequence {
+            events: vec![event("A", "double-click", 0)],
+        };
+
+        assert!(run_simulation(&devices, &events).is_err());
+    }
+
+    #[test]
+    fn run_simulation_with_no_events_returns_empty_result() {
+        let devices = vec![block("*", KeyCode::A, KeyCode::B)];
+        let events = EventSequence { events: Vec::new() };
+
+        let result = run_simulation(&devices, &events).expect("simulation should succeed");
+
+        assert!(result.states.is_empty());
+        assert!(result.outputs.is_empty());
+        assert!(result.latency.is_empty());
+        assert_eq!(result.final_state.active_modifiers, Vec::<u8>::new());
+        assert_eq!(result.final_state.active_layer, None);
+    }
+
+    #[test]
+    fn format_layer_matches_get_state_modifier_formatting() {
+        assert_eq!(format_layer(0), "MD_00");
+        assert_eq!(format_layer(10), "MD_0A");
     }
 }

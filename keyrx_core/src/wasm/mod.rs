@@ -28,24 +28,20 @@ use std::{format, string::String, sync::Mutex, vec, vec::Vec};
 use wasm_bindgen::prelude::*;
 
 use crate::config::ConfigRoot;
-use crate::runtime::KeyLookup;
 
 // Re-export simulation types
-pub use simulation::{
-    EventSequence, LatencyStats, SimKeyEvent, SimulationResult, SimulationState, TimelineEntry,
-};
+pub use simulation::{EventSequence, SimKeyEvent, SimulationResult, SimulationState};
 
 // ============================================================================
 // Global Configuration Storage
 // ============================================================================
 
-use crate::runtime::DeviceState;
-
-/// Configuration entry with associated state
+/// A loaded configuration and the state of its most recent simulation run.
+/// No per-config runtime state is stored here: `simulate()` builds a fresh
+/// [`crate::runtime::Remapper`] from `config` on every call, exactly like the
+/// daemon's simulation driver does.
 struct ConfigEntry {
     config: ConfigRoot,
-    /// Device state (reserved for future use)
-    _state: DeviceState,
     last_sim_state: Option<SimulationState>,
 }
 
@@ -130,7 +126,6 @@ fn store_config(config: ConfigRoot) -> Result<ConfigHandle, JsValue> {
     let index = store.len();
     store.push(ConfigEntry {
         config,
-        _state: DeviceState::new(),
         last_sim_state: None,
     });
     Ok(ConfigHandle(index))
@@ -349,15 +344,21 @@ pub fn validate_config(rhai_source: &str) -> Result<JsValue, JsValue> {
 
 /// Simulate keyboard event sequence.
 ///
-/// Processes a sequence of keyboard events through the remapping configuration,
-/// tracking state changes and performance metrics.
+/// Routes the events through EVERY `device_start` block of the loaded
+/// configuration, using the same [`crate::runtime::Remapper`] +
+/// [`crate::simulate::run`] deterministic driver the daemon's simulator
+/// uses - so the result matches what the daemon would actually do with this
+/// config, tap-hold timeouts included.
 ///
 /// # Arguments
 /// * `config` - Handle to a loaded configuration
 /// * `events_json` - JSON string containing EventSequence
 ///
 /// # Returns
-/// * `Ok(JsValue)` - SimulationResult as JSON
+/// * `Ok(JsValue)` - [`simulation::SimulationResult`] as JSON:
+///   `{ states: StateTransition[], outputs: SimKeyEvent[], latency: number[],
+///   final_state: SimulationState }` (per-step `latency` is always `0` - see
+///   [`simulation::SimulationResult::latency`])
 /// * `Err(JsValue)` - Error message
 ///
 /// # Errors
@@ -396,16 +397,13 @@ pub fn simulate(config: ConfigHandle, events_json: &str) -> Result<JsValue, JsVa
         )));
     }
 
-    // Initialize runtime components
-    let device_config = config_root
-        .devices
-        .first()
-        .ok_or_else(|| JsValue::from_str("Configuration has no devices"))?;
+    if config_root.devices.is_empty() {
+        return Err(JsValue::from_str("Configuration has no devices"));
+    }
 
-    let lookup = KeyLookup::from_device_config(device_config);
-
-    // Run simulation
-    let result = simulation::run_simulation(&lookup, &event_sequence)
+    // Run simulation through every `device_start` block (not just the
+    // first), driven by the SAME Remapper + simulate::run the daemon uses.
+    let result = simulation::run_simulation(&config_root.devices, &event_sequence)
         .map_err(|e| JsValue::from_str(e.as_str()))?;
 
     // Store the final state for get_state to access

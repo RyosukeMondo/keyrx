@@ -109,15 +109,21 @@ export function load_krx(binary: Uint8Array): ConfigHandle;
 /**
  * Simulate keyboard event sequence.
  *
- * Processes a sequence of keyboard events through the remapping configuration,
- * tracking state changes and performance metrics.
+ * Routes the events through EVERY `device_start` block of the loaded
+ * configuration, using the same [`crate::runtime::Remapper`] +
+ * [`crate::simulate::run`] deterministic driver the daemon's simulator
+ * uses - so the result matches what the daemon would actually do with this
+ * config, tap-hold timeouts included.
  *
  * # Arguments
  * * `config` - Handle to a loaded configuration
  * * `events_json` - JSON string containing EventSequence
  *
  * # Returns
- * * `Ok(JsValue)` - SimulationResult as JSON
+ * * `Ok(JsValue)` - [`simulation::SimulationResult`] as JSON:
+ *   `{ states: StateTransition[], outputs: SimKeyEvent[], latency: number[],
+ *   final_state: SimulationState }` (per-step `latency` is always `0` - see
+ *   [`simulation::SimulationResult::latency`])
  * * `Err(JsValue)` - Error message
  *
  * # Errors
