@@ -11,7 +11,6 @@ interface Device {
   identifier: string;
   layout: string;
   active: boolean;
-  enabled: boolean;
   vendorId?: string;
   productId?: string;
   serial?: string;
@@ -27,14 +26,13 @@ export interface DeviceRowProps {
   onRenameCancel: () => void;
   onRenameSave: (deviceId: string) => void;
   onEditingNameChange: (value: string) => void;
-  onToggleEnabled: (deviceId: string, enabled: boolean) => void;
   onForgetClick: (deviceId: string) => void;
 }
 
 /**
  * DeviceRow Component
  *
- * Compact single-row device display with inline layout selector and enable/disable toggle.
+ * Compact single-row device display with inline layout selector.
  */
 export const DeviceRow: React.FC<DeviceRowProps> = ({
   device,
@@ -45,7 +43,6 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
   onRenameCancel,
   onRenameSave,
   onEditingNameChange,
-  onToggleEnabled,
   onForgetClick,
 }) => {
   const {
@@ -71,9 +68,7 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 bg-slate-800 rounded-lg border border-slate-700 hover:border-slate-600 transition-all ${
-        !device.enabled ? 'opacity-50 bg-slate-900' : ''
-      }`}
+      className="flex items-center gap-3 px-4 py-3 bg-slate-800 rounded-lg border border-slate-700 hover:border-slate-600 transition-all"
       data-testid="device-card"
     >
       {/* Status indicator */}
@@ -132,11 +127,6 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
               <span className="text-sm font-medium text-slate-100 group-hover:text-blue-400 transition-colors truncate block">
                 {device.name}
               </span>
-              {!device.enabled && (
-                <span className="text-xs px-2 py-0.5 bg-slate-700 text-slate-400 rounded-full">
-                  Disabled
-                </span>
-              )}
             </div>
             <span className="text-xs font-mono text-slate-500 truncate block">
               {device.identifier}
@@ -175,23 +165,7 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
         )}
       </div>
 
-      {/* Enable/Disable toggle */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button
-          onClick={() => onToggleEnabled(device.id, !device.enabled)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800 ${
-            device.enabled ? 'bg-blue-600' : 'bg-slate-600'
-          }`}
-          role="switch"
-          aria-checked={device.enabled}
-          aria-label={`${device.enabled ? 'Disable' : 'Enable'} ${device.name}`}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              device.enabled ? 'translate-x-6' : 'translate-x-1'
-            }`}
-          />
-        </button>
         <Button
           variant="ghost"
           size="sm"

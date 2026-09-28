@@ -35,16 +35,14 @@ export function useDeviceMerging({
   useEffect(() => {
     const ast = syncEngine.getAST();
     if (!ast) {
-      // No AST yet, just use connected devices (filter out disabled devices)
+      // No AST yet, just use connected devices
       setMergedDevices(
-        devicesData
-          ?.filter((d) => d.enabled !== false)
-          .map((d) => ({
-            id: d.id,
-            name: d.name,
-            serial: d.serial || undefined,
-            connected: true,
-          })) || []
+        devicesData?.map((d) => ({
+          id: d.id,
+          name: d.name,
+          serial: d.serial || undefined,
+          connected: true,
+        })) || []
       );
       return;
     }
@@ -52,18 +50,16 @@ export function useDeviceMerging({
     // Extract device patterns from Rhai script
     const devicePatternsInRhai = extractDevicePatterns(ast);
 
-    // Create a map of connected devices by serial/name/id (filter out disabled devices)
+    // Create a map of connected devices by serial/name/id
     const connectedDeviceMap = new Map<
       string,
       NonNullable<typeof devicesData>[number]
     >();
-    devicesData
-      ?.filter((device) => device.enabled !== false)
-      .forEach((device) => {
-        if (device.serial) connectedDeviceMap.set(device.serial, device);
-        connectedDeviceMap.set(device.name, device);
-        connectedDeviceMap.set(device.id, device);
-      });
+    devicesData?.forEach((device) => {
+      if (device.serial) connectedDeviceMap.set(device.serial, device);
+      connectedDeviceMap.set(device.name, device);
+      connectedDeviceMap.set(device.id, device);
+    });
 
     // Build merged device list
     const merged: Device[] = [];
@@ -98,24 +94,22 @@ export function useDeviceMerging({
         }
       });
 
-    // Add connected devices not in Rhai (filter out disabled devices)
-    devicesData
-      ?.filter((device) => device.enabled !== false)
-      .forEach((device) => {
-        const isInRhai =
-          devicePatternsInRhai.includes(device.serial || '') ||
-          devicePatternsInRhai.includes(device.name) ||
-          devicePatternsInRhai.includes(device.id);
+    // Add connected devices not in Rhai
+    devicesData?.forEach((device) => {
+      const isInRhai =
+        devicePatternsInRhai.includes(device.serial || '') ||
+        devicePatternsInRhai.includes(device.name) ||
+        devicePatternsInRhai.includes(device.id);
 
-        if (!isInRhai) {
-          merged.push({
-            id: device.id,
-            name: device.name,
-            serial: device.serial || undefined,
-            connected: true,
-          });
-        }
-      });
+      if (!isInRhai) {
+        merged.push({
+          id: device.id,
+          name: device.name,
+          serial: device.serial || undefined,
+          connected: true,
+        });
+      }
+    });
 
     setMergedDevices(merged);
 
