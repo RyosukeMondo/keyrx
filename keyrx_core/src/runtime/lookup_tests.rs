@@ -1,0 +1,477 @@
+//! Tests for `KeyLookup` (split from lookup.rs for the file-size gate).
+use super::*;
+extern crate alloc;
+use alloc::string::String;
+use alloc::vec;
+
+use crate::config::{Condition, DeviceIdentifier};
+
+/// Helper to create a simple test DeviceConfig
+fn create_test_device_config(mappings: Vec<KeyMapping>) -> DeviceConfig {
+    DeviceConfig {
+        identifier: DeviceIdentifier {
+            pattern: String::from("*"),
+        },
+        mappings,
+    }
+}
+
+#[test]
+fn more_specific_layer_wins_even_when_declared_later() {
+    use crate::config::ConditionItem;
+    let both = Condition::AllActive(vec![
+        ConditionItem::ModifierActive(0),
+        ConditionItem::ModifierActive(1),
+    ]);
+    let config = create_test_device_config(vec![
+        KeyMapping::conditional(
+            Condition::ModifierActive(0),
+            vec![BaseKeyMapping::Simple {
+                from: KeyCode::W,
+                to: KeyCode::Up,
+            }],
+        ),
+        KeyMapping::conditional(
+            both,
+            vec![BaseKeyMapping::Simple {
+                from: KeyCode::W,
+                to: KeyCode::End,
+            }],
+        ),
+    ]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let target = |state: &DeviceState| match lookup.find_mapping(KeyCode::W, state) {
+        Some(BaseKeyMapping::Simple { to, .. }) => Some(*to),
+        _ => None,
+    };
+    let mut state = DeviceState::new();
+    assert_eq!(target(&state), None);
+    state.set_modifier(0);
+    assert_eq!(target(&state), Some(KeyCode::Up));
+    state.set_modifier(1);
+    assert_eq!(target(&state), Some(KeyCode::End));
+}
+
+#[test]
+fn test_from_device_config_empty() {
+    let config = create_test_device_config(vec![]);
+    let lookup = KeyLookup::from_device_config(&config);
+
+    // Empty config should produce empty table
+    assert!(lookup.table.is_empty());
+}
+
+#[test]
+fn test_from_device_config_simple_mapping() {
+    let config = create_test_device_config(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
+    let lookup = KeyLookup::from_device_config(&config);
+
+    // Should have one entry
+    assert_eq!(lookup.table.len(), 1);
+
+    // Entry for key A should exist
+    let entries = lookup.table.get(&KeyCode::A).unwrap();
+    assert_eq!(entries.len(), 1);
+    assert!(entries[0].condition.is_none()); // Unconditional
+
+    // Should be a Simple mapping
+    if let BaseKeyMapping::Simple { from, to } = &entries[0].mapping {
+        assert_eq!(*from, KeyCode::A);
+        assert_eq!(*to, KeyCode::B);
+    } else {
+        panic!("Expected Simple mapping");
+    }
+}
+
+#[test]
+fn test_from_device_config_conditional_mapping() {
+    let config = create_test_device_config(vec![KeyMapping::conditional(
+        Condition::ModifierActive(0),
+        vec![BaseKeyMapping::Simple {
+            from: KeyCode::H,
+            to: KeyCode::Left,
+        }],
+    )]);
+    let lookup = KeyLookup::from_device_config(&config);
+
+    // Should have one entry for key H
+    let entries = lookup.table.get(&KeyCode::H).unwrap();
+    assert_eq!(entries.len(), 1);
+
+    // Should have a condition
+    assert!(entries[0].condition.is_some());
+    if let Some(Condition::ModifierActive(id)) = &entries[0].condition {
+        assert_eq!(*id, 0);
+    } else {
+        panic!("Expected ModifierActive condition");
+    }
+}
+
+#[test]
+fn test_from_device_config_mixed_mappings() {
+    // Create config with both conditional and unconditional for same key
+    let config = create_test_device_config(vec![
+        KeyMapping::conditional(
+            Condition::ModifierActive(0),
+            vec![BaseKeyMapping::Simple {
+                from: KeyCode::H,
+                to: KeyCode::Left,
+            }],
+        ),
+        KeyMapping::simple(KeyCode::H, KeyCode::J), // Unconditional fallback
+    ]);
+    let lookup = KeyLookup::from_device_config(&config);
+
+    let entries = lookup.table.get(&KeyCode::H).unwrap();
+    assert_eq!(entries.len(), 2);
+
+    // First entry should be conditional
+    assert!(entries[0].condition.is_some());
+
+    // Second entry should be unconditional
+    assert!(entries[1].condition.is_none());
+}
+
+#[test]
+fn test_find_mapping_no_mapping() {
+    let config = create_test_device_config(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let state = DeviceState::new();
+
+    // Key Z has no mapping
+    let result = lookup.find_mapping(KeyCode::Z, &state);
+    assert!(result.is_none());
+}
+
+#[test]
+fn test_find_mapping_simple() {
+    let config = create_test_device_config(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let state = DeviceState::new();
+
+    // Key A should map to B
+    let result = lookup.find_mapping(KeyCode::A, &state);
+    assert!(result.is_some());
+
+    if let BaseKeyMapping::Simple { from, to } = result.unwrap() {
+        assert_eq!(*from, KeyCode::A);
+        assert_eq!(*to, KeyCode::B);
+    } else {
+        panic!("Expected Simple mapping");
+    }
+}
+
+#[test]
+fn test_find_mapping_conditional_true() {
+    let config = create_test_device_config(vec![KeyMapping::conditional(
+        Condition::ModifierActive(0),
+        vec![BaseKeyMapping::Simple {
+            from: KeyCode::H,
+            to: KeyCode::Left,
+        }],
+    )]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+    state.set_modifier(0); // Activate modifier
+
+    // Key H should map to Left when modifier active
+    let result = lookup.find_mapping(KeyCode::H, &state);
+    assert!(result.is_some());
+
+    if let BaseKeyMapping::Simple { from, to } = result.unwrap() {
+        assert_eq!(*from, KeyCode::H);
+        assert_eq!(*to, KeyCode::Left);
+    } else {
+        panic!("Expected Simple mapping");
+    }
+}
+
+#[test]
+fn test_find_mapping_conditional_false() {
+    let config = create_test_device_config(vec![KeyMapping::conditional(
+        Condition::ModifierActive(0),
+        vec![BaseKeyMapping::Simple {
+            from: KeyCode::H,
+            to: KeyCode::Left,
+        }],
+    )]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let state = DeviceState::new(); // Modifier not active
+
+    // Key H should have no mapping when modifier not active
+    let result = lookup.find_mapping(KeyCode::H, &state);
+    assert!(result.is_none());
+}
+
+#[test]
+fn test_find_mapping_conditional_before_unconditional() {
+    // Conditional mapping first, unconditional fallback second
+    let config = create_test_device_config(vec![
+        KeyMapping::conditional(
+            Condition::ModifierActive(0),
+            vec![BaseKeyMapping::Simple {
+                from: KeyCode::H,
+                to: KeyCode::Left,
+            }],
+        ),
+        KeyMapping::simple(KeyCode::H, KeyCode::J),
+    ]);
+    let lookup = KeyLookup::from_device_config(&config);
+
+    // Test with modifier active - should get conditional mapping
+    let mut state = DeviceState::new();
+    state.set_modifier(0);
+
+    let result = lookup.find_mapping(KeyCode::H, &state);
+    assert!(result.is_some());
+
+    if let BaseKeyMapping::Simple { to, .. } = result.unwrap() {
+        assert_eq!(*to, KeyCode::Left); // Conditional result
+    } else {
+        panic!("Expected Simple mapping");
+    }
+
+    // Test with modifier inactive - should get unconditional fallback
+    let state2 = DeviceState::new();
+    let result2 = lookup.find_mapping(KeyCode::H, &state2);
+    assert!(result2.is_some());
+
+    if let BaseKeyMapping::Simple { to, .. } = result2.unwrap() {
+        assert_eq!(*to, KeyCode::J); // Unconditional fallback
+    } else {
+        panic!("Expected Simple mapping");
+    }
+}
+
+#[test]
+fn test_conditional_modified_output_overrides_base_modified_output() {
+    // Reproduces: tap_hold N (MD_0A shift layer) + Num2
+    // Base: Num2 → Shift+Num7 (JIS single quote)
+    // Layer: Num2 → Shift+Num2 (JIS double quote) when modifier 10 active
+    let config = create_test_device_config(vec![
+        // Conditional: when modifier 10 (MD_0A) active, Num2 → Shift+Num2
+        KeyMapping::conditional(
+            Condition::ModifierActive(10),
+            vec![BaseKeyMapping::ModifiedOutput {
+                from: KeyCode::Num2,
+                to: KeyCode::Num2,
+                shift: true,
+                ctrl: false,
+                alt: false,
+                win: false,
+            }],
+        ),
+        // Base: Num2 → Shift+Num7
+        KeyMapping::modified_output(KeyCode::Num2, KeyCode::Num7, true, false, false, false),
+    ]);
+    let lookup = KeyLookup::from_device_config(&config);
+
+    // With modifier 10 active: should get conditional Shift+Num2
+    let mut state_active = DeviceState::new();
+    state_active.set_modifier(10);
+    let result = lookup.find_mapping(KeyCode::Num2, &state_active);
+    assert!(result.is_some(), "Should find mapping with modifier active");
+    if let BaseKeyMapping::ModifiedOutput { to, .. } = result.unwrap() {
+        assert_eq!(*to, KeyCode::Num2, "Layer should produce Shift+Num2");
+    } else {
+        panic!("Expected ModifiedOutput mapping");
+    }
+
+    // Without modifier: should fall back to base Shift+Num7
+    let state_inactive = DeviceState::new();
+    let result2 = lookup.find_mapping(KeyCode::Num2, &state_inactive);
+    assert!(result2.is_some(), "Should find base mapping");
+    if let BaseKeyMapping::ModifiedOutput { to, .. } = result2.unwrap() {
+        assert_eq!(*to, KeyCode::Num7, "Base should produce Shift+Num7");
+    } else {
+        panic!("Expected ModifiedOutput mapping");
+    }
+}
+
+#[test]
+fn test_extract_input_key_all_variants() {
+    // Test Simple
+    let simple = BaseKeyMapping::Simple {
+        from: KeyCode::A,
+        to: KeyCode::B,
+    };
+    assert_eq!(KeyLookup::extract_input_key(&simple), Some(KeyCode::A));
+
+    // Test Modifier
+    let modifier = BaseKeyMapping::Modifier {
+        from: KeyCode::CapsLock,
+        modifier_id: 0,
+    };
+    assert_eq!(
+        KeyLookup::extract_input_key(&modifier),
+        Some(KeyCode::CapsLock)
+    );
+
+    // Test Lock
+    let lock = BaseKeyMapping::Lock {
+        from: KeyCode::ScrollLock,
+        lock_id: 0,
+    };
+    assert_eq!(
+        KeyLookup::extract_input_key(&lock),
+        Some(KeyCode::ScrollLock)
+    );
+
+    // Test TapHold
+    let tap_hold = BaseKeyMapping::TapHold {
+        from: KeyCode::Space,
+        tap: KeyCode::Space,
+        hold_modifier: 0,
+        threshold_ms: 200,
+    };
+    assert_eq!(
+        KeyLookup::extract_input_key(&tap_hold),
+        Some(KeyCode::Space)
+    );
+
+    // Test ModifiedOutput
+    let modified = BaseKeyMapping::ModifiedOutput {
+        from: KeyCode::A,
+        to: KeyCode::A,
+        shift: true,
+        ctrl: false,
+        alt: false,
+        win: false,
+    };
+    assert_eq!(KeyLookup::extract_input_key(&modified), Some(KeyCode::A));
+}
+
+#[test]
+fn test_find_mapping_with_device_matches() {
+    use alloc::string::String;
+
+    // Create config with device-specific mapping and fallback
+    let config = create_test_device_config(vec![
+        // Device-specific: Numpad1 -> F13 when on numpad device
+        KeyMapping::conditional(
+            Condition::DeviceMatches(String::from("*numpad*")),
+            vec![BaseKeyMapping::Simple {
+                from: KeyCode::Numpad1,
+                to: KeyCode::F13,
+            }],
+        ),
+        // Fallback: Numpad1 unchanged (pass through via no mapping)
+    ]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let state = DeviceState::new();
+
+    // Test with matching device - should get device-specific mapping
+    let result = lookup.find_mapping_with_device(KeyCode::Numpad1, &state, Some("usb-numpad-123"));
+    assert!(result.is_some());
+    if let BaseKeyMapping::Simple { to, .. } = result.unwrap() {
+        assert_eq!(*to, KeyCode::F13);
+    } else {
+        panic!("Expected Simple mapping");
+    }
+
+    // Test with non-matching device - should find no mapping
+    let result2 =
+        lookup.find_mapping_with_device(KeyCode::Numpad1, &state, Some("usb-keyboard-456"));
+    assert!(result2.is_none());
+
+    // Test without device_id - should find no mapping (DeviceMatches never matches)
+    let result3 = lookup.find_mapping(KeyCode::Numpad1, &state);
+    assert!(result3.is_none());
+}
+
+#[test]
+fn test_find_mapping_device_with_fallback() {
+    use alloc::string::String;
+
+    // Create config with device-specific mapping AND unconditional fallback
+    let config = create_test_device_config(vec![
+        // Device-specific: Numpad1 -> F13 when on numpad device
+        KeyMapping::conditional(
+            Condition::DeviceMatches(String::from("*numpad*")),
+            vec![BaseKeyMapping::Simple {
+                from: KeyCode::Numpad1,
+                to: KeyCode::F13,
+            }],
+        ),
+        // Fallback: Numpad1 -> Numpad1 for all other devices
+        KeyMapping::simple(KeyCode::Numpad1, KeyCode::Numpad1),
+    ]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let state = DeviceState::new();
+
+    // Test with matching device - should get device-specific mapping
+    let result = lookup.find_mapping_with_device(KeyCode::Numpad1, &state, Some("usb-numpad-123"));
+    assert!(result.is_some());
+    if let BaseKeyMapping::Simple { to, .. } = result.unwrap() {
+        assert_eq!(*to, KeyCode::F13);
+    } else {
+        panic!("Expected Simple mapping");
+    }
+
+    // Test with non-matching device - should get fallback
+    let result2 =
+        lookup.find_mapping_with_device(KeyCode::Numpad1, &state, Some("usb-keyboard-456"));
+    assert!(result2.is_some());
+    if let BaseKeyMapping::Simple { to, .. } = result2.unwrap() {
+        assert_eq!(*to, KeyCode::Numpad1);
+    } else {
+        panic!("Expected Simple mapping");
+    }
+
+    // Test without device_id - should get fallback
+    let result3 = lookup.find_mapping(KeyCode::Numpad1, &state);
+    assert!(result3.is_some());
+    if let BaseKeyMapping::Simple { to, .. } = result3.unwrap() {
+        assert_eq!(*to, KeyCode::Numpad1);
+    } else {
+        panic!("Expected Simple mapping");
+    }
+}
+
+#[test]
+fn test_find_mapping_device_and_modifier_combined() {
+    use alloc::string::String;
+
+    // Create config where both device AND modifier must match
+    // Note: Currently, conditions are single - for combined conditions,
+    // we would need AllActive with ConditionItem::DeviceMatches
+    // For now, test that device condition works alongside modifier conditions
+
+    let config = create_test_device_config(vec![
+        // Modifier-based: H -> Left when MD_00 active
+        KeyMapping::conditional(
+            Condition::ModifierActive(0),
+            vec![BaseKeyMapping::Simple {
+                from: KeyCode::H,
+                to: KeyCode::Left,
+            }],
+        ),
+        // Device-based: Numpad1 -> F13 when on numpad
+        KeyMapping::conditional(
+            Condition::DeviceMatches(String::from("*numpad*")),
+            vec![BaseKeyMapping::Simple {
+                from: KeyCode::Numpad1,
+                to: KeyCode::F13,
+            }],
+        ),
+    ]);
+    let lookup = KeyLookup::from_device_config(&config);
+    let mut state = DeviceState::new();
+
+    // Test modifier condition (independent of device)
+    state.set_modifier(0);
+    let result_h = lookup.find_mapping_with_device(KeyCode::H, &state, Some("any-device"));
+    assert!(result_h.is_some());
+    if let BaseKeyMapping::Simple { to, .. } = result_h.unwrap() {
+        assert_eq!(*to, KeyCode::Left);
+    }
+
+    // Test device condition (independent of modifiers)
+    state.clear_modifier(0);
+    let result_numpad =
+        lookup.find_mapping_with_device(KeyCode::Numpad1, &state, Some("usb-numpad-123"));
+    assert!(result_numpad.is_some());
+    if let BaseKeyMapping::Simple { to, .. } = result_numpad.unwrap() {
+        assert_eq!(*to, KeyCode::F13);
+    }
+}
