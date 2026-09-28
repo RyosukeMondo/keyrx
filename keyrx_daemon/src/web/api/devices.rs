@@ -40,59 +40,32 @@ struct DevicesListResponse {
     devices: Vec<DeviceResponse>,
 }
 
-/// GET /api/devices - List all connected devices
-#[cfg(any(target_os = "linux", target_os = "windows"))]
+/// GET /api/devices - List all connected devices.
+///
+/// Delegates to `DeviceService`, the one device list for every transport
+/// (REST, WS-RPC): `active` is what the daemon actually grabbed, not
+/// "the OS can see it".
 async fn list_devices(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<DevicesListResponse>, DaemonError> {
-    use crate::device_manager::enumerate_keyboards;
-    use crate::error::ConfigError;
+    use crate::error::PlatformError;
 
-    let registry_path = state.device_service.registry_path().to_path_buf();
-
-    tokio::task::spawn_blocking(move || {
-        let registry = DeviceRegistry::load(&registry_path)?;
-
-        let keyboards = enumerate_keyboards().map_err(|e| {
-            use crate::error::PlatformError;
-            PlatformError::DeviceError(e.to_string())
-        })?;
-
-        let devices: Vec<DeviceResponse> = keyboards
-            .into_iter()
-            .map(|kb| {
-                let id = kb.device_id();
-                let registry_entry = registry.get(&id);
-
-                DeviceResponse {
-                    id: id.clone(),
-                    name: registry_entry
-                        .map(|e| e.name.clone())
-                        .unwrap_or_else(|| kb.name.clone()),
-                    path: kb.path.display().to_string(),
-                    serial: kb.serial,
-                    active: true,
-                    layout: registry_entry.and_then(|e| e.layout.clone()),
-                }
-            })
-            .collect();
-
-        Ok::<Json<DevicesListResponse>, DaemonError>(Json(DevicesListResponse { devices }))
-    })
-    .await
-    .map_err(|e| ConfigError::ParseError {
-        path: std::path::PathBuf::from("devices"),
-        reason: format!("Task join error: {}", e),
-    })?
-}
-
-#[cfg(not(any(target_os = "linux", target_os = "windows")))]
-async fn list_devices(
-    State(_state): State<Arc<AppState>>,
-) -> Result<Json<DevicesListResponse>, DaemonError> {
-    Ok(Json(DevicesListResponse {
-        devices: Vec::new(),
-    }))
+    let devices = state
+        .device_service
+        .list_devices()
+        .await
+        .map_err(PlatformError::DeviceError)?
+        .into_iter()
+        .map(|d| DeviceResponse {
+            id: d.id,
+            name: d.name,
+            path: d.path,
+            serial: d.serial,
+            active: d.active,
+            layout: d.layout,
+        })
+        .collect();
+    Ok(Json(DevicesListResponse { devices }))
 }
 
 /// PUT /api/devices/:id/name - Rename a device

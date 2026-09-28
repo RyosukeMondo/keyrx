@@ -624,3 +624,20 @@ async fn test_multiple_device_overrides_with_global_layout() {
         device3_layout
     );
 }
+
+/// `active` means "this daemon has the keyboard grabbed". The test app runs
+/// no daemon, so every keyboard the OS lists must be inactive - REST used to
+/// hardcode `true` (its own copy of the device listing, bypassing
+/// DeviceService), so the Devices page showed a green dot for keyboards the
+/// daemon could not even open.
+#[tokio::test]
+#[serial]
+async fn devices_are_inactive_when_the_daemon_grabbed_nothing() {
+    let app = TestApp::new().await;
+    let response = app.get("/api/devices").await;
+    assert_eq!(response.status(), 200);
+    let body: serde_json::Value = response.json().await.unwrap();
+    for device in body["devices"].as_array().unwrap() {
+        assert_eq!(device["active"], false, "{device}");
+    }
+}
