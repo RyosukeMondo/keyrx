@@ -395,6 +395,40 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
   `platform_runners/windows.rs`, `web/api/profiles.rs`.
   → DONE except `platform_runners/windows.rs` (in the G3 request): the gate was a stub (exit 0) - made real with a shrink-only baseline (dd1d1638, 57bede41); 14 files split by 6 parallel agents, each verified and merged (stale worktree bases re-applied by hand).
 
+## Phase H — Linux daily-use overhaul (2026-09-28)
+
+Goal: the user starts using keyrx on Linux. Walk every feature as a user,
+make each one analyzable/debuggable, speed up iteration, fix real bugs.
+
+- [NEXT] **H1 — One real simulation engine.** `SimulationEngine` (CLI
+  `simulate`/`test`, REST `/api/simulator`, MCP) never used the config: it
+  hardcoded CapsLock tap=Escape/hold=Control and passed every other key
+  through; scenarios "passed" on any output. WASM `simulate` only parsed A-Z,
+  used the first block only, ran no tap-hold timeouts. Fix: device routing +
+  timeouts move into keyrx_core (one engine) used by the daemon event loop,
+  every simulator and WASM.
+- [ ] **H2 — UI walkthrough on a live Linux daemon** (Config, Devices,
+  Monitor, Simulator tab); ConfigPage test failures from the handover.
+- [ ] **H3 — Linux ops & debuggability**: grab only devices a block matches
+  (G8 limitation), permission diagnostics, install/unit flow, help text.
+- [ ] **H4 — Iteration speed**: measure test/build loops, cut the slow ones.
+- [ ] **H5 — Engine output semantics** (after H1; verified with a scratch
+  harness on the real core):
+  (a) a `with_shift`/`with_ctrl` mapping pressed while the user physically
+  holds that modifier releases it: real LShift held + `/`→with_shift(2) + H
+  → `LShift↓ LShift↓ 2↓ 2↑ LShift↑ H↓` (H comes out lowercase). Fix: the
+  output stream is refcounted per key (one uinput device → global), press
+  emitted for the first holder, release for the last.
+  (b) tap-hold is "hold on other key press", not permissive hold as the docs
+  say: rollover `B↓ E↓ B↑ E↑` with user_layout's `tap_hold(B, Enter, MD_00)`
+  yields the MD_00 layer's E (Num2) instead of Enter,E. Implement QMK
+  permissive hold (buffer the interrupting press; hold only if it is
+  released while the tap-hold key is still down; timeout still → hold).
+- [ ] **H6 — Linux capture drops what it cannot map**: EV_KEY codes without
+  a `KeyCode` (brightness, mic-mute, vendor keys) and non-key events on a
+  grabbed node (EV_REL of a keyboard with a pointer) are silently eaten.
+  Forward them raw to the output device.
+
 ## Handover (2026-09-28, end of Linux session)
 
 State: every phase above is `[x]`. `main` pushed to GitHub (PR #1 merged) and to
