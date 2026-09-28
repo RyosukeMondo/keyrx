@@ -62,6 +62,7 @@
 pub mod conditions;
 pub mod constants;
 pub mod keys;
+pub mod lint;
 pub mod mappings;
 pub mod types;
 

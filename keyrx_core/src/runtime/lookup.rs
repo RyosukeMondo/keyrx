@@ -7,6 +7,7 @@ extern crate alloc;
 use alloc::vec::Vec;
 use hashbrown::HashMap;
 
+use crate::config::lint::holds_whenever;
 use crate::config::{BaseKeyMapping, Condition, DeviceConfig, KeyCode, KeyMapping};
 use crate::runtime::state::DeviceState;
 
@@ -60,10 +61,22 @@ impl KeyLookup {
         {
             for base_mapping in mappings {
                 if let Some(key) = Self::extract_input_key(base_mapping) {
-                    table.entry(key).or_insert_with(Vec::new).push(LookupEntry {
-                        mapping: base_mapping.clone(),
-                        condition: Some(condition.clone()),
-                    });
+                    let entries = table.entry(key).or_insert_with(Vec::new);
+                    // A more specific layer beats a more general one declared
+                    // earlier: `when(["MD_00","MD_01"])` after `when("MD_00")`
+                    // would otherwise never fire (the general entry, tried
+                    // first, holds whenever the specific one does).
+                    let at = entries
+                        .iter()
+                        .position(|e| strictly_more_general(e.condition.as_ref(), condition))
+                        .unwrap_or(entries.len());
+                    entries.insert(
+                        at,
+                        LookupEntry {
+                            mapping: base_mapping.clone(),
+                            condition: Some(condition.clone()),
+                        },
+                    );
                 }
             }
         }
@@ -222,6 +235,16 @@ impl KeyLookup {
         }
     }
 
+    /// Conditions of every mapping, per input key, in the order they are
+    /// tried (`None` = unconditional). Used by the dead-mapping lint.
+    pub fn conditions_in_lookup_order(
+        &self,
+    ) -> impl Iterator<Item = (KeyCode, Vec<Option<&Condition>>)> + '_ {
+        self.table
+            .iter()
+            .map(|(key, entries)| (*key, entries.iter().map(|e| e.condition.as_ref()).collect()))
+    }
+
     /// Extracts the input key from a BaseKeyMapping variant
     ///
     /// # Arguments
@@ -244,6 +267,13 @@ impl KeyLookup {
     }
 }
 
+/// `general` holds whenever `specific` holds, but not the other way round.
+fn strictly_more_general(general: Option<&Condition>, specific: &Condition) -> bool {
+    general.is_some()
+        && holds_whenever(general, Some(specific))
+        && !holds_whenever(Some(specific), general)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -261,6 +291,42 @@ mod tests {
             },
             mappings,
         }
+    }
+
+    #[test]
+    fn more_specific_layer_wins_even_when_declared_later() {
+        use crate::config::ConditionItem;
+        let both = Condition::AllActive(vec![
+            ConditionItem::ModifierActive(0),
+            ConditionItem::ModifierActive(1),
+        ]);
+        let config = create_test_device_config(vec![
+            KeyMapping::conditional(
+                Condition::ModifierActive(0),
+                vec![BaseKeyMapping::Simple {
+                    from: KeyCode::W,
+                    to: KeyCode::Up,
+                }],
+            ),
+            KeyMapping::conditional(
+                both,
+                vec![BaseKeyMapping::Simple {
+                    from: KeyCode::W,
+                    to: KeyCode::End,
+                }],
+            ),
+        ]);
+        let lookup = KeyLookup::from_device_config(&config);
+        let target = |state: &DeviceState| match lookup.find_mapping(KeyCode::W, state) {
+            Some(BaseKeyMapping::Simple { to, .. }) => Some(*to),
+            _ => None,
+        };
+        let mut state = DeviceState::new();
+        assert_eq!(target(&state), None);
+        state.set_modifier(0);
+        assert_eq!(target(&state), Some(KeyCode::Up));
+        state.set_modifier(1);
+        assert_eq!(target(&state), Some(KeyCode::End));
     }
 
     #[test]

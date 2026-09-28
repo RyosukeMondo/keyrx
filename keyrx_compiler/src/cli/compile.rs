@@ -82,6 +82,11 @@ pub fn handle_compile(input: &Path, output: &Path) -> Result<(), CompileError> {
     // Parse the Rhai script
     let mut parser = Parser::new();
     let config = parser.parse_script(input)?;
+    for device in &config.devices {
+        for dead in keyrx_core::config::lint::dead_mappings(device) {
+            eprintln!("warning: {dead}");
+        }
+    }
 
     eprintln!("Serializing configuration...");
 
