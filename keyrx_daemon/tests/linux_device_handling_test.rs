@@ -286,28 +286,35 @@ device_end();
 // forwarded to the output device instead of being silently dropped.
 // ---------------------------------------------------------------------
 
-/// Polls the capture device's raw evdev stream (bypassing `KeyCode`
-/// decoding entirely - `OutputCapture::collect_events` only surfaces
-/// events `evdev_to_keycode` recognizes) for the first `(event_type,
-/// code)` match, returning its value.
-fn wait_for_raw_event(
-    capture: &mut OutputCapture,
-    event_type: u16,
-    code: u16,
-    timeout: Duration,
-) -> Option<i32> {
+/// Every event the capture receives within `timeout`, as
+/// `(type, code, value)`. Polls with a timeout (the fd blocks) and keeps a
+/// whole batch: one read may return several events at once, so a helper
+/// that returned on the first match and dropped the rest lost the others
+/// and then blocked forever.
+fn collect_raw_events(capture: &mut OutputCapture, timeout: Duration) -> Vec<(u16, u16, i32)> {
+    use nix::poll::{poll, PollFd, PollFlags, PollTimeout};
+    use std::os::fd::{AsRawFd, BorrowedFd};
+
     let deadline = Instant::now() + timeout;
-    while Instant::now() < deadline {
-        if let Ok(events) = capture.device_mut().fetch_events() {
-            for ev in events {
-                if ev.event_type().0 == event_type && ev.code() == code {
-                    return Some(ev.value());
-                }
-            }
+    let mut seen = Vec::new();
+    while let Some(left) = deadline.checked_duration_since(Instant::now()) {
+        let fd = capture.device_mut().as_raw_fd();
+        // SAFETY: the capture (and its fd) outlives this poll call.
+        let borrowed = unsafe { BorrowedFd::borrow_raw(fd) };
+        let mut fds = [PollFd::new(borrowed, PollFlags::POLLIN)];
+        let ms = u16::try_from(left.as_millis()).unwrap_or(u16::MAX);
+        if poll(&mut fds, PollTimeout::from(ms)).unwrap_or(0) == 0 {
+            break;
         }
-        std::thread::sleep(Duration::from_millis(10));
+        if let Ok(events) = capture.device_mut().fetch_events() {
+            seen.extend(
+                events
+                    .filter(|ev| ev.event_type() != evdev::EventType::SYNCHRONIZATION)
+                    .map(|ev| (ev.event_type().0, ev.code(), ev.value())),
+            );
+        }
     }
-    None
+    seen
 }
 
 #[test]
@@ -356,35 +363,15 @@ device_end();
     )
     .expect("inject REL_X");
 
+    let key = evdev::EventType::KEY.0;
+    let brightness = evdev::Key::KEY_BRIGHTNESSUP.code();
+    let rel = evdev::EventType::RELATIVE.0;
+    let rel_x = evdev::RelativeAxisType::REL_X.0;
+    let seen = collect_raw_events(&mut h.capture, Duration::from_millis(500));
     assert_eq!(
-        wait_for_raw_event(
-            &mut h.capture,
-            evdev::EventType::KEY.0,
-            evdev::Key::KEY_BRIGHTNESSUP.code(),
-            Duration::from_secs(2),
-        ),
-        Some(1),
-        "KEY_BRIGHTNESSUP press must reach the output device, not be dropped"
-    );
-    assert_eq!(
-        wait_for_raw_event(
-            &mut h.capture,
-            evdev::EventType::KEY.0,
-            evdev::Key::KEY_BRIGHTNESSUP.code(),
-            Duration::from_secs(2),
-        ),
-        Some(0),
-        "KEY_BRIGHTNESSUP release must reach the output device, not be dropped"
-    );
-    assert_eq!(
-        wait_for_raw_event(
-            &mut h.capture,
-            evdev::EventType::RELATIVE.0,
-            evdev::RelativeAxisType::REL_X.0,
-            Duration::from_secs(2),
-        ),
-        Some(5),
-        "REL_X must reach the output device, not be dropped"
+        seen,
+        vec![(key, brightness, 1), (key, brightness, 0), (rel, rel_x, 5)],
+        "unmappable key and REL_X must reach the output device in order"
     );
 
     // The daemon keeps remapping normal keys on the same device afterwards.
