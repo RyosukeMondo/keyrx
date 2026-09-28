@@ -42,7 +42,6 @@ pub fn handle_doctor(json: bool) -> Result<(), (i32, String)> {
 fn run_checks() -> Vec<Check> {
     vec![
         check_group_membership("input", "reading /dev/input/event*"),
-        check_group_membership("uinput", "creating the virtual output device"),
         check_uinput_device(),
         check_udev_rule(),
         check_keyboards(),
@@ -139,7 +138,10 @@ fn check_uinput_device() -> Check {
         Err(e) => check(
             "/dev/uinput",
             false,
-            format!("not accessible ({e}) - see the uinput group check above"),
+            format!(
+                "not accessible ({e}) - the udev rule must give your group (input or \
+                 uinput) rw access; check `ls -l /dev/uinput` and the groups above"
+            ),
         ),
     }
 }

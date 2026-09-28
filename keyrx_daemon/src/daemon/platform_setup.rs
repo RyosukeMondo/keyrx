@@ -68,13 +68,14 @@ pub fn log_startup_version_info() {
         log::info!("Binary:     {}", binary_ts);
     }
 
-    // Log admin rights status
-    let admin_status = check_startup_admin_status();
-    if admin_status {
-        log::info!("Admin:      Running with administrator privileges");
-    } else {
-        log::warn!("Admin:      NOT running with administrator privileges");
-        log::warn!("            Key remapping may not work for elevated applications");
+    // Elevation matters only on Windows (hooks cannot see elevated windows).
+    if cfg!(target_os = "windows") {
+        if check_startup_admin_status() {
+            log::info!("Admin:      Running with administrator privileges");
+        } else {
+            log::warn!("Admin:      NOT running with administrator privileges");
+            log::warn!("            Key remapping may not work for elevated applications");
+        }
     }
 
     // Log hook installation status
