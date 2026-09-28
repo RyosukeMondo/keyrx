@@ -167,9 +167,12 @@ fn test_metrics_events_help() {
 
 #[test]
 fn test_metrics_default_socket_not_running() {
+    // Default endpoint inside a fresh runtime dir: nothing listens there.
+    let runtime_dir = TempDir::new().unwrap();
     // Test with default socket path (daemon not running)
     // This should fail gracefully with appropriate error message
     metrics_cmd()
+        .env("XDG_RUNTIME_DIR", runtime_dir.path())
         .arg("metrics")
         .arg("latency")
         .assert()

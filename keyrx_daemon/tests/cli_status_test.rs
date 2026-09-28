@@ -50,12 +50,19 @@ fn test_status_daemon_not_running_json() {
 
 #[test]
 fn test_status_default_socket_not_running() {
+    // Default endpoint inside a fresh runtime dir: nothing listens there.
+    let runtime_dir = TempDir::new().unwrap();
     // Test with default socket path (daemon not running)
     // This should fail gracefully with appropriate error message
-    status_cmd().arg("status").assert().failure().stderr(
-        predicate::str::contains("Daemon not running")
-            .or(predicate::str::contains("error code 3005")),
-    );
+    status_cmd()
+        .env("XDG_RUNTIME_DIR", runtime_dir.path())
+        .arg("status")
+        .assert()
+        .failure()
+        .stderr(
+            predicate::str::contains("Daemon not running")
+                .or(predicate::str::contains("error code 3005")),
+        );
 }
 
 #[test]

@@ -24,7 +24,7 @@ pub struct MetricsArgs {
     pub json: bool,
 
     /// Custom IPC endpoint: socket path, or pipe name on Windows (defaults to
-    /// /tmp/keyrx-daemon.sock, or the keyrx-daemon named pipe on Windows).
+    /// $XDG_RUNTIME_DIR/keyrx-daemon.sock, or the keyrx-daemon named pipe on Windows).
     #[arg(long, global = true)]
     pub socket: Option<String>,
 }

@@ -25,7 +25,7 @@ make verify     # Full quality checks (clippy, fmt, tests, coverage)
 - The daemon's read side is ONE `DaemonQueryService` shared by IPC, REST, MCP and WS — add new status/metrics there, never per transport
 - Which config is live is decided ONLY in `daemon/live_config.rs`: `run` follows the active profile, `run --config FILE` pins FILE at startup, a runtime activation (`DaemonSharedState::request_activation`, via `ProfileService`/IPC) switches profile; status is published only after the swap
 - In-process e2e against the real event loop: `LinuxPlatform::scoped(<test kbd name>, <unique output name>)` — see `tests/live_profile_switch_test.rs`
-- IPC endpoint = `ipc::IpcEndpoint` (Unix socket file / Windows named pipe `\\.\pipe\keyrx-daemon`); client is `ipc::IpcClient`; both runners use `platform_runners::start_production_ipc_server`. Test mode listens on `keyrx-test-<pid>`
+- IPC endpoint = `ipc::IpcEndpoint` (per-user Unix socket `$XDG_RUNTIME_DIR/keyrx-daemon.sock`, fallback `/tmp/keyrx-daemon-<uid>.sock` / Windows named pipe `\\.\pipe\keyrx-daemon`); tests that need "no daemon at the default endpoint" set `XDG_RUNTIME_DIR` to a temp dir; client is `ipc::IpcClient`; both runners use `platform_runners::start_production_ipc_server`. Test mode listens on `keyrx-test-<pid>`
 - Device patterns (`device_start`, `when_device`) have ONE rule: `keyrx_core::runtime::device_pattern` (glob, case-insensitive, matched against id/name/serial/path). Each device is routed to its first matching block (`daemon::remapping_state`)
 - `scripts/verify/file-sizes.sh` is the real 500-line gate (run by `make verify`); `scripts/verify/file-size-baseline.list` may only shrink
 - Monitoring wire types (latency, key events, state) are the typeshare structs in `keyrx_daemon/src/web/events.rs` for EVERY transport; if a REST response changes, regenerate `UPDATE_CONTRACT_FIXTURES=1 cargo test -p keyrx_daemon --test api_contract_test` and `npm run typeshare`, then fix the UI until `npm run type-check` passes
@@ -137,7 +137,7 @@ Both crates have a Rhai DSL parser (keyrx_core uses `spin::Mutex`/no_std, keyrx_
 3. Add discriminant entry in `test_base_key_mapping_discriminant_stability`
 
 ### Build Order — Staleness Enforcement
-`build.rs` **fails** (not warns) if WASM or UI dist is stale. Use `make build` for full pipeline.
+`build.rs` **fails** a release build if WASM or UI dist is stale (dev/check/test builds only warn). Use `make build` for full pipeline.
 Bypass for Rust-only dev: `KEYRX_SKIP_FRONTEND_CHECK=1 cargo build`
 
 ### Version SSOT

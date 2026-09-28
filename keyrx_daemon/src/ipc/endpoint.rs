@@ -1,8 +1,10 @@
 //! Where the daemon's IPC server listens and the CLI connects.
 //!
 //! [`IpcEndpoint`] owns the one platform difference of the transport:
-//! - Unix: a socket file. Stale files are removed before binding, the file is
-//!   restricted to its owner (0600) and removed on shutdown.
+//! - Unix: a per-user socket file (`$XDG_RUNTIME_DIR/keyrx-daemon.sock`, or
+//!   `/tmp/keyrx-daemon-<uid>.sock` without a runtime dir). Stale files are
+//!   removed before binding - a file a live daemon still answers on is not -
+//!   the file is restricted to its owner (0600) and removed on shutdown.
 //! - Windows: a named pipe (`\\.\pipe\<name>`). There is no file, so none of
 //!   the file steps apply. The pipe keeps the default named-pipe DACL, which
 //!   gives other users read-only access: they cannot send requests. Do not
@@ -12,8 +14,8 @@ use super::IpcError;
 use std::fmt;
 use std::path::PathBuf;
 
-/// Production socket file on Unix.
-const UNIX_DEFAULT_SOCKET: &str = "/tmp/keyrx-daemon.sock";
+/// Production socket file name on Unix (inside the user's runtime dir).
+const UNIX_SOCKET_NAME: &str = "keyrx-daemon.sock";
 /// Production pipe name on Windows (`\\.\pipe\keyrx-daemon`).
 const WINDOWS_DEFAULT_PIPE: &str = "keyrx-daemon";
 /// Prefix Windows puts in front of every local pipe name.
@@ -34,7 +36,8 @@ impl IpcEndpoint {
         if cfg!(windows) {
             Self::NamedPipe(WINDOWS_DEFAULT_PIPE.to_string())
         } else {
-            Self::SocketFile(PathBuf::from(UNIX_DEFAULT_SOCKET))
+            let runtime_dir = std::env::var_os("XDG_RUNTIME_DIR");
+            Self::SocketFile(unix_default_socket(runtime_dir.as_deref(), current_uid()))
         }
     }
 
@@ -73,13 +76,28 @@ impl IpcEndpoint {
         }
     }
 
-    /// Clears a stale socket file before binding. No-op for pipes: a pipe
-    /// someone still owns makes the bind fail instead.
+    /// Clears a stale socket file before binding, but refuses to take over
+    /// one a running daemon still answers on (a second daemon would orphan
+    /// it). No-op for pipes: a pipe someone still owns makes the bind fail.
     pub(crate) fn prepare_bind(&self) -> std::io::Result<()> {
-        match self {
-            Self::SocketFile(path) if path.exists() => std::fs::remove_file(path),
-            _ => Ok(()),
+        let Self::SocketFile(path) = self else {
+            return Ok(());
+        };
+        if !path.exists() {
+            return Ok(());
         }
+        #[cfg(unix)]
+        if std::os::unix::net::UnixStream::connect(path).is_ok() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::AddrInUse,
+                format!(
+                    "another keyrx daemon is already listening on {}; stop it first \
+                     (keyrx_daemon status shows it)",
+                    path.display()
+                ),
+            ));
+        }
+        std::fs::remove_file(path)
     }
 
     /// Restricts a freshly bound socket file to its owner. No-op for pipes
@@ -130,6 +148,26 @@ impl IpcEndpoint {
     }
 }
 
+/// The per-user production socket: inside `runtime_dir` (systemd's
+/// `$XDG_RUNTIME_DIR`, already private to the user) when there is one, else
+/// a uid-qualified file in /tmp so two users never share a socket.
+fn unix_default_socket(runtime_dir: Option<&std::ffi::OsStr>, uid: u32) -> PathBuf {
+    match runtime_dir.filter(|dir| !dir.is_empty()) {
+        Some(dir) => PathBuf::from(dir).join(UNIX_SOCKET_NAME),
+        None => PathBuf::from(format!("/tmp/keyrx-daemon-{uid}.sock")),
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn current_uid() -> u32 {
+    nix::unistd::getuid().as_raw()
+}
+
+#[cfg(not(target_os = "linux"))]
+fn current_uid() -> u32 {
+    0
+}
+
 impl fmt::Display for IpcEndpoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -151,9 +189,50 @@ mod tests {
             assert_eq!(endpoint.to_string(), r"\\.\pipe\keyrx-daemon");
             assert_eq!(endpoint.local_socket_name(), "@keyrx-daemon");
         } else {
-            assert_eq!(endpoint.to_string(), "/tmp/keyrx-daemon.sock");
-            assert_eq!(endpoint.local_socket_name(), "/tmp/keyrx-daemon.sock");
+            assert!(endpoint.to_string().ends_with(".sock"), "{endpoint}");
+            assert_eq!(endpoint.local_socket_name(), endpoint.to_string());
         }
+    }
+
+    #[test]
+    fn unix_socket_is_per_user() {
+        use std::ffi::OsStr;
+        assert_eq!(
+            unix_default_socket(Some(OsStr::new("/run/user/1000")), 1000),
+            PathBuf::from("/run/user/1000/keyrx-daemon.sock")
+        );
+        assert_eq!(
+            unix_default_socket(None, 1001),
+            PathBuf::from("/tmp/keyrx-daemon-1001.sock")
+        );
+        assert_eq!(
+            unix_default_socket(Some(OsStr::new("")), 7),
+            PathBuf::from("/tmp/keyrx-daemon-7.sock")
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn bind_refuses_a_socket_a_daemon_still_answers_on() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("live.sock");
+        let _listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
+        let endpoint = IpcEndpoint::SocketFile(path.clone());
+        let err = endpoint.prepare_bind().unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::AddrInUse);
+        assert!(path.exists(), "a live daemon's socket must not be removed");
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn bind_clears_a_stale_socket() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("stale.sock");
+        drop(std::os::unix::net::UnixListener::bind(&path).unwrap());
+        IpcEndpoint::SocketFile(path.clone())
+            .prepare_bind()
+            .unwrap();
+        assert!(!path.exists());
     }
 
     #[test]

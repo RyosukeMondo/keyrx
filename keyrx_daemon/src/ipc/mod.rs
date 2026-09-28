@@ -1,7 +1,7 @@
 //! Inter-Process Communication (IPC) infrastructure for CLI-daemon communication.
 //!
 //! The daemon serves newline-delimited JSON requests for status, state and
-//! metrics on an [`IpcEndpoint`]: a Unix socket file (`/tmp/keyrx-daemon.sock`)
+//! metrics on an [`IpcEndpoint`]: a per-user Unix socket file (`$XDG_RUNTIME_DIR/keyrx-daemon.sock`)
 //! or a Windows named pipe (`\\.\pipe\keyrx-daemon`). [`client::IpcClient`]
 //! is the CLI side, [`server::spawn`] the daemon side.
 

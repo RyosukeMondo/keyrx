@@ -30,6 +30,9 @@ fn test_cmd(temp_dir: &TempDir) -> Command {
     let config_dir = temp_dir.path().join("keyrx");
     std::fs::create_dir_all(&config_dir).unwrap_or(());
     cmd.env("KEYRX_CONFIG_DIR", config_dir);
+    // Private runtime dir: the default IPC socket lives there, so a daemon
+    // the user is running never answers these tests.
+    cmd.env("XDG_RUNTIME_DIR", temp_dir.path());
     cmd
 }
 
