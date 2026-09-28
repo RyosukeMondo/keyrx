@@ -86,6 +86,7 @@ impl AppState {
     ) -> Self {
         if let Some(ds) = &daemon_state {
             profile_service.attach_daemon_state(Arc::clone(ds));
+            device_service.attach_daemon_state(Arc::clone(ds));
         }
         let daemon_query = Arc::new(match &daemon_state {
             Some(ds) => DaemonQueryService::new(Arc::clone(ds), Arc::new(DaemonTelemetry::new())),
@@ -172,6 +173,9 @@ impl AppState {
         if let Some(ds) = &daemon_state {
             container
                 .profile_service()
+                .attach_daemon_state(Arc::clone(ds));
+            container
+                .device_service()
                 .attach_daemon_state(Arc::clone(ds));
         }
         Self {

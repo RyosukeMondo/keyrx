@@ -383,6 +383,7 @@ impl Daemon {
             &mut self.remapping_state,
             Some(&self.latency_recorder),
             Some(&self.telemetry),
+            Some(shared_state.as_ref()),
         )
     }
 
@@ -411,6 +412,19 @@ pub(crate) fn release_held_outputs(platform: &mut Box<dyn Platform>) {
         Ok(n) => info!("Released {n} held output key(s) before the config swap"),
         Err(e) => warn!("Failed to release held output keys: {e}"),
     }
+}
+
+/// Publishes `platform`'s currently captured devices (grabbed on Linux; the
+/// full `list_devices()` set on platforms that don't grab per device) to
+/// `shared_state`: the ONE source `DeviceService::list_devices` reads for
+/// device count and per-device "active" status (H8). Called after startup,
+/// every reload/profile activation ([`apply_loaded`]) and, on Linux, every
+/// hotplug rescan (see [`event_loop::run_event_loop`]) - so a device never
+/// shows as active a moment longer than the daemon actually has it.
+pub(crate) fn publish_device_state(shared_state: &DaemonSharedState, platform: &dyn Platform) {
+    let devices = platform.list_devices().unwrap_or_default();
+    shared_state.set_device_count(devices.len());
+    shared_state.set_active_devices(devices.into_iter().map(|d| d.id));
 }
 
 /// Resolves and loads what a reload should switch to (a pending activation,
@@ -442,7 +456,7 @@ fn apply_loaded(
     if let Err(e) = platform.reconfigure_devices(devices.unwrap_or(&[])) {
         warn!("Failed to reconfigure device capture: {e}");
     }
-    shared_state.set_device_count(platform.list_devices().map(|d| d.len()).unwrap_or(0));
+    publish_device_state(shared_state, platform.as_ref());
     let remapping_state = devices.map(RemappingState::from_blocks);
     shared_state.set_active_config(
         loaded.as_ref().and_then(|l| l.profile.clone()),
