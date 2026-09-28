@@ -400,14 +400,38 @@ Windows code from Linux, but Windows is NOT run. Linux is the verified platform.
 Goal: the user starts using keyrx on Linux. Walk every feature as a user,
 make each one analyzable/debuggable, speed up iteration, fix real bugs.
 
-- [NEXT] **H1 — One real simulation engine.** `SimulationEngine` (CLI
-  `simulate`/`test`, REST `/api/simulator`, MCP) never used the config: it
-  hardcoded CapsLock tap=Escape/hold=Control and passed every other key
-  through; scenarios "passed" on any output. WASM `simulate` only parsed A-Z,
-  used the first block only, ran no tap-hold timeouts. Fix: device routing +
-  timeouts move into keyrx_core (one engine) used by the daemon event loop,
-  every simulator and WASM.
-- [ ] **H2 — UI walkthrough on a live Linux daemon** (Config, Devices,
+- [x] **H1 — One real simulation engine.** → DONE (worktree
+  agent-a6d9fa63682606c32, 9 commits c3a9748a..e9cd6c82). Routing/remapping
+  moved into `keyrx_core::runtime::remapper::Remapper` (`process()` +
+  `tick()`); one deterministic virtual-time driver
+  `keyrx_core::simulate::run()` on top. The daemon event loop, CLI
+  `simulate`/`test`, REST `/api/simulator`, WS-RPC `simulate` (was a
+  placeholder that echoed input as "output"), and the WASM browser
+  simulator all drive this same engine now - `SimulationEngine::new` also
+  genuinely validates the loaded `.krx` instead of ignoring its bytes.
+  Built-in scenarios no longer claim a config-specific PASS/FAIL (there is
+  none to know without the profile); they check the one invariant that
+  holds for any config, `simulate::stuck_keys` (nothing left held at the
+  run's end). Found and fixed along the way: (1) custom modifier/lock
+  state was accidentally per-device instead of the DSL-manual-documented
+  shared-across-devices model (since 9b0377e3) - now one
+  `SharedModifierState` behind `Arc<spin::Mutex<_>>` per `Remapper`,
+  tap-hold/press-tracking staying per-device; (2) `simulate`/`test`
+  without `--profile` silently guessed a hardcoded "default" instead of
+  the daemon's actual active profile; (3) `record` wrote a format
+  `simulate --events-file` couldn't read at all. Real CLI repro verified
+  before/after (04-dual-function-keys.rhai, CapsLock-hold+C): before
+  `C↓ C↑ Control↓ Control↑`, after `LCtrl↓ C↓ C↑ LCtrl↑`. Gates: `cargo
+  clippy --workspace -- -D warnings` / `cargo test --workspace --lib`
+  clean for every touched file (695 passed; the only 10 failures are the
+  pre-existing uinput-needs-`input`-group set plus one dist-stub-only
+  static_files test, both documented, neither touched by this work);
+  `npm run build:wasm` + the useWasm/useSimulation vitest suites +
+  `type-check` green with zero UI changes needed. Deferred (separate,
+  pre-existing, not touched here): `keyrx_core/src/runtime/lookup.rs` is
+  1 line over the file-size gate (main commit 38302865, not in the
+  baseline list).
+- [NEXT] **H2 — UI walkthrough on a live Linux daemon** (Config, Devices,
   Monitor, Simulator tab); ConfigPage test failures from the handover.
 - [ ] **H3 — Linux ops & debuggability**: grab only devices a block matches
   (G8 limitation), permission diagnostics, install/unit flow, help text.
