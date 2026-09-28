@@ -22,6 +22,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   ariaLabel: string;
+  description: string;
 }
 
 const navItems: NavItem[] = [
@@ -30,18 +31,21 @@ const navItems: NavItem[] = [
     icon: Settings,
     label: 'Config',
     ariaLabel: 'Navigate to Configuration page',
+    description: 'Map and test keys',
   },
   {
     to: '/devices',
     icon: Smartphone,
     label: 'Devices',
     ariaLabel: 'Navigate to Devices page',
+    description: 'Manage keyboards',
   },
   {
     to: '/monitor',
     icon: BarChart3,
     label: 'Monitor',
     ariaLabel: 'Navigate to Monitor page',
+    description: 'Inspect live events',
   },
 ];
 
@@ -90,9 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             const Icon = item.icon;
             // For Config route, use custom active state check
             const customIsActive =
-              item.to === '/'
-                ? isRouteActive(item.to)
-                : undefined;
+              item.to === '/' ? isRouteActive(item.to) : undefined;
 
             return (
               <li key={item.to}>
@@ -133,7 +135,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         />
                         {!isCollapsed && (
                           <>
-                            <span>{item.label}</span>
+                            <span className="min-w-0">
+                              <span className="block">{item.label}</span>
+                              <span
+                                className={`block text-[11px] font-normal ${actuallyActive ? 'text-primary-100' : 'text-slate-500'}`}
+                              >
+                                {item.description}
+                              </span>
+                            </span>
                             {actuallyActive && (
                               <span
                                 className="ml-auto w-1 h-6 bg-white rounded-full"
@@ -153,11 +162,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Footer with version and collapse button */}
-      <div className="px-3 py-3 border-t border-slate-700">
+      <div className="px-3 py-3 border-t border-slate-700/80">
         <div className="flex items-center justify-between gap-2">
           {/* Version text - always show, even when collapsed */}
           {!isCollapsed && (
-            <p className="text-xs text-slate-500 flex-1">KeyRx v{VERSION}</p>
+            <p className="text-[11px] text-slate-500 flex-1">
+              KeyRx v{VERSION} · local
+            </p>
           )}
 
           {/* Toggle button */}

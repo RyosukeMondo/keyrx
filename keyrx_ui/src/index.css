@@ -11,8 +11,33 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0f172a;
+  background-color: #0b1120;
+  background-image:
+    radial-gradient(
+      circle at 70% -20%,
+      rgba(59, 130, 246, 0.1),
+      transparent 38rem
+    ),
+    linear-gradient(rgba(148, 163, 184, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.025) 1px, transparent 1px);
+  background-size:
+    auto,
+    32px 32px,
+    32px 32px;
   color: #f1f5f9;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.35);
+  color: #f8fafc;
 }
 
 /* Custom scrollbar styling to match dark theme */

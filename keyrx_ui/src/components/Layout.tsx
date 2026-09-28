@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { BottomNav } from './BottomNav';
 import { GlobalDebugPanel } from './GlobalDebugPanel';
 import { Sidebar } from './Sidebar';
-import { VERSION, BUILD_TIME } from '../version';
+import { Keyboard } from 'lucide-react';
+import { SkipToContent } from './SkipToContent';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -43,6 +44,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
+      <SkipToContent />
       {/* Mobile header with hamburger menu (< 768px) */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-800 border-b border-slate-700 z-40 flex items-center px-4">
         <button
@@ -74,8 +76,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             )}
           </svg>
         </button>
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-lg font-semibold">KeyRx2</span>
+        <div className="flex flex-1 items-center justify-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500/15 text-primary-300 ring-1 ring-primary-400/20">
+            <Keyboard className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span className="text-lg font-semibold tracking-tight">KeyRx2</span>
         </div>
       </header>
 
@@ -86,21 +91,31 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         }`}
       >
         {/* Brand header */}
-        <div className="h-16 flex flex-col justify-center px-6 bg-slate-800 border-b border-slate-700 overflow-hidden">
+        <div className="h-20 flex flex-col justify-center px-4 bg-slate-800 border-b border-slate-700 overflow-hidden">
           {!isSidebarCollapsed && (
-            <>
-              <span className="text-xl font-bold text-primary-500">KeyRx2</span>
-              <span
-                className="text-xs text-slate-500 whitespace-nowrap"
-                title={`Built: ${BUILD_TIME}`}
-              >
-                v{VERSION} • {new Date(BUILD_TIME).toLocaleString()}
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-500/15 text-primary-300 ring-1 ring-primary-400/20">
+                <Keyboard className="h-5 w-5" aria-hidden="true" />
               </span>
-            </>
+              <div className="min-w-0">
+                <span className="block text-lg font-bold leading-tight tracking-tight text-slate-50">
+                  KeyRx2
+                </span>
+                <span className="block text-[11px] text-slate-400">
+                  Keyboard studio
+                </span>
+              </div>
+            </div>
+          )}
+          {isSidebarCollapsed && (
+            <Keyboard
+              className="mx-auto h-5 w-5 text-primary-300"
+              aria-label="KeyRx2"
+            />
           )}
         </div>
         <Sidebar
-          className="h-[calc(100vh-4rem)]"
+          className="h-[calc(100vh-5rem)]"
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={toggleSidebarCollapse}
         />
@@ -128,12 +143,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content Area */}
       <main
+        id="main-content"
+        tabIndex={-1}
         className={`
           min-h-screen
           pt-16 md:pt-0
           pb-16 md:pb-0
           transition-all duration-300
           ${isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}
+          focus:outline-none
         `}
       >
         {children}

@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  Check,
+  Code2,
+  FlaskConical,
+  Save,
+  SlidersHorizontal,
+} from 'lucide-react';
+import {
   useGetProfileConfig,
   useSetProfileConfig,
 } from '@/hooks/useProfileConfig';
@@ -16,7 +23,10 @@ import { useCodePanel } from '@/hooks/useCodePanel';
 import { useKeyboardLayout } from '@/hooks/useKeyboardLayout';
 import { useConfigSync } from '@/hooks/useConfigSync';
 import { useASTSync } from '@/hooks/useASTSync';
-import { useKeyboardShortcuts, CommonShortcuts } from '@/hooks/useKeyboardShortcuts';
+import {
+  useKeyboardShortcuts,
+  CommonShortcuts,
+} from '@/hooks/useKeyboardShortcuts';
 
 // Components
 import { CodePanelContainer } from '@/components/config/CodePanelContainer';
@@ -214,9 +224,10 @@ const ConfigPage: React.FC = () => {
     }
   };
 
-  useKeyboardShortcuts([
-    CommonShortcuts.save(handleSaveConfig),
-  ], activeTab === 'edit' && api.isConnected && profileExists);
+  useKeyboardShortcuts(
+    [CommonShortcuts.save(handleSaveConfig)],
+    activeTab === 'edit' && api.isConnected && profileExists
+  );
 
   return (
     <div className="flex h-full min-h-[calc(100vh-4rem)]">
@@ -227,8 +238,18 @@ const ConfigPage: React.FC = () => {
         aria-label="Toggle profile sidebar"
         aria-expanded={mobileSidebarOpen}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.118a7.5 7.5 0 0 1 14.998 0" />
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.118a7.5 7.5 0 0 1 14.998 0"
+          />
         </svg>
       </button>
 
@@ -262,75 +283,123 @@ const ConfigPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header: Tab switcher + actions */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 border-b border-slate-700 flex-shrink-0">
-          {/* Tabs */}
-          <div className="flex rounded-lg bg-slate-800 p-1" role="tablist">
-            <button
-              role="tab"
-              aria-selected={activeTab === 'edit'}
-              onClick={() => setActiveTab('edit')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'edit'
-                  ? 'bg-primary-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Edit
-            </button>
-            <button
-              role="tab"
-              aria-selected={activeTab === 'test'}
-              onClick={() => setActiveTab('test')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'test'
-                  ? 'bg-primary-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Test
-            </button>
+        {/* Workspace header: context, workflow, and primary action */}
+        <div className="flex flex-col gap-4 border-b border-slate-700/80 bg-slate-900/80 p-4 backdrop-blur md:px-6 md:py-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0">
+              <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-primary-300">
+                <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+                Keymap workspace
+              </div>
+              <div className="flex min-w-0 items-center gap-3">
+                <h1 className="truncate text-xl font-semibold text-slate-50 md:text-2xl">
+                  {selectedProfileName}
+                </h1>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${api.isConnected ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-400/20' : 'bg-rose-400/10 text-rose-300 ring-rose-400/20'}`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${api.isConnected ? 'bg-emerald-400' : 'bg-rose-400'}`}
+                  />
+                  {api.isConnected ? 'Daemon connected' : 'Daemon offline'}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-slate-400">
+                Choose where it applies, map the keys, then test before saving.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+              <div
+                className="flex rounded-lg bg-slate-800 p-1 ring-1 ring-slate-700"
+                role="tablist"
+                aria-label="Configuration workflow"
+              >
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'edit'}
+                  onClick={() => setActiveTab('edit')}
+                  className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'edit'
+                      ? 'bg-slate-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                  1. Map
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'test'}
+                  onClick={() => setActiveTab('test')}
+                  className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'test'
+                      ? 'bg-slate-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <FlaskConical className="h-4 w-4" aria-hidden="true" />
+                  2. Test
+                </button>
+              </div>
+
+              {/* Actions (Edit tab only shows code toggle + save) */}
+              {activeTab === 'edit' && (
+                <button
+                  onClick={toggleCodePanel}
+                  aria-label={isCodePanelOpen ? 'Hide Code' : 'Show Code'}
+                  className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-700"
+                  title={isCodePanelOpen ? 'Hide Code' : 'Show Code'}
+                >
+                  <Code2 className="h-4 w-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">
+                    {isCodePanelOpen ? 'Hide code' : 'Code'}
+                  </span>
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  const currentCode = syncEngine.getCode();
+                  const originalCode = profileConfig?.source || '';
+                  if (currentCode === originalCode) {
+                    handleSaveConfig();
+                  } else {
+                    setShowDiffModal(true);
+                  }
+                }}
+                disabled={
+                  !api.isConnected || !profileExists || syncStatus === 'saving'
+                }
+                className="flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-900/20 transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {syncStatus === 'saved' ? (
+                  <Check className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Save className="h-4 w-4" aria-hidden="true" />
+                )}
+                {configMissing
+                  ? 'Create'
+                  : syncStatus === 'saving'
+                    ? 'Saving…'
+                    : 'Save'}
+              </button>
+            </div>
           </div>
 
-          {/* Actions (Edit tab only shows code toggle + save) */}
-          <div className="flex items-center gap-3">
+          <div className="flex min-h-5 items-center justify-between gap-3 border-t border-slate-800 pt-3">
             <SyncStatusIndicator
               syncStatus={syncStatus}
               lastSaveTime={lastSaveTime}
               isConnected={api.isConnected}
             />
-
-            {activeTab === 'edit' && (
-              <>
-                <button
-                  onClick={toggleCodePanel}
-                  className="px-4 py-2 bg-slate-700 text-slate-200 text-sm font-medium rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap border border-slate-600"
-                  title={isCodePanelOpen ? 'Hide Code' : 'Show Code'}
-                >
-                  {isCodePanelOpen ? '▲ Hide Code' : '▼ Show Code'}
-                </button>
-
-                <button
-                  onClick={() => {
-                    const currentCode = syncEngine.getCode();
-                    const originalCode = profileConfig?.source || '';
-                    if (currentCode === originalCode) {
-                      handleSaveConfig();
-                    } else {
-                      setShowDiffModal(true);
-                    }
-                  }}
-                  disabled={
-                    !api.isConnected ||
-                    !profileExists ||
-                    syncStatus === 'saving'
-                  }
-                  className="px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-md hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-                >
-                  {configMissing ? 'Create' : 'Save'}
-                </button>
-              </>
-            )}
+            <span className="hidden text-xs text-slate-500 sm:inline">
+              Tip: press{' '}
+              <kbd className="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-slate-300">
+                Ctrl S
+              </kbd>{' '}
+              to save
+            </span>
           </div>
         </div>
 
@@ -360,17 +429,28 @@ const ConfigPage: React.FC = () => {
                 configStore={configStore}
                 keyboardLayout={keyboardLayout}
                 layoutKeys={layoutKeys}
+                onOpenAdvanced={() => {
+                  if (!isCodePanelOpen) toggleCodePanel();
+                  window.requestAnimationFrame(() => {
+                    document.getElementById('code-panel')?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    });
+                  });
+                }}
               />
 
               {/* Code Panel (Edit tab only) */}
-              <CodePanelContainer
-                profileName={selectedProfileName}
-                rhaiCode={syncEngine.getCode()}
-                onChange={(value) => syncEngine.onCodeChange(value)}
-                syncEngine={syncEngine}
-                isOpen={isCodePanelOpen}
-                onToggle={toggleCodePanel}
-              />
+              <div id="code-panel" className="scroll-mt-4">
+                <CodePanelContainer
+                  profileName={selectedProfileName}
+                  rhaiCode={syncEngine.getCode()}
+                  onChange={(value) => syncEngine.onCodeChange(value)}
+                  syncEngine={syncEngine}
+                  isOpen={isCodePanelOpen}
+                  onToggle={toggleCodePanel}
+                />
+              </div>
             </div>
           </div>
 

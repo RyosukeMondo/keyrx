@@ -9,12 +9,16 @@ import type { SyncStatus } from '@/hooks/useConfigSync';
 import type { SVGKeyData } from '@/utils/kle-parser';
 import { useDeviceMerging } from '@/hooks/useDeviceMerging';
 import { useASTRebuild } from '@/hooks/useASTRebuild';
-import { useKeyboardShortcuts, CommonShortcuts } from '@/hooks/useKeyboardShortcuts';
+import {
+  useKeyboardShortcuts,
+  CommonShortcuts,
+} from '@/hooks/useKeyboardShortcuts';
 import { ConfigurationLayout } from '@/components/config/ConfigurationLayout';
 import { DeviceSelectionPanel } from '@/components/config/DeviceSelectionPanel';
 import { ConfigScopeTabs } from '@/components/config/ConfigScopeTabs';
 import { GlobalKeyboardPanel } from '@/components/config/GlobalKeyboardPanel';
 import { DeviceKeyboardPanel } from '@/components/config/DeviceKeyboardPanel';
+import { UseCaseGuide } from '@/components/config/UseCaseGuide';
 
 const AVAILABLE_LAYERS = [
   'base',
@@ -41,15 +45,12 @@ interface EditTabProps {
     setActiveLayer: (layerId: string) => void;
     setGlobalSelected: (selected: boolean) => void;
     setSelectedDevices: (deviceIds: string[]) => void;
-    setKeyMapping: (
-      key: string,
-      mapping: KeyMapping,
-      layerId?: string
-    ) => void;
+    setKeyMapping: (key: string, mapping: KeyMapping, layerId?: string) => void;
     deleteKeyMapping: (key: string, layerId?: string) => void;
   };
   keyboardLayout: LayoutType;
   layoutKeys: SVGKeyData[];
+  onOpenAdvanced: () => void;
 }
 
 /**
@@ -69,6 +70,7 @@ export const EditTab: React.FC<EditTabProps> = ({
   configStore,
   keyboardLayout,
   layoutKeys,
+  onOpenAdvanced,
 }) => {
   // Local state owned by EditTab
   const [selectedPhysicalKey, setSelectedPhysicalKey] = useState<string | null>(
@@ -116,18 +118,52 @@ export const EditTab: React.FC<EditTabProps> = ({
     rebuildAndSyncAST();
   };
 
+  const focusEditor = () => {
+    window.requestAnimationFrame(() => {
+      document.getElementById('keyboard-editor')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  };
+
+  const startSimpleRemap = () => {
+    configStore.setGlobalSelected(true);
+    configStore.setSelectedDevices([]);
+    setActivePane('global');
+    focusEditor();
+  };
+
+  const startCommandPad = () => {
+    const firstDevice = devices.find(
+      (device) => device.name !== '*' && device.serial !== '*'
+    );
+    if (!firstDevice) return;
+    configStore.setGlobalSelected(false);
+    configStore.setSelectedDevices([firstDevice.id]);
+    setActivePane('device');
+    focusEditor();
+  };
+
   return (
     <div className="flex flex-col gap-4 md:gap-6">
       {/* Visual Editor Content */}
       <ConfigurationLayout profileName={selectedProfileName}>
+        <UseCaseGuide
+          hasDevice={devices.some(
+            (device) => device.name !== '*' && device.serial !== '*'
+          )}
+          onStartSimple={startSimpleRemap}
+          onStartCommandPad={startCommandPad}
+          onStartAdvanced={onOpenAdvanced}
+        />
+
         {/* Device Selection Panel */}
         <DeviceSelectionPanel
           devices={devices}
           globalSelected={globalSelected}
           selectedDevices={selectedDevices}
-          onToggleGlobal={(selected) =>
-            configStore.setGlobalSelected(selected)
-          }
+          onToggleGlobal={(selected) => configStore.setGlobalSelected(selected)}
           onToggleDevice={(deviceId, selected) => {
             if (selected) {
               configStore.setSelectedDevices([...selectedDevices, deviceId]);
@@ -148,7 +184,7 @@ export const EditTab: React.FC<EditTabProps> = ({
         )}
 
         {/* Single-Pane Layout: tabs control visibility */}
-        <div className="flex flex-col gap-4">
+        <div id="keyboard-editor" className="flex scroll-mt-4 flex-col gap-4">
           {/* Global Keyboard Panel */}
           <GlobalKeyboardPanel
             profileName={selectedProfileName}
@@ -161,9 +197,7 @@ export const EditTab: React.FC<EditTabProps> = ({
             onKeyClick={handlePhysicalKeyClick}
             selectedKeyCode={selectedPhysicalKey}
             initialLayout={keyboardLayout}
-            isVisible={
-              selectedDevices.length === 0 || activePane === 'global'
-            }
+            isVisible={selectedDevices.length === 0 || activePane === 'global'}
           />
 
           {/* Device-Specific Keyboard Panel */}
@@ -178,10 +212,7 @@ export const EditTab: React.FC<EditTabProps> = ({
               const updatedDevices = selectedDevices.filter(
                 (id) => id !== oldDeviceId
               );
-              configStore.setSelectedDevices([
-                ...updatedDevices,
-                newDeviceId,
-              ]);
+              configStore.setSelectedDevices([...updatedDevices, newDeviceId]);
             }}
             keyMappings={keyMappings}
             onKeyClick={handlePhysicalKeyClick}
@@ -201,8 +232,8 @@ export const EditTab: React.FC<EditTabProps> = ({
                   No devices selected
                 </p>
                 <p className="text-yellow-300 text-sm">
-                  Select at least one device or enable &quot;Global
-                  Keys&quot; to configure key mappings
+                  Select at least one device or enable &quot;Global Keys&quot;
+                  to configure key mappings
                 </p>
               </div>
             </Card>
