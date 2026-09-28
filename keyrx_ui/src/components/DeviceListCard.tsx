@@ -121,6 +121,7 @@ export const DeviceListCard: React.FC<DeviceListCardProps> = ({
                         </span>
                         {device.active && (
                           <span
+                            role="status"
                             className="text-xs text-green-500"
                             aria-label="Active device"
                           >

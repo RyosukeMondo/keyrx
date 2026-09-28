@@ -32,17 +32,31 @@ describe('WASM FFI Type Verification', () => {
 
   beforeAll(async () => {
     try {
-      wasmModule = await import('@/wasm/pkg/keyrx_core');
+      const importedModule = await import('@/wasm/pkg/keyrx_core');
 
       // Load WASM binary directly from filesystem instead of fetching via HTTP
-      // This avoids MSW interception issues in the test environment
-      const wasmPath = join(__dirname, '../pkg/keyrx_core_bg.wasm');
+      // This avoids MSW interception issues in the test environment.
+      // __dirname here is src/wasm/ -- the binary lives at src/wasm/pkg/,
+      // i.e. ./pkg, not ../pkg (which resolved to the nonexistent src/pkg/
+      // and made readFileSync throw ENOENT on every run).
+      const wasmPath = join(__dirname, './pkg/keyrx_core_bg.wasm');
       const wasmBinary = readFileSync(wasmPath);
 
       // Initialize WASM module with the binary
-      await wasmModule.default(wasmBinary);
-      wasmModule.wasm_init();
+      await importedModule.default(wasmBinary);
+      importedModule.wasm_init();
+      // Only assign to the shared variable once init has actually
+      // succeeded -- previously `wasmModule` was set right after the
+      // (working) dynamic import, before the (broken) binary load, so a
+      // failure here left every `if (!wasmModule)` guard below thinking
+      // the module was ready. Tests then called real WASM-bound functions
+      // on a module whose internal `wasm` binding was never set, failing
+      // deep inside wasm-bindgen glue with a confusing
+      // "Cannot read properties of undefined (reading
+      // '__wbindgen_add_to_stack_pointer')" instead of skipping cleanly.
+      wasmModule = importedModule;
     } catch (err) {
+      wasmModule = null;
       console.warn('WASM module not available, skipping tests:', err);
     }
   });

@@ -17,7 +17,8 @@ interface DeviceKeyboardPanelProps {
   keyMappings: Map<string, KeyMapping>;
   onKeyClick: (keyCode: string) => void;
   selectedKeyCode: string | null;
-  initialLayout: LayoutType | undefined;
+  layout: LayoutType;
+  onLayoutChange: (layout: LayoutType) => void;
   isVisible: boolean;
 }
 
@@ -35,7 +36,8 @@ export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
   keyMappings,
   onKeyClick,
   selectedKeyCode,
-  initialLayout,
+  layout,
+  onLayoutChange,
   isVisible,
 }) => {
   if (selectedDevices.length === 0) return null;
@@ -113,7 +115,8 @@ export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
                   mappings={keyMappings}
                   onKeyClick={onKeyClick}
                   selectedKeyCode={selectedKeyCode}
-                  initialLayout={initialLayout}
+                  layout={layout}
+                  onLayoutChange={onLayoutChange}
                 />
               </Card>
             </div>

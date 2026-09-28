@@ -292,8 +292,12 @@ const ConfigPage: React.FC = () => {
                 Keymap workspace
               </div>
               <div className="flex min-w-0 items-center gap-3">
+                {/* `selectedProfileName` is '' while the active-profile
+                    query is still loading (or indefinitely while
+                    disconnected) -- an empty <h1> has no accessible name
+                    (axe empty-heading), so fall back to visible text. */}
                 <h1 className="truncate text-xl font-semibold text-slate-50 md:text-2xl">
-                  {selectedProfileName}
+                  {selectedProfileName || 'Loading profile…'}
                 </h1>
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${api.isConnected ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-400/20' : 'bg-rose-400/10 text-rose-300 ring-rose-400/20'}`}
@@ -428,6 +432,7 @@ const ConfigPage: React.FC = () => {
                 setSyncStatus={setSyncStatus}
                 configStore={configStore}
                 keyboardLayout={keyboardLayout}
+                onKeyboardLayoutChange={setLayout}
                 layoutKeys={layoutKeys}
                 onOpenAdvanced={() => {
                   if (!isCodePanelOpen) toggleCodePanel();

@@ -49,7 +49,16 @@ export const COLOR_CONTRAST_CONFIG = {
 export const KEYBOARD_ACCESSIBILITY_CONFIG = {
   runOnly: {
     type: 'rule' as const,
-    values: ['keyboard', 'focus-order-semantics', 'tabindex'],
+    // 'keyboard' is not a real axe-core rule id (there is no such rule) --
+    // passing it throws "unknown rule `keyboard` in options.runOnly" and
+    // failed every test that used this config. These are the real
+    // keyboard/focus-related rules axe-core ships.
+    values: [
+      'focus-order-semantics',
+      'tabindex',
+      'aria-hidden-focus',
+      'scrollable-region-focusable',
+    ],
   },
 };
 
@@ -288,12 +297,14 @@ export function hasFocusIndicator(element: Element): boolean {
  * ```
  */
 export async function runCompleteA11yAudit(container: Element | Document) {
-  const [wcag22, colorContrast, keyboard, aria] = await Promise.all([
-    runA11yAudit(container),
-    runColorContrastAudit(container),
-    runKeyboardAccessibilityAudit(container),
-    runAriaSemanticAudit(container),
-  ]);
+  // axe-core keeps a single global run state, so concurrent axe.run() calls
+  // on the same document throw "Axe is already running." Running these via
+  // Promise.all() looked fine in isolation but is inherently racy; await
+  // each audit in turn instead.
+  const wcag22 = await runA11yAudit(container);
+  const colorContrast = await runColorContrastAudit(container);
+  const keyboard = await runKeyboardAccessibilityAudit(container);
+  const aria = await runAriaSemanticAudit(container);
 
   return {
     wcag22,

@@ -153,7 +153,8 @@ export function cleanupMockWebSocket(): void {
 export function sendServerMessage(message: any): void {
   const server = getMockWebSocket();
   // Explicitly stringify objects to prevent "[object Object]" issues
-  const serialized = typeof message === 'string' ? message : JSON.stringify(message);
+  const serialized =
+    typeof message === 'string' ? message : JSON.stringify(message);
   server.send(serialized);
 }
 
@@ -167,13 +168,28 @@ export function sendServerMessage(message: any): void {
  * await simulateConnected('test-session-123');
  * ```
  */
-export async function simulateConnected(sessionId: string = 'test-session'): Promise<void> {
+export async function simulateConnected(
+  // Kept for backwards compatibility with existing call sites; the real
+  // 'connected' protocol message (src/types/rpc.ts ServerMessage) has no
+  // sessionId field, only content: { version, timestamp }.
+  _sessionId: string = 'test-session'
+): Promise<void> {
   const server = getMockWebSocket();
   await server.connected; // Wait for client to connect
-  server.send({
+  // Route through sendServerMessage so this is JSON-stringified before
+  // hitting the wire -- server.send() would otherwise hand the mock socket
+  // a raw object, which client code's JSON.parse(event.data) turns into
+  // the literal string "[object Object]" (see the same fix already applied
+  // in sendServerMessage below). The payload must also match the real
+  // ServerMessage 'connected' shape (content.version/content.timestamp) or
+  // useUnifiedApi's Zod validation silently rejects it and isConnected
+  // never flips to true.
+  sendServerMessage({
     type: 'connected',
-    sessionId,
-    timestamp: Date.now(),
+    content: {
+      version: '1.0',
+      timestamp: Date.now(),
+    },
   });
 }
 
@@ -393,9 +409,7 @@ export async function waitForRpcRequest(
 
   // Check method if specified
   if (method && parsed.content.method !== method) {
-    throw new Error(
-      `Expected method ${method}, got: ${parsed.content.method}`
-    );
+    throw new Error(`Expected method ${method}, got: ${parsed.content.method}`);
   }
 
   return {

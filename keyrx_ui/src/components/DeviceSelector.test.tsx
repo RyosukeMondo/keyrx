@@ -392,13 +392,19 @@ describe('DeviceSelector', () => {
       ).toBeInTheDocument();
     });
 
-    it('has proper ARIA labels for connection badges', () => {
+    it('shows accessible connection status text for each badge', () => {
+      // The badge is a role-less <span>; an aria-label on it duplicating its
+      // own visible text is an axe aria-prohibited-attr violation ("aria-label
+      // attribute cannot be used on a span with no valid role attribute").
+      // Its accessible name comes from the visible "Connected"/"Disconnected"
+      // text content instead, so this asserts on that text rather than a
+      // label.
       renderPure(<DeviceSelector {...defaultProps} />);
 
-      const connectedBadges = screen.getAllByLabelText('Device connected');
+      const connectedBadges = screen.getAllByText('Connected');
       expect(connectedBadges).toHaveLength(2);
 
-      const disconnectedBadge = screen.getByLabelText('Device disconnected');
+      const disconnectedBadge = screen.getByText('Disconnected');
       expect(disconnectedBadge).toBeInTheDocument();
     });
 

@@ -78,6 +78,7 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
     >
       {/* Status indicator */}
       <div
+        role="status"
         className={`w-2 h-2 rounded-full flex-shrink-0 ${
           device.active ? 'bg-green-500' : 'bg-slate-500'
         }`}

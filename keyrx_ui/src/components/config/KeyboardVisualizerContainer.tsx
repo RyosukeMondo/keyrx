@@ -12,7 +12,6 @@ import {
   KeyboardVisualizer,
   type LayoutType,
 } from '@/components/KeyboardVisualizer';
-import { useKeyboardLayout } from '@/hooks/useKeyboardLayout';
 import type { KeyMapping } from '@/types';
 
 export interface KeyboardVisualizerContainerProps {
@@ -26,8 +25,19 @@ export interface KeyboardVisualizerContainerProps {
   onKeyClick: (keyCode: string) => void;
   /** Currently selected key code (optional) */
   selectedKeyCode?: string | null;
-  /** Initial keyboard layout type */
-  initialLayout?: LayoutType;
+  /**
+   * Selected keyboard layout. Controlled by the parent (ConfigPage owns the
+   * single source of truth: it auto-detects the layout from the profile's
+   * Rhai source and lets the user override it) -- this component used to
+   * keep its own copy via `useKeyboardLayout(initialLayout)`, seeded only
+   * once from an `initialLayout` prop, so it silently went stale the moment
+   * the real detected layout changed after the initial render (e.g. once
+   * the profile config finished loading). Passing `layout` as a controlled
+   * prop instead removes that second, driftable source of truth.
+   */
+  layout: LayoutType;
+  /** Called when the user picks a different layout from the dropdown */
+  onLayoutChange: (layout: LayoutType) => void;
   /** Optional CSS class name */
   className?: string;
 }
@@ -35,8 +45,8 @@ export interface KeyboardVisualizerContainerProps {
 /**
  * KeyboardVisualizerContainer
  *
- * Manages keyboard layout selection and displays the keyboard visualizer.
- * Uses useKeyboardLayout hook to manage layout state and parsed layout keys.
+ * Renders the layout selection dropdown and the keyboard visualizer for a
+ * given (parent-controlled) layout.
  *
  * @example
  * ```tsx
@@ -46,6 +56,8 @@ export interface KeyboardVisualizerContainerProps {
  *   mappings={keyMappings}
  *   onKeyClick={handleKeyClick}
  *   selectedKeyCode="VK_A"
+ *   layout={layout}
+ *   onLayoutChange={setLayout}
  * />
  * ```
  */
@@ -60,11 +72,10 @@ export const KeyboardVisualizerContainer: React.FC<
   onKeyClick,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedKeyCode,
-  initialLayout = 'ANSI_104',
+  layout,
+  onLayoutChange,
   className = '',
 }) => {
-  const { layout, setLayout } = useKeyboardLayout(initialLayout);
-
   return (
     <div className={className}>
       {/* Layout Selector */}
@@ -78,7 +89,7 @@ export const KeyboardVisualizerContainer: React.FC<
         <select
           id="layout-selector"
           value={layout}
-          onChange={(e) => setLayout(e.target.value as LayoutType)}
+          onChange={(e) => onLayoutChange(e.target.value as LayoutType)}
           className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500"
           aria-label="Select keyboard layout"
         >

@@ -118,7 +118,12 @@ describe('Layout', () => {
 
     const main = container.querySelector('main');
     expect(main).toHaveClass('pt-16', 'md:pt-0'); // Top padding for mobile header
-    expect(main).toHaveClass('pb-16', 'md:pb-0'); // Bottom padding for mobile nav
+    expect(main).toHaveClass('pb-16'); // Bottom padding for mobile nav
+    // Desktop also reserves bottom space so page content doesn't render
+    // under GlobalDebugPanel's fixed bottom-right toggle (it has no
+    // reserved space of its own and previously overlapped real content,
+    // e.g. the Monitor page's State Inspector card).
+    expect(main).toHaveClass('md:pb-12');
     expect(main).toHaveClass('md:ml-64'); // Left margin for desktop sidebar
   });
 

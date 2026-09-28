@@ -5,10 +5,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { KeyboardVisualizerContainer } from './KeyboardVisualizerContainer';
 import type { KeyMapping } from '@/types';
-import { useKeyboardLayout } from '@/hooks/useKeyboardLayout';
 
 // Mock the KeyboardVisualizer component
 interface MockKeyboardVisualizerProps {
@@ -30,30 +29,17 @@ vi.mock('@/components/KeyboardVisualizer', () => ({
   ),
 }));
 
-// Mock the useKeyboardLayout hook
-vi.mock('@/hooks/useKeyboardLayout');
-const mockUseKeyboardLayout = vi.mocked(useKeyboardLayout);
-
 describe('KeyboardVisualizerContainer', () => {
-  const mockSetLayout = vi.fn();
+  const onLayoutChange = vi.fn();
 
   const defaultProps = {
     profileName: 'Default',
     activeLayer: 'base',
     mappings: new Map<string, KeyMapping>(),
     onKeyClick: vi.fn(),
+    layout: 'ANSI_104' as const,
+    onLayoutChange,
   };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    // Default mock implementation
-    mockUseKeyboardLayout.mockReturnValue({
-      layout: 'ANSI_104',
-      setLayout: mockSetLayout,
-      layoutKeys: [],
-    });
-  });
 
   it('renders layout selector with correct options', () => {
     render(<KeyboardVisualizerContainer {...defaultProps} />);
@@ -73,11 +59,12 @@ describe('KeyboardVisualizerContainer', () => {
     expect(screen.getByRole('option', { name: 'HHKB' })).toBeInTheDocument();
   });
 
-  it('renders KeyboardVisualizer component', () => {
-    render(<KeyboardVisualizerContainer {...defaultProps} />);
+  it('renders KeyboardVisualizer component with the given layout', () => {
+    render(<KeyboardVisualizerContainer {...defaultProps} layout="ISO_105" />);
 
     const visualizer = screen.getByTestId('keyboard-visualizer');
     expect(visualizer).toBeInTheDocument();
+    expect(visualizer).toHaveAttribute('data-layout', 'ISO_105');
   });
 
   it('passes correct props to KeyboardVisualizer', () => {
@@ -109,32 +96,41 @@ describe('KeyboardVisualizerContainer', () => {
     expect(onKeyClick).toHaveBeenCalledTimes(1);
   });
 
-  it('updates layout when selector changes', async () => {
+  it('calls onLayoutChange when the selector changes (controlled, does not manage its own state)', async () => {
     const user = userEvent.setup();
+    const handleChange = vi.fn();
 
-    render(<KeyboardVisualizerContainer {...defaultProps} />);
+    render(
+      <KeyboardVisualizerContainer
+        {...defaultProps}
+        onLayoutChange={handleChange}
+      />
+    );
 
     const layoutSelector = screen.getByLabelText('Select keyboard layout');
     await user.selectOptions(layoutSelector, 'ISO_105');
 
-    expect(mockSetLayout).toHaveBeenCalledWith('ISO_105');
+    expect(handleChange).toHaveBeenCalledWith('ISO_105');
   });
 
-  it('uses initial layout from props', () => {
-    render(
-      <KeyboardVisualizerContainer
-        {...defaultProps}
-        initialLayout="COMPACT_60"
-      />
+  it('reflects the layout prop value in the selector (controlled by parent)', () => {
+    const { rerender } = render(
+      <KeyboardVisualizerContainer {...defaultProps} layout="ANSI_104" />
     );
 
-    expect(mockUseKeyboardLayout).toHaveBeenCalledWith('COMPACT_60');
-  });
+    const layoutSelector = screen.getByLabelText(
+      'Select keyboard layout'
+    ) as HTMLSelectElement;
+    expect(layoutSelector.value).toBe('ANSI_104');
 
-  it('defaults to ANSI_104 if no initial layout provided', () => {
-    render(<KeyboardVisualizerContainer {...defaultProps} />);
-
-    expect(mockUseKeyboardLayout).toHaveBeenCalledWith('ANSI_104');
+    // Simulates the parent's detected/selected layout changing after the
+    // initial render (e.g. once profile config finishes loading) -- this
+    // must be reflected immediately since the component holds no layout
+    // state of its own.
+    rerender(
+      <KeyboardVisualizerContainer {...defaultProps} layout="JIS_109" />
+    );
+    expect(layoutSelector.value).toBe('JIS_109');
   });
 
   it('applies custom className', () => {
@@ -165,21 +161,25 @@ describe('KeyboardVisualizerContainer', () => {
 
   it('handles multiple layout changes', async () => {
     const user = userEvent.setup();
+    const handleChange = vi.fn();
 
-    render(<KeyboardVisualizerContainer {...defaultProps} />);
+    render(
+      <KeyboardVisualizerContainer
+        {...defaultProps}
+        onLayoutChange={handleChange}
+      />
+    );
 
     const layoutSelector = screen.getByLabelText('Select keyboard layout');
 
     await user.selectOptions(layoutSelector, 'ISO_105');
-    expect(mockSetLayout).toHaveBeenCalledWith('ISO_105');
-
     await user.selectOptions(layoutSelector, 'COMPACT_60');
-    expect(mockSetLayout).toHaveBeenCalledWith('COMPACT_60');
-
     await user.selectOptions(layoutSelector, 'HHKB');
-    expect(mockSetLayout).toHaveBeenCalledWith('HHKB');
 
-    expect(mockSetLayout).toHaveBeenCalledTimes(3);
+    expect(handleChange).toHaveBeenNthCalledWith(1, 'ISO_105');
+    expect(handleChange).toHaveBeenNthCalledWith(2, 'COMPACT_60');
+    expect(handleChange).toHaveBeenNthCalledWith(3, 'HHKB');
+    expect(handleChange).toHaveBeenCalledTimes(3);
   });
 
   it('renders layout selector label correctly', () => {

@@ -17,7 +17,9 @@ interface LayoutProps {
  * - Desktop (>= 768px): Sidebar (fixed left sidebar)
  *
  * The layout automatically adjusts content padding to prevent overlap
- * with the navigation elements.
+ * with the navigation elements, and reserves bottom padding on desktop
+ * so page content doesn't render under the fixed-position GlobalDebugPanel
+ * toggle (bottom-right corner on every page).
  *
  * @example
  * ```tsx
@@ -148,7 +150,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         className={`
           min-h-screen
           pt-16 md:pt-0
-          pb-16 md:pb-0
+          pb-16 md:pb-12
           transition-all duration-300
           ${isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}
           focus:outline-none

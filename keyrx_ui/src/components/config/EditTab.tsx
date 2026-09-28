@@ -49,6 +49,7 @@ interface EditTabProps {
     deleteKeyMapping: (key: string, layerId?: string) => void;
   };
   keyboardLayout: LayoutType;
+  onKeyboardLayoutChange: (layout: LayoutType) => void;
   layoutKeys: SVGKeyData[];
   onOpenAdvanced: () => void;
 }
@@ -69,6 +70,7 @@ export const EditTab: React.FC<EditTabProps> = ({
   setSyncStatus,
   configStore,
   keyboardLayout,
+  onKeyboardLayoutChange,
   layoutKeys,
   onOpenAdvanced,
 }) => {
@@ -196,7 +198,8 @@ export const EditTab: React.FC<EditTabProps> = ({
             keyMappings={keyMappings}
             onKeyClick={handlePhysicalKeyClick}
             selectedKeyCode={selectedPhysicalKey}
-            initialLayout={keyboardLayout}
+            layout={keyboardLayout}
+            onLayoutChange={onKeyboardLayoutChange}
             isVisible={selectedDevices.length === 0 || activePane === 'global'}
           />
 
@@ -217,7 +220,8 @@ export const EditTab: React.FC<EditTabProps> = ({
             keyMappings={keyMappings}
             onKeyClick={handlePhysicalKeyClick}
             selectedKeyCode={selectedPhysicalKey}
-            initialLayout={keyboardLayout}
+            layout={keyboardLayout}
+            onLayoutChange={onKeyboardLayoutChange}
             isVisible={!globalSelected || activePane === 'device'}
           />
 
