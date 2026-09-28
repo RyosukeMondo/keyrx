@@ -67,6 +67,11 @@ rmcp = { version = "1.2", features = ["server", "transport-streamable-http-serve
 [target.'cfg(target_os = "linux")'.dependencies]
 evdev = "0.12"
 uinput = "0.1"
+# Direct access to the raw ioctl bindings `uinput` wraps: its `Builder` only
+# registers EV_KEY/EV_REL codes it has enum variants for, which excludes
+# vendor/consumer keys (brightness, mic-mute) and relative-motion axes. See
+# `platform::linux::uinput_device`.
+uinput-sys = "0.1"
 nix = { version = "0.29", features = ["ioctl", "poll", "user", "fs", "inotify"] }
 signal-hook = "0.3"
 appindicator3 = "0.3"

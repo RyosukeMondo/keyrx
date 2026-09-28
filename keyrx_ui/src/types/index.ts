@@ -42,7 +42,6 @@ export interface DeviceEntry {
   scope: string;
   layout: string | null;
   isVirtual: boolean;
-  enabled: boolean;
   lastSeen?: number;
 }
 

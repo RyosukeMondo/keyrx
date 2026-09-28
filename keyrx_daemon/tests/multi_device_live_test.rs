@@ -18,9 +18,7 @@ use keyrx_core::runtime::KeyEventType;
 use keyrx_daemon::config::{ProfileManager, ProfileTemplate};
 use keyrx_daemon::daemon::{ConfigSource, Daemon};
 use keyrx_daemon::platform::linux::LinuxPlatform;
-use keyrx_daemon::test_utils::{
-    can_access_input_devices, can_access_uinput, OutputCapture, VirtualKeyboard,
-};
+use keyrx_daemon::test_utils::{OutputCapture, VirtualKeyboard};
 
 /// numpad: A->B plus (when_device numpad) Q->W; main: A->C, Q unmapped.
 const MULTI_DEVICE: &str = r#"
@@ -61,10 +59,7 @@ fn tapped(key: KeyCode) -> Vec<(KeyCode, bool)> {
 
 #[test]
 fn each_device_uses_its_own_block_and_when_device_matches_by_name() {
-    if !(can_access_uinput() && can_access_input_devices()) {
-        eprintln!("SKIPPED: needs /dev/uinput and /dev/input access (input group)");
-        return;
-    }
+    keyrx_daemon::skip_if_no_uinput!();
     let dir = tempfile::tempdir().unwrap();
     let manager = ProfileManager::new(dir.path().to_path_buf()).unwrap();
     manager.create("md", ProfileTemplate::Blank).unwrap();
@@ -130,10 +125,7 @@ fn each_device_uses_its_own_block_and_when_device_matches_by_name() {
 /// its NAME (case-insensitive), not just the opaque device id.
 #[test]
 fn when_device_condition_matches_device_name() {
-    if !(can_access_uinput() && can_access_input_devices()) {
-        eprintln!("SKIPPED: needs /dev/uinput and /dev/input access (input group)");
-        return;
-    }
+    keyrx_daemon::skip_if_no_uinput!();
     let config = r#"
 device_start("*");
   map("VK_A", "VK_C");

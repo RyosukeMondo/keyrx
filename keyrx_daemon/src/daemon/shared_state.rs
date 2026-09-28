@@ -29,6 +29,7 @@
 //! Transports that activate a profile call [`DaemonSharedState::request_activation`],
 //! which records the request and raises the reload flag.
 
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
@@ -89,6 +90,15 @@ pub struct DaemonSharedState {
     /// This is queried from the platform on creation and can be updated
     /// if devices are hotplugged/unplugged (future enhancement).
     device_count: Arc<AtomicUsize>,
+
+    /// IDs of the devices this daemon currently has captured (grabbed on
+    /// Linux; the platform's full `list_devices()` set on platforms that
+    /// don't grab per device). THE source of truth for "is this device
+    /// active" (`DeviceService::list_devices`'s `active` field) - not a
+    /// second copy of `device_count`; the two are published together by
+    /// whoever calls [`Self::set_device_count`]/[`Self::set_active_devices`]
+    /// (see `daemon::publish_device_state`).
+    active_devices: Arc<RwLock<HashSet<String>>>,
 
     /// Daemon start time (for uptime calculation).
     ///
@@ -153,6 +163,7 @@ impl DaemonSharedState {
             active_profile: Arc::new(RwLock::new(active_profile)),
             config_path: Arc::new(RwLock::new(config_path)),
             device_count: Arc::new(AtomicUsize::new(device_count)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -397,6 +408,30 @@ impl DaemonSharedState {
         self.device_count.store(count, Ordering::SeqCst);
     }
 
+    /// Replaces the set of currently captured device IDs. Called together
+    /// with [`Self::set_device_count`] by `daemon::publish_device_state`
+    /// after startup, reload/profile activation and hotplug - never by a
+    /// transport, so REST/IPC/WS/MCP agree on which devices are "active"
+    /// by construction (H8).
+    pub fn set_active_devices(&self, ids: impl IntoIterator<Item = String>) {
+        let mut guard = self
+            .active_devices
+            .write()
+            .unwrap_or_else(|e| e.into_inner());
+        *guard = ids.into_iter().collect();
+    }
+
+    /// Whether `id` is one of the devices this daemon currently has
+    /// captured. This is what "active" means on the Devices page - not
+    /// "the OS can see this keyboard" (see H8).
+    #[must_use]
+    pub fn is_device_active(&self, id: &str) -> bool {
+        self.active_devices
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .contains(id)
+    }
+
     /// Request a daemon reload (e.g., after active profile config is modified).
     pub fn request_reload(&self) {
         self.reload_requested.store(true, Ordering::SeqCst);
@@ -478,6 +513,7 @@ mod tests {
             active_profile,
             config_path,
             device_count,
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -500,6 +536,7 @@ mod tests {
             active_profile: Arc::new(RwLock::new(None)),
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -520,6 +557,7 @@ mod tests {
             active_profile: Arc::new(RwLock::new(Some("default".to_string()))),
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -545,6 +583,7 @@ mod tests {
             active_profile: Arc::new(RwLock::new(None)),
             config_path: Arc::new(RwLock::new(PathBuf::from("/initial/config.krx"))),
             device_count: Arc::new(AtomicUsize::new(0)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -568,6 +607,7 @@ mod tests {
             active_profile: Arc::new(RwLock::new(None)),
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(2)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -582,12 +622,37 @@ mod tests {
     }
 
     #[test]
+    fn test_active_devices_defaults_empty_and_tracks_set() {
+        let state = DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            None,
+            PathBuf::from("/test"),
+            0,
+        );
+
+        // Nothing is active before anything is published (H8: test mode /
+        // startup-before-grab must not lie and say a device is active).
+        assert!(!state.is_device_active("dev-a"));
+
+        state.set_active_devices(["dev-a".to_string(), "dev-b".to_string()]);
+        assert!(state.is_device_active("dev-a"));
+        assert!(state.is_device_active("dev-b"));
+        assert!(!state.is_device_active("dev-c"));
+
+        // Republishing replaces the set rather than accumulating it.
+        state.set_active_devices(["dev-c".to_string()]);
+        assert!(!state.is_device_active("dev-a"));
+        assert!(state.is_device_active("dev-c"));
+    }
+
+    #[test]
     fn test_uptime_calculation() {
         let state = DaemonSharedState {
             running: Arc::new(AtomicBool::new(true)),
             active_profile: Arc::new(RwLock::new(None)),
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -612,6 +677,7 @@ mod tests {
             active_profile: Arc::new(RwLock::new(Some("test".to_string()))),
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(5)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -644,6 +710,7 @@ mod tests {
             active_profile: Arc::new(RwLock::new(None)),
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -681,6 +748,7 @@ mod tests {
             active_profile: Arc::new(RwLock::new(Some("old".to_string()))),
             config_path: Arc::new(RwLock::new(PathBuf::from("/old/config.krx"))),
             device_count: Arc::new(AtomicUsize::new(0)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -709,6 +777,7 @@ mod tests {
             active_profile: Arc::new(RwLock::new(None)),
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(0)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),
@@ -746,6 +815,7 @@ mod tests {
             active_profile: Arc::new(RwLock::new(Some("initial".to_string()))),
             config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
             device_count: Arc::new(AtomicUsize::new(1)),
+            active_devices: Arc::new(RwLock::new(HashSet::new())),
             start_time: Instant::now(),
             reload_requested: Arc::new(AtomicBool::new(false)),
             suspended: Arc::new(AtomicBool::new(false)),

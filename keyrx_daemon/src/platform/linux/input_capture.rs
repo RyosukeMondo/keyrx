@@ -15,6 +15,31 @@ use crate::platform::{DeviceError, InputDevice};
 
 use super::keycode_map::evdev_to_keycode;
 
+/// A single `(type, code, value)` triple this daemon could not turn into a
+/// `KeyCode`-based [`KeyEvent`]: an `EV_KEY` code with no `KeyCode`
+/// (brightness, mic-mute, vendor/consumer keys) or a non-key event type
+/// entirely (e.g. `EV_REL` from a keyboard that doubles as a pointer).
+/// Forwarded to the output device unchanged instead of being silently
+/// dropped (H6) - see [`PendingCapture`] and
+/// [`super::LinuxPlatform::next_raw_event`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct RawPassthroughEvent {
+    pub event_type: u16,
+    pub code: u16,
+    pub value: i32,
+}
+
+/// One item read off a device, in the order the kernel delivered it:
+/// either a mapped key press/release, or a [`RawPassthroughEvent`] this
+/// daemon does not interpret. Keeping both in one queue (rather than two
+/// separate ones) is what lets the caller forward raw items in their
+/// original position relative to the key events around them.
+#[derive(Debug, Clone)]
+pub(crate) enum PendingCapture {
+    Key(KeyEvent),
+    Raw(RawPassthroughEvent),
+}
+
 /// Converts a `SystemTime` to microseconds since UNIX epoch.
 ///
 /// This is used to extract timestamps from evdev events for tap-hold
@@ -64,10 +89,12 @@ pub struct EvdevInput {
     grabbed: bool,
     /// Path to the device node (for identification).
     path: PathBuf,
-    /// Key events already read from the kernel but not yet returned. One
-    /// `read()` can return several key events; all of them are kept here so
-    /// none are lost (a lost release is a stuck key).
-    pending: VecDeque<KeyEvent>,
+    /// Events already read from the kernel but not yet returned. One
+    /// `read()` can return several events; all of them are kept here, in
+    /// order, so none are lost (a lost release is a stuck key) and raw
+    /// passthrough items keep their position relative to the key events
+    /// around them.
+    pending: VecDeque<PendingCapture>,
 }
 
 impl EvdevInput {
@@ -339,8 +366,8 @@ impl EvdevInput {
         unsafe { BorrowedFd::borrow_raw(self.device.as_raw_fd()) }
     }
 
-    /// Reads everything the kernel has buffered (non-blocking) and queues the
-    /// key presses/releases. Returns `Ok` with nothing queued when idle.
+    /// Reads everything the kernel has buffered (non-blocking) and queues
+    /// it, in order. Returns `Ok` with nothing queued when idle.
     fn read_available(&mut self) -> Result<(), DeviceError> {
         let events = match self.device.fetch_events() {
             Ok(events) => events,
@@ -348,23 +375,61 @@ impl EvdevInput {
             Err(e) => return Err(DeviceError::Io(e)),
         };
         for event in events {
-            let InputEventKind::Key(key) = event.kind() else {
-                continue; // EV_SYN, EV_MSC, ...
-            };
-            let Some(keycode) = evdev_to_keycode(key.code()) else {
-                continue; // unknown key
-            };
-            let timestamp_us = systemtime_to_micros(event.timestamp());
-            // value: 1 = press, 0 = release, 2 = autorepeat (ignored)
-            let key_event = match event.value() {
-                1 => KeyEvent::press(keycode),
-                0 => KeyEvent::release(keycode),
-                _ => continue,
-            };
-            self.pending
-                .push_back(key_event.with_timestamp(timestamp_us));
+            match event.kind() {
+                InputEventKind::Synchronization(_) | InputEventKind::Misc(_) => continue,
+                InputEventKind::Key(key) => {
+                    let Some(keycode) = evdev_to_keycode(key.code()) else {
+                        // No `KeyCode` for this code (brightness, mic-mute,
+                        // vendor/consumer keys, mouse buttons on a combo
+                        // device, ...): forward it raw instead of dropping
+                        // it (H6). We don't interpret its value (press,
+                        // release or autorepeat), so all three pass through.
+                        self.pending
+                            .push_back(PendingCapture::Raw(RawPassthroughEvent {
+                                event_type: event.event_type().0,
+                                code: key.code(),
+                                value: event.value(),
+                            }));
+                        continue;
+                    };
+                    let timestamp_us = systemtime_to_micros(event.timestamp());
+                    // value: 1 = press, 0 = release, 2 = autorepeat (ignored
+                    // - the desktop repeats a mapped key on its own; see
+                    // module docs).
+                    let key_event = match event.value() {
+                        1 => KeyEvent::press(keycode),
+                        0 => KeyEvent::release(keycode),
+                        _ => continue,
+                    };
+                    self.pending
+                        .push_back(PendingCapture::Key(key_event.with_timestamp(timestamp_us)));
+                }
+                _ => {
+                    // Non-key event on a grabbed keyboard node (EV_REL from
+                    // a keyboard with an integrated pointer/trackpoint,
+                    // EV_ABS, EV_SW, EV_LED, ...): forward it raw (H6).
+                    self.pending
+                        .push_back(PendingCapture::Raw(RawPassthroughEvent {
+                            event_type: event.event_type().0,
+                            code: event.code(),
+                            value: event.value(),
+                        }));
+                }
+            }
         }
         Ok(())
+    }
+
+    /// Like [`InputDevice::next_event`], but returns the next queued item
+    /// as-is instead of dropping [`PendingCapture::Raw`] entries: this is
+    /// what lets a raw passthrough event keep its original position
+    /// relative to the key events around it. The only production caller is
+    /// `LinuxPlatform::next_raw_event`.
+    pub(crate) fn next_pending(&mut self) -> Result<PendingCapture, DeviceError> {
+        if self.pending.is_empty() {
+            self.read_available()?;
+        }
+        self.pending.pop_front().ok_or(DeviceError::EndOfStream)
     }
 }
 
@@ -382,7 +447,11 @@ fn set_nonblocking(device: &Device) -> Result<(), DeviceError> {
 impl InputDevice for EvdevInput {
     /// Returns the next queued key press/release without blocking.
     ///
-    /// Autorepeat (value=2) and keys without a `KeyCode` are skipped.
+    /// Autorepeat (value=2) of a mapped key is skipped. Events this daemon
+    /// cannot represent as a `KeyCode`-based [`KeyEvent`] are skipped too -
+    /// callers that need those (the production capture path) use
+    /// [`EvdevInput::next_pending`] instead, which returns them as
+    /// [`PendingCapture::Raw`].
     ///
     /// # Returns
     ///
@@ -390,10 +459,18 @@ impl InputDevice for EvdevInput {
     /// - `Err(DeviceError::EndOfStream)` when no input is available right now
     /// - `Err(DeviceError::Io)` on I/O errors (e.g. device unplugged)
     fn next_event(&mut self) -> Result<KeyEvent, DeviceError> {
-        if self.pending.is_empty() {
+        loop {
+            if let Some(item) = self.pending.pop_front() {
+                match item {
+                    PendingCapture::Key(event) => return Ok(event),
+                    PendingCapture::Raw(_) => continue,
+                }
+            }
             self.read_available()?;
+            if self.pending.is_empty() {
+                return Err(DeviceError::EndOfStream);
+            }
         }
-        self.pending.pop_front().ok_or(DeviceError::EndOfStream)
     }
 
     /// Grabs exclusive access to the device using EVIOCGRAB ioctl.

@@ -15,6 +15,7 @@ mod input_capture;
 mod keycode_map;
 mod output_injection;
 pub mod tray;
+pub(crate) mod uinput_device;
 
 // Re-export public types
 pub use input_capture::EvdevInput;
@@ -90,6 +91,11 @@ pub struct LinuxPlatform {
     hotplug: Option<HotplugWatcher>,
     /// Detects the emergency escape chord on the raw (pre-remap) stream.
     emergency: EmergencyChord,
+    /// Set by every [`Self::reconfigure`] (explicit or from a hotplug
+    /// rescan) and taken by [`Platform::take_devices_changed`], so the
+    /// event loop knows to republish the captured-device set (H8) even
+    /// when the rescan happened with no caller of its own to do so.
+    devices_changed: bool,
 }
 
 impl LinuxPlatform {
@@ -112,6 +118,7 @@ impl LinuxPlatform {
             active_configs: Vec::new(),
             hotplug: None,
             emergency: EmergencyChord::new(),
+            devices_changed: false,
         }
     }
 
@@ -209,6 +216,7 @@ impl LinuxPlatform {
             device_manager.reconcile(effective, &self.device_pattern, Some(&self.output_name))?;
         self.active_configs = effective.to_vec();
         if result.added > 0 || result.removed > 0 {
+            self.devices_changed = true;
             log::info!(
                 "Device reconfigure: {} grabbed, {} released, {} device(s) now managed",
                 result.added,
@@ -234,19 +242,36 @@ impl LinuxPlatform {
         }
     }
 
-    /// Returns the next pending raw event, if any, without blocking.
+    /// Returns the next pending key event, if any, without blocking. A
+    /// [`PendingCapture::Raw`] item (H6: a code this daemon has no
+    /// `KeyCode` for, or a non-key event) is forwarded straight to the
+    /// output device right here and never returned - that is what keeps it
+    /// in its original position relative to the key events around it,
+    /// since both come off the same per-device queue in arrival order.
     fn next_raw_event(
         &mut self,
     ) -> crate::platform::PlatformResult<Option<keyrx_core::runtime::event::KeyEvent>> {
         use crate::platform::PlatformError;
 
-        let device_manager =
-            self.device_manager
-                .as_mut()
-                .ok_or_else(|| PlatformError::InitializationFailed {
+        loop {
+            let device_manager = self.device_manager.as_mut().ok_or_else(|| {
+                PlatformError::InitializationFailed {
                     reason: "device manager not initialized".to_string(),
-                })?;
-        take_next_event(device_manager)
+                }
+            })?;
+            match take_next_pending(device_manager)? {
+                None => return Ok(None),
+                Some(input_capture::PendingCapture::Key(event)) => return Ok(Some(event)),
+                Some(input_capture::PendingCapture::Raw(raw)) => {
+                    if let Some(output) = self.output_device.as_mut() {
+                        if let Err(e) = output.inject_raw(raw.event_type, raw.code, raw.value) {
+                            log::warn!("Failed to forward raw event {raw:?}: {e}");
+                        }
+                    }
+                    // Not a key event; keep looking.
+                }
+            }
+        }
     }
 
     /// Feeds `event` to the emergency-escape detector before handing it back
@@ -494,6 +519,10 @@ impl crate::platform::Platform for LinuxPlatform {
             })
     }
 
+    fn take_devices_changed(&mut self) -> bool {
+        std::mem::take(&mut self.devices_changed)
+    }
+
     fn capture_input(
         &mut self,
     ) -> crate::platform::PlatformResult<keyrx_core::runtime::event::KeyEvent> {
@@ -593,22 +622,29 @@ fn wildcard_configs() -> Vec<DeviceConfig> {
     }]
 }
 
-/// Returns the next pending key event from any device without blocking.
+/// Returns the next pending item (key event or raw passthrough, see
+/// [`input_capture::PendingCapture`]) from any device without blocking.
 ///
 /// A device whose read errors (not [`DeviceError::EndOfStream`], which just
 /// means "no event right now") is dropped immediately with one log line -
 /// almost always `ENODEV` from an unplugged keyboard - instead of that one
 /// dead fd starving every other device's events behind it every poll. It is
 /// re-grabbed automatically if it comes back (hotplug).
-fn take_next_event(
+fn take_next_pending(
     device_manager: &mut DeviceManager,
-) -> crate::platform::PlatformResult<Option<keyrx_core::runtime::event::KeyEvent>> {
+) -> crate::platform::PlatformResult<Option<input_capture::PendingCapture>> {
     let mut found = None;
     let mut vanished: Vec<String> = Vec::new();
     for device in device_manager.devices_mut() {
-        match device.input_mut().next_event() {
-            Ok(event) => {
-                found = Some(event.with_device_id(device.device_id()));
+        match device.input_mut().next_pending() {
+            Ok(input_capture::PendingCapture::Key(event)) => {
+                found = Some(input_capture::PendingCapture::Key(
+                    event.with_device_id(device.device_id()),
+                ));
+                break;
+            }
+            Ok(raw @ input_capture::PendingCapture::Raw(_)) => {
+                found = Some(raw);
                 break;
             }
             Err(DeviceError::EndOfStream) => continue,

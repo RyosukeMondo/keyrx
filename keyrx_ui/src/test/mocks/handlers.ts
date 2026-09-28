@@ -33,7 +33,6 @@ const initialDevices: DeviceEntry[] = [
     serial: null,
     active: true,
     layout: 'ANSI_104',
-    enabled: true,
     scope: 'Global',
     lastSeen: Date.now(),
     isVirtual: false,
@@ -47,7 +46,6 @@ const initialDevices: DeviceEntry[] = [
     serial: null,
     active: true,
     layout: 'ANSI_104',
-    enabled: true,
     scope: 'Global',
     lastSeen: Date.now(),
     isVirtual: false,
@@ -129,7 +127,6 @@ export const handlers = [
     const body = (await request.json()) as {
       name?: string;
       layout?: string;
-      enabled?: boolean;
     };
 
     const device = mockDevices.find((d) => d.id === id);
@@ -146,26 +143,7 @@ export const handlers = [
     if (body.layout !== undefined) {
       device.layout = body.layout;
     }
-    if (body.enabled !== undefined) {
-      device.enabled = body.enabled;
-    }
 
-    return HttpResponse.json({ success: true });
-  }),
-
-  http.put('/api/devices/:id/enabled', async ({ request, params }) => {
-    const { id } = params;
-    const body = (await request.json()) as { enabled: boolean };
-
-    const device = mockDevices.find((d) => d.id === id);
-    if (!device) {
-      return HttpResponse.json(
-        { error: 'Device not found', errorCode: 'DEVICE_NOT_FOUND' },
-        { status: 404 }
-      );
-    }
-
-    device.enabled = body.enabled;
     return HttpResponse.json({ success: true });
   }),
 

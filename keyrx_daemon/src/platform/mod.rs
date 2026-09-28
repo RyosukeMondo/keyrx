@@ -289,6 +289,21 @@ pub trait Platform: Send + Sync {
     fn reconfigure_devices(&mut self, _configs: &[DeviceConfig]) -> PlatformResult<()> {
         Ok(())
     }
+
+    /// Returns whether the set of captured devices may have changed since
+    /// the last call (a [`reconfigure_devices`](Self::reconfigure_devices)
+    /// call, including one from an internal hotplug rescan) and clears the
+    /// flag. The event loop uses this to know when to republish
+    /// [`list_devices()`](Self::list_devices) to `DaemonSharedState`
+    /// (device count and per-device "active" status - H8) without calling
+    /// it on every iteration - in particular for a hotplug rescan, which
+    /// happens without any caller to republish directly (unlike a reload,
+    /// which does so itself right after calling `reconfigure_devices`).
+    /// Platforms that don't grab individual devices keep the default:
+    /// never changed.
+    fn take_devices_changed(&mut self) -> bool {
+        false
+    }
 }
 
 /// Creates a platform-specific implementation of the Platform trait.

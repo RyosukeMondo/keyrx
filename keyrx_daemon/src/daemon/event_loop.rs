@@ -384,6 +384,10 @@ fn inject_output_events(
 /// * `event_broadcaster` - Optional broadcaster for real-time WebSocket updates
 /// * `remapping_state` - The live remapping state, replaced in place on reload
 /// * `latency_recorder` - Optional lock-free latency recorder for metrics
+/// * `shared_state` - When present, republishes the captured-device set
+///   (H8: device count and per-device "active" status) whenever a hotplug
+///   rescan changes it - `None` for callers that publish it themselves
+///   (tests) or don't need it
 ///
 /// # Event Processing Flow
 ///
@@ -436,6 +440,7 @@ fn inject_output_events(
 ///         &mut None, // No remapping state (pass-through mode)
 ///         None, // No latency recording
 ///         None, // No telemetry
+///         None, // No shared state (no device-set republishing)
 ///     )
 /// }
 /// ```
@@ -449,6 +454,7 @@ pub fn run_event_loop<F>(
     remapping_state: &mut Option<RemappingState>,
     latency_recorder: Option<&LatencyRecorder>,
     telemetry: Option<&DaemonTelemetry>,
+    shared_state: Option<&super::DaemonSharedState>,
 ) -> Result<(), DaemonError>
 where
     F: FnMut(&mut Box<dyn Platform>) -> Result<Option<RemappingState>, DaemonError>,
@@ -509,6 +515,16 @@ where
                     platform,
                     &mut stats,
                 );
+            }
+        }
+
+        // A hotplug rescan (inside `capture_input`'s idle branch) may have
+        // changed which devices are captured; republish that to
+        // `DaemonSharedState` (H8) - a reload republishes on its own via
+        // `reload_callback`, so this only ever fires for hotplug.
+        if let Some(state) = shared_state {
+            if platform.take_devices_changed() {
+                super::publish_device_state(state, platform.as_ref());
             }
         }
 

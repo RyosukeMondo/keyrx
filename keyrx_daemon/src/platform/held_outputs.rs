@@ -81,6 +81,10 @@ impl Platform for HeldOutputs {
     ) -> PlatformResult<()> {
         self.inner.reconfigure_devices(configs)
     }
+
+    fn take_devices_changed(&mut self) -> bool {
+        self.inner.take_devices_changed()
+    }
 }
 
 #[cfg(test)]
@@ -145,5 +149,49 @@ mod tests {
         p.inject_output(KeyEvent::press(KeyCode::B)).unwrap();
         p.inject_output(KeyEvent::press(KeyCode::B)).unwrap(); // autorepeat
         assert_eq!(p.release_held_outputs().unwrap(), 1);
+    }
+
+    /// A decorator that overrides only some `Platform` methods must still
+    /// forward every other one to `inner` - the bug this guards against:
+    /// `HeldOutputs` implementing `Platform` by hand means a new trait
+    /// method with a default silently falls back to that default (here,
+    /// "never changed") instead of the inner platform's real answer,
+    /// unless someone remembers to add a delegating line here too. Found
+    /// via H8's hotplug device-count republishing going through
+    /// `HeldOutputs` and always reporting no change.
+    struct ChangedFlagPlatform(std::sync::atomic::AtomicBool);
+
+    impl Platform for ChangedFlagPlatform {
+        fn initialize(&mut self) -> PlatformResult<()> {
+            Ok(())
+        }
+        fn capture_input(&mut self) -> PlatformResult<KeyEvent> {
+            Err(crate::platform::PlatformError::NoInput)
+        }
+        fn inject_output(&mut self, _event: KeyEvent) -> PlatformResult<()> {
+            Ok(())
+        }
+        fn list_devices(&self) -> PlatformResult<Vec<DeviceInfo>> {
+            Ok(Vec::new())
+        }
+        fn shutdown(&mut self) -> PlatformResult<()> {
+            Ok(())
+        }
+        fn take_devices_changed(&mut self) -> bool {
+            self.0.swap(false, std::sync::atomic::Ordering::SeqCst)
+        }
+    }
+
+    #[test]
+    fn take_devices_changed_delegates_to_inner_platform() {
+        let inner = ChangedFlagPlatform(std::sync::atomic::AtomicBool::new(true));
+        let mut p = HeldOutputs::new(Box::new(inner));
+
+        assert!(
+            p.take_devices_changed(),
+            "must report the inner platform's real change, not the trait default (false)"
+        );
+        // The inner flag was consumed; a second call must not re-report it.
+        assert!(!p.take_devices_changed());
     }
 }

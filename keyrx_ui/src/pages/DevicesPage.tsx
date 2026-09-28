@@ -6,7 +6,6 @@ import { Modal } from '../components/Modal';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import {
   useDevices,
-  useSetDeviceEnabled,
   useForgetDevice,
   useRenameDevice,
   useGlobalLayout,
@@ -28,7 +27,6 @@ interface Device {
   identifier: string;
   layout: string;
   active: boolean;
-  enabled: boolean;
   vendorId?: string;
   productId?: string;
   serial?: string;
@@ -59,7 +57,6 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     error: fetchError,
     refetch,
   } = useDevices();
-  const { mutate: setDeviceEnabledMutation } = useSetDeviceEnabled();
   const { mutate: forgetDeviceMutation } = useForgetDevice();
   const { mutate: renameDeviceMutation } = useRenameDevice();
 
@@ -70,7 +67,6 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     identifier: entry.path,
     layout: entry.layout || 'ANSI_104',
     active: entry.active,
-    enabled: entry.enabled,
     vendorId: entry.path.match(/VID_([0-9A-F]{4})/)?.[1],
     productId: entry.path.match(/PID_([0-9A-F]{4})/)?.[1],
     serial: entry.serial || undefined,
@@ -161,10 +157,6 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
         },
       }
     );
-  };
-
-  const handleToggleEnabled = (deviceId: string, enabled: boolean) => {
-    setDeviceEnabledMutation({ id: deviceId, enabled });
   };
 
   const [globalLayoutSaved, setGlobalLayoutSaved] = useState(false);
@@ -344,7 +336,6 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                     onRenameCancel={handleRenameCancel}
                     onRenameSave={handleRenameSave}
                     onEditingNameChange={setEditingName}
-                    onToggleEnabled={handleToggleEnabled}
                     onForgetClick={setForgetDeviceId}
                   />
                 ))}
