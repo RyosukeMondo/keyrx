@@ -2,6 +2,7 @@
 
 pub mod auth;
 pub mod input_validation;
+pub mod origin_guard;
 pub mod rate_limit;
 pub mod security;
 pub mod security_headers;

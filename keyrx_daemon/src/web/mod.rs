@@ -356,6 +356,11 @@ async fn create_app_with_config(
             middleware::auth::auth_middleware,
         ))
         .layer(cors)
+        // Outermost: refuse foreign origins / DNS-rebound hosts first.
+        .layer(axum_middleware::from_fn_with_state(
+            middleware::origin_guard::OriginGuard::from_config(&config),
+            middleware::origin_guard::origin_guard_middleware,
+        ))
 }
 
 #[allow(dead_code)]
