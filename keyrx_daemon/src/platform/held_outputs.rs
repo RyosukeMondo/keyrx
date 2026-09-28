@@ -74,6 +74,13 @@ impl Platform for HeldOutputs {
         }
         Ok(held.len())
     }
+
+    fn reconfigure_devices(
+        &mut self,
+        configs: &[keyrx_core::config::DeviceConfig],
+    ) -> PlatformResult<()> {
+        self.inner.reconfigure_devices(configs)
+    }
 }
 
 #[cfg(test)]

@@ -3,6 +3,7 @@
 //! This module contains individual handlers for each CLI command,
 //! following the Single Responsibility Principle.
 
+pub mod doctor;
 pub mod list_devices;
 pub mod profiles;
 pub mod record;

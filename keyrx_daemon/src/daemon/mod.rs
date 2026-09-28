@@ -205,12 +205,14 @@ impl Daemon {
         let telemetry = Arc::new(DaemonTelemetry::new());
         let latency_recorder = telemetry.latency_recorder();
 
-        let device_count = platform.list_devices().map(|d| d.len()).unwrap_or(0);
         let shared_state = Arc::new(
-            DaemonSharedState::new(Arc::clone(&running), None, PathBuf::new(), device_count)
+            DaemonSharedState::new(Arc::clone(&running), None, PathBuf::new(), 0)
                 .sharing_reload_flag(signal_handler.reload_state().flag()),
         );
-        let remapping_state = apply_loaded(&mut live, &shared_state, loaded);
+        // Grabs only devices the live config's `device_start` patterns
+        // actually match (an empty/no config falls back to "*", the old
+        // grab-everything pass-through behavior) and publishes the count.
+        let remapping_state = apply_loaded(&mut platform, &mut live, &shared_state, loaded);
 
         info!("Daemon initialization complete");
         Ok(Self {
@@ -308,7 +310,7 @@ impl Daemon {
     /// Reloads now: switches to a pending activation if one was requested,
     /// otherwise re-reads the loaded source. On error the current mappings stay.
     pub fn reload(&mut self) -> Result<(), DaemonError> {
-        let new_state = reload_remapping(&mut self.live, &self.shared_state)?;
+        let new_state = reload_remapping(&mut self.platform, &mut self.live, &self.shared_state)?;
         release_held_outputs(&mut self.platform);
         self.remapping_state = new_state;
         self.telemetry.update_state(TelemetryState::empty());
@@ -376,7 +378,7 @@ impl Daemon {
             &mut self.platform,
             Arc::clone(&self.running),
             &self.signal_handler,
-            || reload_remapping(live, shared_state),
+            |platform| reload_remapping(platform, live, shared_state),
             self.event_broadcaster.as_ref(),
             &mut self.remapping_state,
             Some(&self.latency_recorder),
@@ -414,24 +416,33 @@ pub(crate) fn release_held_outputs(platform: &mut Box<dyn Platform>) {
 /// Resolves and loads what a reload should switch to (a pending activation,
 /// else the loaded source) and makes it live. Errors leave everything as is.
 fn reload_remapping(
+    platform: &mut Box<dyn Platform>,
     live: &mut LiveConfig,
     shared_state: &DaemonSharedState,
 ) -> Result<Option<RemappingState>, DaemonError> {
     let source = live.reload_source(shared_state.take_pending_activation());
     info!("Reloading configuration from {source:?}");
     let loaded = live.load(&source)?;
-    Ok(apply_loaded(live, shared_state, loaded))
+    Ok(apply_loaded(platform, live, shared_state, loaded))
 }
 
 /// Makes `loaded` the live configuration: builds its remapping state,
-/// configures platform key blocking, and publishes it to status.
+/// configures platform key blocking/device capture, and publishes it to
+/// status.
 fn apply_loaded(
+    platform: &mut Box<dyn Platform>,
     live: &mut LiveConfig,
     shared_state: &DaemonSharedState,
     loaded: Option<LoadedConfig>,
 ) -> Option<RemappingState> {
     let devices = loaded.as_ref().map(|l| l.devices.as_slice());
     configure_platform_blocking(devices);
+    // Re-evaluate which devices are grabbed (Linux) against the new
+    // patterns; a no-op on platforms that don't grab per device.
+    if let Err(e) = platform.reconfigure_devices(devices.unwrap_or(&[])) {
+        warn!("Failed to reconfigure device capture: {e}");
+    }
+    shared_state.set_device_count(platform.list_devices().map(|d| d.len()).unwrap_or(0));
     let remapping_state = devices.map(RemappingState::from_blocks);
     shared_state.set_active_config(
         loaded.as_ref().and_then(|l| l.profile.clone()),
@@ -453,8 +464,9 @@ fn apply_loaded(
 
 /// Windows: the low-level hook must block exactly the remapped source keys
 /// (of every block - the hook does not know which device a key came from),
-/// otherwise the original keystroke leaks through (double input). Linux grabs
-/// the devices, so there is nothing to configure.
+/// otherwise the original keystroke leaks through (double input). Linux
+/// instead re-evaluates which devices are grabbed (see the
+/// `reconfigure_devices` call in [`apply_loaded`]).
 #[cfg(target_os = "windows")]
 fn configure_platform_blocking(devices: Option<&[DeviceConfig]>) {
     use crate::platform::windows::platform_state::PlatformState;

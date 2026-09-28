@@ -18,6 +18,7 @@
 //! - `state`: Inspect runtime state (modifier/lock state)
 //! - `metrics`: Query daemon performance metrics
 //! - `list-devices`: List available input devices
+//! - `doctor`: Diagnose common setup problems and print fixes
 //! - `validate`: Validate configuration and device matching
 //! - `record`: Record input events to a file for replay testing
 
@@ -50,7 +51,9 @@ enum Commands {
     /// Start the daemon with the specified configuration file.
     Run {
         /// Path to the .krx configuration file compiled by keyrx_compiler.
-        /// If not specified, uses the active profile from %APPDATA%\keyrx.
+        /// If not specified, uses the active profile from the keyrx config
+        /// directory (Linux: $XDG_CONFIG_HOME/keyrx or ~/.config/keyrx;
+        /// Windows: %APPDATA%\keyrx). Override with KEYRX_CONFIG_DIR.
         #[arg(short, long, value_name = "FILE")]
         config: Option<PathBuf>,
 
@@ -96,6 +99,14 @@ enum Commands {
 
     /// List available input devices on the system.
     ListDevices,
+
+    /// Diagnose common setup problems (device access, uinput, udev rules,
+    /// config, whether the daemon is running) and print the fix for each.
+    Doctor {
+        /// Output as JSON.
+        #[arg(long)]
+        json: bool,
+    },
 
     /// Validate configuration and device matching without grabbing devices.
     Validate {
@@ -152,6 +163,7 @@ fn main() {
         Commands::State(args) => Command::State(args),
         Commands::Metrics(args) => Command::Metrics(args),
         Commands::ListDevices => Command::ListDevices,
+        Commands::Doctor { json } => Command::Doctor { json },
         Commands::Validate { config } => Command::Validate { config },
         Commands::Record { output, device } => Command::Record { output, device },
     };

@@ -451,7 +451,7 @@ pub fn run_event_loop<F>(
     telemetry: Option<&DaemonTelemetry>,
 ) -> Result<(), DaemonError>
 where
-    F: FnMut() -> Result<Option<RemappingState>, DaemonError>,
+    F: FnMut(&mut Box<dyn Platform>) -> Result<Option<RemappingState>, DaemonError>,
 {
     info!("Starting event processing loop");
 
@@ -463,7 +463,7 @@ where
         // Check for SIGHUP (reload request)
         if signal_handler.check_reload() {
             info!("Reload requested (SIGHUP or profile activation)");
-            match reload_callback() {
+            match reload_callback(platform) {
                 Ok(new_state) => {
                     super::release_held_outputs(platform);
                     *remapping_state = new_state;
@@ -487,6 +487,13 @@ where
                     event_broadcaster,
                     telemetry,
                 );
+            }
+            Err(crate::platform::PlatformError::EmergencyStop) => {
+                // The platform already ungrabbed every device; stop the loop
+                // so the keyboard stays usable for fixing the config.
+                warn!("{}", crate::platform::PlatformError::EmergencyStop);
+                running.store(false, Ordering::SeqCst);
+                break;
             }
             Err(e) => {
                 // Exit if shutdown requested

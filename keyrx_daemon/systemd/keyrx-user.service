@@ -95,9 +95,14 @@ ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=1
 
-# Environment for better debugging (optional)
-# Uncomment to enable debug logging:
-# Environment=RUST_LOG=debug
+# Debug logging: `run` does NOT read RUST_LOG (it uses env_logger with a
+# fixed filter, controlled only by the --debug flag), so setting RUST_LOG
+# here has no effect. To get verbose logs, override ExecStart via a drop-in
+# instead:
+#   systemctl --user edit keyrx
+#   [Service]
+#   ExecStart=
+#   ExecStart=%h/.local/bin/keyrx_daemon run --debug
 
 [Install]
 WantedBy=default.target

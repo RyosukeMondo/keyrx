@@ -133,11 +133,41 @@ fn reload_source_prefers_activation_then_loaded_source() {
 // ---- Daemon-side reload: what status reports vs. what is loaded ----------
 
 use crate::daemon::{apply_loaded, reload_remapping, DaemonSharedState};
+use crate::platform::{DeviceInfo, Platform, PlatformResult};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 fn shared_state() -> DaemonSharedState {
     DaemonSharedState::new(Arc::new(AtomicBool::new(true)), None, PathBuf::new(), 0)
+}
+
+/// A `Platform` double that does nothing - these tests only care about
+/// [`LiveConfig`]/[`DaemonSharedState`] bookkeeping, not device I/O.
+struct NoopPlatform;
+
+impl Platform for NoopPlatform {
+    fn initialize(&mut self) -> PlatformResult<()> {
+        Ok(())
+    }
+    fn capture_input(&mut self) -> PlatformResult<keyrx_core::runtime::event::KeyEvent> {
+        Err(crate::platform::PlatformError::NoInput)
+    }
+    fn inject_output(
+        &mut self,
+        _event: keyrx_core::runtime::event::KeyEvent,
+    ) -> PlatformResult<()> {
+        Ok(())
+    }
+    fn list_devices(&self) -> PlatformResult<Vec<DeviceInfo>> {
+        Ok(Vec::new())
+    }
+    fn shutdown(&mut self) -> PlatformResult<()> {
+        Ok(())
+    }
+}
+
+fn noop_platform() -> Box<dyn Platform> {
+    Box::new(NoopPlatform)
 }
 
 #[test]
@@ -150,11 +180,14 @@ fn activation_switches_mappings_and_status_together() {
     let shared = shared_state();
 
     let start = live.load(&ConfigSource::ActiveProfile).unwrap();
-    assert!(apply_loaded(&mut live, &shared, start).is_some());
+    let mut platform = noop_platform();
+    assert!(apply_loaded(&mut platform, &mut live, &shared, start).is_some());
     assert_eq!(shared.get_active_profile().as_deref(), Some("a"));
 
     shared.request_activation("b");
-    let mut state = reload_remapping(&mut live, &shared).unwrap().unwrap();
+    let mut state = reload_remapping(&mut platform, &mut live, &shared)
+        .unwrap()
+        .unwrap();
     let routed = state.route(Some("kbd"), |id| vec![id.to_string()]).unwrap();
     assert!(routed
         .lookup
@@ -176,14 +209,17 @@ fn failed_activation_keeps_previous_config_and_status() {
     let mut live = LiveConfig::new(dir.path().to_path_buf());
     let shared = shared_state();
     let start = live.load(&ConfigSource::ActiveProfile).unwrap();
-    apply_loaded(&mut live, &shared, start);
+    let mut platform = noop_platform();
+    apply_loaded(&mut platform, &mut live, &shared, start);
 
     shared.request_activation("missing");
-    assert!(reload_remapping(&mut live, &shared).is_err());
+    assert!(reload_remapping(&mut platform, &mut live, &shared).is_err());
     assert_eq!(shared.get_active_profile().as_deref(), Some("a"));
     assert_eq!(live.loaded().and_then(|l| l.profile.as_deref()), Some("a"));
     // The request was consumed: the next plain reload re-reads .active ("a").
-    assert!(reload_remapping(&mut live, &shared).unwrap().is_some());
+    assert!(reload_remapping(&mut platform, &mut live, &shared)
+        .unwrap()
+        .is_some());
     assert_eq!(shared.get_active_profile().as_deref(), Some("a"));
 }
 
@@ -196,7 +232,8 @@ fn explicit_file_is_reported_without_a_profile_name() {
     let shared = shared_state();
 
     let start = live.load(&ConfigSource::File(file.clone())).unwrap();
-    apply_loaded(&mut live, &shared, start);
+    let mut platform = noop_platform();
+    apply_loaded(&mut platform, &mut live, &shared, start);
     assert_eq!(shared.get_active_profile(), None);
     assert_eq!(shared.get_config_path(), file);
 }
@@ -210,15 +247,20 @@ fn plain_reload_follows_active_file_and_clears_on_delete() {
     let mut live = LiveConfig::new(dir.path().to_path_buf());
     let shared = shared_state();
     let start = live.load(&ConfigSource::ActiveProfile).unwrap();
-    apply_loaded(&mut live, &shared, start);
+    let mut platform = noop_platform();
+    apply_loaded(&mut platform, &mut live, &shared, start);
 
     // Out-of-band activation (CLI without a daemon connection) + SIGHUP.
     set_active(dir.path(), "b");
-    assert!(reload_remapping(&mut live, &shared).unwrap().is_some());
+    assert!(reload_remapping(&mut platform, &mut live, &shared)
+        .unwrap()
+        .is_some());
     assert_eq!(shared.get_active_profile().as_deref(), Some("b"));
 
     // Active profile deleted (ProfileManager removes .active) + reload.
     fs::remove_file(dir.path().join(".active")).unwrap();
-    assert!(reload_remapping(&mut live, &shared).unwrap().is_none());
+    assert!(reload_remapping(&mut platform, &mut live, &shared)
+        .unwrap()
+        .is_none());
     assert_eq!(shared.get_active_profile(), None);
 }

@@ -144,6 +144,15 @@ pub enum PlatformError {
         /// Suggestion for recovery or resolution.
         suggestion: String,
     },
+
+    /// The user held the emergency escape chord. The platform has already
+    /// released (ungrabbed) every device it was grabbing; the caller must
+    /// stop the event loop so the keyboard stays usable.
+    #[error(
+        "Emergency escape chord held: all keyboards released, stopping the event loop. \
+         Fix the active config and restart keyrx to resume remapping."
+    )]
+    EmergencyStop,
 }
 
 /// Convenience type alias for Results using PlatformError.

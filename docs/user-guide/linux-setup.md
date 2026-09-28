@@ -177,13 +177,23 @@ keyrx_daemon list-devices
 Output:
 ```
 Available keyboard devices:
-PATH                    NAME                           SERIAL
-/dev/input/event3       AT Translated Set 2 keyboard   -
-/dev/input/event18      USB Keyboard                   USB-12345
 
-Tip: Use these names in your config with device_start("USB Keyboard")
-     or use device_start("*") to match all keyboards.
+PATH                           NAME                      READABLE   SERIAL
+------------------------------------------------------------------------------------------
+/dev/input/event3              AT Translated Set 2 kbd   yes        -
+/dev/input/event18             USB Keyboard              yes        USB-12345
+
+Found 2 keyboard device(s).
+
+Tip: Use patterns in your configuration to match devices:
+  - "*" matches all keyboards
+  - "USB*" matches devices with USB in name/serial
+  - Exact name match for specific devices
 ```
+
+The `READABLE` column is a cheap permission check (no device is opened just
+to list it). A device listed as `no` cannot be grabbed by the daemon even if
+a `device_start` pattern matches it - see `keyrx_daemon doctor` for the fix.
 
 **Validate configuration (dry-run):**
 
@@ -193,19 +203,26 @@ keyrx_daemon validate --config my-config.krx
 
 Output:
 ```
-Step 1/3: Loading configuration...
-  [OK] Configuration loaded successfully
+Validating configuration: my-config.krx
 
-Step 2/3: Enumerating input devices...
-  Found 2 keyboard device(s)
+1. Loading configuration...
+   Configuration loaded: 1 device pattern(s)
+   [ 1] Pattern: "*" (5 mapping(s))
 
-Step 3/3: Matching devices to configuration...
-  [MATCH] /dev/input/event3 (AT Translated Set 2 keyboard)
-          Matched pattern: "*" (5 mappings)
-  [MATCH] /dev/input/event18 (USB Keyboard)
-          Matched pattern: "*" (5 mappings)
+2. Enumerating keyboard devices...
+   Found 2 keyboard device(s)
 
-Validation successful! 2 device(s) will be remapped.
+3. Matching devices to configuration patterns...
+
+   [MATCH] /dev/input/event3 -> pattern "*"
+           Name: AT Translated Set 2 keyboard
+   [MATCH] /dev/input/event18 -> pattern "*"
+           Name: USB Keyboard
+           Serial: USB-12345
+
+============================================================
+RESULT: Configuration is valid. 2 of 2 device(s) matched.
+
 Run 'keyrx_daemon run --config my-config.krx' to start remapping.
 ```
 
@@ -374,7 +391,23 @@ device_end();
 
 Use `keyrx_daemon list-devices` to find device names.
 
+Only devices a `device_start` pattern matches are grabbed - a keyboard
+matched by no block is left alone entirely (not remapped, not intercepted).
+Plugging in a keyboard (USB, or a Bluetooth keyboard reconnecting after
+suspend) is picked up automatically, without restarting the daemon, as soon
+as it matches a pattern; unplugging one is detected and released the same
+way. Both react within about a poll cycle of `/dev/input` changing, with no
+added input latency while typing.
+
 ## Troubleshooting
+
+Run `keyrx_daemon doctor` first - it checks input/uinput group membership
+(both configured in `/etc/group` *and* active in your current login session,
+since a group added by `usermod` needs a logout/login to take effect),
+`/dev/uinput` access, whether the udev rule is installed, whether the config
+directory and active profile resolve and compile, whether the daemon is
+reachable over IPC, and whether the web UI is listening - with the fix for
+whatever fails. `keyrx_daemon doctor --json` for scripting.
 
 ### Permission Denied
 
@@ -467,6 +500,16 @@ Use `keyrx_daemon list-devices` to find device names.
    keyrx_daemon run --config your-config.krx --debug
    ```
 
+### Emergency Escape: Keyboard Unusable From a Bad Config
+
+If an active profile remaps a key you need (e.g. Escape) badly enough that
+you cannot type, hold **Left Ctrl + Right Ctrl + Escape** together. The
+daemon releases (ungrabs) every keyboard it holds and stops immediately, on
+the raw physical keys, regardless of what the broken config maps them to.
+Your keyboard goes back to normal system input right away; fix the config
+(e.g. via the web UI or `keyrx_daemon profiles`) and start the daemon again
+(`keyrx_daemon run`, or `systemctl --user restart keyrx`).
+
 ### Keys Stuck After Crash
 
 If the daemon crashes while a key is held, it may appear "stuck."
@@ -528,14 +571,20 @@ Only add trusted users to the `uinput` group.
 
 ### systemd Security Hardening
 
-The provided systemd service file includes security hardening:
+The system-wide unit (`keyrx_daemon/systemd/keyrx.service`) includes security
+hardening. The per-user unit (`keyrx_daemon/systemd/keyrx-user.service`) does
+**not** set these — it runs as your own login user, so most of them would be
+redundant or would block access to `~/.config/keyrx`:
 
 - `NoNewPrivileges=yes` - Prevents privilege escalation
 - `ProtectSystem=strict` - Read-only filesystem
 - `ProtectHome=yes` - No home directory access
-- `PrivateTmp=yes` - Isolated temporary directory
 - `DeviceAllow=...` - Restricted device access
 - `SystemCallFilter=...` - Limited system calls
+
+Note: `PrivateTmp` is deliberately *not* set on `keyrx.service` either, since
+the daemon's IPC socket lives at `/tmp/keyrx-daemon.sock` and must stay
+visible to `keyrx_daemon status`/`profiles activate` run from a normal shell.
 
 ### Best Practices
 

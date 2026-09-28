@@ -100,7 +100,11 @@ RestartSec=1
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
-PrivateTmp=yes
+# PrivateTmp is intentionally NOT set: the daemon's IPC socket is
+# /tmp/keyrx-daemon.sock (keyrx_daemon/src/ipc/endpoint.rs). PrivateTmp=yes
+# would bind-mount a private /tmp for this unit, hiding that socket from
+# `keyrx_daemon status`/`profiles activate`/etc. run from a normal user
+# shell and breaking all IPC against this service.
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes

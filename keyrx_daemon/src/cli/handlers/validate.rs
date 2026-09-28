@@ -56,7 +56,7 @@ pub fn handle_validate(config_path: &Path) -> Result<(), (i32, String)> {
         println!("To fix permission issues, either:");
         println!("  - Run as root (for testing only)");
         println!("  - Add your user to the 'input' group: sudo usermod -aG input $USER");
-        println!("  - Install the udev rules: see docs/LINUX_SETUP.md");
+        println!("  - Install the udev rules: see docs/user-guide/linux-setup.md");
         return Ok(());
     }
 

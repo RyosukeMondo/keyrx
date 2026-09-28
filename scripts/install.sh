@@ -367,6 +367,16 @@ echo "  5. Check daemon status:"
 echo "     \$ systemctl --user status keyrx"
 echo ""
 
+if [[ "$INSTALL_AUTOSTART" == true ]]; then
+    echo "  Note: an XDG autostart entry was also installed (login launches"
+    echo "  'keyrx_daemon run' directly). Enabling the systemd service (step 4)"
+    echo "  as well starts a SECOND daemon on next login, which will delete the"
+    echo "  first one's live IPC socket and fight it for device grabs. Pick one:"
+    echo "    - systemd (recommended): rm '$AUTOSTART_DIR/keyrx.desktop'"
+    echo "    - autostart entry only: skip step 4, do not enable/start keyrx.service"
+    echo ""
+fi
+
 if [[ "$INSTALL_UDEV" == true ]]; then
     echo "  Note: If udev rules were installed, you may need to:"
     echo "    - Log out and log back in for group membership to take effect"

@@ -4,7 +4,9 @@
 //! based on their capabilities (presence of alphabetic keys). It also
 //! provides pattern matching for selecting devices based on configuration.
 
-use log::warn;
+use std::collections::HashMap;
+
+use log::{info, warn};
 
 use keyrx_core::config::DeviceConfig;
 use keyrx_core::runtime::{DeviceState, KeyLookup};
@@ -12,6 +14,7 @@ use keyrx_core::runtime::{DeviceState, KeyLookup};
 use super::linux_enum::enumerate_keyboards;
 use super::{DiscoveryError, KeyboardInfo};
 use crate::platform::linux::EvdevInput;
+use crate::platform::InputDevice;
 
 pub struct ManagedDevice {
     info: KeyboardInfo,
@@ -100,42 +103,46 @@ pub struct DeviceManager {
     devices: Vec<ManagedDevice>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct RefreshResult {
     pub added: usize,
     pub removed: usize,
+    /// Keyboards that matched a `device_start` pattern but could not be
+    /// opened or grabbed (permission denied, in use, etc).
+    pub denied: usize,
+}
+
+/// First config (in declaration order) whose pattern matches `info`.
+fn first_match<'c>(
+    info: &KeyboardInfo,
+    configs: &'c [DeviceConfig],
+) -> Option<(usize, &'c DeviceConfig)> {
+    configs
+        .iter()
+        .enumerate()
+        .find(|(_, c)| super::match_device(info, &c.identifier.pattern))
 }
 
 impl DeviceManager {
+    /// A manager with no devices, ready for [`Self::reconcile`].
+    pub fn empty() -> Self {
+        Self {
+            devices: Vec::new(),
+        }
+    }
+
+    /// Discovers and grabs every keyboard matching `configs`. Fails if none
+    /// end up grabbed (see [`Self::reconcile`] for a non-fatal variant used
+    /// by hotplug and config reload, which keeps the daemon alive with 0
+    /// devices rather than crash-looping).
     pub fn discover(configs: &[DeviceConfig]) -> Result<Self, DiscoveryError> {
-        let keyboards = enumerate_keyboards()?;
-        if keyboards.is_empty() {
+        let mut manager = Self::empty();
+        let result = manager.reconcile(configs, "*")?;
+        if manager.devices.is_empty() {
             return Err(DiscoveryError::NoDevicesFound);
         }
-
-        let mut managed_devices = Vec::new();
-        for keyboard_info in keyboards {
-            for (idx, config) in configs.iter().enumerate() {
-                if super::match_device(&keyboard_info, &config.identifier.pattern) {
-                    if let Ok(input) = EvdevInput::open(&keyboard_info.path) {
-                        managed_devices.push(ManagedDevice::new(
-                            keyboard_info.clone(),
-                            input,
-                            config,
-                            idx,
-                        ));
-                        break;
-                    }
-                }
-            }
-        }
-
-        if managed_devices.is_empty() {
-            return Err(DiscoveryError::NoDevicesFound);
-        }
-        Ok(Self {
-            devices: managed_devices,
-        })
+        let _ = result;
+        Ok(manager)
     }
 
     pub fn device_count(&self) -> usize {
@@ -168,41 +175,137 @@ impl DeviceManager {
         }
     }
 
-    pub fn refresh(&mut self, configs: &[DeviceConfig]) -> Result<RefreshResult, DiscoveryError> {
-        let current_keyboards = enumerate_keyboards()?;
-        let current_paths: std::collections::HashSet<_> =
-            current_keyboards.iter().map(|k| k.path.clone()).collect();
+    /// Re-evaluates which physical keyboards should be grabbed against
+    /// `configs` (an empty slice matches nothing - use a single `"*"`
+    /// [`DeviceConfig`] for pass-through), restricted to keyboards also
+    /// matching `scope` (`"*"` for no restriction - tests pass a specific
+    /// device name/pattern so they can never touch anything else, whatever
+    /// `configs` says). Drops devices that were unplugged or that no longer
+    /// match any in-scope pattern (releasing the grab first), rebinds
+    /// devices that still match but to a different block, and grabs newly
+    /// matching devices (hotplugged, or newly matched by a reload).
+    ///
+    /// Never fails just because nothing ended up grabbed - the daemon stays
+    /// alive so IPC/web/`doctor` remain usable. A device that matched a
+    /// pattern but could not be opened or grabbed is logged with the reason
+    /// and counted in [`RefreshResult::denied`], not silently dropped.
+    pub fn reconcile(
+        &mut self,
+        configs: &[DeviceConfig],
+        scope: &str,
+    ) -> Result<RefreshResult, DiscoveryError> {
+        let current_keyboards: Vec<KeyboardInfo> = enumerate_keyboards()?
+            .into_iter()
+            .filter(|k| scope == "*" || super::match_device(k, scope))
+            .collect();
+        let by_path: HashMap<&std::path::Path, &KeyboardInfo> = current_keyboards
+            .iter()
+            .map(|k| (k.path.as_path(), k))
+            .collect();
 
         let mut removed = 0;
-        self.devices.retain(|d| {
-            if current_paths.contains(&d.info.path) {
-                true
-            } else {
-                removed += 1;
-                false
+        self.devices.retain_mut(|d| {
+            let matched = by_path
+                .get(d.info.path.as_path())
+                .and_then(|info| first_match(info, configs));
+            match matched {
+                Some((idx, config)) => {
+                    if idx != d.config_index {
+                        info!(
+                            "Rebinding '{}' ({}) to device_start block {idx}",
+                            d.info.name,
+                            d.info.path.display()
+                        );
+                        d.config_index = idx;
+                    }
+                    d.rebuild_lookup(config);
+                    true
+                }
+                None => {
+                    let reason = if by_path.contains_key(d.info.path.as_path()) {
+                        "no longer matches any device_start pattern"
+                    } else {
+                        "unplugged"
+                    };
+                    info!(
+                        "Releasing '{}' ({}): {reason}",
+                        d.info.name,
+                        d.info.path.display()
+                    );
+                    if let Err(e) = d.input.release() {
+                        warn!("Failed to release {}: {e}", d.info.path.display());
+                    }
+                    removed += 1;
+                    false
+                }
             }
         });
 
-        let managed_paths: std::collections::HashSet<_> =
+        let managed_paths: std::collections::HashSet<std::path::PathBuf> =
             self.devices.iter().map(|d| d.info.path.clone()).collect();
         let mut added = 0;
-        for info in current_keyboards {
+        let mut denied = 0;
+        for info in &current_keyboards {
             if managed_paths.contains(&info.path) {
                 continue;
             }
-            for (idx, config) in configs.iter().enumerate() {
-                if super::match_device(&info, &config.identifier.pattern) {
-                    if let Ok(input) = EvdevInput::open(&info.path) {
+            let Some((idx, config)) = first_match(info, configs) else {
+                continue;
+            };
+            match EvdevInput::open(&info.path) {
+                Ok(mut input) => match input.grab() {
+                    Ok(()) => {
+                        info!("Grabbed keyboard '{}' ({})", info.name, info.path.display());
                         self.devices
                             .push(ManagedDevice::new(info.clone(), input, config, idx));
                         added += 1;
-                        break;
                     }
+                    Err(e) => {
+                        warn!(
+                            "Matched keyboard '{}' ({}) but could not grab it: {e}",
+                            info.name,
+                            info.path.display()
+                        );
+                        denied += 1;
+                    }
+                },
+                Err(e) => {
+                    warn!(
+                        "Matched keyboard '{}' ({}) but could not open it: {e}",
+                        info.name,
+                        info.path.display()
+                    );
+                    denied += 1;
                 }
             }
         }
+        if denied > 0 {
+            warn!(
+                "{denied} matched keyboard(s) could not be grabbed. If this is a permission \
+                 issue: sudo usermod -aG input $USER, then log out and back in (or run \
+                 `keyrx_daemon doctor`)."
+            );
+        }
 
-        Ok(RefreshResult { added, removed })
+        Ok(RefreshResult {
+            added,
+            removed,
+            denied,
+        })
+    }
+
+    /// Releases and removes a device by id. Used when its fd errors on read
+    /// (e.g. `ENODEV`) - it has almost certainly been unplugged, and holding
+    /// onto a dead fd would otherwise starve every other managed device's
+    /// events behind it. No-op if `id` is not currently managed.
+    pub fn drop_by_id(&mut self, id: &str) {
+        let Some(pos) = self.devices.iter().position(|d| d.device_id() == id) else {
+            return;
+        };
+        let mut removed = self.devices.remove(pos);
+        if let Err(e) = removed.input.release() {
+            warn!("Failed to release {}: {e}", removed.info.path.display());
+        }
     }
 
     /// Returns a list of all device IDs.

@@ -16,36 +16,49 @@ pub fn handle_list_devices() -> Result<(), (i32, String)> {
     })?;
 
     if keyboards.is_empty() {
-        println!("No keyboard devices found.");
-        println!();
-        println!("This could mean:");
-        println!("  - No keyboards are connected");
-        println!("  - Permission denied to read /dev/input/event* devices");
-        println!();
-        println!("To fix permission issues, either:");
-        println!("  - Run as root (for testing only)");
-        println!("  - Add your user to the 'input' group: sudo usermod -aG input $USER");
-        println!("  - Install the udev rules: see docs/LINUX_SETUP.md");
+        // Enumeration reads world-readable sysfs metadata, not /dev/input
+        // itself (see device_manager::linux_enum), so an empty result means
+        // no keyboard-like device is plugged in - it is not a permission
+        // symptom. A device present but not *grabbable* is diagnosed below,
+        // once devices are actually listed.
+        println!("No keyboard devices found: no keyboard-like device is connected.");
+        println!("Run `keyrx_daemon doctor` for a full diagnosis.");
         return Ok(());
     }
 
     println!("Available keyboard devices:");
     println!();
-    println!("{:<30} {:<25} SERIAL", "PATH", "NAME");
-    println!("{}", "-".repeat(80));
+    println!("{:<30} {:<25} {:<10} SERIAL", "PATH", "NAME", "READABLE");
+    println!("{}", "-".repeat(90));
 
+    let mut unreadable = 0;
     for keyboard in &keyboards {
         let serial_display = keyboard.serial.as_deref().unwrap_or("-");
+        let readable = is_readable(&keyboard.path);
+        if !readable {
+            unreadable += 1;
+        }
         println!(
-            "{:<30} {:<25} {}",
+            "{:<30} {:<25} {:<10} {}",
             keyboard.path.display(),
             truncate_string(&keyboard.name, 24),
+            if readable { "yes" } else { "no" },
             serial_display
         );
     }
 
     println!();
     println!("Found {} keyboard device(s).", keyboards.len());
+    if unreadable > 0 {
+        println!();
+        println!(
+            "{unreadable} device(s) can be listed (world-readable metadata) but not opened - \
+             the daemon cannot grab a device it matches unless it can open it, so its keys \
+             will not be remapped."
+        );
+        println!("  Fix: sudo usermod -aG input $USER, then log out and back in.");
+        println!("  Check everything at once: keyrx_daemon doctor");
+    }
     println!();
     println!("Tip: Use patterns in your configuration to match devices:");
     println!("  - \"*\" matches all keyboards");
@@ -53,6 +66,14 @@ pub fn handle_list_devices() -> Result<(), (i32, String)> {
     println!("  - Exact name match for specific devices");
 
     Ok(())
+}
+
+#[cfg(target_os = "linux")]
+/// Whether this process can currently open `path` for reading, without
+/// actually opening it (a real open+close costs ~15ms per device - see
+/// `device_manager::linux_enum`, and this command may list many).
+fn is_readable(path: &std::path::Path) -> bool {
+    nix::unistd::access(path, nix::unistd::AccessFlags::R_OK).is_ok()
 }
 
 #[cfg(target_os = "linux")]
