@@ -21,6 +21,10 @@ bitvec = { workspace = true }
 hashbrown = { workspace = true }
 log = { workspace = true }
 thiserror = { workspace = true }
+# Not optional: SharedModifierState (runtime::state::shared) uses
+# spin::Mutex so the engine is Send across an alloc::sync::Arc - needed
+# because the daemon moves it onto a dedicated platform thread.
+spin = "0.9"
 
 # WASM-specific dependencies
 wasm-bindgen = { workspace = true, optional = true }
@@ -33,7 +37,6 @@ web-sys = { workspace = true, optional = true }
 rhai = { workspace = true, optional = true }
 sha2 = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
-spin = { version = "0.9", optional = true }
 
 # WASM random number generation (for transitive dependencies like ahash)
 # wasm_js feature is required for WASM targets
@@ -44,7 +47,7 @@ getrandom_02 = { workspace = true, optional = true }
 
 [features]
 default = []
-wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_cell", "web-sys", "rhai", "rhai/wasm-bindgen", "sha2", "serde_json", "getrandom_02", "spin"]
+wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_cell", "web-sys", "rhai", "rhai/wasm-bindgen", "sha2", "serde_json", "getrandom_02"]
 
 [dev-dependencies]
 wasm-bindgen-test = { workspace = true }

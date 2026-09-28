@@ -5,14 +5,13 @@
 
 extern crate alloc;
 
+use alloc::sync::Arc;
+
 use arrayvec::ArrayVec;
-use bitvec::prelude::*;
 
-use crate::config::{ImeState, KeyCode, MAX_MODIFIER_ID, MODIFIER_COUNT};
+use crate::config::{ImeState, KeyCode};
+use crate::runtime::state::shared::{SharedModifierState, SharedState};
 use crate::runtime::tap_hold::{TapHoldProcessor, DEFAULT_MAX_PENDING};
-
-/// Maximum valid modifier/lock ID (re-exported from config SSOT)
-const MAX_VALID_ID: u8 = MAX_MODIFIER_ID as u8;
 
 /// Maximum number of simultaneously pressed keys to track
 /// This should cover even the most extreme cases (10-finger roll)
@@ -47,13 +46,17 @@ const MAX_OUTPUT_KEYS_PER_INPUT: usize = 8;
 /// assert!(state.is_modifier_active(0));
 /// ```
 pub struct DeviceState {
-    /// Modifier state (255 bits, IDs 0-254)
-    modifiers: BitVec<u8, Lsb0>,
-    /// Lock state (255 bits, IDs 0-254)
-    locks: BitVec<u8, Lsb0>,
-    /// Tap-hold processor for dual-function keys
+    /// Modifier/lock bits. Shared by reference across every `DeviceState`
+    /// created via [`DeviceState::new_sharing`] (see the cross-device state
+    /// sharing docs on [`SharedModifierState`]); private and unshared for a
+    /// plain [`DeviceState::new`].
+    shared: SharedState,
+    /// Tap-hold processor for dual-function keys (per-device: a hold on one
+    /// device must not be affected by keystrokes on another).
     tap_hold: TapHoldProcessor<DEFAULT_MAX_PENDING>,
-    /// Pressed key tracking: (input_key, [output_keys]) pairs
+    /// Pressed key tracking: (input_key, [output_keys]) pairs (per-device: a
+    /// release on one device must never release another device's tracked
+    /// outputs).
     /// This ensures release events match their corresponding press events
     /// Supports multiple output keys per input (e.g., Shift+Z generates 2 keys)
     pressed_keys:
@@ -63,7 +66,8 @@ pub struct DeviceState {
 }
 
 impl DeviceState {
-    /// Creates a new device state with all bits cleared
+    /// Creates a new device state with all bits cleared, and its own
+    /// private (unshared) modifier/lock state.
     ///
     /// # Example
     ///
@@ -73,21 +77,26 @@ impl DeviceState {
     /// assert!(!state.is_lock_active(0));
     /// ```
     pub fn new() -> Self {
+        Self::new_sharing(&SharedModifierState::new_handle())
+    }
+
+    /// Creates a device state whose modifier/lock bits are SHARED with
+    /// every other `DeviceState` created from the same handle - see the
+    /// cross-device state sharing docs on [`SharedModifierState`]. Tap-hold
+    /// and pressed-key tracking are always private to the new state.
+    pub fn new_sharing(shared: &SharedState) -> Self {
         Self {
-            modifiers: bitvec![u8, Lsb0; 0; MODIFIER_COUNT],
-            locks: bitvec![u8, Lsb0; 0; MODIFIER_COUNT],
+            shared: Arc::clone(shared),
             tap_hold: TapHoldProcessor::new(),
             pressed_keys: ArrayVec::new(),
             ime_state: ImeState::default(),
         }
     }
 
-    /// Validates that a modifier/lock ID is in valid range (0-254)
-    ///
-    /// Returns true if valid, logs error and returns false if invalid (>254).
-    #[inline]
-    pub(super) fn validate_id(id: u8) -> bool {
-        id <= MAX_VALID_ID
+    /// The modifier/lock handle this state reads and writes - clone it into
+    /// [`DeviceState::new_sharing`] to make another device share it.
+    pub fn shared_handle(&self) -> SharedState {
+        Arc::clone(&self.shared)
     }
 
     /// Sets a modifier bit to active
@@ -109,11 +118,7 @@ impl DeviceState {
     /// assert!(!state.set_modifier(255)); // Invalid ID
     /// ```
     pub fn set_modifier(&mut self, id: u8) -> bool {
-        if !Self::validate_id(id) {
-            return false;
-        }
-        self.modifiers.set(id as usize, true);
-        true
+        self.shared.lock().set_modifier(id)
     }
 
     /// Clears a modifier bit to inactive
@@ -135,11 +140,7 @@ impl DeviceState {
     /// assert!(!state.is_modifier_active(0));
     /// ```
     pub fn clear_modifier(&mut self, id: u8) -> bool {
-        if !Self::validate_id(id) {
-            return false;
-        }
-        self.modifiers.set(id as usize, false);
-        true
+        self.shared.lock().clear_modifier(id)
     }
 
     /// Toggles a lock bit (OFF→ON or ON→OFF)
@@ -162,12 +163,7 @@ impl DeviceState {
     /// assert!(!state.is_lock_active(0));
     /// ```
     pub fn toggle_lock(&mut self, id: u8) -> bool {
-        if !Self::validate_id(id) {
-            return false;
-        }
-        let current = self.locks[id as usize];
-        self.locks.set(id as usize, !current);
-        true
+        self.shared.lock().toggle_lock(id)
     }
 
     /// Checks if a modifier is active
@@ -189,10 +185,7 @@ impl DeviceState {
     /// assert!(state.is_modifier_active(0));
     /// ```
     pub fn is_modifier_active(&self, id: u8) -> bool {
-        if !Self::validate_id(id) {
-            return false;
-        }
-        self.modifiers[id as usize]
+        self.shared.lock().is_modifier_active(id)
     }
 
     /// Checks if a lock is active
@@ -214,10 +207,7 @@ impl DeviceState {
     /// assert!(state.is_lock_active(0));
     /// ```
     pub fn is_lock_active(&self, id: u8) -> bool {
-        if !Self::validate_id(id) {
-            return false;
-        }
-        self.locks[id as usize]
+        self.shared.lock().is_lock_active(id)
     }
 
     /// Returns the current IME state

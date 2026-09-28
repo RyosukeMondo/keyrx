@@ -15,8 +15,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 // Re-export Instant from std::time for internal use
 use std::time::Instant;
 
-use keyrx_core::config::BaseKeyMapping;
-use keyrx_core::runtime::{check_tap_hold_timeouts, process_event_for_identities};
 use log::{info, trace, warn};
 
 use crate::platform::Platform;
@@ -72,19 +70,6 @@ impl EventLoopStats {
     }
 }
 
-/// Determines mapping type string from a BaseKeyMapping.
-fn get_mapping_type(mapping: &BaseKeyMapping) -> &'static str {
-    match mapping {
-        BaseKeyMapping::Simple { .. } => "simple",
-        BaseKeyMapping::Modifier { .. } => "modifier",
-        BaseKeyMapping::Lock { .. } => "lock",
-        BaseKeyMapping::TapHold { .. } => "tap_hold",
-        BaseKeyMapping::HoldOnly { .. } => "hold_only",
-        BaseKeyMapping::ModifiedOutput { .. } => "modified_output",
-        BaseKeyMapping::Sequence { .. } => "sequence",
-    }
-}
-
 /// Returns current timestamp in microseconds since UNIX epoch.
 pub(crate) fn current_timestamp_us() -> u64 {
     SystemTime::now()
@@ -108,11 +93,10 @@ fn format_output_description(output_events: &[keyrx_core::runtime::KeyEvent]) ->
 
 /// Builds a packed telemetry state snapshot from the live device state.
 ///
-/// Mirrors the [`TelemetryState`] bit layout: modifiers 0..128, locks 0..64;
-/// the active layer comes from the device block's layer modifiers.
+/// Mirrors the [`TelemetryState`] bit layout: modifiers 0..128, locks 0..64.
 fn build_telemetry_state(
     state: &keyrx_core::runtime::DeviceState,
-    layers: &[u8],
+    active_layer: Option<u8>,
 ) -> TelemetryState {
     let mut snapshot = TelemetryState::empty();
     for id in 0u8..128 {
@@ -125,7 +109,7 @@ fn build_telemetry_state(
             snapshot.set_lock(id, true);
         }
     }
-    snapshot.set_active_layer(super::remapping_state::active_layer(state, layers));
+    snapshot.set_active_layer(active_layer);
     snapshot
 }
 
@@ -204,11 +188,8 @@ fn handle_timeout_events(
     stats: &mut EventLoopStats,
 ) {
     if let Some(ref mut remap_state) = remapping_state {
-        let current_time = current_timestamp_us();
-        for state in remap_state.states_mut() {
-            let timeout_events = check_tap_hold_timeouts(current_time, state);
-            inject_timeout_events(&timeout_events, platform, stats);
-        }
+        let timeout_events = remap_state.tick(current_timestamp_us());
+        inject_timeout_events(&timeout_events, platform, stats);
     }
 }
 
@@ -301,8 +282,10 @@ fn ensure_timestamp(event: keyrx_core::runtime::KeyEvent) -> keyrx_core::runtime
     }
 }
 
-/// The result of running one event through the live config.
-struct Remapped {
+/// The result of running one event through the live config, with the
+/// telemetry-ready state snapshot the daemon (but not the shared engine)
+/// cares about.
+struct ProcessedEvent {
     outputs: Vec<keyrx_core::runtime::KeyEvent>,
     mapping_type: Option<&'static str>,
     triggered: bool,
@@ -310,49 +293,43 @@ struct Remapped {
     state: Option<TelemetryState>,
 }
 
-/// Routes `event` to its device's block and runs it through the remapping
-/// engine (both platforms). Unmatched devices and pass-through mode return the
-/// event unchanged.
+/// Routes `event` to its device's block and runs it through
+/// [`RemappingState::process`] (the shared `keyrx_core` engine - both
+/// platforms and the simulation driver use the same code). Unmatched
+/// devices and pass-through mode return the event unchanged.
 fn remap_event(
     event: &keyrx_core::runtime::KeyEvent,
     remapping_state: Option<&mut RemappingState>,
     platform: &dyn Platform,
-) -> Remapped {
-    let pass_through = || Remapped {
-        outputs: vec![event.clone()],
-        mapping_type: None,
-        triggered: false,
-        state: None,
-    };
+) -> ProcessedEvent {
     let Some(remap_state) = remapping_state else {
-        return pass_through();
+        return ProcessedEvent {
+            outputs: vec![event.clone()],
+            mapping_type: None,
+            triggered: false,
+            state: None,
+        };
     };
-    let Some(routed) = remap_state.route(event.device_id(), |id| device_identities(platform, id))
-    else {
-        return pass_through();
-    };
-    if let Some(ime) = platform.query_ime_state() {
-        routed.state.set_ime_state(ime);
-    }
-    let identities: Vec<&str> = routed.identities.iter().map(String::as_str).collect();
-    let mapping =
-        routed
-            .lookup
-            .find_mapping_for_identities(event.keycode(), routed.state, &identities);
-    let mapping_type = mapping.map(get_mapping_type);
-    let triggered = mapping.is_some();
+    let device_id = event.device_id().map(String::from);
+    let ime = platform.query_ime_state();
     // Ensure real timestamp for tap-hold timeout resolution
-    let outputs = process_event_for_identities(
+    let remapped = remap_state.process(
         ensure_timestamp(event.clone()),
-        routed.lookup,
-        routed.state,
-        &identities,
+        |id| device_identities(platform, id),
+        ime,
     );
-    let state = triggered.then(|| build_telemetry_state(routed.state, routed.layers));
-    Remapped {
-        outputs,
-        mapping_type,
-        triggered,
+    // A triggered mapping implies the device was routed to a block, so
+    // `state_of` is expected to return Some; if it somehow doesn't, skip the
+    // telemetry snapshot for this event rather than panic the event loop.
+    let state = remapped.triggered.then_some(()).and_then(|()| {
+        remap_state
+            .state_of(device_id.as_deref())
+            .map(|device_state| build_telemetry_state(device_state, remapped.active_layer))
+    });
+    ProcessedEvent {
+        outputs: remapped.outputs,
+        mapping_type: remapped.mapping_type,
+        triggered: remapped.triggered,
         state,
     }
 }

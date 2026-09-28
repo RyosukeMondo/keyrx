@@ -29,6 +29,7 @@ pub mod clock;
 pub mod device_pattern;
 pub mod event;
 pub mod lookup;
+pub mod remapper;
 pub mod state;
 pub mod tap_hold;
 
@@ -38,7 +39,8 @@ pub use event::{
     check_tap_hold_timeouts, process_event, process_event_for_identities, KeyEvent, KeyEventType,
 };
 pub use lookup::KeyLookup;
-pub use state::DeviceState;
+pub use remapper::{active_layer, layer_modifiers, Remapped, Remapper, Routed};
+pub use state::{DeviceState, SharedModifierState, SharedState};
 pub use tap_hold::{
     PendingKeyRegistry, TapHoldConfig, TapHoldOutput, TapHoldPhase, TapHoldProcessor, TapHoldState,
     TimeoutResult, DEFAULT_MAX_PENDING, MAX_OUTPUT_EVENTS,

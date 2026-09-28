@@ -5,9 +5,11 @@
 
 mod condition;
 mod core;
+mod shared;
 
 // Re-export the main struct publicly
 pub use self::core::DeviceState;
+pub use shared::{SharedModifierState, SharedState};
 
 #[cfg(test)]
 mod tests;
