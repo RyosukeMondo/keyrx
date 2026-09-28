@@ -27,26 +27,28 @@ pub fn initialize_platform() -> Result<Box<dyn Platform>, (i32, String)> {
     })
 }
 
-/// Initialize logging with the specified debug level.
+/// Initialize logging.
 ///
-/// # Arguments
-///
-/// * `debug` - Whether to enable debug-level logging
+/// `RUST_LOG` wins when set (e.g. `RUST_LOG=info,keyrx_core=trace` for the
+/// tap-hold state machine in a debug build). Otherwise `debug` turns on debug
+/// output for keyrx's own crates only - dependencies (hyper, tower, ...) stay
+/// at info so they do not bury the remapping lines.
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 pub fn init_logging(debug: bool) {
-    use env_logger::Builder;
-    use log::LevelFilter;
+    use env_logger::{Builder, Env};
 
-    let level = if debug {
-        LevelFilter::Debug
-    } else {
-        LevelFilter::Info
-    };
-
-    Builder::new()
-        .filter_level(level)
+    Builder::from_env(Env::default().default_filter_or(default_log_filter(debug)))
         .format_timestamp_millis()
         .init();
+}
+
+/// The log filter used when `RUST_LOG` is not set.
+pub fn default_log_filter(debug: bool) -> &'static str {
+    if debug {
+        "info,keyrx_daemon=debug,keyrx_core=debug,keyrx_compiler=debug"
+    } else {
+        "info"
+    }
 }
 
 /// Log startup version information and system status.
@@ -185,5 +187,24 @@ mod tests {
         // Platform creation depends on OS features
         // This test verifies the function signature is correct
         let _result = initialize_platform();
+    }
+
+    #[test]
+    fn debug_filter_raises_only_keyrx_crates() {
+        use log::{Level, LevelFilter, Log, Metadata};
+        let logger = |debug| {
+            env_logger::Builder::new()
+                .parse_filters(default_log_filter(debug))
+                .build()
+        };
+        let debug = logger(true);
+        let enabled = |target: &str, level| {
+            debug.enabled(&Metadata::builder().target(target).level(level).build())
+        };
+        assert!(enabled("keyrx_daemon::daemon", Level::Debug));
+        assert!(enabled("keyrx_core::runtime", Level::Debug));
+        assert!(!enabled("hyper::proto", Level::Debug));
+        assert!(enabled("hyper::proto", Level::Info));
+        assert_eq!(logger(false).filter(), LevelFilter::Info);
     }
 }

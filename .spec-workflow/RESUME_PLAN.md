@@ -424,6 +424,12 @@ make each one analyzable/debuggable, speed up iteration, fix real bugs.
   yields the MD_00 layer's E (Num2) instead of Enter,E. Implement QMK
   permissive hold (buffer the interrupting press; hold only if it is
   released while the tap-hold key is still down; timeout still → hold).
+- [ ] **H7 — Delete the test-only engine.** `keyrx_daemon::processor::EventProcessor`
+  is used by no production path, only by tests (integration_test,
+  processor_test, multi_device_integration_test, ...): those suites verify an
+  engine the daemon never runs. After H1, port what they assert onto the one
+  engine and delete `processor/` and the dead `src/logging.rs` (JSON tracing
+  setup nothing initializes).
 - [ ] **H6 — Linux capture drops what it cannot map**: EV_KEY codes without
   a `KeyCode` (brightness, mic-mute, vendor keys) and non-key events on a
   grabbed node (EV_REL of a keyboard with a pointer) are silently eaten.
