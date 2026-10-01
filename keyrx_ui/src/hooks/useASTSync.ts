@@ -3,6 +3,8 @@ import { useDevices } from '@/hooks/useDevices';
 import type { KeyMapping } from '@/types';
 import { buildScopes, scopeMatchesBlock } from '@/utils/deviceScopes';
 import type { KeyMapping as RhaiKeyMapping } from '@/utils/rhaiParser';
+import { canonicalDslKeyName } from '@/utils/dslKeys';
+import { normalizeKeyCode as normalizeLayoutKeyCode } from '@/utils/keyNames';
 
 interface UseASTSyncProps {
   syncEngine: {
@@ -35,44 +37,16 @@ const japaneseKeyMap: Record<string, string> = {
   VK_全角: 'VK_Zenkaku',
 };
 
-// Normalize key codes to VK_ format for consistent lookup
+// Normalize key codes to the canonical VK_ spelling used for layout lookup.
+// Single source: utils/dslKeys (mirrors the parser's key table). Upper-casing
+// here used to yield "VK_SPACE", which then got written back into the profile
+// and rejected by the parser ("Unknown key name: 'SPACE'").
 const normalizeKeyCode = (key: string): string => {
   if (!key) return key;
   if (japaneseKeyMap[key]) return japaneseKeyMap[key];
-  if (key.startsWith('VK_')) return key;
-  if (key.startsWith('KC_')) return key.replace(/^KC_/, 'VK_');
-  if (/^[A-Z0-9]$/i.test(key)) return `VK_${key.toUpperCase()}`;
-
-  const knownKeys = [
-    'ESCAPE',
-    'ENTER',
-    'SPACE',
-    'TAB',
-    'BACKSPACE',
-    'DELETE',
-    'INSERT',
-    'HOME',
-    'END',
-    'PAGEUP',
-    'PAGEDOWN',
-    'UP',
-    'DOWN',
-    'LEFT',
-    'RIGHT',
-    'CAPSLOCK',
-    'NUMLOCK',
-    'SCROLLLOCK',
-    'LEFTSHIFT',
-    'RIGHTSHIFT',
-    'LEFTCONTROL',
-    'RIGHTCONTROL',
-    'LEFTALT',
-    'RIGHTALT',
-    'LEFTMETA',
-    'RIGHTMETA',
-  ];
-  if (knownKeys.includes(key.toUpperCase())) return `VK_${key.toUpperCase()}`;
-  return key;
+  if (key.startsWith('KC_')) return normalizeLayoutKeyCode(key);
+  const canonical = canonicalDslKeyName(key);
+  return canonical ? `VK_${canonical}` : key;
 };
 
 // Convert RhaiKeyMapping to visual KeyMapping

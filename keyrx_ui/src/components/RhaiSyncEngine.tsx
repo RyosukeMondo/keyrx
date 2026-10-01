@@ -23,7 +23,7 @@ import {
   type RhaiAST,
   type ParseError,
 } from '../utils/rhaiParser';
-import { generateRhaiScript } from '../utils/rhaiCodeGen';
+import { patchRhaiScript } from '../utils/rhaiPatch';
 import { logger } from '../utils/logger';
 
 /**
@@ -321,7 +321,7 @@ export function useRhaiSyncEngine(
         }
 
         try {
-          const code = generateRhaiScript(ast);
+          const code = patchRhaiScript(codeRef.current, ast);
           codeRef.current = code;
           astRef.current = ast;
 
