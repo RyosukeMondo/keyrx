@@ -303,10 +303,18 @@ mkdir -p ~/.local/bin
 **2. Install files:**
 
 ```bash
-cp target/release/keyrx_daemon ~/.local/bin/
-cp my-config.krx ~/.config/keyrx/config.krx
+cp target/release/keyrx_daemon target/release/keyrx_compiler ~/.local/bin/
 cp keyrx_daemon/systemd/keyrx-user.service ~/.config/systemd/user/keyrx.service
+# The service runs the ACTIVE profile (web UI http://127.0.0.1:9867, or CLI):
+keyrx_daemon profiles create my --template blank   # then edit ~/.config/keyrx/profiles/my.rhai
+keyrx_daemon profiles activate my
 ```
+
+Scope the profile to the keyboard you mean to remap: `device_start("*")`
+also grabs virtual keyboards (remote-desktop/Sunshine) and anything plugged
+in later. Use the name shown by `keyrx_daemon list-devices`, e.g.
+`device_start("USB Keyboard");`, and check it with
+`keyrx_daemon validate --config ~/.config/keyrx/profiles/my.krx`.
 
 **3. Enable and start:**
 
@@ -321,6 +329,15 @@ systemctl --user start keyrx.service
 ```bash
 loginctl enable-linger $USER
 ```
+
+With lingering the service starts at boot (before login, so without a tray
+icon - the web UI works; `systemctl --user restart keyrx` after login brings
+the tray up). Without it, the service starts at login.
+
+**Emergency stop:** hold Left Ctrl + Right Ctrl + Escape (works on the raw
+keys even if the config is broken), or from another TTY / SSH session run
+`systemctl --user stop keyrx` (SIGKILL is also safe: the kernel releases the
+grab and the keyboard types normally again).
 
 **Service management commands:**
 
