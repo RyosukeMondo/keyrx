@@ -365,6 +365,10 @@ echo "     \$ systemctl --user enable keyrx"
 echo ""
 echo "  5. Check daemon status:"
 echo "     \$ systemctl --user status keyrx"
+echo "     \$ keyrx_daemon doctor"
+echo ""
+echo "  Emergency stop: if the keyboard ever stops working, hold"
+echo "  Left Ctrl + Right Ctrl + Escape to release it and stop the daemon."
 echo ""
 
 if [[ "$INSTALL_AUTOSTART" == true ]]; then

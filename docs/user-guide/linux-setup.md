@@ -516,6 +516,54 @@ whatever fails. `keyrx_daemon doctor --json` for scripting.
    ```bash
    keyrx_daemon run --config your-config.krx --debug
    ```
+   `--debug` never logs which keys you press. If you need the key names to
+   debug a mapping, add `--log-keys` (this makes the log a keylogger; turn it
+   off again afterwards and do not share such logs).
+
+### Editing a Profile While the Daemon Runs
+
+The daemon watches the `.rhai` source of the profile it has loaded
+(`~/.config/keyrx/profiles/<name>.rhai`, or under `$KEYRX_CONFIG_DIR`). When
+you save it, the profile is recompiled and applied within a couple of seconds
+without `profiles activate` or a restart. If the new source does not compile,
+the daemon logs the error with its `file:line:column` and keeps running the
+previous mapping:
+
+```bash
+journalctl --user -u keyrx -f
+```
+
+Pass `--no-watch` to `keyrx_daemon run` to turn this off. A daemon started
+with `run --config FILE` (a pinned file, not a profile) is not watched.
+`keyrx_daemon profiles activate NAME` returns only after the daemon is running
+the new profile and exits non-zero if the daemon refuses it.
+
+### Running a Second (Test) Instance Safely
+
+To try a build or a profile without touching the keyboards your real daemon
+manages, start the scratch daemon with its own config dir, port and runtime
+dir, and narrow what it may grab:
+
+```bash
+KEYRX_CONFIG_DIR=/tmp/kx-test KEYRX_PORT=9890 XDG_RUNTIME_DIR=/tmp/kx-rt \
+KEYRX_DEVICE_SCOPE='My Test Keyboard*' KEYRX_OUTPUT_NAME=keyrx-test \
+  keyrx_daemon run
+```
+
+`KEYRX_DEVICE_SCOPE` (a glob on the keyboard name, default `*`) can only
+narrow what the profile's `device_start()` patterns select, and
+`KEYRX_OUTPUT_NAME` names the virtual output keyboard (default `keyrx`) so
+tools can tell the instances apart.
+
+### Keyboard Input Overflow
+
+If keystrokes arrive much faster than the daemon can process them (for
+example a stuck macro tool injecting thousands of events), the kernel drops
+events for the grabbed keyboard (`SYN_DROPPED`). The daemon notices, resyncs
+with the keyboard's real key state, releases any key it believed was held and
+logs a warning ("lost input events"). The number of recoveries is shown by
+`keyrx_daemon status` as "Input overflows" and by `/api/status`
+(`input_overflows`); if it keeps growing, find what is flooding the keyboard.
 
 ### Emergency Escape: Keyboard Unusable From a Bad Config
 
