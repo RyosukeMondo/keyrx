@@ -251,6 +251,7 @@ impl DeviceManager {
             self.devices.iter().map(|d| d.info.path.clone()).collect();
         let mut added = 0;
         let mut denied = 0;
+        let mut busy = 0;
         for info in &current_keyboards {
             if managed_paths.contains(&info.path) {
                 continue;
@@ -267,11 +268,21 @@ impl DeviceManager {
                         added += 1;
                     }
                     Err(e) => {
-                        warn!(
-                            "Matched keyboard '{}' ({}) but could not grab it: {e}",
-                            info.name,
-                            info.path.display()
-                        );
+                        if is_grabbed_elsewhere(&e) {
+                            busy += 1;
+                            warn!(
+                                "Matched keyboard '{}' ({}) is already grabbed by another \
+                                 process (EBUSY): {e}",
+                                info.name,
+                                info.path.display()
+                            );
+                        } else {
+                            warn!(
+                                "Matched keyboard '{}' ({}) but could not grab it: {e}",
+                                info.name,
+                                info.path.display()
+                            );
+                        }
                         denied += 1;
                     }
                 },
@@ -285,11 +296,19 @@ impl DeviceManager {
                 }
             }
         }
-        if denied > 0 {
+        if busy > 0 {
             warn!(
-                "{denied} matched keyboard(s) could not be grabbed. If this is a permission \
+                "{busy} matched keyboard(s) are already grabbed by another process - usually \
+                 another keyrx_daemon (`systemctl --user status keyrx`) or a remapper such as \
+                 kmonad/keyd/interception. Stop it, or narrow this device_start pattern."
+            );
+        }
+        if denied > busy {
+            warn!(
+                "{} matched keyboard(s) could not be opened/grabbed. If this is a permission \
                  issue: sudo usermod -aG input $USER, then log out and back in (or run \
-                 `keyrx_daemon doctor`)."
+                 `keyrx_daemon doctor`).",
+                denied - busy
             );
         }
 
@@ -349,6 +368,13 @@ impl DeviceManager {
     pub fn get_device_by_id_mut(&mut self, id: &str) -> Option<&mut ManagedDevice> {
         self.devices.iter_mut().find(|d| d.device_id() == id)
     }
+}
+
+/// `EVIOCGRAB` fails with `EBUSY` when another process already holds the
+/// device. That is not a permissions problem and must not be reported as one.
+fn is_grabbed_elsewhere(error: &crate::platform::DeviceError) -> bool {
+    const EBUSY: i32 = 16;
+    matches!(error, crate::platform::DeviceError::Io(e) if e.raw_os_error() == Some(EBUSY))
 }
 
 #[cfg(test)]

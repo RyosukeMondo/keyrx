@@ -36,11 +36,16 @@ use crate::config::{
 };
 use crate::daemon::DaemonSharedState;
 
+/// How long an activation waits for the daemon to swap to the new profile.
+const ACTIVATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
 /// Profile information returned by list operations.
 /// PROF-004: Added activation metadata fields.
 #[derive(Debug, Clone)]
 pub struct ProfileInfo {
     pub name: String,
+    /// Where the profile's `.rhai` source lives (honours `KEYRX_CONFIG_DIR`).
+    pub rhai_path: std::path::PathBuf,
     pub layer_count: usize,
     pub device_count: usize,
     pub key_count: usize,
@@ -61,6 +66,7 @@ impl ProfileInfo {
             layer_count: metadata.layer_count,
             device_count: metadata.device_count,
             key_count: metadata.key_count,
+            rhai_path: metadata.rhai_path,
             name: metadata.name,
         }
     }
@@ -267,7 +273,7 @@ impl ProfileService {
         let manager = Arc::clone(&self.profile_manager);
         let name_owned = name.to_string();
 
-        let result = tokio::task::spawn_blocking(move || {
+        let mut result = tokio::task::spawn_blocking(move || {
             log::debug!("spawn_blocking: Starting profile activation");
 
             // Activate profile (blocking operation)
@@ -299,7 +305,20 @@ impl ProfileService {
 
         if result.success {
             if let Some(daemon_state) = self.daemon_state.get() {
-                daemon_state.request_activation(name);
+                // Return only once the daemon is really running the profile:
+                // a tap right after "activated" must hit the NEW mapping.
+                let state = Arc::clone(daemon_state);
+                let wanted = name.to_string();
+                let applied = tokio::task::spawn_blocking(move || {
+                    state.activate_and_wait(&wanted, ACTIVATION_TIMEOUT)
+                })
+                .await
+                .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))?;
+                if let Err(why) = applied {
+                    log::error!("Profile '{name}' compiled but is not live: {why}");
+                    result.success = false;
+                    result.error = Some(why);
+                }
             }
         }
         Ok(result)

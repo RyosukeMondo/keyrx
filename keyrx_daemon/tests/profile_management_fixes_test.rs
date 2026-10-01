@@ -222,7 +222,8 @@ fn test_prof002_max_length_accepted() {
 fn test_prof003_activation_missing_file_error() {
     let (_temp, manager) = setup_test_manager();
 
-    // Create profile then delete its .rhai file manually
+    // Create profile then delete its .rhai file manually. The profiles
+    // directory is the single source of truth, so the profile is gone.
     manager
         .create("test", ProfileTemplate::Blank)
         .expect("Failed to create profile");
@@ -230,20 +231,10 @@ fn test_prof003_activation_missing_file_error() {
     let profile = manager.get("test").expect("Profile should exist");
     fs::remove_file(&profile.rhai_path).expect("Failed to remove file");
 
-    // Try to activate - should fail (returns Ok with success=false)
-    let result = manager.activate("test").expect("activate should return Ok");
-    assert!(
-        !result.success,
-        "Activation should fail when source file is missing"
-    );
-    assert!(
-        result
-            .error
-            .as_ref()
-            .map_or(false, |e| e.contains("not found")),
-        "Error should mention file not found, got: {:?}",
-        result.error
-    );
+    match manager.activate("test") {
+        Err(ProfileError::NotFound(name)) => assert!(name.contains("test"), "got: {name}"),
+        other => panic!("activating a profile whose source is gone must fail: {other:?}"),
+    }
 }
 
 #[test]
@@ -477,24 +468,22 @@ fn test_prof005_import_duplicate_rejected() {
 }
 
 #[test]
-fn test_prof005_duplicate_after_file_deleted_rejected() {
+fn test_prof005_name_is_free_again_after_file_deleted() {
     let (_temp, manager) = setup_test_manager();
 
-    // Create profile
     manager
         .create("test", ProfileTemplate::Blank)
         .expect("Failed to create profile");
 
-    // Manually delete the file but leave it in memory
+    // The directory is the source of truth: once the file is gone the profile
+    // is gone, and its name can be reused (no phantom in-memory entry).
     let profile = manager.get("test").expect("Profile should exist");
     fs::remove_file(&profile.rhai_path).expect("Failed to remove file");
 
-    // Try to create with same name - should still be rejected (checks memory first)
-    let result = manager.create("test", ProfileTemplate::Blank);
-    assert!(
-        matches!(result, Err(ProfileError::AlreadyExists(_))),
-        "Duplicate should be rejected even if file is missing"
-    );
+    assert!(manager.get("test").is_none());
+    manager
+        .create("test", ProfileTemplate::Blank)
+        .expect("the name must be reusable after the file was deleted");
 }
 
 // ============================================================================

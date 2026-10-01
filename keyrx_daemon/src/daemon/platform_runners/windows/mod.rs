@@ -39,13 +39,14 @@ use crate::daemon_config::DaemonConfig;
 pub fn run_daemon(
     source: crate::daemon::ConfigSource,
     config_dir: PathBuf,
-    debug: bool,
+    log: crate::daemon::platform_setup::LogOptions,
+    watch: bool,
     test_mode: bool,
     container: Arc<crate::container::ServiceContainer>,
 ) -> Result<(), (i32, String)> {
     use crate::daemon::platform_setup::{init_logging, log_startup_version_info};
 
-    init_logging(debug);
+    init_logging(log);
     log_startup_version_info();
     let config = load_config()?;
 
@@ -66,6 +67,14 @@ pub fn run_daemon(
     let event_broadcaster = crate::daemon::EventBroadcaster::new(event_tx.clone());
     daemon.set_event_broadcaster(event_broadcaster.clone());
 
+    if watch {
+        crate::daemon::config_watch::spawn(
+            Arc::clone(container.profile_service().profile_manager()),
+            Arc::clone(&daemon_state),
+            daemon.running_flag(),
+            crate::daemon::config_watch::POLL_INTERVAL,
+        );
+    }
     // The single read model for web API and IPC (see DaemonQueryService docs).
     let daemon_query = Arc::new(crate::services::DaemonQueryService::new(
         Arc::clone(&daemon_state),

@@ -14,6 +14,9 @@ fn devices_cmd(temp_dir: &TempDir) -> Command {
     let config_dir = temp_dir.path().join("keyrx");
     std::fs::create_dir_all(&config_dir).unwrap();
     cmd.env("KEYRX_CONFIG_DIR", config_dir);
+    // Never reach a real daemon's IPC socket: `devices list` asks it which
+    // keyboards it has captured.
+    cmd.env("XDG_RUNTIME_DIR", temp_dir.path());
 
     cmd
 }

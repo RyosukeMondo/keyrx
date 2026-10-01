@@ -12,12 +12,14 @@ mod device_discovery;
 mod emergency_stop;
 mod hotplug;
 mod input_capture;
+mod input_sync;
 mod keycode_map;
 mod output_injection;
 pub mod tray;
 pub(crate) mod uinput_device;
 
 // Re-export public types
+pub use emergency_stop::CHORD_TEXT as EMERGENCY_CHORD_TEXT;
 pub use input_capture::EvdevInput;
 pub use output_injection::UinputOutput;
 pub use tray::LinuxSystemTray;
@@ -103,6 +105,25 @@ impl LinuxPlatform {
     #[must_use]
     pub fn new() -> Self {
         Self::scoped("*", "keyrx")
+    }
+
+    /// The production platform, optionally narrowed by the environment so a
+    /// SECOND instance (a test or scratch daemon next to your real one) is
+    /// safe and recognisable:
+    ///
+    /// - `KEYRX_DEVICE_SCOPE` - only keyboards whose name matches this glob
+    ///   are ever grabbed (default `*`). It can only narrow what the loaded
+    ///   profile's `device_start` patterns select, never widen it.
+    /// - `KEYRX_OUTPUT_NAME` - name of the virtual output keyboard (default
+    ///   `keyrx`), so tools can tell instances apart.
+    #[must_use]
+    pub fn from_env() -> Self {
+        let scope = std::env::var("KEYRX_DEVICE_SCOPE").unwrap_or_else(|_| "*".to_string());
+        let output = std::env::var("KEYRX_OUTPUT_NAME").unwrap_or_else(|_| "keyrx".to_string());
+        if scope != "*" || output != "keyrx" {
+            log::info!("Platform scope from environment: devices '{scope}', output '{output}'");
+        }
+        Self::scoped(&scope, &output)
     }
 
     /// Creates a platform that grabs only keyboards matching `device_pattern`
@@ -521,6 +542,14 @@ impl crate::platform::Platform for LinuxPlatform {
 
     fn take_devices_changed(&mut self) -> bool {
         std::mem::take(&mut self.devices_changed)
+    }
+
+    fn take_input_overflows(&mut self) -> u64 {
+        self.device_manager.as_mut().map_or(0, |dm| {
+            dm.devices_mut()
+                .map(|device| device.input_mut().take_overflows())
+                .sum()
+        })
     }
 
     fn capture_input(

@@ -18,7 +18,9 @@ impl ProfileManager {
 
         let start = Instant::now();
 
-        // Get profile metadata
+        // Get profile metadata (re-read from disk: another process, e.g. the
+        // CLI, may have created it after this manager was built)
+        self.refresh();
         let profiles = self.profiles.read().map_err(|e| {
             ProfileError::LockError(format!("Failed to acquire profiles read lock: {}", e))
         })?;
@@ -113,6 +115,21 @@ impl ProfileManager {
         }
 
         Ok((compile_time, reload_time))
+    }
+
+    /// Recompiles `name`'s `.rhai` into its `.krx` unconditionally and
+    /// returns the compile time in ms. Used by the file watcher; a failed
+    /// compile leaves the previous `.krx` untouched.
+    pub fn recompile(&self, name: &str) -> Result<u64, ProfileError> {
+        let profile = self
+            .get(name)
+            .ok_or_else(|| ProfileError::NotFound(name.to_string()))?;
+        let result = self
+            .compiler
+            .compile_profile(&profile.rhai_path, &profile.krx_path)
+            .map_err(ProfileError::Compilation)?;
+        self.refresh();
+        Ok(result.compile_time_ms)
     }
 
     /// Reload the active profile, recompiling if .rhai is newer than .krx.

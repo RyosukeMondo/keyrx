@@ -17,6 +17,7 @@ impl ProfileManager {
         template: ProfileTemplate,
     ) -> Result<ProfileMetadata, ProfileError> {
         Self::validate_name(name)?;
+        self.refresh();
 
         let mut profiles = self.profiles.write().map_err(|e| {
             ProfileError::LockError(format!("Failed to acquire profiles write lock: {}", e))
@@ -38,13 +39,7 @@ impl ProfileManager {
         }
 
         // Generate template content
-        let content = match template {
-            ProfileTemplate::Blank => Self::load_template("blank"),
-            ProfileTemplate::SimpleRemap => Self::load_template("simple_remap"),
-            ProfileTemplate::CapslockEscape => Self::load_template("capslock_escape"),
-            ProfileTemplate::VimNavigation => Self::load_template("vim_navigation"),
-            ProfileTemplate::Gaming => Self::load_template("gaming"),
-        };
+        let content = template.source();
 
         fs::write(&rhai_path, content)?;
 
@@ -54,21 +49,17 @@ impl ProfileManager {
         Ok(metadata)
     }
 
-    /// Load template from embedded files.
+    /// Load template from embedded files (unknown names fall back to blank).
     pub(super) fn load_template(name: &str) -> String {
-        match name {
-            "blank" => include_str!("../../../templates/blank.rhai"),
-            "simple_remap" => include_str!("../../../templates/simple_remap.rhai"),
-            "capslock_escape" => include_str!("../../../templates/capslock_escape.rhai"),
-            "vim_navigation" => include_str!("../../../templates/vim_navigation.rhai"),
-            "gaming" => include_str!("../../../templates/gaming.rhai"),
-            _ => include_str!("../../../templates/blank.rhai"),
-        }
-        .to_string()
+        ProfileTemplate::from_name(name)
+            .unwrap_or(ProfileTemplate::Blank)
+            .source()
+            .to_string()
     }
 
     /// Delete a profile.
     pub fn delete(&self, name: &str) -> Result<(), ProfileError> {
+        self.refresh();
         let profile = {
             let profiles = self.profiles.read().map_err(|e| {
                 ProfileError::LockError(format!("Failed to acquire profiles read lock: {}", e))
@@ -114,6 +105,7 @@ impl ProfileManager {
     /// Duplicate a profile.
     pub fn duplicate(&self, src: &str, dest: &str) -> Result<ProfileMetadata, ProfileError> {
         Self::validate_name(dest)?;
+        self.refresh();
 
         let mut profiles = self.profiles.write().map_err(|e| {
             ProfileError::LockError(format!("Failed to acquire profiles write lock: {}", e))
@@ -155,6 +147,7 @@ impl ProfileManager {
     pub fn rename(&self, old_name: &str, new_name: &str) -> Result<ProfileMetadata, ProfileError> {
         // Validate new name
         Self::validate_name(new_name)?;
+        self.refresh();
 
         let mut profiles = self.profiles.write().map_err(|e| {
             ProfileError::LockError(format!("Failed to acquire profiles write lock: {}", e))
@@ -219,6 +212,7 @@ impl ProfileManager {
     /// Import a profile from a file.
     pub fn import(&self, src: &Path, name: &str) -> Result<ProfileMetadata, ProfileError> {
         Self::validate_name(name)?;
+        self.refresh();
 
         let mut profiles = self.profiles.write().map_err(|e| {
             ProfileError::LockError(format!("Failed to acquire profiles write lock: {}", e))

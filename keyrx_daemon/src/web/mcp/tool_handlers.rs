@@ -82,14 +82,7 @@ pub async fn create_profile(
     name: &str,
     template_str: Option<&str>,
 ) -> Result<String, String> {
-    let template = match template_str.unwrap_or("blank") {
-        "blank" => ProfileTemplate::Blank,
-        "simple_remap" => ProfileTemplate::SimpleRemap,
-        "capslock_escape" => ProfileTemplate::CapslockEscape,
-        "vim_navigation" => ProfileTemplate::VimNavigation,
-        "gaming" => ProfileTemplate::Gaming,
-        other => return Err(format!("Invalid template: '{}'. Valid: blank, simple_remap, capslock_escape, vim_navigation, gaming", other)),
-    };
+    let template = ProfileTemplate::from_name(template_str.unwrap_or("blank"))?;
 
     let info = state
         .profile_service
@@ -166,6 +159,7 @@ pub fn get_status(state: &AppState) -> Result<String, String> {
         "uptimeSecs": s.uptime_secs,
         "activeProfile": s.active_profile,
         "deviceCount": s.device_count,
+        "inputOverflows": s.input_overflows,
     })
     .to_string())
 }

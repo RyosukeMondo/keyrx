@@ -28,6 +28,7 @@ struct StatusOutput {
     uptime_secs: u64,
     active_profile: Option<String>,
     device_count: usize,
+    input_overflows: u64,
 }
 
 /// Execute the status command.
@@ -44,11 +45,24 @@ pub fn execute(args: StatusArgs) -> Result<(), Box<dyn std::error::Error>> {
             uptime_secs,
             active_profile,
             device_count,
+            input_overflows,
         } => {
             if args.json {
-                print_json_output(running, uptime_secs, active_profile, device_count)?;
+                print_json_output(
+                    running,
+                    uptime_secs,
+                    active_profile,
+                    device_count,
+                    input_overflows,
+                )?;
             } else {
-                print_human_output(running, uptime_secs, active_profile, device_count);
+                print_human_output(
+                    running,
+                    uptime_secs,
+                    active_profile,
+                    device_count,
+                    input_overflows,
+                );
             }
             Ok(())
         }
@@ -65,12 +79,14 @@ fn print_json_output(
     uptime_secs: u64,
     active_profile: Option<String>,
     device_count: usize,
+    input_overflows: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let output = StatusOutput {
         running,
         uptime_secs,
         active_profile,
         device_count,
+        input_overflows,
     };
     println!("{}", serde_json::to_string_pretty(&output)?);
     Ok(())
@@ -82,6 +98,7 @@ fn print_human_output(
     uptime_secs: u64,
     active_profile: Option<String>,
     device_count: usize,
+    input_overflows: u64,
 ) {
     println!("Daemon Status:");
     println!("  Running:        {}", if running { "Yes" } else { "No" });
@@ -98,6 +115,12 @@ fn print_human_output(
         active_profile.unwrap_or_else(|| "None".to_string())
     );
     println!("  Device Count:   {}", device_count);
+    if input_overflows > 0 {
+        println!(
+            "  Input overflows: {} (keyboard input outran the daemon; resynced)",
+            input_overflows
+        );
+    }
 }
 
 #[cfg(test)]
@@ -111,6 +134,7 @@ mod tests {
             uptime_secs: 3661,
             active_profile: Some("default".to_string()),
             device_count: 2,
+            input_overflows: 0,
         };
         let json = serde_json::to_string(&output).unwrap();
         assert!(json.contains("\"running\":true"));
@@ -126,6 +150,7 @@ mod tests {
             uptime_secs: 0,
             active_profile: None,
             device_count: 0,
+            input_overflows: 0,
         };
         let json = serde_json::to_string(&output).unwrap();
         assert!(json.contains("\"running\":false"));

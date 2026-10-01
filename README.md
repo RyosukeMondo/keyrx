@@ -30,7 +30,62 @@ KeyRx2 is a Rust-based workspace with four crates:
 - **keyrx_daemon**: OS-level keyboard interception daemon (Linux, Windows)
 - **keyrx_ui**: React + WASM web interface for configuration testing
 
-## Quickstart
+## Quickstart (Linux desktop: daemon + web UI)
+
+The daemon is what remaps your keyboard. It runs one *profile* at a time and
+serves a web UI at <http://127.0.0.1:9867> for creating, editing and
+activating profiles. (The compiler-only workflow further down is for scripting
+and CI.)
+
+```bash
+# 1. Build with the web UI embedded, then install the binary, systemd user
+#    service, udev rules and desktop entry (asks for sudo for udev/groups).
+make build-release
+./scripts/install.sh
+#    Log out and back in once so the new input/uinput groups apply.
+
+# 2. Check that everything the daemon needs is in place.
+keyrx_daemon doctor
+
+# 3. Make a profile and activate it (or do this in the web UI).
+keyrx_daemon profiles create my --template capslock_escape
+keyrx_daemon profiles activate my
+
+# 4. Start the daemon now and on every login.
+systemctl --user enable --now keyrx
+
+# 5. Open the web UI.
+xdg-open http://127.0.0.1:9867
+```
+
+Day to day:
+
+- Edit `~/.config/keyrx/profiles/my.rhai` (the path is printed by
+  `profiles create`; it follows `KEYRX_CONFIG_DIR`). A saved edit is
+  recompiled and applied within a couple of seconds. If it does not compile, the
+  error is logged with `file:line` (`journalctl --user -u keyrx -f`) and the
+  previous mapping keeps running. Start the daemon with `--no-watch` to turn
+  this off.
+- `keyrx_daemon profiles activate other` switches immediately and returns only
+  once the new mapping is live; it exits non-zero if the running daemon
+  refuses it.
+- Templates start with `device_start("*")`, which matches **every** keyboard
+  (including other programs' virtual keyboards). Narrow it to one keyboard with
+  part of its name from `keyrx_daemon list-devices`, e.g.
+  `device_start("*Logitech*")`.
+- `keyrx_daemon status` and `keyrx_daemon devices list` show what the running
+  daemon is doing and which keyboards it has captured.
+- **Emergency stop:** if the keyboard ever stops working, hold **Left Ctrl +
+  Right Ctrl + Escape**. The daemon releases every keyboard and exits. The
+  chord is also printed at startup, by `doctor` and in `keyrx_daemon run --help`.
+- `--debug` adds diagnostics but never logs which keys you press;
+  `--log-keys` additionally logs key names (a keylogger - for debugging a
+  mapping only).
+
+See the [Linux Setup Guide](docs/user-guide/linux-setup.md) for details and
+troubleshooting.
+
+## Quickstart (compiler only)
 
 ### 1. Install the Compiler
 

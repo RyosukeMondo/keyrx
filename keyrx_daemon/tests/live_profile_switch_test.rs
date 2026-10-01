@@ -11,107 +11,25 @@
 #![cfg(target_os = "linux")]
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::thread::JoinHandle;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use keyrx_core::config::KeyCode;
 use keyrx_core::runtime::KeyEventType;
 use keyrx_daemon::config::{ProfileManager, ProfileTemplate};
-use keyrx_daemon::daemon::{ConfigSource, Daemon, DaemonError, DaemonSharedState};
-use keyrx_daemon::platform::linux::LinuxPlatform;
+use keyrx_daemon::daemon::ConfigSource;
 use keyrx_daemon::services::ProfileService;
-use keyrx_daemon::test_utils::{OutputCapture, VirtualKeyboard};
 use tempfile::TempDir;
+
+#[path = "common/live_daemon.rs"]
+mod live_daemon;
+use live_daemon::{tapped, Harness};
 
 const CAPS_TO_LCTRL: &str = r#"
 device_start("*");
   map("VK_CapsLock", "VK_LCtrl");
 device_end();
 "#;
-
-/// A running in-process daemon wired to one virtual keyboard.
-struct Harness {
-    keyboard: VirtualKeyboard,
-    capture: OutputCapture,
-    shared: Arc<DaemonSharedState>,
-    running: Arc<std::sync::atomic::AtomicBool>,
-    thread: Option<JoinHandle<Result<(), DaemonError>>>,
-}
-
-impl Harness {
-    fn start(tag: &str, source: ConfigSource, config_dir: &Path) -> Self {
-        let keyboard = VirtualKeyboard::create(&format!("keyrx-live-{tag}")).expect("keyboard");
-        std::thread::sleep(Duration::from_millis(200)); // let udev register it
-        let output_name = format!("keyrx-live-out-{tag}-{}", std::process::id());
-        let platform = Box::new(LinuxPlatform::scoped(keyboard.name(), &output_name));
-
-        let mut daemon =
-            Daemon::new(platform, source, config_dir.to_path_buf()).expect("daemon starts");
-        assert_eq!(
-            daemon.device_count(),
-            1,
-            "daemon must grab only the test keyboard"
-        );
-        let shared = daemon.shared_state();
-        let running = daemon.running_flag();
-        let thread = Some(std::thread::spawn(move || daemon.run()));
-
-        let capture =
-            OutputCapture::find_by_name(&output_name, Duration::from_secs(5)).expect("output");
-        Self {
-            keyboard,
-            capture,
-            shared,
-            running,
-            thread,
-        }
-    }
-
-    /// Taps `key` and returns what the daemon emitted, as (key, is_press).
-    fn tap(&mut self, key: KeyCode) -> Vec<(KeyCode, bool)> {
-        self.capture.drain().expect("drain");
-        let events = VirtualKeyboard::tap_events(key);
-        self.keyboard
-            .inject_sequence(&events, Some(Duration::from_millis(10)))
-            .expect("inject");
-        self.capture
-            .collect_events(Duration::from_millis(300))
-            .expect("capture")
-            .iter()
-            .map(|e| (e.keycode(), e.event_type() == KeyEventType::Press))
-            .collect()
-    }
-
-    fn wait_for_profile(&self, name: &str) {
-        let deadline = Instant::now() + Duration::from_secs(3);
-        while self.shared.get_active_profile().as_deref() != Some(name) {
-            assert!(
-                Instant::now() < deadline,
-                "daemon never loaded '{name}' (status: {:?})",
-                self.shared.get_active_profile()
-            );
-            std::thread::sleep(Duration::from_millis(10));
-        }
-    }
-}
-
-impl Drop for Harness {
-    fn drop(&mut self) {
-        self.running.store(false, Ordering::SeqCst);
-        if let Some(thread) = self.thread.take() {
-            let result = thread.join().expect("daemon thread panicked");
-            if !std::thread::panicking() {
-                result.expect("daemon run failed");
-            }
-        }
-    }
-}
-
-fn tapped(key: KeyCode) -> Vec<(KeyCode, bool)> {
-    vec![(key, true), (key, false)]
-}
 
 /// Profiles "a" (CapsLock→Escape, active) and "b" (CapsLock→LCtrl), compiled
 /// by the real ProfileManager.
@@ -222,4 +140,63 @@ fn profile_switch_releases_outputs_held_under_the_old_mapping() {
     h.keyboard
         .inject(keyrx_core::runtime::KeyEvent::release(KeyCode::CapsLock))
         .expect("release");
+}
+
+/// `activate` means "live": a tap typed the instant it returns must already
+/// hit the new mapping (it used to race the daemon's swap and be handled by,
+/// or lost between, the old and new config).
+#[test]
+fn activate_returns_only_once_the_new_mapping_is_live() {
+    keyrx_daemon::skip_if_no_uinput!();
+    let dir = TempDir::new().unwrap();
+    let manager = profiles(dir.path());
+    assert!(manager.activate("a").expect("activate a").success);
+    let mut h = Harness::start("immediate", ConfigSource::ActiveProfile, dir.path());
+
+    let service = ProfileService::new(manager);
+    service.attach_daemon_state(Arc::clone(&h.shared));
+    for _ in 0..5 {
+        activate(&service, "b");
+        // No wait_for_profile: the result itself must imply the swap.
+        assert_eq!(h.shared.get_active_profile().as_deref(), Some("b"));
+        assert_eq!(h.tap(KeyCode::CapsLock), tapped(KeyCode::LCtrl));
+        activate(&service, "a");
+        assert_eq!(h.tap(KeyCode::CapsLock), tapped(KeyCode::Escape));
+    }
+}
+
+/// Saving the loaded profile's `.rhai` recompiles and applies it by itself;
+/// a source that does not compile leaves the running config alone.
+#[test]
+fn editing_the_loaded_profile_source_hot_reloads_it() {
+    keyrx_daemon::skip_if_no_uinput!();
+    let dir = TempDir::new().unwrap();
+    let manager = profiles(dir.path());
+    assert!(manager.activate("a").expect("activate a").success);
+    let mut h = Harness::start("watch", ConfigSource::ActiveProfile, dir.path());
+    let _watcher = keyrx_daemon::daemon::config_watch::spawn(
+        Arc::clone(&manager),
+        Arc::clone(&h.shared),
+        Arc::clone(&h.running),
+        Duration::from_millis(50),
+    );
+    assert_eq!(h.tap(KeyCode::CapsLock), tapped(KeyCode::Escape));
+
+    let source = dir.path().join("profiles/a.rhai");
+    std::fs::write(&source, CAPS_TO_LCTRL).unwrap();
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    while h.tap(KeyCode::CapsLock) != tapped(KeyCode::LCtrl) {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the edited profile never went live"
+        );
+    }
+
+    std::fs::write(&source, "device_start(\"*\"\n  map(").unwrap();
+    std::thread::sleep(Duration::from_millis(800));
+    assert_eq!(
+        h.tap(KeyCode::CapsLock),
+        tapped(KeyCode::LCtrl),
+        "a source that does not compile must not replace the running config"
+    );
 }

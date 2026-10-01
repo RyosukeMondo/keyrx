@@ -176,7 +176,11 @@ fn inject_timeout_events(
             warn!("Failed to inject timeout event: {}", e);
         } else {
             stats.record_event();
-            trace!("Tap-hold timeout event injected: {:?}", output_event);
+            trace!(
+                target: super::platform_setup::KEY_LOG_TARGET,
+                "Tap-hold timeout event injected: {:?}",
+                output_event
+            );
         }
     }
 }
@@ -234,7 +238,11 @@ fn process_input_event(
     telemetry: Option<&DaemonTelemetry>,
 ) {
     let capture_time = Instant::now();
-    trace!("Input event: {:?}", event);
+    trace!(
+        target: super::platform_setup::KEY_LOG_TARGET,
+        "Input event: {:?}",
+        event
+    );
 
     let device_id = event.device_id().map(String::from);
     let input_keycode = event.keycode();
@@ -526,6 +534,10 @@ where
             if platform.take_devices_changed() {
                 super::publish_device_state(state, platform.as_ref());
             }
+            let overflows = platform.take_input_overflows();
+            if overflows > 0 {
+                state.add_input_overflows(overflows);
+            }
         }
 
         // Periodic stats logging
@@ -573,7 +585,11 @@ pub fn process_one_event(
             // Ensure real timestamp for tap-hold timeout resolution
             let event = ensure_timestamp(event);
 
-            trace!("Input event: {:?}", event);
+            trace!(
+                target: super::platform_setup::KEY_LOG_TARGET,
+                "Input event: {:?}",
+                event
+            );
 
             // Get device info from event
             let device_id = event.device_id().map(String::from);

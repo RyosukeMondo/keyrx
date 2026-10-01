@@ -3,6 +3,7 @@
 use crate::cli::dispatcher::exit_codes;
 use crate::cli::profiles::ProfilesArgs;
 use crate::config::ProfileManager;
+use crate::error::{CliError, DaemonError};
 use crate::services::ProfileService;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -50,6 +51,11 @@ pub fn handle_profiles(args: ProfilesArgs) -> Result<(), (i32, String)> {
     rt.block_on(async {
         match crate::cli::profiles::execute(args, &service).await {
             Ok(()) => Ok(()),
+            // Handlers print their own failure (text or --json); an empty
+            // message keeps `main` from printing a second, generic one.
+            Err(DaemonError::Cli(CliError::Reported)) => {
+                Err((exit_codes::CONFIG_ERROR, String::new()))
+            }
             Err(err) => Err((exit_codes::CONFIG_ERROR, err.to_string())),
         }
     })

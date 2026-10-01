@@ -2,6 +2,11 @@
 //
 // Optimized key mappings for gaming.
 // Common WASD adjustments and quick access keys.
+//
+// WHICH KEYBOARDS: device_start("*") applies to EVERY keyboard keyrx can see,
+// including other programs' virtual keyboards and any gamepad/keyboard
+// combos. Limit it to your gaming keyboard: run `keyrx_daemon list-devices`
+// and use part of its name, e.g. device_start("*Razer*");
 
 device_start("*");
   // Optional: Remap CapsLock to Ctrl for easier crouching

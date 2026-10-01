@@ -185,7 +185,7 @@ async fn handle_websocket(mut socket: WebSocket, event_tx: broadcast::Sender<Dae
                             client_id,
                             seq,
                             match &event {
-                                DaemonEvent::KeyEvent { payload, .. } => format!("KeyEvent({:?})", payload.key_code),
+                                DaemonEvent::KeyEvent { .. } => "KeyEvent".to_string(),
                                 DaemonEvent::State { .. } => "State".to_string(),
                                 DaemonEvent::Latency { .. } => "Latency".to_string(),
                                 DaemonEvent::Error { payload, .. } => format!("Error({})", payload.code),

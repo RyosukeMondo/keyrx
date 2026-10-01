@@ -57,6 +57,37 @@ impl DaemonQueryService {
             uptime_secs: self.daemon_state.uptime_secs(),
             active_profile: self.daemon_state.get_active_profile(),
             device_count: self.daemon_state.get_device_count(),
+            input_overflows: self.daemon_state.input_overflow_count(),
+        }
+    }
+
+    /// The keyboards this daemon has captured right now. The one place that
+    /// answers "what is the daemon managing" for the IPC `devices list`
+    /// (REST/MCP/WS reach the same set through `DeviceService`, which reads
+    /// `DaemonSharedState::is_device_active`).
+    pub fn get_captured_devices(&self) -> Vec<crate::ipc::CapturedDevice> {
+        #[cfg(any(target_os = "linux", target_os = "windows"))]
+        {
+            let mut devices: Vec<_> = crate::device_manager::enumerate_keyboards()
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|kb| {
+                    let id = kb.device_id();
+                    self.daemon_state
+                        .is_device_active(&id)
+                        .then(|| crate::ipc::CapturedDevice {
+                            id,
+                            name: kb.name.clone(),
+                            path: kb.path.display().to_string(),
+                        })
+                })
+                .collect();
+            devices.sort_by(|a, b| a.id.cmp(&b.id));
+            devices
+        }
+        #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+        {
+            Vec::new()
         }
     }
 
@@ -95,6 +126,18 @@ impl DaemonQueryService {
 
     /// Asks the daemon to switch to the (already compiled) profile `name`.
     ///
+    /// Like [`Self::request_profile_activation`] but waits until the daemon
+    /// is actually running `name`. A query service without a running event
+    /// loop (test mode, unit tests) reports an error after the timeout.
+    ///
+    /// # Errors
+    ///
+    /// Why the daemon did not apply the profile.
+    pub fn activate_and_wait(&self, name: &str) -> Result<(), String> {
+        self.daemon_state
+            .activate_and_wait(name, std::time::Duration::from_secs(5))
+    }
+
     /// Every activation path (REST, MCP, WS-RPC, IPC) calls this. Status
     /// reports `name` once the daemon has actually loaded it.
     pub fn request_profile_activation(&self, name: &str) {
@@ -109,6 +152,8 @@ pub struct StatusInfo {
     pub uptime_secs: u64,
     pub active_profile: Option<String>,
     pub device_count: usize,
+    /// Kernel input-buffer overflows (`SYN_DROPPED`) the daemon recovered from.
+    pub input_overflows: u64,
 }
 
 #[cfg(test)]
@@ -139,6 +184,7 @@ mod tests {
                 uptime_secs: 0,
                 active_profile: Some("test".to_string()),
                 device_count: 2,
+                input_overflows: 0,
             }
         );
     }

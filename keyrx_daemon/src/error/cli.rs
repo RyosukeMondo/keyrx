@@ -24,6 +24,12 @@ pub enum CliError {
         reason: String,
     },
 
+    /// The command already told the user what went wrong (text on stderr or
+    /// a `--json` error object); the caller only needs the non-zero exit
+    /// code and must not print a second, generic message.
+    #[error("command failed (already reported)")]
+    Reported,
+
     /// Output formatting error.
     #[error("Failed to format output: {reason}")]
     OutputError {

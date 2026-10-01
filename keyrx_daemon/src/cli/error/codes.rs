@@ -24,6 +24,7 @@ pub(super) fn error_code(error: &DaemonError) -> u32 {
         DaemonError::Cli(CliError::InvalidArguments { .. }) => 1000,
         DaemonError::Cli(CliError::CommandFailed { .. }) => 1001,
         DaemonError::Cli(CliError::OutputError { .. }) => 1002,
+        DaemonError::Cli(CliError::Reported) => 1003,
 
         // Configuration errors: 2000-2999
         DaemonError::Config(ConfigError::FileNotFound { .. }) => 2000,

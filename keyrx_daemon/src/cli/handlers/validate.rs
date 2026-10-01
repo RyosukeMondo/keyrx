@@ -3,10 +3,49 @@
 use crate::cli::dispatcher::exit_codes;
 use std::path::Path;
 
+/// Loads `path` for validation. A `.rhai` source is compiled first (to a
+/// scratch `.krx`, removed afterwards) so `validate --config my.rhai` works
+/// instead of failing with "Invalid magic bytes" from the binary loader.
+#[cfg(target_os = "linux")]
+fn load_for_validation(path: &Path) -> Result<keyrx_core::config::ConfigRoot, (i32, String)> {
+    use crate::config_loader::load_config;
+
+    let is_source = path.extension().is_some_and(|ext| ext == "rhai");
+    if !is_source {
+        return load_config(path).map_err(|e| {
+            (
+                exit_codes::CONFIG_ERROR,
+                format!("Failed to load configuration: {e}"),
+            )
+        });
+    }
+    let scratch = std::env::temp_dir().join(format!("keyrx-validate-{}.krx", std::process::id()));
+    println!(
+        "   {} is a Rhai source; compiling it first...",
+        path.display()
+    );
+    let result = keyrx_compiler::compile_file(path, &scratch)
+        .map_err(|e| {
+            (
+                exit_codes::CONFIG_ERROR,
+                format!("{} does not compile: {e}", path.display()),
+            )
+        })
+        .and_then(|()| {
+            load_config(&scratch).map_err(|e| {
+                (
+                    exit_codes::CONFIG_ERROR,
+                    format!("Failed to load compiled configuration: {e}"),
+                )
+            })
+        });
+    let _ = std::fs::remove_file(&scratch);
+    result
+}
+
 #[cfg(target_os = "linux")]
 /// Handles the `validate` subcommand - validates config without grabbing.
 pub fn handle_validate(config_path: &Path) -> Result<(), (i32, String)> {
-    use crate::config_loader::load_config;
     use crate::device_manager::{enumerate_keyboards, match_device};
 
     println!("Validating configuration: {}", config_path.display());
@@ -14,12 +53,7 @@ pub fn handle_validate(config_path: &Path) -> Result<(), (i32, String)> {
 
     // Step 1: Load and validate the configuration
     println!("1. Loading configuration...");
-    let config = load_config(config_path).map_err(|e| {
-        (
-            exit_codes::CONFIG_ERROR,
-            format!("Failed to load configuration: {}", e),
-        )
-    })?;
+    let config = load_for_validation(config_path)?;
 
     println!(
         "   Configuration loaded: {} device pattern(s)",

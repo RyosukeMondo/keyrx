@@ -33,6 +33,9 @@ impl IpcCommandHandler {
         match request {
             IpcRequest::ActivateProfile { name } => self.handle_activate_profile(name),
             IpcRequest::GetStatus => self.handle_get_status(),
+            IpcRequest::GetDevices => IpcResponse::Devices {
+                devices: self.query.get_captured_devices(),
+            },
             IpcRequest::GetState => IpcResponse::State {
                 state: self.query.get_state().into_raw(),
             },
@@ -54,6 +57,7 @@ impl IpcCommandHandler {
             uptime_secs: status.uptime_secs,
             active_profile: status.active_profile,
             device_count: status.device_count,
+            input_overflows: status.input_overflows,
         }
     }
 
@@ -76,7 +80,13 @@ impl IpcCommandHandler {
                     result.compile_time_ms,
                     result.reload_time_ms
                 );
-                self.query.request_profile_activation(&name);
+                if let Err(why) = self.query.activate_and_wait(&name) {
+                    log::error!("IPC: Profile '{name}' compiled but is not live: {why}");
+                    return IpcResponse::Error {
+                        code: 5002,
+                        message: why,
+                    };
+                }
                 return IpcResponse::ProfileActivated { name };
             }
             Ok(result) => format!(
@@ -143,6 +153,7 @@ mod tests {
                 uptime_secs,
                 active_profile,
                 device_count,
+                ..
             } => {
                 assert!(running);
                 assert_eq!(active_profile.as_deref(), Some("work"));

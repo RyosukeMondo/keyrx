@@ -25,7 +25,7 @@ pub(super) async fn handle_create(
                 let output = ProfileCreatedOutput {
                     success: true,
                     name: profile.name.clone(),
-                    rhai_path: format!("{}/{}.rhai", "~/.config/keyrx/profiles", profile.name),
+                    rhai_path: profile.rhai_path.display().to_string(),
                     layer_count: profile.layer_count,
                 };
                 if let Ok(json) = serde_json::to_string_pretty(&output) {
@@ -36,7 +36,7 @@ pub(super) async fn handle_create(
                 println!("  Layers: {}", profile.layer_count);
                 println!();
                 println!("Edit the profile:");
-                println!("  $EDITOR ~/.config/keyrx/profiles/{}.rhai", profile.name);
+                println!("  $EDITOR {}", profile.rhai_path.display());
                 println!();
                 println!("Activate the profile:");
                 println!("  keyrx_daemon profiles activate {}", name);
@@ -46,20 +46,12 @@ pub(super) async fn handle_create(
         Err(ProfileError::InvalidName(msg)) => {
             logging::log_command_error("profiles create", &format!("Invalid name: {}", msg));
             output_error(&format!("Invalid name: {}", msg), 1006, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(ProfileError::ProfileLimitExceeded) => {
             logging::log_command_error("profiles create", "Profile limit exceeded (max 100)");
             output_error("Profile limit exceeded (max 100)", 1014, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(ProfileError::AlreadyExists(name)) => {
             logging::log_command_error(
@@ -67,11 +59,7 @@ pub(super) async fn handle_create(
                 &format!("Profile '{}' already exists", name),
             );
             output_error(&format!("Profile '{}' already exists", name), 1015, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(e) => {
             logging::log_command_error(
@@ -79,11 +67,7 @@ pub(super) async fn handle_create(
                 &format!("Failed to create profile: {}", e),
             );
             output_error(&format!("Failed to create profile: {}", e), 3001, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
     }
 }
@@ -134,11 +118,7 @@ pub(super) async fn handle_delete(
         Err(ProfileError::NotFound(name)) => {
             logging::log_command_error("profiles delete", &format!("Profile '{}' not found", name));
             output_error(&format!("Profile '{}' not found", name), 1001, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(e) => {
             logging::log_command_error(
@@ -146,11 +126,7 @@ pub(super) async fn handle_delete(
                 &format!("Failed to delete profile: {}", e),
             );
             output_error(&format!("Failed to delete profile: {}", e), 3001, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
     }
 }
@@ -168,7 +144,7 @@ pub(super) async fn handle_duplicate(
                 let output = ProfileCreatedOutput {
                     success: true,
                     name: profile.name.clone(),
-                    rhai_path: format!("~/.config/keyrx/profiles/{}.rhai", profile.name),
+                    rhai_path: profile.rhai_path.display().to_string(),
                     layer_count: profile.layer_count,
                 };
                 println!(
@@ -183,43 +159,23 @@ pub(super) async fn handle_duplicate(
         }
         Err(ProfileError::NotFound(name)) => {
             output_error(&format!("Profile '{}' not found", name), 1001, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(ProfileError::InvalidName(msg)) => {
             output_error(&format!("Invalid name: {}", msg), 1006, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(ProfileError::ProfileLimitExceeded) => {
             output_error("Profile limit exceeded (max 100)", 1014, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(ProfileError::AlreadyExists(name)) => {
             output_error(&format!("Profile '{}' already exists", name), 1015, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(e) => {
             output_error(&format!("Failed to duplicate profile: {}", e), 3001, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
     }
 }
