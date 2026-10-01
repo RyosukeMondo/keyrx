@@ -18,7 +18,6 @@ use axum::{
 };
 use keyrx_daemon::web::{create_router, AppState};
 use serde_json::{json, Value};
-use std::path::PathBuf;
 use std::sync::Arc;
 use tower::ServiceExt;
 
@@ -293,7 +292,7 @@ async fn test_api_004_request_validation_deny_unknown_fields() {
     let state = create_test_state();
 
     // Test with unknown field
-    let (status, body) = make_request(
+    let (status, _body) = make_request(
         state.clone(),
         "POST",
         "/api/profiles",
@@ -523,7 +522,7 @@ async fn test_api_008_request_size_limits() {
     // Test DSL size limit in simulator (10KB max)
     let large_dsl = "press:A,wait:1,release:A,".repeat(1000); // > 10KB
 
-    let (status, body) = make_request(
+    let (status, _body) = make_request(
         state.clone(),
         "POST",
         "/api/simulator/events",
@@ -547,7 +546,7 @@ async fn test_api_008_request_size_limits() {
         })
         .collect();
 
-    let (status, body) = make_request(
+    let (status, _body) = make_request(
         state.clone(),
         "POST",
         "/api/simulator/events",
@@ -569,8 +568,6 @@ async fn test_api_008_request_size_limits() {
 async fn test_api_009_timeout_protection() {
     // Note: Timeout middleware is implemented but difficult to test
     // without blocking operations. This test verifies the middleware exists.
-
-    use keyrx_daemon::web::api::validation::timeout_middleware;
 
     // Verify timeout middleware is available for use
     // In production, it should be applied via .layer(middleware::from_fn(timeout_middleware))

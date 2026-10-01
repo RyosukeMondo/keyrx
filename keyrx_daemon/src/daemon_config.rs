@@ -276,8 +276,10 @@ mod tests {
 
     #[test]
     fn test_effective_log_level() {
-        let mut config = DaemonConfig::default();
-        config.log_level = "info".to_string();
+        let mut config = DaemonConfig {
+            log_level: "info".to_string(),
+            ..DaemonConfig::default()
+        };
         assert_eq!(config.effective_log_level(), "info");
 
         config.debug = true;
@@ -286,15 +288,19 @@ mod tests {
 
     #[test]
     fn test_validate_invalid_port() {
-        let mut config = DaemonConfig::default();
-        config.port = 100; // Below MIN_PORT
+        let config = DaemonConfig {
+            port: 100, // Below MIN_PORT
+            ..DaemonConfig::default()
+        };
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn test_validate_invalid_log_level() {
-        let mut config = DaemonConfig::default();
-        config.log_level = "invalid".to_string();
+        let config = DaemonConfig {
+            log_level: "invalid".to_string(),
+            ..DaemonConfig::default()
+        };
         assert!(config.validate().is_err());
     }
 

@@ -158,7 +158,7 @@ async fn test_event_broadcaster_queue_bounded() {
     // Make HTTP requests to generate server activity while the WebSocket client is not reading
     // This simulates a slow/stuck client that's subscribed but not consuming messages
     // Note: Rate limit is 10 req/sec, so we add delays to stay within limits
-    for i in 0..50 {
+    for _i in 0..50 {
         // Make requests to the status endpoint to generate server load
         let _ = app.get("/api/status").await;
 

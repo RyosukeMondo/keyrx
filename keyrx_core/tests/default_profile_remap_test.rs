@@ -19,6 +19,7 @@ use keyrx_core::runtime::{
 };
 
 /// Build the default profile's DeviceConfig matching default.rhai
+#[allow(clippy::vec_init_then_push)] // long, commented, order-significant list mirroring default.rhai
 fn default_profile_config() -> DeviceConfig {
     let mut mappings: Vec<KeyMapping> = Vec::new();
 

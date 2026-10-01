@@ -130,7 +130,7 @@ async fn test_real_daemon_activation_freeze() {
 
     // STEP 1: Verify daemon is running
     let health_response = client
-        .get(&format!("{}/api/health", base_url))
+        .get(format!("{}/api/health", base_url))
         .send()
         .await
         .expect("Daemon not running - start with: cargo run --bin keyrx_daemon test");
@@ -142,7 +142,7 @@ async fn test_real_daemon_activation_freeze() {
     let activate_start = std::time::Instant::now();
 
     let activate_response = client
-        .post(&format!("{}/api/profiles/default/activate", base_url))
+        .post(format!("{}/api/profiles/default/activate", base_url))
         .send()
         .await
         .expect("Failed to activate profile");
@@ -158,7 +158,7 @@ async fn test_real_daemon_activation_freeze() {
     let config_result = timeout(
         Duration::from_secs(5),
         client
-            .get(&format!("{}/api/profiles/default/config", base_url))
+            .get(format!("{}/api/profiles/default/config", base_url))
             .send(),
     )
     .await;

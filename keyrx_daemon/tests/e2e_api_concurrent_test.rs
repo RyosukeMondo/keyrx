@@ -648,7 +648,7 @@ async fn test_real_daemon_concurrent_api() {
     let base_url = "http://localhost:9867";
 
     // Verify daemon is running
-    let health = client.get(&format!("{}/api/health", base_url)).send().await;
+    let health = client.get(format!("{}/api/health", base_url)).send().await;
     assert!(
         health.is_ok(),
         "Daemon not running - start with: cargo run --bin keyrx_daemon test"
@@ -699,7 +699,7 @@ async fn test_real_daemon_profile_activation_concurrent() {
     let base_url = "http://localhost:9867";
 
     // Verify daemon is running
-    let health = client.get(&format!("{}/api/health", base_url)).send().await;
+    let health = client.get(format!("{}/api/health", base_url)).send().await;
     assert!(
         health.is_ok(),
         "Daemon not running - start with: cargo run --bin keyrx_daemon test"
@@ -707,7 +707,7 @@ async fn test_real_daemon_profile_activation_concurrent() {
 
     // Create test profile
     let create_response = client
-        .post(&format!("{}/api/profiles", base_url))
+        .post(format!("{}/api/profiles", base_url))
         .json(&json!({
             "name": "real-concurrent-test",
             "template": "blank"
@@ -727,7 +727,7 @@ async fn test_real_daemon_profile_activation_concurrent() {
         handles.push(tokio::spawn(async move {
             tokio::time::sleep(Duration::from_millis(i * 50)).await;
             let response = client
-                .post(&format!(
+                .post(format!(
                     "{}/api/profiles/real-concurrent-test/activate",
                     base_url
                 ))
@@ -744,7 +744,7 @@ async fn test_real_daemon_profile_activation_concurrent() {
         let base_url = base_url.to_string();
         handles.push(tokio::spawn(async move {
             let response = client
-                .get(&format!(
+                .get(format!(
                     "{}/api/profiles/real-concurrent-test/config",
                     base_url
                 ))

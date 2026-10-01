@@ -27,7 +27,7 @@ fn create_secure_app() -> Router {
     // Create security layers
     let auth_mode = AuthMode::Password("test_password".to_string());
     let auth_middleware = AuthMiddleware::new(auth_mode);
-    let rate_limiter = RateLimitLayer::new();
+    let _rate_limiter = RateLimitLayer::new();
     let security_layer = SecurityLayer::new();
     let timeout_layer = TimeoutLayer::new();
 

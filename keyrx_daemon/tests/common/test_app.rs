@@ -2,6 +2,9 @@
 //!
 //! Provides TestApp struct with isolated configuration directory and HTTP helpers.
 
+// Shared by many test crates, each using a subset of the helpers.
+#![allow(dead_code)]
+
 use futures_util::{SinkExt, StreamExt};
 use keyrx_daemon::macro_recorder::MacroRecorder;
 use keyrx_daemon::services::{ConfigService, DeviceService, ProfileService};

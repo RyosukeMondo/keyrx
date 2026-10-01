@@ -86,12 +86,11 @@ async fn test_profile_creation_activation_workflow() {
         .find(|p| p.get("name").and_then(|n| n.as_str()) == Some("test-workflow-profile"))
         .expect("Profile should exist after activation");
 
-    assert_eq!(
+    assert!(
         active_profile
             .get("isActive")
             .and_then(|a| a.as_bool())
             .unwrap_or(false),
-        true,
         "Profile should be marked as active after activation"
     );
 }
@@ -368,7 +367,7 @@ async fn test_profile_activation_state_persistence() {
 
     // Verify profile A is active
     let status1 = app.get("/api/status").await;
-    let status1_json: serde_json::Value = status1.json().await.unwrap();
+    let _status1_json: serde_json::Value = status1.json().await.unwrap();
 
     // Activate profile B
     let _ = app
@@ -481,7 +480,7 @@ async fn test_cors_headers() {
 
     // Check for CORS headers (may or may not be present depending on config)
     let headers = response.headers();
-    assert!(headers.len() > 0); // At least some headers exist
+    assert!(!headers.is_empty()); // At least some headers exist
 }
 
 /// Test graceful error recovery

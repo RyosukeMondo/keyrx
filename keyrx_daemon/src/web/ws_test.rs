@@ -290,7 +290,7 @@ async fn test_high_frequency_batching() {
                     mapping_type: None,
                     mapping_triggered: false,
                 },
-                sequence: i as u64,
+                sequence: i,
             })
             .unwrap();
     }

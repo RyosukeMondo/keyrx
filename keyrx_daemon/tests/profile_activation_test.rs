@@ -5,7 +5,6 @@
 use keyrx_compiler::compile_file;
 use keyrx_core::config::ConfigRoot;
 use std::fs;
-use std::path::Path;
 use std::time::Duration;
 use tempfile::TempDir;
 
@@ -197,7 +196,7 @@ async fn test_profile_activation_via_api() {
 
     // Test profile-a (known working)
     let response = client
-        .post(&format!("{}/profiles/profile-a/activate", base_url))
+        .post(format!("{}/profiles/profile-a/activate", base_url))
         .timeout(Duration::from_secs(30))
         .send()
         .await;
@@ -217,7 +216,7 @@ async fn test_profile_activation_via_api() {
 
     // Test default (was failing)
     let response = client
-        .post(&format!("{}/profiles/default/activate", base_url))
+        .post(format!("{}/profiles/default/activate", base_url))
         .timeout(Duration::from_secs(60))
         .send()
         .await;

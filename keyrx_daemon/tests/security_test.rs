@@ -313,7 +313,7 @@ async fn test_cors_enforcement() {
     // Make request and check CORS headers
     let response = app.get("/api/status").await;
 
-    let headers = response.headers();
+    let _headers = response.headers();
 
     // In test environment, CORS might be permissive
     // Just verify server handles OPTIONS requests

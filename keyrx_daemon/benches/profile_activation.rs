@@ -14,8 +14,7 @@ fn benchmark_profile_activation(c: &mut Criterion) {
     std::fs::create_dir_all(&profiles_dir).expect("Failed to create profiles dir");
 
     // Initialize ProfileManager
-    let mut manager =
-        ProfileManager::new(config_dir.clone()).expect("Failed to create ProfileManager");
+    let manager = ProfileManager::new(config_dir.clone()).expect("Failed to create ProfileManager");
 
     // Create a test profile
     manager
@@ -61,7 +60,7 @@ fn benchmark_profile_creation(c: &mut Criterion) {
 
                 (manager, temp_dir)
             },
-            |(mut manager, _temp_dir)| {
+            |(manager, _temp_dir)| {
                 // Benchmark: Create profile from blank template
                 let result =
                     manager.create(black_box("test_profile"), black_box(ProfileTemplate::Blank));
@@ -83,7 +82,7 @@ fn benchmark_profile_listing(c: &mut Criterion) {
     let profiles_dir = config_dir.join("profiles");
     std::fs::create_dir_all(&profiles_dir).expect("Failed to create profiles dir");
 
-    let mut manager = ProfileManager::new(config_dir).expect("Failed to create ProfileManager");
+    let manager = ProfileManager::new(config_dir).expect("Failed to create ProfileManager");
 
     // Create 10 test profiles
     for i in 0..10 {

@@ -469,7 +469,7 @@ async fn test_validate_profile_with_valid_syntax() {
     // Test passes if validation endpoint works OR returns expected error
     if status.is_success() {
         let json: serde_json::Value = serde_json::from_str(&body_text)
-            .expect(&format!("Failed to parse JSON: {}", body_text));
+            .unwrap_or_else(|_| panic!("Failed to parse JSON: {}", body_text));
 
         assert!(json.get("valid").is_some(), "Should have valid field");
         assert!(json.get("errors").is_some(), "Should have errors field");

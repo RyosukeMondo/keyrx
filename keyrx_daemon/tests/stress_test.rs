@@ -47,7 +47,7 @@ async fn test_24_hour_stability() {
         let _ = app.get("/api/devices").await;
 
         // Periodic profile activation
-        if iteration % 100 == 0 {
+        if iteration.is_multiple_of(100) {
             let _ = app
                 .post("/api/profiles/default/activate", &serde_json::json!({}))
                 .await;
@@ -94,7 +94,7 @@ async fn test_1000_operations_per_second() {
     // Spawn multiple workers
     let mut handles = Vec::new();
 
-    for worker_id in 0..20 {
+    for _worker_id in 0..20 {
         let app_clone = Arc::clone(&app);
         let ops_counter = Arc::clone(&operations_completed);
         let start = start_time;
@@ -193,7 +193,7 @@ async fn test_100_concurrent_websockets_under_load() {
         operation_count += 1;
 
         // Report progress
-        if operation_count % 100 == 0 {
+        if operation_count.is_multiple_of(100) {
             let elapsed = start_time.elapsed().as_secs();
             println!("Elapsed: {}s, Operations: {}", elapsed, operation_count);
         }
@@ -401,7 +401,7 @@ async fn test_concurrent_mixed_workload() {
     println!("Starting mixed workload test...");
 
     let duration = Duration::from_secs(600); // 10 minutes
-    let start_time = Instant::now();
+    let _start_time = Instant::now();
     let running = Arc::new(AtomicBool::new(true));
 
     let mut handles = Vec::new();

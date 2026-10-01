@@ -15,6 +15,8 @@ doctest = false
 default = []
 linux = []
 windows = []
+# Opt-in tests that need a running daemon on localhost:9867
+integration_tests = []
 
 [dependencies]
 keyrx_core = { path = "../keyrx_core" }

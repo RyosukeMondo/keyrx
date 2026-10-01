@@ -10,7 +10,7 @@ mod daemon_health_tests {
     #[test]
     fn test_daemon_version_command() {
         let output = Command::new("cargo")
-            .args(&["run", "-p", "keyrx_daemon", "--", "--version"])
+            .args(["run", "-p", "keyrx_daemon", "--", "--version"])
             .output()
             .expect("Failed to run daemon --version");
 
@@ -39,7 +39,7 @@ mod daemon_health_tests {
     fn test_daemon_health_endpoint_timeout() {
         // Start daemon in background
         let mut child = Command::new("cargo")
-            .args(&["run", "-p", "keyrx_daemon", "--", "run"])
+            .args(["run", "-p", "keyrx_daemon", "--", "run"])
             .spawn()
             .expect("Failed to start daemon");
 
@@ -78,6 +78,7 @@ mod daemon_health_tests {
 
         // Cleanup
         let _ = child.kill();
+        let _ = child.wait();
 
         assert!(
             success,

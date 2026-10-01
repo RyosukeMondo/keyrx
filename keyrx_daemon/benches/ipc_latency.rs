@@ -52,7 +52,9 @@ fn start_mock_ipc_server(socket_path: PathBuf) -> thread::JoinHandle<()> {
                         uptime_secs: 3600,
                         active_profile: Some("default".to_string()),
                         device_count: 2,
+                        input_overflows: 0,
                     },
+                    IpcRequest::GetDevices => IpcResponse::Devices { devices: vec![] },
                     IpcRequest::GetState => IpcResponse::State {
                         state: vec![false; 255],
                     },

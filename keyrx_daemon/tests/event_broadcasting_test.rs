@@ -8,7 +8,7 @@ use keyrx_daemon::web::rpc_types::ServerMessage;
 use serde_json::json;
 use std::time::Duration;
 use tokio::net::TcpListener;
-use tokio::time::{timeout, timeout_at};
+use tokio::time::timeout_at;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 /// Helper to start a test RPC server on a random port

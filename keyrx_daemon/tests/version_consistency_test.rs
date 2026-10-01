@@ -396,13 +396,3 @@ mod version_consistency_tests {
         }
     }
 }
-
-/// The workspace root (the script paths are relative to it; cargo runs tests
-/// from the crate directory).
-#[cfg(unix)]
-fn workspace_root() -> std::path::PathBuf {
-    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("crate has a parent directory")
-        .to_path_buf()
-}

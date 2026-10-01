@@ -7,11 +7,8 @@
 //! 3. Tap-hold causing duplicate outputs
 //! 4. Base mappings conflicting with tap-hold mappings
 
-use keyrx_daemon::services::SimulationService;
 use serde_json::json;
 use serial_test::serial;
-use std::path::PathBuf;
-use std::sync::Arc;
 
 mod common;
 use common::test_app::TestApp;
@@ -254,7 +251,7 @@ device_end();
         .iter()
         .filter(|e| e["eventType"] == "press")
         .count();
-    let release_count_a = events_a
+    let _release_count_a = events_a
         .iter()
         .filter(|e| e["eventType"] == "release")
         .count();
@@ -301,7 +298,7 @@ device_end();
         .iter()
         .filter(|e| e["eventType"] == "press")
         .count();
-    let release_count_w = events_w
+    let _release_count_w = events_w
         .iter()
         .filter(|e| e["eventType"] == "release")
         .count();

@@ -192,7 +192,7 @@ mod tests {
     /// Renders keys as a kernel-style bitmap (MS word first).
     fn bitmap(keys: &[Key]) -> String {
         let bits = usize::BITS as usize;
-        let mut words = vec![0usize; 12];
+        let mut words = [0usize; 12];
         for key in keys {
             let code = usize::from(key.code());
             words[code / bits] |= 1 << (code % bits);

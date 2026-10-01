@@ -63,8 +63,8 @@ mod tests {
     #[test]
     fn test_max_id_range() {
         // Verify max IDs fit in u8
-        assert!(MAX_MODIFIER_ID <= 0xFF, "MAX_MODIFIER_ID must fit in u8");
-        assert!(MAX_LOCK_ID <= 0xFF, "MAX_LOCK_ID must fit in u8");
+        const { assert!(MAX_MODIFIER_ID <= 0xFF, "MAX_MODIFIER_ID must fit in u8") };
+        const { assert!(MAX_LOCK_ID <= 0xFF, "MAX_LOCK_ID must fit in u8") };
 
         // Verify max IDs are exactly 0xFE (254)
         assert_eq!(MAX_MODIFIER_ID, 0xFE);
