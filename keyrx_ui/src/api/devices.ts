@@ -50,7 +50,17 @@ export async function fetchDevices(): Promise<DeviceEntry[]> {
           ? 'global'
           : 'global', // Default to global if unset
     layout: device.layout || null,
-    isVirtual: device.name.toLowerCase().startsWith('keyrx'), // Virtual if name starts with "keyrx" (daemon's uinput device)
+    // Prefer what the daemon says; until it does, guess from the name
+    // ("keyrx*" is the daemon's own uinput output device).
+    isVirtual:
+      device.is_virtual ??
+      device.isVirtual ??
+      device.name.toLowerCase().startsWith('keyrx'),
+    isKeyrxOutput:
+      device.is_keyrx_output ??
+      device.isKeyrxOutput ??
+      device.name.toLowerCase().startsWith('keyrx'),
+    hasJisKeys: device.has_jis_keys ?? device.hasJisKeys,
   }));
 }
 

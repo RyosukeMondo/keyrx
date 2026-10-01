@@ -49,7 +49,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-slate-900 text-slate-100">
       <SkipToContent />
       {/* Mobile header with hamburger menu (< 768px) */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-800 border-b border-slate-700 z-40 flex items-center px-4">
+      <header className="chrome-top md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-800 border-b border-slate-700 z-40 flex items-center px-4">
         <button
           onClick={toggleSidebar}
           aria-label="Toggle navigation menu"

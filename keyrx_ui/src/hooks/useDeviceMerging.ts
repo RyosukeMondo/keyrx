@@ -7,6 +7,7 @@ import {
 } from '@/utils/rhaiParser';
 import type { Device } from '@/components/DeviceSelector';
 import { buildScopes } from '@/utils/deviceScopes';
+import { remappableDevices } from '@/utils/deviceVisibility';
 
 interface UseDeviceMergingProps {
   syncEngine: {
@@ -38,12 +39,12 @@ export function useDeviceMerging({
     if (!ast) {
       // No AST yet, just use connected devices
       setMergedDevices(
-        devicesData?.map((d) => ({
+        remappableDevices(devicesData).map((d) => ({
           id: d.id,
           name: d.name,
           serial: d.serial || undefined,
           connected: true,
-        })) || []
+        }))
       );
       return;
     }
@@ -51,7 +52,10 @@ export function useDeviceMerging({
     // Extract device patterns from Rhai script
     const devicePatternsInRhai = extractDevicePatterns(ast);
 
-    const merged = buildScopes(devicePatternsInRhai, devicesData ?? []);
+    const merged = buildScopes(
+      devicePatternsInRhai,
+      remappableDevices(devicesData)
+    );
 
     setMergedDevices(merged);
 

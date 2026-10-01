@@ -96,7 +96,7 @@ export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
             </div>
 
             {/* Device Keyboard Content */}
-            <div className="flex gap-2 flex-1 bg-zinc-900/30 rounded-lg p-3">
+            <div className="flex flex-1 flex-col gap-2 rounded-lg bg-zinc-900/30 p-2 2xl:flex-row 2xl:p-3">
               <LayerSwitcher
                 activeLayer={activeLayer}
                 availableLayers={availableLayers}

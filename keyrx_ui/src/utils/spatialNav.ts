@@ -24,6 +24,9 @@ export type NavKey =
 /** Keys closer than this (in layout units) vertically count as the same row. */
 const ROW_TOLERANCE = 0.45;
 
+/** Neighbouring keys this close (layout units) side by side still count as aligned. */
+const SIDE_TOLERANCE = 0.1;
+
 const cx = (k: KeyRect) => k.x + k.w / 2;
 const cy = (k: KeyRect) => k.y + k.h / 2;
 
@@ -46,19 +49,45 @@ function horizontal(keys: KeyRect[], from: number, dir: 1 | -1): number {
   return best;
 }
 
+/** Horizontal overlap (>0) or gap (<0) between two keys, in layout units. */
+function overlap(a: KeyRect, b: KeyRect): number {
+  return Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+}
+
+/**
+ * Rows are told apart by key edges, not centres: a 2u-tall numpad "+" has its
+ * centre between two rows and used to win "nearest row" for every key on the
+ * main block, so ArrowDown jumped from Tab/Q/W... straight into the numpad.
+ * Among the keys of the next row, the one whose centre is closest wins; keys that
+ * are not (nearly) directly below do not qualify at all.
+ */
 function vertical(keys: KeyRect[], from: number, dir: 1 | -1): number {
   const cur = keys[from];
+  // Edge of a key that faces the key we leave: its top going down, bottom going up.
+  const facing = (k: KeyRect) => (dir === 1 ? k.y : k.y + k.h);
+  const limit = dir === 1 ? cur.y + cur.h : cur.y;
+  // Only keys that are (nearly) directly above/below count; with none, stay
+  // put rather than jump to another cluster (main block <-> numpad).
   const candidates = keys
-    .map((k, i) => ({
-      i,
-      dy: (cy(k) - cy(cur)) * dir,
-      dx: Math.abs(cx(k) - cx(cur)),
-    }))
-    .filter((c) => c.dy > ROW_TOLERANCE);
+    .map((k, i) => ({ i, k, edge: facing(k) }))
+    .filter(
+      (c) =>
+        c.i !== from &&
+        overlap(cur, c.k) > -SIDE_TOLERANCE &&
+        (dir === 1
+          ? c.edge >= limit - ROW_TOLERANCE
+          : c.edge <= limit + ROW_TOLERANCE)
+    );
   if (candidates.length === 0) return from;
-  const nearestRow = Math.min(...candidates.map((c) => c.dy));
-  const inRow = candidates.filter((c) => c.dy < nearestRow + ROW_TOLERANCE);
-  return inRow.reduce((a, b) => (b.dx < a.dx ? b : a)).i;
+  const nearest =
+    dir === 1
+      ? Math.min(...candidates.map((c) => c.edge))
+      : Math.max(...candidates.map((c) => c.edge));
+  const inRow = candidates.filter(
+    (c) => Math.abs(c.edge - nearest) < ROW_TOLERANCE
+  );
+  const dx = (c: (typeof inRow)[number]) => Math.abs(cx(c.k) - cx(cur));
+  return inRow.reduce((a, b) => (dx(b) < dx(a) ? b : a)).i;
 }
 
 function rowEdge(keys: KeyRect[], from: number, dir: 1 | -1): number {

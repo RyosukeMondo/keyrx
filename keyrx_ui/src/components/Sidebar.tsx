@@ -8,6 +8,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { VERSION } from '../version';
+import { t, type MessageKey } from '@/i18n';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -20,32 +21,32 @@ interface SidebarProps {
 interface NavItem {
   to: string;
   icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  ariaLabel: string;
-  description: string;
+  label: MessageKey;
+  ariaLabel: MessageKey;
+  description: MessageKey;
 }
 
 const navItems: NavItem[] = [
   {
     to: '/',
     icon: Settings,
-    label: 'Config',
-    ariaLabel: 'Navigate to Configuration page',
-    description: 'Map and test keys',
+    label: 'nav.config',
+    ariaLabel: 'nav.config.aria',
+    description: 'nav.config.desc',
   },
   {
     to: '/devices',
     icon: Smartphone,
-    label: 'Devices',
-    ariaLabel: 'Navigate to Devices page',
-    description: 'Manage keyboards',
+    label: 'nav.devices',
+    ariaLabel: 'nav.devices.aria',
+    description: 'nav.devices.desc',
   },
   {
     to: '/monitor',
     icon: BarChart3,
-    label: 'Monitor',
-    ariaLabel: 'Navigate to Monitor page',
-    description: 'Inspect live events',
+    label: 'nav.monitor',
+    ariaLabel: 'nav.monitor.aria',
+    description: 'nav.monitor.desc',
   },
 ];
 
@@ -85,10 +86,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         transition-transform duration-300 ease-in-out
         ${className}
       `}
-      aria-label="Main navigation sidebar"
+      aria-label={t('nav.sidebar')}
       onKeyDown={handleKeyDown}
     >
-      <nav className="flex-1 px-3 py-4" aria-label="Primary navigation">
+      <nav className="flex-1 px-3 py-4" aria-label={t('nav.primary')}>
         <ul className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -101,7 +102,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <NavLink
                   to={item.to}
                   onClick={onClose}
-                  aria-label={item.ariaLabel}
+                  aria-label={t(item.ariaLabel)}
                   className={({ isActive }) => {
                     // Override isActive for Config route
                     const actuallyActive =
@@ -119,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }
                   `;
                   }}
-                  title={isCollapsed ? item.label : undefined}
+                  title={isCollapsed ? t(item.label) : undefined}
                 >
                   {({ isActive }) => {
                     // Override isActive for Config route
@@ -136,11 +137,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {!isCollapsed && (
                           <>
                             <span className="min-w-0">
-                              <span className="block">{item.label}</span>
+                              <span className="block">{t(item.label)}</span>
                               <span
                                 className={`block text-[11px] font-normal ${actuallyActive ? 'text-primary-50' : 'text-slate-400'}`}
                               >
-                                {item.description}
+                                {t(item.description)}
                               </span>
                             </span>
                             {actuallyActive && (
@@ -167,7 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Version text - always show, even when collapsed */}
           {!isCollapsed && (
             <p className="text-[11px] text-slate-400 flex-1">
-              KeyRx v{VERSION} · local
+              KeyRx v{VERSION} · {t('nav.local')}
             </p>
           )}
 
@@ -178,8 +179,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`flex items-center justify-center px-2 py-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors ${
                 isCollapsed ? 'w-full' : ''
               }`}
-              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={isCollapsed ? t('nav.expand') : t('nav.collapse')}
+              title={isCollapsed ? t('nav.expand') : t('nav.collapse')}
             >
               {isCollapsed ? (
                 <ChevronRight className="w-5 h-5" />

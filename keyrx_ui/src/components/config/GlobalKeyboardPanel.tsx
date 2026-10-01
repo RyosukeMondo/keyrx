@@ -64,7 +64,7 @@ export const GlobalKeyboardPanel: React.FC<GlobalKeyboardPanelProps> = ({
       </div>
 
       {/* Global Keyboard Content */}
-      <div className="flex gap-2 flex-1 bg-slate-900/30 rounded-lg p-3">
+      <div className="flex flex-1 flex-col gap-2 rounded-lg bg-slate-900/30 p-2 2xl:flex-row 2xl:p-3">
         <LayerSwitcher
           activeLayer={activeLayer}
           availableLayers={availableLayers}

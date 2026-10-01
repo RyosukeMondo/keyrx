@@ -1,5 +1,6 @@
 import { formatLatencyUs } from '@/utils/latencyFormat';
 import React from 'react';
+import { t } from '@/i18n';
 import { Card } from '../Card';
 import { Activity, Clock, Zap, Cpu } from 'lucide-react';
 import type { LatencyStats } from '../../types';
@@ -56,10 +57,10 @@ export const MetricsStatsCards: React.FC<MetricsStatsCardsProps> = ({
   return (
     <section
       className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4"
-      aria-label="Latency statistics"
+      aria-label={t('stats.aria')}
     >
       {/* Event Count Card */}
-      <Card padding="md" aria-label="Event count">
+      <Card padding="md" aria-label={t('stats.eventCount')}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
           <div
             className="p-2 sm:p-3 bg-blue-500/10 rounded-lg"
@@ -68,7 +69,9 @@ export const MetricsStatsCards: React.FC<MetricsStatsCardsProps> = ({
             <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
           </div>
           <div>
-            <p className="text-xs sm:text-sm text-slate-400">Events</p>
+            <p className="text-xs sm:text-sm text-slate-400">
+              {t('stats.events')}
+            </p>
             <p
               className="text-lg sm:text-2xl font-bold text-slate-100"
               aria-label={`Event count: ${eventCount.toLocaleString()}`}
@@ -80,7 +83,7 @@ export const MetricsStatsCards: React.FC<MetricsStatsCardsProps> = ({
       </Card>
 
       {/* Average Latency Card */}
-      <Card padding="md" aria-label="Average latency">
+      <Card padding="md" aria-label={t('stats.avgAria')}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
           <div
             className="p-2 sm:p-3 bg-green-500/10 rounded-lg"
@@ -89,7 +92,9 @@ export const MetricsStatsCards: React.FC<MetricsStatsCardsProps> = ({
             <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
           </div>
           <div>
-            <p className="text-xs sm:text-sm text-slate-400">Average</p>
+            <p className="text-xs sm:text-sm text-slate-400">
+              {t('stats.avg')}
+            </p>
             <p
               className="text-lg sm:text-2xl font-bold text-slate-100"
               aria-label={`Average latency: ${formatLatency(stats.avg)}`}
@@ -101,13 +106,15 @@ export const MetricsStatsCards: React.FC<MetricsStatsCardsProps> = ({
       </Card>
 
       {/* Minimum Latency Card */}
-      <Card padding="md" aria-label="Minimum latency">
+      <Card padding="md" aria-label={t('stats.minAria')}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
           <div className="p-2 sm:p-3 bg-yellow-500/10 rounded-lg">
             <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
           </div>
           <div>
-            <p className="text-xs sm:text-sm text-slate-400">Min</p>
+            <p className="text-xs sm:text-sm text-slate-400">
+              {t('stats.min')}
+            </p>
             <p className="text-lg sm:text-2xl font-bold text-slate-100">
               {formatLatency(stats.min)}
             </p>
@@ -116,13 +123,15 @@ export const MetricsStatsCards: React.FC<MetricsStatsCardsProps> = ({
       </Card>
 
       {/* Maximum Latency Card */}
-      <Card padding="md" aria-label="Maximum latency">
+      <Card padding="md" aria-label={t('stats.maxAria')}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
           <div className="p-2 sm:p-3 bg-red-500/10 rounded-lg">
             <Cpu className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" />
           </div>
           <div>
-            <p className="text-xs sm:text-sm text-slate-400">Max</p>
+            <p className="text-xs sm:text-sm text-slate-400">
+              {t('stats.max')}
+            </p>
             <p className="text-lg sm:text-2xl font-bold text-slate-100">
               {formatLatency(stats.max)}
             </p>

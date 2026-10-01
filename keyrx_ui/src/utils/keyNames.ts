@@ -7,6 +7,8 @@
  * `dslKeyName()` so it matches what users type in `map("CapsLock", ...)`.
  */
 
+import { getLocale } from '@/i18n';
+
 /**
  * Normalize key code to VK_ format for mapping lookup
  * Maps QMK-style KC_ codes to system VK_ codes based on DSL manual
@@ -167,9 +169,15 @@ export function formatKeyLabel(key: string): string {
   return clean;
 }
 
-/** DSL name of a layout key code without the `VK_` prefix: KC_CAPS -> "CapsLock". */
+/**
+ * DSL name of a layout key code without the `VK_` prefix: KC_CAPS -> "CapsLock".
+ * Layer ids are normalised to the one spelling the DSL uses (`LK_00`, `MD_0A`),
+ * never `LK-00`.
+ */
 export function dslKeyName(code: string): string {
-  return normalizeKeyCode(code).replace(/^VK_/, '');
+  const name = normalizeKeyCode(code).replace(/^VK_/, '');
+  const id = /^(MD|LK)[-_]([0-9A-Fa-f]{2})$/.exec(name);
+  return id ? `${id[1]}_${id[2].toUpperCase()}` : name;
 }
 
 const FRIENDLY_NAMES: Record<string, string> = {
@@ -189,6 +197,35 @@ const FRIENDLY_NAMES: Record<string, string> = {
   PrintScreen: 'Print Screen',
   ScrollLock: 'Scroll Lock',
   NumLock: 'Num Lock',
+  Grave: 'Backtick',
+  Quote: 'Apostrophe',
+  Equal: 'Equals',
+  Period: 'Period',
+  NumpadSubtract: 'Numpad Minus',
+  NumpadAdd: 'Numpad Plus',
+  NumpadDecimal: 'Numpad Point',
+  NumpadMultiply: 'Numpad Multiply',
+  NumpadDivide: 'Numpad Divide',
+  Zenkaku: 'Zenkaku/Hankaku',
+  KatakanaHiragana: 'Katakana/Hiragana',
+};
+
+/**
+ * Japanese names for the JIS keys (and the few keys whose JIS legend differs).
+ * `Grave` is the physical 半角/全角 key on a JIS board (the daemon maps scancode
+ * 0x29 to Grave); `CapsLock` is 英数 there.
+ */
+const JA_KEY_NAMES: Record<string, string> = {
+  Zenkaku: '半角/全角',
+  Grave: '半角/全角（`）',
+  Henkan: '変換',
+  Muhenkan: '無変換',
+  Hiragana: 'ひらがな',
+  Katakana: 'カタカナ',
+  KatakanaHiragana: 'かな',
+  CapsLock: 'Caps Lock（英数）',
+  Yen: '円記号（¥）',
+  Ro: 'ろ（＼）',
 };
 
 const MODIFIER_WORDS: Record<string, string> = {
@@ -205,19 +242,36 @@ const MODIFIER_WORDS: Record<string, string> = {
  * Unknown names are split on word boundaries rather than guessed.
  */
 export function friendlyKeyName(key: string): string {
+  return keyNameParts(key).primary;
+}
+
+/**
+ * Name to show people, plus (in Japanese) the English/DSL name to show smaller
+ * next to it: `{primary: '無変換', secondary: 'Muhenkan'}`. `secondary` is only
+ * set when it adds information (the primary is not already the DSL name).
+ */
+export interface KeyNameParts {
+  primary: string;
+  secondary?: string;
+}
+
+export function keyNameParts(key: string): KeyNameParts {
   const combo = key.match(/^with_(\w+)\(["']?([\w]+)["']?\)$/);
   if (combo) {
     const mod = MODIFIER_WORDS[combo[1].toLowerCase()] ?? combo[1];
-    return `${mod}+${friendlyKeyName(combo[2])}`;
+    const inner = keyNameParts(combo[2]);
+    return { primary: `${mod}+${inner.primary}`, secondary: inner.secondary };
   }
   const name = dslKeyName(key);
-  if (FRIENDLY_NAMES[name]) return FRIENDLY_NAMES[name];
+  const ja = getLocale() === 'ja' ? JA_KEY_NAMES[name] : undefined;
+  if (ja) return { primary: ja, secondary: name };
+  if (FRIENDLY_NAMES[name]) return { primary: FRIENDLY_NAMES[name] };
   const top = name.match(/^Num(\d)$/); // top-row digits
-  if (top) return top[1];
-  if (/^[A-Za-z]$/.test(name)) return name.toUpperCase();
-  return name
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/([A-Za-z])(\d)/g, (m, a, d) =>
-      /^F$/i.test(a) ? m : `${a} ${d}`
-    );
+  if (top) return { primary: top[1] };
+  if (/^[A-Za-z]$/.test(name)) return { primary: name.toUpperCase() };
+  return {
+    primary: name
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/([A-Za-z])(\d)/g, (m, a, d) => (/^F$/i.test(a) ? m : `${a} ${d}`)),
+  };
 }

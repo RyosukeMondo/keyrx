@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/Card';
-import { Activity, FileCode, Pause, Play, Download, Search } from 'lucide-react';
+import {
+  Activity,
+  FileCode,
+  Pause,
+  Play,
+  Download,
+  Search,
+} from 'lucide-react';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { useMetricsStore } from '@/stores/metricsStore';
 import { useActiveProfile } from '@/hooks/useProfiles';
+import { useDevices } from '@/hooks/useDevices';
+import { resolveDeviceName } from '@/utils/deviceNames';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { MetricsStatsCards } from '@/components/metrics/MetricsStatsCards';
 import {
@@ -16,6 +25,7 @@ import {
   type EventLogEntry,
 } from '@/components/metrics/EventLogList';
 import { StateSnapshot } from '@/components/metrics/StateSnapshot';
+import { getLocale, t } from '@/i18n';
 
 /** Trigger a file download in the browser */
 function downloadFile(content: string, filename: string, mimeType: string) {
@@ -31,7 +41,7 @@ function downloadFile(content: string, filename: string, mimeType: string) {
 }
 
 export const MonitorPage: React.FC = () => {
-  usePageTitle('Monitor');
+  usePageTitle(t('monitor.title'));
   // Connect to metrics store (real WebSocket data)
   const {
     latencyStats,
@@ -47,6 +57,7 @@ export const MonitorPage: React.FC = () => {
 
   // Get the active profile data
   const activeProfile = useActiveProfile();
+  const { data: devices = [] } = useDevices();
 
   // Track latency history for the chart (last 60 data points)
   const [latencyHistory, setLatencyHistory] = useState<LatencyDataPoint[]>([]);
@@ -108,11 +119,11 @@ export const MonitorPage: React.FC = () => {
       input: event.input,
       output: event.output,
       deviceId: event.deviceId,
-      deviceName: event.deviceName,
+      deviceName: resolveDeviceName(event, devices),
       mappingType: event.mappingType,
       mappingTriggered: event.mappingTriggered,
     }));
-  }, [storeEventLog]);
+  }, [storeEventLog, devices]);
 
   // Use paused snapshot or live feed, then apply key filter
   const filteredEventLog: EventLogEntry[] = useMemo(() => {
@@ -123,7 +134,7 @@ export const MonitorPage: React.FC = () => {
       (e) =>
         e.keyCode.toLowerCase().includes(lowerFilter) ||
         (e.input?.toLowerCase().includes(lowerFilter) ?? false) ||
-        (e.output?.toLowerCase().includes(lowerFilter) ?? false),
+        (e.output?.toLowerCase().includes(lowerFilter) ?? false)
     );
   }, [isPaused, pausedEvents, eventLog, keyFilter]);
 
@@ -140,7 +151,8 @@ export const MonitorPage: React.FC = () => {
 
   // Export handlers
   const handleExportCSV = useCallback(() => {
-    const header = 'timestamp,type,keyCode,input,output,latency_ms,device,mappingType';
+    const header =
+      'timestamp,type,keyCode,input,output,latency_ms,device,mappingType';
     const rows = filteredEventLog.map((e) =>
       [
         new Date(e.timestamp).toISOString(),
@@ -151,7 +163,7 @@ export const MonitorPage: React.FC = () => {
         e.latency.toFixed(3),
         e.deviceName ?? e.deviceId ?? '',
         e.mappingType ?? '',
-      ].join(','),
+      ].join(',')
     );
     downloadFile([header, ...rows].join('\n'), 'keyrx-events.csv', 'text/csv');
   }, [filteredEventLog]);
@@ -258,10 +270,10 @@ export const MonitorPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
-              Monitor
+              {t('monitor.title')}
             </h1>
             <p className="text-sm md:text-base text-slate-400 mt-2">
-              Real-time monitoring and debugging tools
+              {t('monitor.subtitle')}
             </p>
           </div>
           {/* Connection Status Indicator */}
@@ -271,10 +283,12 @@ export const MonitorPage: React.FC = () => {
                 connected ? 'bg-green-500' : 'bg-red-500'
               }`}
               role="status"
-              aria-label={connected ? 'Connected' : 'Disconnected'}
+              aria-label={
+                connected ? t('monitor.connected') : t('monitor.disconnected')
+              }
             />
             <span className="text-sm text-slate-400">
-              {connected ? 'Live' : 'Disconnected'}
+              {connected ? t('monitor.live') : t('monitor.disconnected')}
             </span>
           </div>
         </div>
@@ -287,13 +301,15 @@ export const MonitorPage: React.FC = () => {
       </header>
 
       {/* Active Profile Header */}
-      <Card padding="md" aria-label="Active profile information">
+      <Card padding="md" aria-label={t('monitor.activeProfileAria')}>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-500/10 rounded-lg">
             <Activity className="w-5 h-5 text-blue-500" aria-hidden="true" />
           </div>
           <div className="flex-1">
-            <p className="text-sm text-slate-400">Active Profile</p>
+            <p className="text-sm text-slate-400">
+              {t('monitor.activeProfile')}
+            </p>
             {activeProfile ? (
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -316,9 +332,9 @@ export const MonitorPage: React.FC = () => {
                 </div>
                 {activeProfile.modifiedAt && (
                   <p className="text-xs text-slate-400">
-                    Last modified:{' '}
+                    {t('monitor.lastModified')}{' '}
                     {new Date(activeProfile.modifiedAt).toLocaleString(
-                      'en-US',
+                      getLocale() === 'ja' ? 'ja-JP' : 'en-US',
                       {
                         year: 'numeric',
                         month: 'short',
@@ -333,14 +349,14 @@ export const MonitorPage: React.FC = () => {
             ) : (
               <div className="space-y-1">
                 <p className="text-lg font-semibold text-slate-400">
-                  {connected ? 'None' : 'Daemon offline'}
+                  {connected ? t('monitor.none') : t('status.offline')}
                 </p>
                 {connected && (
                   <Link
                     to="/"
                     className="inline-block text-sm text-blue-400 hover:text-blue-300 transition-colors underline"
                   >
-                    Go to Profiles to activate one
+                    {t('monitor.goProfiles')}
                   </Link>
                 )}
               </div>
@@ -363,10 +379,10 @@ export const MonitorPage: React.FC = () => {
             id="latency-chart-heading"
             className="text-lg md:text-xl font-semibold text-slate-100"
           >
-            Latency Over Time
+            {t('monitor.latencyOverTime')}
           </h2>
           <p className="text-xs md:text-sm text-slate-400 mt-1">
-            Last 60 seconds
+            {t('monitor.last60')}
           </p>
         </div>
 
@@ -383,12 +399,12 @@ export const MonitorPage: React.FC = () => {
                   id="event-log-heading"
                   className="text-lg md:text-xl font-semibold text-slate-100"
                 >
-                  Event Log
+                  {t('monitor.eventLog')}
                 </h2>
                 <p className="text-xs md:text-sm text-slate-400 mt-1">
-                  {isPaused ? 'Paused' : 'Live'} &middot;{' '}
-                  {filteredEventLog.length} event{filteredEventLog.length !== 1 ? 's' : ''}
-                  {keyFilter && ` (filtered)`}
+                  {isPaused ? t('monitor.paused') : t('monitor.live')} &middot;{' '}
+                  {t('monitor.events', { count: filteredEventLog.length })}
+                  {keyFilter && ` ${t('monitor.filtered')}`}
                 </p>
               </div>
 
@@ -398,25 +414,30 @@ export const MonitorPage: React.FC = () => {
                   type="button"
                   onClick={handleTogglePause}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
-                  aria-label={isPaused ? 'Resume event stream' : 'Pause event stream'}
+                  aria-label={
+                    isPaused ? t('monitor.resumeAria') : t('monitor.pauseAria')
+                  }
                 >
                   {isPaused ? (
                     <Play className="w-4 h-4" aria-hidden="true" />
                   ) : (
                     <Pause className="w-4 h-4" aria-hidden="true" />
                   )}
-                  {isPaused ? 'Resume' : 'Pause'}
+                  {isPaused ? t('monitor.resume') : t('monitor.pause')}
                 </button>
 
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" aria-hidden="true" />
+                  <Search
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+                    aria-hidden="true"
+                  />
                   <input
                     type="text"
                     value={keyFilter}
                     onChange={(e) => setKeyFilter(e.target.value)}
-                    placeholder="Filter by key..."
+                    placeholder={t('monitor.filterPlaceholder')}
                     className="pl-8 pr-3 py-1.5 text-sm rounded-lg bg-slate-800 border border-slate-600 text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 w-40"
-                    aria-label="Filter events by key"
+                    aria-label={t('monitor.filterAria')}
                   />
                 </div>
 
@@ -424,7 +445,7 @@ export const MonitorPage: React.FC = () => {
                   type="button"
                   onClick={handleExportCSV}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
-                  aria-label="Export events as CSV"
+                  aria-label={t('monitor.exportCsv')}
                 >
                   <Download className="w-4 h-4" aria-hidden="true" />
                   CSV
@@ -433,7 +454,7 @@ export const MonitorPage: React.FC = () => {
                   type="button"
                   onClick={handleExportJSON}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
-                  aria-label="Export events as JSON"
+                  aria-label={t('monitor.exportJson')}
                 >
                   <Download className="w-4 h-4" aria-hidden="true" />
                   JSON
@@ -442,7 +463,11 @@ export const MonitorPage: React.FC = () => {
             </div>
           </div>
 
-          <EventLogList events={filteredEventLog} height={300} autoScroll={!isPaused} />
+          <EventLogList
+            events={filteredEventLog}
+            height={300}
+            autoScroll={!isPaused}
+          />
         </Card>
 
         {/* State Inspector */}
@@ -452,10 +477,10 @@ export const MonitorPage: React.FC = () => {
               id="state-inspector-heading"
               className="text-lg md:text-xl font-semibold text-slate-100"
             >
-              State Inspector
+              {t('monitor.state')}
             </h2>
             <p className="text-xs md:text-sm text-slate-400 mt-1">
-              Current daemon internal state
+              {t('monitor.stateDesc')}
             </p>
           </div>
 

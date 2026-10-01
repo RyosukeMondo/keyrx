@@ -314,9 +314,7 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      expect(
-        screen.getByLabelText('Event count: 50')
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Event count: 50')).toBeInTheDocument();
       expect(
         screen.getByLabelText('Average latency: 1.50ms')
       ).toBeInTheDocument();

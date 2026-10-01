@@ -4,6 +4,7 @@ import { Input } from '@/components/Input';
 import { LayoutDropdown } from '@/components/LayoutDropdown';
 import { useUpdateDevice } from '@/hooks/useUpdateDevice';
 import { LAYOUT_OPTIONS } from '@/contexts/LayoutPreviewContext';
+import { t } from '@/i18n';
 
 interface Device {
   id: string;
@@ -77,8 +78,10 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
         className={`w-2 h-2 rounded-full flex-shrink-0 ${
           device.active ? 'bg-green-500' : 'bg-slate-500'
         }`}
-        title={device.active ? 'Connected' : 'Disconnected'}
-        aria-label={device.active ? 'Connected' : 'Disconnected'}
+        title={device.active ? t('device.connected') : t('device.disconnected')}
+        aria-label={
+          device.active ? t('device.connected') : t('device.disconnected')
+        }
       />
 
       {/* Device name */}
@@ -97,14 +100,14 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
               onChange={onEditingNameChange}
               error={nameError}
               maxLength={64}
-              aria-label="Device name"
+              aria-label={t('device.name')}
               className="!py-1 !text-sm"
             />
             <Button
               variant="primary"
               size="sm"
               onClick={() => onRenameSave(device.id)}
-              aria-label="Save"
+              aria-label={t('device.save')}
             >
               ✓
             </Button>
@@ -112,7 +115,7 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
               variant="ghost"
               size="sm"
               onClick={onRenameCancel}
-              aria-label="Cancel"
+              aria-label={t('device.cancel')}
             >
               ✕
             </Button>
@@ -121,7 +124,7 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
           <button
             onClick={() => onRenameClick(device)}
             className="text-left w-full group"
-            aria-label={`Rename ${device.name}`}
+            aria-label={t('device.rename', { name: device.name })}
           >
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-slate-100 group-hover:text-blue-400 transition-colors truncate block">
@@ -142,7 +145,7 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
             options={LAYOUT_OPTIONS}
             value={device.layout}
             onChange={handleLayoutChange}
-            aria-label="Layout"
+            aria-label={t('device.layout')}
             compact
             disabled={isSaving}
           />
@@ -170,7 +173,7 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
           variant="ghost"
           size="sm"
           onClick={() => onForgetClick(device.id)}
-          aria-label={`Permanently forget ${device.name}`}
+          aria-label={t('device.forget', { name: device.name })}
           className="text-slate-400 hover:text-red-400"
         >
           <svg

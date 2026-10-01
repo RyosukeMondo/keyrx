@@ -107,7 +107,7 @@ export const KeyboardVisualizerContainer: React.FC<
       </div>
 
       {/* Keyboard Visualizer */}
-      <div className="overflow-x-auto p-4">
+      <div className="overflow-x-auto p-1 2xl:p-4">
         <div className="mx-auto w-fit">
           <KeyboardVisualizer
             layout={layout}

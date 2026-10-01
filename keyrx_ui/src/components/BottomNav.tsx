@@ -1,10 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import {
-  Settings,
-  Smartphone,
-  BarChart3,
-} from 'lucide-react';
+import { Settings, Smartphone, BarChart3 } from 'lucide-react';
+import { t, type MessageKey } from '@/i18n';
 
 interface BottomNavProps {
   className?: string;
@@ -13,28 +10,28 @@ interface BottomNavProps {
 interface NavItem {
   to: string;
   icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  ariaLabel: string;
+  label: MessageKey;
+  ariaLabel: MessageKey;
 }
 
 const navItems: NavItem[] = [
   {
     to: '/',
     icon: Settings,
-    label: 'Config',
-    ariaLabel: 'Navigate to Configuration page',
+    label: 'nav.config',
+    ariaLabel: 'nav.config.aria',
   },
   {
     to: '/devices',
     icon: Smartphone,
-    label: 'Devices',
-    ariaLabel: 'Navigate to Devices page',
+    label: 'nav.devices',
+    ariaLabel: 'nav.devices.aria',
   },
   {
     to: '/monitor',
     icon: BarChart3,
-    label: 'Monitor',
-    ariaLabel: 'Navigate to Monitor page',
+    label: 'nav.monitor',
+    ariaLabel: 'nav.monitor.aria',
   },
 ];
 
@@ -42,12 +39,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ className = '' }) => {
   return (
     <nav
       className={`
-        fixed bottom-0 left-0 right-0
+        chrome-bottom fixed bottom-0 left-0 right-0
         bg-slate-800 border-t border-slate-700
         md:hidden
         ${className}
       `}
-      aria-label="Mobile bottom navigation"
+      aria-label={t('nav.mobile')}
       style={{ zIndex: 'var(--z-fixed)' }}
     >
       <ul className="flex justify-around items-center h-16">
@@ -57,7 +54,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ className = '' }) => {
             <li key={item.to} className="flex-1">
               <NavLink
                 to={item.to}
-                aria-label={item.ariaLabel}
+                aria-label={t(item.ariaLabel)}
                 className={({ isActive }) =>
                   `
                   flex flex-col items-center justify-center
@@ -82,7 +79,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ className = '' }) => {
                       aria-hidden="true"
                     />
                     <span className={isActive ? 'font-semibold' : ''}>
-                      {item.label}
+                      {t(item.label)}
                     </span>
                   </>
                 )}
