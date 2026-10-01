@@ -100,7 +100,7 @@ fn truncate_string(s: &str, max_len: usize) -> String {
 }
 
 #[cfg(not(target_os = "linux"))]
-pub fn handle_list_devices(all: bool) -> Result<(), (i32, String)> {
+pub fn handle_list_devices(_all: bool) -> Result<(), (i32, String)> {
     Err((
         exit_codes::CONFIG_ERROR,
         "The 'list-devices' command is only available on Linux. \
