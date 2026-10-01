@@ -510,7 +510,8 @@ the `windows` remote. Open items, none blocking:
   integration 85 pass; only `config-editor` and `rpc-communication` fail, and
   only because they need a live daemon on port 13030).
 - **Installed Linux binary** (`~/.local/bin/keyrx_daemon` and `keyrx_compiler`):
-  rebuilt and reinstalled 2026-10-01 (previous kept as `*.pre-j.bak`).
+  rebuilt and reinstalled 2026-10-01 with the round-2 merge (previous kept as
+  `*.pre-k.bak`).
 - **Branch `g3-review`** (local, Linux) is the PR #1 review checkout and can be
   deleted.
 
@@ -581,3 +582,20 @@ the `windows` remote. Open items, none blocking:
   device grabbed, IPC == REST). Scratch-instance live regression 14/14: Caps
   tap=Esc / hold=real LCtrl, home-row mod, hot reload (and a bad edit keeps the
   old config), SYN_DROPPED flood recovery, emergency chord.
+- 2026-10-01 (evening): Round-2 merge (OneShot=8 / TapHoldKeyTimeoutOnly=9,
+  deterministic .krx, parser diagnostics; unique `keyrx-out-<pid>` output,
+  `config_error`, 5 ms min key-down, one-handed emergency stop, in-place CLI
+  edits; UI round-trip-safe save, undo, Japanese) gated together: fmt, clippy
+  (workspace all-targets + windows-gnu), nextest 2185 pass / 70 skipped, doc
+  tests, file sizes, UI type-check/lint/unit 2018 pass/a11y 14 pass. Merge
+  breakage fixed at the root: `validate_krx_format` checked `KRX\0` while the
+  compiler writes `KRX\n` (now uses `KRX_MAGIC`, tested on a real compiled
+  file); `/api/profiles/validate` lost line/column when the compiler reworded
+  its errors (position is now data in `CompilationError::Syntax`); the UI
+  Rhai parser surfaced `fn` bodies as phantom mappings (examples/08); a
+  doctest and two lint nits. Release build installed, real service restarted
+  (doctor green, only `USB Keyboard` grabbed, output `keyrx-out-<pid>`, old
+  .krx still loads). Scratch live regression 97/97 (see commit log): caps,
+  home-row, one_shot, tap_hold_timeout_only, min key-down (5.07 ms vs 0.01 ms
+  with 0), hot reload good/bad + config_error, broken active profile grabs
+  nothing, SYN_DROPPED flood, both emergency stops, example 08, all templates.

@@ -156,3 +156,34 @@ otherwise say so and the Linux session will verify after merging.
     checks still need a Windows run with enough memory (try `-j 2`).
   - `ipc::client` `test_timeout_handling` kept Unix-only: the client has no
     real read timeout (pre-existing).
+
+## Follow-up (2026-10-01): shared-engine changes to verify on Windows
+
+Linux-side round 2 touched code the Windows daemon shares. Nothing here was
+run on Windows (the windows-gnu clippy and `--no-run` test build are clean).
+When you next sync, please check:
+
+- **New `BaseKeyMapping` variants 7/8/9** in the shared engine (explicit rkyv
+  discriminants): 7 = hold-with-real-key (`tap_hold`/`hold_only` can hold a
+  real key such as `VK_LCtrl`), 8 = `OneShot` (`one_shot(key, "VK_LShift")`),
+  9 = `TapHoldKeyTimeoutOnly`. The `.krx` is now byte-deterministic
+  (`SOURCE_DATE_EPOCH` or 0 for the timestamp). Run
+  `cargo test -p keyrx_core` and check the Windows hook still produces correct
+  Shift/Ctrl for a home-row mod and a one-shot Shift.
+- **Min key-down decorator** (`platform/min_key_down.rs`, default 5 ms, flag
+  `--min-key-down-ms`, env `KEYRX_MIN_KEY_DOWN_MS`, `settings.json`): it wraps
+  the output side of the event loop for every platform. Confirm it is wired in
+  `platform_runners/windows` (a tap should keep the key down >= 5 ms; `0`
+  disables) and that `SendInput` pacing still behaves.
+- **Output device naming:** Linux names its uinput device `keyrx-out-<pid>`;
+  `OutputDeviceInfo` (name + path) is now in `status` on IPC and REST. On
+  Windows there is no virtual device, so `output_device` must be absent
+  (`skip_serializing_if`); check `keyrx_daemon status` prints no output line.
+  `DeviceInfo` also gained `is_virtual`/`is_keyrx_output`; REST
+  `/api/devices?include_virtual=` filters on them.
+- **`config_error`** in status (failed hot reload / broken active profile) is
+  set through the shared `DaemonSharedState`; the Windows runner should surface
+  it the same way (`status`, `doctor`).
+- Emergency stop gained a one-handed hold (Linux only); the Windows hook keeps
+  its own chord.
+
