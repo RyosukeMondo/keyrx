@@ -89,6 +89,10 @@ impl Platform for HeldOutputs {
     fn take_input_overflows(&mut self) -> u64 {
         self.inner.take_input_overflows()
     }
+
+    fn output_device(&self) -> Option<crate::platform::OutputDeviceInfo> {
+        self.inner.output_device()
+    }
 }
 
 #[cfg(test)]

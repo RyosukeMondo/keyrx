@@ -30,7 +30,8 @@ pub use keycode_map::{evdev_to_keycode, keycode_to_evdev, keycode_to_uinput_key}
 
 use keyrx_core::config::DeviceConfig;
 
-use crate::device_manager::{DeviceManager, RefreshResult};
+use crate::device_manager::{find_event_path_by_name, DeviceManager, RefreshResult};
+use crate::platform::output_device::default_output_name;
 use crate::platform::{DeviceError, InputDevice, OutputDevice, ProcessResult};
 use emergency_stop::EmergencyChord;
 use hotplug::HotplugWatcher;
@@ -104,7 +105,7 @@ impl LinuxPlatform {
     /// Creates a new LinuxPlatform instance with no devices attached.
     #[must_use]
     pub fn new() -> Self {
-        Self::scoped("*", "keyrx")
+        Self::scoped("*", &default_output_name())
     }
 
     /// The production platform, optionally narrowed by the environment so a
@@ -115,12 +116,13 @@ impl LinuxPlatform {
     ///   are ever grabbed (default `*`). It can only narrow what the loaded
     ///   profile's `device_start` patterns select, never widen it.
     /// - `KEYRX_OUTPUT_NAME` - name of the virtual output keyboard (default
-    ///   `keyrx`), so tools can tell instances apart.
+    ///   `keyrx-out-<pid>`, unique per instance; status reports the name and
+    ///   the `/dev/input/eventN` path), so tools can tell instances apart.
     #[must_use]
     pub fn from_env() -> Self {
         let scope = std::env::var("KEYRX_DEVICE_SCOPE").unwrap_or_else(|_| "*".to_string());
-        let output = std::env::var("KEYRX_OUTPUT_NAME").unwrap_or_else(|_| "keyrx".to_string());
-        if scope != "*" || output != "keyrx" {
+        let output = std::env::var("KEYRX_OUTPUT_NAME").unwrap_or_else(|_| default_output_name());
+        if scope != "*" {
             log::info!("Platform scope from environment: devices '{scope}', output '{output}'");
         }
         Self::scoped(&scope, &output)
@@ -199,7 +201,12 @@ impl LinuxPlatform {
         }
         if self.output_device.is_none() {
             let output_device = UinputOutput::create(&self.output_name)?;
-            log::info!("Created virtual output device: {}", output_device.name());
+            log::info!(
+                "Created virtual output device '{}' ({})",
+                output_device.name(),
+                find_event_path_by_name(output_device.name())
+                    .map_or_else(|| "node pending".to_string(), |p| p.display().to_string())
+            );
             self.output_device = Some(output_device);
         }
         if self.hotplug.is_none() {
@@ -617,6 +624,14 @@ impl crate::platform::Platform for LinuxPlatform {
             .collect();
 
         Ok(devices)
+    }
+
+    fn output_device(&self) -> Option<crate::platform::OutputDeviceInfo> {
+        let device = self.output_device.as_ref()?;
+        Some(crate::platform::OutputDeviceInfo {
+            name: device.name().to_string(),
+            path: find_event_path_by_name(device.name()).map(|p| p.display().to_string()),
+        })
     }
 
     fn shutdown(&mut self) -> crate::platform::PlatformResult<()> {

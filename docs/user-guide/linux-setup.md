@@ -562,8 +562,19 @@ KEYRX_DEVICE_SCOPE='My Test Keyboard*' KEYRX_OUTPUT_NAME=keyrx-test \
 
 `KEYRX_DEVICE_SCOPE` (a glob on the keyboard name, default `*`) can only
 narrow what the profile's `device_start()` patterns select, and
-`KEYRX_OUTPUT_NAME` names the virtual output keyboard (default `keyrx`) so
-tools can tell the instances apart.
+`KEYRX_OUTPUT_NAME` names the virtual output keyboard. By default every
+daemon names it `keyrx-out-<pid>`, so no two instances share a name; the name
+and the `/dev/input/eventN` node are reported by `keyrx_daemon status`
+(`Output device`), `GET /api/status` and `status --json` (`output_device`).
+
+**Capture a daemon's output by that path, never by the name `keyrx`.** Older
+daemons called their device plain `keyrx`; a tool that looked it up by name
+could attach to the wrong instance, including your real one. Any device named
+`keyrx` or `keyrx-out-*` is treated as keyrx's own output and is never grabbed
+as input by any instance, and is hidden from `keyrx_daemon list-devices`,
+`GET /api/devices` and the UI. Pass `--all` / `?include_virtual=true` to see
+other tools' virtual keyboards (each entry has `is_virtual` and
+`is_keyrx_output`).
 
 ### Keyboard Input Overflow
 

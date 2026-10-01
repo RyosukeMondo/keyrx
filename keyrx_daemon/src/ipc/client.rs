@@ -169,6 +169,7 @@ mod tests {
             device_count: 1,
             input_overflows: 0,
             config_error: None,
+            output_device: None,
         }
     }
 

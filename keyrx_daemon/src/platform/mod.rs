@@ -44,8 +44,10 @@ use thiserror::Error;
 
 pub mod common;
 pub mod held_outputs;
+pub mod output_device;
 pub mod recovery;
 pub use common::{DeviceInfo, PlatformError, Result as PlatformResult};
+pub use output_device::OutputDeviceInfo;
 
 #[cfg(target_os = "linux")]
 pub mod linux;
@@ -313,6 +315,13 @@ pub trait Platform: Send + Sync {
     /// that failure mode keep the default of 0.
     fn take_input_overflows(&mut self) -> u64 {
         0
+    }
+
+    /// The virtual keyboard this platform injects through, if it has one.
+    /// Published to status so tools find the right device by path instead
+    /// of guessing a name several instances might share.
+    fn output_device(&self) -> Option<OutputDeviceInfo> {
+        None
     }
 }
 

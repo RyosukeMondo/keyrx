@@ -424,7 +424,7 @@ device_end();
 
     let runtime = tokio::runtime::Runtime::new().expect("runtime");
     let devices = runtime
-        .block_on(device_service.list_devices())
+        .block_on(device_service.list_all_devices(true))
         .expect("list_devices");
 
     assert!(
@@ -477,7 +477,9 @@ device_end();
     let mut plugged = new_keyboard(&tag, "late");
     wait_until(
         || {
-            let devices = runtime.block_on(device_service.list_devices()).unwrap();
+            let devices = runtime
+                .block_on(device_service.list_all_devices(true))
+                .unwrap();
             devices
                 .iter()
                 .find(|d| d.name == plugged.name())

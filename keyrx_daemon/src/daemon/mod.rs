@@ -431,6 +431,7 @@ pub(crate) fn release_held_outputs(platform: &mut Box<dyn Platform>) {
 pub(crate) fn publish_device_state(shared_state: &DaemonSharedState, platform: &dyn Platform) {
     let devices = platform.list_devices().unwrap_or_default();
     shared_state.set_device_count(devices.len());
+    shared_state.set_output_device(platform.output_device());
     shared_state.set_active_devices(devices.into_iter().map(|d| d.id));
 }
 

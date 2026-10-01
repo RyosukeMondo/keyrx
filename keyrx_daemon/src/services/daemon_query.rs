@@ -59,6 +59,7 @@ impl DaemonQueryService {
             device_count: self.daemon_state.get_device_count(),
             input_overflows: self.daemon_state.input_overflow_count(),
             config_error: self.daemon_state.get_config_error(),
+            output_device: self.daemon_state.get_output_device(),
         }
     }
 
@@ -158,6 +159,9 @@ pub struct StatusInfo {
     /// Why the requested configuration is not live (the daemon then grabs
     /// no keyboard, or keeps the previous config); `None` when it is live.
     pub config_error: Option<String>,
+    /// The daemon's own virtual output keyboard (name and device node), so
+    /// tools capture the right device instead of guessing by name.
+    pub output_device: Option<crate::platform::OutputDeviceInfo>,
 }
 
 #[cfg(test)]
@@ -190,8 +194,21 @@ mod tests {
                 device_count: 2,
                 input_overflows: 0,
                 config_error: None,
+                output_device: None,
             }
         );
+    }
+
+    #[test]
+    fn test_get_status_reports_output_device() {
+        let (svc, _) = make_test_service();
+        assert_eq!(svc.get_status().output_device, None);
+        let device = crate::platform::OutputDeviceInfo {
+            name: "keyrx-out-7".to_string(),
+            path: Some("/dev/input/event9".to_string()),
+        };
+        svc.shared_state().set_output_device(Some(device.clone()));
+        assert_eq!(svc.get_status().output_device, Some(device));
     }
 
     #[test]

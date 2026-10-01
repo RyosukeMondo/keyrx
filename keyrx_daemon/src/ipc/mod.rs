@@ -66,6 +66,9 @@ pub enum IpcResponse {
         /// when none is); absent when it is.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         config_error: Option<String>,
+        /// The daemon's own output keyboard (name, `/dev/input` node).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        output_device: Option<crate::platform::OutputDeviceInfo>,
     },
     /// Keyboards the daemon currently has captured
     Devices { devices: Vec<CapturedDevice> },
@@ -163,6 +166,7 @@ mod tests {
             device_count: 2,
             input_overflows: 0,
             config_error: None,
+            output_device: None,
         };
         let json = serde_json::to_string(&resp).unwrap();
         let deserialized: IpcResponse = serde_json::from_str(&json).unwrap();

@@ -8,6 +8,12 @@ use log::{info, warn};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+/// Windows has no daemon-created output keyboard, so the capturable and the
+/// complete lists are the same.
+pub fn enumerate_all_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
+    enumerate_keyboards()
+}
+
 pub fn enumerate_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
     let device_map = DeviceMap::new();
     device_map
@@ -52,6 +58,7 @@ pub fn enumerate_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
                 name,
                 serial,
                 phys: None,
+                is_virtual: false,
             }
         })
         .collect();
@@ -259,6 +266,7 @@ impl DeviceManager {
                 name: format!("Device {:x}", handle), // We might want better name if API gives it? currently path is \\?\...
                 serial: device_info.serial.clone(),
                 phys: None,
+                is_virtual: false,
             };
 
             // Attempt to match

@@ -4,16 +4,24 @@ use crate::cli::dispatcher::exit_codes;
 
 #[cfg(target_os = "linux")]
 /// Handles the `list-devices` subcommand - lists input devices.
-pub fn handle_list_devices() -> Result<(), (i32, String)> {
+pub fn handle_list_devices(all: bool) -> Result<(), (i32, String)> {
     use crate::device_manager::enumerate_keyboards;
 
     // Get all keyboard devices
-    let keyboards = enumerate_keyboards().map_err(|e| {
+    let mut keyboards = enumerate_keyboards().map_err(|e| {
         (
             exit_codes::PERMISSION_ERROR,
             format!("Failed to enumerate devices: {}", e),
         )
     })?;
+
+    // Software keyboards (other tools' virtual devices) are not something a
+    // user remaps; keyrx's own outputs are already excluded by enumeration.
+    let total = keyboards.len();
+    if !all {
+        keyboards.retain(|k| !k.is_virtual);
+    }
+    let hidden = total - keyboards.len();
 
     if keyboards.is_empty() {
         // Enumeration reads world-readable sysfs metadata, not /dev/input
@@ -49,6 +57,9 @@ pub fn handle_list_devices() -> Result<(), (i32, String)> {
 
     println!();
     println!("Found {} keyboard device(s).", keyboards.len());
+    if hidden > 0 {
+        println!("({hidden} software keyboard(s) hidden; use --all to list them.)");
+    }
     if unreadable > 0 {
         println!();
         println!(
@@ -89,7 +100,7 @@ fn truncate_string(s: &str, max_len: usize) -> String {
 }
 
 #[cfg(not(target_os = "linux"))]
-pub fn handle_list_devices() -> Result<(), (i32, String)> {
+pub fn handle_list_devices(all: bool) -> Result<(), (i32, String)> {
     Err((
         exit_codes::CONFIG_ERROR,
         "The 'list-devices' command is only available on Linux. \

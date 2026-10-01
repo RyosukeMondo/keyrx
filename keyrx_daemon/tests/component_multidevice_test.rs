@@ -24,6 +24,7 @@ fn make_keyboard(path: &str, name: &str, serial: Option<&str>) -> KeyboardInfo {
         name: name.to_string(),
         serial: serial.map(String::from),
         phys: None,
+        is_virtual: false,
     }
 }
 

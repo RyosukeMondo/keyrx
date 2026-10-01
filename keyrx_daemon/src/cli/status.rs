@@ -5,6 +5,7 @@
 
 use crate::ipc::client::IpcClient;
 use crate::ipc::{DaemonIpc, IpcEndpoint, IpcRequest, IpcResponse};
+use crate::platform::OutputDeviceInfo;
 use clap::Args;
 use serde::Serialize;
 
@@ -21,7 +22,7 @@ pub struct StatusArgs {
     pub socket: Option<String>,
 }
 
-/// JSON output structure for status.
+/// The status the CLI prints (JSON as-is; human text via [`print_human_output`]).
 #[derive(Serialize)]
 struct StatusOutput {
     running: bool,
@@ -31,6 +32,8 @@ struct StatusOutput {
     input_overflows: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     config_error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    output_device: Option<OutputDeviceInfo>,
 }
 
 /// Execute the status command.
@@ -49,25 +52,21 @@ pub fn execute(args: StatusArgs) -> Result<(), Box<dyn std::error::Error>> {
             device_count,
             input_overflows,
             config_error,
+            output_device,
         } => {
+            let output = StatusOutput {
+                running,
+                uptime_secs,
+                active_profile,
+                device_count,
+                input_overflows,
+                config_error,
+                output_device,
+            };
             if args.json {
-                print_json_output(
-                    running,
-                    uptime_secs,
-                    active_profile,
-                    device_count,
-                    input_overflows,
-                    config_error,
-                )?;
+                println!("{}", serde_json::to_string_pretty(&output)?);
             } else {
-                print_human_output(
-                    running,
-                    uptime_secs,
-                    active_profile,
-                    device_count,
-                    input_overflows,
-                    config_error,
-                );
+                print_human_output(output);
             }
             Ok(())
         }
@@ -78,59 +77,41 @@ pub fn execute(args: StatusArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-/// Print JSON output.
-fn print_json_output(
-    running: bool,
-    uptime_secs: u64,
-    active_profile: Option<String>,
-    device_count: usize,
-    input_overflows: u64,
-    config_error: Option<String>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let output = StatusOutput {
-        running,
-        uptime_secs,
-        active_profile,
-        device_count,
-        input_overflows,
-        config_error,
-    };
-    println!("{}", serde_json::to_string_pretty(&output)?);
-    Ok(())
-}
-
 /// Print human-readable output.
-fn print_human_output(
-    running: bool,
-    uptime_secs: u64,
-    active_profile: Option<String>,
-    device_count: usize,
-    input_overflows: u64,
-    config_error: Option<String>,
-) {
+fn print_human_output(status: StatusOutput) {
     println!("Daemon Status:");
-    println!("  Running:        {}", if running { "Yes" } else { "No" });
-    println!("  Uptime:         {} seconds", uptime_secs);
+    println!(
+        "  Running:        {}",
+        if status.running { "Yes" } else { "No" }
+    );
+    println!("  Uptime:         {} seconds", status.uptime_secs);
 
     // Format uptime in human-readable form
-    let hours = uptime_secs / 3600;
-    let minutes = (uptime_secs % 3600) / 60;
-    let seconds = uptime_secs % 60;
+    let hours = status.uptime_secs / 3600;
+    let minutes = (status.uptime_secs % 3600) / 60;
+    let seconds = status.uptime_secs % 60;
     println!("                  ({}h {}m {}s)", hours, minutes, seconds);
 
     println!(
         "  Active Profile: {}",
-        active_profile.unwrap_or_else(|| "None".to_string())
+        status.active_profile.unwrap_or_else(|| "None".to_string())
     );
-    println!("  Device Count:   {}", device_count);
-    if let Some(error) = config_error {
-        println!("  Config error:   {error}");
-        println!("                  (no keyboard is grabbed until a valid profile is active)");
+    println!("  Device Count:   {}", status.device_count);
+    if let Some(out) = status.output_device {
+        println!(
+            "  Output device:  {} ({})",
+            out.name,
+            out.path.as_deref().unwrap_or("node pending")
+        );
     }
-    if input_overflows > 0 {
+    if let Some(error) = status.config_error {
+        println!("  Config error:   {error}");
+        println!("                  (the previous config stays live, or no keyboard is grabbed if none was)");
+    }
+    if status.input_overflows > 0 {
         println!(
             "  Input overflows: {} (keyboard input outran the daemon; resynced)",
-            input_overflows
+            status.input_overflows
         );
     }
 }
@@ -148,6 +129,7 @@ mod tests {
             device_count: 2,
             input_overflows: 0,
             config_error: None,
+            output_device: None,
         };
         let json = serde_json::to_string(&output).unwrap();
         assert!(json.contains("\"running\":true"));
@@ -165,6 +147,7 @@ mod tests {
             device_count: 0,
             input_overflows: 0,
             config_error: None,
+            output_device: None,
         };
         let json = serde_json::to_string(&output).unwrap();
         assert!(json.contains("\"running\":false"));

@@ -113,7 +113,11 @@ enum Commands {
     Metrics(keyrx_daemon::cli::metrics::MetricsArgs),
 
     /// List available input devices on the system.
-    ListDevices,
+    ListDevices {
+        /// Also list software keyboards (other tools' virtual devices).
+        #[arg(long)]
+        all: bool,
+    },
 
     /// Diagnose common setup problems (device access, uinput, udev rules,
     /// config, whether the daemon is running) and print the fix for each.
@@ -181,7 +185,7 @@ fn main() {
         Commands::Status(args) => Command::Status(args),
         Commands::State(args) => Command::State(args),
         Commands::Metrics(args) => Command::Metrics(args),
-        Commands::ListDevices => Command::ListDevices,
+        Commands::ListDevices { all } => Command::ListDevices { all },
         Commands::Doctor { json } => Command::Doctor { json },
         Commands::Validate { config } => Command::Validate { config },
         Commands::Record { output, device } => Command::Record { output, device },

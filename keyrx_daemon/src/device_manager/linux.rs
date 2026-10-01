@@ -389,6 +389,7 @@ mod tests {
             name: name.to_string(),
             serial: serial.map(String::from),
             phys: None,
+            is_virtual: false,
         }
     }
 
