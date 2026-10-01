@@ -60,6 +60,12 @@ export const en = {
   'save.hideDetails': 'Hide details',
   'save.cancel': 'Cancel',
   'save.confirm': 'Save changes',
+  'save.tapHold': '{from}: tap for {tap}, hold for {hold}',
+  'save.layer': '{text} (on layer {layer})',
+  'save.device': '{text} (only on {device})',
+  'save.blocked': 'Can’t save yet: {reason}',
+  'guide.step.pick': 'Click the key you want to change.',
+  'guide.step.swap': 'Choose the two keys to swap.',
 } as const satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;
@@ -116,4 +122,10 @@ export const ja: Record<MessageKey, Message> = {
   'save.hideDetails': '詳細を隠す',
   'save.cancel': 'キャンセル',
   'save.confirm': '変更を保存',
+  'save.tapHold': '{from}: タップで {tap}、長押しで {hold}',
+  'save.layer': '{text}（レイヤー {layer}）',
+  'save.device': '{text}（{device} のみ）',
+  'save.blocked': 'まだ保存できません: {reason}',
+  'guide.step.pick': '変更したいキーをクリックしてください。',
+  'guide.step.swap': '入れ替える2つのキーを選んでください。',
 };

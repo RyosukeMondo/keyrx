@@ -171,3 +171,53 @@ export function formatKeyLabel(key: string): string {
 export function dslKeyName(code: string): string {
   return normalizeKeyCode(code).replace(/^VK_/, '');
 }
+
+const FRIENDLY_NAMES: Record<string, string> = {
+  CapsLock: 'Caps Lock',
+  LCtrl: 'Ctrl',
+  RCtrl: 'Right Ctrl',
+  LShift: 'Shift',
+  RShift: 'Right Shift',
+  LAlt: 'Alt',
+  RAlt: 'Right Alt',
+  LMeta: 'Win',
+  RMeta: 'Right Win',
+  Escape: 'Esc',
+  Backspace: 'Backspace',
+  PageUp: 'Page Up',
+  PageDown: 'Page Down',
+  PrintScreen: 'Print Screen',
+  ScrollLock: 'Scroll Lock',
+  NumLock: 'Num Lock',
+};
+
+const MODIFIER_WORDS: Record<string, string> = {
+  shift: 'Shift',
+  ctrl: 'Ctrl',
+  alt: 'Alt',
+  meta: 'Win',
+  gui: 'Win',
+};
+
+/**
+ * Plain-language key name for people, not for the DSL: `VK_CapsLock` ->
+ * "Caps Lock", `VK_LCtrl` -> "Ctrl", `with_shift(VK_A)` -> "Shift+A".
+ * Unknown names are split on word boundaries rather than guessed.
+ */
+export function friendlyKeyName(key: string): string {
+  const combo = key.match(/^with_(\w+)\(["']?([\w]+)["']?\)$/);
+  if (combo) {
+    const mod = MODIFIER_WORDS[combo[1].toLowerCase()] ?? combo[1];
+    return `${mod}+${friendlyKeyName(combo[2])}`;
+  }
+  const name = dslKeyName(key);
+  if (FRIENDLY_NAMES[name]) return FRIENDLY_NAMES[name];
+  const top = name.match(/^Num(\d)$/); // top-row digits
+  if (top) return top[1];
+  if (/^[A-Za-z]$/.test(name)) return name.toUpperCase();
+  return name
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([A-Za-z])(\d)/g, (m, a, d) =>
+      /^F$/i.test(a) ? m : `${a} ${d}`
+    );
+}

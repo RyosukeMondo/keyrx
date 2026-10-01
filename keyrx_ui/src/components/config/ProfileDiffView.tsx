@@ -24,7 +24,7 @@ export const ProfileDiffView: React.FC<ProfileDiffViewProps> = ({
           scrollBeyondLastLine: false,
           fontSize: 13,
         }}
-        height="60vh"
+        height="40vh"
       />
     </div>
   );

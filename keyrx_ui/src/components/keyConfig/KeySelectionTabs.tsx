@@ -1,6 +1,7 @@
 import React from 'react';
 import { Keyboard, Command, Lock, Layers, type LucideIcon } from 'lucide-react';
 import { SVGKeyboard, type SVGKey } from '../SVGKeyboard';
+import { IdGrid } from './IdGrid';
 
 /**
  * KeySelectionTabs Component
@@ -75,69 +76,56 @@ export interface KeySelectionTabsProps {
   maxHeight?: string;
 }
 
-/**
- * Generates modifier keys (MD_00 to MD_FF)
- */
+const hex2 = (i: number) => i.toString(16).toUpperCase().padStart(2, '0');
+
+const LOCK_LABELS: Record<string, string> = {
+  LK_00: 'CapsLock',
+  LK_01: 'NumLock',
+  LK_02: 'ScrollLock',
+};
+
+const MODIFIER_ITEMS = Array.from({ length: 256 }, (_, i) => ({
+  id: `MD_${hex2(i)}`,
+  label: hex2(i),
+  ariaLabel: `Modifier ${hex2(i)}`,
+}));
+
+const LOCK_ITEMS = Array.from({ length: 256 }, (_, i) => {
+  const id = `LK_${hex2(i)}`;
+  const label = LOCK_LABELS[id] || hex2(i);
+  return { id, label, ariaLabel: `Lock ${label}` };
+});
+
+/** Custom modifier picker (MD_00 to MD_FF) */
 function renderModifierGrid(onSelect: (id: string) => void) {
   return (
     <div className="border border-slate-600 rounded-lg p-4 bg-slate-900 max-h-96 overflow-y-auto">
       <p className="text-xs text-slate-400 mb-3">
         Select a custom modifier (MD_00 to MD_FF)
       </p>
-      <div className="grid grid-cols-8 gap-2">
-        {Array.from({ length: 256 }, (_, i) => {
-          const hex = i.toString(16).toUpperCase().padStart(2, '0');
-          const id = `MD_${hex}`;
-          return (
-            <button
-              key={id}
-              onClick={() => onSelect(id)}
-              className="px-2 py-1 bg-slate-700 hover:bg-primary-500 text-slate-300 hover:text-white rounded text-xs font-mono transition-colors"
-              title={id}
-              aria-label={`Modifier ${hex}`}
-            >
-              {hex}
-            </button>
-          );
-        })}
-      </div>
+      <IdGrid
+        items={MODIFIER_ITEMS}
+        columns={8}
+        onSelect={onSelect}
+        label="Custom modifiers"
+      />
     </div>
   );
 }
 
-/**
- * Generates lock keys (LK_00 to LK_FF)
- */
+/** Lock state picker (LK_00 to LK_FF) */
 function renderLockGrid(onSelect: (id: string) => void) {
-  const labels: Record<string, string> = {
-    LK_00: 'CapsLock',
-    LK_01: 'NumLock',
-    LK_02: 'ScrollLock',
-  };
-
   return (
     <div className="border border-slate-600 rounded-lg p-4 bg-slate-900 max-h-96 overflow-y-auto">
       <p className="text-xs text-slate-400 mb-3">
         Select a lock state (LK_00 to LK_FF)
       </p>
-      <div className="grid grid-cols-8 gap-2">
-        {Array.from({ length: 256 }, (_, i) => {
-          const hex = i.toString(16).toUpperCase().padStart(2, '0');
-          const id = `LK_${hex}`;
-          const label = labels[id] || hex;
-          return (
-            <button
-              key={id}
-              onClick={() => onSelect(id)}
-              className="px-2 py-1 bg-slate-700 hover:bg-primary-500 text-slate-300 hover:text-white rounded text-xs font-mono transition-colors"
-              title={id}
-              aria-label={`Lock ${label}`}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+      <IdGrid
+        items={LOCK_ITEMS}
+        columns={8}
+        onSelect={onSelect}
+        label="Lock states"
+      />
     </div>
   );
 }

@@ -44,6 +44,7 @@ vi.mock('../contexts/WasmContext', () => {
 
   return {
     useWasmContext: () => mockWasmContext,
+    useOptionalWasmContext: () => mockWasmContext,
     WasmProvider: ({ children }: { children: React.ReactNode }) => children,
   };
 });
@@ -77,7 +78,8 @@ function waitForProfileHeading(name = 'default') {
  * read-only SimulatorTab keyboard is also in the DOM; its keys end in
  * "Simulator mode active." rather than "Click to configure.", which this
  * matches on to stay scoped to the editable (Map tab) keyboard(s). */
-const CAPS_LOCK_KEY_RE = /^Key KC_CAPS\..*Click to configure\./;
+// Keys are named with DSL names (CapsLock), not QMK codes (KC_CAPS)
+const CAPS_LOCK_KEY_RE = /^CapsLock, /;
 
 beforeEach(async () => {
   useConfigStore.getState().reset();
@@ -266,7 +268,7 @@ describe('ConfigPage - Integration Tests', () => {
       expect(
         screen.queryByText('Click a key on the keyboard above to configure it')
       ).not.toBeInTheDocument();
-      expect(await screen.findByText('VK_CapsLock')).toBeInTheDocument();
+      expect(await screen.findByText('CapsLock')).toBeInTheDocument();
 
       // Pick a target via the Lock tab (unambiguous vs. the keyboard-shaped
       // "keyboard" tab, which would render a second, identically-labelled
@@ -275,7 +277,7 @@ describe('ConfigPage - Integration Tests', () => {
       await user.click(screen.getByRole('button', { name: 'Lock CapsLock' }));
 
       expect(
-        screen.getByText('Press VK_CapsLock → Output LK_00')
+        screen.getByText('Press CapsLock → Output LK_00')
       ).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Save Mapping' }));
@@ -289,14 +291,14 @@ describe('ConfigPage - Integration Tests', () => {
       });
       expect(
         await screen.findByRole('button', {
-          name: /^Key KC_CAPS\. KC_CAPS → LK_00\./,
+          name: /^CapsLock, acts as LK_00/,
         })
       ).toBeInTheDocument();
       expect(screen.getByText(/Unsaved/i)).toBeInTheDocument();
 
       // Re-select the mapped key and clear it
       await user.click(
-        screen.getByRole('button', { name: /^Key KC_CAPS\. KC_CAPS → LK_00\./ })
+        screen.getByRole('button', { name: /^CapsLock, acts as LK_00/ })
       );
       await user.click(screen.getByRole('button', { name: 'Clear Mapping' }));
 
@@ -320,7 +322,7 @@ describe('ConfigPage - Integration Tests', () => {
       });
       await user.click(capsKey);
       // See the normalization note above: the panel is keyed by VK_CapsLock.
-      expect(await screen.findByText('VK_CapsLock')).toBeInTheDocument();
+      expect(await screen.findByText('CapsLock')).toBeInTheDocument();
 
       await user.keyboard('{Escape}');
 
@@ -352,18 +354,21 @@ describe('ConfigPage - Integration Tests', () => {
       await user.click(topSaveButton);
 
       const dialog = await screen.findByRole('dialog', {
-        name: 'Review Changes',
+        name: 'Review changes',
       });
       expect(
-        within(dialog).getByRole('button', { name: 'Confirm Save' })
+        within(dialog).getByRole('button', { name: 'Save changes' })
       ).toBeInTheDocument();
 
       await user.click(
-        within(dialog).getByRole('button', { name: 'Confirm Save' })
+        within(dialog).getByRole('button', { name: 'Save changes' })
       );
 
       const request = await waitForRpcRequest('set_profile_config');
       expect(request.params).toMatchObject({ name: 'default' });
+      // Like the real daemon, serve the saved source from now on (the
+      // post-save refetch must not resurrect the pre-save text).
+      mockProfileConfig((request.params as { source: string }).source);
       sendRpcResponse(request.id, null);
 
       await waitFor(() => {

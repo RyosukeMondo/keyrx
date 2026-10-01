@@ -155,7 +155,7 @@ export const Modal = React.memo<ModalProps>(
               role="dialog"
               aria-modal="true"
               aria-labelledby="modal-title"
-              className={`relative bg-slate-800 rounded-lg shadow-2xl border border-slate-700 ${sizeClasses[size]} h-[90vh] overflow-hidden ${className}`}
+              className={`relative bg-slate-800 rounded-lg shadow-2xl border border-slate-700 ${sizeClasses[size]} max-h-[90vh] overflow-hidden ${className}`}
             >
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">

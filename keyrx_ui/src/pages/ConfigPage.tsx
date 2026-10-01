@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Check,
@@ -16,12 +16,12 @@ import { useUnifiedApi } from '@/hooks/useUnifiedApi';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useConfigStore } from '@/stores/configStore';
 import { ProfileTemplate } from '@/types';
-import type { LayoutType } from '@/components/KeyboardVisualizer';
 
 // Custom hooks
 import { useProfileSelection } from '@/hooks/useProfileSelection';
 import { useCodePanel } from '@/hooks/useCodePanel';
-import { useKeyboardLayout } from '@/hooks/useKeyboardLayout';
+import { useLayoutPreference } from '@/hooks/useLayoutPreference';
+import { useConfigValidation } from '@/hooks/useConfigValidation';
 import { useConfigSync } from '@/hooks/useConfigSync';
 import { useASTSync } from '@/hooks/useASTSync';
 import {
@@ -35,27 +35,10 @@ import { SyncStatusIndicator } from '@/components/config/SyncStatusIndicator';
 import { ProfileSidebar } from '@/components/config/ProfileSidebar';
 import { EditTab } from '@/components/config/EditTab';
 import { SimulatorTab } from '@/components/config/SimulatorTab';
-import { Modal } from '@/components/Modal';
 import { NotificationBanners } from '@/components/config/NotificationBanners';
-import { ProfileDiffView } from '@/components/config/ProfileDiffView';
-
-/** Auto-detect keyboard layout from Rhai config source */
-function detectLayoutFromSource(source: string | undefined): LayoutType {
-  if (!source) return 'JIS_109';
-  const jisKeys = [
-    'VK_Zenkaku',
-    'VK_全角',
-    'VK_無変換',
-    'VK_変換',
-    'VK_ひらがな',
-    'VK_カタカナ',
-    'VK_Ro',
-    'VK_Yen',
-    'VK_Henkan',
-    'VK_Muhenkan',
-  ];
-  return jisKeys.some((k) => source.includes(k)) ? 'JIS_109' : 'ANSI_104';
-}
+import { SaveReviewModal } from '@/components/config/SaveReviewModal';
+import { t } from '@/i18n';
+import { friendlyErrorMessage } from '@/utils/errorUtils';
 
 type ActiveTab = 'edit' | 'test';
 
@@ -100,20 +83,17 @@ const ConfigPage: React.FC = () => {
   } = useGetProfileConfig(selectedProfileName);
   const { mutateAsync: setProfileConfig } = useSetProfileConfig();
 
-  // Keyboard layout detection
-  const detectedLayout = useMemo(
-    () => detectLayoutFromSource(profileConfig?.source),
-    [profileConfig?.source]
-  );
+  // Keyboard layout: remembered per device, detected only as a fallback
   const {
     layout: keyboardLayout,
-    setLayout,
     layoutKeys,
-  } = useKeyboardLayout(detectedLayout);
-
-  useEffect(() => {
-    setLayout(detectedLayout);
-  }, [detectedLayout, setLayout]);
+    chooseLayout,
+  } = useLayoutPreference({
+    source: profileConfig?.source,
+    ast: syncEngine.getAST(),
+    globalSelected: configStore.globalSelected,
+    selectedScopeIds: configStore.selectedDevices,
+  });
 
   // AST sync (visual editor state from parsed config)
   useASTSync({
@@ -212,7 +192,18 @@ const ConfigPage: React.FC = () => {
     }
   };
 
+  // Save is blocked while the editor shows errors: same validator, same facts.
+  const validationErrors = useConfigValidation(syncEngine.getCode());
+  const firstIssue = syncEngine.error ?? validationErrors[0] ?? null;
+  const issueCount = validationErrors.length + (syncEngine.error ? 1 : 0);
+  const saveBlockedReason = firstIssue
+    ? `${t('save.blocked', {
+        reason: `line ${firstIssue.line}: ${friendlyErrorMessage(firstIssue.message)}`,
+      })}${issueCount > 1 ? ` (+${issueCount - 1})` : ''}`
+    : null;
+
   const handleSaveConfig = async () => {
+    if (saveBlockedReason) return;
     try {
       setSyncStatus('saving');
       await setProfileConfig({
@@ -377,7 +368,13 @@ const ConfigPage: React.FC = () => {
                   }
                 }}
                 disabled={
-                  !api.isConnected || !profileExists || syncStatus === 'saving'
+                  !api.isConnected ||
+                  !profileExists ||
+                  syncStatus === 'saving' ||
+                  saveBlockedReason !== null
+                }
+                aria-describedby={
+                  saveBlockedReason ? 'save-blocked-reason' : undefined
                 }
                 className="flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-900/20 transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -401,6 +398,16 @@ const ConfigPage: React.FC = () => {
               lastSaveTime={lastSaveTime}
               isConnected={api.isConnected}
             />
+            {saveBlockedReason && (
+              <span
+                id="save-blocked-reason"
+                role="status"
+                className="min-w-0 truncate text-xs text-rose-300"
+                title={saveBlockedReason}
+              >
+                {saveBlockedReason}
+              </span>
+            )}
             <span className="hidden text-xs text-slate-400 sm:inline">
               Tip: press{' '}
               <kbd className="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-slate-300">
@@ -437,7 +444,7 @@ const ConfigPage: React.FC = () => {
                 setSyncStatus={setSyncStatus}
                 configStore={configStore}
                 keyboardLayout={keyboardLayout}
-                onKeyboardLayoutChange={setLayout}
+                onKeyboardLayoutChange={chooseLayout}
                 layoutKeys={layoutKeys}
                 onOpenAdvanced={() => {
                   if (!isCodePanelOpen) toggleCodePanel();
@@ -475,36 +482,16 @@ const ConfigPage: React.FC = () => {
         </div>
       </div>
 
-      {showDiffModal && (
-        <Modal
-          open={showDiffModal}
-          onClose={() => setShowDiffModal(false)}
-          title="Review Changes"
-          size="xl"
-        >
-          <ProfileDiffView
-            original={profileConfig?.source || ''}
-            modified={syncEngine.getCode()}
-          />
-          <div className="flex justify-end gap-3 mt-4">
-            <button
-              onClick={() => setShowDiffModal(false)}
-              className="px-4 py-2 bg-slate-700 text-slate-200 text-sm font-medium rounded-md hover:bg-slate-600 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                setShowDiffModal(false);
-                handleSaveConfig();
-              }}
-              className="px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-md hover:bg-primary-600 transition-colors"
-            >
-              Confirm Save
-            </button>
-          </div>
-        </Modal>
-      )}
+      <SaveReviewModal
+        open={showDiffModal}
+        original={profileConfig?.source || ''}
+        modified={showDiffModal ? syncEngine.getCode() : ''}
+        onCancel={() => setShowDiffModal(false)}
+        onConfirm={() => {
+          setShowDiffModal(false);
+          handleSaveConfig();
+        }}
+      />
     </div>
   );
 };
