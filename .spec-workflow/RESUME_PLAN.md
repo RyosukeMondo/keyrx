@@ -505,12 +505,12 @@ the `windows` remote. Open items, none blocking:
   exes and test-mode CLI↔pipe↔REST, not with a production `run` on the
   interactive desktop (real keys through the hook). Steps 1–4 are in
   `docs/requests/G3-windows-production-ipc.md`.
-- **ConfigPage UI tests:** `ConfigPage.integration.test.tsx` (31) and
-  `ConfigPage.a11y.test.tsx` (2) fail at fe151cbe and later. They are not in the
-  gate table's run, and the a11y ones include `aria-label` on a role-less
-  status `<span>`. Next UI item.
-- **Installed Linux binary** (`~/.local/bin/keyrx_daemon`) predates G3; to
-  pick up the IpcEndpoint changes, rebuild with `make build` and reinstall.
+- **ConfigPage UI tests:** resolved. `ConfigPage.integration.test.tsx` and
+  `ConfigPage.a11y.test.tsx` pass (2026-10-01: unit 1901 pass, a11y 11 pass,
+  integration 85 pass; only `config-editor` and `rpc-communication` fail, and
+  only because they need a live daemon on port 13030).
+- **Installed Linux binary** (`~/.local/bin/keyrx_daemon` and `keyrx_compiler`):
+  rebuilt and reinstalled 2026-10-01 (previous kept as `*.pre-j.bak`).
 - **Branch `g3-review`** (local, Linux) is the PR #1 review checkout and can be
   deleted.
 
@@ -567,3 +567,17 @@ the `windows` remote. Open items, none blocking:
   check (real keys through the hook) remains for the user.
 - 2026-09-28: Wrap-up. UI use-case guide and ConfigPage work committed; main
   pushed to origin and windows. See Handover.
+- 2026-10-01: Merged the three agent branches (DSL/core TapHoldKey + parser
+  lints, daemon SYN_DROPPED/hot reload/CLI, UI a11y/UX) and gated them
+  together: fmt, clippy (workspace, --all-targets, windows-gnu) clean;
+  nextest 2088 pass / 70 skipped; file sizes OK; UI type-check, lint, unit
+  1901 pass, a11y 11 pass, integration 85 pass (config-editor and
+  rpc-communication need a live daemon on 13030 and fail without one).
+  Fixed: all-targets clippy debt in tests/benches, the UI WebSocket URL
+  split (`constants.WS_BASE_URL` vs `env.getWsUrl()`), the MSW websocket and
+  FFI integration tests, and `scripts/build.sh` building only the daemon (the
+  installed `keyrx_compiler` was stale and rejected `tap_hold(..., "VK_LCtrl")`).
+  Release build installed and the real service restarted (doctor green, one
+  device grabbed, IPC == REST). Scratch-instance live regression 14/14: Caps
+  tap=Esc / hold=real LCtrl, home-row mod, hot reload (and a bad edit keeps the
+  old config), SYN_DROPPED flood recovery, emergency chord.
