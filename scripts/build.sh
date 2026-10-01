@@ -145,11 +145,13 @@ build_ui() {
 
 # Build daemon
 build_daemon() {
-    local build_cmd="cargo build -p keyrx_daemon"
+    # The compiler ships alongside the daemon (install.sh); building only the daemon
+    # left a stale keyrx_compiler that rejects newer DSL (e.g. tap_hold with VK_ hold).
+    local build_cmd="cargo build -p keyrx_daemon -p keyrx_compiler"
 
     if [[ "$RELEASE_MODE" == "true" ]]; then
         build_cmd="$build_cmd --release"
-        log_info "Building daemon in release mode..."
+        log_info "Building daemon + compiler in release mode..."
     else
         log_info "Building daemon in debug mode..."
     fi
