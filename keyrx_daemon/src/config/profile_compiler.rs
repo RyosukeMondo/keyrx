@@ -28,6 +28,16 @@ pub enum CompilationError {
     #[error("Compilation failed: {0}")]
     CompilationFailed(String),
 
+    /// The script itself is wrong. Carries the position the parser reported
+    /// as data: it used to be scraped back out of the message text, which
+    /// broke whenever the compiler reworded its errors.
+    #[error("Compilation failed: {message}")]
+    Syntax {
+        message: String,
+        line: usize,
+        column: usize,
+    },
+
     #[error("Compilation timeout (exceeded {COMPILATION_TIMEOUT_SECS}s)")]
     CompilationTimeout,
 
@@ -41,10 +51,19 @@ impl CompilationError {
     /// told about their real file (`profiles/work.rhai:3:1`).
     #[must_use]
     pub fn naming_file(self, from: &Path, to: &Path) -> Self {
+        let rename =
+            |msg: String| msg.replace(&from.display().to_string(), &to.display().to_string());
         match self {
-            Self::CompilationFailed(msg) => Self::CompilationFailed(
-                msg.replace(&from.display().to_string(), &to.display().to_string()),
-            ),
+            Self::CompilationFailed(msg) => Self::CompilationFailed(rename(msg)),
+            Self::Syntax {
+                message,
+                line,
+                column,
+            } => Self::Syntax {
+                message: rename(message),
+                line,
+                column,
+            },
             other => other,
         }
     }
@@ -52,8 +71,12 @@ impl CompilationError {
     /// Source position (line, column) of the error, when the compiler reported
     /// one. Compiler messages end with `(line N, position M)`.
     pub fn location(&self) -> Option<(usize, usize)> {
-        let CompilationError::CompilationFailed(message) = self else {
-            return None;
+        let message = match self {
+            CompilationError::Syntax { line, column, .. } if *line > 0 => {
+                return Some((*line, (*column).max(1)));
+            }
+            CompilationError::CompilationFailed(message) => message,
+            _ => return None,
         };
         let tail = &message[message.rfind("(line ")? + "(line ".len()..];
         let (line, rest) = tail.split_once(", position ")?;
@@ -157,9 +180,22 @@ impl ProfileCompiler {
         let config = keyrx_compiler::parser::Parser::new()
             .parse_script(source)
             .map_err(|e| {
-                CompilationError::CompilationFailed(
-                    keyrx_compiler::CompileError::ParseError(e).to_string(),
-                )
+                let (line, column) = match &e {
+                    keyrx_compiler::error::ParseError::SyntaxError { line, column, .. } => {
+                        (*line, *column)
+                    }
+                    _ => (0, 0),
+                };
+                let message = keyrx_compiler::CompileError::ParseError(e).to_string();
+                if line > 0 {
+                    CompilationError::Syntax {
+                        message,
+                        line,
+                        column,
+                    }
+                } else {
+                    CompilationError::CompilationFailed(message)
+                }
             })?;
         let warnings = config
             .devices
@@ -330,6 +366,18 @@ mod tests {
         );
         assert_eq!(multiline.location(), Some((2, 3)));
         assert_eq!(CompilationError::CompilationTimeout.location(), None);
+
+        // Structured position: independent of how the message is worded.
+        let structured = CompilationError::Syntax {
+            message: "/x/p.rhai:3:3: Syntax error: Function not found: bogus_fn".into(),
+            line: 3,
+            column: 3,
+        };
+        assert_eq!(structured.location(), Some((3, 3)));
+        assert_eq!(
+            structured.short_message(),
+            "Syntax error: Function not found: bogus_fn"
+        );
         assert_eq!(
             CompilationError::CompilationFailed("no position".into()).location(),
             None
