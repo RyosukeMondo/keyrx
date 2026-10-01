@@ -472,7 +472,7 @@ pub fn process_event_for_identities(
                 }
                 events
             } else {
-                // Release handled by tracking mechanism (harmless duplicate releases)
+                // Nothing is held: every key was already released with its press
                 Vec::new()
             }
         }
@@ -480,7 +480,11 @@ pub fn process_event_for_identities(
 
     // For PRESS events: Record the mapping for press/release consistency
     // This must happen AFTER processing, so we know the actual output
-    if is_press && !result.is_empty() {
+    // A sequence types its keys complete (press+release pairs) on the press;
+    // recording them would replay their releases when the trigger key comes
+    // up - key-ups for keys that are not down.
+    let is_sequence = matches!(mapping, BaseKeyMapping::Sequence { .. });
+    if is_press && !result.is_empty() && !is_sequence {
         // Collect ALL press event keycodes from the result
         let output_keys: alloc::vec::Vec<KeyCode> = result
             .iter()
