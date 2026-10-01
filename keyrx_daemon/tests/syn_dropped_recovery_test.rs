@@ -19,8 +19,9 @@ use keyrx_daemon::config::{ProfileManager, ProfileTemplate};
 use keyrx_daemon::daemon::ConfigSource;
 use tempfile::TempDir;
 
-mod common;
-use common::live_daemon::{tapped, Harness};
+#[path = "common/live_daemon.rs"]
+mod live_daemon;
+use live_daemon::{tapped, Harness};
 
 /// Keys cycled through in the flood: a mix of remapped (CapsLock) and
 /// pass-through letters.

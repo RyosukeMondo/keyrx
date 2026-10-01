@@ -49,6 +49,9 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Start the daemon with the specified configuration file.
+    ///
+    /// Linux emergency stop: if the keyboard stops responding, hold Left Ctrl
+    /// + Right Ctrl + Escape to release every keyboard and stop the daemon.
     Run {
         /// Path to the .krx configuration file compiled by keyrx_compiler.
         /// If not specified, uses the active profile from the keyrx config
@@ -57,9 +60,21 @@ enum Commands {
         #[arg(short, long, value_name = "FILE")]
         config: Option<PathBuf>,
 
-        /// Enable debug logging for verbose output.
+        /// Enable debug logging for verbose output. Never logs which keys
+        /// you type; add --log-keys for that.
         #[arg(short, long)]
         debug: bool,
+
+        /// Also log the NAMES of the keys being typed (privacy-sensitive:
+        /// the log becomes a keylogger). For debugging a mapping only.
+        #[arg(long)]
+        log_keys: bool,
+
+        /// Do not watch the loaded profile's .rhai for edits. By default a
+        /// saved edit is recompiled and applied within a couple of seconds; one
+        /// that does not compile is reported and the running config kept.
+        #[arg(long)]
+        no_watch: bool,
 
         /// Enable test mode with IPC infrastructure but without keyboard capture.
         /// Only available in debug builds for security.
@@ -146,10 +161,14 @@ fn main() {
         Commands::Run {
             config,
             debug,
+            log_keys,
+            no_watch,
             test_mode,
         } => Command::Run {
             config,
             debug,
+            log_keys,
+            no_watch,
             test_mode,
         },
         Commands::Devices(args) => Command::Devices(args),

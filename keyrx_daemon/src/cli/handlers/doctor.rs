@@ -45,6 +45,7 @@ fn run_checks() -> Vec<Check> {
         check_uinput_device(),
         check_udev_rule(),
         check_keyboards(),
+        check_emergency_stop(),
         check_config(),
         check_daemon_running(),
         check_web_port(),
@@ -118,6 +119,20 @@ fn whoami() -> String {
     std::env::var("USER")
         .or_else(|_| std::env::var("LOGNAME"))
         .unwrap_or_default()
+}
+
+/// Always passes: it is here so the escape hatch is visible while diagnosing,
+/// before anything has gone wrong with the keyboard.
+#[cfg(target_os = "linux")]
+fn check_emergency_stop() -> Check {
+    check(
+        "emergency stop",
+        true,
+        format!(
+            "hold {} to release every keyboard and stop the daemon",
+            crate::platform::linux::EMERGENCY_CHORD_TEXT
+        ),
+    )
 }
 
 #[cfg(target_os = "linux")]

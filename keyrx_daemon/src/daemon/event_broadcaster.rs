@@ -89,6 +89,7 @@ impl EventBroadcaster {
     pub fn broadcast_key_event(&self, event: KeyEventData) {
         let subscribers = self.event_tx.receiver_count();
         log::debug!(
+            target: crate::daemon::platform_setup::KEY_LOG_TARGET,
             "Broadcasting key event (subscribers: {}): {:?}",
             subscribers,
             event.key_code

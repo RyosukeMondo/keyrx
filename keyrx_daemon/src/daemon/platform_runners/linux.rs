@@ -24,7 +24,8 @@ use std::sync::Arc;
 pub fn run_daemon(
     source: crate::daemon::ConfigSource,
     config_dir: PathBuf,
-    debug: bool,
+    log: crate::daemon::platform_setup::LogOptions,
+    watch: bool,
     test_mode: bool,
     container: Arc<crate::container::ServiceContainer>,
 ) -> Result<(), (i32, String)> {
@@ -35,7 +36,7 @@ pub fn run_daemon(
     use crate::platform::{SystemTray, TrayControlEvent};
 
     // Initialize logging
-    init_logging(debug);
+    init_logging(log);
 
     // Log version information on startup
     log_startup_version_info();
@@ -77,6 +78,11 @@ pub fn run_daemon(
         "Daemon initialized with {} device(s)",
         daemon.device_count()
     );
+    log::info!(
+        "Emergency stop: if the keyboard ever stops working, hold {} to release \
+         every keyboard and stop keyrx",
+        crate::platform::linux::EMERGENCY_CHORD_TEXT
+    );
 
     // Create system tray (optional - continues without it if unavailable)
     let tray = match LinuxSystemTray::new() {
@@ -113,6 +119,14 @@ pub fn run_daemon(
     // The single read model shared by the web API and the IPC server (same
     // pattern as Windows), so both report identical status.
     let daemon_state = daemon.shared_state();
+    if watch {
+        crate::daemon::config_watch::spawn(
+            Arc::clone(container.profile_service().profile_manager()),
+            Arc::clone(&daemon_state),
+            daemon.running_flag(),
+            crate::daemon::config_watch::POLL_INTERVAL,
+        );
+    }
     let daemon_query = Arc::new(crate::services::DaemonQueryService::new(
         Arc::clone(&daemon_state),
         daemon.telemetry(),

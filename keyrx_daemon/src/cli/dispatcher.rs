@@ -26,6 +26,8 @@ pub enum Command {
     Run {
         config: Option<PathBuf>,
         debug: bool,
+        log_keys: bool,
+        no_watch: bool,
         test_mode: bool,
     },
     Devices(devices::DevicesArgs),
@@ -68,10 +70,13 @@ pub fn dispatch(command: Command) -> CommandResult {
         Command::Run {
             config,
             debug,
+            log_keys,
+            no_watch,
             test_mode,
         } => {
             // Delegate to run handler (defined in handlers/run.rs)
-            crate::cli::handlers::run::handle_run(config, debug, test_mode)
+            let log = crate::daemon::platform_setup::LogOptions { debug, log_keys };
+            crate::cli::handlers::run::handle_run(config, log, !no_watch, test_mode)
         }
         // `devices` and `config` report their own errors (text or --json), so
         // only the exit code is passed on: main would print them twice.

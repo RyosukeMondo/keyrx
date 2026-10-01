@@ -16,6 +16,11 @@ use keyrx_core::runtime::event::KeyEvent;
 /// The chord: hold all three simultaneously.
 pub const CHORD: [KeyCode; 3] = [KeyCode::LCtrl, KeyCode::RCtrl, KeyCode::Escape];
 
+/// The chord as users read it. Shown at startup, in `doctor` and in
+/// `run --help` so nobody has to find it in the docs while locked out; kept
+/// next to [`CHORD`] (and tested against it) so the two cannot drift.
+pub const CHORD_TEXT: &str = "Left Ctrl + Right Ctrl + Escape";
+
 /// Tracks which of the chord's keys are currently down (across every managed
 /// device - the chord works no matter which physical keyboard each key comes
 /// from) and fires once when the last one is pressed.
@@ -61,6 +66,14 @@ mod tests {
     }
     fn release(key: KeyCode) -> KeyEvent {
         KeyEvent::release(key)
+    }
+
+    #[test]
+    fn chord_text_names_every_chord_key() {
+        assert_eq!(CHORD_TEXT.matches('+').count() + 1, CHORD.len());
+        assert!(CHORD_TEXT.contains("Left Ctrl"));
+        assert!(CHORD_TEXT.contains("Right Ctrl"));
+        assert!(CHORD_TEXT.contains("Escape"));
     }
 
     #[test]

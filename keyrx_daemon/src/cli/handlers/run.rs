@@ -14,7 +14,8 @@ use crate::daemon::ConfigSource;
 /// # Arguments
 ///
 /// * `config` - Optional path to configuration file
-/// * `debug` - Enable debug logging
+/// * `log` - Logging verbosity (`--debug`, `--log-keys`)
+/// * `watch` - Hot-reload the loaded profile when its source changes
 /// * `test_mode` - Enable test mode (no keyboard capture)
 ///
 /// # Returns
@@ -22,7 +23,8 @@ use crate::daemon::ConfigSource;
 /// Returns `Ok(())` on success, or `Err((exit_code, message))` on failure.
 pub fn handle_run(
     config: Option<PathBuf>,
-    debug: bool,
+    log: crate::daemon::platform_setup::LogOptions,
+    watch: bool,
     test_mode: bool,
 ) -> Result<(), (i32, String)> {
     // Validate test mode early for release builds
@@ -70,12 +72,12 @@ pub fn handle_run(
     // Delegate to platform-specific handler with ServiceContainer
     #[cfg(target_os = "linux")]
     return crate::daemon::platform_runners::linux::run_daemon(
-        source, config_dir, debug, test_mode, container,
+        source, config_dir, log, watch, test_mode, container,
     );
 
     #[cfg(target_os = "windows")]
     return crate::daemon::platform_runners::windows::run_daemon(
-        source, config_dir, debug, test_mode, container,
+        source, config_dir, log, watch, test_mode, container,
     );
 
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]

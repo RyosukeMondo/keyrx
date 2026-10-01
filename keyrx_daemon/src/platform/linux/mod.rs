@@ -107,6 +107,25 @@ impl LinuxPlatform {
         Self::scoped("*", "keyrx")
     }
 
+    /// The production platform, optionally narrowed by the environment so a
+    /// SECOND instance (a test or scratch daemon next to your real one) is
+    /// safe and recognisable:
+    ///
+    /// - `KEYRX_DEVICE_SCOPE` - only keyboards whose name matches this glob
+    ///   are ever grabbed (default `*`). It can only narrow what the loaded
+    ///   profile's `device_start` patterns select, never widen it.
+    /// - `KEYRX_OUTPUT_NAME` - name of the virtual output keyboard (default
+    ///   `keyrx`), so tools can tell instances apart.
+    #[must_use]
+    pub fn from_env() -> Self {
+        let scope = std::env::var("KEYRX_DEVICE_SCOPE").unwrap_or_else(|_| "*".to_string());
+        let output = std::env::var("KEYRX_OUTPUT_NAME").unwrap_or_else(|_| "keyrx".to_string());
+        if scope != "*" || output != "keyrx" {
+            log::info!("Platform scope from environment: devices '{scope}', output '{output}'");
+        }
+        Self::scoped(&scope, &output)
+    }
+
     /// Creates a platform that grabs only keyboards matching `device_pattern`
     /// and injects through an output device called `output_name`. Lets tests
     /// drive a real daemon without touching the user's keyboards.

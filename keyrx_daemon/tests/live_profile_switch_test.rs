@@ -21,8 +21,9 @@ use keyrx_daemon::daemon::ConfigSource;
 use keyrx_daemon::services::ProfileService;
 use tempfile::TempDir;
 
-mod common;
-use common::live_daemon::{tapped, Harness};
+#[path = "common/live_daemon.rs"]
+mod live_daemon;
+use live_daemon::{tapped, Harness};
 
 const CAPS_TO_LCTRL: &str = r#"
 device_start("*");
@@ -139,4 +140,63 @@ fn profile_switch_releases_outputs_held_under_the_old_mapping() {
     h.keyboard
         .inject(keyrx_core::runtime::KeyEvent::release(KeyCode::CapsLock))
         .expect("release");
+}
+
+/// `activate` means "live": a tap typed the instant it returns must already
+/// hit the new mapping (it used to race the daemon's swap and be handled by,
+/// or lost between, the old and new config).
+#[test]
+fn activate_returns_only_once_the_new_mapping_is_live() {
+    keyrx_daemon::skip_if_no_uinput!();
+    let dir = TempDir::new().unwrap();
+    let manager = profiles(dir.path());
+    assert!(manager.activate("a").expect("activate a").success);
+    let mut h = Harness::start("immediate", ConfigSource::ActiveProfile, dir.path());
+
+    let service = ProfileService::new(manager);
+    service.attach_daemon_state(Arc::clone(&h.shared));
+    for _ in 0..5 {
+        activate(&service, "b");
+        // No wait_for_profile: the result itself must imply the swap.
+        assert_eq!(h.shared.get_active_profile().as_deref(), Some("b"));
+        assert_eq!(h.tap(KeyCode::CapsLock), tapped(KeyCode::LCtrl));
+        activate(&service, "a");
+        assert_eq!(h.tap(KeyCode::CapsLock), tapped(KeyCode::Escape));
+    }
+}
+
+/// Saving the loaded profile's `.rhai` recompiles and applies it by itself;
+/// a source that does not compile leaves the running config alone.
+#[test]
+fn editing_the_loaded_profile_source_hot_reloads_it() {
+    keyrx_daemon::skip_if_no_uinput!();
+    let dir = TempDir::new().unwrap();
+    let manager = profiles(dir.path());
+    assert!(manager.activate("a").expect("activate a").success);
+    let mut h = Harness::start("watch", ConfigSource::ActiveProfile, dir.path());
+    let _watcher = keyrx_daemon::daemon::config_watch::spawn(
+        Arc::clone(&manager),
+        Arc::clone(&h.shared),
+        Arc::clone(&h.running),
+        Duration::from_millis(50),
+    );
+    assert_eq!(h.tap(KeyCode::CapsLock), tapped(KeyCode::Escape));
+
+    let source = dir.path().join("profiles/a.rhai");
+    std::fs::write(&source, CAPS_TO_LCTRL).unwrap();
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    while h.tap(KeyCode::CapsLock) != tapped(KeyCode::LCtrl) {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the edited profile never went live"
+        );
+    }
+
+    std::fs::write(&source, "device_start(\"*\"\n  map(").unwrap();
+    std::thread::sleep(Duration::from_millis(800));
+    assert_eq!(
+        h.tap(KeyCode::CapsLock),
+        tapped(KeyCode::LCtrl),
+        "a source that does not compile must not replace the running config"
+    );
 }

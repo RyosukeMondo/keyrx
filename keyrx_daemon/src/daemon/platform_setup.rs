@@ -27,27 +27,51 @@ pub fn initialize_platform() -> Result<Box<dyn Platform>, (i32, String)> {
     })
 }
 
+/// Log target for lines that name the keys being typed (`Q`, `Enter`, ...).
+/// Such lines make the log a keylogger, so they are OFF unless `--log-keys`
+/// is given (or `RUST_LOG` names this target) - `--debug` alone never
+/// enables them. Use it as `log::debug!(target: KEY_LOG_TARGET, ...)`.
+pub const KEY_LOG_TARGET: &str = "keyrx_keys";
+
+/// How verbose the daemon's own logging is.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct LogOptions {
+    /// Debug output for keyrx's own crates (never key names).
+    pub debug: bool,
+    /// Also log the key names being typed (privacy-sensitive).
+    pub log_keys: bool,
+}
+
 /// Initialize logging.
 ///
 /// `RUST_LOG` wins when set (e.g. `RUST_LOG=info,keyrx_core=trace` for the
 /// tap-hold state machine in a debug build). Otherwise `debug` turns on debug
 /// output for keyrx's own crates only - dependencies (hyper, tower, ...) stay
-/// at info so they do not bury the remapping lines.
+/// at info so they do not bury the remapping lines. Key names stay hidden
+/// unless `log_keys` is set.
 #[cfg(any(target_os = "linux", target_os = "windows"))]
-pub fn init_logging(debug: bool) {
+pub fn init_logging(options: LogOptions) {
     use env_logger::{Builder, Env};
 
-    Builder::from_env(Env::default().default_filter_or(default_log_filter(debug)))
+    Builder::from_env(Env::default().default_filter_or(default_log_filter(options)))
         .format_timestamp_millis()
         .init();
+    if options.log_keys {
+        log::warn!("--log-keys is on: key names are being written to the log");
+    }
 }
 
 /// The log filter used when `RUST_LOG` is not set.
-pub fn default_log_filter(debug: bool) -> &'static str {
-    if debug {
-        "info,keyrx_daemon=debug,keyrx_core=debug,keyrx_compiler=debug"
-    } else {
-        "info"
+pub fn default_log_filter(options: LogOptions) -> &'static str {
+    match (options.debug, options.log_keys) {
+        (false, false) => "info",
+        (false, true) => "info,keyrx_keys=debug",
+        (true, false) => {
+            "info,keyrx_daemon=debug,keyrx_core=debug,keyrx_compiler=debug,keyrx_keys=off"
+        }
+        (true, true) => {
+            "info,keyrx_daemon=debug,keyrx_core=debug,keyrx_compiler=debug,keyrx_keys=debug"
+        }
     }
 }
 
@@ -193,12 +217,12 @@ mod tests {
     #[test]
     fn debug_filter_raises_only_keyrx_crates() {
         use log::{Level, LevelFilter, Log, Metadata};
-        let logger = |debug| {
+        let logger = |debug, log_keys| {
             env_logger::Builder::new()
-                .parse_filters(default_log_filter(debug))
+                .parse_filters(default_log_filter(LogOptions { debug, log_keys }))
                 .build()
         };
-        let debug = logger(true);
+        let debug = logger(true, false);
         let enabled = |target: &str, level| {
             debug.enabled(&Metadata::builder().target(target).level(level).build())
         };
@@ -206,6 +230,29 @@ mod tests {
         assert!(enabled("keyrx_core::runtime", Level::Debug));
         assert!(!enabled("hyper::proto", Level::Debug));
         assert!(enabled("hyper::proto", Level::Info));
-        assert_eq!(logger(false).filter(), LevelFilter::Info);
+        assert_eq!(logger(false, false).filter(), LevelFilter::Info);
+    }
+
+    #[test]
+    fn key_names_need_an_explicit_flag_not_just_debug() {
+        use log::{Level, Log, Metadata};
+        let enabled = |debug, log_keys| {
+            let logger = env_logger::Builder::new()
+                .parse_filters(default_log_filter(LogOptions { debug, log_keys }))
+                .build();
+            logger.enabled(
+                &Metadata::builder()
+                    .target(KEY_LOG_TARGET)
+                    .level(Level::Debug)
+                    .build(),
+            )
+        };
+        assert!(!enabled(false, false));
+        assert!(
+            !enabled(true, false),
+            "--debug alone must not log key names"
+        );
+        assert!(enabled(true, true));
+        assert!(enabled(false, true));
     }
 }
