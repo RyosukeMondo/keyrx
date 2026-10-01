@@ -66,6 +66,16 @@ export const en = {
   'save.blocked': 'Can’t save yet: {reason}',
   'guide.step.pick': 'Click the key you want to change.',
   'guide.step.swap': 'Choose the two keys to swap.',
+
+  'history.undo': 'Undo',
+  'history.redo': 'Redo',
+  'history.revert': 'Revert to previous version',
+  'history.revertNone': 'No earlier saved version yet',
+  'history.reverted':
+    'Restored the version replaced on {when}. Review and Save to apply it.',
+  'toast.cleared': 'Cleared the mapping for {key}.',
+  'toast.undo': 'Undo',
+  'toast.restored': 'Restored the mapping for {key}.',
 } as const satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;
@@ -128,4 +138,14 @@ export const ja: Record<MessageKey, Message> = {
   'save.blocked': 'まだ保存できません: {reason}',
   'guide.step.pick': '変更したいキーをクリックしてください。',
   'guide.step.swap': '入れ替える2つのキーを選んでください。',
+
+  'history.undo': '元に戻す',
+  'history.redo': 'やり直す',
+  'history.revert': '前のバージョンに戻す',
+  'history.revertNone': '戻せる保存済みバージョンはまだありません',
+  'history.reverted':
+    '{when} に置き換えられたバージョンを復元しました。保存すると反映されます。',
+  'toast.cleared': '{key} の割り当てを削除しました。',
+  'toast.undo': '元に戻す',
+  'toast.restored': '{key} の割り当てを復元しました。',
 };

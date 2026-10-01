@@ -40,7 +40,9 @@ describe('patchRhaiScript', () => {
     next.deviceBlocks[0].mappings[0].tapHold!.tapAction = 'VK_SPACE';
     next.deviceBlocks[0].mappings[0].tapHold!.thresholdMs = 180;
     const out = patchRhaiScript(SOURCE, next);
-    expect(out).toContain('tap_hold("VK_Space", "VK_Space", "MD_00", 180); // space / nav layer');
+    expect(out).toContain(
+      'tap_hold("VK_Space", "VK_Space", "MD_00", 180); // space / nav layer'
+    );
     expect(out).not.toMatch(/SPACE/);
     expect(generateRhaiScript(next)).not.toMatch(/SPACE/);
   });
@@ -50,7 +52,10 @@ describe('patchRhaiScript', () => {
     next.deviceBlocks[0].mappings[1].targetKey = 'VK_Escape';
     const out = patchRhaiScript(SOURCE, next);
     expect(out).toBe(
-      SOURCE.replace('map("CapsLock", "VK_LCtrl")', 'map("VK_CapsLock", "VK_Escape")')
+      SOURCE.replace(
+        'map("CapsLock", "VK_LCtrl")',
+        'map("VK_CapsLock", "VK_Escape")'
+      )
     );
     expect(out).toContain('sequence("F9"');
     expect(out).toContain('// vim arrows');
@@ -66,7 +71,9 @@ describe('patchRhaiScript', () => {
     });
     next.deviceBlocks[0].layers[0].mappings.splice(1, 1); // drop J
     const out = patchRhaiScript(SOURCE, next);
-    expect(out).toContain('"VK_LCtrl");\n    map("VK_Tab", "VK_Enter");\n    sequence');
+    expect(out).toContain(
+      '"VK_LCtrl");\n    map("VK_Tab", "VK_Enter");\n    sequence'
+    );
     expect(out).not.toContain('"J"');
     expect(out).toContain('// vim arrows');
     expect(parseRhaiScript(out).success).toBe(true);
@@ -90,7 +97,9 @@ describe('patchRhaiScript', () => {
     const next = ast();
     next.deviceBlocks.push({
       pattern: '*New*',
-      mappings: [{ type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 0 }],
+      mappings: [
+        { type: 'simple', sourceKey: 'VK_A', targetKey: 'VK_B', line: 0 },
+      ],
       layers: [],
       startLine: 0,
       endLine: 0,
@@ -104,6 +113,8 @@ describe('statementSpan', () => {
   it('handles nested parens, strings and trailing comments', () => {
     const line = '  map("A", with_shift("VK_B")); // note (x)';
     const span = statementSpan(line)!;
-    expect(line.slice(span.from, span.to)).toBe('map("A", with_shift("VK_B"));');
+    expect(line.slice(span.from, span.to)).toBe(
+      'map("A", with_shift("VK_B"));'
+    );
   });
 });

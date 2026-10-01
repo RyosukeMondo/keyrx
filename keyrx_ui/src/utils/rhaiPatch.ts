@@ -89,7 +89,8 @@ function removalEdit(line: string, index: number): Edit {
   const span = statementSpan(line);
   if (!span) return { line: index, remove: true };
   const rest = line.slice(span.to).trim();
-  if (rest === '' || rest.startsWith('//')) return { line: index, remove: true };
+  if (rest === '' || rest.startsWith('//'))
+    return { line: index, remove: true };
   return { line: index, replace: { from: span.from, to: span.to, text: '' } };
 }
 
@@ -120,7 +121,8 @@ function diffScope(lines: string[], scope: Scope, edits: Edit[]): void {
     }
   }
   for (const rest of oldByKey.values()) {
-    for (const old of rest) edits.push(removalEdit(lines[old.line - 1], old.line - 1));
+    for (const old of rest)
+      edits.push(removalEdit(lines[old.line - 1], old.line - 1));
   }
   if (added.length) edits.push({ line: scope.anchor, insertBefore: added });
 }
@@ -169,7 +171,11 @@ function mergeBlocks(blocks: DeviceBlock[]): DeviceBlock[] {
       have.mappings = [...have.mappings, ...b.mappings];
       have.layers = [...have.layers, ...b.layers];
     } else {
-      merged.set(b.pattern, { ...b, mappings: [...b.mappings], layers: [...b.layers] });
+      merged.set(b.pattern, {
+        ...b,
+        mappings: [...b.mappings],
+        layers: [...b.layers],
+      });
     }
   }
   return [...merged.values()];
@@ -232,7 +238,11 @@ function diffBlock(
         oldMaps,
         newMaps: nl.mappings,
         anchor: anchorAfter(ol.mappings, ol.endLine - 1),
-        indent: firstIndent(lines, oldMaps, indentOf(lines[ol.startLine - 1]) + STEP),
+        indent: firstIndent(
+          lines,
+          oldMaps,
+          indentOf(lines[ol.startLine - 1]) + STEP
+        ),
       },
       edits
     );
@@ -240,7 +250,8 @@ function diffBlock(
   for (const gone of groups.values()) {
     for (const layer of gone) removeLayer(lines, layer, edits);
   }
-  if (extra.length) edits.push({ line: first.endLine - 1, insertBefore: extra });
+  if (extra.length)
+    edits.push({ line: first.endLine - 1, insertBefore: extra });
 }
 
 function applyEdits(lines: string[], edits: Edit[]): string[] {
@@ -252,7 +263,9 @@ function applyEdits(lines: string[], edits: Edit[]): string[] {
     for (const e of here) if (e.insertBefore) out.push(...e.insertBefore);
     if (here.some((e) => e.remove)) return;
     const rep = here.find((e) => e.replace)?.replace;
-    out.push(rep ? text.slice(0, rep.from) + rep.text + text.slice(rep.to) : text);
+    out.push(
+      rep ? text.slice(0, rep.from) + rep.text + text.slice(rep.to) : text
+    );
   });
   return out;
 }
@@ -288,7 +301,8 @@ export function patchRhaiScript(source: string, newAst: RhaiAST): string {
   // are deliberately left untouched.
   const patched = applyEdits(lines, edits);
   if (appended.length) {
-    while (patched.length && patched[patched.length - 1].trim() === '') patched.pop();
+    while (patched.length && patched[patched.length - 1].trim() === '')
+      patched.pop();
     patched.push(...appended, '');
   }
   return patched.join('\n');

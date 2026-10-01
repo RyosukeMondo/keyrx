@@ -11,10 +11,7 @@ import {
 
 /** Rows of `parse_key_name` in the Rust parser: the single source of truth. */
 function rustKeyRows(): string[][] {
-  const path = resolve(
-    process.cwd(),
-    '../keyrx_core/src/parser/validators.rs'
-  );
+  const path = resolve(process.cwd(), '../keyrx_core/src/parser/validators.rs');
   const src = readFileSync(path, 'utf8');
   const body = src.slice(src.indexOf('pub fn parse_key_name'));
   const rows: string[][] = [];

@@ -45,7 +45,10 @@ function shape(ast: RhaiAST): unknown {
   return ast.deviceBlocks.map((b) => ({
     pattern: b.pattern,
     maps: b.mappings.map(norm),
-    layers: b.layers.map((l) => ({ m: l.modifiers, maps: l.mappings.map(norm) })),
+    layers: b.layers.map((l) => ({
+      m: l.modifiers,
+      maps: l.mappings.map(norm),
+    })),
   }));
 }
 

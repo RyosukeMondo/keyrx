@@ -21,6 +21,7 @@ import { DeviceKeyboardPanel } from '@/components/config/DeviceKeyboardPanel';
 import { UseCaseGuide } from '@/components/config/UseCaseGuide';
 import { SwapKeysPanel } from '@/components/config/SwapKeysPanel';
 import { friendlyKeyName } from '@/utils/keyNames';
+import { useToast } from '@/hooks/useToast';
 import { t } from '@/i18n';
 import { describeKey } from '@/components/SVGKeyboard';
 import { formatLayerName } from '@/components/LayerSwitcher';
@@ -99,6 +100,8 @@ export const EditTab: React.FC<EditTabProps> = ({
     null
   );
 
+  const toast = useToast();
+
   // Screen-reader announcement for selection / edit results (aria-live).
   const [announcement, setAnnouncement] = useState('');
 
@@ -144,10 +147,27 @@ export const EditTab: React.FC<EditTabProps> = ({
   };
 
   const handleClearMapping = (keyCode: string) => {
-    configStore.deleteKeyMapping(keyCode, activeLayer);
+    const previous = keyMappings.get(keyCode);
+    const layer = activeLayer;
+    configStore.deleteKeyMapping(keyCode, layer);
     setSyncStatus('unsaved');
     rebuildAndSyncAST();
-    setAnnouncement(`Cleared the mapping for ${describeKey(keyCode)}.`);
+    const name = friendlyKeyName(keyCode);
+    setAnnouncement(t('toast.cleared', { key: name }));
+    if (!previous) return;
+    // Deleting is instant, so offer the way back right where the click was.
+    toast.info(t('toast.cleared', { key: name }), {
+      duration: 8000,
+      action: {
+        label: t('toast.undo'),
+        onClick: () => {
+          configStore.setKeyMapping(keyCode, previous, layer);
+          setSyncStatus('unsaved');
+          rebuildAndSyncAST();
+          setAnnouncement(t('toast.restored', { key: name }));
+        },
+      },
+    });
   };
 
   const handleSaveMapping = (mapping: KeyMapping) => {
