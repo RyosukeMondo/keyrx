@@ -14,7 +14,7 @@ the test wraps in `device_start("*"); ... device_end();`; blocks tagged
 KeyRx uses a **Rhai-based DSL** (Domain-Specific Language) for defining keyboard remapping configurations. All configurations are **compiled ahead of time** into deterministic `.krx` binary files, ensuring:
 
 - **Zero runtime overhead** - No script interpretation
-- **Deterministic behavior** - Same input always produces same output
+- **Deterministic behavior** - Same input always produces the same bytes
 - **Hash-based verification** - Configuration integrity via SHA256
 
 ---
@@ -27,6 +27,7 @@ KeyRx uses a **Rhai-based DSL** (Domain-Specific Language) for defining keyboard
 4. [Operations](#operations)
 5. [Physical Modifiers in Output](#physical-modifiers-in-output)
 6. [Recipes](#recipes)
+   - [Accessibility / one-handed](#accessibility--one-handed)
 7. [Compiler Checks](#compiler-checks)
 8. [Error Reference](#error-reference)
 9. [Platform Differences](#platform-differences)
@@ -247,6 +248,35 @@ device_start("*");
 device_end();
 ```
 
+### `tap_hold_timeout_only(key, tap, hold, threshold_ms)`
+
+`tap_hold` with **permissive hold turned off for this key**: other keys typed while it is down never decide it. It becomes a hold only when `threshold_ms` passes; released earlier it is always a tap, and the keys typed meanwhile come out afterwards as plain typing. `hold` must be a real key (`VK_...`); a layer (`MD_xx`) has to be decided by the keys typed in it, so use `tap_hold` for layers.
+
+Use it on a home-row key when fast typists see the "nested overlap" turn into a shortcut: with `tap_hold`, `f` down, `c` down, `c` up, `f` up inside 30 ms is read as Ctrl+C; with `tap_hold_timeout_only` it types `fc`. The price: to get the modifier you must hold the key for the whole threshold before pressing the next key.
+
+```rhai
+device_start("*");
+    tap_hold_timeout_only("F", "VK_F", "VK_LCtrl", 250);
+device_end();
+```
+
+### `one_shot(key, modifier)` / `one_shot(key, modifier, timeout_ms)`
+
+A **sticky key**: a quick tap *latches* `modifier` for the **next key press only**, so Shift+A needs no two-key chord. Holding the key works as the plain modifier.
+
+- `key` - the physical key (bare name).
+- `modifier` - a physical modifier written `VK_LShift`, `VK_LCtrl`, `VK_LAlt`, `VK_LMeta` (or the `R` variants). Custom modifiers (`MD_xx`) and other keys are rejected.
+- `timeout_ms` - optional: release an unused latch after this long. `0` or omitted = wait until a key is typed.
+
+```rhai
+device_start("*");
+    one_shot("CapsLock", "VK_LShift");        // tap, then a letter: capital letter
+    one_shot("Tab", "VK_LCtrl", 3000);        // Ctrl for the next key, or off after 3 s
+device_end();
+```
+
+Rules: the modifier goes down on the tap and is released right after the next non-modifier key is pressed; pressing another modifier does not use it up, so latches stack (tap Shift, tap Ctrl, then `C`). Tapping a latched key again cancels it. A modifier can never stay stuck: the same state machine that presses it releases it.
+
 ### `sequence(key, [keys...])`
 
 One press types several keys, in order (1 to 8 keys, each `VK_...`). Each key is pressed and released in turn on the press; releasing the trigger key emits nothing more.
@@ -435,6 +465,34 @@ device_start("*");
 device_end();
 ```
 
+### Accessibility / one-handed
+
+`examples/08-one-handed.rhai` is a complete left-hand-only setup: hold Space to mirror the keyboard, tap CapsLock to latch the mirror layer, tap Tab / Grave for sticky Shift / Ctrl. The building blocks:
+
+```rhai
+device_start("*");
+    // Sticky keys: tap, then the next key is modified. No chords needed.
+    one_shot("Tab", "VK_LShift", 5000);
+    one_shot("Grave", "VK_LCtrl", 5000);
+
+    // Slow or unsteady taps: a generous threshold. Space is still a space
+    // on any tap shorter than this; holding it past it opens the layer.
+    tap_hold("Space", "VK_Space", "MD_00", 350);
+
+    when_start("MD_00");
+        map("A", "VK_Semicolon");   // mirror the home row
+        map("S", "VK_L");
+    when_end();
+device_end();
+```
+
+Tips:
+
+- **Tap thresholds.** `threshold_ms` is how long a key must be held before it counts as a hold. For slow or tremor-affected taps raise it (300-400 ms); for fast typists lower it, or switch to `tap_hold_timeout_only` so rolled keys never become shortcuts.
+- **Sticky keys** (`one_shot`) replace chords: tap the modifier, then the key. Add a timeout so a forgotten latch lets go by itself, or use `0` to wait indefinitely. Sticky modifiers are per keyboard.
+- **Latching a layer.** `map("CapsLock", "LK_00")` toggles a lock; use the same mappings under `when_start("LK_00")` to keep a layer on without holding anything (the example shares them through a `fn`).
+- **Accidental presses.** Nothing here debounces repeated presses; use the operating system's "slow/bounce keys" setting for that.
+
 ---
 
 ## Compiler Checks
@@ -444,6 +502,9 @@ These mistakes are **errors** (the file does not compile), reported with the lin
 | Mistake | Message starts with |
 |---------|---------------------|
 | The same key mapped twice in one scope (device level, or inside one `when_*` block) | `Duplicate mapping for key ...` - names both lines |
+| The same `device_start` pattern used in two blocks (a device is routed to the first match, so the second block would never run; patterns compare case-insensitively) | `Duplicate device_start("...")` - names both lines |
+| `device_start` without `device_end()` | `device_start("...") (line N) is never closed` |
+| `tap_hold` / `hold_only` threshold of 0, negative or over 65535 | `threshold_ms must be between 1 and 65535` |
 | `when_start` / `when_not_start` / `when_device_start` without its `..._end` | `... block opened (line N) is never closed` |
 | `..._end` without a start, nested blocks, mappings outside `device_start` | the message says what is missing |
 | Output key without `VK_`, or an input that is `MD_`/`LK_` | hint with the fix |
@@ -473,6 +534,17 @@ device_start("*");
 device_end();
 ```
 
+Two blocks with the same `device_start` pattern are rejected too, instead of silently ignoring the second one: merge them into one block (this matters when you paste a snippet that has its own `device_start("*")`).
+
+```rhai,error
+device_start("*");
+    map("A", "VK_B");
+device_end();
+device_start("*");
+    map("C", "VK_D");
+device_end();
+```
+
 The compiler also warns (without failing) about mappings that can never fire because a more general mapping of the same key is always tried first.
 
 ---
@@ -495,7 +567,7 @@ device_end();
 
 #### `tap_hold` needs four arguments
 
-`Function not found: tap_hold (string, string, string)` - add the threshold: `tap_hold("Space", "VK_Space", "MD_00", 200)`.
+`tap_hold needs 4 argument(s), got 3. Usage: tap_hold(key, tap, hold, threshold_ms)` - add the threshold: `tap_hold("Space", "VK_Space", "MD_00", 200)`.
 
 #### Physical modifier name in a custom modifier
 
@@ -520,6 +592,10 @@ device_end();
 #### Circular `load`
 
 `load("a.rhai")` that eventually loads itself again is rejected; restructure the files.
+
+#### Unknown key name
+
+`Unknown key name: 'Escpae'` - a `Did you mean` list appears only when a real key name is close (a typo or an abbreviation such as `Ente`); an unrelated name gets no suggestion. Key names are in [Valid key names](#valid-key-names).
 
 #### Missing semicolon
 
@@ -563,6 +639,8 @@ keyrx_compiler parse main.rhai
 keyrx_compiler view main.rhai
 ```
 
+Compiling is reproducible: the same script gives a byte-identical `.krx` (no wall-clock time is embedded; the metadata timestamp is `0`, or `SOURCE_DATE_EPOCH` when that is set). `compile` prints the file's real `SHA256`, the same value `sha256sum config.krx` gives; `verify` and `hash` use the integrity hash stored in the header, which covers the data section.
+
 Run it:
 
 ```bash
@@ -581,7 +659,9 @@ keyrx_daemon simulate --events "press:A,wait:50,release:A"
 | `device_start(pattern);` ... `device_end();` | per-device block |
 | `map(key, "VK_x" \| "MD_xx" \| "LK_xx" \| with_*(...));` | remap, layer key, lock key, modified output |
 | `tap_hold(key, "VK_tap", "MD_xx" \| "VK_hold", ms);` | tap/hold, hold = layer or real key |
+| `tap_hold_timeout_only(key, "VK_tap", "VK_hold", ms);` | tap/hold that typing never decides (no permissive hold) |
 | `hold_only(key, "MD_xx" \| "VK_hold" [, ms]);` | hold without tap |
+| `one_shot(key, "VK_LShift" [, timeout_ms]);` | sticky modifier for the next key |
 | `sequence(key, ["VK_a", ...]);` | type several keys |
 | `when_start(cond);` ... `when_end();` | layer while `cond` holds |
 | `when_not_start(cond);` ... `when_not_end();` | layer while `cond` does not hold |

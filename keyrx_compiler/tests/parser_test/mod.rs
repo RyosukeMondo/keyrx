@@ -14,6 +14,7 @@ mod diagnostics_test;
 mod key_naming_test;
 mod maps_test;
 mod modifiers_test;
+mod one_handed_example_test;
 mod taps_test;
 mod when_device_test;
 mod when_not_test;
