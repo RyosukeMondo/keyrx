@@ -58,6 +58,7 @@ impl DaemonQueryService {
             active_profile: self.daemon_state.get_active_profile(),
             device_count: self.daemon_state.get_device_count(),
             input_overflows: self.daemon_state.input_overflow_count(),
+            config_error: self.daemon_state.get_config_error(),
         }
     }
 
@@ -154,6 +155,9 @@ pub struct StatusInfo {
     pub device_count: usize,
     /// Kernel input-buffer overflows (`SYN_DROPPED`) the daemon recovered from.
     pub input_overflows: u64,
+    /// Why the requested configuration is not live (the daemon then grabs
+    /// no keyboard, or keeps the previous config); `None` when it is live.
+    pub config_error: Option<String>,
 }
 
 #[cfg(test)]
@@ -185,8 +189,16 @@ mod tests {
                 active_profile: Some("test".to_string()),
                 device_count: 2,
                 input_overflows: 0,
+                config_error: None,
             }
         );
+    }
+
+    #[test]
+    fn test_get_status_reports_config_error() {
+        let (svc, _) = make_test_service();
+        svc.shared_state().set_config_error(Some("bad".to_string()));
+        assert_eq!(svc.get_status().config_error.as_deref(), Some("bad"));
     }
 
     #[test]

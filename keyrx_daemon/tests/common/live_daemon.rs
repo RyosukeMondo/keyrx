@@ -32,6 +32,17 @@ pub struct Harness {
 
 impl Harness {
     pub fn start(tag: &str, source: ConfigSource, config_dir: &Path) -> Self {
+        Self::start_expecting(tag, source, config_dir, 1)
+    }
+
+    /// Like [`Self::start`], but asserts the daemon grabbed `grabbed` devices
+    /// at startup (0 when no valid config is live).
+    pub fn start_expecting(
+        tag: &str,
+        source: ConfigSource,
+        config_dir: &Path,
+        grabbed: usize,
+    ) -> Self {
         let keyboard = VirtualKeyboard::create(&format!("keyrx-live-{tag}")).expect("keyboard");
         std::thread::sleep(Duration::from_millis(200)); // let udev register it
         let output_name = format!("keyrx-live-out-{tag}-{}", std::process::id());
@@ -41,8 +52,8 @@ impl Harness {
             Daemon::new(platform, source, config_dir.to_path_buf()).expect("daemon starts");
         assert_eq!(
             daemon.device_count(),
-            1,
-            "daemon must grab only the test keyboard"
+            grabbed,
+            "daemon must grab exactly the expected test keyboards"
         );
         let shared = daemon.shared_state();
         let running = daemon.running_flag();

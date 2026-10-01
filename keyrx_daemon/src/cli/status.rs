@@ -29,6 +29,8 @@ struct StatusOutput {
     active_profile: Option<String>,
     device_count: usize,
     input_overflows: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config_error: Option<String>,
 }
 
 /// Execute the status command.
@@ -46,6 +48,7 @@ pub fn execute(args: StatusArgs) -> Result<(), Box<dyn std::error::Error>> {
             active_profile,
             device_count,
             input_overflows,
+            config_error,
         } => {
             if args.json {
                 print_json_output(
@@ -54,6 +57,7 @@ pub fn execute(args: StatusArgs) -> Result<(), Box<dyn std::error::Error>> {
                     active_profile,
                     device_count,
                     input_overflows,
+                    config_error,
                 )?;
             } else {
                 print_human_output(
@@ -62,6 +66,7 @@ pub fn execute(args: StatusArgs) -> Result<(), Box<dyn std::error::Error>> {
                     active_profile,
                     device_count,
                     input_overflows,
+                    config_error,
                 );
             }
             Ok(())
@@ -80,6 +85,7 @@ fn print_json_output(
     active_profile: Option<String>,
     device_count: usize,
     input_overflows: u64,
+    config_error: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let output = StatusOutput {
         running,
@@ -87,6 +93,7 @@ fn print_json_output(
         active_profile,
         device_count,
         input_overflows,
+        config_error,
     };
     println!("{}", serde_json::to_string_pretty(&output)?);
     Ok(())
@@ -99,6 +106,7 @@ fn print_human_output(
     active_profile: Option<String>,
     device_count: usize,
     input_overflows: u64,
+    config_error: Option<String>,
 ) {
     println!("Daemon Status:");
     println!("  Running:        {}", if running { "Yes" } else { "No" });
@@ -115,6 +123,10 @@ fn print_human_output(
         active_profile.unwrap_or_else(|| "None".to_string())
     );
     println!("  Device Count:   {}", device_count);
+    if let Some(error) = config_error {
+        println!("  Config error:   {error}");
+        println!("                  (no keyboard is grabbed until a valid profile is active)");
+    }
     if input_overflows > 0 {
         println!(
             "  Input overflows: {} (keyboard input outran the daemon; resynced)",
@@ -135,6 +147,7 @@ mod tests {
             active_profile: Some("default".to_string()),
             device_count: 2,
             input_overflows: 0,
+            config_error: None,
         };
         let json = serde_json::to_string(&output).unwrap();
         assert!(json.contains("\"running\":true"));
@@ -151,6 +164,7 @@ mod tests {
             active_profile: None,
             device_count: 0,
             input_overflows: 0,
+            config_error: None,
         };
         let json = serde_json::to_string(&output).unwrap();
         assert!(json.contains("\"running\":false"));

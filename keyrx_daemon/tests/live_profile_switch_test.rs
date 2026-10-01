@@ -200,3 +200,30 @@ fn editing_the_loaded_profile_source_hot_reloads_it() {
         "a source that does not compile must not replace the running config"
     );
 }
+
+/// A broken active profile must leave NO config live: the daemon grabs no
+/// keyboard (here: not even the one it is scoped to), reports why through
+/// status, and still switches to a good profile when one is activated.
+#[test]
+fn broken_active_profile_grabs_nothing_until_a_good_one_is_activated() {
+    keyrx_daemon::skip_if_no_uinput!();
+    let dir = TempDir::new().unwrap();
+    let manager = profiles(dir.path());
+    assert!(manager.activate("a").expect("activate a").success);
+    std::fs::write(dir.path().join("profiles/a.krx"), b"corrupt").unwrap();
+
+    let mut h = Harness::start_expecting("broken", ConfigSource::ActiveProfile, dir.path(), 0);
+    assert_eq!(h.shared.get_active_profile(), None);
+    assert!(h.shared.get_config_error().is_some());
+    // Not grabbed: the daemon never sees the keystroke, so nothing is emitted.
+    assert!(h.tap(KeyCode::F24).is_empty(), "a keyboard was grabbed");
+    assert_eq!(h.shared.get_device_count(), 0);
+
+    let service = ProfileService::new(manager);
+    service.attach_daemon_state(Arc::clone(&h.shared));
+    activate(&service, "b");
+    h.wait_for_profile("b");
+    assert_eq!(h.shared.get_config_error(), None);
+    assert_eq!(h.shared.get_device_count(), 1);
+    assert_eq!(h.tap(KeyCode::CapsLock), tapped(KeyCode::LCtrl));
+}

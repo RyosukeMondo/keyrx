@@ -248,7 +248,7 @@ fn check_config() -> Check {
             "config dir",
             true,
             format!(
-                "{} (no active profile - pass-through mode)",
+                "{} (no active profile - no keyboard is grabbed until one is activated)",
                 config_dir.display()
             ),
         ),
@@ -267,6 +267,19 @@ fn check_daemon_running() -> Check {
 
     let mut ipc = IpcClient::new(IpcEndpoint::from_cli(None));
     match ipc.send_request(&IpcRequest::GetStatus) {
+        Ok(IpcResponse::Status {
+            running,
+            device_count,
+            config_error: Some(error),
+            ..
+        }) if running => check(
+            "daemon",
+            false,
+            format!(
+                "running but NO config is live ({error}); {device_count} device(s) grabbed - \
+                 fix the profile or activate another"
+            ),
+        ),
         Ok(IpcResponse::Status {
             running,
             active_profile,

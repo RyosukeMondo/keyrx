@@ -75,7 +75,7 @@ pub struct DaemonSharedState {
 
     /// Name of the currently active profile.
     ///
-    /// This is `Some(name)` when a profile is active, `None` for pass-through mode.
+    /// This is `Some(name)` when a profile is active, `None` when no config is live (no keyboard is grabbed).
     /// Updated when the web API activates/deactivates profiles.
     active_profile: Arc<RwLock<Option<String>>>,
 
@@ -131,6 +131,12 @@ pub struct DaemonSharedState {
     /// the new config, or kept the old one because it failed to load).
     /// Lets a transport wait until its activation is actually live.
     reloads_serviced: Arc<AtomicU64>,
+
+    /// Why the configuration the user asked for is NOT live (compile/load
+    /// failure at startup or on reload); `None` when what is live is what was
+    /// requested. With no valid config the daemon grabs no keyboard, so this
+    /// is how every transport tells the user why nothing is being remapped.
+    config_error: Arc<RwLock<Option<String>>>,
 }
 
 impl DaemonSharedState {
@@ -180,7 +186,19 @@ impl DaemonSharedState {
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
             reloads_serviced: Arc::default(),
+            config_error: Arc::default(),
         }
+    }
+
+    /// Why the requested configuration is not live, if it is not.
+    pub fn get_config_error(&self) -> Option<String> {
+        self.config_error.read().expect("RwLock poisoned").clone()
+    }
+
+    /// Records (or, with `None`, clears) the reason the requested
+    /// configuration is not live.
+    pub fn set_config_error(&self, error: Option<String>) {
+        *self.config_error.write().expect("RwLock poisoned") = error;
     }
 
     /// Called by the daemon each time it finishes servicing a reload request.
@@ -288,7 +306,7 @@ impl DaemonSharedState {
 
     /// Returns the name of the currently active profile, if any.
     ///
-    /// Returns `Some(name)` when a profile is active, `None` for pass-through mode
+    /// Returns `Some(name)` when a profile is active, `None` when no config is live (no keyboard is grabbed)
     /// (no remapping). This is set during daemon startup or when the web API
     /// activates a profile.
     ///
@@ -387,11 +405,11 @@ impl DaemonSharedState {
     /// Sets the active profile name.
     ///
     /// This is called by the web API when a profile is activated or deactivated.
-    /// Pass `Some(name)` to activate a profile, `None` to enter pass-through mode.
+    /// Pass `Some(name)` to activate a profile, `None` to leave no config live (no keyboard is grabbed).
     ///
     /// # Arguments
     ///
-    /// * `name` - The profile name to activate, or `None` for pass-through mode
+    /// * `name` - The profile name to activate, or `None` when no config is live (no keyboard is grabbed)
     ///
     /// # Thread Safety
     ///
@@ -452,7 +470,7 @@ impl DaemonSharedState {
     ///
     /// # Arguments
     ///
-    /// * `profile` - The profile name to activate, or `None` for pass-through mode
+    /// * `profile` - The profile name to activate, or `None` when no config is live (no keyboard is grabbed)
     /// * `config_path` - The new configuration file path
     pub fn set_active_config(&self, profile: Option<String>, config_path: PathBuf) {
         // Acquire both write locks to update atomically.
@@ -586,23 +604,12 @@ mod tests {
         // We can't create a full Daemon in tests without platform setup,
         // so we test the field behavior directly
         let running = Arc::new(AtomicBool::new(true));
-        let active_profile = Arc::new(RwLock::new(Some("test".to_string())));
-        let config_path = Arc::new(RwLock::new(PathBuf::from("/test/config.krx")));
-        let device_count = Arc::new(AtomicUsize::new(2));
-
-        let state = DaemonSharedState {
+        let state = DaemonSharedState::new(
             running,
-            active_profile,
-            config_path,
-            device_count,
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        };
+            Some("test".to_string()),
+            PathBuf::from("/test/config.krx"),
+            2,
+        );
 
         assert!(state.is_running());
         assert_eq!(state.get_active_profile(), Some("test".to_string()));
@@ -615,19 +622,7 @@ mod tests {
     #[test]
     fn test_is_running() {
         let running = Arc::new(AtomicBool::new(true));
-        let state = DaemonSharedState {
-            running: Arc::clone(&running),
-            active_profile: Arc::new(RwLock::new(None)),
-            config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
-            device_count: Arc::new(AtomicUsize::new(0)),
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        };
+        let state = DaemonSharedState::new(Arc::clone(&running), None, PathBuf::from("/test"), 0);
 
         assert!(state.is_running());
 
@@ -638,19 +633,12 @@ mod tests {
 
     #[test]
     fn test_active_profile_access() {
-        let state = DaemonSharedState {
-            running: Arc::new(AtomicBool::new(true)),
-            active_profile: Arc::new(RwLock::new(Some("default".to_string()))),
-            config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
-            device_count: Arc::new(AtomicUsize::new(0)),
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        };
+        let state = DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            Some("default".to_string()),
+            PathBuf::from("/test"),
+            0,
+        );
 
         // Initial profile
         assert_eq!(state.get_active_profile(), Some("default".to_string()));
@@ -666,19 +654,12 @@ mod tests {
 
     #[test]
     fn test_config_path_access() {
-        let state = DaemonSharedState {
-            running: Arc::new(AtomicBool::new(true)),
-            active_profile: Arc::new(RwLock::new(None)),
-            config_path: Arc::new(RwLock::new(PathBuf::from("/initial/config.krx"))),
-            device_count: Arc::new(AtomicUsize::new(0)),
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        };
+        let state = DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            None,
+            PathBuf::from("/initial/config.krx"),
+            0,
+        );
 
         assert_eq!(
             state.get_config_path(),
@@ -692,19 +673,12 @@ mod tests {
 
     #[test]
     fn test_device_count_access() {
-        let state = DaemonSharedState {
-            running: Arc::new(AtomicBool::new(true)),
-            active_profile: Arc::new(RwLock::new(None)),
-            config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
-            device_count: Arc::new(AtomicUsize::new(2)),
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        };
+        let state = DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            None,
+            PathBuf::from("/test"),
+            2,
+        );
 
         assert_eq!(state.get_device_count(), 2);
 
@@ -739,19 +713,12 @@ mod tests {
 
     #[test]
     fn test_uptime_calculation() {
-        let state = DaemonSharedState {
-            running: Arc::new(AtomicBool::new(true)),
-            active_profile: Arc::new(RwLock::new(None)),
-            config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
-            device_count: Arc::new(AtomicUsize::new(0)),
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        };
+        let state = DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            None,
+            PathBuf::from("/test"),
+            0,
+        );
 
         // Just created, uptime should be 0
         assert_eq!(state.uptime_secs(), 0);
@@ -766,19 +733,12 @@ mod tests {
 
     #[test]
     fn test_concurrent_reads() {
-        let state = Arc::new(DaemonSharedState {
-            running: Arc::new(AtomicBool::new(true)),
-            active_profile: Arc::new(RwLock::new(Some("test".to_string()))),
-            config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
-            device_count: Arc::new(AtomicUsize::new(5)),
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        });
+        let state = Arc::new(DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            Some("test".to_string()),
+            PathBuf::from("/test"),
+            5,
+        ));
 
         // Spawn multiple reader threads
         let handles: Vec<_> = (0..10)
@@ -801,19 +761,12 @@ mod tests {
 
     #[test]
     fn test_concurrent_writes() {
-        let state = Arc::new(DaemonSharedState {
-            running: Arc::new(AtomicBool::new(true)),
-            active_profile: Arc::new(RwLock::new(None)),
-            config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
-            device_count: Arc::new(AtomicUsize::new(0)),
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        });
+        let state = Arc::new(DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            None,
+            PathBuf::from("/test"),
+            0,
+        ));
 
         // Spawn multiple writer threads
         let handles: Vec<_> = (0..10)
@@ -841,19 +794,12 @@ mod tests {
 
     #[test]
     fn test_set_active_config_atomic() {
-        let state = Arc::new(DaemonSharedState {
-            running: Arc::new(AtomicBool::new(true)),
-            active_profile: Arc::new(RwLock::new(Some("old".to_string()))),
-            config_path: Arc::new(RwLock::new(PathBuf::from("/old/config.krx"))),
-            device_count: Arc::new(AtomicUsize::new(0)),
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        });
+        let state = Arc::new(DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            Some("old".to_string()),
+            PathBuf::from("/old/config.krx"),
+            0,
+        ));
 
         // Atomic update of both fields
         state.set_active_config(
@@ -872,19 +818,12 @@ mod tests {
 
     #[test]
     fn test_set_active_config_concurrent() {
-        let state = Arc::new(DaemonSharedState {
-            running: Arc::new(AtomicBool::new(true)),
-            active_profile: Arc::new(RwLock::new(None)),
-            config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
-            device_count: Arc::new(AtomicUsize::new(0)),
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        });
+        let state = Arc::new(DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            None,
+            PathBuf::from("/test"),
+            0,
+        ));
 
         // Concurrent atomic updates should not deadlock
         let handles: Vec<_> = (0..10)
@@ -912,19 +851,12 @@ mod tests {
 
     #[test]
     fn test_mixed_concurrent_access() {
-        let state = Arc::new(DaemonSharedState {
-            running: Arc::new(AtomicBool::new(true)),
-            active_profile: Arc::new(RwLock::new(Some("initial".to_string()))),
-            config_path: Arc::new(RwLock::new(PathBuf::from("/test"))),
-            device_count: Arc::new(AtomicUsize::new(1)),
-            active_devices: Arc::new(RwLock::new(HashSet::new())),
-            start_time: Instant::now(),
-            reload_requested: Arc::new(AtomicBool::new(false)),
-            suspended: Arc::new(AtomicBool::new(false)),
-            pending_activation: Arc::default(),
-            input_overflows: Arc::default(),
-            reloads_serviced: Arc::default(),
-        });
+        let state = Arc::new(DaemonSharedState::new(
+            Arc::new(AtomicBool::new(true)),
+            Some("initial".to_string()),
+            PathBuf::from("/test"),
+            1,
+        ));
 
         // Mix of readers and writers
         let mut handles = vec![];

@@ -160,6 +160,7 @@ pub fn get_status(state: &AppState) -> Result<String, String> {
         "activeProfile": s.active_profile,
         "deviceCount": s.device_count,
         "inputOverflows": s.input_overflows,
+        "configError": s.config_error,
     })
     .to_string())
 }

@@ -255,7 +255,7 @@ fn check_config_validation() -> ConfigStatus {
         },
         Ok(None) => ConfigStatus {
             valid: true,
-            message: "No active profile (running in pass-through mode)".into(),
+            message: "No active profile (no config is live; no keyboard is grabbed)".into(),
         },
         Err(e) => ConfigStatus {
             valid: false,

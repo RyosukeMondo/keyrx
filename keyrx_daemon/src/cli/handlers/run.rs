@@ -106,14 +106,14 @@ fn validate_config_file(path: &Path) -> Result<(), (i32, String)> {
 }
 
 /// First run without `--config`: create and activate a blank `default`
-/// profile so the UI has something to edit. Failures only mean pass-through.
+/// profile so the UI has something to edit. Failures only mean no config is live.
 fn ensure_active_profile(config_dir: &Path) {
     use crate::config::{ProfileManager, ProfileTemplate};
 
     let manager = match ProfileManager::new(config_dir.to_path_buf()) {
         Ok(manager) => manager,
         Err(e) => {
-            log::warn!("Cannot read profiles ({e}); starting in pass-through mode");
+            log::warn!("Cannot read profiles ({e}); starting with no config live");
             return;
         }
     };

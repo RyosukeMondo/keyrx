@@ -4,8 +4,10 @@
 //!
 //! - `run` (no `--config`) starts from the **active profile**
 //!   (`<config_dir>/.active` → `<config_dir>/profiles/<name>.krx`). No active
-//!   profile means pass-through. This is what the systemd unit and the desktop
-//!   entries use, so the profile chosen in the UI survives restarts.
+//!   profile, or one that fails to load, means **no config is live: the daemon
+//!   grabs no keyboard** (it keeps serving IPC/web so the profile can be fixed,
+//!   and status reports `config_error`). This is what the systemd unit and the
+//!   desktop entries use, so the profile chosen in the UI survives restarts.
 //! - `run --config FILE` is an **explicit override for this run's startup**: FILE
 //!   is loaded instead of the active profile. If FILE is a profile's `.krx`, it is
 //!   reported as that profile.
@@ -31,7 +33,7 @@ use crate::config_loader::load_config;
 /// Where the daemon should take its configuration from.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConfigSource {
-    /// The profile named in `<config_dir>/.active` (pass-through if none).
+    /// The profile named in `<config_dir>/.active` (nothing live if none).
     ActiveProfile,
     /// A named profile: `<config_dir>/profiles/<name>.krx`.
     Profile(String),
@@ -58,7 +60,7 @@ pub struct LiveConfig {
 }
 
 impl LiveConfig {
-    /// Creates a tracker with nothing loaded (pass-through).
+    /// Creates a tracker with nothing loaded (no keyboard grabbed).
     pub fn new(config_dir: PathBuf) -> Self {
         Self {
             config_dir,
@@ -71,7 +73,7 @@ impl LiveConfig {
         &self.config_dir
     }
 
-    /// What is currently loaded (`None` = pass-through).
+    /// What is currently loaded (`None` = nothing live).
     pub fn loaded(&self) -> Option<&LoadedConfig> {
         self.loaded.as_ref()
     }
@@ -99,7 +101,7 @@ impl LiveConfig {
         }
     }
 
-    /// Reads `source` from disk. `Ok(None)` means pass-through (no active profile).
+    /// Reads `source` from disk. `Ok(None)` means no config is live (no active profile).
     pub fn load(&self, source: &ConfigSource) -> Result<Option<LoadedConfig>, DaemonError> {
         match source {
             ConfigSource::ActiveProfile => match read_active_profile_name(&self.config_dir)? {

@@ -25,6 +25,7 @@ pub(super) async fn get_debug_state(State(state): State<Arc<AppState>>) -> Json<
     let daemon_info = serde_json::json!({
         "running": status.daemon_running, "uptime_secs": status.uptime_secs,
         "active_profile": status.active_profile, "device_count": status.device_count, "input_overflows": status.input_overflows,
+        "config_error": status.config_error,
         "mapping_count": mapping_count,
         "suspended": state.daemon_state.as_ref().map(|d| d.is_suspended()),
     });

@@ -58,6 +58,7 @@ impl IpcCommandHandler {
             active_profile: status.active_profile,
             device_count: status.device_count,
             input_overflows: status.input_overflows,
+            config_error: status.config_error,
         }
     }
 

@@ -62,6 +62,10 @@ pub enum IpcResponse {
         /// Kernel input-buffer overflows (`SYN_DROPPED`) recovered from.
         #[serde(default)]
         input_overflows: u64,
+        /// Why the requested config is not live (no keyboard is grabbed
+        /// when none is); absent when it is.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        config_error: Option<String>,
     },
     /// Keyboards the daemon currently has captured
     Devices { devices: Vec<CapturedDevice> },
@@ -158,6 +162,7 @@ mod tests {
             active_profile: Some("default".to_string()),
             device_count: 2,
             input_overflows: 0,
+            config_error: None,
         };
         let json = serde_json::to_string(&resp).unwrap();
         let deserialized: IpcResponse = serde_json::from_str(&json).unwrap();

@@ -47,7 +47,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
 use keyrx_core::config::DeviceConfig;
-use log::{info, warn};
+use log::{error, info, warn};
 
 use crate::error::ConfigError;
 use crate::platform::held_outputs::HeldOutputs;
@@ -163,7 +163,7 @@ pub struct Daemon {
     /// Lock-free latency recorder (owned by `telemetry`, cached for the hot path).
     latency_recorder: Arc<LatencyRecorder>,
 
-    /// Live remapping state; `None` in pass-through mode. Owned by the event
+    /// Live remapping state; `None` when no config is live (no keyboard is grabbed). Owned by the event
     /// loop while it runs — reloads hand a replacement back to the loop.
     remapping_state: Option<RemappingState>,
 
@@ -179,7 +179,10 @@ impl Daemon {
     ///
     /// The configuration is read before any device is grabbed, so a broken
     /// `--config` file fails fast. A missing or broken *active profile* is not
-    /// fatal: the daemon starts in pass-through mode and logs why.
+    /// fatal: the daemon starts with **no config live**, which grabs no
+    /// keyboard (a broken profile must never capture devices the user did not
+    /// scope), keeps serving IPC/web so the profile can be fixed, and reports
+    /// the reason as `config_error` in status.
     ///
     /// # Errors
     ///
@@ -196,7 +199,7 @@ impl Daemon {
         let mut platform: Box<dyn Platform> = Box::new(HeldOutputs::new(platform));
         info!("Initializing keyrx daemon from {source:?}");
         let mut live = LiveConfig::new(config_dir);
-        let loaded = Self::load_startup_config(&live, &source)?;
+        let (loaded, config_error) = Self::load_startup_config(&live, &source)?;
 
         platform.initialize()?;
         let running = Arc::new(AtomicBool::new(true));
@@ -211,9 +214,9 @@ impl Daemon {
                 .sharing_reload_flag(signal_handler.reload_state().flag()),
         );
         // Grabs only devices the live config's `device_start` patterns
-        // actually match (an empty/no config falls back to "*", the old
-        // grab-everything pass-through behavior) and publishes the count.
+        // actually match (no config grabs nothing) and publishes the count.
         let remapping_state = apply_loaded(&mut platform, &mut live, &shared_state, loaded);
+        shared_state.set_config_error(config_error);
 
         info!("Daemon initialization complete");
         Ok(Self {
@@ -229,19 +232,22 @@ impl Daemon {
         })
     }
 
+    /// Reads the startup config. A broken/unreadable *active profile* yields
+    /// `(None, Some(reason))` - no config live, reason surfaced in status.
     fn load_startup_config(
         live: &LiveConfig,
         source: &ConfigSource,
-    ) -> Result<Option<LoadedConfig>, DaemonError> {
+    ) -> Result<(Option<LoadedConfig>, Option<String>), DaemonError> {
         match (source, live.load(source)) {
             (_, Ok(None)) => {
-                info!("No active profile; running in pass-through mode");
-                Ok(None)
+                info!("No active profile; no config is live and no keyboard is grabbed");
+                Ok((None, None))
             }
-            (_, Ok(loaded)) => Ok(loaded),
+            (_, Ok(loaded)) => Ok((loaded, None)),
             (ConfigSource::ActiveProfile, Err(e)) => {
-                warn!("Failed to load the active profile ({e}); running in pass-through mode");
-                Ok(None)
+                let reason = format!("failed to load the active profile: {e}");
+                error!("{reason}; no keyboard is grabbed until the profile is fixed or another is activated");
+                Ok((None, Some(reason)))
             }
             (_, Err(e)) => Err(e),
         }
@@ -266,7 +272,7 @@ impl Daemon {
         self.running.load(Ordering::SeqCst)
     }
 
-    /// The loaded configuration file, if any (pass-through: `None`).
+    /// The loaded configuration file, if any (`None`: no config is live).
     #[must_use]
     pub fn config_path(&self) -> Option<&Path> {
         self.live.loaded().map(|l| l.path.as_path())
@@ -437,9 +443,14 @@ fn reload_remapping(
 ) -> Result<Option<RemappingState>, DaemonError> {
     let source = live.reload_source(shared_state.take_pending_activation());
     info!("Reloading configuration from {source:?}");
-    let result = live
-        .load(&source)
-        .map(|loaded| apply_loaded(platform, live, shared_state, loaded));
+    let result = live.load(&source).map(|loaded| {
+        let state = apply_loaded(platform, live, shared_state, loaded);
+        shared_state.set_config_error(None);
+        state
+    });
+    if let Err(e) = &result {
+        shared_state.set_config_error(Some(format!("failed to load {source:?}: {e}")));
+    }
     // Success or not, the request has been dealt with: waiters (activate)
     // re-read the published profile to tell which.
     shared_state.mark_reload_serviced();
@@ -476,7 +487,7 @@ fn apply_loaded(
             l.devices.len(),
             l.profile.as_deref().unwrap_or("-")
         ),
-        None => info!("Live config: none (pass-through)"),
+        None => info!("Live config: none (no keyboard is grabbed)"),
     }
     live.set_loaded(loaded);
     remapping_state

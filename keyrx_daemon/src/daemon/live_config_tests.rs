@@ -264,3 +264,98 @@ fn plain_reload_follows_active_file_and_clears_on_delete() {
         .is_none());
     assert_eq!(shared.get_active_profile(), None);
 }
+
+/// Records how many `device_start` blocks each `reconfigure_devices` call got:
+/// an empty slice is "no config live", which must capture nothing.
+struct RecordingPlatform(Arc<std::sync::Mutex<Vec<usize>>>);
+
+impl Platform for RecordingPlatform {
+    fn initialize(&mut self) -> PlatformResult<()> {
+        Ok(())
+    }
+    fn capture_input(&mut self) -> PlatformResult<keyrx_core::runtime::event::KeyEvent> {
+        Err(crate::platform::PlatformError::NoInput)
+    }
+    fn inject_output(
+        &mut self,
+        _event: keyrx_core::runtime::event::KeyEvent,
+    ) -> PlatformResult<()> {
+        Ok(())
+    }
+    fn list_devices(&self) -> PlatformResult<Vec<DeviceInfo>> {
+        Ok(Vec::new())
+    }
+    fn reconfigure_devices(&mut self, configs: &[DeviceConfig]) -> PlatformResult<()> {
+        self.0.lock().unwrap().push(configs.len());
+        Ok(())
+    }
+    fn shutdown(&mut self) -> PlatformResult<()> {
+        Ok(())
+    }
+}
+
+#[test]
+fn broken_active_profile_at_startup_leaves_no_config_live_and_reports_why() {
+    let dir = TempDir::new().unwrap();
+    fs::create_dir_all(dir.path().join("profiles")).unwrap();
+    fs::write(dir.path().join("profiles/bad.krx"), b"not a krx").unwrap();
+    set_active(dir.path(), "bad");
+    let calls = Arc::new(std::sync::Mutex::new(Vec::new()));
+
+    let mut daemon = crate::daemon::Daemon::new(
+        Box::new(RecordingPlatform(Arc::clone(&calls))),
+        ConfigSource::ActiveProfile,
+        dir.path().to_path_buf(),
+    )
+    .expect("a broken active profile is not fatal");
+
+    // The platform was told "nothing is live" (zero blocks => grab nothing).
+    assert_eq!(*calls.lock().unwrap(), vec![0]);
+    let shared = daemon.shared_state();
+    assert_eq!(shared.get_active_profile(), None);
+    let error = shared.get_config_error().expect("config_error is reported");
+    assert!(error.contains("active profile"), "{error}");
+    assert!(daemon.config_path().is_none());
+
+    // Fixing the profile and reloading brings it live and clears the error.
+    write_profile(dir.path(), "bad", KeyCode::CapsLock, KeyCode::Escape);
+    daemon.reload().expect("reload");
+    assert_eq!(*calls.lock().unwrap(), vec![0, 1]);
+    assert_eq!(shared.get_active_profile().as_deref(), Some("bad"));
+    assert_eq!(shared.get_config_error(), None);
+}
+
+#[test]
+fn no_active_profile_is_no_config_and_no_error() {
+    let dir = TempDir::new().unwrap();
+    let calls = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let daemon = crate::daemon::Daemon::new(
+        Box::new(RecordingPlatform(Arc::clone(&calls))),
+        ConfigSource::ActiveProfile,
+        dir.path().to_path_buf(),
+    )
+    .unwrap();
+    assert_eq!(*calls.lock().unwrap(), vec![0]);
+    assert_eq!(daemon.shared_state().get_config_error(), None);
+}
+
+#[test]
+fn failed_reload_keeps_the_previous_config_and_reports_the_error() {
+    let dir = TempDir::new().unwrap();
+    write_profile(dir.path(), "a", KeyCode::CapsLock, KeyCode::Escape);
+    set_active(dir.path(), "a");
+    let mut live = LiveConfig::new(dir.path().to_path_buf());
+    let shared = shared_state();
+    let start = live.load(&ConfigSource::ActiveProfile).unwrap();
+    let mut platform = noop_platform();
+    apply_loaded(&mut platform, &mut live, &shared, start);
+    assert_eq!(shared.get_config_error(), None);
+
+    shared.request_activation("missing");
+    assert!(reload_remapping(&mut platform, &mut live, &shared).is_err());
+    assert_eq!(shared.get_active_profile().as_deref(), Some("a"));
+    assert!(shared.get_config_error().is_some());
+
+    assert!(reload_remapping(&mut platform, &mut live, &shared).is_ok());
+    assert_eq!(shared.get_config_error(), None);
+}

@@ -209,7 +209,8 @@ impl LinuxPlatform {
     }
 
     /// Re-evaluates which physical keyboards are grabbed against `configs`
-    /// (an empty slice falls back to `"*"` - grab-everything pass-through).
+    /// (an empty slice means no config is live: every grab is released and
+    /// nothing is grabbed - an unscoped daemon must never capture keyboards).
     /// Remembers `configs` as [`Self::active_configs`] so a later hotplug
     /// rescan can reuse them. Never fails just because 0 devices ended up
     /// grabbed; see [`Self::init`] for the fatal startup variant.
@@ -222,20 +223,13 @@ impl LinuxPlatform {
         configs: &[DeviceConfig],
     ) -> Result<RefreshResult, Box<dyn std::error::Error>> {
         self.ensure_output_device()?;
-        let owned_wildcard;
-        let effective: &[DeviceConfig] = if configs.is_empty() {
-            owned_wildcard = wildcard_configs();
-            &owned_wildcard
-        } else {
-            configs
-        };
         let device_manager = self
             .device_manager
             .as_mut()
             .ok_or("device manager missing after ensure_output_device")?;
         let result =
-            device_manager.reconcile(effective, &self.device_pattern, Some(&self.output_name))?;
-        self.active_configs = effective.to_vec();
+            device_manager.reconcile(configs, &self.device_pattern, Some(&self.output_name))?;
+        self.active_configs = configs.to_vec();
         if result.added > 0 || result.removed > 0 {
             self.devices_changed = true;
             log::info!(
@@ -517,7 +511,7 @@ impl crate::platform::Platform for LinuxPlatform {
     /// [`reconfigure_devices`](crate::platform::Platform::reconfigure_devices)
     /// once it knows the live config's `device_start` patterns, so only
     /// devices a pattern actually matches get grabbed (an empty/no config
-    /// falls back to `"*"`, i.e. grab-everything pass-through).
+    /// grabs nothing).
     fn initialize(&mut self) -> crate::platform::PlatformResult<()> {
         use crate::platform::PlatformError;
 
@@ -637,19 +631,6 @@ impl crate::platform::Platform for LinuxPlatform {
 /// Longest `capture_input` waits for input before returning `NoInput`, which
 /// bounds how late the event loop services reloads and tap-hold timeouts.
 const INPUT_WAIT: std::time::Duration = std::time::Duration::from_millis(10);
-
-/// The single `"*"` block used when no config is loaded (pass-through):
-/// grab and pass through every keyboard in scope, same as before a config
-/// existed.
-fn wildcard_configs() -> Vec<DeviceConfig> {
-    use keyrx_core::config::mappings::DeviceIdentifier;
-    vec![DeviceConfig {
-        identifier: DeviceIdentifier {
-            pattern: "*".to_string(),
-        },
-        mappings: vec![],
-    }]
-}
 
 /// Returns the next pending item (key event or raw passthrough, see
 /// [`input_capture::PendingCapture`]) from any device without blocking.

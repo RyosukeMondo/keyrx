@@ -278,8 +278,9 @@ pub trait Platform: Send + Sync {
     }
 
     /// Re-evaluates which input devices should be captured against the live
-    /// config's `device_start` blocks (`configs`; empty means pass-through -
-    /// implementations should fall back to matching everything). Called once
+    /// config's `device_start` blocks (`configs`; empty means no config is live -
+    /// implementations must capture NOTHING, never fall back to matching
+    /// everything). Called once
     /// after [`initialize()`](Platform::initialize) with the startup config,
     /// again after every reload/profile switch, and periodically to pick up
     /// hotplugged keyboards.

@@ -168,6 +168,7 @@ mod tests {
             active_profile: Some(profile.to_string()),
             device_count: 1,
             input_overflows: 0,
+            config_error: None,
         }
     }
 

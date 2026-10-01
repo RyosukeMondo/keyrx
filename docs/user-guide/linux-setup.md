@@ -416,6 +416,16 @@ as it matches a pattern; unplugging one is detected and released the same
 way. Both react within about a poll cycle of `/dev/input` changing, with no
 added input latency while typing.
 
+### When no valid profile is live
+
+If the active profile is missing, fails to compile, or its `.krx` cannot be
+loaded, the daemon grabs **no keyboard at all** - it never falls back to
+capturing everything. It keeps running and serving the web UI, IPC and REST so
+you can fix the profile (or activate another), logs the reason, and reports it
+as `config_error` in `keyrx_daemon status` (also `GET /api/status` and the MCP
+status tool); `keyrx_daemon doctor` flags it. A reload that fails (bad edit,
+SIGHUP) keeps the previous working config and reports the error the same way.
+
 ## Troubleshooting
 
 Run `keyrx_daemon doctor` first - it checks input/uinput group membership

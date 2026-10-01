@@ -97,6 +97,8 @@ struct StatusResponse {
     active_profile: Option<String>,
     device_count: usize,
     input_overflows: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config_error: Option<String>,
 }
 
 async fn get_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> {
@@ -109,6 +111,7 @@ async fn get_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> 
         active_profile: status.active_profile,
         device_count: status.device_count,
         input_overflows: status.input_overflows,
+        config_error: status.config_error,
     })
 }
 
