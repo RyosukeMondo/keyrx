@@ -9,10 +9,16 @@
  * regressions in the MSW WebSocket setup that would break other tests.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
+import { cleanupMockWebSocket } from '../helpers/websocket';
 import { ws } from 'msw';
+import { buildWsUrl } from '../../src/config/constants';
 import { server } from '../../src/test/mocks/server';
-import { resetWebSocketState, broadcastEvent } from '../../src/test/mocks/websocketHandlers';
+import {
+  createWebSocketHandlers,
+  resetWebSocketState,
+  broadcastEvent,
+} from '../../src/test/mocks/websocketHandlers';
 import {
   setDaemonState,
   sendLatencyUpdate,
@@ -30,7 +36,7 @@ describe('MSW WebSocket Infrastructure', () => {
    */
   function createWebSocket(): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
-      const socket = new WebSocket('ws://localhost:3030/ws');
+      const socket = new WebSocket(buildWsUrl());
       receivedMessages.length = 0; // Clear previous messages
 
       socket.onopen = () => {
@@ -46,7 +52,11 @@ describe('MSW WebSocket Infrastructure', () => {
           const message: ServerMessage = JSON.parse(event.data);
           receivedMessages.push(message);
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', event.data, error);
+          console.error(
+            'Failed to parse WebSocket message:',
+            event.data,
+            error
+          );
         }
       };
 
@@ -87,7 +97,20 @@ describe('MSW WebSocket Infrastructure', () => {
     );
   }
 
+  let mswWebSocket: typeof WebSocket;
+  beforeAll(() => {
+    // Runs after setup.ts's beforeAll(server.listen), which patches WebSocket
+    mswWebSocket = globalThis.WebSocket;
+  });
+
   beforeEach(async () => {
+    // The global setup.ts beforeEach installs jest-websocket-mock (mock-socket
+    // replaces globalThis.WebSocket). This suite exercises MSW's WebSocket
+    // interception instead, so put MSW's patched WebSocket back.
+    cleanupMockWebSocket();
+    globalThis.WebSocket = mswWebSocket;
+    // server.ts registers HTTP handlers only; opt in to the WS handlers here.
+    server.use(...createWebSocketHandlers());
     // Reset WebSocket state before each test
     resetWebSocketState();
     receivedMessages.length = 0;
@@ -106,7 +129,9 @@ describe('MSW WebSocket Infrastructure', () => {
       expect(socket.readyState).toBe(WebSocket.OPEN);
 
       // Should receive connected handshake message
-      const connectedMsg = await waitForMessage((msg) => msg.type === 'connected');
+      const connectedMsg = await waitForMessage(
+        (msg) => msg.type === 'connected'
+      );
       expect(connectedMsg).toMatchObject({
         type: 'connected',
         version: '1.0.0',
@@ -117,7 +142,7 @@ describe('MSW WebSocket Infrastructure', () => {
     it('should handle multiple concurrent connections', async () => {
       // Create two connections with message listeners set up before connection
       const receivedMessages1: ServerMessage[] = [];
-      const socket1 = new WebSocket('ws://localhost:3030/ws');
+      const socket1 = new WebSocket(buildWsUrl());
       socket1.onmessage = (event) => {
         receivedMessages1.push(JSON.parse(event.data));
       };
@@ -127,7 +152,7 @@ describe('MSW WebSocket Infrastructure', () => {
       });
 
       const receivedMessages2: ServerMessage[] = [];
-      const socket2 = new WebSocket('ws://localhost:3030/ws');
+      const socket2 = new WebSocket(buildWsUrl());
       socket2.onmessage = (event) => {
         receivedMessages2.push(JSON.parse(event.data));
       };
@@ -142,8 +167,12 @@ describe('MSW WebSocket Infrastructure', () => {
 
       // Wait for connected messages
       await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(receivedMessages1.some((msg) => msg.type === 'connected')).toBe(true);
-      expect(receivedMessages2.some((msg) => msg.type === 'connected')).toBe(true);
+      expect(receivedMessages1.some((msg) => msg.type === 'connected')).toBe(
+        true
+      );
+      expect(receivedMessages2.some((msg) => msg.type === 'connected')).toBe(
+        true
+      );
 
       // Clean up
       socket1.close();
@@ -224,7 +253,9 @@ describe('MSW WebSocket Infrastructure', () => {
         channel: 'daemon-state',
       };
       socket.send(JSON.stringify(subscribeState));
-      await waitForMessage((msg) => msg.type === 'response' && msg.id === 'sub-state');
+      await waitForMessage(
+        (msg) => msg.type === 'response' && msg.id === 'sub-state'
+      );
 
       // Subscribe to latency
       const subscribeLatency: ClientMessage = {
@@ -233,7 +264,9 @@ describe('MSW WebSocket Infrastructure', () => {
         channel: 'latency',
       };
       socket.send(JSON.stringify(subscribeLatency));
-      await waitForMessage((msg) => msg.type === 'response' && msg.id === 'sub-latency');
+      await waitForMessage(
+        (msg) => msg.type === 'response' && msg.id === 'sub-latency'
+      );
 
       // Subscribe to events
       const subscribeEvents: ClientMessage = {
@@ -242,7 +275,9 @@ describe('MSW WebSocket Infrastructure', () => {
         channel: 'events',
       };
       socket.send(JSON.stringify(subscribeEvents));
-      await waitForMessage((msg) => msg.type === 'response' && msg.id === 'sub-events');
+      await waitForMessage(
+        (msg) => msg.type === 'response' && msg.id === 'sub-events'
+      );
 
       // Clear received messages (keep only new events)
       receivedMessages.length = 0;
@@ -329,7 +364,7 @@ describe('MSW WebSocket Infrastructure', () => {
 
     it('should broadcast to multiple subscribed connections', async () => {
       // Create second connection and subscribe
-      const socket2 = new WebSocket('ws://localhost:3030/ws');
+      const socket2 = new WebSocket(buildWsUrl());
       const receivedMessages2: ServerMessage[] = [];
       await new Promise((resolve, reject) => {
         socket2.onopen = resolve;
@@ -437,7 +472,9 @@ describe('MSW WebSocket Infrastructure', () => {
         channel: 'daemon-state',
       };
       socket.send(JSON.stringify(subscribeMsg));
-      await waitForMessage((msg) => msg.type === 'response' && msg.id === 'sub-isolation');
+      await waitForMessage(
+        (msg) => msg.type === 'response' && msg.id === 'sub-isolation'
+      );
 
       // Clear messages and broadcast
       receivedMessages.length = 0;
@@ -457,32 +494,37 @@ describe('MSW WebSocket Infrastructure', () => {
   describe('Custom Handler Overrides', () => {
     it('should allow overriding handlers with server.use()', async () => {
       // Override WebSocket handler with custom behavior
-      const customHandler = ws.link('ws://localhost:3030/ws').addEventListener('connection', ({ client }) => {
-        // Send custom connected message
-        const customMessage: ServerMessage = {
-          type: 'connected',
-          version: '2.0.0-custom',
-          timestamp: Date.now() * 1000,
-        };
-        client.send(JSON.stringify(customMessage));
+      const customHandler = ws
+        .link(buildWsUrl())
+        .addEventListener('connection', ({ client }) => {
+          // Send custom connected message
+          const customMessage: ServerMessage = {
+            type: 'connected',
+            version: '2.0.0-custom',
+            timestamp: Date.now() * 1000,
+          };
+          client.send(JSON.stringify(customMessage));
 
-        // Handle custom message behavior
-        client.addEventListener('message', (event: MessageEvent) => {
-          try {
-            const message: ClientMessage = JSON.parse(event.data);
-            if (message.type === 'query' && message.method === 'get_active_profile') {
-              const response: ServerMessage = {
-                type: 'response',
-                id: message.id,
-                result: { activeProfile: 'custom-override-profile' },
-              };
-              client.send(JSON.stringify(response));
+          // Handle custom message behavior
+          client.addEventListener('message', (event: MessageEvent) => {
+            try {
+              const message: ClientMessage = JSON.parse(event.data);
+              if (
+                message.type === 'query' &&
+                message.method === 'get_active_profile'
+              ) {
+                const response: ServerMessage = {
+                  type: 'response',
+                  id: message.id,
+                  result: { activeProfile: 'custom-override-profile' },
+                };
+                client.send(JSON.stringify(response));
+              }
+            } catch (error) {
+              // Ignore parse errors
             }
-          } catch (error) {
-            // Ignore parse errors
-          }
+          });
         });
-      });
 
       // Use custom handler
       server.use(customHandler);
@@ -491,7 +533,9 @@ describe('MSW WebSocket Infrastructure', () => {
         const socket = await createWebSocket();
 
         // Should receive custom connected message
-        const connectedMsg = await waitForMessage((msg) => msg.type === 'connected');
+        const connectedMsg = await waitForMessage(
+          (msg) => msg.type === 'connected'
+        );
         expect(connectedMsg.version).toBe('2.0.0-custom');
 
         // Query should return custom result
@@ -506,7 +550,9 @@ describe('MSW WebSocket Infrastructure', () => {
         const response = await waitForMessage(
           (msg) => msg.type === 'response' && msg.id === 'custom-query'
         );
-        expect((response.result as any).activeProfile).toBe('custom-override-profile');
+        expect((response.result as any).activeProfile).toBe(
+          'custom-override-profile'
+        );
       } finally {
         // Reset handlers after test
         server.resetHandlers();
@@ -518,7 +564,9 @@ describe('MSW WebSocket Infrastructure', () => {
       const socket = await createWebSocket();
 
       // Should receive default connected message (not custom)
-      const connectedMsg = await waitForMessage((msg) => msg.type === 'connected');
+      const connectedMsg = await waitForMessage(
+        (msg) => msg.type === 'connected'
+      );
       expect(connectedMsg.version).toBe('1.0.0'); // Default version
 
       // Query should return default result
@@ -600,7 +648,7 @@ describe('MSW WebSocket Infrastructure', () => {
   describe('Helper Utility Functions', () => {
     it('should provide waitForWebSocketConnection() utility', async () => {
       // Create connection in background
-      const socket = new WebSocket('ws://localhost:3030/ws');
+      const socket = new WebSocket(buildWsUrl());
       socket.onmessage = (event) => {
         receivedMessages.push(JSON.parse(event.data));
       };

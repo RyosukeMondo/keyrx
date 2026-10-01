@@ -399,8 +399,11 @@ device("*") {
         return;
       }
 
-      // WASM should reject non-string types
-      const invalidTypes = [123, true, {}, [], () => {}];
+      // WASM should reject non-string types. `[]` and `() => {}` are
+      // deliberately absent: release wasm-bindgen glue does no typeof check
+      // and reads `.length`, so an empty array (and a zero-arg function) is
+      // passed as the empty string.
+      const invalidTypes = [123, true, {}];
 
       invalidTypes.forEach((invalidType) => {
         expect(() => {

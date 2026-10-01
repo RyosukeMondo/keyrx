@@ -50,9 +50,13 @@ export const API_BASE_URL =
  * 3. Development: ws://localhost:9867/ws-rpc
  */
 export const WS_BASE_URL =
-  import.meta.env.VITE_WS_URL ??
+  // `||` not `??`: an empty VITE_WS_URL (.env.production, .env.test) means
+  // "unset", matching env.getWsUrl(); a relative value is not a valid
+  // WebSocket URL.
+  import.meta.env.VITE_WS_URL ||
   (import.meta.env.PROD
-    ? `ws://${window.location.host}/ws-rpc` // Production: same host as UI
+    ? // Production: same host as UI, matching the page's scheme (wss on https)
+      `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws-rpc`
     : `ws://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}/ws-rpc`);
 
 // ============================================================================
