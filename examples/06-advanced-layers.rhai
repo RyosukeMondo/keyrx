@@ -42,19 +42,19 @@ device_start("*");
 // ============================================================================
 
 // CapsLock as dual-function: tap=Escape, hold=Nav layer
-tap_hold("VK_CapsLock", "VK_Escape", "MD_00", 200);
+tap_hold("CapsLock", "VK_Escape", "MD_00", 200);
 
 // Space as dual-function: tap=Space, hold=Symbol layer
-tap_hold("VK_Space", "VK_Space", "MD_01", 200);
+tap_hold("Space", "VK_Space", "MD_01", 200);
 
 // Enter as dual-function: tap=Enter, hold=Number layer
-tap_hold("VK_Enter", "VK_Enter", "MD_02", 150);
+tap_hold("Enter", "VK_Enter", "MD_02", 150);
 
 // Tab as dual-function: tap=Tab, hold=Function layer
-tap_hold("VK_Tab", "VK_Tab", "MD_03", 200);
+tap_hold("Tab", "VK_Tab", "MD_03", 200);
 
 // ScrollLock toggles Gaming mode (lock LK_00)
-map("VK_ScrollLock", "LK_00");
+map("ScrollLock", "LK_00");
 
 
 // ============================================================================
@@ -63,30 +63,30 @@ map("VK_ScrollLock", "LK_00");
 
 when_start("MD_00");
   // === Arrow keys on HJKL (Vim-style) ===
-  map("VK_H", "VK_Left");
-  map("VK_J", "VK_Down");
-  map("VK_K", "VK_Up");
-  map("VK_L", "VK_Right");
+  map("H", "VK_Left");
+  map("J", "VK_Down");
+  map("K", "VK_Up");
+  map("L", "VK_Right");
 
   // === Page navigation ===
-  map("VK_U", "VK_PageUp");      // U = up (page)
-  map("VK_D", "VK_PageDown");    // D = down (page)
+  map("U", "VK_PageUp");      // U = up (page)
+  map("D", "VK_PageDown");    // D = down (page)
 
   // === Line navigation ===
-  map("VK_I", "VK_Home");        // I = inside (line start)
-  map("VK_A", "VK_End");         // A = append (line end)
+  map("I", "VK_Home");        // I = inside (line start)
+  map("A", "VK_End");         // A = append (line end)
 
   // === Word navigation (Ctrl+Arrow) ===
-  map("VK_W", with_ctrl("VK_Right"));   // W = word forward
-  map("VK_B", with_ctrl("VK_Left"));    // B = back word
+  map("W", with_ctrl("VK_Right"));   // W = word forward
+  map("B", with_ctrl("VK_Left"));    // B = back word
 
   // === Deletion ===
-  map("VK_X", "VK_Delete");      // X = delete char
-  map("VK_Backspace", with_ctrl("VK_Backspace"));  // Delete word
+  map("X", "VK_Delete");      // X = delete char
+  map("Backspace", with_ctrl("VK_Backspace"));  // Delete word
 
   // === Selection (Shift+Arrow) ===
-  map("VK_Semicolon", with_shift("VK_Left"));  // Select left
-  map("VK_Quote", with_shift("VK_Right")); // Select right
+  map("Semicolon", with_shift("VK_Left"));  // Select left
+  map("Quote", with_shift("VK_Right")); // Select right
 when_end();
 
 
@@ -96,26 +96,26 @@ when_end();
 
 when_start("MD_01");
   // === Brackets on home row ===
-  map("VK_H", with_shift("VK_Num9"));           // H = (
-  map("VK_J", "VK_LeftBracket");             // J = [
-  map("VK_K", with_shift("VK_LeftBracket")); // K = {
-  map("VK_L", with_shift("VK_RightBracket"));// L = }
-  map("VK_Semicolon", "VK_RightBracket");    // ; = ]
-  map("VK_Quote", with_shift("VK_Num0"));  // ' = )
+  map("H", with_shift("VK_Num9"));           // H = (
+  map("J", "VK_LeftBracket");             // J = [
+  map("K", with_shift("VK_LeftBracket")); // K = {
+  map("L", with_shift("VK_RightBracket"));// L = }
+  map("Semicolon", "VK_RightBracket");    // ; = ]
+  map("Quote", with_shift("VK_Num0"));  // ' = )
 
   // === Common operators ===
-  map("VK_Y", with_shift("VK_Equal"));   // Y = +
-  map("VK_U", "VK_Minus");                // U = -
-  map("VK_I", with_shift("VK_Num8"));        // I = *
-  map("VK_O", "VK_Slash");                // O = /
-  map("VK_P", "VK_Equal");                // P = =
+  map("Y", with_shift("VK_Equal"));   // Y = +
+  map("U", "VK_Minus");                // U = -
+  map("I", with_shift("VK_Num8"));        // I = *
+  map("O", "VK_Slash");                // O = /
+  map("P", "VK_Equal");                // P = =
 
   // === Other symbols ===
-  map("VK_N", with_shift("VK_Num1"));        // N = !
-  map("VK_M", with_shift("VK_Num2"));        // M = @
-  map("VK_Comma", with_shift("VK_Num3"));    // , = #
-  map("VK_Period", with_shift("VK_Num4"));   // . = $
-  map("VK_Slash", with_shift("VK_Num5"));    // / = %
+  map("N", with_shift("VK_Num1"));        // N = !
+  map("M", with_shift("VK_Num2"));        // M = @
+  map("Comma", with_shift("VK_Num3"));    // , = #
+  map("Period", with_shift("VK_Num4"));   // . = $
+  map("Slash", with_shift("VK_Num5"));    // / = %
 when_end();
 
 
@@ -125,23 +125,23 @@ when_end();
 
 when_start("MD_02");
   // === Numbers 1-9-0 ===
-  map("VK_M", "VK_Num1");
-  map("VK_Comma", "VK_Num2");
-  map("VK_Period", "VK_Num3");
-  map("VK_J", "VK_Num4");
-  map("VK_K", "VK_Num5");
-  map("VK_L", "VK_Num6");
-  map("VK_U", "VK_Num7");
-  map("VK_I", "VK_Num8");
-  map("VK_O", "VK_Num9");
-  map("VK_N", "VK_Num0");
+  map("M", "VK_Num1");
+  map("Comma", "VK_Num2");
+  map("Period", "VK_Num3");
+  map("J", "VK_Num4");
+  map("K", "VK_Num5");
+  map("L", "VK_Num6");
+  map("U", "VK_Num7");
+  map("I", "VK_Num8");
+  map("O", "VK_Num9");
+  map("N", "VK_Num0");
 
   // === Operators ===
-  map("VK_H", "VK_Minus");          // H = -
-  map("VK_Semicolon", with_shift("VK_Equal")); // ; = +
-  map("VK_Quote", "VK_Equal");            // ' = =
-  map("VK_Slash", "VK_Slash");                 // / = /
-  map("VK_P", with_shift("VK_Num8"));             // P = *
+  map("H", "VK_Minus");          // H = -
+  map("Semicolon", with_shift("VK_Equal")); // ; = +
+  map("Quote", "VK_Equal");            // ' = =
+  map("Slash", "VK_Slash");                 // / = /
+  map("P", with_shift("VK_Num8"));             // P = *
 when_end();
 
 
@@ -151,26 +151,26 @@ when_end();
 
 when_start("MD_03");
   // === F-keys on number row ===
-  map("VK_Num1", "VK_F1");
-  map("VK_Num2", "VK_F2");
-  map("VK_Num3", "VK_F3");
-  map("VK_Num4", "VK_F4");
-  map("VK_Num5", "VK_F5");
-  map("VK_Num6", "VK_F6");
-  map("VK_Num7", "VK_F7");
-  map("VK_Num8", "VK_F8");
-  map("VK_Num9", "VK_F9");
-  map("VK_Num0", "VK_F10");
-  map("VK_Minus", "VK_F11");
-  map("VK_Equal", "VK_F12");
+  map("Num1", "VK_F1");
+  map("Num2", "VK_F2");
+  map("Num3", "VK_F3");
+  map("Num4", "VK_F4");
+  map("Num5", "VK_F5");
+  map("Num6", "VK_F6");
+  map("Num7", "VK_F7");
+  map("Num8", "VK_F8");
+  map("Num9", "VK_F9");
+  map("Num0", "VK_F10");
+  map("Minus", "VK_F11");
+  map("Equal", "VK_F12");
 
   // === Media controls on HJKL ===
-  map("VK_H", "VK_MediaPrevious");  // H = previous track
-  map("VK_J", "VK_VolumeDown");      // J = volume down
-  map("VK_K", "VK_VolumeUp");        // K = volume up
-  map("VK_L", "VK_MediaNext");  // L = next track
-  map("VK_Space", "VK_MediaPlayPause"); // Space = play/pause
-  map("VK_M", "VK_Mute");      // M = mute
+  map("H", "VK_MediaPrevious");  // H = previous track
+  map("J", "VK_VolumeDown");      // J = volume down
+  map("K", "VK_VolumeUp");        // K = volume up
+  map("L", "VK_MediaNext");  // L = next track
+  map("Space", "VK_MediaPlayPause"); // Space = play/pause
+  map("M", "VK_Mute");      // M = mute
 when_end();
 
 
@@ -186,23 +186,23 @@ when_start("LK_00");
   // These override the base layer tap_hold mappings
 
   // CapsLock = instant Ctrl (for crouch/sprint)
-  map("VK_CapsLock", with_ctrl("VK_CapsLock"));
+  map("CapsLock", with_ctrl("VK_CapsLock"));
 
   // Space = instant Space (for jump)
-  map("VK_Space", "VK_Space");
+  map("Space", "VK_Space");
 
   // === Quick access macros ===
   // Q = quick save (F5 in many games)
-  map("VK_Q", "VK_F5");
+  map("Q", "VK_F5");
 
   // E = quick load (F9 in many games)
-  map("VK_E", "VK_F9");
+  map("E", "VK_F9");
 
   // === Number keys as function keys (weapon switching) ===
-  map("VK_Num1", "VK_F1");
-  map("VK_Num2", "VK_F2");
-  map("VK_Num3", "VK_F3");
-  map("VK_Num4", "VK_F4");
+  map("Num1", "VK_F1");
+  map("Num2", "VK_F2");
+  map("Num3", "VK_F3");
+  map("Num4", "VK_F4");
 when_end();
 
 
@@ -214,11 +214,11 @@ when_end();
 
 when_start(["MD_00", "MD_01"]);
   // Text manipulation shortcuts (Ctrl+Shift+Arrow for word selection)
-  map("VK_W", with_mods("VK_Right", true, true, false, false));  // Select word right
-  map("VK_B", with_mods("VK_Left", true, true, false, false));   // Select word left
+  map("W", with_mods("VK_Right", true, true, false, false));  // Select word right
+  map("B", with_mods("VK_Left", true, true, false, false));   // Select word left
 
   // Line manipulation (Ctrl+Shift+K = delete line in many editors)
-  map("VK_X", with_mods("VK_K", false, true, false, false));
+  map("X", with_mods("VK_K", false, true, false, false));
 when_end();
 
 device_end();

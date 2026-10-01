@@ -20,7 +20,12 @@
 //
 // The tap_hold() function creates dual-function keys with timing-based behavior:
 //
-//   tap_hold(physical_key, tap_output, hold_modifier, threshold_ms)
+//   tap_hold(physical_key, tap_output, hold, threshold_ms)
+//
+//   hold is either MD_xx (a custom modifier / layer, see below) or a real
+//   key "VK_LCtrl" / "VK_LShift" / "VK_LAlt" / "VK_LMeta" (and R variants),
+//   which is pressed for as long as the key is held:
+//     tap_hold("CapsLock", "VK_Escape", "VK_LCtrl", 200);   // Esc / Ctrl
 //
 // State Machine:
 //   1. IDLE: Key not pressed
@@ -39,7 +44,7 @@
 //
 // Timing:
 //   - threshold_ms: Time in milliseconds to distinguish tap from hold
-//   - Default: 200ms (if not specified)
+//   - threshold_ms is required (200 is a good start)
 //   - Recommended range: 150-250ms depending on typing speed
 //   - Too low (< 100ms): Hard to trigger taps, accidental holds
 //   - Too high (> 300ms): Typing feels sluggish, delays on taps
@@ -60,7 +65,7 @@ device_start("*");
 //   - Easy to reach with pinky finger
 //   - Natural position for a modifier key
 //
-tap_hold("VK_CapsLock", "VK_Escape", "MD_01", 200);
+tap_hold("CapsLock", "VK_Escape", "MD_01", 200);
 
 // When MD_01 (CapsLock held) is active, enable common Ctrl shortcuts
 // These mappings only activate when CapsLock is held past threshold
@@ -68,18 +73,18 @@ tap_hold("VK_CapsLock", "VK_Escape", "MD_01", 200);
 when_start("MD_01");
   // Common Ctrl shortcuts - output with physical Ctrl modifier
   // Example: Hold CapsLock + press C → Ctrl+C (copy)
-  map("VK_C", with_ctrl("VK_C"));  // Ctrl+C (copy)
-  map("VK_V", with_ctrl("VK_V"));  // Ctrl+V (paste)
-  map("VK_X", with_ctrl("VK_X"));  // Ctrl+X (cut)
-  map("VK_Z", with_ctrl("VK_Z"));  // Ctrl+Z (undo)
-  map("VK_Y", with_ctrl("VK_Y"));  // Ctrl+Y (redo)
-  map("VK_F", with_ctrl("VK_F"));  // Ctrl+F (find)
-  map("VK_S", with_ctrl("VK_S"));  // Ctrl+S (save)
-  map("VK_A", with_ctrl("VK_A"));  // Ctrl+A (select all)
-  map("VK_T", with_ctrl("VK_T"));  // Ctrl+T (new tab)
-  map("VK_W", with_ctrl("VK_W"));  // Ctrl+W (close tab)
-  map("VK_N", with_ctrl("VK_N"));  // Ctrl+N (new)
-  map("VK_P", with_ctrl("VK_P"));  // Ctrl+P (print)
+  map("C", with_ctrl("VK_C"));  // Ctrl+C (copy)
+  map("V", with_ctrl("VK_V"));  // Ctrl+V (paste)
+  map("X", with_ctrl("VK_X"));  // Ctrl+X (cut)
+  map("Z", with_ctrl("VK_Z"));  // Ctrl+Z (undo)
+  map("Y", with_ctrl("VK_Y"));  // Ctrl+Y (redo)
+  map("F", with_ctrl("VK_F"));  // Ctrl+F (find)
+  map("S", with_ctrl("VK_S"));  // Ctrl+S (save)
+  map("A", with_ctrl("VK_A"));  // Ctrl+A (select all)
+  map("T", with_ctrl("VK_T"));  // Ctrl+T (new tab)
+  map("W", with_ctrl("VK_W"));  // Ctrl+W (close tab)
+  map("N", with_ctrl("VK_N"));  // Ctrl+N (new)
+  map("P", with_ctrl("VK_P"));  // Ctrl+P (print)
 when_end();
 
 
@@ -95,7 +100,7 @@ when_end();
 //   - MD_00 applies to H: H becomes Left arrow, without waiting
 //   - Rolling Space into the next letter (Space up first) types " h"
 //
-tap_hold("VK_Space", "VK_Space", "MD_00", 200);
+tap_hold("Space", "VK_Space", "MD_00", 200);
 
 // When holding Space (MD_00), activate Vim-style navigation
 // The modifier is activated either by:
@@ -103,22 +108,22 @@ tap_hold("VK_Space", "VK_Space", "MD_00", 200);
 //   2. Tapping another key while Space is held (Permissive Hold)
 when_start("MD_00");
   // Arrow keys on HJKL (Vim-style)
-  map("VK_H", "VK_Left");   // H → Left
-  map("VK_J", "VK_Down");   // J → Down
-  map("VK_K", "VK_Up");     // K → Up
-  map("VK_L", "VK_Right");  // L → Right
+  map("H", "VK_Left");   // H → Left
+  map("J", "VK_Down");   // J → Down
+  map("K", "VK_Up");     // K → Up
+  map("L", "VK_Right");  // L → Right
 
   // Page navigation
-  map("VK_U", "VK_PageUp");    // U → Page Up
-  map("VK_D", "VK_PageDown");  // D → Page Down
+  map("U", "VK_PageUp");    // U → Page Up
+  map("D", "VK_PageDown");  // D → Page Down
 
   // Line navigation
-  map("VK_I", "VK_Home");      // I → Home (start of line)
-  map("VK_A", "VK_End");       // A → End (end of line)
+  map("I", "VK_Home");      // I → Home (start of line)
+  map("A", "VK_End");       // A → End (end of line)
 
   // Word navigation (Ctrl+Arrow)
-  map("VK_W", with_ctrl("VK_Right"));  // W → word forward
-  map("VK_B", with_ctrl("VK_Left"));   // B → back word
+  map("W", with_ctrl("VK_Right"));  // W → word forward
+  map("B", with_ctrl("VK_Left"));   // B → back word
 when_end();
 
 
@@ -132,24 +137,24 @@ when_end();
 // Note: Using 150ms (faster threshold) because Enter is frequently tapped
 // during normal typing. Adjust based on your typing speed.
 //
-tap_hold("VK_Enter", "VK_Enter", "MD_02", 150);
+tap_hold("Enter", "VK_Enter", "MD_02", 150);
 
 // When MD_02 (Enter held) is active, keys output with Shift
 when_start("MD_02");
   // Letters become uppercase
-  map("VK_A", with_shift("VK_A"));
-  map("VK_B", with_shift("VK_B"));
-  map("VK_C", with_shift("VK_C"));
-  map("VK_D", with_shift("VK_D"));
-  map("VK_E", with_shift("VK_E"));
+  map("A", with_shift("VK_A"));
+  map("B", with_shift("VK_B"));
+  map("C", with_shift("VK_C"));
+  map("D", with_shift("VK_D"));
+  map("E", with_shift("VK_E"));
   // ... add more letters as needed
 
   // Numbers become symbols
-  map("VK_Num1", with_shift("VK_Num1"));  // 1 → !
-  map("VK_Num2", with_shift("VK_Num2"));  // 2 → @
-  map("VK_Num3", with_shift("VK_Num3"));  // 3 → #
-  map("VK_Num4", with_shift("VK_Num4"));  // 4 → $
-  map("VK_Num5", with_shift("VK_Num5"));  // 5 → %
+  map("Num1", with_shift("VK_Num1"));  // 1 → !
+  map("Num2", with_shift("VK_Num2"));  // 2 → @
+  map("Num3", with_shift("VK_Num3"));  // 3 → #
+  map("Num4", with_shift("VK_Num4"));  // 4 → $
+  map("Num5", with_shift("VK_Num5"));  // 5 → %
   // ... add more as needed
 when_end();
 
@@ -176,9 +181,9 @@ when_end();
 when_start(["MD_00", "MD_01"]);
   // Text manipulation shortcuts
   // Hold Space + CapsLock + W → Select word right (Ctrl+Shift+Right)
-  map("VK_W", with_mods("VK_Right", true, true, false, false));
+  map("W", with_mods("VK_Right", true, true, false, false));
   // Hold Space + CapsLock + B → Select word left (Ctrl+Shift+Left)
-  map("VK_B", with_mods("VK_Left", true, true, false, false));
+  map("B", with_mods("VK_Left", true, true, false, false));
 when_end();
 
 
@@ -190,23 +195,23 @@ when_end();
 //
 when_start("MD_00");
   // When Space is held, Tab becomes: tap=Tab, hold=MD_03 (Function layer)
-  tap_hold("VK_Tab", "VK_Tab", "MD_03", 200);
+  tap_hold("Tab", "VK_Tab", "MD_03", 200);
 when_end();
 
 // MD_03 provides Function keys (only accessible when Space is held first)
 when_start("MD_03");
-  map("VK_Num1", "VK_F1");
-  map("VK_Num2", "VK_F2");
-  map("VK_Num3", "VK_F3");
-  map("VK_Num4", "VK_F4");
-  map("VK_Num5", "VK_F5");
-  map("VK_Num6", "VK_F6");
-  map("VK_Num7", "VK_F7");
-  map("VK_Num8", "VK_F8");
-  map("VK_Num9", "VK_F9");
-  map("VK_Num0", "VK_F10");
-  map("VK_Minus", "VK_F11");
-  map("VK_Equal", "VK_F12");
+  map("Num1", "VK_F1");
+  map("Num2", "VK_F2");
+  map("Num3", "VK_F3");
+  map("Num4", "VK_F4");
+  map("Num5", "VK_F5");
+  map("Num6", "VK_F6");
+  map("Num7", "VK_F7");
+  map("Num8", "VK_F8");
+  map("Num9", "VK_F9");
+  map("Num0", "VK_F10");
+  map("Minus", "VK_F11");
+  map("Equal", "VK_F12");
 when_end();
 
 
@@ -220,10 +225,11 @@ device_end();
 //   tap_hold(key, tap_action, hold_action, threshold_ms)
 //
 // Parameters:
-//   - key: Physical key to modify (with VK_ prefix)
+//   - key: Physical key to modify (bare name, e.g. "CapsLock")
 //   - tap_action: VK_ key to output on quick release
-//   - hold_action: MD_ modifier to activate when held
-//   - threshold_ms: Time in ms to distinguish tap from hold (default: 200)
+//   - hold_action: MD_xx custom modifier (layer) OR a VK_ key such as
+//     VK_LCtrl that is held down while the physical key is held
+//   - threshold_ms: Time in ms to distinguish tap from hold (required)
 //
 // State Transitions:
 //   IDLE → PENDING (on key press)
@@ -278,12 +284,11 @@ device_end();
 // LIMITATIONS
 // ============================================================================
 //
-// - tap_action must be a VK_ key (cannot be a modifier)
-// - hold_action must be a MD_ modifier (cannot be a key or LK_ lock)
-// - You need to map the modifier to actual keys with when_start()
+// - tap_action must be a VK_ key (not MD_/LK_)
+// - hold_action must be MD_xx or a VK_ key (not LK_ locks)
+// - An MD_ hold needs mappings under when_start("MD_xx") to be useful
 // - Maximum 32 concurrent tap-hold keys tracked
-// - Minimum threshold: 50ms (rejected if lower)
-// - Maximum threshold: 1000ms (warning if higher)
+// - threshold_ms is not range-checked; 100-300ms is sensible
 //
 // ============================================================================
 // SEE ALSO
@@ -291,6 +296,6 @@ device_end();
 //
 // - Example 03: Vim-style navigation (simpler modifier layer)
 // - Example 06: Advanced multi-layer setup with tap-hold
-// - docs/DSL_MANUAL.md: Complete tap_hold() reference
+// - docs/user-guide/dsl-manual.md: Complete tap_hold() reference
 //
 // ============================================================================

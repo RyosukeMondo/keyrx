@@ -29,21 +29,25 @@
 device_start("*");
 
   // Basic remapping: map physical key to virtual key
-  // Format: map("VK_<source>", "VK_<target>")
-  map("VK_A", "VK_B");  // Press A, get B
+  // Format: map("<source>", "VK_<target>")
+  map("A", "VK_B");  // Press A, get B
 
   // You can remap any key to any other key
-  map("VK_Q", "VK_W");  // Press Q, get W
+  map("Q", "VK_W");  // Press Q, get W
 
   // Number keys work the same way
-  map("VK_Num1", "VK_Num2");  // Press 1, get 2
+  map("Num1", "VK_Num2");  // Press 1, get 2
 
 device_end();
 
 // ============================================================================
 // NOTES:
-// - All key names must start with "VK_" prefix (Virtual Key)
-// - Key names are case-sensitive (VK_A not vk_a)
-// - See DSL_MANUAL.md for complete list of key names
+// - Key naming rule: the key you PRESS (first argument) is a bare name
+//   ("A", "CapsLock"); the key that is OUTPUT (second argument) needs the
+//   "VK_" prefix ("VK_B"). A "VK_" on the first argument is accepted and
+//   means the same key, but the bare form is the convention.
+// - Key names are case-sensitive ("CapsLock", not "capslock")
+// - Mapping the same key twice in one scope is a compile error
+// - See docs/user-guide/dsl-manual.md for the complete list of key names
 // - Simple remapping is unidirectional: A→B doesn't affect B
 // ============================================================================

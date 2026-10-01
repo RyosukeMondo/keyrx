@@ -28,7 +28,7 @@
 device_start("*");
 
   // Simple approach: CapsLock becomes Escape
-  map("VK_CapsLock", "VK_Escape");
+  map("CapsLock", "VK_Escape");
 
   // Optional: If you still need CapsLock occasionally, you can use a modifier
   // Note: This requires using a custom modifier layer (see example 03)
@@ -44,9 +44,12 @@ device_end();
 // - This is one of the most popular keyboard customizations
 //
 // VARIATIONS:
-// - CapsLock → Ctrl (another popular choice)
+// - CapsLock → Ctrl (another popular choice): map("CapsLock", "VK_LCtrl");
 // - CapsLock → Backspace (for easier deletion)
-// - CapsLock → dual-function (tap=Escape, hold=Ctrl) - see example 04
+// - CapsLock → dual-function, tap=Escape / hold=real Ctrl (replace the map
+//   line above with this one):
+//     tap_hold("CapsLock", "VK_Escape", "VK_LCtrl", 200);
+//   Hold CapsLock + C types Ctrl+C; a quick tap types Escape.
 //
 // SEE ALSO:
 // - Example 04 for dual-function CapsLock (tap/hold)

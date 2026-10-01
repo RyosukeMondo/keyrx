@@ -33,23 +33,23 @@ device_start("*");
 
   // STEP 1: Make CapsLock a custom modifier (MD_00)
   // When you press CapsLock, it activates modifier 00 but doesn't output anything
-  map("VK_CapsLock", "MD_00");
+  map("CapsLock", "MD_00");
 
   // STEP 2: When modifier MD_00 is active, remap HJKL to arrow keys
   // The when() function creates conditional mappings that only work when the modifier is pressed
   when_start("MD_00");
-    map("VK_H", "VK_Left");   // H → Left arrow
-    map("VK_J", "VK_Down");   // J → Down arrow
-    map("VK_K", "VK_Up");     // K → Up arrow
-    map("VK_L", "VK_Right");  // L → Right arrow
+    map("H", "VK_Left");   // H → Left arrow
+    map("J", "VK_Down");   // J → Down arrow
+    map("K", "VK_Up");     // K → Up arrow
+    map("L", "VK_Right");  // L → Right arrow
   when_end();
 
   // OPTIONAL: Add more navigation keys
   when_start("MD_00");
-    map("VK_U", "VK_PageUp");    // U → Page Up
-    map("VK_D", "VK_PageDown");  // D → Page Down
-    map("VK_I", "VK_Home");      // I → Home
-    map("VK_A", "VK_End");       // A → End
+    map("U", "VK_PageUp");    // U → Page Up
+    map("D", "VK_PageDown");  // D → Page Down
+    map("I", "VK_Home");      // I → Home
+    map("A", "VK_End");       // A → End
   when_end();
 
 device_end();

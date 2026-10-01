@@ -34,10 +34,10 @@ device_start("*Laptop*Keyboard*");
 
   // Minimal changes for laptop - just the essentials
   // CapsLock → Escape (universal improvement)
-  map("VK_CapsLock", "VK_Escape");
+  map("CapsLock", "VK_Escape");
 
   // Right Alt → Backspace (laptop backspace is far)
-  map("VK_RAlt", "VK_Backspace");
+  map("RAlt", "VK_Backspace");
 
 device_end();
 
@@ -48,57 +48,57 @@ device_end();
 device_start("*Keychron*");
 
   // LAYER 1: CapsLock as dual-function (tap=Esc, hold=Vim layer)
-  tap_hold("VK_CapsLock", "VK_Escape", "MD_00", 200);
+  tap_hold("CapsLock", "VK_Escape", "MD_00", 200);
 
   // LAYER 2: Space as dual-function (tap=Space, hold=symbol layer)
-  tap_hold("VK_Space", "VK_Space", "MD_01", 200);
+  tap_hold("Space", "VK_Space", "MD_01", 200);
 
   // LAYER 3: Enter as dual-function (tap=Enter, hold=number layer)
-  tap_hold("VK_Enter", "VK_Enter", "MD_02", 200);
+  tap_hold("Enter", "VK_Enter", "MD_02", 200);
 
   // Vim navigation layer (MD_00 = hold CapsLock)
   when_start("MD_00");
     // HJKL navigation
-    map("VK_H", "VK_Left");
-    map("VK_J", "VK_Down");
-    map("VK_K", "VK_Up");
-    map("VK_L", "VK_Right");
+    map("H", "VK_Left");
+    map("J", "VK_Down");
+    map("K", "VK_Up");
+    map("L", "VK_Right");
 
     // Extended navigation
-    map("VK_U", "VK_PageUp");
-    map("VK_D", "VK_PageDown");
-    map("VK_I", "VK_Home");
-    map("VK_A", "VK_End");
+    map("U", "VK_PageUp");
+    map("D", "VK_PageDown");
+    map("I", "VK_Home");
+    map("A", "VK_End");
 
     // Word movement (Ctrl+Arrow)
-    map("VK_W", with_ctrl("VK_Right"));   // Next word
-    map("VK_B", with_ctrl("VK_Left"));    // Previous word
+    map("W", with_ctrl("VK_Right"));   // Next word
+    map("B", with_ctrl("VK_Left"));    // Previous word
   when_end();
 
   // Symbol layer (MD_01 = hold Space)
   when_start("MD_01");
     // Common programming symbols on home row
-    map("VK_J", "VK_LeftBracket");   // [
-    map("VK_K", "VK_RightBracket");  // ]
-    map("VK_H", with_shift("VK_Num9")); // (
-    map("VK_L", with_shift("VK_Num0")); // )
-    map("VK_U", with_shift("VK_LeftBracket"));  // {
-    map("VK_I", with_shift("VK_RightBracket")); // }
+    map("J", "VK_LeftBracket");   // [
+    map("K", "VK_RightBracket");  // ]
+    map("H", with_shift("VK_Num9")); // (
+    map("L", with_shift("VK_Num0")); // )
+    map("U", with_shift("VK_LeftBracket"));  // {
+    map("I", with_shift("VK_RightBracket")); // }
   when_end();
 
   // Number layer (MD_02 = hold Enter)
   when_start("MD_02");
     // Numbers on home row (like a numpad)
-    map("VK_J", "VK_Num1");
-    map("VK_K", "VK_Num2");
-    map("VK_L", "VK_Num3");
-    map("VK_U", "VK_Num4");
-    map("VK_I", "VK_Num5");
-    map("VK_O", "VK_Num6");
-    map("VK_M", "VK_Num7");
-    map("VK_Comma", "VK_Num8");
-    map("VK_Period", "VK_Num9");
-    map("VK_N", "VK_Num0");
+    map("J", "VK_Num1");
+    map("K", "VK_Num2");
+    map("L", "VK_Num3");
+    map("U", "VK_Num4");
+    map("I", "VK_Num5");
+    map("O", "VK_Num6");
+    map("M", "VK_Num7");
+    map("Comma", "VK_Num8");
+    map("Period", "VK_Num9");
+    map("N", "VK_Num0");
   when_end();
 
 device_end();
@@ -111,17 +111,17 @@ device_start("*");
   // Conservative changes that work well on any keyboard
 
   // CapsLock → Escape (universal improvement)
-  map("VK_CapsLock", "VK_Escape");
+  map("CapsLock", "VK_Escape");
 
   // Right Alt as navigation modifier
-  map("VK_RAlt", "MD_10");
+  map("RAlt", "MD_10");
 
   when_start("MD_10");
     // Arrow keys on IJKL (more standard than HJKL)
-    map("VK_I", "VK_Up");
-    map("VK_J", "VK_Left");
-    map("VK_K", "VK_Down");
-    map("VK_L", "VK_Right");
+    map("I", "VK_Up");
+    map("J", "VK_Left");
+    map("K", "VK_Down");
+    map("L", "VK_Right");
   when_end();
 
 device_end();
