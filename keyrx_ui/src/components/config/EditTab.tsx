@@ -19,16 +19,8 @@ import { ConfigScopeTabs } from '@/components/config/ConfigScopeTabs';
 import { GlobalKeyboardPanel } from '@/components/config/GlobalKeyboardPanel';
 import { DeviceKeyboardPanel } from '@/components/config/DeviceKeyboardPanel';
 import { UseCaseGuide } from '@/components/config/UseCaseGuide';
-
-const AVAILABLE_LAYERS = [
-  'base',
-  'md-00',
-  'md-01',
-  'md-02',
-  'md-03',
-  'md-04',
-  'md-05',
-];
+import { describeKey } from '@/components/SVGKeyboard';
+import { formatLayerName } from '@/components/LayerSwitcher';
 
 interface EditTabProps {
   selectedProfileName: string;
@@ -52,6 +44,31 @@ interface EditTabProps {
   onKeyboardLayoutChange: (layout: LayoutType) => void;
   layoutKeys: SVGKeyData[];
   onOpenAdvanced: () => void;
+}
+
+/** Put the keyboard cursor in the key editor and bring it on screen. */
+function moveFocusToKeyEditor(): void {
+  window.requestAnimationFrame(() => {
+    const editor = document.getElementById('key-editor');
+    if (!editor) return;
+    editor.focus({ preventScroll: true });
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    editor.scrollIntoView({
+      behavior: reduce?.matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  });
+}
+
+/** Return keyboard focus to a keycap after leaving the editor with Escape. */
+function focusKeycap(keyCode: string): void {
+  window.requestAnimationFrame(() => {
+    document
+      .querySelector<SVGGElement>(
+        `#keyboard-editor [data-key-code="${keyCode}"]`
+      )
+      ?.focus();
+  });
 }
 
 /**
@@ -79,8 +96,15 @@ export const EditTab: React.FC<EditTabProps> = ({
     null
   );
 
+  // Screen-reader announcement for selection / edit results (aria-live).
+  const [announcement, setAnnouncement] = useState('');
+
   useKeyboardShortcuts([
-    CommonShortcuts.escape(() => setSelectedPhysicalKey(null)),
+    CommonShortcuts.escape(() => {
+      const previous = selectedPhysicalKey;
+      setSelectedPhysicalKey(null);
+      if (previous) focusKeycap(previous);
+    }),
   ]);
 
   const [activePane, setActivePane] = useState<'global' | 'device'>('global');
@@ -88,6 +112,7 @@ export const EditTab: React.FC<EditTabProps> = ({
   // Derived values from configStore
   const keyMappings = configStore.getLayerMappings(configStore.activeLayer);
   const { activeLayer, globalSelected, selectedDevices } = configStore;
+  const usedLayers = configStore.getAllLayers();
 
   // Merged device list: connected devices + devices from Rhai config
   const mergedDevices = useDeviceMerging({ syncEngine, configStore });
@@ -105,12 +130,17 @@ export const EditTab: React.FC<EditTabProps> = ({
   // Handlers
   const handlePhysicalKeyClick = (keyCode: string) => {
     setSelectedPhysicalKey(keyCode);
+    setAnnouncement(
+      `Editing ${describeKey(keyCode, keyMappings.get(keyCode))}. Layer ${formatLayerName(activeLayer)}.`
+    );
+    moveFocusToKeyEditor();
   };
 
   const handleClearMapping = (keyCode: string) => {
     configStore.deleteKeyMapping(keyCode, activeLayer);
     setSyncStatus('unsaved');
     rebuildAndSyncAST();
+    setAnnouncement(`Cleared the mapping for ${describeKey(keyCode)}.`);
   };
 
   const handleSaveMapping = (mapping: KeyMapping) => {
@@ -118,6 +148,7 @@ export const EditTab: React.FC<EditTabProps> = ({
     configStore.setKeyMapping(selectedPhysicalKey, mapping, activeLayer);
     setSyncStatus('unsaved');
     rebuildAndSyncAST();
+    setAnnouncement(`Updated ${describeKey(selectedPhysicalKey, mapping)}.`);
   };
 
   const focusEditor = () => {
@@ -191,7 +222,7 @@ export const EditTab: React.FC<EditTabProps> = ({
           <GlobalKeyboardPanel
             profileName={selectedProfileName}
             activeLayer={activeLayer}
-            availableLayers={AVAILABLE_LAYERS}
+            availableLayers={usedLayers}
             onLayerChange={configStore.setActiveLayer}
             globalSelected={globalSelected}
             onToggleGlobal={configStore.setGlobalSelected}
@@ -207,7 +238,7 @@ export const EditTab: React.FC<EditTabProps> = ({
           <DeviceKeyboardPanel
             profileName={selectedProfileName}
             activeLayer={activeLayer}
-            availableLayers={AVAILABLE_LAYERS}
+            availableLayers={usedLayers}
             onLayerChange={configStore.setActiveLayer}
             devices={devices}
             selectedDevices={selectedDevices}
@@ -268,21 +299,33 @@ export const EditTab: React.FC<EditTabProps> = ({
           </div>
         </div>
 
+        {/* Polite live region: announces key selection and edit results */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {announcement}
+        </div>
+
         {/* Inline Key Configuration Panel */}
-        <KeyConfigPanel
-          physicalKey={selectedPhysicalKey}
-          currentMapping={
-            selectedPhysicalKey
-              ? keyMappings.get(selectedPhysicalKey)
-              : undefined
-          }
-          onSave={handleSaveMapping}
-          onClearMapping={handleClearMapping}
-          onEditMapping={handlePhysicalKeyClick}
-          activeLayer={activeLayer}
-          keyMappings={keyMappings}
-          layoutKeys={layoutKeys}
-        />
+        <section
+          id="key-editor"
+          tabIndex={-1}
+          aria-label="Key editor"
+          className="scroll-mt-4 focus:outline-none focus-visible:outline-2"
+        >
+          <KeyConfigPanel
+            physicalKey={selectedPhysicalKey}
+            currentMapping={
+              selectedPhysicalKey
+                ? keyMappings.get(selectedPhysicalKey)
+                : undefined
+            }
+            onSave={handleSaveMapping}
+            onClearMapping={handleClearMapping}
+            onEditMapping={handlePhysicalKeyClick}
+            activeLayer={activeLayer}
+            keyMappings={keyMappings}
+            layoutKeys={layoutKeys}
+          />
+        </section>
       </ConfigurationLayout>
     </div>
   );

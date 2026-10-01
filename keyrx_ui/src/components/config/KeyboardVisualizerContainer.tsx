@@ -70,7 +70,6 @@ export const KeyboardVisualizerContainer: React.FC<
   activeLayer,
   mappings,
   onKeyClick,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedKeyCode,
   layout,
   onLayoutChange,
@@ -115,6 +114,7 @@ export const KeyboardVisualizerContainer: React.FC<
             keyMappings={mappings}
             onKeyClick={onKeyClick}
             simulatorMode={false}
+            selectedKeyCode={selectedKeyCode}
           />
         </div>
       </div>

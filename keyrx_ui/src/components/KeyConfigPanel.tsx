@@ -3,6 +3,7 @@ import { Keyboard, ArrowRight, X } from 'lucide-react';
 import type { KeyMapping } from '@/types';
 import type { SVGKey } from './SVGKeyboard';
 import { CurrentMappingsSummary } from './CurrentMappingsSummary';
+import { dslKeyName } from '@/utils/keyNames';
 import {
   MappingTypeSelector,
   type MappingType,
@@ -100,13 +101,13 @@ export function KeyConfigPanel({
       if (!tapAction && !holdAction) {
         return 'Configure tap and hold actions';
       }
-      return `Quick tap: ${physicalKey} → ${
-        tapAction || '?'
-      }\nHold ${threshold}ms: ${physicalKey} → ${holdAction || '?'}`;
+      return `Quick tap: ${dslKeyName(physicalKey)} → ${
+        (tapAction ? dslKeyName(tapAction) : '?')
+      }\nHold ${threshold}ms: ${dslKeyName(physicalKey)} → ${(holdAction ? dslKeyName(holdAction) : '?')}`;
     }
 
     return tapAction
-      ? `Press ${physicalKey} → Output ${tapAction}`
+      ? `Press ${dslKeyName(physicalKey)} → Output ${dslKeyName(tapAction)}`
       : 'Select a target key';
   };
 
@@ -143,7 +144,7 @@ export function KeyConfigPanel({
                   Key
                 </span>
                 <span className="text-base font-bold text-slate-100">
-                  {physicalKey}
+                  {dslKeyName(physicalKey)}
                 </span>
               </div>
 
@@ -154,7 +155,7 @@ export function KeyConfigPanel({
                   Target
                 </span>
                 <span className="text-base font-bold text-green-400">
-                  {tapAction || '—'}
+                  {tapAction ? dslKeyName(tapAction) : '—'}
                 </span>
               </div>
 

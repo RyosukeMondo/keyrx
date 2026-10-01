@@ -1,97 +1,171 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 
 /**
- * Layer Switcher - Displays all 256 layers (Base + MD_00 to MD_FF)
- * Vertical scrollable layout with search/filter capability
+ * Layer Switcher.
+ *
+ * By default it lists only the layers a profile actually uses (Base plus the
+ * layers that have mappings or were opened). The full MD_00..MD_FF range
+ * (256 layers) lives behind an "All layers" advanced toggle, because a
+ * 257-item list is noise for nearly everyone.
+ *
+ * The list is a single-select listbox with a roving tabindex: one Tab stop,
+ * Up/Down/Home/End move, Enter/Space selects.
  */
 
 interface LayerSwitcherProps {
   activeLayer: string;
+  /** Layers in use by the profile (the base layer is always shown). */
   availableLayers: string[];
   onLayerChange: (layer: string) => void;
 }
 
+const ALL_LAYERS: string[] = [
+  'base',
+  ...Array.from(
+    { length: 256 },
+    (_, i) => `md-${i.toString(16).padStart(2, '0')}`
+  ),
+];
+
+export const formatLayerName = (layer: string) =>
+  layer === 'base' ? 'Base' : layer.toUpperCase().replace('MD-', 'MD_');
+
+/** Base first, then the used layers in order, always including the active one. */
+function visibleLayers(used: string[], active: string): string[] {
+  const set = new Set<string>(['base', ...used, active]);
+  const rest = [...set].filter((l) => l !== 'base').sort();
+  return ['base', ...rest];
+}
+
 export function LayerSwitcher({
   activeLayer,
-  availableLayers: _availableLayers,
+  availableLayers,
   onLayerChange,
 }: LayerSwitcherProps) {
+  const [showAll, setShowAll] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
+  const [focusedLayer, setFocusedLayer] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
-  // Generate all 256 layers: Base + MD_00 through MD_FF
-  const allLayers = useMemo(() => {
-    const layers = ['base'];
-    for (let i = 0; i <= 255; i++) {
-      layers.push(`md-${i.toString(16).padStart(2, '0')}`);
+  const layers = useMemo(() => {
+    if (!showAll) return visibleLayers(availableLayers, activeLayer);
+    const filter = searchFilter.trim().toLowerCase();
+    if (!filter) return ALL_LAYERS;
+    return ALL_LAYERS.filter((layer) => layer.includes(filter));
+  }, [showAll, availableLayers, activeLayer, searchFilter]);
+
+  // Roving tabindex target: last focused option, else the active one, else first.
+  const tabStop =
+    focusedLayer && layers.includes(focusedLayer)
+      ? focusedLayer
+      : layers.includes(activeLayer)
+        ? activeLayer
+        : layers[0];
+
+  const moveFocus = (layer: string | undefined) => {
+    if (!layer) return;
+    setFocusedLayer(layer);
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-layer="${layer}"]`)
+      ?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, layer: string) => {
+    const i = layers.indexOf(layer);
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        moveFocus(layers[Math.min(i + 1, layers.length - 1)]);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        moveFocus(layers[Math.max(i - 1, 0)]);
+        break;
+      case 'Home':
+        e.preventDefault();
+        moveFocus(layers[0]);
+        break;
+      case 'End':
+        e.preventDefault();
+        moveFocus(layers[layers.length - 1]);
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        onLayerChange(layer);
+        break;
     }
-    return layers;
-  }, []);
-
-  // Filter layers based on search input
-  const filteredLayers = useMemo(() => {
-    if (!searchFilter.trim()) {
-      return allLayers;
-    }
-    const filter = searchFilter.toLowerCase();
-    return allLayers.filter((layer) => layer.toLowerCase().includes(filter));
-  }, [allLayers, searchFilter]);
-
-  const formatLayerName = (layer: string) => {
-    if (layer === 'base') return 'Base';
-    return layer.toUpperCase().replace('MD-', 'MD_');
   };
 
   return (
     <div className="w-24 flex flex-col bg-slate-800/50 rounded-lg border border-slate-700/50 flex-shrink-0">
-      {/* Header with search - compact for narrow width */}
       <div className="p-2 border-b border-slate-700/50">
         <div className="mb-2">
-          <span className="text-slate-300 font-semibold text-xs block text-center">
+          <span
+            id="layer-switcher-title"
+            className="text-slate-300 font-semibold text-xs block text-center"
+          >
             LAYERS
           </span>
           <span className="text-slate-400 text-xs block text-center">
-            {filteredLayers.length}
+            {layers.length}
           </span>
         </div>
 
-        <input
-          type="text"
-          value={searchFilter}
-          onChange={(e) => setSearchFilter(e.target.value)}
-          placeholder="..."
-          title="Search layers (e.g., 'md-0a', 'base', '1f')"
-          className="w-full px-1 py-1 bg-slate-900/50 border border-slate-600 rounded text-white text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary-500/50"
-          aria-label="Search layers"
-        />
+        {showAll && (
+          <input
+            type="text"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            placeholder="..."
+            title="Search layers (e.g., 'md-0a', 'base', '1f')"
+            className="w-full px-1 py-1 bg-slate-900/50 border border-slate-600 rounded text-white text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary-500/50"
+            aria-label="Search layers"
+          />
+        )}
       </div>
 
-      {/* Scrollable layer list with custom scrollbar */}
-      <div className="overflow-y-auto max-h-96 p-1 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50">
-        <div className="space-y-1">
-          {filteredLayers.map((layer) => (
-            <button
-              key={layer}
-              onClick={() => onLayerChange(layer)}
-              className={`w-full px-1 py-1 rounded text-xs font-medium text-center transition-all break-words ${
-                activeLayer === layer
-                  ? 'bg-primary-500/80 text-white shadow-md'
-                  : 'bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500'
-              }`}
-              aria-label={`Select ${formatLayerName(layer)}`}
-              aria-pressed={activeLayer === layer}
-            >
-              {formatLayerName(layer)}
-            </button>
-          ))}
-        </div>
+      <div
+        ref={listRef}
+        role="listbox"
+        aria-labelledby="layer-switcher-title"
+        className="overflow-y-auto max-h-96 p-1 space-y-1 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50"
+      >
+        {layers.map((layer) => (
+          <div
+            key={layer}
+            role="option"
+            aria-selected={activeLayer === layer}
+            data-layer={layer}
+            tabIndex={layer === tabStop ? 0 : -1}
+            onClick={() => onLayerChange(layer)}
+            onFocus={() => setFocusedLayer(layer)}
+            onKeyDown={(e) => handleKeyDown(e, layer)}
+            className={`w-full px-1 py-1 rounded text-xs font-medium text-center cursor-pointer transition-all break-words ${
+              activeLayer === layer
+                ? 'bg-primary-500 text-white shadow-md'
+                : 'bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500'
+            }`}
+          >
+            {formatLayerName(layer)}
+          </div>
+        ))}
       </div>
 
-      {/* Footer info */}
-      {searchFilter && filteredLayers.length === 0 && (
+      {showAll && searchFilter && layers.length === 0 && (
         <div className="p-4 text-center text-slate-400 text-sm">
           No layers match your search
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={() => setShowAll((v) => !v)}
+        aria-expanded={showAll}
+        className="m-1 rounded border border-slate-600/60 px-1 py-1 text-[11px] text-slate-300 hover:bg-slate-700"
+      >
+        {showAll ? 'Fewer layers' : 'All layers'}
+      </button>
     </div>
   );
 }

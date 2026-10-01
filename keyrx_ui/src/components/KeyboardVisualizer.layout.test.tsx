@@ -268,7 +268,11 @@ describe('KeyboardVisualizer Layout Integration', () => {
       );
 
       const user = userEvent.setup();
-      const keyButtons = screen.getAllByRole('button');
+      // Simulator mode is a read-only display: keys are images, not buttons
+      expect(screen.queryAllByRole('button')).toHaveLength(0);
+      const keyButtons = Array.from(
+        document.querySelectorAll<SVGGElement>('g.key-group')
+      );
 
       // Try clicking a key in simulator mode
       await user.click(keyButtons[0]);
@@ -296,7 +300,7 @@ describe('KeyboardVisualizer Layout Integration', () => {
       );
 
       // Find the 'A' key button by its key code (with period to avoid matching KC_APP)
-      const aButton = screen.getByRole('button', { name: /Key KC_A\./ });
+      const aButton = screen.getByRole('button', { name: /^A, / });
       expect(aButton).toBeInTheDocument();
 
       // KeyButton component applies 'pressed' class when isPressed is true
@@ -316,7 +320,7 @@ describe('KeyboardVisualizer Layout Integration', () => {
       );
 
       // Initially KC_A is pressed
-      const aButton = screen.getByRole('button', { name: /Key KC_A\./ });
+      const aButton = screen.getByRole('button', { name: /^A, / });
       expect(aButton).toBeInTheDocument();
 
       // Update to press KC_B instead
@@ -330,7 +334,7 @@ describe('KeyboardVisualizer Layout Integration', () => {
       );
 
       // KC_B button should be present
-      const bButton = screen.getByRole('button', { name: /Key KC_B\./ });
+      const bButton = screen.getByRole('button', { name: /^B, / });
       expect(bButton).toBeInTheDocument();
     });
   });
