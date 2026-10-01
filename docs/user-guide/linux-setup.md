@@ -19,6 +19,7 @@ Complete guide for setting up KeyRx keyboard remapping daemon on Linux.
 - [Configuration Management](#configuration-management)
   - [Hot Reload](#hot-reload)
   - [Multiple Devices](#multiple-devices)
+- [Accessibility](#accessibility)
 - [Troubleshooting](#troubleshooting)
 - [Security Considerations](#security-considerations)
 
@@ -477,6 +478,57 @@ Because `.active` and the `.krx` files are machine state, two machines can
 share the same repository and still run different profiles; after a
 `git pull`, `keyrx_daemon profiles activate NAME` (or just saving an edit while
 the daemon runs) recompiles.
+
+## Accessibility
+
+keyrx is meant to be usable with one hand, with a tremor, or with sticky keys.
+Everything below is a setting or a profile you write; none of it needs the
+physical keyboard to be changed.
+
+### One-handed use
+
+- **Layout:** `examples/08-one-handed.rhai` is a one-handed profile (it moves
+  the keys that are out of reach under the hand you keep on the keyboard).
+  Copy it into your profiles directory (`~/.config/keyrx/profiles/`), edit
+  the `device_start("...")` line to your keyboard (`keyrx_daemon list-devices`)
+  and activate it. Treat it as a starting point: reach differs per person.
+- **Layers on one key:** `tap_hold("Space", "VK_Space", "MD_00", 200)` makes a
+  tapped Space a space and a held Space a layer, so a whole second keyboard
+  fits under one hand (see the DSL manual).
+- **Emergency stop without a second hand:** hold **Escape alone for 3
+  seconds**. Any other key pressed meanwhile cancels it, so normal typing and
+  repeated taps on Escape never stop keyrx. If 3 seconds is too long or too
+  short for you, change it (1-30 seconds):
+
+  ```bash
+  keyrx_daemon run --emergency-hold-ms 5000          # one run
+  KEYRX_EMERGENCY_HOLD_MS=5000 keyrx_daemon run      # environment
+  ```
+
+  or put `"emergency_hold_ms": 5000` into `~/.config/keyrx/settings.json`.
+  The two-hand chord can be replaced as well, e.g. by keys that sit together:
+  `"emergency_chord": "Escape+F1"` (2-4 keys joined by `+`). See
+  [Emergency Escape](#emergency-escape-keyboard-unusable-from-a-bad-config).
+  `keyrx_daemon doctor` and the startup log always print what is in force.
+
+### Sticky keys and slow presses
+
+- **Sticky modifiers:** a modifier can be latched for the next key instead of
+  held (one-shot / sticky modifiers; the DSL manual and
+  `examples/08-one-handed.rhai` show how). The desktop's own Sticky Keys
+  (GNOME: Settings > Accessibility > Typing; KDE: System Settings >
+  Accessibility) also work with keyrx, because keyrx outputs ordinary key
+  events.
+- **Slow or uneven presses:** raise the `threshold_ms` of your `tap_hold`
+  keys (e.g. 400 instead of 200) so a deliberate tap is not mistaken for a hold.
+- **Very short taps:** a tap on a remapped key reaches the system as a
+  press and release a few microseconds apart. keyrx keeps every output key
+  down for at least 5 ms (see [Minimum Key-Down Time](#minimum-key-down-time),
+  `--min-key-down-ms`) so programs that poll the keyboard once per frame still
+  see it; raise it if a program misses taps.
+- **Locked out:** whatever the profile does, the emergency stop works on the
+  raw physical keys. If the keyboard stops responding, hold Escape for the
+  configured seconds and keyrx releases every keyboard.
 
 ## Troubleshooting
 

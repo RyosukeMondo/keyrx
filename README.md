@@ -88,8 +88,12 @@ Day to day:
   `--log-keys` additionally logs key names (a keylogger - for debugging a
   mapping only).
 
+日本語のクイックスタートは [README.ja.md](README.ja.md) にあります
+(Japanese quickstart: [README.ja.md](README.ja.md)).
+
 See the [Linux Setup Guide](docs/user-guide/linux-setup.md) for details and
-troubleshooting.
+troubleshooting; one-handed use, sticky keys and emergency-stop alternatives
+are covered under [Accessibility](docs/user-guide/linux-setup.md#accessibility).
 
 ## Quickstart (compiler only)
 
