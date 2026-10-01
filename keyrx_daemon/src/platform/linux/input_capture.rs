@@ -51,6 +51,9 @@ fn systemtime_to_micros(time: SystemTime) -> u64 {
         .unwrap_or(0)
 }
 
+/// errno `ENODEV` on Linux: the device was unplugged.
+const ENODEV: i32 = 19;
+
 /// Wrapper for evdev input device with keyrx interface.
 ///
 /// `EvdevInput` provides a high-level interface for capturing keyboard events
@@ -524,7 +527,13 @@ impl InputDevice for EvdevInput {
             return Ok(()); // Not grabbed
         }
 
-        self.device.ungrab().map_err(DeviceError::Io)?;
+        match self.device.ungrab() {
+            Ok(()) => {}
+            // The device is gone (unplugged): the kernel dropped the grab
+            // with it, so there is nothing left to release.
+            Err(e) if e.raw_os_error() == Some(ENODEV) => {}
+            Err(e) => return Err(DeviceError::Io(e)),
+        }
         self.grabbed = false;
         Ok(())
     }
@@ -787,5 +796,28 @@ mod tests {
             "{second:?}"
         );
         assert!(matches!(input.next_event(), Err(DeviceError::EndOfStream)));
+    }
+
+    /// Releasing the grab of an unplugged device is not an error: the kernel
+    /// already dropped it (it used to log a spurious "Failed to release").
+    #[test]
+    fn release_of_an_unplugged_device_succeeds() {
+        use crate::test_utils::output_capture::OutputCapture;
+        use crate::test_utils::VirtualKeyboard;
+        use std::time::Duration;
+
+        let mut keyboard = VirtualKeyboard::create("release-unplugged-test").unwrap();
+        std::thread::sleep(Duration::from_millis(250));
+        let path = OutputCapture::find_by_name(keyboard.name(), Duration::from_secs(5))
+            .unwrap()
+            .device_path()
+            .to_path_buf();
+        let mut input = EvdevInput::open(&path).unwrap();
+        input.grab().unwrap();
+        keyboard.destroy().unwrap();
+        std::thread::sleep(Duration::from_millis(250));
+
+        input.release().expect("ENODEV on release must be ignored");
+        assert!(!input.is_grabbed());
     }
 }
