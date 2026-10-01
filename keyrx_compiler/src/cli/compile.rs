@@ -8,6 +8,8 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
+use sha2::{Digest, Sha256};
+
 use crate::error::ParseError;
 use crate::error::SerializeError;
 use crate::parser::Parser;
@@ -98,9 +100,10 @@ pub fn handle_compile(input: &Path, output: &Path) -> Result<(), CompileError> {
     // Write to output file
     fs::write(output, &bytes)?;
 
-    // Extract hash from bytes (bytes 8-40 contain the SHA256 hash)
-    let hash = &bytes[8..40];
-    let hash_hex = hex::encode(hash);
+    // Real SHA256 of the whole file, comparable with `sha256sum`.
+    let file_hash_hex = hex::encode(Sha256::digest(&bytes));
+    // Header hash covers only the data section (see `keyrx_compiler hash`).
+    let payload_hash_hex = hex::encode(&bytes[8..40]);
 
     // Calculate file size
     let file_size = bytes.len();
@@ -111,7 +114,8 @@ pub fn handle_compile(input: &Path, output: &Path) -> Result<(), CompileError> {
         output.display()
     );
     eprintln!("  Size: {} bytes", file_size);
-    eprintln!("  SHA256: {}", hash_hex);
+    eprintln!("  SHA256 (file): {}", file_hash_hex);
+    eprintln!("  SHA256 (data section): {}", payload_hash_hex);
 
     Ok(())
 }

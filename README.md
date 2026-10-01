@@ -17,7 +17,7 @@ KeyRx2 is a cross-platform keyboard remapping system that provides powerful cust
 - **Custom Locks (Toggles)**: Toggle states like gaming mode, numpad mode, etc. (255 available)
 - **Device-Specific Configs**: Different mappings for different keyboards
 - **Multi-File Configurations**: Organize complex configurations with imports
-- **Deterministic Compilation**: Same input always produces identical output
+- **Deterministic Compilation**: Same input always produces byte-identical output (no wall-clock timestamp; honours `SOURCE_DATE_EPOCH`)
 - **Binary Format**: Fast, zero-copy deserialization with integrity checking
 - **WASM Support**: Test configurations in browser before deploying
 

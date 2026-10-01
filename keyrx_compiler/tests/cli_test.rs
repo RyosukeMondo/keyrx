@@ -429,15 +429,62 @@ fn test_hash_truncated_file() {
 }
 
 #[test]
+fn test_compile_is_byte_identical_across_time() {
+    let temp_dir = setup_test_dir();
+    let input = create_simple_rhai_config(&temp_dir, "config.rhai");
+    let out1 = temp_dir.path().join("a.krx");
+    let out2 = temp_dir.path().join("b.krx");
+
+    for out in [&out1, &out2] {
+        get_binary()
+            .env_remove("SOURCE_DATE_EPOCH")
+            .arg("compile")
+            .arg(&input)
+            .arg("-o")
+            .arg(out)
+            .assert()
+            .success();
+        // Wall-clock seconds must never leak into the output.
+        std::thread::sleep(std::time::Duration::from_millis(2100));
+    }
+
+    assert_eq!(
+        fs::read(&out1).expect("read a.krx"),
+        fs::read(&out2).expect("read b.krx"),
+        "compiling the same source twice must give identical bytes"
+    );
+}
+
+#[test]
+fn test_compile_honours_source_date_epoch() {
+    let temp_dir = setup_test_dir();
+    let input = create_simple_rhai_config(&temp_dir, "config.rhai");
+    let out = temp_dir.path().join("a.krx");
+    get_binary()
+        .env("SOURCE_DATE_EPOCH", "1700000000")
+        .arg("compile")
+        .arg(&input)
+        .arg("-o")
+        .arg(&out)
+        .assert()
+        .success();
+    get_binary()
+        .arg("verify")
+        .arg(&out)
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("Compilation timestamp: 1700000000"));
+}
+
+#[test]
 fn test_hash_determinism() {
     let temp_dir = setup_test_dir();
     let input = create_simple_rhai_config(&temp_dir, "config.rhai");
     let krx_file1 = temp_dir.path().join("config1.krx");
     let krx_file2 = temp_dir.path().join("config2.krx");
 
-    // Compile twice with deterministic build mode
+    // Compile twice
     get_binary()
-        .env("KEYRX_DETERMINISTIC_BUILD", "1")
         .arg("compile")
         .arg(&input)
         .arg("-o")
@@ -446,7 +493,6 @@ fn test_hash_determinism() {
         .success();
 
     get_binary()
-        .env("KEYRX_DETERMINISTIC_BUILD", "1")
         .arg("compile")
         .arg(&input)
         .arg("-o")

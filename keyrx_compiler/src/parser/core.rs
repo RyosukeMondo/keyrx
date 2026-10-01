@@ -2,7 +2,7 @@ use rhai::{Engine, EvalAltResult, NativeCallContext, Scope};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime};
 
 use crate::error::ParseError;
 use keyrx_core::config::{ConfigRoot, DeviceConfig, Metadata, Version};
@@ -199,19 +199,7 @@ impl Parser {
         let hash_result = hasher.finalize();
         let source_hash = hex::encode(hash_result);
 
-        // Use deterministic timestamp (0) for reproducible builds if env var is set
-        let compilation_timestamp = if std::env::var("KEYRX_DETERMINISTIC_BUILD").is_ok() {
-            0
-        } else {
-            // SAFETY: SystemTime is always after UNIX_EPOCH on modern systems (post-1970)
-            #[allow(clippy::unwrap_used)]
-            {
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs()
-            }
-        };
+        let compilation_timestamp = build_timestamp();
 
         let metadata = Metadata {
             compilation_timestamp,
@@ -236,6 +224,18 @@ impl Parser {
             import_chain: Vec::new(),
         }
     }
+}
+
+/// Timestamp embedded in the .krx metadata.
+///
+/// Output must be byte-identical for identical input, so the wall clock is
+/// never used. Honours the reproducible-builds convention `SOURCE_DATE_EPOCH`
+/// and is otherwise `0`.
+pub(crate) fn build_timestamp() -> u64 {
+    std::env::var("SOURCE_DATE_EPOCH")
+        .ok()
+        .and_then(|v| v.trim().parse().ok())
+        .unwrap_or(0)
 }
 
 impl Default for Parser {
