@@ -175,6 +175,12 @@ pub(super) fn extract_cli_error_details(
             Some(format!("Check the '{}' command usage with --help", command)),
             Some(format!("Command: {}", command)),
         ),
+        CliError::Reported => (
+            "CLI".to_string(),
+            "Command failed (details were already printed)".to_string(),
+            None,
+            None,
+        ),
         CliError::OutputError { reason } => (
             "CLI".to_string(),
             format!("Failed to format output: {}", reason),

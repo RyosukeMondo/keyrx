@@ -91,6 +91,16 @@ impl ProfileManager {
         Ok(manager)
     }
 
+    /// Re-reads the profiles directory so the in-memory map never disagrees
+    /// with disk. The profiles dir is the single source of truth: the CLI,
+    /// the web UI and a hand edit all write there, from other processes, so
+    /// every accessor refreshes first instead of trusting a startup snapshot.
+    fn refresh(&self) {
+        if let Err(e) = self.scan_profiles() {
+            log::warn!("Could not rescan the profiles directory: {e}");
+        }
+    }
+
     /// Scan the profiles directory for .rhai files.
     pub fn scan_profiles(&self) -> Result<(), ProfileError> {
         let profiles_dir = self.profiles_dir();
@@ -109,8 +119,13 @@ impl ProfileManager {
 
             if path.extension().and_then(|s| s.to_str()) == Some("rhai") {
                 if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
-                    let metadata = self.load_profile_metadata(name)?;
-                    profiles.insert(name.to_string(), metadata);
+                    match self.load_profile_metadata(name) {
+                        Ok(metadata) => {
+                            profiles.insert(name.to_string(), metadata);
+                        }
+                        // One unreadable profile must not hide the rest.
+                        Err(e) => log::warn!("Skipping profile '{name}': {e}"),
+                    }
                 }
             }
         }
@@ -187,6 +202,7 @@ impl ProfileManager {
 
     /// List all profiles.
     pub fn list(&self) -> Vec<ProfileMetadata> {
+        self.refresh();
         self.profiles
             .read()
             .unwrap_or_else(PoisonError::into_inner)
@@ -209,6 +225,7 @@ impl ProfileManager {
 
     /// Get profile metadata by name.
     pub fn get(&self, name: &str) -> Option<ProfileMetadata> {
+        self.refresh();
         self.profiles
             .read()
             .unwrap_or_else(PoisonError::into_inner)
@@ -244,6 +261,7 @@ impl ProfileManager {
     /// # }
     /// ```
     pub fn get_config(&self, name: &str) -> Result<String, ProfileError> {
+        self.refresh();
         let profiles = self.profiles.read().unwrap_or_else(PoisonError::into_inner);
         let profile = profiles
             .get(name)
@@ -284,6 +302,7 @@ impl ProfileManager {
     /// # }
     /// ```
     pub fn set_config(&self, name: &str, content: &str) -> Result<(), ProfileError> {
+        self.refresh();
         let profile = {
             let profiles = self.profiles.read().unwrap_or_else(PoisonError::into_inner);
             profiles

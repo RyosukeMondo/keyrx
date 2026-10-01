@@ -126,6 +126,18 @@ impl DaemonQueryService {
 
     /// Asks the daemon to switch to the (already compiled) profile `name`.
     ///
+    /// Like [`Self::request_profile_activation`] but waits until the daemon
+    /// is actually running `name`. A query service without a running event
+    /// loop (test mode, unit tests) reports an error after the timeout.
+    ///
+    /// # Errors
+    ///
+    /// Why the daemon did not apply the profile.
+    pub fn activate_and_wait(&self, name: &str) -> Result<(), String> {
+        self.daemon_state
+            .activate_and_wait(name, std::time::Duration::from_secs(5))
+    }
+
     /// Every activation path (REST, MCP, WS-RPC, IPC) calls this. Status
     /// reports `name` once the daemon has actually loaded it.
     pub fn request_profile_activation(&self, name: &str) {

@@ -163,6 +163,11 @@ impl IntoResponse for DaemonError {
                     "COMMAND_FAILED",
                     format!("Command '{}' failed: {}", command, reason),
                 ),
+                CliError::Reported => (
+                    StatusCode::BAD_REQUEST,
+                    "COMMAND_FAILED",
+                    "Command failed".to_string(),
+                ),
                 CliError::OutputError { reason } => (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "OUTPUT_ERROR",

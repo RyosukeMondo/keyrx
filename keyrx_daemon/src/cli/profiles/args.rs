@@ -25,7 +25,9 @@ pub(super) enum ProfilesCommands {
         /// Profile name (max 32 chars).
         name: String,
 
-        /// Template to use: "blank" (default) or "qmk-layers".
+        /// Template to start from (blank, simple_remap, capslock_escape,
+        /// vim_navigation, gaming). Every template matches ALL keyboards
+        /// ("*"); edit its device_start() to limit it.
         #[arg(long, default_value = "blank", value_parser = parse_template)]
         template: ProfileTemplate,
     },
@@ -76,15 +78,5 @@ pub(super) enum ProfilesCommands {
 
 /// Parse template string to ProfileTemplate enum.
 pub(super) fn parse_template(s: &str) -> Result<ProfileTemplate, String> {
-    match s.to_lowercase().as_str() {
-        "blank" => Ok(ProfileTemplate::Blank),
-        "simple_remap" | "simple-remap" => Ok(ProfileTemplate::SimpleRemap),
-        "capslock_escape" | "capslock-escape" => Ok(ProfileTemplate::CapslockEscape),
-        "vim_navigation" | "vim-navigation" => Ok(ProfileTemplate::VimNavigation),
-        "gaming" => Ok(ProfileTemplate::Gaming),
-        _ => Err(format!(
-            "Invalid template '{}'. Valid templates: blank, simple_remap, capslock_escape, vim_navigation, gaming",
-            s
-        )),
-    }
+    ProfileTemplate::from_name(s)
 }

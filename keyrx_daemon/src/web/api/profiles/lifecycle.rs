@@ -23,19 +23,7 @@ pub(super) async fn create_profile(
     // Validate profile name
     validate_profile_name(&payload.name)?;
 
-    let template = match payload.template.as_str() {
-        "blank" => ProfileTemplate::Blank,
-        "simple_remap" => ProfileTemplate::SimpleRemap,
-        "capslock_escape" => ProfileTemplate::CapslockEscape,
-        "vim_navigation" => ProfileTemplate::VimNavigation,
-        "gaming" => ProfileTemplate::Gaming,
-        _ => {
-            return Err(ApiError::BadRequest(format!(
-                "Invalid template: '{}'. Valid templates: blank, simple_remap, capslock_escape, vim_navigation, gaming",
-                payload.template
-            )))
-        }
-    };
+    let template = ProfileTemplate::from_name(&payload.template).map_err(ApiError::BadRequest)?;
 
     // Use ProfileService to ensure consistent state
     let profile_info = state

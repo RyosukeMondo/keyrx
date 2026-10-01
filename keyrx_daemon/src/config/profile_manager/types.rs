@@ -58,6 +58,63 @@ pub enum ProfileTemplate {
     Gaming,
 }
 
+impl ProfileTemplate {
+    /// Every template, in the order they are documented. THE list: the CLI
+    /// help, REST, MCP and WS-RPC all derive their accepted names from it.
+    pub const ALL: [ProfileTemplate; 5] = [
+        ProfileTemplate::Blank,
+        ProfileTemplate::SimpleRemap,
+        ProfileTemplate::CapslockEscape,
+        ProfileTemplate::VimNavigation,
+        ProfileTemplate::Gaming,
+    ];
+
+    /// The template's name as typed by users (`snake_case`).
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Blank => "blank",
+            Self::SimpleRemap => "simple_remap",
+            Self::CapslockEscape => "capslock_escape",
+            Self::VimNavigation => "vim_navigation",
+            Self::Gaming => "gaming",
+        }
+    }
+
+    /// The template's `.rhai` source, embedded at build time.
+    pub fn source(self) -> &'static str {
+        match self {
+            Self::Blank => include_str!("../../../templates/blank.rhai"),
+            Self::SimpleRemap => include_str!("../../../templates/simple_remap.rhai"),
+            Self::CapslockEscape => include_str!("../../../templates/capslock_escape.rhai"),
+            Self::VimNavigation => include_str!("../../../templates/vim_navigation.rhai"),
+            Self::Gaming => include_str!("../../../templates/gaming.rhai"),
+        }
+    }
+
+    /// `"blank, simple_remap, ..."` for help and error messages.
+    pub fn names_list() -> String {
+        Self::ALL.map(Self::name).join(", ")
+    }
+
+    /// Parses a user-typed name (case-insensitive; `-` or `_`).
+    ///
+    /// # Errors
+    ///
+    /// The message names the offending input and every valid template.
+    pub fn from_name(name: &str) -> Result<Self, String> {
+        let wanted = name.to_lowercase().replace('-', "_");
+        Self::ALL
+            .into_iter()
+            .find(|t| t.name() == wanted)
+            .ok_or_else(|| {
+                format!(
+                    "Invalid template '{name}'. Valid templates: {}",
+                    Self::names_list()
+                )
+            })
+    }
+}
+
 /// Result of profile activation.
 #[typeshare]
 #[derive(Debug, Clone, Serialize, Deserialize)]

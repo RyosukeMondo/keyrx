@@ -101,19 +101,11 @@ pub(super) async fn handle_export(
         }
         Err(ProfileError::NotFound(name)) => {
             output_error(&format!("Profile '{}' not found", name), 1001, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(e) => {
             output_error(&format!("Failed to export profile: {}", e), 3001, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
     }
 }
@@ -131,7 +123,7 @@ pub(super) async fn handle_import(
                 let output = ProfileCreatedOutput {
                     success: true,
                     name: profile.name.clone(),
-                    rhai_path: format!("~/.config/keyrx/profiles/{}.rhai", profile.name),
+                    rhai_path: profile.rhai_path.display().to_string(),
                     layer_count: profile.layer_count,
                 };
                 println!(
@@ -146,35 +138,19 @@ pub(super) async fn handle_import(
         }
         Err(ProfileError::InvalidName(msg)) => {
             output_error(&format!("Invalid name: {}", msg), 1006, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(ProfileError::ProfileLimitExceeded) => {
             output_error("Profile limit exceeded (max 100)", 1014, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(ProfileError::AlreadyExists(name)) => {
             output_error(&format!("Profile '{}' already exists", name), 1015, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
         Err(e) => {
             output_error(&format!("Failed to import profile: {}", e), 3001, json);
-            Err(CliError::CommandFailed {
-                command: "profiles".to_string(),
-                reason: "Command failed".to_string(),
-            }
-            .into())
+            Err(CliError::Reported.into())
         }
     }
 }

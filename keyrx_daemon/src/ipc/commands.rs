@@ -80,7 +80,13 @@ impl IpcCommandHandler {
                     result.compile_time_ms,
                     result.reload_time_ms
                 );
-                self.query.request_profile_activation(&name);
+                if let Err(why) = self.query.activate_and_wait(&name) {
+                    log::error!("IPC: Profile '{name}' compiled but is not live: {why}");
+                    return IpcResponse::Error {
+                        code: 5002,
+                        message: why,
+                    };
+                }
                 return IpcResponse::ProfileActivated { name };
             }
             Ok(result) => format!(

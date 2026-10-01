@@ -54,6 +54,7 @@ use crate::platform::held_outputs::HeldOutputs;
 use crate::platform::{Platform, PlatformError};
 
 // Submodules
+pub mod config_watch;
 pub mod event_broadcaster;
 pub mod event_loop;
 pub mod live_config;
@@ -436,8 +437,13 @@ fn reload_remapping(
 ) -> Result<Option<RemappingState>, DaemonError> {
     let source = live.reload_source(shared_state.take_pending_activation());
     info!("Reloading configuration from {source:?}");
-    let loaded = live.load(&source)?;
-    Ok(apply_loaded(platform, live, shared_state, loaded))
+    let result = live
+        .load(&source)
+        .map(|loaded| apply_loaded(platform, live, shared_state, loaded));
+    // Success or not, the request has been dealt with: waiters (activate)
+    // re-read the published profile to tell which.
+    shared_state.mark_reload_serviced();
+    result
 }
 
 /// Makes `loaded` the live configuration: builds its remapping state,

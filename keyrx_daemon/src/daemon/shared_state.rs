@@ -126,6 +126,11 @@ pub struct DaemonSharedState {
     /// (`SYN_DROPPED`) since the daemon started. Written by the event loop,
     /// read by every transport through `DaemonQueryService`.
     input_overflows: Arc<AtomicU64>,
+
+    /// Counts reload requests the daemon has finished servicing (swapped to
+    /// the new config, or kept the old one because it failed to load).
+    /// Lets a transport wait until its activation is actually live.
+    reloads_serviced: Arc<AtomicU64>,
 }
 
 impl DaemonSharedState {
@@ -174,6 +179,67 @@ impl DaemonSharedState {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
+        }
+    }
+
+    /// Called by the daemon each time it finishes servicing a reload request.
+    pub fn mark_reload_serviced(&self) {
+        self.reloads_serviced.fetch_add(1, Ordering::SeqCst);
+    }
+
+    /// Reload requests serviced so far (see [`Self::wait_for_reload`]).
+    pub fn reloads_serviced(&self) -> u64 {
+        self.reloads_serviced.load(Ordering::SeqCst)
+    }
+
+    /// Blocks until the daemon has serviced a reload after the one counted
+    /// by `after` (a value of [`Self::reloads_serviced`] taken BEFORE
+    /// requesting it), or `timeout` passes. Returns whether it was serviced.
+    /// This is what makes "activate" mean "live", not "queued".
+    pub fn wait_for_reload(&self, after: u64, timeout: std::time::Duration) -> bool {
+        let deadline = Instant::now() + timeout;
+        while self.reloads_serviced() <= after {
+            if Instant::now() >= deadline {
+                return false;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(2));
+        }
+        true
+    }
+
+    /// Requests activation of `name` and waits until the daemon has applied
+    /// it. `Ok` means the daemon is now running `name`.
+    ///
+    /// # Errors
+    ///
+    /// A message when the daemon does not answer in time or kept its old
+    /// config because `name` failed to load.
+    pub fn activate_and_wait(
+        &self,
+        name: &str,
+        timeout: std::time::Duration,
+    ) -> Result<(), String> {
+        if !self.is_running() {
+            // No event loop to service it (test mode): the request just queues.
+            self.request_activation(name);
+            return Ok(());
+        }
+        let before = self.reloads_serviced();
+        self.request_activation(name);
+        if !self.wait_for_reload(before, timeout) {
+            return Err(format!(
+                "the daemon did not apply profile '{name}' within {}s",
+                timeout.as_secs_f32()
+            ));
+        }
+        if self.get_active_profile().as_deref() == Some(name) {
+            Ok(())
+        } else {
+            Err(format!(
+                "the daemon could not load profile '{name}' and kept its previous configuration \
+                 (see the daemon log)"
+            ))
         }
     }
 
@@ -535,6 +601,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         };
 
         assert!(state.is_running());
@@ -559,6 +626,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         };
 
         assert!(state.is_running());
@@ -581,6 +649,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         };
 
         // Initial profile
@@ -608,6 +677,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         };
 
         assert_eq!(
@@ -633,6 +703,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         };
 
         assert_eq!(state.get_device_count(), 2);
@@ -679,6 +750,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         };
 
         // Just created, uptime should be 0
@@ -705,6 +777,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         });
 
         // Spawn multiple reader threads
@@ -739,6 +812,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         });
 
         // Spawn multiple writer threads
@@ -778,6 +852,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         });
 
         // Atomic update of both fields
@@ -808,6 +883,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         });
 
         // Concurrent atomic updates should not deadlock
@@ -847,6 +923,7 @@ mod tests {
             suspended: Arc::new(AtomicBool::new(false)),
             pending_activation: Arc::default(),
             input_overflows: Arc::default(),
+            reloads_serviced: Arc::default(),
         });
 
         // Mix of readers and writers

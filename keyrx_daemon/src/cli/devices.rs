@@ -7,6 +7,7 @@ use crate::cli::common::output_error;
 use crate::cli::logging;
 use crate::config::device_registry::{DeviceEntry, DeviceRegistry, DeviceValidationError};
 use crate::error::{CliError, DaemonResult};
+use crate::ipc::CapturedDevice;
 use clap::{Args, Subcommand};
 use serde::Serialize;
 use std::path::PathBuf;
@@ -24,7 +25,7 @@ pub struct DevicesArgs {
 
 #[derive(Subcommand, Debug)]
 enum DevicesCommands {
-    /// List all registered devices.
+    /// List the keyboards the running daemon manages (and registered devices).
     List,
 
     /// Rename a device.
@@ -55,7 +56,25 @@ enum DevicesCommands {
 /// JSON output structure for device list.
 #[derive(Serialize)]
 struct DeviceListOutput {
+    /// Registry entries (names / layouts the user assigned).
     devices: Vec<DeviceEntry>,
+    /// Whether a daemon answered on the IPC endpoint.
+    daemon_running: bool,
+    /// Keyboards that daemon has captured right now (empty if not running).
+    captured: Vec<CapturedDevice>,
+}
+
+/// Asks the running daemon which keyboards it has captured. `None` when no
+/// daemon is reachable.
+fn captured_by_daemon() -> Option<Vec<CapturedDevice>> {
+    use crate::ipc::client::IpcClient;
+    use crate::ipc::{DaemonIpc, IpcEndpoint, IpcRequest, IpcResponse};
+
+    let mut ipc = IpcClient::new(IpcEndpoint::default_for_platform());
+    match ipc.send_request(&IpcRequest::GetDevices) {
+        Ok(IpcResponse::Devices { devices }) => Some(devices),
+        _ => None,
+    }
 }
 
 /// JSON output structure for success operations.
@@ -130,45 +149,80 @@ fn execute_inner(args: DevicesArgs, registry_path: Option<PathBuf>) -> DaemonRes
 /// Handle the `list` subcommand.
 fn handle_list(registry: &DeviceRegistry, json: bool) -> DaemonResult<()> {
     let devices = registry.list();
+    let captured = captured_by_daemon();
 
     if json {
         let output = DeviceListOutput {
             devices: devices.into_iter().cloned().collect(),
+            daemon_running: captured.is_some(),
+            captured: captured.unwrap_or_default(),
         };
         println!(
             "{}",
             serde_json::to_string_pretty(&output).map_err(CliError::from)?
         );
-    } else {
-        if devices.is_empty() {
-            println!("No devices registered.");
-            println!();
-            println!("Devices are automatically registered when the daemon detects them.");
-            println!("Run 'keyrx daemon run' to start detecting devices.");
-            return Ok(());
-        }
-
-        println!("Registered Devices:");
-        println!();
-        println!("{:<40} {:<25} LAYOUT", "ID", "NAME");
-        println!("{}", "-".repeat(85));
-
-        for device in &devices {
-            let layout_str = device.layout.as_deref().unwrap_or("-");
-
-            println!(
-                "{:<40} {:<25} {}",
-                truncate(&device.id, 40),
-                truncate(&device.name, 25),
-                layout_str
-            );
-        }
-
-        println!();
-        println!("Total: {} device(s)", devices.len());
+        return Ok(());
     }
 
+    match &captured {
+        Some(captured) => print_captured(captured),
+        None => {
+            println!("The keyrx daemon is not running, so no keyboards are captured.");
+            println!("Start it with 'keyrx_daemon run'; 'keyrx_daemon list-devices' shows");
+            println!("the keyboards connected right now.");
+            println!();
+        }
+    }
+    print_registered(&devices);
     Ok(())
+}
+
+/// Prints the keyboards the running daemon has grabbed.
+fn print_captured(captured: &[CapturedDevice]) {
+    println!("Captured by the running daemon:");
+    if captured.is_empty() {
+        println!("  (none - no keyboard matches the active profile's device_start patterns)");
+        println!();
+        return;
+    }
+    println!("{:<40} {:<30} PATH", "ID", "NAME");
+    println!("{}", "-".repeat(95));
+    for device in captured {
+        println!(
+            "{:<40} {:<30} {}",
+            truncate(&device.id, 40),
+            truncate(&device.name, 30),
+            device.path
+        );
+    }
+    println!();
+}
+
+/// Prints the registry (user-assigned names and layouts).
+fn print_registered(devices: &[&DeviceEntry]) {
+    if devices.is_empty() {
+        println!("No devices registered (rename a device or set its layout to add it).");
+        return;
+    }
+
+    println!("Registered Devices:");
+    println!();
+    println!("{:<40} {:<25} LAYOUT", "ID", "NAME");
+    println!("{}", "-".repeat(85));
+
+    for device in devices {
+        let layout_str = device.layout.as_deref().unwrap_or("-");
+
+        println!(
+            "{:<40} {:<25} {}",
+            truncate(&device.id, 40),
+            truncate(&device.name, 25),
+            layout_str
+        );
+    }
+
+    println!();
+    println!("Total: {} device(s)", devices.len());
 }
 
 /// Handle the `rename` subcommand.

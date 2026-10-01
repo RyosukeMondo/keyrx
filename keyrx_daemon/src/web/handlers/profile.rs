@@ -188,19 +188,8 @@ pub async fn create_profile(
     validate_profile_name(&params.name)?;
 
     // Parse template
-    let template = match params.template.as_str() {
-        "blank" => ProfileTemplate::Blank,
-        "simple_remap" => ProfileTemplate::SimpleRemap,
-        "capslock_escape" => ProfileTemplate::CapslockEscape,
-        "vim_navigation" => ProfileTemplate::VimNavigation,
-        "gaming" => ProfileTemplate::Gaming,
-        _ => {
-            return Err(RpcError::invalid_params(format!(
-                "Invalid template: {}. Valid templates: blank, simple_remap, capslock_escape, vim_navigation, gaming",
-                params.template
-            )))
-        }
-    };
+    let template =
+        ProfileTemplate::from_name(&params.template).map_err(RpcError::invalid_params)?;
 
     // Call profile service
     let profile_info = profile_service
