@@ -265,7 +265,7 @@ fn devices_list_says_when_no_daemon_is_running_and_never_mentions_a_nonexistent_
 #[cfg(target_os = "linux")]
 #[test]
 fn the_emergency_chord_is_in_run_help_and_doctor() {
-    let chord = keyrx_daemon::platform::linux::EMERGENCY_CHORD_TEXT;
+    let chord = "Left Ctrl + Right Ctrl + Escape";
     let sandbox = Sandbox::new();
     let help = sandbox.cmd().args(["run", "--help"]).output().unwrap();
     // clap re-wraps long help; compare without whitespace differences.
@@ -287,6 +287,9 @@ fn the_emergency_chord_is_in_run_help_and_doctor() {
         "doctor: {}",
         flat(&doctor.stdout)
     );
+    // The one-handed alternative is announced next to the chord.
+    assert!(flat(&help.stdout).contains("hold Escape alone"));
+    assert!(flat(&doctor.stdout).contains("hold Escape alone for 3 s"));
 }
 
 #[test]

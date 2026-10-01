@@ -26,6 +26,7 @@ pub fn handle_run(
     log: crate::daemon::platform_setup::LogOptions,
     watch: bool,
     test_mode: bool,
+    tuning: crate::daemon::options::OptionOverrides,
 ) -> Result<(), (i32, String)> {
     // Validate test mode early for release builds
     #[cfg(not(debug_assertions))]
@@ -37,6 +38,10 @@ pub fn handle_run(
     }
 
     let config_dir = crate::cli::config_dir::get_config_dir()
+        .map_err(|e| (exit_codes::CONFIG_ERROR, format!("Error: {e}")))?;
+
+    // Resolve flags/env/settings.json once, so a bad value fails before anything starts.
+    let options = crate::daemon::options::RuntimeOptions::from_environment(&config_dir, &tuning)
         .map_err(|e| (exit_codes::CONFIG_ERROR, format!("Error: {e}")))?;
 
     // `--config FILE` overrides the active profile at startup; without it the
@@ -72,12 +77,12 @@ pub fn handle_run(
     // Delegate to platform-specific handler with ServiceContainer
     #[cfg(target_os = "linux")]
     return crate::daemon::platform_runners::linux::run_daemon(
-        source, config_dir, log, watch, test_mode, container,
+        source, config_dir, log, watch, test_mode, container, options,
     );
 
     #[cfg(target_os = "windows")]
     return crate::daemon::platform_runners::windows::run_daemon(
-        source, config_dir, log, watch, test_mode, container,
+        source, config_dir, log, watch, test_mode, container, options,
     );
 
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]

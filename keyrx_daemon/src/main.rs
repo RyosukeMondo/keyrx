@@ -51,7 +51,8 @@ enum Commands {
     /// Start the daemon with the specified configuration file.
     ///
     /// Linux emergency stop: if the keyboard stops responding, hold Left Ctrl
-    /// + Right Ctrl + Escape to release every keyboard and stop the daemon.
+    /// + Right Ctrl + Escape (or, with one hand, hold Escape alone for 3
+    /// seconds) to release every keyboard and stop the daemon.
     Run {
         /// Path to the .krx configuration file compiled by keyrx_compiler.
         /// If not specified, uses the active profile from the keyrx config
@@ -80,6 +81,9 @@ enum Commands {
         /// Only available in debug builds for security.
         #[arg(long)]
         test_mode: bool,
+
+        #[command(flatten)]
+        tuning: keyrx_daemon::daemon::options::OptionOverrides,
     },
 
     /// Manage device metadata (rename, set scope, set layout).
@@ -168,12 +172,14 @@ fn main() {
             log_keys,
             no_watch,
             test_mode,
+            tuning,
         } => Command::Run {
             config,
             debug,
             log_keys,
             no_watch,
             test_mode,
+            tuning,
         },
         Commands::Devices(args) => Command::Devices(args),
         Commands::Profiles(args) => Command::Profiles(args),

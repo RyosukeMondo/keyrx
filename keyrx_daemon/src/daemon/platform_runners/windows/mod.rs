@@ -43,6 +43,7 @@ pub fn run_daemon(
     watch: bool,
     test_mode: bool,
     container: Arc<crate::container::ServiceContainer>,
+    options: crate::daemon::options::RuntimeOptions,
 ) -> Result<(), (i32, String)> {
     use crate::daemon::platform_setup::{init_logging, log_startup_version_info};
 
@@ -59,7 +60,7 @@ pub fn run_daemon(
     let killed_old = instance::ensure_single_instance(&config_dir);
     let configured_port = configured_port(&config_dir, killed_old);
 
-    let mut daemon = create_daemon(source, &config_dir)?;
+    let mut daemon = create_daemon(source, &config_dir, &options)?;
     let daemon_state = daemon.shared_state();
 
     // Real-time event streaming to WebSocket clients
@@ -116,6 +117,7 @@ pub fn run_daemon(
 fn create_daemon(
     source: crate::daemon::ConfigSource,
     config_dir: &Path,
+    options: &crate::daemon::options::RuntimeOptions,
 ) -> Result<crate::daemon::Daemon, (i32, String)> {
     log::info!("Starting keyrx daemon (Windows) from {source:?}");
     let platform = crate::platform::create_platform().map_err(|e| {
@@ -124,7 +126,7 @@ fn create_daemon(
             format!("Failed to create platform: {}", e),
         )
     })?;
-    crate::daemon::Daemon::new(platform, source, config_dir.to_path_buf())
+    crate::daemon::Daemon::with_options(platform, source, config_dir.to_path_buf(), options)
         .map_err(daemon_error_to_exit)
 }
 

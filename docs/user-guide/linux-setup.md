@@ -334,8 +334,9 @@ With lingering the service starts at boot (before login, so without a tray
 icon - the web UI works; `systemctl --user restart keyrx` after login brings
 the tray up). Without it, the service starts at login.
 
-**Emergency stop:** hold Left Ctrl + Right Ctrl + Escape (works on the raw
-keys even if the config is broken), or from another TTY / SSH session run
+**Emergency stop:** hold Left Ctrl + Right Ctrl + Escape, or hold Escape alone
+for 3 seconds (works on the raw keys even if the config is broken), or from
+another TTY / SSH session run
 `systemctl --user stop keyrx` (SIGKILL is also safe: the kernel releases the
 grab and the keyboard types normally again).
 
@@ -589,12 +590,45 @@ logs a warning ("lost input events"). The number of recoveries is shown by
 ### Emergency Escape: Keyboard Unusable From a Bad Config
 
 If an active profile remaps a key you need (e.g. Escape) badly enough that
-you cannot type, hold **Left Ctrl + Right Ctrl + Escape** together. The
-daemon releases (ungrabs) every keyboard it holds and stops immediately, on
-the raw physical keys, regardless of what the broken config maps them to.
+you cannot type, use either escape hatch. Both work on the raw physical keys,
+regardless of what the broken config maps them to, and both make the daemon
+release (ungrab) every keyboard it holds and stop:
+
+- **Two hands:** hold **Left Ctrl + Right Ctrl + Escape** together (the
+  default chord).
+- **One hand:** hold **Escape alone for 3 seconds**. Pressing any other key
+  while it is down cancels it, so normal typing and tapping or mashing Escape
+  never trigger it. It needs no timing precision and no second hand, which
+  suits one-handed use, a tremor, or sticky keys.
+
 Your keyboard goes back to normal system input right away; fix the config
 (e.g. via the web UI or `keyrx_daemon profiles`) and start the daemon again
-(`keyrx_daemon run`, or `systemctl --user restart keyrx`).
+(`keyrx_daemon run`, or `systemctl --user restart keyrx`). The active
+settings are printed at startup and by `keyrx_daemon doctor`.
+
+Both are configurable (flag, then environment variable, then `settings.json`
+in the config dir, then the default):
+
+| Setting | Flag | Environment | `settings.json` |
+|---|---|---|---|
+| Chord (2-4 keys joined by `+`) | `--emergency-chord LCtrl+RCtrl+Escape` | `KEYRX_EMERGENCY_CHORD` | `emergency_chord` |
+| One-handed hold in ms (1000-30000, `0` = off) | `--emergency-hold-ms 3000` | `KEYRX_EMERGENCY_HOLD_MS` | `emergency_hold_ms` |
+
+The chord itself cannot be switched off: there is always a way out.
+
+### Minimum Key-Down Time
+
+A tap, a sequence or a remapped tap reaches the output as a press and a
+release a few microseconds apart. Games and tools that read key state once per
+frame can miss a pulse that short. keyrx therefore keeps an output key down for
+at least **5 ms**: only a release that would follow its press by less than that
+is held back until the time has passed. Longer holds are not delayed, order is
+preserved (anything emitted after a held-back release waits behind it, at most
+5 ms), and a profile switch or shutdown flushes everything at once.
+
+| Setting | Flag | Environment | `settings.json` |
+|---|---|---|---|
+| Minimum key-down in ms (0-200, `0` = off) | `--min-key-down-ms 5` | `KEYRX_MIN_KEY_DOWN_MS` | `min_key_down_ms` |
 
 ### Keys Stuck After Crash
 

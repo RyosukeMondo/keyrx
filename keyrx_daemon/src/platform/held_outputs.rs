@@ -90,6 +90,10 @@ impl Platform for HeldOutputs {
         self.inner.take_input_overflows()
     }
 
+    fn set_input_wait_limit(&mut self, limit: Option<std::time::Duration>) {
+        self.inner.set_input_wait_limit(limit);
+    }
+
     fn output_device(&self) -> Option<crate::platform::OutputDeviceInfo> {
         self.inner.output_device()
     }
