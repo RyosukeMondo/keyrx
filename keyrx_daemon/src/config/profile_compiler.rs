@@ -16,6 +16,10 @@ const COMPILATION_TIMEOUT_SECS: u64 = 30;
 pub struct CompilationResult {
     pub compile_time_ms: u64,
     pub success: bool,
+    /// Lint findings (e.g. a mapping that can never fire). The profile still
+    /// compiled; the compiler used to print these to stderr, along with
+    /// progress chatter, on every activation.
+    pub warnings: Vec<String>,
 }
 
 /// Errors that can occur during compilation.
@@ -32,6 +36,19 @@ pub enum CompilationError {
 }
 
 impl CompilationError {
+    /// The same error with `from` replaced by `to` in its message: a
+    /// candidate source is compiled from a temp file, but the user should be
+    /// told about their real file (`profiles/work.rhai:3:1`).
+    #[must_use]
+    pub fn naming_file(self, from: &Path, to: &Path) -> Self {
+        match self {
+            Self::CompilationFailed(msg) => Self::CompilationFailed(
+                msg.replace(&from.display().to_string(), &to.display().to_string()),
+            ),
+            other => other,
+        }
+    }
+
     /// Source position (line, column) of the error, when the compiler reported
     /// one. Compiler messages end with `(line N, position M)`.
     pub fn location(&self) -> Option<(usize, usize)> {
@@ -94,13 +111,14 @@ impl ProfileCompiler {
     ) -> Result<CompilationResult, CompilationError> {
         let start = Instant::now();
 
-        self.compile_with_timeout(source, output)?;
+        let warnings = self.compile_with_timeout(source, output)?;
 
         let compile_time = start.elapsed().as_millis() as u64;
 
         Ok(CompilationResult {
             compile_time_ms: compile_time,
             success: true,
+            warnings,
         })
     }
 
@@ -119,13 +137,48 @@ impl ProfileCompiler {
         &self,
         rhai_path: &Path,
         krx_path: &Path,
-    ) -> Result<(), CompilationError> {
-        // For now, use keyrx_compiler directly
-        // In production, this would use timeout mechanism
-        keyrx_compiler::compile_file(rhai_path, krx_path)
-            .map_err(|e| CompilationError::CompilationFailed(e.to_string()))?;
+    ) -> Result<Vec<String>, CompilationError> {
+        let (bytes, warnings) = self.build(rhai_path)?;
+        write_atomically(krx_path, &bytes)?;
+        for warning in &warnings {
+            log::warn!("{}: {warning}", rhai_path.display());
+        }
+        Ok(warnings)
+    }
 
-        Ok(())
+    /// Parses `source` into a configuration, with its lint warnings. Nothing
+    /// is written and nothing is printed - this is the ONE parse every
+    /// caller (activation, `config set-key`, `validate`) shares, so none of
+    /// them needs a scratch file just to find out whether a profile compiles.
+    pub fn parse(
+        &self,
+        source: &Path,
+    ) -> Result<(keyrx_core::config::ConfigRoot, Vec<String>), CompilationError> {
+        let config = keyrx_compiler::parser::Parser::new()
+            .parse_script(source)
+            .map_err(|e| {
+                CompilationError::CompilationFailed(
+                    keyrx_compiler::CompileError::ParseError(e).to_string(),
+                )
+            })?;
+        let warnings = config
+            .devices
+            .iter()
+            .flat_map(keyrx_core::config::lint::dead_mappings)
+            .map(|dead| dead.to_string())
+            .collect();
+        Ok((config, warnings))
+    }
+
+    /// Compiles `source` to the `.krx` bytes (and lint warnings) in memory.
+    pub fn build(&self, source: &Path) -> Result<(Vec<u8>, Vec<String>), CompilationError> {
+        let (config, warnings) = self.parse(source)?;
+        let bytes = keyrx_compiler::serialize::serialize(&config).map_err(|e| {
+            CompilationError::CompilationFailed(
+                keyrx_compiler::CompileError::SerializeError(e).to_string(),
+            )
+        })?;
+        Ok((bytes, warnings))
     }
 
     /// Validate a configuration file without compiling.
@@ -148,6 +201,18 @@ impl ProfileCompiler {
 
         Ok(())
     }
+}
+
+/// Writes `bytes` to `path` through a sibling file and a rename, so a reader
+/// (the daemon, the file watcher) never sees a half-written `.krx`.
+fn write_atomically(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    let mut part = path.as_os_str().to_owned();
+    part.push(".part");
+    let part = std::path::PathBuf::from(part);
+    std::fs::write(&part, bytes)?;
+    std::fs::rename(&part, path).inspect_err(|_| {
+        let _ = std::fs::remove_file(&part);
+    })
 }
 
 impl Default for ProfileCompiler {
@@ -200,6 +265,7 @@ mod tests {
         let result = CompilationResult {
             compile_time_ms: 100,
             success: true,
+            warnings: Vec::new(),
         };
 
         assert_eq!(result.compile_time_ms, 100);

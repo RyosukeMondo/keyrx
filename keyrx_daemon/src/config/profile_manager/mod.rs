@@ -334,7 +334,9 @@ impl ProfileManager {
             );
             let _ = fs::remove_file(&temp_rhai_path);
             let _ = fs::remove_file(&temp_krx_path);
-            return Err(ProfileError::Compilation(e));
+            return Err(ProfileError::Compilation(
+                e.naming_file(&temp_rhai_path, &profile.rhai_path),
+            ));
         }
 
         // Compilation succeeded — commit both files (each rename is atomic

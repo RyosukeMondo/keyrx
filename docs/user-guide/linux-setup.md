@@ -426,6 +426,57 @@ you can fix the profile (or activate another), logs the reason, and reports it
 as `config_error` in `keyrx_daemon status` (also `GET /api/status` and the MCP
 status tool); `keyrx_daemon doctor` flags it. A reload that fails (bad edit,
 SIGHUP) keeps the previous working config and reports the error the same way.
+That includes an edit the file watcher picked up that does not compile: status
+and `doctor` show the compiler's `file:line` message and when it happened until
+a later edit compiles.
+
+### Editing mappings from the command line
+
+`keyrx_daemon config set-key`, `set-tap-hold`, `delete-key` and
+`layers create|rename|delete` edit the profile's `.rhai` in place:
+
+- Input keys are bare names as in the DSL manual (`CapsLock`); a `VK_` prefix
+  is accepted and means the same key, so `CapsLock` and `VK_CapsLock` replace
+  each other instead of producing a duplicate. Output keys are written
+  `VK_...` (a bare output name gets its prefix).
+- Only the lines that change are touched: your comments, blank lines, spacing
+  and line endings stay as they are, so `git diff` shows the one line you
+  meant to change. A new mapping goes after the last mapping of its block.
+- The result is compiled before anything is written. If it does not compile
+  (or a key name is unknown) the command fails with the reason and neither the
+  `.rhai` nor the `.krx` is modified.
+
+Compiling is quiet: `profiles activate` prints its outcome, not the
+compiler's progress; lint findings (a mapping that can never fire) are logged
+as warnings.
+
+### What to keep in git
+
+The config directory (`~/.config/keyrx`) mixes source you wrote with state the
+daemon generates:
+
+| Path | Track in git? | Why |
+|---|---|---|
+| `profiles/*.rhai` | **yes** | Your profiles - the source of truth |
+| `settings.json` | yes (optional) | Port, layout, key-down and emergency-stop settings you chose |
+| `devices.json` | optional | Names/layouts you gave your keyboards (machine specific) |
+| `profiles/*.krx` | **no** | Compiled binaries, rebuilt from the `.rhai` on activation or edit |
+| `.active` | **no** | Which profile is active on this machine |
+| `profiles/*.tmp`, `*.part`, `*.rhai.tmp` | no | Transient files of an interrupted save |
+
+Example `.gitignore` for the config dir:
+
+```gitignore
+*.krx
+.active
+*.tmp
+*.part
+```
+
+Because `.active` and the `.krx` files are machine state, two machines can
+share the same repository and still run different profiles; after a
+`git pull`, `keyrx_daemon profiles activate NAME` (or just saving an edit while
+the daemon runs) recompiles.
 
 ## Troubleshooting
 
