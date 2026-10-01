@@ -164,16 +164,17 @@ run on Windows (the windows-gnu clippy and `--no-run` test build are clean).
 When you next sync, please check:
 
 - **New `BaseKeyMapping` variants 7/8/9** in the shared engine (explicit rkyv
-  discriminants): 7 = hold-with-real-key (`tap_hold`/`hold_only` can hold a
-  real key such as `VK_LCtrl`), 8 = `OneShot` (`one_shot(key, "VK_LShift")`),
+  discriminants): 7 = `TapHoldKey` (`tap_hold`/`hold_only` can hold a real key
+  such as `VK_LCtrl`), 8 = `OneShot` (`one_shot(key, "VK_LShift")`),
   9 = `TapHoldKeyTimeoutOnly`. The `.krx` is now byte-deterministic
   (`SOURCE_DATE_EPOCH` or 0 for the timestamp). Run
   `cargo test -p keyrx_core` and check the Windows hook still produces correct
   Shift/Ctrl for a home-row mod and a one-shot Shift.
 - **Min key-down decorator** (`platform/min_key_down.rs`, default 5 ms, flag
-  `--min-key-down-ms`, env `KEYRX_MIN_KEY_DOWN_MS`, `settings.json`): it wraps
-  the output side of the event loop for every platform. Confirm it is wired in
-  `platform_runners/windows` (a tap should keep the key down >= 5 ms; `0`
+  `--min-key-down-ms`, env `KEYRX_MIN_KEY_DOWN_MS`, `settings.json`): it is
+  applied in `daemon/mod.rs` (`MinKeyDown::new(platform, ..)`) around whatever
+  `Platform` the daemon was given. Confirm the Windows runner builds its
+  daemon through that path (a tap should keep the key down >= 5 ms; `0`
   disables) and that `SendInput` pacing still behaves.
 - **Output device naming:** Linux names its uinput device `keyrx-out-<pid>`;
   `OutputDeviceInfo` (name + path) is now in `status` on IPC and REST. On
@@ -184,6 +185,8 @@ When you next sync, please check:
 - **`config_error`** in status (failed hot reload / broken active profile) is
   set through the shared `DaemonSharedState`; the Windows runner should surface
   it the same way (`status`, `doctor`).
-- Emergency stop gained a one-handed hold (Linux only); the Windows hook keeps
-  its own chord.
+- The one-handed emergency stop (`--emergency-hold-ms`, hold Escape alone) was
+  implemented in `platform/linux/emergency_stop.rs` and `platform/emergency.rs`;
+  check whether `platform/emergency.rs` is meant to be shared with the Windows
+  hook and that the Windows chord behaviour is unchanged.
 

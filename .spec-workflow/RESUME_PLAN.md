@@ -595,7 +595,8 @@ the `windows` remote. Open items, none blocking:
   Rhai parser surfaced `fn` bodies as phantom mappings (examples/08); a
   doctest and two lint nits. Release build installed, real service restarted
   (doctor green, only `USB Keyboard` grabbed, output `keyrx-out-<pid>`, old
-  .krx still loads). Scratch live regression 97/97 (see commit log): caps,
+  .krx still loads). Scratch live regression 67/67 checks (one harness read after the
+  chord-stopped daemon's device vanished, not a product failure): caps,
   home-row, one_shot, tap_hold_timeout_only, min key-down (5.07 ms vs 0.01 ms
   with 0), hot reload good/bad + config_error, broken active profile grabs
   nothing, SYN_DROPPED flood, both emergency stops, example 08, all templates.
