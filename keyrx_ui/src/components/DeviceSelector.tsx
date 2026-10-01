@@ -143,12 +143,12 @@ export function DeviceSelector({
                   )}
                 </div>
                 {device.serial && (
-                  <div className="text-xs text-slate-500 truncate">
+                  <div className="text-xs text-slate-400 truncate">
                     Serial: {device.serial}
                   </div>
                 )}
                 {device.layout && (
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-slate-400">
                     Layout: {device.layout}
                   </div>
                 )}
@@ -171,13 +171,13 @@ export function DeviceSelector({
           ))}
         </div>
       ) : (
-        <div className="text-sm text-slate-500 text-center py-4">
+        <div className="text-sm text-slate-400 text-center py-4">
           No devices detected. Connect a keyboard to get started.
         </div>
       )}
 
       {/* Info text */}
-      <p className="text-xs text-slate-500 mt-3">
+      <p className="text-xs text-slate-400 mt-3">
         {multiSelect
           ? 'Select one or more devices to configure. Device-specific mappings will be generated in Rhai script.'
           : 'Select a device to configure.'}

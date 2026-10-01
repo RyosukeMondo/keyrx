@@ -80,7 +80,7 @@ export const Input = React.memo<InputProps>(
       : '';
 
     // Placeholder color
-    const placeholderClasses = 'placeholder:text-slate-500';
+    const placeholderClasses = 'placeholder:text-slate-400';
 
     const inputClasses = [
       baseClasses,

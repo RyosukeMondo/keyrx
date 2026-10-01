@@ -152,7 +152,7 @@ export const InlineEdit = React.memo<InlineEditProps>(
       >
         <span
           className={`${className} ${
-            showPlaceholder ? 'text-slate-500 italic' : ''
+            showPlaceholder ? 'text-slate-400 italic' : ''
           }`}
         >
           {displayValue}

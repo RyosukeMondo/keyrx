@@ -61,7 +61,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
             ) : (
               <span
                 role="status"
-                className="text-slate-500 text-sm"
+                className="text-slate-400 text-sm"
                 aria-label="No modifiers active"
               >
                 None
@@ -93,7 +93,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
             ) : (
               <span
                 role="status"
-                className="text-slate-500 text-sm"
+                className="text-slate-400 text-sm"
                 aria-label="No locks active"
               >
                 None
@@ -133,7 +133,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
             {devicesLoading ? (
               <span
                 role="status"
-                className="text-slate-500 text-sm"
+                className="text-slate-400 text-sm"
                 aria-label="Loading devices"
               >
                 Loading...
@@ -202,7 +202,7 @@ export function StateIndicatorPanel({ state }: StateIndicatorPanelProps) {
             ) : (
               <span
                 role="status"
-                className="text-slate-500 text-sm"
+                className="text-slate-400 text-sm"
                 aria-label="No devices connected"
               >
                 None

@@ -102,7 +102,7 @@ export function KeyCategorySection({
             )}
             {icon && <span className="flex-shrink-0">{icon}</span>}
             <h4>{title}</h4>
-            <span className="text-xs text-slate-500 font-normal">
+            <span className="text-xs text-slate-400 font-normal">
               ({keys.length})
             </span>
           </button>
@@ -110,7 +110,7 @@ export function KeyCategorySection({
           <div className="flex items-center gap-2">
             {icon && <span className="flex-shrink-0">{icon}</span>}
             <h4 className="text-sm font-semibold text-slate-300">{title}</h4>
-            <span className="text-xs text-slate-500">({keys.length})</span>
+            <span className="text-xs text-slate-400">({keys.length})</span>
           </div>
         )}
       </div>

@@ -226,7 +226,7 @@ export const ProfileCard = React.memo<ProfileCardProps>(
 
         {/* Last Modified */}
         {lastModified && (
-          <p className="text-xs text-slate-500 mb-4">
+          <p className="text-xs text-slate-400 mb-4">
             Modified: {lastModified}
           </p>
         )}

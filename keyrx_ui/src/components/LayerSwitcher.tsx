@@ -49,7 +49,7 @@ export function LayerSwitcher({
           <span className="text-slate-300 font-semibold text-xs block text-center">
             LAYERS
           </span>
-          <span className="text-slate-500 text-xs block text-center">
+          <span className="text-slate-400 text-xs block text-center">
             {filteredLayers.length}
           </span>
         </div>

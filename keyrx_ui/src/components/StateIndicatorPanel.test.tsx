@@ -72,7 +72,7 @@ describe('StateIndicatorPanel', () => {
     const noneElements = screen.getAllByText('None');
     // Should have "None" for modifiers
     expect(noneElements.length).toBeGreaterThanOrEqual(1);
-    expect(noneElements[0]).toHaveClass('text-slate-500');
+    expect(noneElements[0]).toHaveClass('text-slate-400');
   });
 
   it('shows "None" when locks array is empty', () => {
@@ -87,7 +87,7 @@ describe('StateIndicatorPanel', () => {
     const noneElements = screen.getAllByText('None');
     // Should have "None" for locks
     expect(noneElements.length).toBeGreaterThanOrEqual(1);
-    expect(noneElements[0]).toHaveClass('text-slate-500');
+    expect(noneElements[0]).toHaveClass('text-slate-400');
   });
 
   it('renders all sections when state has modifiers, locks, and layer', () => {

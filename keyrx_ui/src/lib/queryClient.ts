@@ -94,6 +94,9 @@ export const queryKeys = {
   // Settings queries
   globalLayout: ['settings', 'global-layout'] as const,
 
+  // Daemon status (active profile, grabbed keyboards)
+  daemonStatus: ['daemon', 'status'] as const,
+
   // Metrics queries
   latencyStats: ['metrics', 'latency'] as const,
   eventLog: ['metrics', 'events'] as const,

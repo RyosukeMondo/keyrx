@@ -11,7 +11,9 @@
  * - Height persistence via useCodePanel
  * - Sync status indicators (parsing, generating, syncing)
  * - Parse error display with line/column info
- * - Fixed positioning at bottom of viewport
+ * - Fixed positioning at the bottom of the content area (above the mobile
+ *   bottom nav, right of the desktop sidebar) with an in-flow spacer so it
+ *   never hides the end of the page
  *
  * @module CodePanelContainer
  */
@@ -87,114 +89,125 @@ export const CodePanelContainer: React.FC<CodePanelContainerProps> = ({
     return null;
   }
 
-  return (
-    <div
-      className="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-600 shadow-2xl z-50 transition-all duration-300 ease-in-out"
-      style={{ height: `${height}px` }}
-      data-testid="code-panel-container"
-    >
-      {/* Header with collapse button */}
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-900/50 border-b border-slate-600">
-        <h3 className="text-sm font-semibold text-slate-300">
-          Code - {profileName}
-        </h3>
-        <button
-          onClick={onToggle}
-          className="px-3 py-1 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
-          title="Hide code editor"
-          aria-label="Hide code editor"
-        >
-          ▼ Hide
-        </button>
-      </div>
+  // Never taller than 60% of the viewport, so the page stays reachable.
+  const panelStyle = { height: `${height}px`, maxHeight: '60vh' };
 
-      {/* Resize Handle */}
-      {/* role="separator" gives this a valid role for aria-label (axe
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        data-testid="code-panel-spacer"
+        style={panelStyle}
+      />
+      <div
+        className="fixed bottom-16 md:bottom-0 left-0 md:left-64 right-0 bg-slate-800 border-t border-slate-600 shadow-2xl z-40 transition-all duration-300 ease-in-out"
+        style={panelStyle}
+        data-testid="code-panel-container"
+      >
+        {/* Header with collapse button */}
+        <div className="flex items-center justify-between px-4 py-2 bg-slate-900/50 border-b border-slate-600">
+          <h3 className="text-sm font-semibold text-slate-300">
+            Code - {profileName}
+          </h3>
+          <button
+            onClick={onToggle}
+            className="px-3 py-1 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
+            title="Hide code editor"
+            aria-label="Hide code editor"
+          >
+            ▼ Hide
+          </button>
+        </div>
+
+        {/* Resize Handle */}
+        {/* role="separator" gives this a valid role for aria-label (axe
           aria-prohibited-attr) and is the correct ARIA role for a resize
           handle between two panes. Full keyboard resizing (arrow keys via
           a widget-pattern separator) isn't implemented -- this only fixes
           the accessible-name violation, drag-only resize is unchanged. */}
-      <div
-        role="separator"
-        aria-orientation="horizontal"
-        className="h-1 bg-slate-600 hover:bg-primary-500 cursor-ns-resize transition-colors"
-        onMouseDown={handleResizeMouseDown}
-        title="Drag to resize"
-        aria-label="Resize handle"
-      />
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          className="h-1 bg-slate-600 hover:bg-primary-500 cursor-ns-resize transition-colors"
+          onMouseDown={handleResizeMouseDown}
+          title="Drag to resize"
+          aria-label="Resize handle"
+        />
 
-      {/* Code Panel Content */}
-      <div className="h-full flex flex-col p-4 overflow-hidden">
-        {/* Sync status indicators */}
-        {syncEngine.state !== 'idle' && (
-          <div className="flex items-center gap-2 px-4 py-2 mb-2 bg-slate-700 border border-slate-600 rounded-md">
-            {syncEngine.state === 'parsing' && (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400" />
-                <span className="text-sm text-slate-300">
-                  Parsing Rhai script...
-                </span>
-              </>
-            )}
-            {syncEngine.state === 'generating' && (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400" />
-                <span className="text-sm text-slate-300">
-                  Generating code...
-                </span>
-              </>
-            )}
-            {syncEngine.state === 'syncing' && (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400" />
-                <span className="text-sm text-slate-300">Syncing...</span>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Error display */}
-        {syncEngine.error && (
-          <div className="p-3 mb-2 bg-red-900/20 border border-red-500 rounded-md">
-            <div className="flex items-start gap-3">
-              <span className="text-red-400 text-lg">⚠️</span>
-              <div className="flex-1">
-                <h4 className="text-red-400 font-semibold text-sm mb-1">
-                  Parse Error
-                </h4>
-                <p className="text-xs text-red-300 mb-1">
-                  Line {syncEngine.error.line}, Column {syncEngine.error.column}
-                  : {syncEngine.error.message}
-                </p>
-                {syncEngine.error.suggestion && (
-                  <p className="text-xs text-slate-300 italic">
-                    💡 {syncEngine.error.suggestion}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={() => syncEngine.clearError()}
-                className="text-slate-400 hover:text-slate-300 transition-colors"
-                aria-label="Clear error"
-              >
-                ✕
-              </button>
+        {/* Code Panel Content */}
+        <div className="h-full flex flex-col p-4 overflow-hidden">
+          {/* Sync status indicators */}
+          {syncEngine.state !== 'idle' && (
+            <div className="flex items-center gap-2 px-4 py-2 mb-2 bg-slate-700 border border-slate-600 rounded-md">
+              {syncEngine.state === 'parsing' && (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400" />
+                  <span className="text-sm text-slate-300">
+                    Parsing Rhai script...
+                  </span>
+                </>
+              )}
+              {syncEngine.state === 'generating' && (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400" />
+                  <span className="text-sm text-slate-300">
+                    Generating code...
+                  </span>
+                </>
+              )}
+              {syncEngine.state === 'syncing' && (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-400" />
+                  <span className="text-sm text-slate-300">Syncing...</span>
+                </>
+              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Code Editor with WASM validation */}
-        <div className="flex-1 overflow-hidden" data-testid="code-editor">
-          <MonacoEditor
-            value={rhaiCode}
-            onChange={onChange}
-            height={`${
-              height - calculateHeaderHeight(syncEngine.state, syncEngine.error)
-            }px`}
-          />
+          {/* Error display */}
+          {syncEngine.error && (
+            <div className="p-3 mb-2 bg-red-900/20 border border-red-500 rounded-md">
+              <div className="flex items-start gap-3">
+                <span className="text-red-400 text-lg">⚠️</span>
+                <div className="flex-1">
+                  <h4 className="text-red-400 font-semibold text-sm mb-1">
+                    Parse Error
+                  </h4>
+                  <p className="text-xs text-red-300 mb-1">
+                    Line {syncEngine.error.line}, Column{' '}
+                    {syncEngine.error.column}: {syncEngine.error.message}
+                  </p>
+                  {syncEngine.error.suggestion && (
+                    <p className="text-xs text-slate-300 italic">
+                      💡 {syncEngine.error.suggestion}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => syncEngine.clearError()}
+                  className="text-slate-400 hover:text-slate-300 transition-colors"
+                  aria-label="Clear error"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Code Editor with WASM validation */}
+          <div className="flex-1 overflow-hidden" data-testid="code-editor">
+            <MonacoEditor
+              value={rhaiCode}
+              onChange={onChange}
+              height={`${
+                height -
+                calculateHeaderHeight(syncEngine.state, syncEngine.error)
+              }px`}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

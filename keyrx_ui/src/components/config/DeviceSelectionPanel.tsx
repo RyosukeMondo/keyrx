@@ -102,7 +102,7 @@ export const DeviceSelectionPanel: React.FC<DeviceSelectionPanelProps> = ({
               </label>
             ))
           ) : (
-            <span className="text-sm text-slate-500">No devices</span>
+            <span className="text-sm text-slate-400">No devices</span>
           )}
         </div>
       </div>

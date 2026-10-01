@@ -129,7 +129,7 @@ export const DeviceListCard: React.FC<DeviceListCardProps> = ({
                           </span>
                         )}
                       </div>
-                      <span className="text-xs font-mono text-slate-500">
+                      <span className="text-xs font-mono text-slate-400">
                         {device.serial || device.path}
                       </span>
                     </div>

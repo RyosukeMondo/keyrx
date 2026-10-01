@@ -277,7 +277,7 @@ export function KeyPalette({
         recentKeys.length === 0 &&
         !searchQuery && (
           <div className="mb-4 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
-            <p className="text-xs text-slate-500 text-center">
+            <p className="text-xs text-slate-400 text-center">
               Star keys to add favorites. Recent keys will appear automatically.
             </p>
           </div>
@@ -351,7 +351,7 @@ export function KeyPalette({
 
       {/* Hint - hidden in compact mode */}
       {!compact && (
-        <p className="text-xs text-slate-500 mt-4">
+        <p className="text-xs text-slate-400 mt-4">
           {isSearching
             ? 'Use ↑↓ arrows to navigate, Enter to select, Esc to clear'
             : 'Search for keys or browse by category. Click to select.'}

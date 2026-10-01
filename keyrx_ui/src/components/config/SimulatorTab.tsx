@@ -177,7 +177,7 @@ export const SimulatorTab: React.FC<SimulatorTabProps> = ({
             pressedKeys={pressedKeys}
           />
         </div>
-        <p className="text-xs text-slate-500 mt-4 text-center">
+        <p className="text-xs text-slate-400 mt-4 text-center">
           Click keys to simulate press/release. Hold-configured keys will show
           timer behavior.
         </p>

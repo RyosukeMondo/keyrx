@@ -6,8 +6,10 @@
  * - All fetch() requests and responses (method, url, status)
  * - Uncaught errors and unhandled promise rejections
  *
- * Available on every page via Layout.
- * Default: collapsed (small button). Expanded: scrollable log feed.
+ * Available on every page via Layout, but hidden by default so the badge
+ * never covers page content: open it with `?debug=1`, or toggle it with
+ * Ctrl+Shift+D (the choice is remembered). Log capture always runs.
+ * Once shown: collapsed (small button) or expanded (scrollable log feed).
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -174,7 +176,50 @@ function useLogEntries(): LogEntry[] {
 
 type DaemonLogLevel = 'error' | 'warn' | 'info' | 'debug';
 
+const DEBUG_FLAG_KEY = 'keyrx.debug';
+
+function readDebugFlag(): boolean {
+  try {
+    const q = new URLSearchParams(window.location.search).get('debug');
+    if (q === '1') {
+      window.localStorage.setItem(DEBUG_FLAG_KEY, '1');
+      return true;
+    }
+    if (q === '0') window.localStorage.removeItem(DEBUG_FLAG_KEY);
+    return window.localStorage.getItem(DEBUG_FLAG_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** Whether the debug badge is visible; Ctrl+Shift+D toggles and persists. */
+function useDebugVisible(): boolean {
+  const [visible, setVisible] = useState(readDebugFlag);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setVisible((v) => {
+          try {
+            if (v) window.localStorage.removeItem(DEBUG_FLAG_KEY);
+            else window.localStorage.setItem(DEBUG_FLAG_KEY, '1');
+          } catch {
+            // storage unavailable: the toggle still works for this page view
+          }
+          return !v;
+        });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  return visible;
+}
+
 export const GlobalDebugPanel: React.FC = () => {
+  const visible = useDebugVisible();
   const entries = useLogEntries();
   const [expanded, setExpanded] = useState(false);
   const [filter, setFilter] = useState<LogLevel | 'all'>('all');
@@ -228,6 +273,8 @@ export const GlobalDebugPanel: React.FC = () => {
 
   const badgeColor =
     errorCount > 0 ? '#ef4444' : warnCount > 0 ? '#fbbf24' : '#4ade80';
+
+  if (!visible) return null;
 
   if (!expanded) {
     return (
@@ -287,6 +334,7 @@ export const GlobalDebugPanel: React.FC = () => {
         bottom: 0,
         right: 0,
         width: 560,
+        maxWidth: '100vw',
         maxHeight: '50vh',
         background: '#0f172a',
         border: '1px solid #334155',

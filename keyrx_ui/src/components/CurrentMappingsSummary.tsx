@@ -110,7 +110,7 @@ export function CurrentMappingsSummary({
   if (totalMappings === 0) {
     return (
       <div className="p-4 bg-slate-800/30 border border-slate-700/50 rounded-lg">
-        <p className="text-sm text-slate-500 text-center">
+        <p className="text-sm text-slate-400 text-center">
           No key mappings configured. Click a key on the keyboard to add a
           mapping.
         </p>
@@ -161,7 +161,7 @@ export function CurrentMappingsSummary({
                   <span className={cn('text-sm font-medium', style.text)}>
                     {style.label}
                   </span>
-                  <span className="text-xs text-slate-500">({count})</span>
+                  <span className="text-xs text-slate-400">({count})</span>
                 </div>
               </button>
 
@@ -181,7 +181,7 @@ export function CurrentMappingsSummary({
                         <span className="font-mono text-sm font-semibold text-slate-200 shrink-0">
                           {keyCode}
                         </span>
-                        <span className="text-slate-500">→</span>
+                        <span className="text-slate-400">→</span>
                         <span className="text-sm text-slate-300 truncate">
                           {formatMappingDescription(mapping)}
                         </span>

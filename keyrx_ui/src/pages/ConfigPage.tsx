@@ -13,6 +13,7 @@ import {
 } from '@/hooks/useProfileConfig';
 import { useProfiles, useCreateProfile } from '@/hooks/useProfiles';
 import { useUnifiedApi } from '@/hooks/useUnifiedApi';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { useConfigStore } from '@/stores/configStore';
 import { ProfileTemplate } from '@/types';
 import type { LayoutType } from '@/components/KeyboardVisualizer';
@@ -62,6 +63,7 @@ const ConfigPage: React.FC = () => {
   const navigate = useNavigate();
   const { name: routeProfileName } = useParams<{ name: string }>();
   const api = useUnifiedApi();
+  usePageTitle('Config');
 
   // Profile selection (route param feeds into priority chain)
   const { selectedProfileName, setSelectedProfileName } =
@@ -231,28 +233,6 @@ const ConfigPage: React.FC = () => {
 
   return (
     <div className="flex h-full min-h-[calc(100vh-4rem)]">
-      {/* Mobile profile sidebar toggle — pinned to top-left below the app header */}
-      <button
-        className="md:hidden fixed top-[4.5rem] left-2 z-30 p-2 bg-slate-700 rounded-md text-slate-300 hover:bg-slate-600 shadow-lg"
-        onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-        aria-label="Toggle profile sidebar"
-        aria-expanded={mobileSidebarOpen}
-      >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.118a7.5 7.5 0 0 1 14.998 0"
-          />
-        </svg>
-      </button>
-
       {/* Mobile sidebar backdrop */}
       {mobileSidebarOpen && (
         <div
@@ -287,6 +267,30 @@ const ConfigPage: React.FC = () => {
         <div className="flex flex-col gap-4 border-b border-slate-700/80 bg-slate-900/80 p-4 backdrop-blur md:px-6 md:py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
+              {/* Mobile profile list toggle: in the header flow (not fixed) so it
+                  can never cover the workspace label or title. */}
+              <button
+                className="md:hidden mb-2 inline-flex items-center gap-2 rounded-md bg-slate-700 px-3 py-2 text-sm font-medium text-slate-100 hover:bg-slate-600"
+                onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+                aria-label="Toggle profile sidebar"
+                aria-expanded={mobileSidebarOpen}
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.118a7.5 7.5 0 0 1 14.998 0"
+                  />
+                </svg>
+                Profiles
+              </button>
               <div className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-primary-300">
                 <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
                 Keymap workspace
@@ -375,7 +379,7 @@ const ConfigPage: React.FC = () => {
                 disabled={
                   !api.isConnected || !profileExists || syncStatus === 'saving'
                 }
-                className="flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-900/20 transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-900/20 transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {syncStatus === 'saved' ? (
                   <Check className="h-4 w-4" aria-hidden="true" />
@@ -397,7 +401,7 @@ const ConfigPage: React.FC = () => {
               lastSaveTime={lastSaveTime}
               isConnected={api.isConnected}
             />
-            <span className="hidden text-xs text-slate-500 sm:inline">
+            <span className="hidden text-xs text-slate-400 sm:inline">
               Tip: press{' '}
               <kbd className="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-slate-300">
                 Ctrl S

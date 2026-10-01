@@ -72,7 +72,7 @@ const EventRow: React.FC<EventRowProps> = ({ event, index }) => {
       role="row"
       aria-rowindex={index + 1}
     >
-      <span className="text-slate-500 shrink-0 w-20" role="cell">
+      <span className="text-slate-400 shrink-0 w-20" role="cell">
         {formatTimestamp(event.timestamp)}
       </span>
       <span
@@ -164,7 +164,7 @@ export const EventList: React.FC<EventListProps> = ({
         {events.length === 0 ? (
           // Empty state
           <div
-            className="flex items-center justify-center h-full text-slate-500 text-sm"
+            className="flex items-center justify-center h-full text-slate-400 text-sm"
             role="status"
           >
             No events yet. Press a key to start.

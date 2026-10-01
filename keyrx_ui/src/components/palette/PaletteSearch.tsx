@@ -148,7 +148,7 @@ export function PaletteSearch({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${
+          className={`w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${
             compact ? 'pl-8 pr-8 py-1.5 text-xs' : 'pl-10 pr-10 py-2 text-sm'
           }`}
           aria-label="Search keys"
@@ -184,7 +184,7 @@ export function PaletteSearch({
           {results.length === 0 ? (
             <div className="p-4 text-center text-slate-400">
               <p className="mb-2">No results found for "{value}"</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-400">
                 Try different search terms like "ctrl", "enter", or "KC_A"
               </p>
             </div>
@@ -240,7 +240,7 @@ export function PaletteSearch({
 
                         {/* Matched alias */}
                         {match.field === 'alias' && (
-                          <div className="text-xs text-slate-500 mt-1 truncate">
+                          <div className="text-xs text-slate-400 mt-1 truncate">
                             Alias: {highlightMatches(match.text, match.indices)}
                           </div>
                         )}

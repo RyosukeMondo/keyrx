@@ -147,7 +147,7 @@ export function KeyConfigPanel({
                 </span>
               </div>
 
-              <ArrowRight className="w-4 h-4 text-slate-500" />
+              <ArrowRight className="w-4 h-4 text-slate-400" />
 
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-400 uppercase tracking-wide">
@@ -308,7 +308,7 @@ export function KeyConfigPanel({
                       }}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                    <div className="flex justify-between text-xs text-slate-400 mt-1">
                       <span>0 (MD_00)</span>
                       <span>255 (MD_FF)</span>
                     </div>
@@ -330,7 +330,7 @@ export function KeyConfigPanel({
                   onChange={(e) => setThreshold(parseInt(e.target.value))}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                <div className="flex justify-between text-xs text-slate-400 mt-1">
                   <span>50ms (fast)</span>
                   <span>500ms (slow)</span>
                 </div>

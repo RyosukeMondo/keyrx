@@ -149,7 +149,7 @@ export const EventInjectionForm: React.FC<EventInjectionFormProps> = ({
           onChange={handleKeyCodeChange}
           disabled={disabled}
           placeholder="e.g., A, Enter, Space"
-          className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           aria-describedby={validationError ? 'key-code-error' : undefined}
           aria-invalid={!!validationError}
         />

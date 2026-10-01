@@ -8,6 +8,9 @@ import { logger } from './utils/logger';
 import './styles/tokens.css';
 import './index.css';
 import App from './App.tsx';
+import { applyDocumentLanguage } from './i18n';
+
+applyDocumentLanguage();
 
 // Enable axe-core accessibility testing in development
 if (import.meta.env.DEV) {

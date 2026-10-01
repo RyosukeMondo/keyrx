@@ -12,6 +12,7 @@ import {
   useSetGlobalLayout,
 } from '../hooks/useDevices';
 import { getErrorMessage } from '../utils/errorUtils';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { LAYOUT_OPTIONS } from '../contexts/LayoutPreviewContext';
 import type { DeviceEntry } from '../types';
 import { DeviceRow } from '../components/devices/DeviceRow';
@@ -50,6 +51,7 @@ interface Device {
  * not by a UI setting. See ConfigPage for device-aware editing.
  */
 export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
+  usePageTitle('Devices');
   // Fetch devices using React Query
   const {
     data: deviceEntries = [],

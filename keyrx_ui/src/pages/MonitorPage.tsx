@@ -5,6 +5,7 @@ import { Activity, FileCode, Pause, Play, Download, Search } from 'lucide-react'
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { useMetricsStore } from '@/stores/metricsStore';
 import { useActiveProfile } from '@/hooks/useProfiles';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { MetricsStatsCards } from '@/components/metrics/MetricsStatsCards';
 import {
   LatencyChart,
@@ -30,6 +31,7 @@ function downloadFile(content: string, filename: string, mimeType: string) {
 }
 
 export const MonitorPage: React.FC = () => {
+  usePageTitle('Monitor');
   // Connect to metrics store (real WebSocket data)
   const {
     latencyStats,
@@ -246,9 +248,9 @@ export const MonitorPage: React.FC = () => {
   }
 
   return (
-    <main
+    <div
       className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6"
-      role="main"
+      role="region"
       aria-label="Monitor"
     >
       {/* Page Header */}
@@ -313,7 +315,7 @@ export const MonitorPage: React.FC = () => {
                   </span>
                 </div>
                 {activeProfile.modifiedAt && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-400">
                     Last modified:{' '}
                     {new Date(activeProfile.modifiedAt).toLocaleString(
                       'en-US',
@@ -413,7 +415,7 @@ export const MonitorPage: React.FC = () => {
                     value={keyFilter}
                     onChange={(e) => setKeyFilter(e.target.value)}
                     placeholder="Filter by key..."
-                    className="pl-8 pr-3 py-1.5 text-sm rounded-lg bg-slate-800 border border-slate-600 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-40"
+                    className="pl-8 pr-3 py-1.5 text-sm rounded-lg bg-slate-800 border border-slate-600 text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 w-40"
                     aria-label="Filter events by key"
                   />
                 </div>
@@ -460,7 +462,7 @@ export const MonitorPage: React.FC = () => {
           <StateSnapshot state={currentState} />
         </Card>
       </div>
-    </main>
+    </div>
   );
 };
 

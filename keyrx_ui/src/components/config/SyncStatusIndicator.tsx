@@ -33,7 +33,7 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
           <span className="w-2 h-2 rounded-full bg-green-400"></span>
           <span className="hidden sm:inline">Saved</span>
           {lastSaveTime && (
-            <span className="text-slate-500 hidden md:inline">
+            <span className="text-slate-400 hidden md:inline">
               {getTimeAgo()}
             </span>
           )}

@@ -78,7 +78,7 @@ function EventRow({ event, style }: EventRowProps) {
       </div>
 
       {/* Relative timestamp */}
-      <div className="w-24 text-right text-xs text-slate-500">
+      <div className="w-24 text-right text-xs text-slate-400">
         {relativeTime}
       </div>
 
@@ -89,16 +89,16 @@ function EventRow({ event, style }: EventRowProps) {
           data-testid="event-tooltip"
         >
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-            <span className="text-slate-500">Timestamp:</span>
+            <span className="text-slate-400">Timestamp:</span>
             <span className="text-slate-200">{event.timestamp}μs</span>
 
-            <span className="text-slate-500">Input:</span>
+            <span className="text-slate-400">Input:</span>
             <span className="text-slate-200">{event.input}</span>
 
-            <span className="text-slate-500">Output:</span>
+            <span className="text-slate-400">Output:</span>
             <span className="text-slate-200">{event.output}</span>
 
-            <span className="text-slate-500">Latency:</span>
+            <span className="text-slate-400">Latency:</span>
             <span className="text-slate-200">{event.latency}μs</span>
           </div>
         </div>
@@ -160,7 +160,7 @@ export function DashboardEventTimeline({
       {/* Event list or empty state */}
       {events.length === 0 ? (
         <div
-          className="flex items-center justify-center h-96 text-slate-500"
+          className="flex items-center justify-center h-96 text-slate-400"
           data-testid="event-list"
         >
           No events yet. Start typing to see events appear.

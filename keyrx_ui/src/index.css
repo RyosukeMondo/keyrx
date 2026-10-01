@@ -35,6 +35,24 @@ textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* One focus ring for every interactive element (WCAG 2.4.7 / 2.4.13): 2px,
+   offset so it is visible on dark surfaces. Components may layer their own
+   ring on top, but never remove this for keyboard users. */
+:focus-visible {
+  outline: 2px solid #93c5fd; /* primary-300 */
+  outline-offset: 2px;
+}
+
+/* SVG keycaps: outline on <g> is not painted consistently, so ring the key. */
+.key-group:focus-visible {
+  outline: none;
+}
+.key-group:focus-visible .key-face {
+  stroke: #93c5fd;
+  stroke-width: 4px;
+  stroke-dasharray: none;
+}
+
 ::selection {
   background: rgba(59, 130, 246, 0.35);
   color: #f8fafc;

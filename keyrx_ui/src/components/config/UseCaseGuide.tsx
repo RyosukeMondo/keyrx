@@ -118,7 +118,7 @@ export const UseCaseGuide: React.FC<UseCaseGuideProps> = ({
                   >
                     <Icon className="h-4 w-4" aria-hidden="true" />
                   </span>
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                     {path.eyebrow}
                   </span>
                 </div>
@@ -128,7 +128,7 @@ export const UseCaseGuide: React.FC<UseCaseGuideProps> = ({
                 <span className="mt-1 text-sm leading-5 text-slate-400">
                   {path.description}
                 </span>
-                <span className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-slate-500">
+                <span className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-slate-400">
                   {unavailable ? 'Connect a device first' : path.outcome}
                   {!unavailable && (
                     <ArrowRight

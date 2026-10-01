@@ -90,7 +90,7 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
         role="img"
         aria-label="No latency data available"
       >
-        <p className="text-slate-500 text-sm">No data available</p>
+        <p className="text-slate-400 text-sm">No data available</p>
       </div>
     );
   }

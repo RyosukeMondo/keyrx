@@ -46,7 +46,7 @@ export const CustomKeycodeInput: React.FC<CustomKeycodeInputProps> = ({
               w-full px-4 py-3 pr-10
               bg-slate-800 border-2 rounded-lg
               text-slate-100 font-mono text-base
-              placeholder-slate-500
+              placeholder-slate-400
               focus:outline-none focus:ring-2
               transition-colors
               ${
@@ -105,7 +105,7 @@ export const CustomKeycodeInput: React.FC<CustomKeycodeInputProps> = ({
             ${
               customValidation.valid
                 ? 'bg-primary-500 hover:bg-primary-600 text-white shadow-lg hover:shadow-xl'
-                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                : 'bg-slate-700 text-slate-400 cursor-not-allowed'
             }
           `}
         >
