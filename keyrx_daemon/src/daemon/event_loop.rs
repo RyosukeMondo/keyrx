@@ -443,7 +443,7 @@ fn inject_output_events(
 ///         platform,
 ///         running,
 ///         signal_handler,
-///         || Err(DaemonError::RuntimeError("Reload not supported".to_string())),
+///         |_| Err(DaemonError::RuntimeError("Reload not supported".to_string())),
 ///         None,      // No event broadcaster
 ///         &mut None, // No remapping state (pass-through mode)
 ///         None, // No latency recording
