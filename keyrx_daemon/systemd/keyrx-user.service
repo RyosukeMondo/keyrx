@@ -72,8 +72,15 @@
 Description=keyrx Keyboard Remapping Daemon (User Service)
 Documentation=https://github.com/keyrx/keyrx
 
-# Wait for graphical session (ensures input devices are ready)
-After=graphical-session.target
+# Started by default.target: at boot when lingering is enabled, otherwise at
+# login. It deliberately does NOT wait for graphical-session.target - the
+# daemon needs only /dev/input and /dev/uinput (hotplug picks up keyboards that
+# appear later), and waiting would leave the keyboard unremapped until login.
+# The tray icon needs the session's DISPLAY/WAYLAND_DISPLAY: when the daemon
+# starts before login it runs without a tray (the web UI works either way);
+# `systemctl --user restart keyrx` after login brings the tray up.
+# EMERGENCY STOP: hold Left Ctrl + Right Ctrl + Escape (works on the raw keys,
+# stops the daemon cleanly, which systemd does not restart).
 
 # Limit restart attempts to prevent restart loops
 # Max 5 restarts within 30 seconds before giving up
