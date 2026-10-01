@@ -20,6 +20,10 @@ import { GlobalKeyboardPanel } from '@/components/config/GlobalKeyboardPanel';
 import { DeviceKeyboardPanel } from '@/components/config/DeviceKeyboardPanel';
 import { UseCaseGuide } from '@/components/config/UseCaseGuide';
 import { SwapKeysPanel } from '@/components/config/SwapKeysPanel';
+import {
+  ImeKeysPanel,
+  type ImeAssignments,
+} from '@/components/config/ImeKeysPanel';
 import { friendlyKeyName } from '@/utils/keyNames';
 import { useToast } from '@/hooks/useToast';
 import { t } from '@/i18n';
@@ -116,7 +120,7 @@ export const EditTab: React.FC<EditTabProps> = ({
   const [activePane, setActivePane] = useState<'global' | 'device'>('global');
 
   // First-run guide step the user chose from the cards (visible next-step cue)
-  const [guide, setGuide] = useState<null | 'pick-key' | 'swap'>(null);
+  const [guide, setGuide] = useState<null | 'pick-key' | 'swap' | 'ime'>(null);
 
   // Derived values from configStore
   const keyMappings = configStore.getLayerMappings(configStore.activeLayer);
@@ -141,7 +145,7 @@ export const EditTab: React.FC<EditTabProps> = ({
     setSelectedPhysicalKey(keyCode);
     setGuide((g) => (g === 'pick-key' ? null : g));
     setAnnouncement(
-      `Editing ${describeKey(keyCode, keyMappings.get(keyCode))}. Layer ${formatLayerName(activeLayer)}.`
+      `${describeKey(keyCode, keyMappings.get(keyCode))}. ${t('kc.layer')} ${formatLayerName(activeLayer)}.`
     );
     moveFocusToKeyEditor();
   };
@@ -232,6 +236,23 @@ export const EditTab: React.FC<EditTabProps> = ({
     focusEditor();
   };
 
+  /** Apply the IME on/off keys chosen in ImeKeysPanel on the base layer. */
+  const applyIme = (assignments: ImeAssignments) => {
+    configStore.setActiveLayer('base');
+    assignments.forEach(([key, target]) =>
+      configStore.setKeyMapping(
+        key,
+        { type: 'simple', tapAction: target },
+        'base'
+      )
+    );
+    setSyncStatus('unsaved');
+    rebuildAndSyncAST();
+    setGuide(null);
+    setAnnouncement(t('ime.done'));
+    focusEditor();
+  };
+
   const startCommandPad = () => {
     const firstDevice = devices.find(
       (device) => device.name !== '*' && device.serial !== '*'
@@ -261,6 +282,14 @@ export const EditTab: React.FC<EditTabProps> = ({
           <SwapKeysPanel
             layoutKeys={layoutKeys}
             onSwap={applySwap}
+            onCancel={() => setGuide(null)}
+          />
+        )}
+
+        {guide === 'ime' && (
+          <ImeKeysPanel
+            layoutKeys={layoutKeys}
+            onApply={applyIme}
             onCancel={() => setGuide(null)}
           />
         )}
@@ -305,13 +334,22 @@ export const EditTab: React.FC<EditTabProps> = ({
               className="flex items-center justify-between gap-3 rounded-lg bg-primary-500/15 px-4 py-3 text-sm text-primary-100"
             >
               <span>{t('guide.step.pick')}</span>
-              <button
-                type="button"
-                onClick={() => setGuide(null)}
-                className="rounded px-2 py-1 text-xs text-primary-100 underline"
-              >
-                {t('swap.cancel')}
-              </button>
+              <span className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setGuide('ime')}
+                  className="rounded bg-primary-500/30 px-2 py-1 text-xs font-medium text-primary-50 hover:bg-primary-500/50"
+                >
+                  {t('ime.open')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGuide(null)}
+                  className="rounded px-2 py-1 text-xs text-primary-100 underline"
+                >
+                  {t('swap.cancel')}
+                </button>
+              </span>
             </div>
           )}
           {/* Global Keyboard Panel */}
@@ -356,15 +394,14 @@ export const EditTab: React.FC<EditTabProps> = ({
           {!globalSelected && selectedDevices.length === 0 && (
             <Card
               className="bg-yellow-900/20 border border-yellow-700/50 flex-1 block"
-              aria-label="Configuration Warning"
+              aria-label={t('edit.configWarning')}
             >
               <div className="text-center py-8">
                 <p className="text-yellow-200 text-lg mb-2">
-                  No devices selected
+                  {t('edit.noDevices')}
                 </p>
                 <p className="text-yellow-300 text-sm">
-                  Select at least one device or enable &quot;Global Keys&quot;
-                  to configure key mappings
+                  {t('edit.noDevicesHelp')}
                 </p>
               </div>
             </Card>
@@ -375,23 +412,23 @@ export const EditTab: React.FC<EditTabProps> = ({
         <div className="flex gap-4 flex-wrap text-xs text-slate-400 px-2">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-green-500"></div>
-            <span>Simple</span>
+            <span>{t('edit.legend.simple')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-primary-500"></div>
-            <span>Modifier</span>
+            <span>{t('edit.legend.modifier')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-purple-500"></div>
-            <span>Lock</span>
+            <span>{t('edit.legend.lock')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-red-500"></div>
-            <span>Tap/Hold</span>
+            <span>{t('edit.legend.tapHold')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-yellow-500"></div>
-            <span>Layer Active</span>
+            <span>{t('edit.legend.layer')}</span>
           </div>
         </div>
 

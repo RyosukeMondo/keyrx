@@ -2,6 +2,7 @@ import React from 'react';
 import { Keyboard, Command, Lock, Layers, type LucideIcon } from 'lucide-react';
 import { SVGKeyboard, type SVGKey } from '../SVGKeyboard';
 import { IdGrid } from './IdGrid';
+import { t, type MessageKey } from '@/i18n';
 
 /**
  * KeySelectionTabs Component
@@ -34,30 +35,30 @@ export type KeySelectionTab = 'keyboard' | 'modifier' | 'lock' | 'layer';
 
 interface TabConfig {
   icon: LucideIcon;
-  label: string;
-  ariaLabel: string;
+  label: MessageKey;
+  ariaLabel: MessageKey;
 }
 
 const TAB_CONFIG: Record<KeySelectionTab, TabConfig> = {
   keyboard: {
     icon: Keyboard,
-    label: 'Keyboard',
-    ariaLabel: 'Select from keyboard layout',
+    label: 'tabs.keyboard',
+    ariaLabel: 'tabs.keyboard.aria',
   },
   modifier: {
     icon: Command,
-    label: 'Modifier',
-    ariaLabel: 'Select custom modifier (MD_00 to MD_FF)',
+    label: 'tabs.modifier',
+    ariaLabel: 'tabs.modifier.aria',
   },
   lock: {
     icon: Lock,
-    label: 'Lock',
-    ariaLabel: 'Select lock state (LK_00 to LK_FF)',
+    label: 'tabs.lock',
+    ariaLabel: 'tabs.lock.aria',
   },
   layer: {
     icon: Layers,
-    label: 'Layer',
-    ariaLabel: 'Select layer',
+    label: 'tabs.layer',
+    ariaLabel: 'tabs.layer.aria',
   },
 };
 
@@ -87,27 +88,29 @@ const LOCK_LABELS: Record<string, string> = {
 const MODIFIER_ITEMS = Array.from({ length: 256 }, (_, i) => ({
   id: `MD_${hex2(i)}`,
   label: hex2(i),
-  ariaLabel: `Modifier ${hex2(i)}`,
+  ariaLabel: (): string => t('tabs.modifier.item', { id: hex2(i) }),
 }));
 
 const LOCK_ITEMS = Array.from({ length: 256 }, (_, i) => {
   const id = `LK_${hex2(i)}`;
   const label = LOCK_LABELS[id] || hex2(i);
-  return { id, label, ariaLabel: `Lock ${label}` };
+  return {
+    id,
+    label,
+    ariaLabel: (): string => t('tabs.lock.item', { id: label }),
+  };
 });
 
 /** Custom modifier picker (MD_00 to MD_FF) */
 function renderModifierGrid(onSelect: (id: string) => void) {
   return (
     <div className="border border-slate-600 rounded-lg p-4 bg-slate-900 max-h-96 overflow-y-auto">
-      <p className="text-xs text-slate-400 mb-3">
-        Select a custom modifier (MD_00 to MD_FF)
-      </p>
+      <p className="text-xs text-slate-400 mb-3">{t('tabs.modifier.help')}</p>
       <IdGrid
         items={MODIFIER_ITEMS}
         columns={8}
         onSelect={onSelect}
-        label="Custom modifiers"
+        label={t('tabs.modifier.group')}
       />
     </div>
   );
@@ -117,14 +120,12 @@ function renderModifierGrid(onSelect: (id: string) => void) {
 function renderLockGrid(onSelect: (id: string) => void) {
   return (
     <div className="border border-slate-600 rounded-lg p-4 bg-slate-900 max-h-96 overflow-y-auto">
-      <p className="text-xs text-slate-400 mb-3">
-        Select a lock state (LK_00 to LK_FF)
-      </p>
+      <p className="text-xs text-slate-400 mb-3">{t('tabs.lock.help')}</p>
       <IdGrid
         items={LOCK_ITEMS}
         columns={8}
         onSelect={onSelect}
-        label="Lock states"
+        label={t('tabs.lock.group')}
       />
     </div>
   );
@@ -149,7 +150,7 @@ export function KeySelectionTabs({
       {/* Tab Buttons */}
       <div
         role="tablist"
-        aria-label="Key selection categories"
+        aria-label={t('tabs.aria')}
         className="flex gap-2 mb-4 border-b border-slate-700"
       >
         {availableTabs.map((tab) => {
@@ -170,10 +171,10 @@ export function KeySelectionTabs({
                   ? 'text-primary-400 border-primary-400'
                   : 'text-slate-400 border-transparent hover:text-slate-300'
               }`}
-              aria-label={config.ariaLabel}
+              aria-label={t(config.ariaLabel)}
             >
               <Icon className="w-4 h-4 inline-block mr-2" aria-hidden="true" />
-              {config.label}
+              {t(config.label)}
             </button>
           );
         })}
@@ -206,9 +207,7 @@ export function KeySelectionTabs({
             aria-labelledby="keyboard-tab"
             className="border border-slate-600 rounded-lg p-4 bg-slate-900 text-center"
           >
-            <p className="text-slate-400 text-sm">
-              No keyboard layout available
-            </p>
+            <p className="text-slate-400 text-sm">{t('tabs.noLayout')}</p>
           </div>
         )}
 
@@ -235,7 +234,7 @@ export function KeySelectionTabs({
           <div role="tabpanel" id="layer-panel" aria-labelledby="layer-tab">
             <div className="border border-slate-600 rounded-lg p-4 bg-slate-900">
               <p className="text-xs text-slate-400 mb-3">
-                Select a layer (typically 0-15)
+                {t('tabs.layer.help')}
               </p>
               <div className="grid grid-cols-8 gap-2">
                 {Array.from({ length: 16 }, (_, i) => {
@@ -245,7 +244,7 @@ export function KeySelectionTabs({
                       key={layerId}
                       onClick={() => onKeySelect(layerId)}
                       className="px-3 py-2 bg-slate-700 hover:bg-primary-500 text-slate-300 hover:text-white rounded text-sm font-mono transition-colors"
-                      aria-label={`Layer ${i}`}
+                      aria-label={t('tabs.layer.item', { n: i })}
                     >
                       {i}
                     </button>

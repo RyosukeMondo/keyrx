@@ -274,7 +274,7 @@ const ConfigPage: React.FC = () => {
           fixed md:relative z-50 md:z-auto
           h-full md:h-auto
           transition-transform duration-300
-          ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${mobileSidebarOpen ? 'translate-x-0' : 'invisible -translate-x-full md:visible md:translate-x-0'}
           ${sidebarCollapsed ? 'md:w-12' : 'md:w-64'}
           flex-shrink-0
         `}

@@ -230,25 +230,22 @@ export const EventLogList: React.FC<EventLogListProps> = ({
           className="flex flex-wrap items-center gap-x-3 px-4 text-sm font-mono cursor-pointer hover:bg-slate-700/50 select-none"
           title={`Device: ${event.deviceName || event.deviceId || 'Unknown'}`}
           onClick={() => handleRowClick(index)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleRowClick(index);
-            }
-          }}
-          tabIndex={0}
           role="row"
-          aria-expanded={isExpanded}
         >
-          <span
-            className="flex h-10 w-3.5 items-center"
-            role="cell"
-            aria-label="Expand details"
-          >
-            <ChevronIcon
-              className="w-3.5 h-3.5 text-slate-400 shrink-0"
-              aria-hidden="true"
-            />
+          {/* The expander is a real button inside the first cell: aria-expanded
+              is not allowed on a table row, and rows stay plain table rows. */}
+          <span className="flex h-10 w-3.5 items-center" role="cell">
+            <button
+              type="button"
+              aria-expanded={isExpanded}
+              aria-label={`Details: ${event.type} ${formatKey(event.input || event.keyCode)}`}
+              className="flex h-10 w-6 items-center"
+            >
+              <ChevronIcon
+                className="w-3.5 h-3.5 text-slate-400 shrink-0"
+                aria-hidden="true"
+              />
+            </button>
           </span>
           <span
             className="w-20 text-slate-400 text-xs"
@@ -373,7 +370,9 @@ export const EventLogList: React.FC<EventLogListProps> = ({
         className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-800 border-b border-slate-700 text-sm font-semibold text-slate-300"
         role="row"
       >
-        <span className="w-3.5" role="columnheader" aria-label="Details" />
+        <span className="w-3.5" role="columnheader">
+          <span className="sr-only">Details</span>
+        </span>
         <span className="w-20" role="columnheader">
           {t('log.time')}
         </span>

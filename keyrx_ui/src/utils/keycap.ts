@@ -29,15 +29,27 @@ export const MAPPING_MAX = 14;
 export const MAPPING_MIN = 10;
 export const MONO_EM = 0.62; // monospace advance width in em
 
+/** Full-width (CJK) glyphs are a whole em wide, not MONO_EM. */
+const WIDE =
+  /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹯＀-｠￠-￦]/;
+const emWidth = (ch: string) => (WIDE.test(ch) ? 1 : MONO_EM);
+
 /** Fit `text` into `width` px: shrink to `min`, then truncate with an ellipsis. */
 export function fitText(text: string, width: number, max: number, min: number) {
   if (!text) return { text, size: max };
-  const size = Math.max(min, Math.min(max, width / (text.length * MONO_EM)));
-  const maxChars = Math.max(1, Math.floor(width / (size * MONO_EM)));
-  return {
-    text: text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text,
-    size,
-  };
+  const chars = [...text];
+  const total = chars.reduce((n, c) => n + emWidth(c), 0);
+  const size = Math.max(min, Math.min(max, width / total));
+  const budget = width / size; // em available at the chosen size
+  if (total <= budget + 1e-9) return { text, size };
+  let used = MONO_EM; // room for the ellipsis
+  let kept = '';
+  for (const c of chars) {
+    if (used + emWidth(c) > budget) break;
+    used += emWidth(c);
+    kept += c;
+  }
+  return { text: `${kept || chars[0]}…`, size };
 }
 
 const spoken = (value: string | undefined) =>

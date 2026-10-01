@@ -121,6 +121,18 @@ export function normalizeKeyCode(code: string): string {
   return `VK_${code}`;
 }
 
+/** Keycap-sized Japanese legends for the JIS keys (a keycap fits ~3 full-width glyphs). */
+const JA_SHORT_LABELS: Record<string, string> = {
+  Zenkaku: '半/全',
+  Henkan: '変換',
+  Muhenkan: '無変換',
+  Hiragana: 'ひらがな',
+  Katakana: 'カタカナ',
+  KatakanaHiragana: 'かな',
+  Yen: '¥',
+  Ro: 'ろ',
+};
+
 /**
  * Format key label for display
  */
@@ -144,6 +156,8 @@ export function formatKeyLabel(key: string): string {
   }
 
   const clean = key.replace(/^VK_/, '');
+  const jaShort = getLocale() === 'ja' ? JA_SHORT_LABELS[clean] : undefined;
+  if (jaShort) return jaShort;
   const shortNames: Record<string, string> = {
     BACKSPACE: 'BS',
     CAPSLOCK: 'Caps',
@@ -272,6 +286,8 @@ export function keyNameParts(key: string): KeyNameParts {
   return {
     primary: name
       .replace(/([a-z])([A-Z])/g, '$1 $2')
-      .replace(/([A-Za-z])(\d)/g, (m, a, d) => (/^F$/i.test(a) ? m : `${a} ${d}`)),
+      .replace(/([A-Za-z])(\d)/g, (m, a, d) =>
+        /^F$/i.test(a) ? m : `${a} ${d}`
+      ),
   };
 }

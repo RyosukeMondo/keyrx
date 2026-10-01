@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
+import { t } from '@/i18n';
 
 /**
  * Layer Switcher.
@@ -28,7 +29,7 @@ const ALL_LAYERS: string[] = [
 ];
 
 export const formatLayerName = (layer: string) =>
-  layer === 'base' ? 'Base' : layer.toUpperCase().replace('MD-', 'MD_');
+  layer === 'base' ? t('layers.base') : layer.toUpperCase().replace(/-/g, '_');
 
 /** Base first, then the used layers in order, always including the active one. */
 function visibleLayers(used: string[], active: string): string[] {
@@ -107,7 +108,7 @@ export function LayerSwitcher({
             id="layer-switcher-title"
             className="text-slate-300 font-semibold text-xs block text-center"
           >
-            LAYERS
+            {t('layers.title')}
           </span>
           <span className="text-slate-400 text-xs block text-center">
             {layers.length}
@@ -120,9 +121,9 @@ export function LayerSwitcher({
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="..."
-            title="Search layers (e.g., 'md-0a', 'base', '1f')"
+            title={t('layers.searchTitle')}
             className="w-full px-1 py-1 bg-slate-900/50 border border-slate-600 rounded text-white text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary-500/50"
-            aria-label="Search layers"
+            aria-label={t('layers.search')}
           />
         )}
       </div>
@@ -156,7 +157,7 @@ export function LayerSwitcher({
 
       {showAll && searchFilter && layers.length === 0 && (
         <div className="p-4 text-center text-slate-400 text-sm">
-          No layers match your search
+          {t('layers.noMatch')}
         </div>
       )}
 
@@ -166,7 +167,7 @@ export function LayerSwitcher({
         aria-expanded={showAll}
         className="m-1 rounded border border-slate-600/60 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-700 2xl:px-1"
       >
-        {showAll ? 'Fewer layers' : 'All layers'}
+        {showAll ? t('layers.fewer') : t('layers.all')}
       </button>
     </div>
   );

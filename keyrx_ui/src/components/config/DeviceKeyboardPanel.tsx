@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/Card';
 import { LayerSwitcher } from '@/components/LayerSwitcher';
+import { t } from '@/i18n';
 import { KeyboardVisualizerContainer } from './KeyboardVisualizerContainer';
 import type { LayoutType } from '@/components/KeyboardVisualizer';
 import type { Device } from '@/components/DeviceSelector';
@@ -61,14 +62,14 @@ export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
                   htmlFor={`device-selector-${device.id}`}
                   className="text-lg font-semibold text-slate-200"
                 >
-                  Device:
+                  {t('devpanel.label')}
                 </label>
                 <select
                   id={`device-selector-${device.id}`}
                   value={device.id}
                   onChange={(e) => onDeviceChange(device.id, e.target.value)}
                   className="px-3 py-1.5 bg-zinc-700 border border-zinc-600 rounded-md text-slate-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  aria-label="Select device to configure"
+                  aria-label={t('devpanel.select')}
                 >
                   {devices.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -87,10 +88,10 @@ export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
                   }`}
                 >
                   {device.connected
-                    ? '● Connected'
+                    ? t('devpanel.connected')
                     : device.pattern !== undefined
-                      ? '○ No matching keyboard connected'
-                      : '○ Disconnected'}
+                      ? t('devpanel.noMatch')
+                      : t('devpanel.disconnected')}
                 </span>
               </div>
             </div>

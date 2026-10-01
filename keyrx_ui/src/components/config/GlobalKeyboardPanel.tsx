@@ -4,6 +4,7 @@ import { LayerSwitcher } from '@/components/LayerSwitcher';
 import { KeyboardVisualizerContainer } from './KeyboardVisualizerContainer';
 import type { LayoutType } from '@/components/KeyboardVisualizer';
 import type { KeyMapping } from '@/types';
+import { t } from '@/i18n';
 
 interface GlobalKeyboardPanelProps {
   profileName: string;
@@ -48,7 +49,9 @@ export const GlobalKeyboardPanel: React.FC<GlobalKeyboardPanelProps> = ({
     >
       {/* Global Pane Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-md">
-        <h2 className="text-lg font-semibold text-slate-200">Global Keys</h2>
+        <h2 className="text-lg font-semibold text-slate-200">
+          {t('panel.globalKeys')}
+        </h2>
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -58,7 +61,7 @@ export const GlobalKeyboardPanel: React.FC<GlobalKeyboardPanelProps> = ({
             className="w-4 h-4 text-primary-600 bg-slate-700 border-slate-600 rounded focus:ring-primary-500 focus:ring-2"
           />
           <label htmlFor="global-checkbox" className="text-sm text-slate-300">
-            Enable
+            {t('panel.enable')}
           </label>
         </div>
       </div>
@@ -72,10 +75,10 @@ export const GlobalKeyboardPanel: React.FC<GlobalKeyboardPanelProps> = ({
         />
         <Card
           className="bg-gradient-to-br from-slate-800 to-slate-900 flex-1"
-          aria-label="Global Keyboard Configuration"
+          aria-label={t('panel.globalKeyboardAria')}
         >
           <h3 className="text-xl font-bold text-primary-400 mb-4">
-            Global Keyboard (All Devices)
+            {t('panel.globalKeyboard')}
           </h3>
           <KeyboardVisualizerContainer
             profileName={profileName}

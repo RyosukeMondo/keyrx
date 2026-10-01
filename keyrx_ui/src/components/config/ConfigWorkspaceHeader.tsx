@@ -122,7 +122,7 @@ export const ConfigWorkspaceHeader: React.FC<ConfigWorkspaceHeaderProps> = ({
               role="tab"
               aria-selected={activeTab === 'edit'}
               onClick={() => onTabChange('edit')}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                 activeTab === 'edit'
                   ? 'bg-slate-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
@@ -135,7 +135,7 @@ export const ConfigWorkspaceHeader: React.FC<ConfigWorkspaceHeaderProps> = ({
               role="tab"
               aria-selected={activeTab === 'test'}
               onClick={() => onTabChange('test')}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                 activeTab === 'test'
                   ? 'bg-slate-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
@@ -151,7 +151,7 @@ export const ConfigWorkspaceHeader: React.FC<ConfigWorkspaceHeaderProps> = ({
             <button
               onClick={onToggleCode}
               aria-label={isCodeOpen ? t('code.hideAria') : t('code.showAria')}
-              className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-700"
+              className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-700"
               title={isCodeOpen ? t('code.hideAria') : t('code.showAria')}
             >
               <Code2 className="h-4 w-4" aria-hidden="true" />
@@ -183,7 +183,7 @@ export const ConfigWorkspaceHeader: React.FC<ConfigWorkspaceHeaderProps> = ({
             aria-describedby={
               saveBlockedReason ? 'save-blocked-reason' : undefined
             }
-            className="flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-900/20 transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 whitespace-nowrap rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-900/20 transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {syncStatus === 'saved' ? (
               <Check className="h-4 w-4" aria-hidden="true" />
