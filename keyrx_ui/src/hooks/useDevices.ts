@@ -24,6 +24,17 @@ export function useGlobalLayout() {
 }
 
 /**
+ * The stored global layout, or null when never set. Nested under the
+ * `globalLayout` key so setting the layout invalidates it too.
+ */
+export function useGlobalLayoutSetting() {
+  return useQuery({
+    queryKey: [...queryKeys.globalLayout, 'setting'] as const,
+    queryFn: deviceApi.fetchGlobalLayoutSetting,
+  });
+}
+
+/**
  * Set the global default keyboard layout with cache update
  */
 export function useSetGlobalLayout() {

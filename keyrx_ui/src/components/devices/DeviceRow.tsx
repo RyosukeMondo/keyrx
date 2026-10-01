@@ -128,7 +128,7 @@ export const DeviceRow: React.FC<DeviceRowProps> = ({
                 {device.name}
               </span>
             </div>
-            <span className="text-xs font-mono text-slate-500 truncate block">
+            <span className="text-xs font-mono text-slate-400 truncate block">
               {device.identifier}
             </span>
           </button>

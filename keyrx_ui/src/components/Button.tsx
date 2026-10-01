@@ -56,9 +56,9 @@ export const Button = React.memo<ButtonProps>(
       primary:
         'bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700',
       secondary:
-        'bg-transparent border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white',
+        'bg-transparent border-2 border-primary-500 text-primary-400 hover:bg-primary-500 hover:text-white',
       danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700',
-      ghost: 'bg-transparent text-primary-500 hover:bg-primary-500/10',
+      ghost: 'bg-transparent text-primary-400 hover:bg-primary-500/10',
     };
 
     const sizeClasses = {

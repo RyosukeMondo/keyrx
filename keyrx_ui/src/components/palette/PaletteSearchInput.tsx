@@ -39,7 +39,7 @@ export const PaletteSearchInput: React.FC<PaletteSearchInputProps> = ({
             ? 'Search keys...'
             : 'Search keys (e.g., ctrl, enter, KC_A)...'
         }
-        className={`w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${
+        className={`w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${
           compact ? 'pl-8 pr-8 py-1.5 text-xs' : 'pl-10 pr-10 py-2 text-sm'
         }`}
       />

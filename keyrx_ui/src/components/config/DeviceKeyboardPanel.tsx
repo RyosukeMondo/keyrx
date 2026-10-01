@@ -72,7 +72,8 @@ export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
                 >
                   {devices.map((d) => (
                     <option key={d.id} value={d.id}>
-                      {d.name} {d.serial ? `(${d.serial})` : ''}
+                      {d.name}
+                      {d.serial && d.serial !== d.name ? ` (${d.serial})` : ''}
                     </option>
                   ))}
                 </select>
@@ -85,7 +86,11 @@ export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
                       : 'bg-gray-900/30 border border-gray-500 text-gray-400'
                   }`}
                 >
-                  {device.connected ? '● Connected' : '○ Disconnected'}
+                  {device.connected
+                    ? '● Connected'
+                    : device.pattern !== undefined
+                      ? '○ No matching keyboard connected'
+                      : '○ Disconnected'}
                 </span>
               </div>
             </div>
@@ -103,7 +108,7 @@ export const DeviceKeyboardPanel: React.FC<DeviceKeyboardPanelProps> = ({
               >
                 <h3 className="text-xl font-bold text-primary-400 mb-4">
                   {device.name}
-                  {device.serial && (
+                  {device.serial && device.serial !== device.name && (
                     <span className="ml-2 text-sm text-slate-400 font-normal">
                       ({device.serial})
                     </span>

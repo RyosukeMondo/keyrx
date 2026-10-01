@@ -94,10 +94,18 @@ export async function forgetDevice(id: string): Promise<DeviceResponse> {
  * Fetch the global default keyboard layout (`ANSI_104` when unset)
  */
 export async function fetchGlobalLayout(): Promise<string> {
+  return (await fetchGlobalLayoutSetting()) ?? 'ANSI_104';
+}
+
+/**
+ * Fetch the stored global layout, or null when the user never chose one
+ * (lets callers tell "unset" apart from an explicit ANSI_104).
+ */
+export async function fetchGlobalLayoutSetting(): Promise<string | null> {
   const response = await apiClient.get<GlobalLayout>(
     '/api/settings/global-layout'
   );
-  return response.layout ?? 'ANSI_104';
+  return response.layout ?? null;
 }
 
 /**

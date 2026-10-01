@@ -45,6 +45,8 @@ interface KeyboardVisualizerProps {
   simulatorMode?: boolean;
   pressedKeys?: Set<string>;
   className?: string;
+  /** Normalized (VK_*) code of the key being edited. */
+  selectedKeyCode?: string | null;
 }
 
 interface KeyLayout {
@@ -77,6 +79,7 @@ export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
   simulatorMode = false,
   pressedKeys = new Set(),
   className = '',
+  selectedKeyCode = null,
 }) => {
   // Parse layout data to SVG format
   const svgKeys = useMemo(() => {
@@ -109,6 +112,7 @@ export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({
         simulatorMode={simulatorMode}
         pressedKeys={pressedKeys}
         layoutName={layoutName}
+        selectedKeyCode={selectedKeyCode}
       />
     </div>
   );

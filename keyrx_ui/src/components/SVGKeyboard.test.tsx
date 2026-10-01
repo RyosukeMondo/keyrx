@@ -295,10 +295,11 @@ describe('SVGKeyboard - Key Code Normalization', () => {
       const button = screen.getByRole('button');
       const ariaLabel = button.getAttribute('aria-label');
 
-      // Should reference VK_ code in aria-label
-      expect(ariaLabel).toContain('KC_B');
-      expect(ariaLabel).toContain('Tap');
-      expect(ariaLabel).toContain('Hold');
+      // Names use the DSL key name (B), never the QMK code (KC_B)
+      expect(ariaLabel).toContain('B,');
+      expect(ariaLabel).not.toContain('KC_');
+      expect(ariaLabel).toContain('tap for Enter');
+      expect(ariaLabel).toContain('hold for MD_00');
     });
   });
 

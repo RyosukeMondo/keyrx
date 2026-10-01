@@ -39,6 +39,7 @@ vi.mock('../contexts/WasmContext', () => {
 
   return {
     useWasmContext: () => mockWasmContext,
+    useOptionalWasmContext: () => mockWasmContext,
     WasmProvider: ({ children }: { children: React.ReactNode }) => children,
   };
 });

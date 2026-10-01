@@ -67,7 +67,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ className = '' }) => {
                   focus:outline focus:outline-2 focus:outline-primary-500
                   ${
                     isActive
-                      ? 'text-primary-500'
+                      ? 'text-primary-400'
                       : 'text-slate-400 hover:text-slate-300'
                   }
                 `

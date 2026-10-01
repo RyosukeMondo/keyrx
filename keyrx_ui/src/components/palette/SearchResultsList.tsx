@@ -23,7 +23,7 @@ export const SearchResultsList: React.FC<SearchResultsListProps> = ({
     return (
       <div className="p-4 text-center text-slate-400">
         <p className="mb-2">No results found for "{searchQuery}"</p>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-400">
           Try different search terms like "ctrl", "enter", or "KC_A"
         </p>
       </div>
@@ -74,7 +74,7 @@ export const SearchResultsList: React.FC<SearchResultsListProps> = ({
 
                 {/* Matched alias */}
                 {match.field === 'alias' && (
-                  <div className="text-xs text-slate-500 mt-1">
+                  <div className="text-xs text-slate-400 mt-1">
                     Alias: {highlightMatches(match.text, match.indices)}
                   </div>
                 )}

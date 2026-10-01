@@ -168,16 +168,20 @@ export const SimulatorTab: React.FC<SimulatorTabProps> = ({
         >
           Interactive Keyboard
         </h2>
-        <div className="flex justify-center overflow-x-auto md:overflow-x-visible">
-          <KeyboardVisualizer
-            layout="ANSI_104"
-            keyMappings={keyMappings}
-            onKeyClick={handleKeyClick}
-            simulatorMode={true}
-            pressedKeys={pressedKeys}
-          />
+        {/* mx-auto (not justify-center): a centered overflowing flex child is
+            clipped on the left and cannot be scrolled back into view. */}
+        <div className="overflow-x-auto">
+          <div className="mx-auto w-fit">
+            <KeyboardVisualizer
+              layout="ANSI_104"
+              keyMappings={keyMappings}
+              onKeyClick={handleKeyClick}
+              simulatorMode={true}
+              pressedKeys={pressedKeys}
+            />
+          </div>
         </div>
-        <p className="text-xs text-slate-500 mt-4 text-center">
+        <p className="text-xs text-slate-400 mt-4 text-center">
           Click keys to simulate press/release. Hold-configured keys will show
           timer behavior.
         </p>

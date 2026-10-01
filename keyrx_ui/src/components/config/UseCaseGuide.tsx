@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ArrowLeftRight,
   ArrowRight,
   ChevronDown,
   Code2,
@@ -7,45 +8,36 @@ import {
   SlidersHorizontal,
   Sparkles,
 } from 'lucide-react';
+import { t, type MessageKey } from '@/i18n';
 
 interface UseCaseGuideProps {
   hasDevice: boolean;
+  onStartSwap: () => void;
   onStartSimple: () => void;
   onStartCommandPad: () => void;
   onStartAdvanced: () => void;
 }
 
-const paths = [
-  {
-    id: 'simple',
-    icon: Keyboard,
-    eyebrow: 'Quick fix',
-    title: 'Change a few keys',
-    description: 'Swap Caps Lock, fix an awkward key, or add a media control.',
-    outcome: 'Best for your everyday keyboard',
-    accent: 'emerald',
-  },
-  {
-    id: 'command-pad',
-    icon: Sparkles,
-    eyebrow: 'Reuse a gadget',
-    title: 'Make a command pad',
-    description: 'Turn a cheap numpad or spare keyboard into shortcut buttons.',
-    outcome: 'Best for creators and productivity',
-    accent: 'amber',
-  },
-  {
-    id: 'advanced',
-    icon: Code2,
-    eyebrow: 'Power setup',
-    title: 'Build a full layout',
-    description: 'Use layers, tap/hold behavior, macros, and editable Rhai.',
-    outcome: 'Best for keyboard enthusiasts',
-    accent: 'violet',
-  },
-] as const;
+type PathId = 'swap' | 'simple' | 'command-pad' | 'advanced';
+
+const paths: ReadonlyArray<{
+  id: PathId;
+  icon: typeof Keyboard;
+  /** i18n prefix: `${prefix}.eyebrow|title|description|outcome` */
+  prefix: 'guide.swap' | 'guide.simple' | 'guide.pad' | 'guide.advanced';
+  accent: 'emerald' | 'amber' | 'violet' | 'sky';
+}> = [
+  { id: 'swap', icon: ArrowLeftRight, prefix: 'guide.swap', accent: 'sky' },
+  { id: 'simple', icon: Keyboard, prefix: 'guide.simple', accent: 'emerald' },
+  { id: 'command-pad', icon: Sparkles, prefix: 'guide.pad', accent: 'amber' },
+  { id: 'advanced', icon: Code2, prefix: 'guide.advanced', accent: 'violet' },
+];
+
+const msg = (prefix: string, field: string) =>
+  t(`${prefix}.${field}` as MessageKey);
 
 const accentClasses = {
+  sky: 'bg-sky-400/10 text-sky-300 ring-sky-400/20',
   emerald: 'bg-emerald-400/10 text-emerald-300 ring-emerald-400/20',
   amber: 'bg-amber-400/10 text-amber-300 ring-amber-400/20',
   violet: 'bg-violet-400/10 text-violet-300 ring-violet-400/20',
@@ -54,13 +46,15 @@ const accentClasses = {
 /** Goal-led entry points that keep KeyRx approachable without hiding power tools. */
 export const UseCaseGuide: React.FC<UseCaseGuideProps> = ({
   hasDevice,
+  onStartSwap,
   onStartSimple,
   onStartCommandPad,
   onStartAdvanced,
 }) => {
   const [expanded, setExpanded] = useState(true);
 
-  const handlePath = (id: (typeof paths)[number]['id']) => {
+  const handlePath = (id: PathId) => {
+    if (id === 'swap') onStartSwap();
     if (id === 'simple') onStartSimple();
     if (id === 'command-pad') onStartCommandPad();
     if (id === 'advanced') onStartAdvanced();
@@ -86,10 +80,10 @@ export const UseCaseGuide: React.FC<UseCaseGuideProps> = ({
               id="use-case-guide-title"
               className="font-semibold text-slate-100"
             >
-              What do you want this keyboard to do?
+              {t('guide.title')}
             </h2>
             <p className="truncate text-xs text-slate-400">
-              Pick a path—we’ll set the right scope and tools.
+              {t('guide.subtitle')}
             </p>
           </div>
         </div>
@@ -100,7 +94,7 @@ export const UseCaseGuide: React.FC<UseCaseGuideProps> = ({
       </button>
 
       {expanded && (
-        <div className="grid gap-3 border-t border-slate-700/70 p-3 md:grid-cols-3 md:p-4">
+        <div className="grid gap-3 border-t border-slate-700/70 p-3 md:grid-cols-2 lg:grid-cols-4 md:p-4">
           {paths.map((path) => {
             const Icon = path.icon;
             const unavailable = path.id === 'command-pad' && !hasDevice;
@@ -118,18 +112,20 @@ export const UseCaseGuide: React.FC<UseCaseGuideProps> = ({
                   >
                     <Icon className="h-4 w-4" aria-hidden="true" />
                   </span>
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {path.eyebrow}
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    {msg(path.prefix, 'eyebrow')}
                   </span>
                 </div>
                 <span className="font-semibold text-slate-100">
-                  {path.title}
+                  {msg(path.prefix, 'title')}
                 </span>
                 <span className="mt-1 text-sm leading-5 text-slate-400">
-                  {path.description}
+                  {msg(path.prefix, 'description')}
                 </span>
-                <span className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-slate-500">
-                  {unavailable ? 'Connect a device first' : path.outcome}
+                <span className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-slate-400">
+                  {unavailable
+                    ? t('guide.connectFirst')
+                    : msg(path.prefix, 'outcome')}
                   {!unavailable && (
                     <ArrowRight
                       className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-1"

@@ -19,16 +19,11 @@ import { ConfigScopeTabs } from '@/components/config/ConfigScopeTabs';
 import { GlobalKeyboardPanel } from '@/components/config/GlobalKeyboardPanel';
 import { DeviceKeyboardPanel } from '@/components/config/DeviceKeyboardPanel';
 import { UseCaseGuide } from '@/components/config/UseCaseGuide';
-
-const AVAILABLE_LAYERS = [
-  'base',
-  'md-00',
-  'md-01',
-  'md-02',
-  'md-03',
-  'md-04',
-  'md-05',
-];
+import { SwapKeysPanel } from '@/components/config/SwapKeysPanel';
+import { friendlyKeyName } from '@/utils/keyNames';
+import { t } from '@/i18n';
+import { describeKey } from '@/components/SVGKeyboard';
+import { formatLayerName } from '@/components/LayerSwitcher';
 
 interface EditTabProps {
   selectedProfileName: string;
@@ -52,6 +47,31 @@ interface EditTabProps {
   onKeyboardLayoutChange: (layout: LayoutType) => void;
   layoutKeys: SVGKeyData[];
   onOpenAdvanced: () => void;
+}
+
+/** Put the keyboard cursor in the key editor and bring it on screen. */
+function moveFocusToKeyEditor(): void {
+  window.requestAnimationFrame(() => {
+    const editor = document.getElementById('key-editor');
+    if (!editor) return;
+    editor.focus({ preventScroll: true });
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    editor.scrollIntoView({
+      behavior: reduce?.matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  });
+}
+
+/** Return keyboard focus to a keycap after leaving the editor with Escape. */
+function focusKeycap(keyCode: string): void {
+  window.requestAnimationFrame(() => {
+    document
+      .querySelector<SVGGElement>(
+        `#keyboard-editor [data-key-code="${keyCode}"]`
+      )
+      ?.focus();
+  });
 }
 
 /**
@@ -79,15 +99,26 @@ export const EditTab: React.FC<EditTabProps> = ({
     null
   );
 
+  // Screen-reader announcement for selection / edit results (aria-live).
+  const [announcement, setAnnouncement] = useState('');
+
   useKeyboardShortcuts([
-    CommonShortcuts.escape(() => setSelectedPhysicalKey(null)),
+    CommonShortcuts.escape(() => {
+      const previous = selectedPhysicalKey;
+      setSelectedPhysicalKey(null);
+      if (previous) focusKeycap(previous);
+    }),
   ]);
 
   const [activePane, setActivePane] = useState<'global' | 'device'>('global');
 
+  // First-run guide step the user chose from the cards (visible next-step cue)
+  const [guide, setGuide] = useState<null | 'pick-key' | 'swap'>(null);
+
   // Derived values from configStore
   const keyMappings = configStore.getLayerMappings(configStore.activeLayer);
   const { activeLayer, globalSelected, selectedDevices } = configStore;
+  const usedLayers = configStore.getAllLayers();
 
   // Merged device list: connected devices + devices from Rhai config
   const mergedDevices = useDeviceMerging({ syncEngine, configStore });
@@ -105,12 +136,18 @@ export const EditTab: React.FC<EditTabProps> = ({
   // Handlers
   const handlePhysicalKeyClick = (keyCode: string) => {
     setSelectedPhysicalKey(keyCode);
+    setGuide((g) => (g === 'pick-key' ? null : g));
+    setAnnouncement(
+      `Editing ${describeKey(keyCode, keyMappings.get(keyCode))}. Layer ${formatLayerName(activeLayer)}.`
+    );
+    moveFocusToKeyEditor();
   };
 
   const handleClearMapping = (keyCode: string) => {
     configStore.deleteKeyMapping(keyCode, activeLayer);
     setSyncStatus('unsaved');
     rebuildAndSyncAST();
+    setAnnouncement(`Cleared the mapping for ${describeKey(keyCode)}.`);
   };
 
   const handleSaveMapping = (mapping: KeyMapping) => {
@@ -118,21 +155,60 @@ export const EditTab: React.FC<EditTabProps> = ({
     configStore.setKeyMapping(selectedPhysicalKey, mapping, activeLayer);
     setSyncStatus('unsaved');
     rebuildAndSyncAST();
+    setAnnouncement(`Updated ${describeKey(selectedPhysicalKey, mapping)}.`);
   };
 
+  /** Scroll the keyboard into view and put the keyboard cursor on it. */
   const focusEditor = () => {
     window.requestAnimationFrame(() => {
-      document.getElementById('keyboard-editor')?.scrollIntoView({
-        behavior: 'smooth',
+      const editor = document.getElementById('keyboard-editor');
+      if (!editor) return;
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+      editor.scrollIntoView({
+        behavior: reduce?.matches ? 'auto' : 'smooth',
         block: 'start',
       });
+      editor
+        .querySelector<SVGGElement>('[data-key-code][tabindex="0"]')
+        ?.focus({ preventScroll: true });
     });
   };
 
+  /**
+   * Make sure edits have somewhere to go without changing an existing scope:
+   * a profile already scoped to a device must stay scoped to it.
+   */
+  const ensureScope = () => {
+    if (!globalSelected && selectedDevices.length === 0) {
+      configStore.setGlobalSelected(true);
+      setActivePane('global');
+    }
+  };
+
   const startSimpleRemap = () => {
-    configStore.setGlobalSelected(true);
-    configStore.setSelectedDevices([]);
-    setActivePane('global');
+    ensureScope();
+    setGuide('pick-key');
+    setAnnouncement(t('guide.step.pick'));
+    focusEditor();
+  };
+
+  const startSwap = () => {
+    ensureScope();
+    setGuide('swap');
+    setAnnouncement(t('guide.step.swap'));
+  };
+
+  /** Exchange two keys on the base layer: each acts like the other. */
+  const applySwap = (a: string, b: string) => {
+    configStore.setActiveLayer('base');
+    configStore.setKeyMapping(a, { type: 'simple', tapAction: b }, 'base');
+    configStore.setKeyMapping(b, { type: 'simple', tapAction: a }, 'base');
+    setSyncStatus('unsaved');
+    rebuildAndSyncAST();
+    setGuide(null);
+    setAnnouncement(
+      `${friendlyKeyName(a)} → ${friendlyKeyName(b)}, ${friendlyKeyName(b)} → ${friendlyKeyName(a)}. Review and save to apply.`
+    );
     focusEditor();
   };
 
@@ -155,10 +231,19 @@ export const EditTab: React.FC<EditTabProps> = ({
           hasDevice={devices.some(
             (device) => device.name !== '*' && device.serial !== '*'
           )}
+          onStartSwap={startSwap}
           onStartSimple={startSimpleRemap}
           onStartCommandPad={startCommandPad}
           onStartAdvanced={onOpenAdvanced}
         />
+
+        {guide === 'swap' && (
+          <SwapKeysPanel
+            layoutKeys={layoutKeys}
+            onSwap={applySwap}
+            onCancel={() => setGuide(null)}
+          />
+        )}
 
         {/* Device Selection Panel */}
         <DeviceSelectionPanel
@@ -186,12 +271,34 @@ export const EditTab: React.FC<EditTabProps> = ({
         )}
 
         {/* Single-Pane Layout: tabs control visibility */}
-        <div id="keyboard-editor" className="flex scroll-mt-4 flex-col gap-4">
+        <div
+          id="keyboard-editor"
+          className={`flex scroll-mt-4 flex-col gap-4 rounded-xl transition-shadow ${
+            guide === 'pick-key'
+              ? 'ring-2 ring-primary-300 ring-offset-4 ring-offset-slate-900'
+              : ''
+          }`}
+        >
+          {guide === 'pick-key' && (
+            <div
+              role="status"
+              className="flex items-center justify-between gap-3 rounded-lg bg-primary-500/15 px-4 py-3 text-sm text-primary-100"
+            >
+              <span>{t('guide.step.pick')}</span>
+              <button
+                type="button"
+                onClick={() => setGuide(null)}
+                className="rounded px-2 py-1 text-xs text-primary-100 underline"
+              >
+                {t('swap.cancel')}
+              </button>
+            </div>
+          )}
           {/* Global Keyboard Panel */}
           <GlobalKeyboardPanel
             profileName={selectedProfileName}
             activeLayer={activeLayer}
-            availableLayers={AVAILABLE_LAYERS}
+            availableLayers={usedLayers}
             onLayerChange={configStore.setActiveLayer}
             globalSelected={globalSelected}
             onToggleGlobal={configStore.setGlobalSelected}
@@ -207,7 +314,7 @@ export const EditTab: React.FC<EditTabProps> = ({
           <DeviceKeyboardPanel
             profileName={selectedProfileName}
             activeLayer={activeLayer}
-            availableLayers={AVAILABLE_LAYERS}
+            availableLayers={usedLayers}
             onLayerChange={configStore.setActiveLayer}
             devices={devices}
             selectedDevices={selectedDevices}
@@ -268,21 +375,33 @@ export const EditTab: React.FC<EditTabProps> = ({
           </div>
         </div>
 
+        {/* Polite live region: announces key selection and edit results */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {announcement}
+        </div>
+
         {/* Inline Key Configuration Panel */}
-        <KeyConfigPanel
-          physicalKey={selectedPhysicalKey}
-          currentMapping={
-            selectedPhysicalKey
-              ? keyMappings.get(selectedPhysicalKey)
-              : undefined
-          }
-          onSave={handleSaveMapping}
-          onClearMapping={handleClearMapping}
-          onEditMapping={handlePhysicalKeyClick}
-          activeLayer={activeLayer}
-          keyMappings={keyMappings}
-          layoutKeys={layoutKeys}
-        />
+        <section
+          id="key-editor"
+          tabIndex={-1}
+          aria-label="Key editor"
+          className="scroll-mt-4 focus:outline-none focus-visible:outline-2"
+        >
+          <KeyConfigPanel
+            physicalKey={selectedPhysicalKey}
+            currentMapping={
+              selectedPhysicalKey
+                ? keyMappings.get(selectedPhysicalKey)
+                : undefined
+            }
+            onSave={handleSaveMapping}
+            onClearMapping={handleClearMapping}
+            onEditMapping={handlePhysicalKeyClick}
+            activeLayer={activeLayer}
+            keyMappings={keyMappings}
+            layoutKeys={layoutKeys}
+          />
+        </section>
       </ConfigurationLayout>
     </div>
   );

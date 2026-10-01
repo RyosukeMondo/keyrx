@@ -11,6 +11,7 @@ import type {
   SimulationInput,
 } from '../hooks/useWasm';
 import { logger } from '../utils/logger';
+import { friendlyErrorMessage } from '../utils/errorUtils';
 
 // Type definitions for WASM module
 interface WasmModule {
@@ -124,7 +125,7 @@ export function WasmProvider({ children }: { children: React.ReactNode }) {
             line,
             column,
             length: 1,
-            message: errorMessage,
+            message: friendlyErrorMessage(errorMessage),
           },
         ];
       }
@@ -179,4 +180,13 @@ export function useWasmContext() {
     throw new Error('useWasmContext must be used within WasmProvider');
   }
   return context;
+}
+
+/**
+ * Like `useWasmContext`, but returns null instead of throwing when there is no
+ * provider -- for optional enhancements (e.g. live validation) that must not
+ * make a page unusable where WASM is not wired up.
+ */
+export function useOptionalWasmContext(): WasmContextValue | null {
+  return useContext(WasmContext);
 }

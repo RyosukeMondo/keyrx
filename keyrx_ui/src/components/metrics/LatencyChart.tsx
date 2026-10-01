@@ -9,6 +9,11 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
+import {
+  formatLatencyMs,
+  pickLatencyUnit,
+  unitScale,
+} from '@/utils/latencyFormat';
 
 /**
  * Data point for latency chart
@@ -52,9 +57,8 @@ export const formatTimestamp = (timestamp: number): string => {
  * @param latency - Latency value in milliseconds
  * @returns Formatted latency string with unit (e.g., "1.23ms")
  */
-export const formatLatency = (latency: number): string => {
-  return `${latency.toFixed(2)}ms`;
-};
+export const formatLatency = (latency: number): string =>
+  formatLatencyMs(latency);
 
 /**
  * LatencyChart component displays a line chart of latency measurements over time.
@@ -77,9 +81,18 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
   thresholdMs = 1.0,
 }) => {
   // Limit data to maxDataPoints (most recent)
-  const chartData = React.useMemo(() => {
+  const recent = React.useMemo(() => {
     return data.slice(-maxDataPoints);
   }, [data, maxDataPoints]);
+
+  // Auto-scale the axis: sub-millisecond latencies are plotted in µs so the
+  // line is not flattened against 0 on a millisecond axis.
+  const unit = pickLatencyUnit(Math.max(0, ...recent.map((d) => d.latency)));
+  const scale = unitScale(unit);
+  const chartData = React.useMemo(
+    () => recent.map((d) => ({ ...d, latency: d.latency * scale })),
+    [recent, scale]
+  );
 
   // Handle empty data case
   if (chartData.length === 0) {
@@ -90,7 +103,7 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
         role="img"
         aria-label="No latency data available"
       >
-        <p className="text-slate-500 text-sm">No data available</p>
+        <p className="text-slate-400 text-sm">No data available</p>
       </div>
     );
   }
@@ -109,7 +122,7 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
           stroke="#94A3B8"
           style={{ fontSize: '12px' }}
           label={{
-            value: 'Latency (ms)',
+            value: `Latency (${unit})`,
             angle: -90,
             position: 'insideLeft',
             style: { fill: '#94A3B8', fontSize: '12px' },
@@ -123,10 +136,13 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
             color: '#F1F5F9',
           }}
           labelFormatter={(timestamp) => formatTimestamp(Number(timestamp))}
-          formatter={(value: number) => [formatLatency(value), 'Latency']}
+          formatter={(value: number) => [
+            formatLatency(value / scale),
+            'Latency',
+          ]}
         />
         <ReferenceLine
-          y={thresholdMs}
+          y={thresholdMs * scale}
           stroke="#22c55e"
           strokeDasharray="6 3"
           label={{

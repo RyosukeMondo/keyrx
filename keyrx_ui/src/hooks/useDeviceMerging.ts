@@ -6,6 +6,7 @@ import {
   type RhaiAST,
 } from '@/utils/rhaiParser';
 import type { Device } from '@/components/DeviceSelector';
+import { buildScopes } from '@/utils/deviceScopes';
 
 interface UseDeviceMergingProps {
   syncEngine: {
@@ -50,66 +51,7 @@ export function useDeviceMerging({
     // Extract device patterns from Rhai script
     const devicePatternsInRhai = extractDevicePatterns(ast);
 
-    // Create a map of connected devices by serial/name/id
-    const connectedDeviceMap = new Map<
-      string,
-      NonNullable<typeof devicesData>[number]
-    >();
-    devicesData?.forEach((device) => {
-      if (device.serial) connectedDeviceMap.set(device.serial, device);
-      connectedDeviceMap.set(device.name, device);
-      connectedDeviceMap.set(device.id, device);
-    });
-
-    // Build merged device list
-    const merged: Device[] = [];
-    const addedPatterns = new Set<string>();
-
-    // Add devices from Rhai (may be disconnected)
-    // Skip "*" pattern - it represents "all devices" and is handled by Global checkbox
-    devicePatternsInRhai
-      .filter((pattern) => pattern !== '*')
-      .forEach((pattern) => {
-        if (addedPatterns.has(pattern)) return;
-        addedPatterns.add(pattern);
-
-        // Try to find matching connected device
-        const connectedDevice = connectedDeviceMap.get(pattern);
-        if (connectedDevice) {
-          // Device is both in Rhai and connected
-          merged.push({
-            id: connectedDevice.id,
-            name: connectedDevice.name,
-            serial: connectedDevice.serial || undefined,
-            connected: true,
-          });
-        } else {
-          // Device in Rhai but not connected (disconnected device)
-          merged.push({
-            id: `disconnected-${pattern}`,
-            name: pattern,
-            serial: pattern,
-            connected: false,
-          });
-        }
-      });
-
-    // Add connected devices not in Rhai
-    devicesData?.forEach((device) => {
-      const isInRhai =
-        devicePatternsInRhai.includes(device.serial || '') ||
-        devicePatternsInRhai.includes(device.name) ||
-        devicePatternsInRhai.includes(device.id);
-
-      if (!isInRhai) {
-        merged.push({
-          id: device.id,
-          name: device.name,
-          serial: device.serial || undefined,
-          connected: true,
-        });
-      }
-    });
+    const merged = buildScopes(devicePatternsInRhai, devicesData ?? []);
 
     setMergedDevices(merged);
 
@@ -125,18 +67,24 @@ export function useDeviceMerging({
       initialSelectionDoneRef.current = true;
 
       const hasWildcardDevice = devicePatternsInRhai.includes('*');
-      if (hasGlobalMappings(ast) || hasWildcardDevice) {
+      const hasGlobal = hasGlobalMappings(ast) || hasWildcardDevice;
+      if (hasGlobal) {
         configStore.setGlobalSelected(true);
+      } else if (devicePatternsInRhai.length > 0) {
+        // The profile only has device blocks: land on those, not on an
+        // empty Global keyboard.
+        configStore.setGlobalSelected(false);
       }
 
       // If Rhai has device blocks, auto-select those devices (excluding "*")
       const nonWildcardPatterns = devicePatternsInRhai.filter((p) => p !== '*');
       if (nonWildcardPatterns.length > 0) {
         const devicesToSelect = merged
-          .filter((device) => {
-            const pattern = device.serial || device.name;
-            return nonWildcardPatterns.includes(pattern);
-          })
+          .filter(
+            (device) =>
+              device.pattern !== undefined &&
+              nonWildcardPatterns.includes(device.pattern)
+          )
           .map((device) => device.id);
 
         if (devicesToSelect.length > 0) {

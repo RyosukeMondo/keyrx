@@ -41,7 +41,7 @@ describe('BottomNav', () => {
     );
 
     const devicesLink = screen.getByLabelText('Navigate to Devices page');
-    expect(devicesLink).toHaveClass('text-primary-500');
+    expect(devicesLink).toHaveClass('text-primary-400');
   });
 
   it('applies custom className', () => {

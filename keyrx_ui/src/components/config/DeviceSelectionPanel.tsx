@@ -1,11 +1,20 @@
 import React from 'react';
 import { Card } from '../Card';
 
-export interface Device {
-  id: string;
-  name: string;
-  serial?: string;
-  connected?: boolean;
+import type { Device } from '../DeviceSelector';
+
+export type { Device };
+
+/** Human-readable status for a pattern scope, or null for a plain device. */
+function patternSummary(device: Device): string | null {
+  if (device.pattern === undefined || device.matchedNames === undefined) {
+    return null;
+  }
+  const n = device.matchedNames.length;
+  if (n === 0) return 'no matching keyboard connected';
+  return n === 1
+    ? `matches ${device.matchedNames[0]}`
+    : `matches ${n} keyboards`;
 }
 
 interface DeviceSelectionPanelProps {
@@ -72,7 +81,14 @@ export const DeviceSelectionPanel: React.FC<DeviceSelectionPanelProps> = ({
                   className="w-4 h-4 text-primary-600 bg-slate-700 border-slate-600 rounded focus:ring-primary-500 focus:ring-2"
                   aria-label={`Select device ${device.name}`}
                 />
-                <span className="text-sm text-slate-200">{device.name}</span>
+                <span className="text-sm text-slate-200">
+                  {device.name}
+                  {patternSummary(device) && (
+                    <span className="ml-1.5 text-xs text-slate-400">
+                      ({patternSummary(device)})
+                    </span>
+                  )}
+                </span>
                 {device.connected !== undefined && (
                   <span
                     role="status"
@@ -86,7 +102,7 @@ export const DeviceSelectionPanel: React.FC<DeviceSelectionPanelProps> = ({
               </label>
             ))
           ) : (
-            <span className="text-sm text-slate-500">No devices</span>
+            <span className="text-sm text-slate-400">No devices</span>
           )}
         </div>
       </div>

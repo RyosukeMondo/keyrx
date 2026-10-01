@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { VariableSizeList as List } from 'react-window';
+import { formatLatencyMs } from '@/utils/latencyFormat';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 
 /**
@@ -144,7 +145,7 @@ export const EventLogList: React.FC<EventLogListProps> = ({
 
   // Format latency for display
   const formatLatency = (latency: number): string => {
-    return `${latency.toFixed(2)}ms`;
+    return formatLatencyMs(latency);
   };
 
   // Format key code for display
@@ -219,7 +220,7 @@ export const EventLogList: React.FC<EventLogListProps> = ({
           aria-expanded={isExpanded}
           aria-label={`Event: ${event.type} ${formatKey(event.input || event.keyCode)}`}
         >
-          <ChevronIcon className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
+          <ChevronIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
           <span
             className="w-20 text-slate-400 text-xs"
             role="cell"
@@ -263,7 +264,7 @@ export const EventLogList: React.FC<EventLogListProps> = ({
             {formatKey(event.output)}
           </span>
           <span
-            className="w-16 text-slate-500 text-xs truncate"
+            className="w-16 text-slate-400 text-xs truncate"
             title={event.mappingType || 'passthrough'}
             role="cell"
             aria-label={`Mapping type: ${event.mappingType || (wasRemapped ? 'remap' : 'passthrough')}`}
@@ -271,7 +272,7 @@ export const EventLogList: React.FC<EventLogListProps> = ({
             {event.mappingType || (wasRemapped ? 'remap' : '–')}
           </span>
           <span
-            className="flex-1 text-slate-500 text-xs truncate"
+            className="flex-1 text-slate-400 text-xs truncate"
             title={event.deviceName || event.deviceId}
             role="cell"
             aria-label={`Device: ${shortDeviceName}`}
@@ -293,36 +294,36 @@ export const EventLogList: React.FC<EventLogListProps> = ({
         {isExpanded && (
           <div className="px-4 py-2 bg-slate-800/60 text-xs text-slate-300 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 font-mono">
             <div>
-              <span className="text-slate-500">Timestamp: </span>
+              <span className="text-slate-400">Timestamp: </span>
               {formatTimeFull(event.timestamp)}
             </div>
             <div>
-              <span className="text-slate-500">Raw keyCode: </span>
+              <span className="text-slate-400">Raw keyCode: </span>
               {event.keyCode}
             </div>
             <div>
-              <span className="text-slate-500">Device ID: </span>
+              <span className="text-slate-400">Device ID: </span>
               {event.deviceId || '–'}
             </div>
             <div>
-              <span className="text-slate-500">Device: </span>
+              <span className="text-slate-400">Device: </span>
               {event.deviceName || '–'}
             </div>
             <div>
-              <span className="text-slate-500">Input: </span>
+              <span className="text-slate-400">Input: </span>
               {event.input || '–'}
             </div>
             <div>
-              <span className="text-slate-500">Output: </span>
+              <span className="text-slate-400">Output: </span>
               {event.output || '–'}
             </div>
             <div>
-              <span className="text-slate-500">Mapping: </span>
+              <span className="text-slate-400">Mapping: </span>
               {event.mappingType || 'none'}
               {event.mappingTriggered ? ' (triggered)' : ''}
             </div>
             <div>
-              <span className="text-slate-500">Latency: </span>
+              <span className="text-slate-400">Latency: </span>
               {formatLatency(event.latency)}
             </div>
           </div>

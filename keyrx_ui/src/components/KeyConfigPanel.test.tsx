@@ -135,7 +135,7 @@ describe('KeyConfigPanel', () => {
     it('displays key info header when physical key selected', () => {
       render(<KeyConfigPanel {...defaultProps} physicalKey="VK_CAPSLOCK" />);
 
-      expect(screen.getByText('VK_CAPSLOCK')).toBeInTheDocument();
+      expect(screen.getByText('CAPSLOCK')).toBeInTheDocument();
       expect(screen.getByText('Base')).toBeInTheDocument();
     });
 
@@ -273,7 +273,7 @@ describe('KeyConfigPanel', () => {
 
       // After selection, shows the key in the target display
       await waitFor(() => {
-        expect(screen.getByText('VK_ENTER')).toBeInTheDocument();
+        expect(screen.getByText('ENTER')).toBeInTheDocument();
       });
     });
 
@@ -300,7 +300,7 @@ describe('KeyConfigPanel', () => {
       await user.click(selectEnterButton);
 
       await waitFor(() => {
-        expect(screen.getByText('VK_ENTER')).toBeInTheDocument();
+        expect(screen.getByText('ENTER')).toBeInTheDocument();
       });
 
       // Clear it - get the first Clear button
@@ -397,7 +397,7 @@ describe('KeyConfigPanel', () => {
       await user.click(selectEnterButton);
 
       await waitFor(() => {
-        const preview = screen.getByText(/Press VK_A → Output VK_ENTER/);
+        const preview = screen.getByText(/Press A → Output ENTER/);
         expect(preview).toBeInTheDocument();
       });
     });
@@ -570,7 +570,7 @@ describe('KeyConfigPanel', () => {
         />
       );
 
-      expect(screen.getByText('VK_Z')).toBeInTheDocument();
+      expect(screen.getByText('Z')).toBeInTheDocument();
     });
   });
 

@@ -164,10 +164,10 @@ describe('EventLogList', () => {
       render(<EventLogList events={mockEvents} />);
 
       expect(
-        screen.getByRole('cell', { name: 'Latency: 0.50ms' })
+        screen.getByRole('cell', { name: 'Latency: 500µs' })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('cell', { name: 'Latency: 0.30ms' })
+        screen.getByRole('cell', { name: 'Latency: 300µs' })
       ).toBeInTheDocument();
       expect(
         screen.getByRole('cell', { name: 'Latency: 1.20ms' })
@@ -515,7 +515,7 @@ describe('EventLogList', () => {
       render(<EventLogList events={[normalLatencyEvent]} />);
 
       expect(
-        screen.getByRole('cell', { name: 'Latency: 0.50ms' })
+        screen.getByRole('cell', { name: 'Latency: 500µs' })
       ).toBeInTheDocument();
     });
   });

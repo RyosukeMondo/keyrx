@@ -26,9 +26,9 @@ export const SimulatorHeader: React.FC<SimulatorHeaderProps> = ({
     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
       <div className="flex-1">
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
+          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
             Keyboard Simulator
-          </h1>
+          </h2>
           <WasmStatusBadge
             isLoading={isLoadingWasm}
             isReady={isWasmReady}

@@ -174,7 +174,10 @@ describe('KeyboardVisualizer', () => {
       <KeyboardVisualizer {...defaultProps} simulatorMode={true} />
     );
 
-    const buttons = screen.getAllByRole('button');
+    const buttons = Array.from(
+      document.querySelectorAll<SVGGElement>('g.key-group')
+    );
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
     if (buttons[0]) {
       await user.click(buttons[0]);
       // In simulator mode, clicks should not trigger onKeyClick

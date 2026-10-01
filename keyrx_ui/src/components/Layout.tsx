@@ -4,6 +4,7 @@ import { GlobalDebugPanel } from './GlobalDebugPanel';
 import { Sidebar } from './Sidebar';
 import { Keyboard } from 'lucide-react';
 import { SkipToContent } from './SkipToContent';
+import { StatusChip } from './StatusChip';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -86,14 +87,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </header>
 
-      {/* Desktop Sidebar (>= 768px) - Fixed left */}
+      {/* Desktop Sidebar (>= 768px) - Fixed left. The brand lives in a
+          <header> so no content sits outside a landmark. */}
       <div
         className={`hidden md:block fixed top-0 left-0 bottom-0 border-r border-slate-700 z-30 transition-all duration-300 ${
           isSidebarCollapsed ? 'w-16' : 'w-64'
         }`}
       >
         {/* Brand header */}
-        <div className="h-20 flex flex-col justify-center px-4 bg-slate-800 border-b border-slate-700 overflow-hidden">
+        <header className="h-20 flex flex-col justify-center px-4 bg-slate-800 border-b border-slate-700 overflow-hidden">
           {!isSidebarCollapsed && (
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-500/15 text-primary-300 ring-1 ring-primary-400/20">
@@ -115,7 +117,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               aria-label="KeyRx2"
             />
           )}
-        </div>
+        </header>
         <Sidebar
           className="h-[calc(100vh-5rem)]"
           isCollapsed={isSidebarCollapsed}
@@ -156,6 +158,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           focus:outline-none
         `}
       >
+        <div className="flex justify-end px-4 pt-3 md:px-6">
+          <StatusChip />
+        </div>
         {children}
       </main>
 

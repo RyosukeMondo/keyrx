@@ -6,6 +6,7 @@ import { UseCaseGuide } from './UseCaseGuide';
 
 const renderGuide = (hasDevice = true) => {
   const callbacks = {
+    onStartSwap: vi.fn(),
     onStartSimple: vi.fn(),
     onStartCommandPad: vi.fn(),
     onStartAdvanced: vi.fn(),
@@ -27,6 +28,13 @@ describe('UseCaseGuide', () => {
     expect(
       screen.getByRole('button', { name: /Build a full layout/i })
     ).toBeInTheDocument();
+  });
+
+  it('offers a one-step "Swap two keys" path', async () => {
+    const user = userEvent.setup();
+    const callbacks = renderGuide();
+    await user.click(screen.getByRole('button', { name: /Swap two keys/i }));
+    expect(callbacks.onStartSwap).toHaveBeenCalledOnce();
   });
 
   it('routes each path to its setup action', async () => {

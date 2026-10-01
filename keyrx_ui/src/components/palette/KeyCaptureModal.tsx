@@ -41,7 +41,7 @@ export const KeyCaptureModal: React.FC<KeyCaptureModalProps> = ({
             <p className="text-slate-400 mb-6">
               Press the physical key you want to select.
             </p>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-slate-400">
               Press{' '}
               <kbd className="px-2 py-1 bg-slate-700 rounded border border-slate-600 font-mono">
                 Esc
@@ -67,7 +67,7 @@ export const KeyCaptureModal: React.FC<KeyCaptureModalProps> = ({
               <div className="text-sm text-slate-400 font-mono mb-1">
                 {capturedKey.id}
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-slate-400">
                 {capturedKey.description}
               </div>
             </div>

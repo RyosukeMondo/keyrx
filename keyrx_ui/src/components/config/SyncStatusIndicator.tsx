@@ -31,9 +31,9 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
           title="All changes saved"
         >
           <span className="w-2 h-2 rounded-full bg-green-400"></span>
-          <span className="hidden sm:inline">Saved</span>
+          <span>Saved</span>
           {lastSaveTime && (
-            <span className="text-slate-500 hidden md:inline">
+            <span className="text-slate-400 hidden md:inline">
               {getTimeAgo()}
             </span>
           )}
@@ -45,7 +45,7 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
           title="Unsaved changes"
         >
           <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
-          <span className="hidden sm:inline">Unsaved</span>
+          <span>Unsaved</span>
         </div>
       )}
       {syncStatus === 'saving' && (
@@ -54,7 +54,7 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
           title="Saving..."
         >
           <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-          <span className="hidden sm:inline">Saving...</span>
+          <span>Saving...</span>
         </div>
       )}
       {!isConnected && (
@@ -63,7 +63,7 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
           title="Disconnected from daemon"
         >
           <span className="w-2 h-2 rounded-full bg-red-400"></span>
-          <span className="hidden sm:inline">Disconnected</span>
+          <span>Disconnected</span>
         </div>
       )}
     </div>

@@ -85,7 +85,7 @@ export const StateInspectorCard: React.FC<StateInspectorCardProps> = ({
             </div>
           </div>
           {!isUsingProfileConfig && (
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-slate-400 mt-2">
               Using mock state. Select a valid profile to see WASM state.
             </p>
           )}

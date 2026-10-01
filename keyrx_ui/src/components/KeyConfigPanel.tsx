@@ -3,6 +3,7 @@ import { Keyboard, ArrowRight, X } from 'lucide-react';
 import type { KeyMapping } from '@/types';
 import type { SVGKey } from './SVGKeyboard';
 import { CurrentMappingsSummary } from './CurrentMappingsSummary';
+import { dslKeyName } from '@/utils/keyNames';
 import {
   MappingTypeSelector,
   type MappingType,
@@ -100,13 +101,13 @@ export function KeyConfigPanel({
       if (!tapAction && !holdAction) {
         return 'Configure tap and hold actions';
       }
-      return `Quick tap: ${physicalKey} → ${
-        tapAction || '?'
-      }\nHold ${threshold}ms: ${physicalKey} → ${holdAction || '?'}`;
+      return `Quick tap: ${dslKeyName(physicalKey)} → ${
+        (tapAction ? dslKeyName(tapAction) : '?')
+      }\nHold ${threshold}ms: ${dslKeyName(physicalKey)} → ${(holdAction ? dslKeyName(holdAction) : '?')}`;
     }
 
     return tapAction
-      ? `Press ${physicalKey} → Output ${tapAction}`
+      ? `Press ${dslKeyName(physicalKey)} → Output ${dslKeyName(tapAction)}`
       : 'Select a target key';
   };
 
@@ -143,18 +144,18 @@ export function KeyConfigPanel({
                   Key
                 </span>
                 <span className="text-base font-bold text-slate-100">
-                  {physicalKey}
+                  {dslKeyName(physicalKey)}
                 </span>
               </div>
 
-              <ArrowRight className="w-4 h-4 text-slate-500" />
+              <ArrowRight className="w-4 h-4 text-slate-400" />
 
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-400 uppercase tracking-wide">
                   Target
                 </span>
                 <span className="text-base font-bold text-green-400">
-                  {tapAction || '—'}
+                  {tapAction ? dslKeyName(tapAction) : '—'}
                 </span>
               </div>
 
@@ -308,7 +309,7 @@ export function KeyConfigPanel({
                       }}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                    <div className="flex justify-between text-xs text-slate-400 mt-1">
                       <span>0 (MD_00)</span>
                       <span>255 (MD_FF)</span>
                     </div>
@@ -330,7 +331,7 @@ export function KeyConfigPanel({
                   onChange={(e) => setThreshold(parseInt(e.target.value))}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                <div className="flex justify-between text-xs text-slate-400 mt-1">
                   <span>50ms (fast)</span>
                   <span>500ms (slow)</span>
                 </div>

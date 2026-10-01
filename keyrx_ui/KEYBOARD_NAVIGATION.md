@@ -35,12 +35,17 @@ Press `Tab` when the page loads to reveal a "Skip to main content" link. Press `
 
 ### Keyboard Visualizer
 
-On the Configuration page, the keyboard visualizer supports:
+On the Configuration page the keyboard is a single Tab stop (roving
+tabindex). `Tab` enters it; inside it:
 
-- `Arrow keys` - Navigate between keys
-- `Enter` - Open configuration dialog for the focused key
-- `Home` - Focus first key
-- `End` - Focus last key
+- `Arrow keys` - Move to the nearest key in that direction (spatial, not DOM order)
+- `Home` / `End` - First / last key of the current row
+- `Enter` or `Space` - Select the focused key: focus moves to the Key editor
+  (scrolled into view) and the choice is announced through a polite live region
+- `Escape` (in the editor) - Deselect and return focus to the key
+
+Keys are named with their DSL names (`CapsLock`, `LCtrl`), never QMK codes
+(`KC_CAPS`). In the read-only Test (simulator) tab the keys are not focusable.
 
 ## Components
 
@@ -89,9 +94,10 @@ The dropdown component (using Headless UI) supports:
 
 ### Layer Selection (ConfigPage)
 
-- Tab through layer buttons
-- Press `Enter` or `Space` to activate a layer
-- Current layer indicated with `aria-pressed="true"`
+- The layer list is a listbox and a single Tab stop; it shows Base plus the
+  layers in use. "All layers" reveals MD_00..MD_FF.
+- `Up` / `Down` / `Home` / `End` move; `Enter` or `Space` activates a layer
+- Current layer indicated with `aria-selected="true"`
 
 ### Profile Cards
 

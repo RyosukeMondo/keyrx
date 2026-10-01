@@ -5,26 +5,32 @@
  * MIT License compatible - no GPL dependencies
  */
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef } from 'react';
 import type { KeyMapping } from '@/types';
+import { normalizeKeyCode } from '@/utils/keyNames';
+import { NAV_KEYS, nextKeyIndex, type NavKey } from '@/utils/spatialNav';
+import {
+  UNIT_SIZE,
+  KEY_GAP,
+  KEY_INSET,
+  MIN_SCALE,
+  LABEL_MAX,
+  LABEL_MIN,
+  MAPPING_MAX,
+  MAPPING_MIN,
+  fitText,
+  describeKey,
+  generateISOEnterPath,
+  generateRectPath,
+  getMappingStyle,
+  getRemapText,
+  getMappingIcon,
+  getMappingIconColor,
+  type SVGKey,
+} from '@/utils/keycap';
 
-// Constants for SVG rendering
-const UNIT_SIZE = 54; // pixels per key unit (1u)
-const KEY_GAP = 2; // gap between keys
-const _KEY_PADDING = 2; // padding inside key
-const KEY_RADIUS = 6; // border radius
-const KEY_INSET = 3; // 3D effect inset
-
-export interface SVGKey {
-  code: string;
-  label: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  /** Special shape: 'iso-enter' | 'standard' */
-  shape?: 'iso-enter' | 'standard';
-}
+export { describeKey };
+export type { SVGKey };
 
 interface SVGKeyboardProps {
   keys: SVGKey[];
@@ -36,238 +42,48 @@ interface SVGKeyboardProps {
   layoutName?: string;
   /** Dynamic key labels from layout detection API */
   labelOverrides?: Record<string, string>;
+  /** Normalized (VK_*) code of the key being edited; exposed as aria-pressed. */
+  selectedKeyCode?: string | null;
 }
 
 interface KeySVGProps {
   keyData: SVGKey;
+  /** Normalized (VK_*) code, used for data attributes and the accessible name. */
+  normalizedCode: string;
+  index: number;
   mapping?: KeyMapping;
   isPressed: boolean;
+  isSelected: boolean;
+  /** Roving tabindex: exactly one key of the keyboard is a Tab stop. */
+  isTabStop: boolean;
   onClick: () => void;
+  onFocusKey: (index: number) => void;
+  onNavigate: (index: number, key: NavKey) => void;
   simulatorMode?: boolean;
-}
-
-/**
- * Generate SVG path for ISO Enter key (L-shaped)
- * The ISO Enter spans 2 rows with different widths
- */
-function generateISOEnterPath(
-  x: number,
-  y: number,
-  w: number,
-  h: number
-): string {
-  const px = x * UNIT_SIZE;
-  const py = y * UNIT_SIZE;
-  const topWidth = 1.5 * UNIT_SIZE - KEY_GAP; // Top part is 1.5u
-  const bottomWidth = w * UNIT_SIZE - KEY_GAP; // Bottom uses actual width
-  const halfHeight = (h * UNIT_SIZE) / 2 - KEY_GAP / 2;
-  const r = KEY_RADIUS;
-
-  // L-shape path (clockwise from top-left)
-  // Note: The top part extends further left than the bottom
-  const leftOffset = topWidth - bottomWidth;
-
-  return `
-    M ${px + leftOffset + r} ${py}
-    L ${px + topWidth - r} ${py}
-    Q ${px + topWidth} ${py} ${px + topWidth} ${py + r}
-    L ${px + topWidth} ${py + h * UNIT_SIZE - KEY_GAP - r}
-    Q ${px + topWidth} ${py + h * UNIT_SIZE - KEY_GAP} ${px + topWidth - r} ${
-      py + h * UNIT_SIZE - KEY_GAP
-    }
-    L ${px + leftOffset + r} ${py + h * UNIT_SIZE - KEY_GAP}
-    Q ${px + leftOffset} ${py + h * UNIT_SIZE - KEY_GAP} ${px + leftOffset} ${
-      py + h * UNIT_SIZE - KEY_GAP - r
-    }
-    L ${px + leftOffset} ${py + halfHeight + r}
-    Q ${px + leftOffset} ${py + halfHeight} ${px + leftOffset - r} ${
-      py + halfHeight
-    }
-    L ${px + r} ${py + halfHeight}
-    Q ${px} ${py + halfHeight} ${px} ${py + halfHeight - r}
-    L ${px} ${py + r}
-    Q ${px} ${py} ${px + r} ${py}
-    Z
-  `.trim();
-}
-
-/**
- * Generate SVG path for standard rectangular key
- */
-function generateRectPath(x: number, y: number, w: number, h: number): string {
-  const px = x * UNIT_SIZE;
-  const py = y * UNIT_SIZE;
-  const width = w * UNIT_SIZE - KEY_GAP;
-  const height = h * UNIT_SIZE - KEY_GAP;
-  const r = KEY_RADIUS;
-
-  return `
-    M ${px + r} ${py}
-    L ${px + width - r} ${py}
-    Q ${px + width} ${py} ${px + width} ${py + r}
-    L ${px + width} ${py + height - r}
-    Q ${px + width} ${py + height} ${px + width - r} ${py + height}
-    L ${px + r} ${py + height}
-    Q ${px} ${py + height} ${px} ${py + height - r}
-    L ${px} ${py + r}
-    Q ${px} ${py} ${px + r} ${py}
-    Z
-  `.trim();
-}
-
-/**
- * Get styling based on mapping type
- */
-function getMappingStyle(mapping?: KeyMapping) {
-  if (!mapping) {
-    return {
-      fill: '#334155', // slate-700
-      stroke: '#475569', // slate-600
-      strokeDasharray: '4 2',
-    };
-  }
-
-  switch (mapping.type) {
-    case 'simple':
-      return { fill: '#334155', stroke: '#22c55e', strokeDasharray: 'none' }; // green-500
-    case 'tap_hold':
-      return {
-        fill: 'rgba(127, 29, 29, 0.15)',
-        stroke: '#ef4444',
-        strokeDasharray: 'none',
-      }; // red-500
-    case 'macro':
-      return {
-        fill: 'rgba(88, 28, 135, 0.15)',
-        stroke: '#a855f7',
-        strokeDasharray: 'none',
-      }; // purple-500
-    case 'layer_switch':
-      return {
-        fill: 'rgba(113, 63, 18, 0.15)',
-        stroke: '#eab308',
-        strokeDasharray: 'none',
-      }; // yellow-500
-    default:
-      return { fill: '#334155', stroke: '#475569', strokeDasharray: 'none' };
-  }
-}
-
-/**
- * Format key label for display
- */
-function formatKeyLabel(key: string): string {
-  if (!key) return '';
-
-  // Handle with_* helper functions
-  const withMatch = key.match(/^with_(\w+)\(["']?(\w+)["']?\)$/);
-  if (withMatch) {
-    const [, modifier, innerKey] = withMatch;
-    const modSymbols: Record<string, string> = {
-      shift: '⇧',
-      ctrl: '⌃',
-      alt: '⌥',
-      meta: '⌘',
-      gui: '⌘',
-    };
-    const modSymbol =
-      modSymbols[modifier.toLowerCase()] || modifier.charAt(0).toUpperCase();
-    return `${modSymbol}${innerKey.replace(/^VK_/, '')}`;
-  }
-
-  const clean = key.replace(/^VK_/, '');
-  const shortNames: Record<string, string> = {
-    BACKSPACE: 'BS',
-    CAPSLOCK: 'Caps',
-    ESCAPE: 'Esc',
-    DELETE: 'Del',
-    INSERT: 'Ins',
-    PAGEUP: 'PgUp',
-    PAGEDOWN: 'PgDn',
-    LEFTSHIFT: 'LShft',
-    RIGHTSHIFT: 'RShft',
-    LEFTCONTROL: 'LCtrl',
-    RIGHTCONTROL: 'RCtrl',
-    LEFTALT: 'LAlt',
-    RIGHTALT: 'RAlt',
-    NUMLOCK: 'Num',
-    SCROLLLOCK: 'Scrl',
-    PRINTSCREEN: 'PrtSc',
-  };
-
-  const upper = clean.toUpperCase();
-  if (shortNames[upper]) return shortNames[upper];
-  if (clean.length > 5) return clean.slice(0, 4) + '…';
-  return clean;
-}
-
-/**
- * Get mapping display text
- */
-function getRemapText(mapping?: KeyMapping): string {
-  if (!mapping) return '';
-
-  switch (mapping.type) {
-    case 'simple':
-      return formatKeyLabel(mapping.tapAction || '');
-    case 'tap_hold': {
-      const tap = formatKeyLabel(mapping.tapAction || '');
-      const hold = formatKeyLabel(mapping.holdAction || '');
-      return `${tap}/${hold}`;
-    }
-    case 'macro':
-      return '⚡';
-    case 'layer_switch':
-      return mapping.targetLayer?.replace(/^MD_/, 'L') || '';
-    default:
-      return '';
-  }
-}
-
-/**
- * Mapping type indicator icon
- */
-function getMappingIcon(type?: string): string {
-  switch (type) {
-    case 'simple':
-      return '→';
-    case 'tap_hold':
-      return '↕';
-    case 'macro':
-      return '⚡';
-    case 'layer_switch':
-      return '⇄';
-    default:
-      return '';
-  }
-}
-
-function getMappingIconColor(type?: string): string {
-  switch (type) {
-    case 'simple':
-      return '#4ade80'; // green-400
-    case 'tap_hold':
-      return '#f87171'; // red-400
-    case 'macro':
-      return '#c084fc'; // purple-400
-    case 'layer_switch':
-      return '#facc15'; // yellow-400
-    default:
-      return '#94a3b8'; // slate-400
-  }
 }
 
 /**
  * Individual key SVG component
  */
 const KeySVG: React.FC<KeySVGProps> = React.memo(
-  ({ keyData, mapping, isPressed, onClick, simulatorMode = false }) => {
+  ({
+    keyData,
+    normalizedCode,
+    index,
+    mapping,
+    isPressed,
+    isSelected,
+    isTabStop,
+    onClick,
+    onFocusKey,
+    onNavigate,
+    simulatorMode = false,
+  }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isClicked, setIsClicked] = useState(false);
 
-    const { code, label, x, y, w, h, shape } = keyData;
+    const { x, y, w, h, shape, label } = keyData;
     const style = getMappingStyle(mapping);
-    const remapText = getRemapText(mapping);
     const icon = getMappingIcon(mapping?.type);
     const iconColor = getMappingIconColor(mapping?.type);
 
@@ -278,12 +94,21 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(
         : generateRectPath(x, y, w, h);
 
     // Calculate center position for text
-    const centerX = x * UNIT_SIZE + (w * UNIT_SIZE - KEY_GAP) / 2;
+    const keyWidth = w * UNIT_SIZE - KEY_GAP;
+    const centerX = x * UNIT_SIZE + keyWidth / 2;
     const centerY = y * UNIT_SIZE + (h * UNIT_SIZE - KEY_GAP) / 2;
+    const innerWidth = keyWidth - 8;
+    const legend = fitText(label, innerWidth, LABEL_MAX, LABEL_MIN);
+    const remap = fitText(
+      getRemapText(mapping),
+      innerWidth,
+      MAPPING_MAX,
+      MAPPING_MIN
+    );
 
     // Icon position (top-right)
-    const iconX = x * UNIT_SIZE + w * UNIT_SIZE - KEY_GAP - 12;
-    const iconY = y * UNIT_SIZE + 12;
+    const iconX = x * UNIT_SIZE + w * UNIT_SIZE - KEY_GAP - 6;
+    const iconY = y * UNIT_SIZE + 10;
 
     const handleClick = useCallback(() => {
       // In simulator mode, don't trigger onClick (only visual feedback)
@@ -295,21 +120,17 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(
       onClick();
     }, [onClick, simulatorMode]);
 
-    const tooltipContent = useMemo(() => {
-      if (!mapping) return `${code} (Default)`;
-      switch (mapping.type) {
-        case 'simple':
-          return `${code} → ${mapping.tapAction}`;
-        case 'tap_hold':
-          return `${code} → Tap: ${mapping.tapAction}, Hold: ${mapping.holdAction} (${mapping.threshold}ms)`;
-        case 'macro':
-          return `${code} → Macro (${mapping.macroSteps?.length || 0} steps)`;
-        case 'layer_switch':
-          return `${code} → Layer: ${mapping.targetLayer}`;
-        default:
-          return `${code} (Default)`;
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleClick();
+      } else if (NAV_KEYS.has(e.key)) {
+        e.preventDefault();
+        onNavigate(index, e.key as NavKey);
       }
-    }, [code, mapping]);
+    };
+
+    const description = describeKey(normalizedCode, mapping);
 
     // Colors
     const fillColor = isPressed
@@ -317,30 +138,37 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(
       : isClicked
         ? '#3b82f6'
         : style.fill;
-    const strokeColor = isPressed ? '#4ade80' : style.stroke;
+    const strokeColor = isPressed
+      ? '#4ade80'
+      : isSelected
+        ? '#38bdf8'
+        : style.stroke;
     const brightness = isHovered ? 1.15 : 1;
 
-    // In simulator mode, keys should appear disabled via styling
-    const className = simulatorMode
-      ? 'key-group opacity-50 cursor-not-allowed'
-      : 'key-group';
+    // In simulator mode the keyboard is a read-only display: no tab stops.
+    const interactive = !simulatorMode;
+    const className = interactive
+      ? 'key-group'
+      : 'key-group opacity-50 cursor-not-allowed';
 
     return (
       <g
         className={className}
-        style={{ cursor: simulatorMode ? 'not-allowed' : 'pointer' }}
+        style={{ cursor: interactive ? 'pointer' : 'not-allowed' }}
         onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        role="button"
-        tabIndex={0}
-        aria-label={`Key ${code}. ${tooltipContent}. ${
-          simulatorMode ? 'Simulator mode active.' : 'Click to configure.'
-        }`}
-        onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+        role={interactive ? 'button' : 'img'}
+        tabIndex={interactive ? (isTabStop ? 0 : -1) : undefined}
+        aria-pressed={interactive ? isSelected : undefined}
+        aria-label={description}
+        data-key-code={normalizedCode}
+        data-key-index={index}
+        onFocus={interactive ? () => onFocusKey(index) : undefined}
+        onKeyDown={interactive ? handleKeyDown : undefined}
       >
         {/* Native SVG tooltip */}
-        <title>{tooltipContent}</title>
+        <title>{description}</title>
 
         {/* Key shadow/depth effect */}
         <path
@@ -351,10 +179,11 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(
 
         {/* Main key surface */}
         <path
+          className="key-face"
           d={path}
           fill={fillColor}
           stroke={strokeColor}
-          strokeWidth={2}
+          strokeWidth={isSelected ? 3 : 2}
           strokeDasharray={style.strokeDasharray}
           style={{
             filter: `brightness(${brightness})`,
@@ -366,29 +195,31 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(
         {/* Key label (original key) */}
         <text
           x={centerX}
-          y={centerY - (mapping ? 6 : 0)}
+          y={centerY - (mapping ? 8 : 0)}
           textAnchor="middle"
           dominantBaseline="middle"
-          fill="#94a3b8"
-          fontSize={10}
+          fill="#cbd5e1"
+          fontSize={legend.size}
           fontFamily="monospace"
+          aria-hidden="true"
         >
-          {label}
+          {legend.text}
         </text>
 
         {/* Mapping text */}
         {mapping && (
           <text
             x={centerX}
-            y={centerY + 8}
+            y={centerY + 9}
             textAnchor="middle"
             dominantBaseline="middle"
             fill="#fde047"
-            fontSize={11}
+            fontSize={remap.size}
             fontWeight="bold"
             fontFamily="monospace"
+            aria-hidden="true"
           >
-            {remapText}
+            {remap.text}
           </text>
         )}
 
@@ -400,8 +231,9 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(
             textAnchor="end"
             dominantBaseline="middle"
             fill={iconColor}
-            fontSize={10}
+            fontSize={11}
             fontWeight="bold"
+            aria-hidden="true"
           >
             {icon}
           </text>
@@ -414,119 +246,11 @@ const KeySVG: React.FC<KeySVGProps> = React.memo(
 KeySVG.displayName = 'KeySVG';
 
 /**
- * Normalize key code to VK_ format for mapping lookup
- * Maps QMK-style KC_ codes to system VK_ codes based on DSL manual
- *
- * Handles:
- * - KC_A -> VK_A (letters)
- * - KC_0-9 -> VK_Num0-9 (top row numbers)
- * - KC_P0-9 -> VK_Numpad0-9 (numpad digit keys)
- * - KC_NLCK -> VK_NumLock, etc. (numpad special keys)
- * - VK_A -> VK_A (already normalized)
- */
-function normalizeKeyCode(code: string): string {
-  if (!code) return code;
-
-  // Already in VK_ format
-  if (code.startsWith('VK_')) return code;
-
-  // Handle top row number keys: KC_0-KC_9 -> VK_Num0-VK_Num9
-  if (code.match(/^KC_[0-9]$/)) {
-    const digit = code.charAt(code.length - 1);
-    return `VK_Num${digit}`;
-  }
-
-  // Handle numpad digit keys: KC_P0-KC_P9 -> VK_Numpad0-VK_Numpad9
-  if (code.match(/^KC_P[0-9]$/)) {
-    const digit = code.charAt(code.length - 1);
-    return `VK_Numpad${digit}`;
-  }
-
-  // Handle special keys that need name translation (QMK → keyrx DSL)
-  const specialKeyMap: Record<string, string> = {
-    // Punctuation / symbol keys
-    KC_LBRC: 'VK_LeftBracket',
-    KC_RBRC: 'VK_RightBracket',
-    KC_BSLS: 'VK_Backslash',
-    KC_SCLN: 'VK_Semicolon',
-    KC_QUOT: 'VK_Quote',
-    KC_COMM: 'VK_Comma',
-    KC_DOT: 'VK_Period',
-    KC_SLSH: 'VK_Slash',
-    KC_GRV: 'VK_Grave',
-    KC_MINS: 'VK_Minus',
-    KC_EQL: 'VK_Equal',
-    // Control keys
-    KC_ESC: 'VK_Escape',
-    KC_TAB: 'VK_Tab',
-    KC_CAPS: 'VK_CapsLock',
-    KC_SPC: 'VK_Space',
-    KC_ENT: 'VK_Enter',
-    KC_BSPC: 'VK_Backspace',
-    KC_DEL: 'VK_Delete',
-    KC_INS: 'VK_Insert',
-    KC_HOME: 'VK_Home',
-    KC_END: 'VK_End',
-    KC_PGUP: 'VK_PageUp',
-    KC_PGDN: 'VK_PageDown',
-    KC_UP: 'VK_Up',
-    KC_DOWN: 'VK_Down',
-    KC_LEFT: 'VK_Left',
-    KC_RGHT: 'VK_Right',
-    KC_PSCR: 'VK_PrintScreen',
-    KC_SCRL: 'VK_ScrollLock',
-    KC_PAUS: 'VK_Pause',
-    // Modifier keys
-    KC_LSFT: 'VK_LShift',
-    KC_RSFT: 'VK_RShift',
-    KC_LCTL: 'VK_LCtrl',
-    KC_RCTL: 'VK_RCtrl',
-    KC_LALT: 'VK_LAlt',
-    KC_RALT: 'VK_RAlt',
-    KC_LGUI: 'VK_LMeta',
-    KC_RGUI: 'VK_RMeta',
-    // Function keys
-    KC_F1: 'VK_F1',
-    KC_F2: 'VK_F2',
-    KC_F3: 'VK_F3',
-    KC_F4: 'VK_F4',
-    KC_F5: 'VK_F5',
-    KC_F6: 'VK_F6',
-    KC_F7: 'VK_F7',
-    KC_F8: 'VK_F8',
-    KC_F9: 'VK_F9',
-    KC_F10: 'VK_F10',
-    KC_F11: 'VK_F11',
-    KC_F12: 'VK_F12',
-    // Numpad special keys
-    KC_NLCK: 'VK_NumLock',
-    KC_PSLS: 'VK_NumpadDivide',
-    KC_PAST: 'VK_NumpadMultiply',
-    KC_PMNS: 'VK_NumpadSubtract',
-    KC_PPLS: 'VK_NumpadAdd',
-    KC_PENT: 'VK_NumpadEnter',
-    KC_PDOT: 'VK_NumpadDecimal',
-    // JIS-specific keys
-    KC_JYEN: 'VK_Yen',
-    KC_RO: 'VK_Ro',
-    KC_MHEN: 'VK_Muhenkan',
-    KC_HENK: 'VK_Henkan',
-    KC_KANA: 'VK_Hiragana',
-  };
-
-  if (specialKeyMap[code]) {
-    return specialKeyMap[code];
-  }
-
-  // Convert KC_ to VK_
-  if (code.startsWith('KC_')) return code.replace(/^KC_/, 'VK_');
-
-  // No prefix - add VK_
-  return `VK_${code}`;
-}
-
-/**
  * Main SVG Keyboard component
+ *
+ * The keyboard is ONE Tab stop (roving tabindex): Tab enters it, arrow keys
+ * move between keycaps spatially, Home/End jump to the row edges, and
+ * Enter/Space selects the focused key.
  */
 export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
   keys,
@@ -537,7 +261,10 @@ export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
   className = '',
   layoutName = 'Keyboard',
   labelOverrides,
+  selectedKeyCode = null,
 }) => {
+  const svgRef = useRef<SVGSVGElement>(null);
+
   // Calculate SVG dimensions
   const dimensions = useMemo(() => {
     if (keys.length === 0) {
@@ -551,8 +278,37 @@ export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
     };
   }, [keys]);
 
+  const normalizedCodes = useMemo(
+    () => keys.map((k) => normalizeKeyCode(k.code)),
+    [keys]
+  );
+
+  // Roving tabindex: remember the last focused key; before any focus, the
+  // selected key (or the first key) is the Tab stop.
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const selectedIndex = selectedKeyCode
+    ? normalizedCodes.indexOf(selectedKeyCode)
+    : -1;
+  const tabStopIndex = Math.min(
+    focusedIndex ?? (selectedIndex >= 0 ? selectedIndex : 0),
+    Math.max(keys.length - 1, 0)
+  );
+
+  const handleNavigate = useCallback(
+    (from: number, key: NavKey) => {
+      const to = nextKeyIndex(keys, from, key);
+      if (to === from) return;
+      setFocusedIndex(to);
+      svgRef.current
+        ?.querySelector<SVGGElement>(`[data-key-index="${to}"]`)
+        ?.focus();
+    },
+    [keys]
+  );
+
   return (
     <svg
+      ref={svgRef}
       width={dimensions.width}
       height={dimensions.height}
       viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
@@ -561,28 +317,39 @@ export const SVGKeyboard: React.FC<SVGKeyboardProps> = ({
         backgroundColor: 'var(--color-bg-secondary, #1e293b)',
         borderRadius: '12px',
         maxWidth: '100%',
+        // Never shrink so far that keycap text becomes unreadable; the
+        // surrounding container scrolls horizontally instead.
+        minWidth: dimensions.width * MIN_SCALE,
         height: 'auto',
         display: 'block',
       }}
       role="group"
-      aria-label={`${layoutName} keyboard layout${
-        simulatorMode ? ' (simulator mode)' : ''
-      }. Click keys to configure.`}
+      aria-label={
+        simulatorMode
+          ? `${layoutName} keyboard layout (simulator mode, read-only)`
+          : `${layoutName} keyboard. Use the arrow keys to move between keys and Enter to edit the focused key.`
+      }
     >
       <g transform="translate(8, 8)">
-        {keys.map((key) => {
-          const normalizedCode = normalizeKeyCode(key.code);
+        {keys.map((key, index) => {
+          const normalizedCode = normalizedCodes[index];
           const keyName = normalizedCode.replace(/^VK_/, '');
           const displayLabel = labelOverrides?.[keyName] || key.label;
           return (
             <KeySVG
               key={key.code}
               keyData={{ ...key, label: displayLabel }}
+              normalizedCode={normalizedCode}
+              index={index}
               mapping={keyMappings.get(normalizedCode)}
               isPressed={
                 pressedKeys.has(key.code) || pressedKeys.has(normalizedCode)
               }
+              isSelected={selectedKeyCode === normalizedCode}
+              isTabStop={index === tabStopIndex}
               onClick={() => onKeyClick(normalizedCode)}
+              onFocusKey={setFocusedIndex}
+              onNavigate={handleNavigate}
               simulatorMode={simulatorMode}
             />
           );
