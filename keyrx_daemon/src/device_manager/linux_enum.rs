@@ -49,19 +49,50 @@ pub(super) const MIN_REQUIRED_KEYS: usize = 20;
 /// `EV_KEY` bit in `capabilities/ev`.
 const EV_KEY_BIT: usize = 1;
 
-/// Name of the daemon's own virtual output device (never a capture source).
-const OUTPUT_DEVICE_NAME: &str = "keyrx";
-
-/// Lists keyboards (devices with EV_KEY and most letter keys), deduplicated
-/// per physical device, sorted by device path.
+/// Lists the keyboards that can be captured (devices with EV_KEY and most
+/// letter keys), deduplicated per physical device, sorted by device path.
+/// keyrx's own output keyboards are never in this list - it is what the
+/// daemon grabs from, so the loop protection lives here.
 pub fn enumerate_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
-    enumerate_keyboards_in(Path::new("/sys/class/input"), Path::new("/dev/input"))
+    enumerate_keyboards_in(
+        Path::new("/sys/class/input"),
+        Path::new("/dev/input"),
+        false,
+    )
+}
+
+/// Like [`enumerate_keyboards`] but also lists keyrx's own output keyboards
+/// (flagged by [`KeyboardInfo::is_keyrx_output`]), for device listings that
+/// show or hide them explicitly. Never use this to pick inputs.
+pub fn enumerate_all_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
+    enumerate_keyboards_in(Path::new("/sys/class/input"), Path::new("/dev/input"), true)
+}
+
+/// The `/dev/input/eventN` node of the (newest) device called exactly
+/// `name`, e.g. a daemon's own output keyboard.
+#[must_use]
+pub fn find_event_path_by_name(name: &str) -> Option<PathBuf> {
+    enumerate_all_keyboards()
+        .ok()?
+        .into_iter()
+        .filter(|kb| kb.name == name)
+        .map(|kb| kb.path)
+        .max_by_key(|path| event_number(path))
+}
+
+fn event_number(path: &Path) -> u32 {
+    path.file_name()
+        .and_then(|n| n.to_str())
+        .and_then(|n| n.strip_prefix("event"))
+        .and_then(|n| n.parse().ok())
+        .unwrap_or(0)
 }
 
 /// [`enumerate_keyboards`] over an arbitrary sysfs class dir (tests).
 pub(super) fn enumerate_keyboards_in(
     sys_class_input: &Path,
     dev_input: &Path,
+    include_outputs: bool,
 ) -> Result<Vec<KeyboardInfo>, DiscoveryError> {
     let mut keyboards = Vec::new();
     for entry in fs::read_dir(sys_class_input)? {
@@ -71,7 +102,9 @@ pub(super) fn enumerate_keyboards_in(
             continue;
         }
         if let Some(info) = read_keyboard(&entry.path().join("device"), dev_input.join(&node)) {
-            keyboards.push(info);
+            if include_outputs || !info.is_keyrx_output() {
+                keyboards.push(info);
+            }
         }
     }
     keyboards.sort_by(|a, b| a.path.cmp(&b.path));
@@ -88,15 +121,19 @@ fn read_keyboard(device_dir: &Path, path: PathBuf) -> Option<KeyboardInfo> {
         return None;
     }
     let name = read_attr(device_dir, "name").unwrap_or_else(|| "Unknown Device".to_string());
-    if name == OUTPUT_DEVICE_NAME {
-        return None;
-    }
     Some(KeyboardInfo {
         path,
         name,
         serial: read_attr(device_dir, "uniq"),
         phys: read_attr(device_dir, "phys"),
+        is_virtual: is_virtual_sysfs_path(&fs::canonicalize(device_dir).unwrap_or_default()),
     })
+}
+
+/// Whether a resolved sysfs device path is a software device (uinput, ...):
+/// the kernel parents those under `/sys/devices/virtual/`.
+fn is_virtual_sysfs_path(resolved: &Path) -> bool {
+    resolved.starts_with("/sys/devices/virtual")
 }
 
 fn is_keyboard(ev: &[usize], keys: &[usize]) -> bool {
@@ -205,7 +242,7 @@ mod tests {
     }
 
     fn enumerate(root: &TempDir) -> Vec<KeyboardInfo> {
-        enumerate_keyboards_in(root.path(), Path::new("/dev/input")).unwrap()
+        enumerate_keyboards_in(root.path(), Path::new("/dev/input"), false).unwrap()
     }
 
     #[test]
@@ -247,6 +284,33 @@ mod tests {
         );
         fs::create_dir_all(root.path().join("mouse0")).unwrap();
         assert!(enumerate(&root).is_empty());
+    }
+
+    #[test]
+    fn own_output_is_listed_only_when_asked_and_flagged() {
+        let root = TempDir::new().unwrap();
+        fake_device(root.path(), "event2", "keyrx", "", &REQUIRED_KEYS);
+        fake_device(root.path(), "event6", "keyrx-out-42", "", &REQUIRED_KEYS);
+        fake_device(
+            root.path(),
+            "event7",
+            "keyrx-md-a-1",
+            "usb-9/input0",
+            &REQUIRED_KEYS,
+        );
+        assert_eq!(enumerate(&root).len(), 1, "only the test keyboard");
+        let all = enumerate_keyboards_in(root.path(), Path::new("/dev/input"), true).unwrap();
+        assert_eq!(all.iter().filter(|k| k.is_keyrx_output()).count(), 2);
+    }
+
+    #[test]
+    fn software_devices_are_recognised_by_sysfs_parent() {
+        assert!(is_virtual_sysfs_path(Path::new(
+            "/sys/devices/virtual/input/input42"
+        )));
+        assert!(!is_virtual_sysfs_path(Path::new(
+            "/sys/devices/pci0000:00/0000:00:14.0/usb1/1-1/input/input3"
+        )));
     }
 
     #[test]

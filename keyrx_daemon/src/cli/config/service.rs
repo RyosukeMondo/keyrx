@@ -1,9 +1,10 @@
 //! Layer 2: Business logic execution.
 
 use crate::config::profile_manager::ProfileManager;
-use crate::config::rhai_generator::{KeyAction, RhaiGenerator};
+use crate::config::profile_manager::{ProfileError, ProfileMetadata};
+use crate::config::rhai_generator::{GeneratorError, KeyAction, RhaiGenerator};
 use crate::error::{CliError, ConfigError, DaemonResult};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// Service layer for profile operations.
 pub struct ProfileService {
@@ -51,44 +52,9 @@ impl ProfileService {
         key: &str,
         action: KeyAction,
     ) -> DaemonResult<u64> {
-        let profile_meta =
-            self.manager
-                .get(profile_name)
-                .ok_or_else(|| ConfigError::InvalidProfile {
-                    name: profile_name.to_string(),
-                    reason: "Profile not found".to_string(),
-                })?;
-
-        let mut gen =
-            RhaiGenerator::load(&profile_meta.rhai_path).map_err(|e| ConfigError::ParseError {
-                path: profile_meta.rhai_path.clone(),
-                reason: e.to_string(),
-            })?;
-
-        gen.set_key_mapping(layer, key, action)
-            .map_err(|e| CliError::CommandFailed {
-                command: "set-key".to_string(),
-                reason: e.to_string(),
-            })?;
-
-        gen.save(&profile_meta.rhai_path)
-            .map_err(|e| ConfigError::ParseError {
-                path: profile_meta.rhai_path.clone(),
-                reason: format!("Failed to save: {}", e),
-            })?;
-
-        self.compile_profile(&profile_meta.rhai_path, &profile_meta.krx_path)
-    }
-
-    /// Compiles a profile and returns compilation time.
-    fn compile_profile(&self, rhai_path: &Path, krx_path: &Path) -> DaemonResult<u64> {
-        let compile_start = std::time::Instant::now();
-        keyrx_compiler::compile_file(rhai_path, krx_path).map_err(|e| {
-            ConfigError::CompilationFailed {
-                reason: e.to_string(),
-            }
-        })?;
-        Ok(compile_start.elapsed().as_millis() as u64)
+        self.edit_source(profile_name, "set-key", |gen| {
+            gen.set_key_mapping(layer, key, action)
+        })
     }
 
     /// Deletes a key mapping.
@@ -98,33 +64,56 @@ impl ProfileService {
         layer: &str,
         key: &str,
     ) -> DaemonResult<u64> {
-        let profile_meta =
-            self.manager
-                .get(profile_name)
-                .ok_or_else(|| ConfigError::InvalidProfile {
-                    name: profile_name.to_string(),
-                    reason: "Profile not found".to_string(),
-                })?;
+        self.edit_source(profile_name, "delete-key", |gen| {
+            gen.delete_key_mapping(layer, key)
+        })
+    }
 
+    /// Edits a profile's source and commits it only if the result compiles.
+    ///
+    /// The edit is applied in memory, and `ProfileManager::set_config` (the
+    /// path REST and RPC saves take too) compiles a temp copy first and only
+    /// then replaces the `.rhai`/`.krx` pair atomically - a rejected edit
+    /// leaves both files untouched. Returns the compile time in ms.
+    fn edit_source(
+        &mut self,
+        profile_name: &str,
+        command: &str,
+        edit: impl FnOnce(&mut RhaiGenerator) -> Result<(), GeneratorError>,
+    ) -> DaemonResult<u64> {
+        let meta = self.profile(profile_name)?;
         let mut gen =
-            RhaiGenerator::load(&profile_meta.rhai_path).map_err(|e| ConfigError::ParseError {
-                path: profile_meta.rhai_path.clone(),
+            RhaiGenerator::load(&meta.rhai_path).map_err(|e| ConfigError::ParseError {
+                path: meta.rhai_path.clone(),
                 reason: e.to_string(),
             })?;
-
-        gen.delete_key_mapping(layer, key)
-            .map_err(|e| CliError::CommandFailed {
-                command: "delete-key".to_string(),
-                reason: e.to_string(),
+        edit(&mut gen).map_err(|e| CliError::CommandFailed {
+            command: command.to_string(),
+            reason: e.to_string(),
+        })?;
+        let start = std::time::Instant::now();
+        self.manager
+            .set_config(profile_name, &gen.to_string())
+            .map_err(|e| match e {
+                ProfileError::Compilation(c) => ConfigError::CompilationFailed {
+                    reason: c.to_string(),
+                },
+                other => ConfigError::InvalidProfile {
+                    name: profile_name.to_string(),
+                    reason: other.to_string(),
+                },
             })?;
+        Ok(start.elapsed().as_millis() as u64)
+    }
 
-        gen.save(&profile_meta.rhai_path)
-            .map_err(|e| ConfigError::ParseError {
-                path: profile_meta.rhai_path.clone(),
-                reason: format!("Failed to save: {}", e),
-            })?;
-
-        self.compile_profile(&profile_meta.rhai_path, &profile_meta.krx_path)
+    fn profile(&self, name: &str) -> DaemonResult<ProfileMetadata> {
+        Ok(self
+            .manager
+            .get(name)
+            .ok_or_else(|| ConfigError::InvalidProfile {
+                name: name.to_string(),
+                reason: "Profile not found".to_string(),
+            })?)
     }
 
     /// Gets a key mapping as string.
@@ -134,44 +123,31 @@ impl ProfileService {
         layer: &str,
         key: &str,
     ) -> DaemonResult<Option<String>> {
-        let profile_meta =
-            self.manager
-                .get(profile_name)
-                .ok_or_else(|| ConfigError::InvalidProfile {
-                    name: profile_name.to_string(),
-                    reason: "Profile not found".to_string(),
-                })?;
-
-        let content = std::fs::read_to_string(&profile_meta.rhai_path).map_err(|e| {
-            ConfigError::ParseError {
-                path: profile_meta.rhai_path.clone(),
-                reason: format!("Failed to read profile: {}", e),
-            }
+        let meta = self.profile(profile_name)?;
+        let gen = RhaiGenerator::load(&meta.rhai_path).map_err(|e| ConfigError::ParseError {
+            path: meta.rhai_path.clone(),
+            reason: e.to_string(),
         })?;
-
-        Ok(find_key_mapping(&content, key, layer))
+        Ok(gen
+            .find_mapping(layer, key)
+            .map_err(|e| CliError::CommandFailed {
+                command: "get-key".to_string(),
+                reason: e.to_string(),
+            })?)
     }
 
-    /// Validates a profile by dry-run compilation.
+    /// Validates a profile by compiling it in memory (no file is written).
     pub fn validate_profile(&self, profile_name: &str) -> DaemonResult<()> {
-        let profile_meta =
-            self.manager
-                .get(profile_name)
-                .ok_or_else(|| ConfigError::InvalidProfile {
-                    name: profile_name.to_string(),
-                    reason: "Profile not found".to_string(),
-                })?;
-
-        let temp_output = profile_meta.krx_path.with_extension("tmp.krx");
-        let result = keyrx_compiler::compile_file(&profile_meta.rhai_path, &temp_output);
-        let _ = std::fs::remove_file(&temp_output);
-
-        result.map_err(|e| {
-            ConfigError::CompilationFailed {
-                reason: e.to_string(),
-            }
-            .into()
-        })
+        let meta = self.profile(profile_name)?;
+        crate::config::ProfileCompiler::new()
+            .parse(&meta.rhai_path)
+            .map(|_| ())
+            .map_err(|e| {
+                ConfigError::CompilationFailed {
+                    reason: e.to_string(),
+                }
+                .into()
+            })
     }
 
     /// Gets profile metadata.
@@ -236,40 +212,6 @@ impl ProfileService {
 }
 
 // Helper functions for parsing Rhai content
-
-fn find_key_mapping(content: &str, key: &str, layer: &str) -> Option<String> {
-    let mut current_layer = "base";
-    let mut in_when_block = false;
-
-    for line in content.lines() {
-        let trimmed = line.trim();
-
-        if trimmed.starts_with("when_start(") {
-            in_when_block = true;
-            if let Some(start) = trimmed.find('"') {
-                if let Some(end) = trimmed[start + 1..].find('"') {
-                    current_layer = &trimmed[start + 1..start + 1 + end];
-                }
-            }
-        } else if trimmed.starts_with("when_end()") {
-            in_when_block = false;
-            current_layer = "base";
-        } else if (current_layer == layer || (layer == "base" && !in_when_block))
-            && (trimmed.starts_with("map(") || trimmed.starts_with("tap_hold("))
-        {
-            if let Some(start) = trimmed.find('"') {
-                if let Some(end) = trimmed[start + 1..].find('"') {
-                    let first_key = &trimmed[start + 1..start + 1 + end];
-                    if first_key == key {
-                        return Some(trimmed.to_string());
-                    }
-                }
-            }
-        }
-    }
-
-    None
-}
 
 fn extract_device_id(content: &str) -> Option<String> {
     for line in content.lines() {

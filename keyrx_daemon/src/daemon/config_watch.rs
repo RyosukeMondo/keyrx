@@ -5,8 +5,9 @@
 //! The decision of WHICH config is live stays in [`super::live_config`]; the
 //! watcher only recompiles the loaded profile's source and raises the same
 //! reload request SIGHUP and the web UI raise. A source that fails to compile
-//! keeps the previous `.krx` (and so the running config) and logs the
-//! compiler's `file:line` error.
+//! keeps the previous `.krx` (and so the running config), logs the compiler's
+//! `file:line` error and reports it as `config_error` in status/doctor on
+//! every transport until a later load succeeds (the daemon's reload clears it).
 //!
 //! Plain polling of one file's mtime (every [`POLL_INTERVAL`]) on purpose: no
 //! extra dependency, works on every platform and over network file systems.
@@ -83,7 +84,14 @@ impl ProfileWatcher {
         }
         self.candidate = None;
         self.seen = Some((profile.clone(), mtime));
-        Some(self.reload(profile, &source, mtime))
+        let event = self.reload(profile, &source, mtime);
+        if let WatchEvent::CompileFailed { error, profile } = &event {
+            self.shared.report_config_error(format!(
+                "profile '{profile}' changed on disk but does not compile, keeping the \
+                 running configuration: {error}"
+            ));
+        }
+        Some(event)
     }
 
     fn reload(&self, profile: String, source: &Path, source_mtime: SystemTime) -> WatchEvent {
@@ -231,6 +239,20 @@ mod tests {
             }
             other => panic!("expected a compile failure, got {other:?}"),
         }
+        let reported = f.shared.get_config_error().expect("config_error is set");
+        assert!(
+            reported.contains("p.rhai:2"),
+            "carries file:line: {reported}"
+        );
+        assert!(reported.contains("p.rhai"), "{reported}");
+        assert!(
+            reported.contains("keeping the running configuration"),
+            "{reported}"
+        );
+        assert!(
+            reported.contains(" (at 20"),
+            "carries a timestamp: {reported}"
+        );
         assert_eq!(
             std::fs::read(&krx).unwrap(),
             before,

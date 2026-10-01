@@ -1,7 +1,7 @@
 //! Device management endpoints.
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{delete, get, patch, put},
     Json, Router,
 };
@@ -34,6 +34,15 @@ struct DeviceResponse {
     serial: Option<String>,
     active: bool,
     layout: Option<String>,
+    is_virtual: bool,
+    is_keyrx_output: bool,
+}
+
+#[derive(Deserialize)]
+struct ListQuery {
+    /// Also list software devices and keyrx's own output keyboards.
+    #[serde(default)]
+    include_virtual: bool,
 }
 
 #[derive(Serialize)]
@@ -48,12 +57,13 @@ struct DevicesListResponse {
 /// "the OS can see it".
 async fn list_devices(
     State(state): State<Arc<AppState>>,
+    Query(query): Query<ListQuery>,
 ) -> Result<Json<DevicesListResponse>, DaemonError> {
     use crate::error::PlatformError;
 
     let devices = state
         .device_service
-        .list_devices()
+        .list_all_devices(query.include_virtual)
         .await
         .map_err(PlatformError::DeviceError)?
         .into_iter()
@@ -64,6 +74,8 @@ async fn list_devices(
             serial: d.serial,
             active: d.active,
             layout: d.layout,
+            is_virtual: d.is_virtual,
+            is_keyrx_output: d.is_keyrx_output,
         })
         .collect();
     Ok(Json(DevicesListResponse { devices }))

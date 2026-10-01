@@ -19,28 +19,23 @@ fn load_for_validation(path: &Path) -> Result<keyrx_core::config::ConfigRoot, (i
             )
         });
     }
-    let scratch = std::env::temp_dir().join(format!("keyrx-validate-{}.krx", std::process::id()));
     println!(
         "   {} is a Rhai source; compiling it first...",
         path.display()
     );
-    let result = keyrx_compiler::compile_file(path, &scratch)
+    // Compiled in memory: no scratch .krx is created, so nothing can be left behind.
+    let (config, warnings) = crate::config::ProfileCompiler::new()
+        .parse(path)
         .map_err(|e| {
             (
                 exit_codes::CONFIG_ERROR,
                 format!("{} does not compile: {e}", path.display()),
             )
-        })
-        .and_then(|()| {
-            load_config(&scratch).map_err(|e| {
-                (
-                    exit_codes::CONFIG_ERROR,
-                    format!("Failed to load compiled configuration: {e}"),
-                )
-            })
-        });
-    let _ = std::fs::remove_file(&scratch);
-    result
+        })?;
+    for warning in warnings {
+        println!("   warning: {warning}");
+    }
+    Ok(config)
 }
 
 #[cfg(target_os = "linux")]

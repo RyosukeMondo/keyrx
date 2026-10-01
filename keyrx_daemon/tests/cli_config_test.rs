@@ -355,3 +355,107 @@ fn test_config_auto_recompile() {
         .success()
         .stdout(predicate::str::contains("\"compile_time_ms\""));
 }
+
+// --- edit safety: normalised names, minimal diff, nothing written on failure ---
+
+/// A profile with deliberately idiosyncratic formatting, compiled.
+fn setup_tidy_env() -> (TempDir, String, std::path::PathBuf) {
+    let temp_dir = TempDir::new().unwrap();
+    let config_path = temp_dir.path().to_str().unwrap().to_string();
+    let profiles = temp_dir.path().join("profiles");
+    fs::create_dir_all(&profiles).unwrap();
+    let rhai = profiles.join("tidy.rhai");
+    let content = "// my keys\ndevice_start(\"*\");\n\n    map(  \"VK_CapsLock\",\"VK_Escape\"  );\n\tmap(\"A\", \"VK_B\");\n\ndevice_end();\n";
+    fs::write(&rhai, content).unwrap();
+    keyrx_compiler::compile_file(&rhai, &profiles.join("tidy.krx")).unwrap();
+    (temp_dir, config_path, rhai)
+}
+
+fn set_key(config_path: &str, args: &[&str]) -> assert_cmd::assert::Assert {
+    let mut cmd = Command::cargo_bin("keyrx_daemon").unwrap();
+    cmd.env("KEYRX_CONFIG_DIR", config_path)
+        .args(["config", "set-key"])
+        .args(args)
+        .args(["--profile", "tidy", "--json"]);
+    cmd.assert()
+}
+
+#[test]
+fn set_key_with_the_manuals_bare_name_replaces_the_vk_spelling_instead_of_duplicating() {
+    let (_temp, config_path, rhai) = setup_tidy_env();
+    set_key(&config_path, &["CapsLock", "VK_LCtrl"]).success();
+
+    let after = fs::read_to_string(&rhai).unwrap();
+    assert_eq!(
+        after.matches("CapsLock").count(),
+        1,
+        "no duplicate:\n{after}"
+    );
+    // One line changed; the odd spacing and the tab on the others survive.
+    assert_eq!(
+        after,
+        "// my keys\ndevice_start(\"*\");\n\n    map(\"CapsLock\", \"VK_LCtrl\");\n\tmap(\"A\", \"VK_B\");\n\ndevice_end();\n"
+    );
+}
+
+#[test]
+fn a_rejected_set_key_leaves_the_source_and_binary_untouched() {
+    let (_temp, config_path, rhai) = setup_tidy_env();
+    let krx = rhai.with_extension("krx");
+    let (rhai_before, krx_before) = (fs::read(&rhai).unwrap(), fs::read(&krx).unwrap());
+
+    set_key(&config_path, &["CapsLock", "NotAKey"]).failure();
+    assert_eq!(
+        fs::read(&rhai).unwrap(),
+        rhai_before,
+        ".rhai must not change"
+    );
+    assert_eq!(fs::read(&krx).unwrap(), krx_before, ".krx must not change");
+
+    // An edit that is fine as text but breaks the compile: the profile is
+    // already broken elsewhere, so compiling the candidate fails.
+    fs::write(
+        &rhai,
+        "device_start(\"*\");\n  map(\"A\" \"VK_B\");\ndevice_end();\n",
+    )
+    .unwrap();
+    let broken = fs::read(&rhai).unwrap();
+    set_key(&config_path, &["F13", "VK_F14"]).failure();
+    assert_eq!(
+        fs::read(&rhai).unwrap(),
+        broken,
+        "a failed compile writes nothing"
+    );
+    assert_eq!(fs::read(&krx).unwrap(), krx_before);
+    let leftovers: Vec<_> = fs::read_dir(rhai.parent().unwrap())
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .filter(|n| n.ends_with(".tmp") || n.ends_with(".part"))
+        .collect();
+    assert!(
+        leftovers.is_empty(),
+        "temp files left behind: {leftovers:?}"
+    );
+}
+
+#[test]
+fn set_tap_hold_uses_the_same_normalisation() {
+    let (_temp, config_path, rhai) = setup_tidy_env();
+    let mut cmd = Command::cargo_bin("keyrx_daemon").unwrap();
+    cmd.env("KEYRX_CONFIG_DIR", &config_path)
+        .args([
+            "config",
+            "set-tap-hold",
+            "CapsLock",
+            "VK_Escape",
+            "VK_LCtrl",
+        ])
+        .args(["--profile", "tidy", "--json"]);
+    cmd.assert().success();
+    let after = fs::read_to_string(&rhai).unwrap();
+    assert_eq!(after.matches("CapsLock").count(), 1, "{after}");
+    assert!(
+        after.contains("tap_hold(\"CapsLock\", \"VK_Escape\", \"VK_LCtrl\""),
+        "{after}"
+    );
+}

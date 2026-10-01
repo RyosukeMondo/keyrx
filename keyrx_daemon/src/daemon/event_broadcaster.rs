@@ -101,7 +101,7 @@ impl EventBroadcaster {
             sequence,
         }) {
             Ok(receiver_count) => {
-                log::debug!(
+                log::trace!(
                     "Successfully broadcast key event to {} receivers",
                     receiver_count
                 );

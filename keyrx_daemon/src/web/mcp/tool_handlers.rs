@@ -161,6 +161,7 @@ pub fn get_status(state: &AppState) -> Result<String, String> {
         "deviceCount": s.device_count,
         "inputOverflows": s.input_overflows,
         "configError": s.config_error,
+        "outputDevice": s.output_device,
     })
     .to_string())
 }
@@ -187,6 +188,7 @@ pub async fn list_devices(state: &AppState) -> Result<String, String> {
                 "path": d.path,
                 "active": d.active,
                 "layout": d.layout,
+                "isVirtual": d.is_virtual,
             })
         })
         .collect();

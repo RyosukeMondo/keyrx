@@ -29,6 +29,7 @@ pub enum Command {
         log_keys: bool,
         no_watch: bool,
         test_mode: bool,
+        tuning: crate::daemon::options::OptionOverrides,
     },
     Devices(devices::DevicesArgs),
     Profiles(profiles::ProfilesArgs),
@@ -40,7 +41,9 @@ pub enum Command {
     Status(status::StatusArgs),
     State(state::StateArgs),
     Metrics(metrics::MetricsArgs),
-    ListDevices,
+    ListDevices {
+        all: bool,
+    },
     Doctor {
         json: bool,
     },
@@ -73,10 +76,11 @@ pub fn dispatch(command: Command) -> CommandResult {
             log_keys,
             no_watch,
             test_mode,
+            tuning,
         } => {
             // Delegate to run handler (defined in handlers/run.rs)
             let log = crate::daemon::platform_setup::LogOptions { debug, log_keys };
-            crate::cli::handlers::run::handle_run(config, log, !no_watch, test_mode)
+            crate::cli::handlers::run::handle_run(config, log, !no_watch, test_mode, tuning)
         }
         // `devices` and `config` report their own errors (text or --json), so
         // only the exit code is passed on: main would print them twice.
@@ -108,7 +112,9 @@ pub fn dispatch(command: Command) -> CommandResult {
         Command::Metrics(args) => {
             metrics::execute(args).map_err(|e| (exit_codes::CONFIG_ERROR, e.to_string()))
         }
-        Command::ListDevices => crate::cli::handlers::list_devices::handle_list_devices(),
+        Command::ListDevices { all } => {
+            crate::cli::handlers::list_devices::handle_list_devices(all)
+        }
         Command::Doctor { json } => crate::cli::handlers::doctor::handle_doctor(json),
         Command::Validate { config } => crate::cli::handlers::validate::handle_validate(&config),
         Command::Record { output, device } => {

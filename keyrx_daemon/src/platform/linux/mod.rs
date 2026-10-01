@@ -19,7 +19,6 @@ pub mod tray;
 pub(crate) mod uinput_device;
 
 // Re-export public types
-pub use emergency_stop::CHORD_TEXT as EMERGENCY_CHORD_TEXT;
 pub use input_capture::EvdevInput;
 pub use output_injection::UinputOutput;
 pub use tray::LinuxSystemTray;
@@ -30,9 +29,11 @@ pub use keycode_map::{evdev_to_keycode, keycode_to_evdev, keycode_to_uinput_key}
 
 use keyrx_core::config::DeviceConfig;
 
-use crate::device_manager::{DeviceManager, RefreshResult};
+use crate::device_manager::{find_event_path_by_name, DeviceManager, RefreshResult};
+use crate::platform::emergency::EmergencyConfig;
+use crate::platform::output_device::default_output_name;
 use crate::platform::{DeviceError, InputDevice, OutputDevice, ProcessResult};
-use emergency_stop::EmergencyChord;
+use emergency_stop::EmergencyDetector;
 use hotplug::HotplugWatcher;
 
 /// Linux platform structure for keyboard input/output operations.
@@ -91,8 +92,13 @@ pub struct LinuxPlatform {
     /// inotify could not be started (logged once at startup); hotplug is
     /// then simply off.
     hotplug: Option<HotplugWatcher>,
-    /// Detects the emergency escape chord on the raw (pre-remap) stream.
-    emergency: EmergencyChord,
+    /// Detects the emergency stop (chord or one-handed hold) on the raw
+    /// (pre-remap) stream.
+    emergency: EmergencyDetector,
+    /// Upper bound for how long `capture_input` may wait for input, set by a
+    /// decorator that has something due sooner than the default tick (see
+    /// [`Platform::set_input_wait_limit`]).
+    wait_limit: Option<std::time::Duration>,
     /// Set by every [`Self::reconfigure`] (explicit or from a hotplug
     /// rescan) and taken by [`Platform::take_devices_changed`], so the
     /// event loop knows to republish the captured-device set (H8) even
@@ -104,7 +110,7 @@ impl LinuxPlatform {
     /// Creates a new LinuxPlatform instance with no devices attached.
     #[must_use]
     pub fn new() -> Self {
-        Self::scoped("*", "keyrx")
+        Self::scoped("*", &default_output_name())
     }
 
     /// The production platform, optionally narrowed by the environment so a
@@ -115,12 +121,13 @@ impl LinuxPlatform {
     ///   are ever grabbed (default `*`). It can only narrow what the loaded
     ///   profile's `device_start` patterns select, never widen it.
     /// - `KEYRX_OUTPUT_NAME` - name of the virtual output keyboard (default
-    ///   `keyrx`), so tools can tell instances apart.
+    ///   `keyrx-out-<pid>`, unique per instance; status reports the name and
+    ///   the `/dev/input/eventN` path), so tools can tell instances apart.
     #[must_use]
     pub fn from_env() -> Self {
         let scope = std::env::var("KEYRX_DEVICE_SCOPE").unwrap_or_else(|_| "*".to_string());
-        let output = std::env::var("KEYRX_OUTPUT_NAME").unwrap_or_else(|_| "keyrx".to_string());
-        if scope != "*" || output != "keyrx" {
+        let output = std::env::var("KEYRX_OUTPUT_NAME").unwrap_or_else(|_| default_output_name());
+        if scope != "*" {
             log::info!("Platform scope from environment: devices '{scope}', output '{output}'");
         }
         Self::scoped(&scope, &output)
@@ -138,9 +145,18 @@ impl LinuxPlatform {
             output_name: output_name.to_string(),
             active_configs: Vec::new(),
             hotplug: None,
-            emergency: EmergencyChord::new(),
+            emergency: EmergencyDetector::new(EmergencyConfig::default()),
+            wait_limit: None,
             devices_changed: false,
         }
+    }
+
+    /// Uses `config` for the emergency stop instead of the default chord
+    /// and hold.
+    #[must_use]
+    pub fn with_emergency(mut self, config: EmergencyConfig) -> Self {
+        self.emergency = EmergencyDetector::new(config);
+        self
     }
 
     /// Initializes the platform with input and output devices.
@@ -199,7 +215,12 @@ impl LinuxPlatform {
         }
         if self.output_device.is_none() {
             let output_device = UinputOutput::create(&self.output_name)?;
-            log::info!("Created virtual output device: {}", output_device.name());
+            log::info!(
+                "Created virtual output device '{}' ({})",
+                output_device.name(),
+                find_event_path_by_name(output_device.name())
+                    .map_or_else(|| "node pending".to_string(), |p| p.display().to_string())
+            );
             self.output_device = Some(output_device);
         }
         if self.hotplug.is_none() {
@@ -298,22 +319,22 @@ impl LinuxPlatform {
         &mut self,
         event: keyrx_core::runtime::event::KeyEvent,
     ) -> crate::platform::PlatformResult<keyrx_core::runtime::event::KeyEvent> {
-        use crate::platform::PlatformError;
-
-        if self.emergency.observe(&event) {
-            log::error!(
-                "EMERGENCY ESCAPE chord ({}+{}+{}) held: releasing every grabbed keyboard \
-                 and stopping the event loop.",
-                format_args!("{:?}", emergency_stop::CHORD[0]),
-                format_args!("{:?}", emergency_stop::CHORD[1]),
-                format_args!("{:?}", emergency_stop::CHORD[2]),
-            );
-            if let Err(e) = self.release_all_devices() {
-                log::warn!("Emergency stop: failed to release a device cleanly: {e}");
-            }
-            return Err(PlatformError::EmergencyStop);
+        if self.emergency.observe(&event, std::time::Instant::now()) {
+            return Err(self.emergency_stop("chord held"));
         }
         Ok(event)
+    }
+
+    /// Ungrabs every device (best-effort) and returns the error that stops
+    /// the event loop.
+    fn emergency_stop(&mut self, why: &str) -> crate::platform::PlatformError {
+        log::error!(
+            "EMERGENCY STOP ({why}): releasing every grabbed keyboard and stopping the event loop."
+        );
+        if let Err(e) = self.release_all_devices() {
+            log::warn!("Emergency stop: failed to release a device cleanly: {e}");
+        }
+        crate::platform::PlatformError::EmergencyStop
     }
 
     /// Releases exclusive access to all managed input devices.
@@ -551,6 +572,9 @@ impl crate::platform::Platform for LinuxPlatform {
     ) -> crate::platform::PlatformResult<keyrx_core::runtime::event::KeyEvent> {
         use crate::platform::PlatformError;
 
+        if self.emergency.poll(std::time::Instant::now()) {
+            return Err(self.emergency_stop("Escape held"));
+        }
         if let Some(event) = self.next_raw_event()? {
             return self.finish_capture(event);
         }
@@ -560,7 +584,8 @@ impl crate::platform::Platform for LinuxPlatform {
                     reason: "device manager not initialized".to_string(),
                 }
             })?;
-            wait_for_input(device_manager, INPUT_WAIT)?;
+            let wait = self.wait_limit.map_or(INPUT_WAIT, |l| l.min(INPUT_WAIT));
+            wait_for_input(device_manager, wait)?;
         }
         self.rescan_if_hotplugged();
         match self.next_raw_event()? {
@@ -617,6 +642,18 @@ impl crate::platform::Platform for LinuxPlatform {
             .collect();
 
         Ok(devices)
+    }
+
+    fn set_input_wait_limit(&mut self, limit: Option<std::time::Duration>) {
+        self.wait_limit = limit;
+    }
+
+    fn output_device(&self) -> Option<crate::platform::OutputDeviceInfo> {
+        let device = self.output_device.as_ref()?;
+        Some(crate::platform::OutputDeviceInfo {
+            name: device.name().to_string(),
+            path: find_event_path_by_name(device.name()).map(|p| p.display().to_string()),
+        })
     }
 
     fn shutdown(&mut self) -> crate::platform::PlatformResult<()> {
@@ -688,7 +725,8 @@ fn wait_for_input(
         .devices()
         .map(|d| PollFd::new(d.input().poll_fd(), PollFlags::POLLIN))
         .collect();
-    let timeout_ms = u16::try_from(timeout.as_millis()).unwrap_or(u16::MAX);
+    // Round up: a 4.2 ms wait must not become a busy 4 ms poll, nor 0.5 ms 0.
+    let timeout_ms = u16::try_from(timeout.as_micros().div_ceil(1000)).unwrap_or(u16::MAX);
     match poll(&mut fds, PollTimeout::from(timeout_ms)) {
         Ok(_) | Err(nix::errno::Errno::EINTR) => Ok(()),
         Err(e) => Err(crate::platform::PlatformError::Io(e.into())),

@@ -51,7 +51,9 @@ use log::{error, info, warn};
 
 use crate::error::ConfigError;
 use crate::platform::held_outputs::HeldOutputs;
+use crate::platform::min_key_down::MinKeyDown;
 use crate::platform::{Platform, PlatformError};
+use options::{OptionOverrides, RuntimeOptions};
 
 // Submodules
 pub mod config_watch;
@@ -59,6 +61,8 @@ pub mod event_broadcaster;
 pub mod event_loop;
 pub mod live_config;
 pub mod metrics;
+pub mod options;
+pub mod overflow_log;
 pub mod platform_runners;
 pub mod platform_setup;
 pub mod remapping_state;
@@ -195,8 +199,28 @@ impl Daemon {
         source: ConfigSource,
         config_dir: PathBuf,
     ) -> Result<Self, DaemonError> {
+        let options = RuntimeOptions::from_environment(&config_dir, &OptionOverrides::default())
+            .map_err(DaemonError::RuntimeError)?;
+        Self::with_options(platform, source, config_dir, &options)
+    }
+
+    /// Like [`Self::new`] with the runtime tuning (minimum key-down time)
+    /// already resolved, e.g. including command-line overrides.
+    ///
+    /// # Errors
+    ///
+    /// Same as [`Self::new`].
+    pub fn with_options(
+        platform: Box<dyn Platform>,
+        source: ConfigSource,
+        config_dir: PathBuf,
+        options: &RuntimeOptions,
+    ) -> Result<Self, DaemonError> {
         // Track held output keys so a config swap can release them.
         let mut platform: Box<dyn Platform> = Box::new(HeldOutputs::new(platform));
+        if !options.min_key_down.is_zero() {
+            platform = Box::new(MinKeyDown::new(platform, options.min_key_down));
+        }
         info!("Initializing keyrx daemon from {source:?}");
         let mut live = LiveConfig::new(config_dir);
         let (loaded, config_error) = Self::load_startup_config(&live, &source)?;
@@ -431,6 +455,7 @@ pub(crate) fn release_held_outputs(platform: &mut Box<dyn Platform>) {
 pub(crate) fn publish_device_state(shared_state: &DaemonSharedState, platform: &dyn Platform) {
     let devices = platform.list_devices().unwrap_or_default();
     shared_state.set_device_count(devices.len());
+    shared_state.set_output_device(platform.output_device());
     shared_state.set_active_devices(devices.into_iter().map(|d| d.id));
 }
 
@@ -449,7 +474,7 @@ fn reload_remapping(
         state
     });
     if let Err(e) = &result {
-        shared_state.set_config_error(Some(format!("failed to load {source:?}: {e}")));
+        shared_state.report_config_error(format!("failed to load {source:?}: {e}"));
     }
     // Success or not, the request has been dealt with: waiters (activate)
     // re-read the published profile to tell which.

@@ -470,6 +470,7 @@ where
     info!("Starting event processing loop");
 
     let mut stats = EventLoopStats::new();
+    let mut overflow_log = super::overflow_log::OverflowLog::default();
     let mut last_timeout_check = Instant::now();
 
     // Main event loop
@@ -537,6 +538,15 @@ where
             let overflows = platform.take_input_overflows();
             if overflows > 0 {
                 state.add_input_overflows(overflows);
+            }
+            // One summary line per interval, not one per overflow: the total
+            // is in status (`input_overflows`).
+            if let Some(summary) = overflow_log.record(overflows, Instant::now()) {
+                warn!(
+                    "Keyboard input outran the daemon: {summary} (kernel buffer \
+                     SYN_DROPPED); resynced from the key state. Total: {}",
+                    state.input_overflow_count()
+                );
             }
         }
 

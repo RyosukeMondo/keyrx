@@ -118,6 +118,43 @@ impl OutputCapture {
         }
     }
 
+    /// Opens the output device at `path` (e.g. the `output_device.path` a
+    /// daemon reports in its status). Prefer this to
+    /// [`find_by_name`](Self::find_by_name) whenever more than one keyrx
+    /// instance may be running: it can never attach to another instance's
+    /// device that happens to share a name.
+    ///
+    /// # Errors
+    ///
+    /// [`VirtualDeviceError::PermissionDenied`] if the node cannot be opened
+    /// by this user, [`VirtualDeviceError::Io`] for any other failure.
+    pub fn open_path(path: &Path) -> Result<Self, VirtualDeviceError> {
+        // A node that was just created is briefly root-only until udev
+        // applies its rules, so retry before reporting a permission error.
+        let deadline = Instant::now() + Duration::from_secs(3);
+        let device = loop {
+            match Device::open(path) {
+                Ok(device) => break device,
+                Err(e) if Instant::now() < deadline => {
+                    log::debug!("waiting for {}: {e}", path.display());
+                    std::thread::sleep(POLL_INTERVAL);
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+                    return Err(VirtualDeviceError::evdev_permission_denied(
+                        &path.display().to_string(),
+                    ));
+                }
+                Err(e) => return Err(VirtualDeviceError::Io(e)),
+            }
+        };
+        Ok(OutputCapture {
+            name: device.name().unwrap_or("").to_string(),
+            device,
+            device_path: path.to_path_buf(),
+            event_buffer: Vec::new(),
+        })
+    }
+
     /// Attempts to find and open a device by name (single poll).
     ///
     /// # Arguments

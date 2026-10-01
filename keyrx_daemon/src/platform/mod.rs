@@ -43,9 +43,13 @@ use keyrx_core::runtime::event::KeyEvent;
 use thiserror::Error;
 
 pub mod common;
+pub mod emergency;
 pub mod held_outputs;
+pub mod min_key_down;
+pub mod output_device;
 pub mod recovery;
 pub use common::{DeviceInfo, PlatformError, Result as PlatformResult};
+pub use output_device::OutputDeviceInfo;
 
 #[cfg(target_os = "linux")]
 pub mod linux;
@@ -313,6 +317,20 @@ pub trait Platform: Send + Sync {
     /// that failure mode keep the default of 0.
     fn take_input_overflows(&mut self) -> u64 {
         0
+    }
+
+    /// Asks `capture_input` to return within `limit` even when no input
+    /// arrives (`None` restores the default tick). A decorator with
+    /// something due sooner than the event loop's ~10 ms tick (a deferred key
+    /// release) uses this to be serviced on time. Platforms whose wait cannot
+    /// be shortened keep the default no-op and are serviced at their own tick.
+    fn set_input_wait_limit(&mut self, _limit: Option<std::time::Duration>) {}
+
+    /// The virtual keyboard this platform injects through, if it has one.
+    /// Published to status so tools find the right device by path instead
+    /// of guessing a name several instances might share.
+    fn output_device(&self) -> Option<OutputDeviceInfo> {
+        None
     }
 }
 

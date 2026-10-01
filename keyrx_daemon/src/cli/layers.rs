@@ -218,7 +218,7 @@ fn handle_create(
 
     match gen.add_layer(layer_id, name, mode) {
         Ok(()) => {
-            gen.save(&profile_path)?;
+            manager.set_config(&profile_name, &gen.to_string())?;
             logging::log_layer_operation(&profile_name, "create", layer_id);
             logging::log_command_success("layers create", 0);
 
@@ -275,7 +275,7 @@ fn handle_rename(
 
     match gen.rename_layer(old_id, new_id) {
         Ok(()) => {
-            gen.save(&profile_path)?;
+            manager.set_config(&profile_name, &gen.to_string())?;
 
             if json {
                 let output = LayerOperationOutput {
@@ -333,7 +333,7 @@ fn handle_delete(
 
     match gen.delete_layer(layer_id) {
         Ok(()) => {
-            gen.save(&profile_path)?;
+            manager.set_config(&profile_name, &gen.to_string())?;
 
             if json {
                 let output = LayerOperationOutput {

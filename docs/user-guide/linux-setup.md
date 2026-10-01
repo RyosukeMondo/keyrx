@@ -19,6 +19,7 @@ Complete guide for setting up KeyRx keyboard remapping daemon on Linux.
 - [Configuration Management](#configuration-management)
   - [Hot Reload](#hot-reload)
   - [Multiple Devices](#multiple-devices)
+- [Accessibility](#accessibility)
 - [Troubleshooting](#troubleshooting)
 - [Security Considerations](#security-considerations)
 
@@ -334,8 +335,9 @@ With lingering the service starts at boot (before login, so without a tray
 icon - the web UI works; `systemctl --user restart keyrx` after login brings
 the tray up). Without it, the service starts at login.
 
-**Emergency stop:** hold Left Ctrl + Right Ctrl + Escape (works on the raw
-keys even if the config is broken), or from another TTY / SSH session run
+**Emergency stop:** hold Left Ctrl + Right Ctrl + Escape, or hold Escape alone
+for 3 seconds (works on the raw keys even if the config is broken), or from
+another TTY / SSH session run
 `systemctl --user stop keyrx` (SIGKILL is also safe: the kernel releases the
 grab and the keyboard types normally again).
 
@@ -425,6 +427,108 @@ you can fix the profile (or activate another), logs the reason, and reports it
 as `config_error` in `keyrx_daemon status` (also `GET /api/status` and the MCP
 status tool); `keyrx_daemon doctor` flags it. A reload that fails (bad edit,
 SIGHUP) keeps the previous working config and reports the error the same way.
+That includes an edit the file watcher picked up that does not compile: status
+and `doctor` show the compiler's `file:line` message and when it happened until
+a later edit compiles.
+
+### Editing mappings from the command line
+
+`keyrx_daemon config set-key`, `set-tap-hold`, `delete-key` and
+`layers create|rename|delete` edit the profile's `.rhai` in place:
+
+- Input keys are bare names as in the DSL manual (`CapsLock`); a `VK_` prefix
+  is accepted and means the same key, so `CapsLock` and `VK_CapsLock` replace
+  each other instead of producing a duplicate. Output keys are written
+  `VK_...` (a bare output name gets its prefix).
+- Only the lines that change are touched: your comments, blank lines, spacing
+  and line endings stay as they are, so `git diff` shows the one line you
+  meant to change. A new mapping goes after the last mapping of its block.
+- The result is compiled before anything is written. If it does not compile
+  (or a key name is unknown) the command fails with the reason and neither the
+  `.rhai` nor the `.krx` is modified.
+
+Compiling is quiet: `profiles activate` prints its outcome, not the
+compiler's progress; lint findings (a mapping that can never fire) are logged
+as warnings.
+
+### What to keep in git
+
+The config directory (`~/.config/keyrx`) mixes source you wrote with state the
+daemon generates:
+
+| Path | Track in git? | Why |
+|---|---|---|
+| `profiles/*.rhai` | **yes** | Your profiles - the source of truth |
+| `settings.json` | yes (optional) | Port, layout, key-down and emergency-stop settings you chose |
+| `devices.json` | optional | Names/layouts you gave your keyboards (machine specific) |
+| `profiles/*.krx` | **no** | Compiled binaries, rebuilt from the `.rhai` on activation or edit |
+| `.active` | **no** | Which profile is active on this machine |
+| `profiles/*.tmp`, `*.part`, `*.rhai.tmp` | no | Transient files of an interrupted save |
+
+Example `.gitignore` for the config dir:
+
+```gitignore
+*.krx
+.active
+*.tmp
+*.part
+```
+
+Because `.active` and the `.krx` files are machine state, two machines can
+share the same repository and still run different profiles; after a
+`git pull`, `keyrx_daemon profiles activate NAME` (or just saving an edit while
+the daemon runs) recompiles.
+
+## Accessibility
+
+keyrx is meant to be usable with one hand, with a tremor, or with sticky keys.
+Everything below is a setting or a profile you write; none of it needs the
+physical keyboard to be changed.
+
+### One-handed use
+
+- **Layout:** `examples/08-one-handed.rhai` is a one-handed profile (it moves
+  the keys that are out of reach under the hand you keep on the keyboard).
+  Copy it into your profiles directory (`~/.config/keyrx/profiles/`), edit
+  the `device_start("...")` line to your keyboard (`keyrx_daemon list-devices`)
+  and activate it. Treat it as a starting point: reach differs per person.
+- **Layers on one key:** `tap_hold("Space", "VK_Space", "MD_00", 200)` makes a
+  tapped Space a space and a held Space a layer, so a whole second keyboard
+  fits under one hand (see the DSL manual).
+- **Emergency stop without a second hand:** hold **Escape alone for 3
+  seconds**. Any other key pressed meanwhile cancels it, so normal typing and
+  repeated taps on Escape never stop keyrx. If 3 seconds is too long or too
+  short for you, change it (1-30 seconds):
+
+  ```bash
+  keyrx_daemon run --emergency-hold-ms 5000          # one run
+  KEYRX_EMERGENCY_HOLD_MS=5000 keyrx_daemon run      # environment
+  ```
+
+  or put `"emergency_hold_ms": 5000` into `~/.config/keyrx/settings.json`.
+  The two-hand chord can be replaced as well, e.g. by keys that sit together:
+  `"emergency_chord": "Escape+F1"` (2-4 keys joined by `+`). See
+  [Emergency Escape](#emergency-escape-keyboard-unusable-from-a-bad-config).
+  `keyrx_daemon doctor` and the startup log always print what is in force.
+
+### Sticky keys and slow presses
+
+- **Sticky modifiers:** a modifier can be latched for the next key instead of
+  held (one-shot / sticky modifiers; the DSL manual and
+  `examples/08-one-handed.rhai` show how). The desktop's own Sticky Keys
+  (GNOME: Settings > Accessibility > Typing; KDE: System Settings >
+  Accessibility) also work with keyrx, because keyrx outputs ordinary key
+  events.
+- **Slow or uneven presses:** raise the `threshold_ms` of your `tap_hold`
+  keys (e.g. 400 instead of 200) so a deliberate tap is not mistaken for a hold.
+- **Very short taps:** a tap on a remapped key reaches the system as a
+  press and release a few microseconds apart. keyrx keeps every output key
+  down for at least 5 ms (see [Minimum Key-Down Time](#minimum-key-down-time),
+  `--min-key-down-ms`) so programs that poll the keyboard once per frame still
+  see it; raise it if a program misses taps.
+- **Locked out:** whatever the profile does, the emergency stop works on the
+  raw physical keys. If the keyboard stops responding, hold Escape for the
+  configured seconds and keyrx releases every keyboard.
 
 ## Troubleshooting
 
@@ -562,8 +666,19 @@ KEYRX_DEVICE_SCOPE='My Test Keyboard*' KEYRX_OUTPUT_NAME=keyrx-test \
 
 `KEYRX_DEVICE_SCOPE` (a glob on the keyboard name, default `*`) can only
 narrow what the profile's `device_start()` patterns select, and
-`KEYRX_OUTPUT_NAME` names the virtual output keyboard (default `keyrx`) so
-tools can tell the instances apart.
+`KEYRX_OUTPUT_NAME` names the virtual output keyboard. By default every
+daemon names it `keyrx-out-<pid>`, so no two instances share a name; the name
+and the `/dev/input/eventN` node are reported by `keyrx_daemon status`
+(`Output device`), `GET /api/status` and `status --json` (`output_device`).
+
+**Capture a daemon's output by that path, never by the name `keyrx`.** Older
+daemons called their device plain `keyrx`; a tool that looked it up by name
+could attach to the wrong instance, including your real one. Any device named
+`keyrx` or `keyrx-out-*` is treated as keyrx's own output and is never grabbed
+as input by any instance, and is hidden from `keyrx_daemon list-devices`,
+`GET /api/devices` and the UI. Pass `--all` / `?include_virtual=true` to see
+other tools' virtual keyboards (each entry has `is_virtual` and
+`is_keyrx_output`).
 
 ### Keyboard Input Overflow
 
@@ -578,12 +693,45 @@ logs a warning ("lost input events"). The number of recoveries is shown by
 ### Emergency Escape: Keyboard Unusable From a Bad Config
 
 If an active profile remaps a key you need (e.g. Escape) badly enough that
-you cannot type, hold **Left Ctrl + Right Ctrl + Escape** together. The
-daemon releases (ungrabs) every keyboard it holds and stops immediately, on
-the raw physical keys, regardless of what the broken config maps them to.
+you cannot type, use either escape hatch. Both work on the raw physical keys,
+regardless of what the broken config maps them to, and both make the daemon
+release (ungrab) every keyboard it holds and stop:
+
+- **Two hands:** hold **Left Ctrl + Right Ctrl + Escape** together (the
+  default chord).
+- **One hand:** hold **Escape alone for 3 seconds**. Pressing any other key
+  while it is down cancels it, so normal typing and tapping or mashing Escape
+  never trigger it. It needs no timing precision and no second hand, which
+  suits one-handed use, a tremor, or sticky keys.
+
 Your keyboard goes back to normal system input right away; fix the config
 (e.g. via the web UI or `keyrx_daemon profiles`) and start the daemon again
-(`keyrx_daemon run`, or `systemctl --user restart keyrx`).
+(`keyrx_daemon run`, or `systemctl --user restart keyrx`). The active
+settings are printed at startup and by `keyrx_daemon doctor`.
+
+Both are configurable (flag, then environment variable, then `settings.json`
+in the config dir, then the default):
+
+| Setting | Flag | Environment | `settings.json` |
+|---|---|---|---|
+| Chord (2-4 keys joined by `+`) | `--emergency-chord LCtrl+RCtrl+Escape` | `KEYRX_EMERGENCY_CHORD` | `emergency_chord` |
+| One-handed hold in ms (1000-30000, `0` = off) | `--emergency-hold-ms 3000` | `KEYRX_EMERGENCY_HOLD_MS` | `emergency_hold_ms` |
+
+The chord itself cannot be switched off: there is always a way out.
+
+### Minimum Key-Down Time
+
+A tap, a sequence or a remapped tap reaches the output as a press and a
+release a few microseconds apart. Games and tools that read key state once per
+frame can miss a pulse that short. keyrx therefore keeps an output key down for
+at least **5 ms**: only a release that would follow its press by less than that
+is held back until the time has passed. Longer holds are not delayed, order is
+preserved (anything emitted after a held-back release waits behind it, at most
+5 ms), and a profile switch or shutdown flushes everything at once.
+
+| Setting | Flag | Environment | `settings.json` |
+|---|---|---|---|
+| Minimum key-down in ms (0-200, `0` = off) | `--min-key-down-ms 5` | `KEYRX_MIN_KEY_DOWN_MS` | `min_key_down_ms` |
 
 ### Keys Stuck After Crash
 

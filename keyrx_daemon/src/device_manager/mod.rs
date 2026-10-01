@@ -25,9 +25,11 @@ mod windows;
 #[cfg(target_os = "linux")]
 pub use linux::{DeviceManager, ManagedDevice, RefreshResult};
 #[cfg(target_os = "linux")]
-pub use linux_enum::enumerate_keyboards;
+pub use linux_enum::{enumerate_all_keyboards, enumerate_keyboards, find_event_path_by_name};
 #[cfg(target_os = "windows")]
-pub use windows::{enumerate_keyboards, DeviceManager, ManagedDevice, RefreshResult};
+pub use windows::{
+    enumerate_all_keyboards, enumerate_keyboards, DeviceManager, ManagedDevice, RefreshResult,
+};
 
 /// Matches a device against a `device_start` pattern: THE shared glob rule
 /// (`keyrx_core::runtime::device_pattern`) over the device's name, serial and
@@ -66,9 +68,18 @@ pub struct KeyboardInfo {
     pub serial: Option<String>,
     /// Physical location identifier if available.
     pub phys: Option<String>,
+    /// A software device (uinput etc.), not a physical keyboard.
+    pub is_virtual: bool,
 }
 
 impl KeyboardInfo {
+    /// Whether this is a keyrx daemon's own output keyboard (never a capture
+    /// source).
+    #[must_use]
+    pub fn is_keyrx_output(&self) -> bool {
+        crate::platform::output_device::is_keyrx_output(&self.name)
+    }
+
     /// Returns a unique device ID for this keyboard.
     ///
     /// The ID is generated from the serial number if available, otherwise
@@ -111,6 +122,7 @@ mod tests {
             name: "Test Keyboard".to_string(),
             serial: Some("ABC123".to_string()),
             phys: Some("usb-0000:00:14.0-1/input0".to_string()),
+            is_virtual: false,
         };
         let debug_str = format!("{:?}", info);
         assert!(debug_str.contains("Test Keyboard"));
@@ -124,6 +136,7 @@ mod tests {
             name: "Test Keyboard".to_string(),
             serial: None,
             phys: None,
+            is_virtual: false,
         };
         let cloned = info.clone();
         assert_eq!(cloned.name, info.name);
@@ -137,12 +150,14 @@ mod tests {
             name: "Keyboard A".to_string(),
             serial: Some("SN1".to_string()),
             phys: None,
+            is_virtual: false,
         };
         let info2 = KeyboardInfo {
             path: std::path::PathBuf::from("/dev/input/event0"),
             name: "Keyboard A".to_string(),
             serial: Some("SN1".to_string()),
             phys: None,
+            is_virtual: false,
         };
         assert_eq!(info1, info2);
     }
@@ -154,12 +169,14 @@ mod tests {
             name: "Keyboard A".to_string(),
             serial: None,
             phys: None,
+            is_virtual: false,
         };
         let info2 = KeyboardInfo {
             path: std::path::PathBuf::from("/dev/input/event1"),
             name: "Keyboard A".to_string(),
             serial: None,
             phys: None,
+            is_virtual: false,
         };
         assert_ne!(info1, info2);
     }
@@ -172,12 +189,14 @@ mod tests {
             name: "Keyboard A".to_string(),
             serial: Some("SN1".to_string()),
             phys: Some("usb-1".to_string()),
+            is_virtual: false,
         };
         let info2 = KeyboardInfo {
             path: std::path::PathBuf::from("/dev/input/event0"),
             name: "Keyboard B".to_string(), // Different name
             serial: Some("SN1".to_string()),
             phys: Some("usb-1".to_string()),
+            is_virtual: false,
         };
         assert_ne!(info1, info2);
     }

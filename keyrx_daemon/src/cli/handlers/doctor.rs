@@ -125,14 +125,22 @@ fn whoami() -> String {
 /// before anything has gone wrong with the keyboard.
 #[cfg(target_os = "linux")]
 fn check_emergency_stop() -> Check {
-    check(
-        "emergency stop",
-        true,
-        format!(
-            "hold {} to release every keyboard and stop the daemon",
-            crate::platform::linux::EMERGENCY_CHORD_TEXT
+    let describe = crate::cli::config_dir::get_config_dir()
+        .map_err(|e| e.to_string())
+        .and_then(|dir| {
+            crate::daemon::options::RuntimeOptions::from_environment(&dir, &Default::default())
+        });
+    match describe {
+        Ok(options) => check(
+            "emergency stop",
+            true,
+            format!(
+                "{}. Either releases every keyboard and stops the daemon",
+                options.emergency.describe()
+            ),
         ),
-    )
+        Err(e) => check("emergency stop", false, format!("invalid setting: {e}")),
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -276,7 +284,8 @@ fn check_daemon_running() -> Check {
             "daemon",
             false,
             format!(
-                "running but NO config is live ({error}); {device_count} device(s) grabbed - \
+                "running, but the last config change did not load ({error}); {device_count} device(s) \
+                 grabbed (the previous config stays live; with none, no keyboard is grabbed) - \
                  fix the profile or activate another"
             ),
         ),

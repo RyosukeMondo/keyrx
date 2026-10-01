@@ -35,6 +35,8 @@ use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 
+use crate::platform::OutputDeviceInfo;
+
 /// Thread-safe shared state for daemon-to-web-server communication on Windows.
 ///
 /// This struct provides a snapshot of daemon state that can be safely shared
@@ -137,6 +139,11 @@ pub struct DaemonSharedState {
     /// requested. With no valid config the daemon grabs no keyboard, so this
     /// is how every transport tells the user why nothing is being remapped.
     config_error: Arc<RwLock<Option<String>>>,
+
+    /// The virtual keyboard this daemon injects through (name and
+    /// `/dev/input` node), published once the platform has created it, so
+    /// every transport can tell instances apart without guessing a name.
+    output_device: Arc<RwLock<Option<OutputDeviceInfo>>>,
 }
 
 impl DaemonSharedState {
@@ -187,6 +194,7 @@ impl DaemonSharedState {
             input_overflows: Arc::default(),
             reloads_serviced: Arc::default(),
             config_error: Arc::default(),
+            output_device: Arc::default(),
         }
     }
 
@@ -199,6 +207,25 @@ impl DaemonSharedState {
     /// configuration is not live.
     pub fn set_config_error(&self, error: Option<String>) {
         *self.config_error.write().expect("RwLock poisoned") = error;
+    }
+
+    /// Records why the requested configuration is not live, stamped with the
+    /// local time so a status read hours later still says when it happened.
+    /// The ONE way a failed load (startup, reload, file-watcher recompile)
+    /// reaches `config_error` on every transport.
+    pub fn report_config_error(&self, detail: impl std::fmt::Display) {
+        let at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+        self.set_config_error(Some(format!("{detail} (at {at})")));
+    }
+
+    /// The daemon's own output keyboard, once it exists.
+    pub fn get_output_device(&self) -> Option<OutputDeviceInfo> {
+        self.output_device.read().expect("RwLock poisoned").clone()
+    }
+
+    /// Publishes (or clears) the daemon's own output keyboard.
+    pub fn set_output_device(&self, device: Option<OutputDeviceInfo>) {
+        *self.output_device.write().expect("RwLock poisoned") = device;
     }
 
     /// Called by the daemon each time it finishes servicing a reload request.

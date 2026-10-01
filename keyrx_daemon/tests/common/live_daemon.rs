@@ -27,6 +27,7 @@ pub struct Harness {
     pub shared: Arc<DaemonSharedState>,
     pub running: Arc<std::sync::atomic::AtomicBool>,
     pub output_name: String,
+    pub output_path: std::path::PathBuf,
     pub thread: Option<JoinHandle<Result<(), DaemonError>>>,
 }
 
@@ -59,11 +60,15 @@ impl Harness {
         let running = daemon.running_flag();
         let thread = Some(std::thread::spawn(move || daemon.run()));
 
-        let capture =
-            OutputCapture::find_by_name(&output_name, Duration::from_secs(5)).expect("output");
+        // Capture by the PATH the daemon reports in status, never by name:
+        // several keyrx instances can share a name, and a name lookup once
+        // grabbed the real daemon's output device.
+        let output_path = wait_for_output_path(&shared);
+        let capture = OutputCapture::open_path(&output_path).expect("output");
         Self {
             keyboard,
             capture,
+            output_path,
             output_name,
             shared,
             running,
@@ -90,8 +95,7 @@ impl Harness {
     /// during a flood has its own queue of compensation events; a new one
     /// starts from a clean slate so later assertions see only new output.
     pub fn reopen_capture(&mut self) {
-        self.capture =
-            OutputCapture::find_by_name(&self.output_name, Duration::from_secs(5)).expect("output");
+        self.capture = OutputCapture::open_path(&self.output_path).expect("output");
     }
 
     pub fn wait_for_profile(&self, name: &str) {
@@ -116,6 +120,21 @@ impl Drop for Harness {
                 result.expect("daemon run failed");
             }
         }
+    }
+}
+
+/// Waits for the daemon to publish its output device node in status.
+fn wait_for_output_path(shared: &DaemonSharedState) -> std::path::PathBuf {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(path) = shared.get_output_device().and_then(|d| d.path) {
+            return path.into();
+        }
+        assert!(
+            Instant::now() < deadline,
+            "daemon never reported its output device path in status"
+        );
+        std::thread::sleep(Duration::from_millis(20));
     }
 }
 

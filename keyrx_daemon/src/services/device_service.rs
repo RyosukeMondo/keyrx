@@ -19,6 +19,21 @@ pub struct DeviceInfo {
     pub serial: Option<String>,
     pub active: bool,
     pub layout: Option<String>,
+    /// A software device (uinput, another tool's virtual keyboard), not
+    /// hardware. Hidden from listings unless asked for.
+    pub is_virtual: bool,
+    /// A keyrx daemon's own output keyboard (this instance's or another's).
+    pub is_keyrx_output: bool,
+}
+
+/// Drops software devices (including keyrx's own outputs) unless
+/// `include_virtual`: the ONE filter every transport's device list uses, so
+/// a UI never offers to remap the daemon's own output.
+pub fn filter_virtual(devices: Vec<DeviceInfo>, include_virtual: bool) -> Vec<DeviceInfo> {
+    devices
+        .into_iter()
+        .filter(|d| include_virtual || !(d.is_virtual || d.is_keyrx_output))
+        .collect()
 }
 
 /// Why a device edit failed - REST and RPC map this to their own errors.
@@ -105,22 +120,31 @@ impl DeviceService {
             .is_some_and(|state| state.is_device_active(id))
     }
 
-    /// List all connected devices
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    /// Lists connected hardware keyboards (software devices, including
+    /// keyrx's own outputs, are hidden; see [`Self::list_all_devices`]).
     pub async fn list_devices(&self) -> Result<Vec<DeviceInfo>, String> {
-        use crate::device_manager::enumerate_keyboards;
+        self.list_all_devices(false).await
+    }
+
+    /// Lists connected devices; with `include_virtual` also software devices
+    /// and keyrx's own output keyboards (flagged on each entry).
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    pub async fn list_all_devices(&self, include_virtual: bool) -> Result<Vec<DeviceInfo>, String> {
+        use crate::device_manager::enumerate_all_keyboards;
 
         // Load registry
         let registry = DeviceRegistry::load(&self.registry_path)
             .map_err(|e| format!("Failed to load device registry: {}", e))?;
 
         // Enumerate actual connected devices
-        let keyboards =
-            enumerate_keyboards().map_err(|e| format!("Failed to enumerate keyboards: {}", e))?;
+        let keyboards = enumerate_all_keyboards()
+            .map_err(|e| format!("Failed to enumerate keyboards: {}", e))?;
 
         let devices: Vec<DeviceInfo> = keyboards
             .into_iter()
             .map(|kb| {
+                let is_keyrx_output = kb.is_keyrx_output();
+                let is_virtual = kb.is_virtual;
                 let id = kb.device_id();
                 let registry_entry = registry.get(&id);
 
@@ -133,16 +157,21 @@ impl DeviceService {
                     path: kb.path.display().to_string(),
                     serial: kb.serial,
                     layout: registry_entry.and_then(|e| e.layout.clone()),
+                    is_virtual,
+                    is_keyrx_output,
                 }
             })
             .collect();
 
-        Ok(devices)
+        Ok(filter_virtual(devices, include_virtual))
     }
 
-    /// List all connected devices (stub for unsupported platforms)
+    /// Stub for unsupported platforms.
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]
-    pub async fn list_devices(&self) -> Result<Vec<DeviceInfo>, String> {
+    pub async fn list_all_devices(
+        &self,
+        _include_virtual: bool,
+    ) -> Result<Vec<DeviceInfo>, String> {
         Ok(Vec::new())
     }
 
@@ -210,6 +239,33 @@ impl DeviceService {
 mod tests {
     use super::*;
     use std::sync::atomic::AtomicBool;
+
+    fn dev(id: &str, is_virtual: bool, is_keyrx_output: bool) -> DeviceInfo {
+        DeviceInfo {
+            id: id.into(),
+            name: id.into(),
+            path: String::new(),
+            serial: None,
+            active: false,
+            layout: None,
+            is_virtual,
+            is_keyrx_output,
+        }
+    }
+
+    #[test]
+    fn virtual_and_own_output_devices_are_hidden_unless_asked() {
+        let all = || {
+            vec![
+                dev("usb", false, false),
+                dev("other-tool", true, false),
+                dev("keyrx-out-1", true, true),
+            ]
+        };
+        let ids = |v: Vec<DeviceInfo>| v.into_iter().map(|d| d.id).collect::<Vec<_>>();
+        assert_eq!(ids(filter_virtual(all(), false)), vec!["usb"]);
+        assert_eq!(ids(filter_virtual(all(), true)).len(), 3);
+    }
 
     /// H8: no daemon attached (test mode, or before the web layer wires
     /// one) must report every device inactive, never `true` by default.

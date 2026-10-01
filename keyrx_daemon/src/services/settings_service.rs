@@ -19,6 +19,19 @@ pub struct DaemonSettings {
     /// Web server port (default: 9867)
     #[serde(default = "default_port")]
     pub port: u16,
+
+    /// Shortest time an output key stays down, in ms (default 5; 0 = off).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_key_down_ms: Option<u64>,
+
+    /// Emergency-stop chord, e.g. `LCtrl+RCtrl+Escape`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub emergency_chord: Option<String>,
+
+    /// How long Escape must be held alone to stop the daemon, in ms
+    /// (default 3000; 0 = off).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub emergency_hold_ms: Option<u64>,
 }
 
 fn default_port() -> u16 {
@@ -30,6 +43,9 @@ impl Default for DaemonSettings {
         Self {
             global_layout: None,
             port: DEFAULT_PORT,
+            min_key_down_ms: None,
+            emergency_chord: None,
+            emergency_hold_ms: None,
         }
     }
 }

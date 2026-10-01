@@ -15,8 +15,11 @@ use crate::web::AppState;
 
 /// Parameters for get_devices query
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct GetDevicesParams {
-    // No parameters needed - returns all devices
+    /// Also list software devices and keyrx's own output keyboards.
+    #[serde(default)]
+    include_virtual: bool,
 }
 
 /// Parameters for rename_device command
@@ -57,7 +60,7 @@ fn validate_device_id(id: &str) -> Result<(), RpcError> {
 /// Get all devices
 pub async fn get_devices(device_service: &DeviceService, params: Value) -> Result<Value, RpcError> {
     // Validate params (should be empty object or null)
-    let _params: Option<GetDevicesParams> = if params.is_null() {
+    let params: Option<GetDevicesParams> = if params.is_null() {
         None
     } else {
         Some(
@@ -70,7 +73,7 @@ pub async fn get_devices(device_service: &DeviceService, params: Value) -> Resul
 
     // Call device service
     let devices = device_service
-        .list_devices()
+        .list_all_devices(params.is_some_and(|p| p.include_virtual))
         .await
         .map_err(|e| RpcError::new(INTERNAL_ERROR, format!("Failed to list devices: {}", e)))?;
 
@@ -84,7 +87,7 @@ pub async fn get_devices(device_service: &DeviceService, params: Value) -> Resul
             serial: d.serial.clone(),
             active: d.active,
             layout: d.layout.clone(),
-            is_virtual: d.name.starts_with("keyrx") || d.path.contains("uinput"),
+            is_virtual: d.is_virtual || d.is_keyrx_output,
         })
         .collect();
 

@@ -76,14 +76,24 @@ Day to day:
 - `keyrx_daemon status` and `keyrx_daemon devices list` show what the running
   daemon is doing and which keyboards it has captured.
 - **Emergency stop:** if the keyboard ever stops working, hold **Left Ctrl +
-  Right Ctrl + Escape**. The daemon releases every keyboard and exits. The
-  chord is also printed at startup, by `doctor` and in `keyrx_daemon run --help`.
+  Right Ctrl + Escape**, or, with one hand, hold **Escape alone for 3
+  seconds** (any other key pressed meanwhile cancels it). The daemon releases
+  every keyboard and exits. Both are printed at startup, by `doctor` and in
+  `keyrx_daemon run --help`, and the chord and hold time are configurable
+  (see [Emergency Escape](docs/user-guide/linux-setup.md#emergency-escape-keyboard-unusable-from-a-bad-config)).
+- Tapped output keys are held down for at least 5 ms (`--min-key-down-ms`,
+  `0` turns it off) so games and tools that poll key state once per frame do
+  not miss a tap.
 - `--debug` adds diagnostics but never logs which keys you press;
   `--log-keys` additionally logs key names (a keylogger - for debugging a
   mapping only).
 
+日本語のクイックスタートは [README.ja.md](README.ja.md) にあります
+(Japanese quickstart: [README.ja.md](README.ja.md)).
+
 See the [Linux Setup Guide](docs/user-guide/linux-setup.md) for details and
-troubleshooting.
+troubleshooting; one-handed use, sticky keys and emergency-stop alternatives
+are covered under [Accessibility](docs/user-guide/linux-setup.md#accessibility).
 
 ## Quickstart (compiler only)
 

@@ -28,6 +28,7 @@ pub fn run_daemon(
     watch: bool,
     test_mode: bool,
     container: Arc<crate::container::ServiceContainer>,
+    options: crate::daemon::options::RuntimeOptions,
 ) -> Result<(), (i32, String)> {
     use crate::daemon::platform_setup::{init_logging, log_startup_version_info};
     use crate::daemon::{Daemon, ExitCode};
@@ -64,24 +65,27 @@ pub fn run_daemon(
     log::info!("Starting keyrx daemon from {source:?}");
 
     // Create platform instance
-    let platform = crate::platform::create_platform().map_err(|e| {
-        (
-            ExitCode::RuntimeError as i32,
-            format!("Failed to create platform: {}", e),
-        )
-    })?;
+    let platform: Box<dyn crate::platform::Platform> = Box::new(
+        crate::platform::linux::LinuxPlatform::from_env().with_emergency(options.emergency.clone()),
+    );
 
     // Create the daemon
-    let mut daemon = Daemon::new(platform, source, config_dir).map_err(daemon_error_to_exit)?;
+    let mut daemon = Daemon::with_options(platform, source, config_dir, &options)
+        .map_err(daemon_error_to_exit)?;
 
     log::info!(
         "Daemon initialized with {} device(s)",
         daemon.device_count()
     );
     log::info!(
-        "Emergency stop: if the keyboard ever stops working, hold {} to release \
-         every keyboard and stop keyrx",
-        crate::platform::linux::EMERGENCY_CHORD_TEXT
+        "Emergency stop - if the keyboard ever stops working: {}. Either releases \
+         every keyboard and stops keyrx",
+        options.emergency.describe()
+    );
+    log::info!(
+        "Minimum output key-down time: {} ms (a tap shorter than that is stretched so \
+         per-frame pollers see it; --min-key-down-ms 0 turns it off)",
+        options.min_key_down.as_millis()
     );
 
     // Create system tray (optional - continues without it if unavailable)

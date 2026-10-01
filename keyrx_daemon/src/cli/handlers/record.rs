@@ -71,7 +71,7 @@ pub fn handle_record(output_path: &Path, device_path: Option<&Path>) -> Result<(
             output_path.display()
         );
         println!();
-        return crate::cli::handlers::list_devices::handle_list_devices();
+        return crate::cli::handlers::list_devices::handle_list_devices(false);
     };
 
     println!("Preparing to record from: {}", device_path.display());
