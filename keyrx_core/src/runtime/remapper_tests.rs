@@ -370,3 +370,42 @@ fn two_devices_routed_by_one_remapper_stay_independent_when_interleaved() {
     assert!(!h_without_layer.triggered);
     assert_eq!(h_without_layer.outputs[0].keycode(), KeyCode::H);
 }
+
+/// Regression: a key typed in the base layer and still down when a layer key
+/// activates was released through the NEW layer's mapping (H -> Left), so
+/// the OS never saw H come up and it auto-repeated until pressed again.
+#[test]
+fn a_passthrough_key_is_released_as_pressed_after_a_layer_change() {
+    let config = DeviceConfig {
+        identifier: DeviceIdentifier {
+            pattern: "*".to_string(),
+        },
+        mappings: alloc::vec![
+            KeyMapping::modifier(KeyCode::RAlt, 0),
+            KeyMapping::conditional(
+                Condition::ModifierActive(0),
+                alloc::vec![BaseKeyMapping::Simple {
+                    from: KeyCode::H,
+                    to: KeyCode::Left,
+                }],
+            ),
+        ],
+    };
+    let mut state = Remapper::new(&config);
+    let mut send = |event: KeyEvent| -> Vec<(KeyCode, bool)> {
+        state
+            .process(event, |id| alloc::vec![id.to_string()], None)
+            .outputs
+            .iter()
+            .map(|e| (e.keycode(), e.is_press()))
+            .collect()
+    };
+
+    assert_eq!(send(KeyEvent::press(KeyCode::H)), [(KeyCode::H, true)]);
+    assert!(send(KeyEvent::press(KeyCode::RAlt)).is_empty()); // layer on
+    assert_eq!(send(KeyEvent::release(KeyCode::H)), [(KeyCode::H, false)]);
+    assert!(send(KeyEvent::release(KeyCode::RAlt)).is_empty());
+    // A fresh press inside the layer still uses the layer.
+    send(KeyEvent::press(KeyCode::RAlt));
+    assert_eq!(send(KeyEvent::press(KeyCode::H)), [(KeyCode::Left, true)]);
+}

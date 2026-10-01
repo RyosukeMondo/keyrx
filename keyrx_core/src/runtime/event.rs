@@ -247,21 +247,18 @@ pub fn process_event_for_identities(
     // For RELEASE events: Check if we have a tracked press mapping
     // This ensures releases match their presses even if mapping changed
     if !is_press {
-        let tracked_outputs = state.get_release_key(input_keycode);
-
-        // Check if we have a real tracking (not just [input_keycode])
-        if tracked_outputs.len() == 1 && tracked_outputs[0] == input_keycode {
-            // No tracked mapping - proceed with normal lookup
+        // A tracked press is released as it was pressed - including a key
+        // that passed through as itself - however the layer changed since
+        // (a key typed in the base layer must not be released as its
+        // layer-2 mapping and stay stuck down).
+        if let Some(tracked_outputs) = state.tracked_release(input_keycode) {
             state.clear_press(input_keycode);
-        } else {
-            // We have tracked mappings! Release all keys in REVERSE order
-            // (If press was [LShift, Z], release should be [Z, LShift])
-            state.clear_press(input_keycode);
-            let mut result = alloc::vec::Vec::new();
-            for &keycode in tracked_outputs.iter().rev() {
-                result.push(event.clone().with_keycode(keycode));
-            }
-            return result;
+            // Release in REVERSE order (press [LShift, Z] -> release [Z, LShift])
+            return tracked_outputs
+                .iter()
+                .rev()
+                .map(|&keycode| event.clone().with_keycode(keycode))
+                .collect();
         }
     }
 
@@ -304,6 +301,9 @@ pub fn process_event_for_identities(
 
     // If no mapping found, pass through the original event
     let Some(mapping) = mapping else {
+        if is_press {
+            state.record_press(input_keycode, &[input_keycode]);
+        }
         prefix_events.push(event);
         return prefix_events;
     };
@@ -452,9 +452,7 @@ pub fn process_event_for_identities(
             .map(|e| e.keycode())
             .collect();
 
-        // Only track if outputs differ from just [input_keycode]
-        if !(output_keys.is_empty() || (output_keys.len() == 1 && output_keys[0] == input_keycode))
-        {
+        if !output_keys.is_empty() {
             state.record_press(input_keycode, &output_keys);
         }
     }

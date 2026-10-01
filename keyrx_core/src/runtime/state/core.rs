@@ -301,13 +301,28 @@ impl DeviceState {
     /// state.clear_press(KeyCode::A);
     /// ```
     pub fn get_release_key(&self, input: KeyCode) -> ArrayVec<KeyCode, MAX_OUTPUT_KEYS_PER_INPUT> {
-        if let Some((_, outputs)) = self.pressed_keys.iter().find(|(k, _)| *k == input) {
-            outputs.clone()
-        } else {
+        self.tracked_release(input).unwrap_or_else(|| {
             let mut result = ArrayVec::new();
             let _ = result.try_push(input);
             result
-        }
+        })
+    }
+
+    /// The outputs recorded when `input` was pressed, or `None` if its press
+    /// was never recorded (pressed before the engine started, tracking table
+    /// full, or a press that produced no output such as a modifier key).
+    ///
+    /// Unlike [`Self::get_release_key`] this tells "pressed and passed
+    /// through as itself" (`Some([input])`) apart from "not tracked", which
+    /// is what lets a release ignore a layer change since the press.
+    pub fn tracked_release(
+        &self,
+        input: KeyCode,
+    ) -> Option<ArrayVec<KeyCode, MAX_OUTPUT_KEYS_PER_INPUT>> {
+        self.pressed_keys
+            .iter()
+            .find(|(k, _)| *k == input)
+            .map(|(_, outputs)| outputs.clone())
     }
 
     /// Clears the press tracking for an input key after it's been released
