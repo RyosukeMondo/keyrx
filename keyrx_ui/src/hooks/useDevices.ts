@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
 import * as deviceApi from '../api/devices';
 import type { DeviceEntry } from '../types';
+import { t } from '../i18n';
 
 /**
  * Fetch all devices with React Query caching
@@ -56,7 +57,7 @@ export function useSetGlobalLayout() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.globalLayout });
     },
-    meta: { successMessage: 'Global layout saved' },
+    meta: { successMessage: t('toast.layoutSaved') },
   });
 }
 

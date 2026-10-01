@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '../Card';
 
 import type { Device } from '../DeviceSelector';
+import { t } from '@/i18n';
 
 export type { Device };
 
@@ -11,10 +12,11 @@ function patternSummary(device: Device): string | null {
     return null;
   }
   const n = device.matchedNames.length;
-  if (n === 0) return 'no matching keyboard connected';
-  return n === 1
-    ? `matches ${device.matchedNames[0]}`
-    : `matches ${n} keyboards`;
+  if (n === 0) return t('devsel.noMatch');
+  return t('devsel.matches', {
+    count: n,
+    name: device.matchedNames[0] ?? '',
+  });
 }
 
 interface DeviceSelectionPanelProps {
@@ -40,7 +42,7 @@ export const DeviceSelectionPanel: React.FC<DeviceSelectionPanelProps> = ({
   );
 
   return (
-    <Card aria-label="Device Selection">
+    <Card aria-label={t('devsel.aria')}>
       <div
         className="flex items-center gap-4 flex-wrap"
         data-testid="device-selector"
@@ -51,18 +53,20 @@ export const DeviceSelectionPanel: React.FC<DeviceSelectionPanelProps> = ({
             checked={globalSelected}
             onChange={(e) => onToggleGlobal(e.target.checked)}
             className="w-4 h-4 text-primary-600 bg-slate-700 border-slate-600 rounded focus:ring-primary-500 focus:ring-2"
-            aria-label="Enable global configuration"
+            aria-label={t('devsel.globalAria')}
             data-testid="global-checkbox"
           />
           <span className="text-sm font-medium text-slate-200">
-            Global (All Devices)
+            {t('devsel.global')}
           </span>
         </label>
 
         <div className="h-5 w-px bg-slate-700"></div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-slate-300">Devices:</span>
+          <span className="text-sm font-medium text-slate-300">
+            {t('devsel.devices')}
+          </span>
           {filteredDevices.length > 0 ? (
             filteredDevices.map((device) => (
               <label
@@ -79,7 +83,7 @@ export const DeviceSelectionPanel: React.FC<DeviceSelectionPanelProps> = ({
                   checked={selectedDevices.includes(device.id)}
                   onChange={(e) => onToggleDevice(device.id, e.target.checked)}
                   className="w-4 h-4 text-primary-600 bg-slate-700 border-slate-600 rounded focus:ring-primary-500 focus:ring-2"
-                  aria-label={`Select device ${device.name}`}
+                  aria-label={t('devsel.select', { name: device.name })}
                 />
                 <span className="text-sm text-slate-200">
                   {device.name}
@@ -95,14 +99,22 @@ export const DeviceSelectionPanel: React.FC<DeviceSelectionPanelProps> = ({
                     className={`w-2 h-2 rounded-full ${
                       device.connected ? 'bg-green-400' : 'bg-gray-500'
                     }`}
-                    title={device.connected ? 'Connected' : 'Disconnected'}
-                    aria-label={device.connected ? 'Connected' : 'Disconnected'}
+                    title={
+                      device.connected
+                        ? t('device.connected')
+                        : t('device.disconnected')
+                    }
+                    aria-label={
+                      device.connected
+                        ? t('device.connected')
+                        : t('device.disconnected')
+                    }
                   />
                 )}
               </label>
             ))
           ) : (
-            <span className="text-sm text-slate-400">No devices</span>
+            <span className="text-sm text-slate-400">{t('devsel.none')}</span>
           )}
         </div>
       </div>

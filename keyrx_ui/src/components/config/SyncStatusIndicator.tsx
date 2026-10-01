@@ -1,4 +1,5 @@
 import React from 'react';
+import { t } from '@/i18n';
 
 export type SyncStatus = 'saved' | 'unsaved' | 'saving';
 
@@ -19,8 +20,8 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
   const getTimeAgo = () => {
     if (!lastSaveTime) return '';
     const msAgo = new Date().getTime() - lastSaveTime.getTime();
-    if (msAgo < 60000) return 'just now';
-    return `${Math.floor(msAgo / 60000)}m ago`;
+    if (msAgo < 60000) return t('sync.justNow');
+    return t('sync.minutesAgo', { count: Math.floor(msAgo / 60000) });
   };
 
   return (
@@ -28,10 +29,10 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
       {syncStatus === 'saved' && (
         <div
           className="flex items-center gap-2 text-xs text-green-400"
-          title="All changes saved"
+          title={t('sync.savedTitle')}
         >
           <span className="w-2 h-2 rounded-full bg-green-400"></span>
-          <span>Saved</span>
+          <span>{t('sync.saved')}</span>
           {lastSaveTime && (
             <span className="text-slate-400 hidden md:inline">
               {getTimeAgo()}
@@ -42,28 +43,28 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
       {syncStatus === 'unsaved' && (
         <div
           className="flex items-center gap-2 text-xs text-yellow-400"
-          title="Unsaved changes"
+          title={t('sync.unsavedTitle')}
         >
           <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
-          <span>Unsaved</span>
+          <span>{t('sync.unsaved')}</span>
         </div>
       )}
       {syncStatus === 'saving' && (
         <div
           className="flex items-center gap-2 text-xs text-blue-400"
-          title="Saving..."
+          title={t('sync.saving')}
         >
           <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-          <span>Saving...</span>
+          <span>{t('sync.saving')}</span>
         </div>
       )}
       {!isConnected && (
         <div
           className="flex items-center gap-2 text-xs text-red-400"
-          title="Disconnected from daemon"
+          title={t('sync.disconnectedTitle')}
         >
           <span className="w-2 h-2 rounded-full bg-red-400"></span>
-          <span>Disconnected</span>
+          <span>{t('sync.disconnected')}</span>
         </div>
       )}
     </div>

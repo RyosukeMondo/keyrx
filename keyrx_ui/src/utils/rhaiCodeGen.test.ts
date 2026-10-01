@@ -50,18 +50,18 @@ describe('rhaiCodeGen', () => {
     it('should generate tap-hold mapping', () => {
       const mapping: KeyMapping = {
         type: 'tap_hold',
-        sourceKey: 'VK_CAPSLOCK',
+        sourceKey: 'VK_CapsLock',
         line: 1,
         tapHold: {
-          tapAction: 'VK_ESCAPE',
-          holdAction: 'VK_LCTRL',
+          tapAction: 'VK_Escape',
+          holdAction: 'VK_LCtrl',
           thresholdMs: 200,
         },
       };
 
       const result = generateKeyMapping(mapping);
       expect(result).toBe(
-        'tap_hold("VK_CAPSLOCK", "VK_ESCAPE", "VK_LCTRL", 200);'
+        'tap_hold("VK_CapsLock", "VK_Escape", "VK_LCtrl", 200);'
       );
     });
 
@@ -236,8 +236,8 @@ describe('rhaiCodeGen', () => {
       const layer: ModifierLayer = {
         modifiers: 'MD_00',
         mappings: [
-          { type: 'simple', sourceKey: 'VK_H', targetKey: 'VK_LEFT', line: 4 },
-          { type: 'simple', sourceKey: 'VK_L', targetKey: 'VK_RIGHT', line: 5 },
+          { type: 'simple', sourceKey: 'VK_H', targetKey: 'VK_Left', line: 4 },
+          { type: 'simple', sourceKey: 'VK_L', targetKey: 'VK_Right', line: 5 },
         ],
         startLine: 3,
         endLine: 6,
@@ -258,8 +258,8 @@ describe('rhaiCodeGen', () => {
         'device_start("*");',
         '    map("VK_A", "VK_B");',
         '    when_start("MD_00");',
-        '        map("VK_H", "VK_LEFT");',
-        '        map("VK_L", "VK_RIGHT");',
+        '        map("VK_H", "VK_Left");',
+        '        map("VK_L", "VK_Right");',
         '    when_end();',
         'device_end();',
       ]);
@@ -269,7 +269,7 @@ describe('rhaiCodeGen', () => {
       const layer1: ModifierLayer = {
         modifiers: 'MD_00',
         mappings: [
-          { type: 'simple', sourceKey: 'VK_H', targetKey: 'VK_LEFT', line: 4 },
+          { type: 'simple', sourceKey: 'VK_H', targetKey: 'VK_Left', line: 4 },
         ],
         startLine: 3,
         endLine: 5,
@@ -278,7 +278,7 @@ describe('rhaiCodeGen', () => {
       const layer2: ModifierLayer = {
         modifiers: ['MD_01', 'MD_02'],
         mappings: [
-          { type: 'simple', sourceKey: 'VK_J', targetKey: 'VK_DOWN', line: 7 },
+          { type: 'simple', sourceKey: 'VK_J', targetKey: 'VK_Down', line: 7 },
         ],
         startLine: 6,
         endLine: 8,
@@ -296,10 +296,10 @@ describe('rhaiCodeGen', () => {
       expect(result).toEqual([
         'device_start("*");',
         '    when_start("MD_00");',
-        '        map("VK_H", "VK_LEFT");',
+        '        map("VK_H", "VK_Left");',
         '    when_end();',
         '    when_start(["MD_01", "MD_02"]);',
-        '        map("VK_J", "VK_DOWN");',
+        '        map("VK_J", "VK_Down");',
         '    when_end();',
         'device_end();',
       ]);
@@ -551,7 +551,7 @@ describe('rhaiCodeGen', () => {
     });
 
     it('should preserve tap-hold mappings through round-trip', () => {
-      const original = 'tap_hold("VK_CAPSLOCK", "VK_ESCAPE", "VK_LCTRL", 200);';
+      const original = 'tap_hold("VK_CapsLock", "VK_Escape", "VK_LCtrl", 200);';
 
       const parseResult1 = parseRhaiScript(original);
       expect(parseResult1.success).toBe(true);
@@ -566,8 +566,8 @@ describe('rhaiCodeGen', () => {
       expect(parseResult2.ast!.deviceBlocks[0].mappings).toHaveLength(1);
       const mapping = parseResult2.ast!.deviceBlocks[0].mappings[0];
       expect(mapping.type).toBe('tap_hold');
-      expect(mapping.tapHold?.tapAction).toBe('VK_ESCAPE');
-      expect(mapping.tapHold?.holdAction).toBe('VK_LCTRL');
+      expect(mapping.tapHold?.tapAction).toBe('VK_Escape');
+      expect(mapping.tapHold?.holdAction).toBe('VK_LCtrl');
       expect(mapping.tapHold?.thresholdMs).toBe(200);
     });
 
@@ -591,8 +591,8 @@ device_end();`;
     it('should preserve modifier layers through round-trip', () => {
       const original = `device_start("*");
     when_start("MD_00");
-        map("VK_H", "VK_LEFT");
-        map("VK_L", "VK_RIGHT");
+        map("VK_H", "VK_Left");
+        map("VK_L", "VK_Right");
     when_end();
 device_end();`;
 
@@ -618,12 +618,12 @@ device_end();`;
 
 // Global mappings
 map("VK_A", "VK_B");
-tap_hold("VK_CAPSLOCK", "VK_ESCAPE", "VK_LCTRL", 200);
+tap_hold("VK_CapsLock", "VK_Escape", "VK_LCtrl", 200);
 
 device_start("*Keychron*");
     map("VK_C", "VK_D");
     when_start("MD_00");
-        map("VK_H", "VK_LEFT");
+        map("VK_H", "VK_Left");
     when_end();
 device_end();`;
 

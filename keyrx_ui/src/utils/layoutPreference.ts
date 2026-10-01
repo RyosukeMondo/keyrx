@@ -47,7 +47,8 @@ const JIS_SOURCE_KEYS = [
   'VK_Muhenkan',
 ];
 
-const JIS_DEVICE_NAME = /\bjis\b|japanese|日本語/i;
+// Names that say JIS: "JIS", "Japanese", "日本語", "109" (the JIS key count), "JP".
+const JIS_DEVICE_NAME = /\bjis\b|japan|\b109\b|\bjp\b|日本語/i;
 
 /** Devices a selected scope stands for (a pattern scope may cover several). */
 export function devicesForScopes(
@@ -77,7 +78,13 @@ export function detectLayout(
   if (source && JIS_SOURCE_KEYS.some((k) => source.includes(k))) {
     return 'JIS_109';
   }
-  if (relevantDevices.some((d) => JIS_DEVICE_NAME.test(d.name))) {
+  // `hasJisKeys` is the daemon's own evidence (the device reports JIS-only
+  // keys such as Yen/Ro/Henkan); the name is the fallback for older daemons.
+  if (
+    relevantDevices.some(
+      (d) => d.hasJisKeys === true || JIS_DEVICE_NAME.test(d.name)
+    )
+  ) {
     return 'JIS_109';
   }
   return source ? 'ANSI_104' : 'JIS_109';

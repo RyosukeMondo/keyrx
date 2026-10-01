@@ -13,6 +13,7 @@ import {
   type LayoutType,
 } from '@/components/KeyboardVisualizer';
 import type { KeyMapping } from '@/types';
+import { t } from '@/i18n';
 
 export interface KeyboardVisualizerContainerProps {
   /** Currently active profile name */
@@ -83,14 +84,14 @@ export const KeyboardVisualizerContainer: React.FC<
           htmlFor="layout-selector"
           className="text-sm font-medium text-slate-300 whitespace-nowrap"
         >
-          Layout:
+          {t('layout.label')}
         </label>
         <select
           id="layout-selector"
           value={layout}
           onChange={(e) => onLayoutChange(e.target.value as LayoutType)}
           className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500"
-          aria-label="Select keyboard layout"
+          aria-label={t('layout.aria')}
         >
           <option value="ANSI_104">ANSI Full (104)</option>
           <option value="ANSI_87">ANSI TKL (87)</option>
@@ -107,7 +108,7 @@ export const KeyboardVisualizerContainer: React.FC<
       </div>
 
       {/* Keyboard Visualizer */}
-      <div className="overflow-x-auto p-4">
+      <div className="overflow-x-auto p-1 2xl:p-4">
         <div className="mx-auto w-fit">
           <KeyboardVisualizer
             layout={layout}
@@ -121,7 +122,7 @@ export const KeyboardVisualizerContainer: React.FC<
 
       {/* Helper text */}
       <p className="text-center text-sm text-slate-400 mt-4">
-        Click any key to configure mappings
+        {t('layout.help')}
       </p>
     </div>
   );

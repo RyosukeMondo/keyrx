@@ -2,7 +2,7 @@
  * Keycap geometry, styling and text helpers for the SVG keyboard.
  */
 import type { KeyMapping } from '@/types';
-import { formatKeyLabel, dslKeyName } from '@/utils/keyNames';
+import { formatKeyLabel, friendlyKeyName } from '@/utils/keyNames';
 
 // Constants for SVG rendering
 export const UNIT_SIZE = 54; // pixels per key unit (1u)
@@ -22,35 +22,52 @@ export interface SVGKey {
 }
 
 /** Minimum on-screen size (px) the keyboard may be scaled down to. */
-export const MIN_SCALE = 0.9;
+export const MIN_SCALE = 0.6;
 export const LABEL_MAX = 13;
 export const LABEL_MIN = 10;
 export const MAPPING_MAX = 14;
 export const MAPPING_MIN = 10;
 export const MONO_EM = 0.62; // monospace advance width in em
 
+/** Full-width (CJK) glyphs are a whole em wide, not MONO_EM. */
+const WIDE =
+  /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹯＀-｠￠-￦]/;
+const emWidth = (ch: string) => (WIDE.test(ch) ? 1 : MONO_EM);
+
 /** Fit `text` into `width` px: shrink to `min`, then truncate with an ellipsis. */
 export function fitText(text: string, width: number, max: number, min: number) {
   if (!text) return { text, size: max };
-  const size = Math.max(min, Math.min(max, width / (text.length * MONO_EM)));
-  const maxChars = Math.max(1, Math.floor(width / (size * MONO_EM)));
-  return {
-    text: text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text,
-    size,
-  };
+  const chars = [...text];
+  const total = chars.reduce((n, c) => n + emWidth(c), 0);
+  const size = Math.max(min, Math.min(max, width / total));
+  const budget = width / size; // em available at the chosen size
+  if (total <= budget + 1e-9) return { text, size };
+  let used = MONO_EM; // room for the ellipsis
+  let kept = '';
+  for (const c of chars) {
+    if (used + emWidth(c) > budget) break;
+    used += emWidth(c);
+    kept += c;
+  }
+  return { text: `${kept || chars[0]}…`, size };
 }
 
-const bare = (value: string | undefined) => (value ?? '').replace(/^VK_/, '');
+const spoken = (value: string | undefined) =>
+  value ? friendlyKeyName(value) : '';
 
-/** Plain-language, DSL-named description of what a key does, for tooltips and screen readers. */
+/**
+ * Plain-language description of what a key does, for tooltips and screen
+ * readers. Uses the names printed on the keys ("Space", "Numpad 3",
+ * "Backtick"), not the DSL spellings ("Num3", "Grave").
+ */
 export function describeKey(code: string, mapping?: KeyMapping): string {
-  const name = dslKeyName(code);
+  const name = friendlyKeyName(code);
   if (!mapping) return `${name}, not remapped`;
   switch (mapping.type) {
     case 'simple':
-      return `${name}, acts as ${bare(mapping.tapAction)}`;
+      return `${name}, acts as ${spoken(mapping.tapAction)}`;
     case 'tap_hold':
-      return `${name}, tap for ${bare(mapping.tapAction)}, hold for ${bare(mapping.holdAction)} after ${mapping.threshold ?? 200} ms`;
+      return `${name}, tap for ${spoken(mapping.tapAction)}, hold for ${spoken(mapping.holdAction)} after ${mapping.threshold ?? 200} ms`;
     case 'macro':
       return `${name}, runs a macro of ${mapping.macroSteps?.length ?? 0} steps`;
     case 'layer_switch':

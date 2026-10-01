@@ -116,17 +116,17 @@ device_start("*");`;
     });
 
     it('formats tap_hold mappings correctly', () => {
-      const script = 'tap_hold("VK_ESCAPE","VK_ESCAPE","VK_LCTRL",200);';
+      const script = 'tap_hold("VK_Escape","VK_Escape","VK_LCtrl",200);';
       const formatted = formatRhaiScript(script);
       expect(formatted).toContain(
-        'tap_hold("VK_ESCAPE", "VK_ESCAPE", "VK_LCTRL", 200);'
+        'tap_hold("VK_Escape", "VK_Escape", "VK_LCtrl", 200);'
       );
     });
 
     it('handles unsupported mapping types (macro) gracefully', () => {
       // Parser doesn't support macro yet - it will be silently ignored
       const script =
-        'macro("VK_F1",["VK_LCTRL","VK_C"],50);\nmap("VK_A", "VK_B");';
+        'macro("VK_F1",["VK_LCtrl","VK_C"],50);\nmap("VK_A", "VK_B");';
       const formatted = formatRhaiScript(script);
       // Should format supported mappings, ignore unsupported ones
       expect(formatted).toContain('map("VK_A", "VK_B");');
@@ -137,7 +137,7 @@ device_start("*");`;
     it('handles unsupported mapping types (layer_switch) gracefully', () => {
       // Parser doesn't support layer_switch yet - it will be silently ignored
       const script =
-        'layer_switch("VK_CAPSLOCK","layer1","toggle");\nmap("VK_C", "VK_D");';
+        'layer_switch("VK_CapsLock","layer1","toggle");\nmap("VK_C", "VK_D");';
       const formatted = formatRhaiScript(script);
       // Should format supported mappings, ignore unsupported ones
       expect(formatted).toContain('map("VK_C", "VK_D");');
@@ -181,7 +181,7 @@ map("VK_A", "VK_B");`;
       const original = `map("VK_A","VK_B");
 device_start("*Keychron*");
 map("VK_C","VK_D");
-tap_hold("VK_ESCAPE","VK_ESCAPE","VK_LCTRL",200);
+tap_hold("VK_Escape","VK_Escape","VK_LCtrl",200);
 device_end();`;
 
       const formatted = formatRhaiScript(original);
@@ -196,13 +196,13 @@ device_end();`;
     it('formats when_start blocks with proper nesting', () => {
       const script = `device_start("*");
 when_start("MD_00");
-map("VK_J","VK_DOWN");
+map("VK_J","VK_Down");
 when_end();
 device_end();`;
 
       const formatted = formatRhaiScript(script);
       expect(formatted).toContain('    when_start("MD_00");');
-      expect(formatted).toContain('        map("VK_J", "VK_DOWN");');
+      expect(formatted).toContain('        map("VK_J", "VK_Down");');
       expect(formatted).toContain('    when_end();');
     });
 
@@ -230,8 +230,8 @@ map("VK_A","VK_B");
 device_start("*Keychron*");
 map("VK_C","VK_D");
 when_start("MD_00");
-map("VK_J","VK_DOWN");
-map("VK_K","VK_UP");
+map("VK_J","VK_Down");
+map("VK_K","VK_Up");
 when_end();
 device_end();`;
 
@@ -243,8 +243,8 @@ device_end();`;
       expect(formatted).toContain('device_start("*Keychron*");');
       expect(formatted).toContain('    map("VK_C", "VK_D");');
       expect(formatted).toContain('    when_start("MD_00");');
-      expect(formatted).toContain('        map("VK_J", "VK_DOWN");');
-      expect(formatted).toContain('        map("VK_K", "VK_UP");');
+      expect(formatted).toContain('        map("VK_J", "VK_Down");');
+      expect(formatted).toContain('        map("VK_K", "VK_Up");');
     });
 
     it('completes formatting within performance requirements', () => {

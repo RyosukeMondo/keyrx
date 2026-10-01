@@ -1,4 +1,5 @@
 import React from 'react';
+import { t } from '@/i18n';
 
 /**
  * Props for the StateSnapshot component
@@ -47,7 +48,7 @@ export const StateSnapshot: React.FC<StateSnapshotProps> = ({ state }) => {
     <div
       className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
       role="group"
-      aria-label="Daemon state information"
+      aria-label={t('state.aria')}
     >
       {/* Active Layer */}
       <div
@@ -56,7 +57,7 @@ export const StateSnapshot: React.FC<StateSnapshotProps> = ({ state }) => {
         aria-label={`Active layer: ${state.activeLayer}`}
       >
         <h3 className="text-sm font-semibold text-slate-300 mb-2">
-          Active Layer
+          {t('state.layer')}
         </h3>
         <p className="text-lg font-mono text-blue-400">{state.activeLayer}</p>
       </div>
@@ -68,10 +69,10 @@ export const StateSnapshot: React.FC<StateSnapshotProps> = ({ state }) => {
         aria-label={`${state.tapHoldTimers} active tap/hold timers`}
       >
         <h3 className="text-sm font-semibold text-slate-300 mb-2">
-          Tap/Hold Timers
+          {t('state.timers')}
         </h3>
         <p className="text-lg font-mono text-yellow-400">
-          {state.tapHoldTimers} active
+          {t('state.timersActive', { count: state.tapHoldTimers })}
         </p>
       </div>
 
@@ -80,14 +81,14 @@ export const StateSnapshot: React.FC<StateSnapshotProps> = ({ state }) => {
         className="bg-slate-800 rounded-lg p-4"
         role="status"
         aria-label={`Active modifiers: ${
-          state.modifiers.length > 0 ? state.modifiers.join(', ') : 'None'
+          state.modifiers.length > 0 ? state.modifiers.join(', ') : t('state.noneValue')
         }`}
       >
         <h3 className="text-sm font-semibold text-slate-300 mb-2">
-          Active Modifiers
+          {t('state.modifiers')}
         </h3>
         <p className="text-lg font-mono text-green-400">
-          {state.modifiers.length > 0 ? state.modifiers.join(', ') : 'None'}
+          {state.modifiers.length > 0 ? state.modifiers.join(', ') : t('state.noneValue')}
         </p>
       </div>
 
@@ -96,14 +97,14 @@ export const StateSnapshot: React.FC<StateSnapshotProps> = ({ state }) => {
         className="bg-slate-800 rounded-lg p-4"
         role="status"
         aria-label={`Active locks: ${
-          state.locks.length > 0 ? state.locks.join(', ') : 'None'
+          state.locks.length > 0 ? state.locks.join(', ') : t('state.noneValue')
         }`}
       >
         <h3 className="text-sm font-semibold text-slate-300 mb-2">
-          Active Locks
+          {t('state.locks')}
         </h3>
         <p className="text-lg font-mono text-purple-400">
-          {state.locks.length > 0 ? state.locks.join(', ') : 'None'}
+          {state.locks.length > 0 ? state.locks.join(', ') : t('state.noneValue')}
         </p>
       </div>
 
@@ -114,7 +115,7 @@ export const StateSnapshot: React.FC<StateSnapshotProps> = ({ state }) => {
         aria-label={`${state.queuedEvents} queued events`}
       >
         <h3 className="text-sm font-semibold text-slate-300 mb-2">
-          Queued Events
+          {t('state.queued')}
         </h3>
         <p className="text-lg font-mono text-red-400">{state.queuedEvents}</p>
       </div>

@@ -279,6 +279,7 @@ export const GlobalDebugPanel: React.FC = () => {
   if (!expanded) {
     return (
       <button
+        className="chrome-float"
         onClick={() => setExpanded(true)}
         style={{
           position: 'fixed',

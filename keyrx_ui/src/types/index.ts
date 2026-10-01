@@ -42,6 +42,10 @@ export interface DeviceEntry {
   scope: string;
   layout: string | null;
   isVirtual: boolean;
+  /** keyrx's own uinput output device (API field, else guessed from the name). */
+  isKeyrxOutput?: boolean;
+  /** Device reports JIS-only keys (API field; absent on older daemons). */
+  hasJisKeys?: boolean;
   lastSeen?: number;
 }
 

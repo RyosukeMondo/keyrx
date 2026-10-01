@@ -1,6 +1,7 @@
 import { QueryClient, MutationCache } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { userFacingError } from '../utils/errorUtils';
+import { t } from '../i18n';
 
 // Type-safe mutation meta for global toast control
 declare module '@tanstack/react-query' {
@@ -24,7 +25,7 @@ declare module '@tanstack/react-query' {
 const mutationCache = new MutationCache({
   onError: (error, _variables, _context, mutation) => {
     if (mutation.meta?.suppressGlobalError) return;
-    toast.error(userFacingError(error, 'Operation failed'));
+    toast.error(userFacingError(error, t('toast.opFailed')));
   },
   onSuccess: (_data, _variables, _context, mutation) => {
     if (mutation.meta?.successMessage) {

@@ -9,6 +9,7 @@ import {
 import { useToast } from '@/hooks/useToast';
 import { getErrorMessage } from '@/utils/errorUtils';
 import { ProfileTemplate } from '@/types';
+import { t } from '@/i18n';
 import { Modal } from '@/components/Modal';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
@@ -81,11 +82,11 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       await createMutation.mutateAsync({ name: 'default', template: ProfileTemplate.Blank });
       await activateMutation.mutateAsync('default');
       onSelectProfile('default');
-      toast.success('Default profile created.');
+      toast.success(t('toast.defaultCreated'));
     } catch (err) {
       const msg = getErrorMessage(err, 'Failed to create default profile');
       const isOffline = msg.includes('Failed to fetch') || msg.includes('NetworkError');
-      toast.error(isOffline ? 'Unable to connect to daemon.' : msg);
+      toast.error(isOffline ? t('toast.offline') : msg);
     }
   };
 
@@ -103,15 +104,15 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   // --- validation ---
   const validateName = (name: string): boolean => {
     if (!name.trim()) {
-      setNameError('Profile name is required');
+      setNameError(t('prof.nameRequired'));
       return false;
     }
     if (name.length > 50) {
-      setNameError('Profile name must be 50 characters or less');
+      setNameError(t('prof.nameTooLong'));
       return false;
     }
     if (profiles.some((p) => p.name === name)) {
-      setNameError('Profile name already exists');
+      setNameError(t('prof.nameExists'));
       return false;
     }
     setNameError('');
@@ -143,12 +144,12 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     try {
       const result = await activateMutation.mutateAsync(name);
       if (result.errors && result.errors.length > 0) {
-        toast.error('Compilation failed', {
+        toast.error(t('toast.compileFailed'), {
           description: result.errors.join('\n'),
           duration: 8000,
         });
       } else {
-        toast.success(`Profile '${name}' applied!`);
+        toast.success(t('toast.applied', { name }));
       }
     } catch {
       // Global MutationCache.onError handles the toast
@@ -176,8 +177,8 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       <div className="flex flex-col items-center w-12 bg-slate-800 border-r border-slate-700 h-full py-3 gap-2">
         <button
           type="button"
-          aria-label="Expand profile sidebar"
-          title="Expand profile sidebar"
+          aria-label={t('prof.expand')}
+          title={t('prof.expand')}
           onClick={onToggleCollapse}
           className="p-2 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
         >
@@ -209,12 +210,12 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       <div className="flex flex-col w-64 bg-slate-800 border-r border-slate-700 h-full">
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-3 border-b border-slate-700">
-          <h2 className="text-sm font-semibold text-slate-100">Profiles</h2>
+          <h2 className="text-sm font-semibold text-slate-100">{t('prof.title')}</h2>
           <div className="flex items-center gap-1">
             <button
               type="button"
-              aria-label="Create new profile"
-              title="Create new profile"
+              aria-label={t('prof.create')}
+              title={t('prof.create')}
               onClick={() => setCreateOpen(true)}
               className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
             >
@@ -222,8 +223,8 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             </button>
             <button
               type="button"
-              aria-label="Collapse profile sidebar"
-              title="Collapse profile sidebar"
+              aria-label={t('prof.collapse')}
+              title={t('prof.collapse')}
               onClick={onToggleCollapse}
               className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
             >
@@ -267,7 +268,7 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       </div>
 
       {/* Create Profile Modal */}
-      <Modal open={createOpen} onClose={resetCreateModal} title="Create New Profile">
+      <Modal open={createOpen} onClose={resetCreateModal} title={t('prof.createTitle')}>
         <div className="flex flex-col gap-md">
           <Input
             type="text"
@@ -276,28 +277,28 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               setNewName(value);
               if (nameError) validateName(value);
             }}
-            aria-label="Profile name"
-            placeholder="Profile name"
+            aria-label={t('prof.name')}
+            placeholder={t('prof.name')}
             error={nameError}
             maxLength={50}
           />
 
           <div className="flex flex-col gap-2">
             <label htmlFor="sidebar-template-select" className="text-sm font-medium text-slate-300">
-              Starting Template
+              {t('prof.template')}
             </label>
             <select
               id="sidebar-template-select"
               value={template}
               onChange={(e) => setTemplate(e.target.value as ProfileTemplate)}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              aria-label="Select profile template"
+              aria-label={t('prof.templateAria')}
             >
-              <option value="blank">Blank - Empty configuration</option>
-              <option value="simple_remap">Simple Remap - Basic key remapping</option>
-              <option value="capslock_escape">CapsLock to Escape</option>
-              <option value="vim_navigation">Vim Navigation - HJKL arrows</option>
-              <option value="gaming">Gaming - Optimized for gaming</option>
+              <option value="blank">{t('prof.tBlank')}</option>
+              <option value="simple_remap">{t('prof.tSimple')}</option>
+              <option value="capslock_escape">{t('prof.tCaps')}</option>
+              <option value="vim_navigation">{t('prof.tVim')}</option>
+              <option value="gaming">{t('prof.tGaming')}</option>
             </select>
           </div>
 
@@ -305,17 +306,17 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             type="text"
             value={newDescription}
             onChange={(value) => setNewDescription(value)}
-            aria-label="Profile description"
-            placeholder="Description (optional)"
+            aria-label={t('prof.description')}
+            placeholder={t('prof.descriptionPh')}
             maxLength={200}
           />
 
           <div className="flex gap-2 justify-end mt-2">
-            <Button variant="secondary" size="md" onClick={resetCreateModal} aria-label="Cancel creating profile">
-              Cancel
+            <Button variant="secondary" size="md" onClick={resetCreateModal} aria-label={t('prof.cancelCreate')}>
+              {t('prof.cancel')}
             </Button>
-            <Button variant="primary" size="md" onClick={handleCreate} aria-label="Create profile">
-              Create
+            <Button variant="primary" size="md" onClick={handleCreate} aria-label={t('prof.createBtnAria')}>
+              {t('prof.createBtn')}
             </Button>
           </div>
         </div>
@@ -328,12 +329,12 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           setDeleteOpen(false);
           setDeleteTarget(null);
         }}
-        title="Delete Profile"
+        title={t('prof.deleteTitle')}
       >
         <div className="flex flex-col gap-md">
           <p className="text-slate-300">
-            Are you sure you want to delete{' '}
-            <strong className="text-white">{deleteTarget}</strong>? This action cannot be undone.
+            {t('prof.deleteConfirm')}{' '}
+            <strong className="text-white">{deleteTarget}</strong>? {t('prof.deleteWarn')}
           </p>
           <div className="flex gap-2 justify-end mt-2">
             <Button
@@ -343,12 +344,12 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 setDeleteOpen(false);
                 setDeleteTarget(null);
               }}
-              aria-label="Cancel deleting profile"
+              aria-label={t('prof.cancelDelete')}
             >
-              Cancel
+              {t('prof.cancel')}
             </Button>
-            <Button variant="danger" size="md" onClick={handleDeleteConfirm} aria-label="Confirm delete profile">
-              Delete
+            <Button variant="danger" size="md" onClick={handleDeleteConfirm} aria-label={t('prof.deleteConfirmAria')}>
+              {t('prof.deleteBtn')}
             </Button>
           </div>
         </div>

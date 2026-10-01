@@ -91,10 +91,10 @@ describe('SVGKeyboard keyboard navigation', () => {
 });
 
 describe('describeKey', () => {
-  it('uses DSL names, not QMK codes', () => {
-    expect(describeKey('KC_CAPS')).toBe('CapsLock, not remapped');
+  it('uses the names printed on the keys, not QMK or DSL codes', () => {
+    expect(describeKey('KC_CAPS')).toBe('Caps Lock, not remapped');
     const simple: KeyMapping = { type: 'simple', tapAction: 'VK_LCtrl' };
-    expect(describeKey('KC_CAPS', simple)).toBe('CapsLock, acts as LCtrl');
+    expect(describeKey('KC_CAPS', simple)).toBe('Caps Lock, acts as Ctrl');
     const th: KeyMapping = {
       type: 'tap_hold',
       tapAction: 'VK_Space',
@@ -104,5 +104,17 @@ describe('describeKey', () => {
     expect(describeKey('KC_SPC', th)).toBe(
       'Space, tap for Space, hold for MD_00 after 200 ms'
     );
+  });
+});
+
+describe('describeKey spoken names', () => {
+  it.each([
+    ['KC_P3', 'Numpad 3, not remapped'],
+    ['KC_PMNS', 'Numpad Minus, not remapped'],
+    ['KC_GRV', 'Backtick, not remapped'],
+    ['KC_3', '3, not remapped'],
+    ['KC_SPC', 'Space, not remapped'],
+  ])('%s -> %s', (code, expected) => {
+    expect(describeKey(code)).toBe(expected);
   });
 });

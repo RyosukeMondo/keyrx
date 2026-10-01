@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
+import { t } from '@/i18n';
 
 /**
  * Layer Switcher.
@@ -28,7 +29,7 @@ const ALL_LAYERS: string[] = [
 ];
 
 export const formatLayerName = (layer: string) =>
-  layer === 'base' ? 'Base' : layer.toUpperCase().replace('MD-', 'MD_');
+  layer === 'base' ? t('layers.base') : layer.toUpperCase().replace(/-/g, '_');
 
 /** Base first, then the used layers in order, always including the active one. */
 function visibleLayers(used: string[], active: string): string[] {
@@ -74,10 +75,12 @@ export function LayerSwitcher({
     const i = layers.indexOf(layer);
     switch (e.key) {
       case 'ArrowDown':
+      case 'ArrowRight':
         e.preventDefault();
         moveFocus(layers[Math.min(i + 1, layers.length - 1)]);
         break;
       case 'ArrowUp':
+      case 'ArrowLeft':
         e.preventDefault();
         moveFocus(layers[Math.max(i - 1, 0)]);
         break;
@@ -98,14 +101,14 @@ export function LayerSwitcher({
   };
 
   return (
-    <div className="w-24 flex flex-col bg-slate-800/50 rounded-lg border border-slate-700/50 flex-shrink-0">
-      <div className="p-2 border-b border-slate-700/50">
-        <div className="mb-2">
+    <div className="flex w-full flex-shrink-0 flex-row flex-wrap items-center gap-1 rounded-lg border border-slate-700/50 bg-slate-800/50 2xl:w-24 2xl:flex-col 2xl:items-stretch 2xl:gap-0">
+      <div className="p-2 2xl:border-b border-slate-700/50">
+        <div className="2xl:mb-2">
           <span
             id="layer-switcher-title"
             className="text-slate-300 font-semibold text-xs block text-center"
           >
-            LAYERS
+            {t('layers.title')}
           </span>
           <span className="text-slate-400 text-xs block text-center">
             {layers.length}
@@ -118,9 +121,9 @@ export function LayerSwitcher({
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="..."
-            title="Search layers (e.g., 'md-0a', 'base', '1f')"
+            title={t('layers.searchTitle')}
             className="w-full px-1 py-1 bg-slate-900/50 border border-slate-600 rounded text-white text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary-500/50"
-            aria-label="Search layers"
+            aria-label={t('layers.search')}
           />
         )}
       </div>
@@ -129,7 +132,7 @@ export function LayerSwitcher({
         ref={listRef}
         role="listbox"
         aria-labelledby="layer-switcher-title"
-        className="overflow-y-auto max-h-96 p-1 space-y-1 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50"
+        className="flex max-h-96 flex-row flex-wrap gap-1 overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 2xl:block 2xl:space-y-1"
       >
         {layers.map((layer) => (
           <div
@@ -141,7 +144,7 @@ export function LayerSwitcher({
             onClick={() => onLayerChange(layer)}
             onFocus={() => setFocusedLayer(layer)}
             onKeyDown={(e) => handleKeyDown(e, layer)}
-            className={`w-full px-1 py-1 rounded text-xs font-medium text-center cursor-pointer transition-all break-words ${
+            className={`min-w-14 px-2 py-1 2xl:w-full 2xl:px-1 rounded text-xs font-medium text-center cursor-pointer transition-all break-words ${
               activeLayer === layer
                 ? 'bg-primary-500 text-white shadow-md'
                 : 'bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500'
@@ -154,7 +157,7 @@ export function LayerSwitcher({
 
       {showAll && searchFilter && layers.length === 0 && (
         <div className="p-4 text-center text-slate-400 text-sm">
-          No layers match your search
+          {t('layers.noMatch')}
         </div>
       )}
 
@@ -162,9 +165,9 @@ export function LayerSwitcher({
         type="button"
         onClick={() => setShowAll((v) => !v)}
         aria-expanded={showAll}
-        className="m-1 rounded border border-slate-600/60 px-1 py-1 text-[11px] text-slate-300 hover:bg-slate-700"
+        className="m-1 rounded border border-slate-600/60 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-700 2xl:px-1"
       >
-        {showAll ? 'Fewer layers' : 'All layers'}
+        {showAll ? t('layers.fewer') : t('layers.all')}
       </button>
     </div>
   );

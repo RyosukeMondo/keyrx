@@ -22,6 +22,7 @@ import type {
   ImportStatement,
   Comment,
 } from './rhaiParser';
+import { toDslKeyRef } from './dslKeys';
 
 /**
  * Formatting options for code generation
@@ -219,7 +220,7 @@ export function generateDeviceBlock(
  * @param options - Formatting options
  * @returns Array of lines for the modifier layer
  */
-function generateModifierLayer(
+export function generateModifierLayer(
   layer: ModifierLayer,
   baseIndentLevel: number,
   options: Required<FormatOptions>
@@ -345,7 +346,7 @@ function ensureVKPrefix(key: string): string {
     return key;
   }
   // Skip if it's a layer modifier (MD_00, etc.)
-  if (key.startsWith('MD_') || key.startsWith('MMD_')) {
+  if (/^(MD|MMD|LK)_/.test(key)) {
     return key;
   }
 
@@ -374,8 +375,9 @@ function ensureVKPrefix(key: string): string {
     return `VK_${dslName}`;
   }
 
-  // Already a valid DSL name (letters, F-keys, etc.)
-  return `VK_${rawName}`;
+  // Canonical parser spelling ("SPACE" -> "Space"); unknown names pass through
+  // so the compiler reports them instead of us silently rewriting.
+  return toDslKeyRef(rawName);
 }
 
 /**
@@ -476,26 +478,3 @@ function getFirstDeviceLineOrEnd(ast: RhaiAST): number {
   return ast.deviceBlocks[0].startLine;
 }
 
-/**
- * Format a Rhai script with consistent indentation and spacing
- *
- * This is a utility function that can re-format existing Rhai code
- * to match project standards. It works by parsing and regenerating.
- *
- * Note: This function is now implemented in rhaiFormatter.ts to avoid
- * circular dependencies. Use that module for formatting functionality.
- *
- * @deprecated Use formatRhaiScript from rhaiFormatter.ts instead
- * @param script - Rhai script to format
- * @param options - Formatting options
- * @returns Formatted script
- */
-export function formatRhaiScript(
-  _script: string,
-  _options?: FormatOptions
-): string {
-  // This function is deprecated - use rhaiFormatter.formatRhaiScript instead
-  throw new Error(
-    'formatRhaiScript has been moved to rhaiFormatter.ts. Please import from there instead.'
-  );
-}

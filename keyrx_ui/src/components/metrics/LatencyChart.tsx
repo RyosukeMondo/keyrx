@@ -11,6 +11,8 @@ import {
 } from 'recharts';
 import {
   formatLatencyMs,
+  niceLatencyTicks,
+  niceTimeTicks,
   pickLatencyUnit,
   unitScale,
 } from '@/utils/latencyFormat';
@@ -94,6 +96,14 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
     [recent, scale]
   );
 
+  // Whole-unit Y ticks and whole-second X ticks with distinct labels.
+  const yMax = Math.max(0, ...chartData.map((d) => d.latency));
+  const yTicks = niceLatencyTicks(yMax);
+  const xTicks = niceTimeTicks(
+    chartData[0]?.timestamp ?? 0,
+    chartData[chartData.length - 1]?.timestamp ?? 0
+  );
+
   // Handle empty data case
   if (chartData.length === 0) {
     return (
@@ -114,12 +124,19 @@ export const LatencyChart: React.FC<LatencyChartProps> = ({
         <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
         <XAxis
           dataKey="timestamp"
+          type="number"
+          scale="time"
+          domain={['dataMin', 'dataMax']}
+          ticks={xTicks}
           tickFormatter={formatTimestamp}
           stroke="#94A3B8"
           style={{ fontSize: '12px' }}
         />
         <YAxis
           stroke="#94A3B8"
+          domain={[0, yTicks[yTicks.length - 1]]}
+          ticks={yTicks}
+          allowDecimals={unit !== 'µs'}
           style={{ fontSize: '12px' }}
           label={{
             value: `Latency (${unit})`,

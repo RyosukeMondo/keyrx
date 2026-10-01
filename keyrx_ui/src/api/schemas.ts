@@ -52,6 +52,15 @@ export const DeviceRpcInfoSchema = z
     active: z.boolean(),
     scope: z.string().nullable().optional(),
     layout: z.string().nullable().optional(), // Backend returns null when not set
+    // Optional: newer daemons say whether a device is another tool's virtual
+    // keyboard / keyrx's own output device (either spelling).
+    is_virtual: z.boolean().optional(),
+    isVirtual: z.boolean().optional(),
+    is_keyrx_output: z.boolean().optional(),
+    isKeyrxOutput: z.boolean().optional(),
+    // Optional JIS hint (device reports JIS-only keys) for layout detection.
+    has_jis_keys: z.boolean().optional(),
+    hasJisKeys: z.boolean().optional(),
   })
   .passthrough();
 

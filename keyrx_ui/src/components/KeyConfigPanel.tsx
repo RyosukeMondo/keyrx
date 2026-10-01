@@ -3,7 +3,10 @@ import { Keyboard, ArrowRight, X } from 'lucide-react';
 import type { KeyMapping } from '@/types';
 import type { SVGKey } from './SVGKeyboard';
 import { CurrentMappingsSummary } from './CurrentMappingsSummary';
-import { dslKeyName } from '@/utils/keyNames';
+import { formatLayerName } from './LayerSwitcher';
+import { friendlyKeyName } from '@/utils/keyNames';
+import { KeyName } from './KeyName';
+import { t } from '@/i18n';
 import {
   MappingTypeSelector,
   type MappingType,
@@ -94,22 +97,28 @@ export function KeyConfigPanel({
     onSave(mapping);
   };
 
+  const name = (code: string) => (code ? friendlyKeyName(code) : '?');
+
   const getPreviewText = (): string => {
-    if (!physicalKey) return 'Select a key from the keyboard above';
+    if (!physicalKey) return t('kc.selectPrompt');
 
     if (mappingType === 'tap_hold') {
-      if (!tapAction && !holdAction) {
-        return 'Configure tap and hold actions';
-      }
-      return `Quick tap: ${dslKeyName(physicalKey)} → ${
-        (tapAction ? dslKeyName(tapAction) : '?')
-      }\nHold ${threshold}ms: ${dslKeyName(physicalKey)} → ${(holdAction ? dslKeyName(holdAction) : '?')}`;
+      if (!tapAction && !holdAction) return t('kc.configureTapHold');
+      const from = name(physicalKey);
+      return `${t('kc.quickTap', { from, to: name(tapAction) })}\n${t('kc.holdLine', { ms: threshold, from, to: name(holdAction) })}`;
     }
 
     return tapAction
-      ? `Press ${dslKeyName(physicalKey)} → Output ${dslKeyName(tapAction)}`
-      : 'Select a target key';
+      ? t('kc.press', { from: name(physicalKey), to: name(tapAction) })
+      : t('kc.selectTarget');
   };
+
+  // Screen readers hear what a pick did (the picker itself is a silent grid).
+  const announcement = tapAction
+    ? mappingType === 'tap_hold' && holdAction
+      ? t('kc.pickedHold', { key: name(holdAction) })
+      : t('kc.pickedTarget', { key: name(tapAction) })
+    : t('kc.selectionCleared');
 
   const isSaveDisabled =
     !physicalKey ||
@@ -118,6 +127,10 @@ export function KeyConfigPanel({
 
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 space-y-6">
+      <div role="status" aria-live="polite" className="sr-only">
+        {physicalKey ? announcement : ''}
+      </div>
+
       {/* Mapping Type Selector */}
       <MappingTypeSelector
         selectedType={mappingType}
@@ -129,9 +142,7 @@ export function KeyConfigPanel({
       {!physicalKey ? (
         <div className="text-center py-12 text-slate-400">
           <Keyboard className="w-16 h-16 mx-auto mb-4 opacity-50" />
-          <p className="text-lg">
-            Click a key on the keyboard above to configure it
-          </p>
+          <p className="text-lg">{t('kc.clickKey')}</p>
         </div>
       ) : (
         <>
@@ -141,32 +152,36 @@ export function KeyConfigPanel({
               <div className="flex items-center gap-2">
                 <Keyboard className="w-4 h-4 text-primary-400" />
                 <span className="text-xs text-slate-400 uppercase tracking-wide">
-                  Key
+                  {t('kc.key')}
                 </span>
-                <span className="text-base font-bold text-slate-100">
-                  {dslKeyName(physicalKey)}
-                </span>
+                <KeyName
+                  code={physicalKey}
+                  className="text-base font-bold text-slate-100"
+                />
               </div>
 
               <ArrowRight className="w-4 h-4 text-slate-400" />
 
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-400 uppercase tracking-wide">
-                  Target
+                  {t('kc.target')}
                 </span>
-                <span className="text-base font-bold text-green-400">
-                  {tapAction ? dslKeyName(tapAction) : '—'}
-                </span>
+                {tapAction ? (
+                  <KeyName
+                    code={tapAction}
+                    className="text-base font-bold text-green-400"
+                  />
+                ) : (
+                  <span className="text-base font-bold text-green-400">—</span>
+                )}
               </div>
 
               <div className="ml-auto flex items-center gap-2">
                 <span className="text-xs text-slate-400 uppercase tracking-wide">
-                  Layer
+                  {t('kc.layer')}
                 </span>
                 <span className="text-sm font-bold text-yellow-400">
-                  {activeLayer === 'base'
-                    ? 'Base'
-                    : activeLayer.toUpperCase().replace('-', '_')}
+                  {formatLayerName(activeLayer)}
                 </span>
               </div>
             </div>
@@ -177,16 +192,16 @@ export function KeyConfigPanel({
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="text-sm font-medium text-slate-300">
-                  Select Key
+                  {t('kc.selectKey')}
                 </label>
                 {tapAction && (
                   <button
                     onClick={() => setTapAction('')}
                     className="px-3 py-1 text-xs text-red-300 hover:text-red-100 hover:bg-red-500/20 rounded transition-colors flex items-center gap-1"
-                    title="Clear selection"
+                    title={t('kc.clearSel')}
                   >
-                    <X className="w-3.5 h-3.5" />
-                    Clear
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
+                    {t('kc.clear')}
                   </button>
                 )}
               </div>
@@ -208,19 +223,20 @@ export function KeyConfigPanel({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-sm font-medium text-slate-300">
-                    Tap Action
+                    {t('kc.tapAction')}
                   </label>
                   {tapAction && (
                     <div className="flex items-center gap-2">
                       <div className="px-3 py-1 bg-green-500/20 border border-green-500 rounded">
                         <span className="text-sm font-bold text-green-300 font-mono">
-                          {tapAction}
+                          {friendlyKeyName(tapAction)}
                         </span>
                       </div>
                       <button
                         onClick={() => setTapAction('')}
                         className="p-1 text-slate-400 hover:text-red-400 transition-colors"
-                        title="Clear selection"
+                        title={t('kc.clearSel')}
+                        aria-label={t('kc.clearSel')}
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -242,10 +258,10 @@ export function KeyConfigPanel({
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <label className="text-sm font-medium text-slate-300">
-                      Hold Action (modifier)
+                      {t('kc.holdAction')}
                     </label>
                     <p className="text-xs text-slate-400 mt-1">
-                      Select modifier 0-255
+                      {t('kc.holdHelp')}
                     </p>
                   </div>
                   {holdAction && (
@@ -258,7 +274,8 @@ export function KeyConfigPanel({
                       <button
                         onClick={() => setHoldAction('')}
                         className="p-1 text-slate-400 hover:text-red-400 transition-colors"
-                        title="Clear selection"
+                        title={t('kc.clearSel')}
+                        aria-label={t('kc.clearSel')}
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -287,11 +304,13 @@ export function KeyConfigPanel({
                       setHoldAction(`MD_${hex}`);
                     }}
                     className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Enter value 0-255"
+                    placeholder={t('kc.holdPlaceholder')}
+                    aria-label={t('kc.holdAction')}
                   />
                   <div className="mt-3">
                     <input
                       type="range"
+                      aria-label={t('kc.holdAction')}
                       min="0"
                       max="255"
                       value={
@@ -319,10 +338,14 @@ export function KeyConfigPanel({
 
               {/* Threshold */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Hold Threshold (ms): {threshold}
+                <label
+                  htmlFor="hold-threshold"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
+                  {t('kc.threshold', { ms: threshold })}
                 </label>
                 <input
+                  id="hold-threshold"
                   type="range"
                   min="50"
                   max="500"
@@ -332,8 +355,8 @@ export function KeyConfigPanel({
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-slate-400 mt-1">
-                  <span>50ms (fast)</span>
-                  <span>500ms (slow)</span>
+                  <span>{t('kc.fast')}</span>
+                  <span>{t('kc.slow')}</span>
                 </div>
               </div>
             </>
@@ -344,7 +367,7 @@ export function KeyConfigPanel({
             <div className="flex items-center gap-2 mb-2">
               <ArrowRight className="w-4 h-4 text-primary-400" />
               <label className="text-sm font-medium text-slate-300">
-                Preview
+                {t('kc.preview')}
               </label>
             </div>
             <div className="bg-slate-900 rounded-md p-3 font-mono text-sm text-slate-300 whitespace-pre-wrap min-h-[60px] flex items-center">
@@ -359,7 +382,7 @@ export function KeyConfigPanel({
                 onClick={() => onClearMapping(physicalKey)}
                 className="px-4 py-2 text-red-300 hover:text-red-100 hover:bg-red-500/20 rounded-md transition-colors"
               >
-                Clear Mapping
+                {t('kc.clearMapping')}
               </button>
             )}
             <button
@@ -367,17 +390,14 @@ export function KeyConfigPanel({
               disabled={isSaveDisabled}
               className="px-6 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             >
-              Save Mapping
+              {t('kc.saveMapping')}
             </button>
           </div>
         </>
       )}
 
-      {/* Current Mappings Summary */}
+      {/* Current Mappings Summary (owns the one "Current Mappings" heading) */}
       <div className="border-t border-slate-700 pt-6">
-        <h3 className="text-lg font-semibold text-slate-200 mb-4">
-          Current Mappings ({keyMappings.size} mappings)
-        </h3>
         <CurrentMappingsSummary
           keyMappings={keyMappings}
           onEditMapping={onEditMapping}

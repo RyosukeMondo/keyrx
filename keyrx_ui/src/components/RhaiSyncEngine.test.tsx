@@ -63,8 +63,8 @@ vi.mock('../utils/rhaiParser', () => ({
   }),
 }));
 
-vi.mock('../utils/rhaiCodeGen', () => ({
-  generateRhaiScript: vi.fn((ast: RhaiAST) => {
+vi.mock('../utils/rhaiPatch', () => ({
+  patchRhaiScript: vi.fn((_source: string, ast: RhaiAST) => {
     if (ast.globalMappings.length > 0) {
       const mapping = ast.globalMappings[0];
       if (mapping.type === 'simple' && mapping.targetKey) {
@@ -241,8 +241,8 @@ describe('useRhaiSyncEngine', () => {
       );
 
       // Mock code generator to throw error
-      const { generateRhaiScript } = await import('../utils/rhaiCodeGen');
-      vi.mocked(generateRhaiScript).mockImplementationOnce(() => {
+      const { patchRhaiScript } = await import('../utils/rhaiPatch');
+      vi.mocked(patchRhaiScript).mockImplementationOnce(() => {
         throw new Error('Generation failed');
       });
 

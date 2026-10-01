@@ -16,6 +16,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import { LAYOUT_OPTIONS } from '../contexts/LayoutPreviewContext';
 import type { DeviceEntry } from '../types';
 import { DeviceRow } from '../components/devices/DeviceRow';
+import { t } from '../i18n';
 
 interface DevicesPageProps {
   className?: string;
@@ -51,7 +52,7 @@ interface Device {
  * not by a UI setting. See ConfigPage for device-aware editing.
  */
 export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
-  usePageTitle('Devices');
+  usePageTitle(t('devices.title'));
   // Fetch devices using React Query
   const {
     data: deviceEntries = [],
@@ -76,7 +77,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   }));
 
   const error = fetchError
-    ? getErrorMessage(fetchError, 'Failed to fetch devices')
+    ? getErrorMessage(fetchError, t('devices.fetchFailed'))
     : null;
 
   // Global layout via React Query
@@ -87,7 +88,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     error: globalLayoutMutationError,
   } = useSetGlobalLayout();
   const globalLayoutError = globalLayoutMutationError
-    ? getErrorMessage(globalLayoutMutationError, 'Failed to save global layout')
+    ? getErrorMessage(globalLayoutMutationError, t('devices.layoutSaveFailed'))
     : null;
 
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
@@ -102,17 +103,19 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     let result = [...devices];
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(d =>
-        d.name.toLowerCase().includes(q) ||
-        d.identifier.toLowerCase().includes(q) ||
-        (d.vendorId?.toLowerCase().includes(q)) ||
-        (d.productId?.toLowerCase().includes(q))
+      result = result.filter(
+        (d) =>
+          d.name.toLowerCase().includes(q) ||
+          d.identifier.toLowerCase().includes(q) ||
+          d.vendorId?.toLowerCase().includes(q) ||
+          d.productId?.toLowerCase().includes(q)
       );
     }
     result.sort((a, b) => {
       let cmp = 0;
       if (sortBy === 'name') cmp = a.name.localeCompare(b.name);
-      else if (sortBy === 'active') cmp = (a.active ? 0 : 1) - (b.active ? 0 : 1);
+      else if (sortBy === 'active')
+        cmp = (a.active ? 0 : 1) - (b.active ? 0 : 1);
       else if (sortBy === 'layout') cmp = a.layout.localeCompare(b.layout);
       return sortDirection === 'asc' ? cmp : -cmp;
     });
@@ -134,12 +137,12 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   const handleRenameSave = (deviceId: string) => {
     // Validate name
     if (!editingName.trim()) {
-      setNameError('Device name cannot be empty');
+      setNameError(t('devices.nameEmpty'));
       return;
     }
 
     if (editingName.length > 64) {
-      setNameError('Device name cannot exceed 64 characters');
+      setNameError(t('devices.nameTooLong'));
       return;
     }
 
@@ -155,7 +158,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
         },
         onError: (err) => {
           // Show error message
-          setNameError(getErrorMessage(err, 'Failed to rename device'));
+          setNameError(getErrorMessage(err, t('devices.renameFailed')));
         },
       }
     );
@@ -210,7 +213,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
     >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-slate-100">
-          Devices
+          {t('devices.title')}
         </h1>
         <div className="flex gap-2">
           <Button
@@ -219,10 +222,10 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
             onClick={() => {
               refetch();
             }}
-            aria-label="Refresh device list"
+            aria-label={t('devices.refreshAria')}
             disabled={loading}
           >
-            Refresh
+            {t('devices.refresh')}
           </Button>
         </div>
       </div>
@@ -238,57 +241,55 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
         <div className="flex flex-col gap-md">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-100">
-              Global Settings
+              {t('devices.global')}
             </h2>
             {isSavingGlobalLayout && (
               <span className="text-xs text-slate-400 flex items-center gap-1">
                 <span className="animate-spin h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full" />
-                Saving...
+                {t('devices.saving')}
               </span>
             )}
             {!isSavingGlobalLayout && globalLayoutSaved && (
-              <span className="text-xs text-green-500">✓ Saved</span>
+              <span className="text-xs text-green-500">
+                {t('devices.saved')}
+              </span>
             )}
             {globalLayoutError && (
               <span
                 className="text-xs text-red-500 flex items-center gap-1"
                 title={globalLayoutError}
               >
-                ✗ Error
+                {t('devices.error')}
               </span>
             )}
           </div>
 
           <div className="flex flex-col gap-sm">
             <label className="text-sm font-medium text-slate-300">
-              Default Keyboard Layout
+              {t('devices.defaultLayout')}
             </label>
             <p className="text-xs text-slate-400">
-              New devices will inherit this layout by default. You can override
-              it for specific devices below.
+              {t('devices.defaultLayoutHelp')}
             </p>
             <LayoutDropdown
               options={LAYOUT_OPTIONS}
               value={globalLayout}
               onChange={handleGlobalLayoutChange}
-              aria-label="Select default keyboard layout"
+              aria-label={t('devices.defaultLayoutAria')}
             />
           </div>
-
         </div>
       </Card>
 
       <Card>
         <div className="flex flex-col gap-md">
           <h2 className="text-lg font-semibold text-slate-100">
-            Device List ({devices.length} connected)
+            {t('devices.list', { count: devices.length })}
           </h2>
 
           {devices.length === 0 ? (
             <div className="py-xl text-center">
-              <p className="text-sm text-slate-400">
-                No devices connected. Connect a keyboard to get started.
-              </p>
+              <p className="text-sm text-slate-400">{t('devices.none')}</p>
             </div>
           ) : (
             <>
@@ -296,36 +297,50 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
                   <input
                     type="text"
-                    placeholder="Search devices..."
+                    placeholder={t('devices.search')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    aria-label="Search devices"
+                    aria-label={t('devices.searchAria')}
                   />
                   <div className="flex items-center gap-2">
                     <select
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as 'name' | 'active' | 'layout')}
+                      onChange={(e) =>
+                        setSortBy(
+                          e.target.value as 'name' | 'active' | 'layout'
+                        )
+                      }
                       className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      aria-label="Sort by"
+                      aria-label={t('devices.sortBy')}
                     >
-                      <option value="name">Name</option>
-                      <option value="active">Status</option>
-                      <option value="layout">Layout</option>
+                      <option value="name">{t('devices.sortName')}</option>
+                      <option value="active">{t('devices.sortStatus')}</option>
+                      <option value="layout">{t('devices.sortLayout')}</option>
                     </select>
                     <button
-                      onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
+                      onClick={() =>
+                        setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))
+                      }
                       className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-slate-200 hover:bg-slate-600 transition-colors"
-                      aria-label={`Sort ${sortDirection === 'asc' ? 'descending' : 'ascending'}`}
+                      aria-label={
+                        sortDirection === 'asc'
+                          ? t('devices.sortDesc')
+                          : t('devices.sortAsc')
+                      }
                     >
                       {sortDirection === 'asc' ? '↑' : '↓'}
                     </button>
                   </div>
                 </div>
               )}
-              {filteredAndSortedDevices.length === 0 && devices.length > 0 && searchQuery && (
-                <p className="text-center text-slate-400 py-8">No devices match "{searchQuery}"</p>
-              )}
+              {filteredAndSortedDevices.length === 0 &&
+                devices.length > 0 &&
+                searchQuery && (
+                  <p className="text-center text-slate-400 py-8">
+                    {t('devices.noMatch', { query: searchQuery })}
+                  </p>
+                )}
               <div className="flex flex-col gap-2">
                 {filteredAndSortedDevices.map((device) => (
                   <DeviceRow
@@ -351,36 +366,33 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
       <Modal
         open={forgetDeviceId !== null}
         onClose={() => setForgetDeviceId(null)}
-        title="Forget Device"
+        title={t('devices.forgetTitle')}
       >
         <div className="flex flex-col gap-lg">
           <p className="text-sm text-slate-300">
-            Are you sure you want to forget device{' '}
+            {t('devices.forgetConfirm')}{' '}
             <span className="font-semibold text-slate-100">
               {forgetDevice?.name}
             </span>
             ?
           </p>
-          <p className="text-sm text-slate-400">
-            This will remove all device-specific configuration and mappings.
-            This action cannot be undone.
-          </p>
+          <p className="text-sm text-slate-400">{t('devices.forgetWarn')}</p>
           <div className="flex justify-end gap-sm">
             <Button
               variant="ghost"
               size="md"
               onClick={() => setForgetDeviceId(null)}
-              aria-label="Cancel forget device"
+              aria-label={t('devices.cancelAria')}
             >
-              Cancel
+              {t('devices.cancel')}
             </Button>
             <Button
               variant="danger"
               size="md"
               onClick={handleForgetDevice}
-              aria-label="Confirm forget device"
+              aria-label={t('devices.forgetConfirmAria')}
             >
-              Forget Device
+              {t('devices.forgetTitle')}
             </Button>
           </div>
         </div>

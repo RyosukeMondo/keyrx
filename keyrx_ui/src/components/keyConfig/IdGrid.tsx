@@ -3,7 +3,8 @@ import React, { useRef, useState } from 'react';
 interface IdGridItem {
   id: string;
   label: string;
-  ariaLabel: string;
+  /** Lazy so the label follows the active locale. */
+  ariaLabel: () => string;
 }
 
 interface IdGridProps {
@@ -70,7 +71,7 @@ export const IdGrid: React.FC<IdGridProps> = ({
           onKeyDown={(e) => handleKeyDown(e, index)}
           className="px-2 py-1 bg-slate-700 hover:bg-primary-500 text-slate-300 hover:text-white rounded text-xs font-mono transition-colors"
           title={item.id}
-          aria-label={item.ariaLabel}
+          aria-label={item.ariaLabel()}
         >
           {item.label}
         </button>

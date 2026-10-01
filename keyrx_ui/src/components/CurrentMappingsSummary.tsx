@@ -2,6 +2,9 @@ import React from 'react';
 import { Pencil, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import type { KeyMapping } from '@/types';
+import { friendlyKeyName } from '@/utils/keyNames';
+import { KeyName } from '@/components/KeyName';
+import { t, type MessageKey } from '@/i18n';
 
 interface CurrentMappingsSummaryProps {
   keyMappings: Map<string, KeyMapping>;
@@ -15,28 +18,28 @@ const MAPPING_TYPE_STYLES = {
     border: 'border-green-500/50',
     text: 'text-green-400',
     badge: 'bg-green-500',
-    label: 'Simple',
+    label: 'type.simple' as MessageKey,
   },
   tap_hold: {
     bg: 'bg-red-500/20',
     border: 'border-red-500/50',
     text: 'text-red-400',
     badge: 'bg-red-500',
-    label: 'Tap/Hold',
+    label: 'type.tapHold' as MessageKey,
   },
   macro: {
     bg: 'bg-yellow-500/20',
     border: 'border-yellow-500/50',
     text: 'text-yellow-400',
     badge: 'bg-yellow-500',
-    label: 'Macro',
+    label: 'cm.macro' as MessageKey,
   },
   layer_switch: {
     bg: 'bg-purple-500/20',
     border: 'border-purple-500/50',
     text: 'text-purple-400',
     badge: 'bg-purple-500',
-    label: 'Layer',
+    label: 'cm.layer' as MessageKey,
   },
 } as const;
 
@@ -91,29 +94,30 @@ export function CurrentMappingsSummary({
   const formatMappingDescription = (mapping: KeyMapping): string => {
     switch (mapping.type) {
       case 'simple':
-        return mapping.tapAction || '(not set)';
+        return mapping.tapAction
+          ? friendlyKeyName(mapping.tapAction)
+          : t('cm.notSet');
       case 'tap_hold':
-        return `Tap: ${mapping.tapAction || '?'}, Hold (${
-          mapping.threshold || 200
-        }ms): ${mapping.holdAction || '?'}`;
+        return t('cm.tapHold', {
+          tap: mapping.tapAction ? friendlyKeyName(mapping.tapAction) : '?',
+          ms: mapping.threshold || 200,
+          hold: mapping.holdAction ? friendlyKeyName(mapping.holdAction) : '?',
+        });
       case 'macro':
         return mapping.macroSteps?.length
-          ? `${mapping.macroSteps.length} step(s)`
-          : '(empty)';
+          ? t('cm.steps', { count: mapping.macroSteps.length })
+          : t('cm.empty2');
       case 'layer_switch':
-        return mapping.targetLayer || '(not set)';
+        return mapping.targetLayer || t('cm.notSet');
       default:
-        return 'Unknown';
+        return t('cm.unknown');
     }
   };
 
   if (totalMappings === 0) {
     return (
       <div className="p-4 bg-slate-800/30 border border-slate-700/50 rounded-lg">
-        <p className="text-sm text-slate-400 text-center">
-          No key mappings configured. Click a key on the keyboard to add a
-          mapping.
-        </p>
+        <p className="text-sm text-slate-400 text-center">{t('cm.empty')}</p>
       </div>
     );
   }
@@ -123,9 +127,9 @@ export function CurrentMappingsSummary({
       {/* Header */}
       <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-200">
-          Current Mappings
+          {t('cm.title')}
           <span className="ml-2 text-xs text-slate-400 font-normal">
-            ({totalMappings} {totalMappings === 1 ? 'mapping' : 'mappings'})
+            {t('cm.count', { count: totalMappings })}
           </span>
         </h3>
       </div>
@@ -159,7 +163,7 @@ export function CurrentMappingsSummary({
                   )}
                   <div className={cn('w-3 h-3 rounded', style.badge)} />
                   <span className={cn('text-sm font-medium', style.text)}>
-                    {style.label}
+                    {t(style.label)}
                   </span>
                   <span className="text-xs text-slate-400">({count})</span>
                 </div>
@@ -178,9 +182,10 @@ export function CurrentMappingsSummary({
                       )}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <span className="font-mono text-sm font-semibold text-slate-200 shrink-0">
-                          {keyCode}
-                        </span>
+                        <KeyName
+                          code={keyCode}
+                          className="text-sm font-semibold text-slate-200 shrink-0"
+                        />
                         <span className="text-slate-400">→</span>
                         <span className="text-sm text-slate-300 truncate">
                           {formatMappingDescription(mapping)}
@@ -191,16 +196,20 @@ export function CurrentMappingsSummary({
                         <button
                           onClick={() => onEditMapping(keyCode)}
                           className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-600/50 rounded transition-colors"
-                          title="Edit mapping"
-                          aria-label={`Edit mapping for ${keyCode}`}
+                          title={t('cm.edit')}
+                          aria-label={t('cm.editFor', {
+                            key: friendlyKeyName(keyCode),
+                          })}
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => onClearMapping(keyCode)}
                           className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded transition-colors"
-                          title="Remove mapping"
-                          aria-label={`Remove mapping for ${keyCode}`}
+                          title={t('cm.remove')}
+                          aria-label={t('cm.removeFor', {
+                            key: friendlyKeyName(keyCode),
+                          })}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

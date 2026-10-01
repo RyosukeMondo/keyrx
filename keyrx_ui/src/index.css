@@ -35,17 +35,47 @@ textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* One focus ring for every interactive element (WCAG 2.4.7 / 2.4.13): 2px,
-   offset so it is visible on dark surfaces. Components may layer their own
-   ring on top, but never remove this for keyboard users. */
+/* ONE focus ring for every interactive element (WCAG 2.4.7 / 2.4.13): a 2px
+   outline in --focus-ring, offset so it reads on dark surfaces. Components used
+   to roll their own (focus:ring-*, focus:outline-*, border changes: 13 looks);
+   !important makes this token the only keyboard-focus style, and the Tailwind
+   ring variables are zeroed so `focus:ring-*` cannot stack a second ring. */
+:root {
+  --focus-ring: #93c5fd; /* primary-300 */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+}
 :focus-visible {
-  outline: 2px solid #93c5fd; /* primary-300 */
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--focus-ring) !important;
+  outline-offset: var(--focus-ring-offset) !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
+/* Programmatic scrolling (focus, scrollIntoView, anchors) must not park the
+   target under the fixed top bar / bottom nav (WCAG 2.4.11 Focus Not Obscured). */
+* {
+  scroll-padding-block: 5rem;
+}
+
+/* Short viewports (e.g. 400% zoom: ~225px tall): fixed chrome would leave no
+   room for content, so it scrolls with the page instead of covering it. */
+@media (max-height: 520px) {
+  .chrome-top {
+    position: absolute !important;
+  }
+  .chrome-bottom,
+  .chrome-float {
+    position: static !important;
+  }
+  .chrome-float {
+    margin: 8px;
+  }
 }
 
 /* SVG keycaps: outline on <g> is not painted consistently, so ring the key. */
 .key-group:focus-visible {
-  outline: none;
+  outline: none !important;
 }
 .key-group:focus-visible .key-face {
   stroke: #93c5fd;

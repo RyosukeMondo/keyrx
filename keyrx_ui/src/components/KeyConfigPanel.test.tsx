@@ -147,10 +147,9 @@ describe('KeyConfigPanel', () => {
 
       render(<KeyConfigPanel {...defaultProps} keyMappings={keyMappings} />);
 
-      expect(
-        screen.getByText('Current Mappings (2 mappings)')
-      ).toBeInTheDocument();
+      // The summary owns the "Current Mappings" heading (exactly one on the page)
       expect(screen.getByText('Mappings: 2')).toBeInTheDocument();
+      expect(screen.queryByText(/Current Mappings/)).not.toBeInTheDocument();
     });
 
     it('displays active layer name', () => {
@@ -642,9 +641,7 @@ describe('KeyConfigPanel', () => {
     it('handles empty keyMappings', () => {
       render(<KeyConfigPanel {...defaultProps} keyMappings={new Map()} />);
 
-      expect(
-        screen.getByText('Current Mappings (0 mappings)')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Mappings: 0')).toBeInTheDocument();
     });
 
     it('handles active layer with hyphens', () => {
@@ -656,8 +653,8 @@ describe('KeyConfigPanel', () => {
         />
       );
 
-      // Component only replaces first hyphen: .replace('-', '_')
-      expect(screen.getByText('LAYER_SPECIAL-2')).toBeInTheDocument();
+      // Layer ids are always shown with underscores (LK_00 / MD_00 style)
+      expect(screen.getByText('LAYER_SPECIAL_2')).toBeInTheDocument();
     });
   });
 });

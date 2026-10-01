@@ -7,6 +7,7 @@ import {
   Layers,
   type LucideIcon,
 } from 'lucide-react';
+import { t, type MessageKey } from '@/i18n';
 
 /**
  * MappingTypeSelector Component
@@ -49,35 +50,35 @@ export type MappingType =
 
 interface MappingTypeConfig {
   icon: LucideIcon;
-  label: string;
-  description: string;
+  label: MessageKey;
+  description: MessageKey;
 }
 
 const MAPPING_TYPE_CONFIG: Record<MappingType, MappingTypeConfig> = {
   simple: {
     icon: MousePointerClick,
-    label: 'Simple',
-    description: 'Map to a single key',
+    label: 'type.simple',
+    description: 'type.simple.desc',
   },
   modifier: {
     icon: Command,
-    label: 'Modifier',
-    description: 'Act as a modifier key',
+    label: 'type.modifier',
+    description: 'type.modifier.desc',
   },
   lock: {
     icon: Lock,
-    label: 'Lock',
-    description: 'Toggle lock state',
+    label: 'type.lock',
+    description: 'type.lock.desc',
   },
   tap_hold: {
     icon: Timer,
-    label: 'Tap/Hold',
-    description: 'Different actions for tap vs hold',
+    label: 'type.tapHold',
+    description: 'type.tapHold.desc',
   },
   layer_active: {
     icon: Layers,
-    label: 'Layer Active',
-    description: 'Activate a layer',
+    label: 'type.layerActive',
+    description: 'type.layerActive.desc',
   },
 };
 
@@ -111,11 +112,11 @@ export function MappingTypeSelector({
       }`}
     >
       <label className="text-xs font-medium text-slate-400 uppercase tracking-wider whitespace-nowrap">
-        Type
+        {t('type.label')}
       </label>
       <div
         role="radiogroup"
-        aria-label="Mapping type"
+        aria-label={t('type.aria')}
         className={`flex gap-2 ${
           layout === 'vertical' ? 'flex-col w-full' : 'flex-wrap'
         }`}
@@ -137,11 +138,11 @@ export function MappingTypeSelector({
                   ? 'bg-primary-500 text-white'
                   : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
               } ${layout === 'vertical' ? 'w-full justify-start' : ''}`}
-              title={config.description}
-              aria-label={`${config.label}: ${config.description}`}
+              title={t(config.description)}
+              aria-label={`${t(config.label)}: ${t(config.description)}`}
             >
               <Icon className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>{config.label}</span>
+              <span>{t(config.label)}</span>
             </button>
           );
         })}

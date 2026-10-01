@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { VariableSizeList as List } from 'react-window';
 import { formatLatencyMs } from '@/utils/latencyFormat';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { getLocale, t } from '@/i18n';
 
 /**
  * Event log entry interface
@@ -77,6 +78,13 @@ export interface EventLogListProps {
  * ```
  */
 const COLLAPSED_HEIGHT = 40;
+
+/** Inner element of the virtual list: the `rowgroup` that owns the event rows. */
+const RowGroup = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>((props, ref) => <div ref={ref} role="rowgroup" {...props} />);
+RowGroup.displayName = 'EventLogRowGroup';
 const EXPANDED_HEIGHT = 120;
 
 export const EventLogList: React.FC<EventLogListProps> = ({
@@ -90,13 +98,18 @@ export const EventLogList: React.FC<EventLogListProps> = ({
   // under. When the list length changes (events arrive, filter changes,
   // etc.) the stored length no longer matches, so the row derives back to
   // "collapsed" on the next render — no effect needed to reset it.
-  const [expanded, setExpanded] = useState<{ index: number; length: number } | null>(null);
+  const [expanded, setExpanded] = useState<{
+    index: number;
+    length: number;
+  } | null>(null);
 
   // Limit events if maxEvents is specified
   const displayEvents = maxEvents ? events.slice(-maxEvents) : events;
 
   const expandedIndex =
-    expanded && expanded.length === displayEvents.length ? expanded.index : null;
+    expanded && expanded.length === displayEvents.length
+      ? expanded.index
+      : null;
 
   // Auto-scroll to top when new events arrive (newest first)
   useEffect(() => {
@@ -106,8 +119,9 @@ export const EventLogList: React.FC<EventLogListProps> = ({
   }, [displayEvents.length, autoScroll]);
 
   const getItemSize = useCallback(
-    (index: number) => (index === expandedIndex ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT),
-    [expandedIndex],
+    (index: number) =>
+      index === expandedIndex ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
+    [expandedIndex]
   );
 
   // Reset list cache when expanded row changes
@@ -122,16 +136,16 @@ export const EventLogList: React.FC<EventLogListProps> = ({
       setExpanded((prev) =>
         prev && prev.length === displayEvents.length && prev.index === index
           ? null
-          : { index, length: displayEvents.length },
+          : { index, length: displayEvents.length }
       );
     },
-    [displayEvents.length],
+    [displayEvents.length]
   );
 
   // Format timestamp for display
   const formatTime = (timestamp: number): string => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
+    return date.toLocaleTimeString(getLocale() === 'ja' ? 'ja-JP' : 'en-US', {
       hour12: false,
       hour: '2-digit',
       minute: '2-digit',
@@ -204,23 +218,35 @@ export const EventLogList: React.FC<EventLogListProps> = ({
 
     const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
 
+    // One `row` per event whose children are all `cell`s (WAI-ARIA table
+    // pattern); the row itself is the keyboard target that expands details.
     return (
       <div
         style={style}
         className="border-b border-slate-700"
-        role="row"
+        role="presentation"
       >
         <div
-          className="flex items-center gap-3 px-4 h-10 text-sm font-mono cursor-pointer hover:bg-slate-700/50 select-none"
+          className="flex flex-wrap items-center gap-x-3 px-4 text-sm font-mono cursor-pointer hover:bg-slate-700/50 select-none"
           title={`Device: ${event.deviceName || event.deviceId || 'Unknown'}`}
           onClick={() => handleRowClick(index)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleRowClick(index); }}
-          tabIndex={0}
-          role="button"
-          aria-expanded={isExpanded}
-          aria-label={`Event: ${event.type} ${formatKey(event.input || event.keyCode)}`}
+          role="row"
         >
-          <ChevronIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
+          {/* The expander is a real button inside the first cell: aria-expanded
+              is not allowed on a table row, and rows stay plain table rows. */}
+          <span className="flex h-10 w-3.5 items-center" role="cell">
+            <button
+              type="button"
+              aria-expanded={isExpanded}
+              aria-label={`Details: ${event.type} ${formatKey(event.input || event.keyCode)}`}
+              className="flex h-10 w-6 items-center"
+            >
+              <ChevronIcon
+                className="w-3.5 h-3.5 text-slate-400 shrink-0"
+                aria-hidden="true"
+              />
+            </button>
+          </span>
           <span
             className="w-20 text-slate-400 text-xs"
             role="cell"
@@ -246,10 +272,12 @@ export const EventLogList: React.FC<EventLogListProps> = ({
           </span>
           <span
             className={`w-6 text-center ${
-              hasMappingTriggered ? 'text-green-400' : 'text-slate-600'
+              hasMappingTriggered ? 'text-green-400' : 'text-slate-500'
             }`}
             role="cell"
-            aria-label={hasMappingTriggered ? 'Mapping triggered' : 'No mapping'}
+            aria-label={
+              hasMappingTriggered ? 'Mapping triggered' : 'No mapping'
+            }
           >
             {hasMappingTriggered ? '→' : '–'}
           </span>
@@ -272,7 +300,7 @@ export const EventLogList: React.FC<EventLogListProps> = ({
             {event.mappingType || (wasRemapped ? 'remap' : '–')}
           </span>
           <span
-            className="flex-1 text-slate-400 text-xs truncate"
+            className="min-w-0 flex-1 text-slate-400 text-xs truncate"
             title={event.deviceName || event.deviceId}
             role="cell"
             aria-label={`Device: ${shortDeviceName}`}
@@ -288,85 +316,90 @@ export const EventLogList: React.FC<EventLogListProps> = ({
           >
             {formatLatency(event.latency)}
           </span>
-        </div>
 
-        {/* Expanded detail panel */}
-        {isExpanded && (
-          <div className="px-4 py-2 bg-slate-800/60 text-xs text-slate-300 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 font-mono">
-            <div>
-              <span className="text-slate-400">Timestamp: </span>
-              {formatTimeFull(event.timestamp)}
+          {/* Expanded detail panel (a cell spanning the row) */}
+          {isExpanded && (
+            <div
+              role="cell"
+              className="basis-full -mx-4 mt-0 px-4 py-2 bg-slate-800/60 text-xs text-slate-300 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 font-mono cursor-default"
+            >
+              <div>
+                <span className="text-slate-400">Timestamp: </span>
+                {formatTimeFull(event.timestamp)}
+              </div>
+              <div>
+                <span className="text-slate-400">Raw keyCode: </span>
+                {event.keyCode}
+              </div>
+              <div>
+                <span className="text-slate-400">Device ID: </span>
+                {event.deviceId || '–'}
+              </div>
+              <div>
+                <span className="text-slate-400">Device: </span>
+                {event.deviceName || '–'}
+              </div>
+              <div>
+                <span className="text-slate-400">Input: </span>
+                {event.input || '–'}
+              </div>
+              <div>
+                <span className="text-slate-400">Output: </span>
+                {event.output || '–'}
+              </div>
+              <div>
+                <span className="text-slate-400">Mapping: </span>
+                {event.mappingType || 'none'}
+                {event.mappingTriggered ? ' (triggered)' : ''}
+              </div>
+              <div>
+                <span className="text-slate-400">Latency: </span>
+                {formatLatency(event.latency)}
+              </div>
             </div>
-            <div>
-              <span className="text-slate-400">Raw keyCode: </span>
-              {event.keyCode}
-            </div>
-            <div>
-              <span className="text-slate-400">Device ID: </span>
-              {event.deviceId || '–'}
-            </div>
-            <div>
-              <span className="text-slate-400">Device: </span>
-              {event.deviceName || '–'}
-            </div>
-            <div>
-              <span className="text-slate-400">Input: </span>
-              {event.input || '–'}
-            </div>
-            <div>
-              <span className="text-slate-400">Output: </span>
-              {event.output || '–'}
-            </div>
-            <div>
-              <span className="text-slate-400">Mapping: </span>
-              {event.mappingType || 'none'}
-              {event.mappingTriggered ? ' (triggered)' : ''}
-            </div>
-            <div>
-              <span className="text-slate-400">Latency: </span>
-              {formatLatency(event.latency)}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   };
 
   return (
-    <div role="table" aria-label="Event log">
+    <div role="table" aria-label={t('log.aria')}>
       {/* Table Header - hide some columns on mobile */}
       <div
         className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-800 border-b border-slate-700 text-sm font-semibold text-slate-300"
         role="row"
       >
-        <span className="w-3.5" aria-hidden="true" />
+        <span className="w-3.5" role="columnheader">
+          <span className="sr-only">Details</span>
+        </span>
         <span className="w-20" role="columnheader">
-          Time
+          {t('log.time')}
         </span>
         <span className="w-14" role="columnheader">
-          Type
+          {t('log.type')}
         </span>
         <span className="w-20" role="columnheader">
-          Input
+          {t('log.input')}
         </span>
         <span
           className="w-6 text-center"
-          title="Mapping Triggered"
+          title={t('log.mapTriggered')}
           role="columnheader"
         >
           →
         </span>
         <span className="w-20" role="columnheader">
-          Output
+          {t('log.output')}
         </span>
         <span className="w-16" role="columnheader">
-          Map Type
+          {t('log.mapType')}
         </span>
         <span className="flex-1 truncate" role="columnheader">
-          Device
+          {t('log.device')}
         </span>
         <span className="w-16 text-right" role="columnheader">
-          Latency
+          {t('log.latency')}
         </span>
       </div>
 
@@ -378,6 +411,7 @@ export const EventLogList: React.FC<EventLogListProps> = ({
         itemSize={getItemSize}
         width="100%"
         className="bg-slate-900"
+        innerElementType={RowGroup}
       >
         {EventRow}
       </List>

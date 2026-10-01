@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   formatLatencyUs,
   formatLatencyMs,
+  niceLatencyTicks,
+  niceTimeTicks,
   pickLatencyUnit,
   unitScale,
 } from './latencyFormat';
@@ -37,5 +39,28 @@ describe('ms helpers', () => {
     expect(pickLatencyUnit(0)).toBe('ms');
     expect(unitScale('µs')).toBe(1000);
     expect(unitScale('ms')).toBe(1);
+  });
+});
+
+describe('axis ticks', () => {
+  it('latency ticks are whole units covering the max', () => {
+    for (const max of [0.4, 3, 12.5, 37, 480, 1200]) {
+      const ticks = niceLatencyTicks(max);
+      expect(ticks[0]).toBe(0);
+      expect(ticks[ticks.length - 1]).toBeGreaterThanOrEqual(max);
+      if (max >= 3) ticks.forEach((t) => expect(Number.isInteger(t)).toBe(true));
+    }
+    expect(niceLatencyTicks(0)).toEqual([0, 1]);
+  });
+
+  it('time ticks are whole seconds with distinct HH:MM:SS labels', () => {
+    const start = Date.UTC(2026, 0, 1, 12, 0, 0, 250);
+    const ticks = niceTimeTicks(start, start + 60_000);
+    expect(ticks.length).toBeLessThanOrEqual(6);
+    ticks.forEach((t) => expect(t % 1000).toBe(0));
+    const labels = ticks.map((t) => new Date(t).toISOString().slice(11, 19));
+    expect(new Set(labels).size).toBe(labels.length);
+    // sub-second span: still one tick, never repeated labels
+    expect(niceTimeTicks(start, start + 400)).toHaveLength(1);
   });
 });
