@@ -656,4 +656,24 @@ device_end();`;
       expect(validation.errors).toHaveLength(0);
     });
   });
+
+  describe('user-defined functions', () => {
+    it('does not surface statements inside a fn body as mappings', () => {
+      const script = [
+        'fn mirror() {',
+        '  map("Q", "VK_P");',
+        '  if true { map("W", "VK_O"); }',
+        '}',
+        'device_start("*");',
+        '  map("A", "VK_B");',
+        'device_end();',
+      ].join('\n');
+
+      const ast = parseRhaiScript(script).ast!;
+
+      expect(ast.globalMappings).toHaveLength(0);
+      expect(ast.deviceBlocks).toHaveLength(1);
+      expect(ast.deviceBlocks[0].mappings).toHaveLength(1);
+    });
+  });
 });

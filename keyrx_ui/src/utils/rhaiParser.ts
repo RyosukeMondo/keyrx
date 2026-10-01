@@ -202,6 +202,17 @@ export interface ParseError {
  * }
  * ```
  */
+/** Net `{` minus `}` on a line, ignoring string literals and `//` comments. */
+function countBraces(line: string): number {
+  const code = line.replace(/"(?:[^"\\]|\\.)*"/g, '""').replace(/\/\/.*$/, '');
+  let depth = 0;
+  for (const ch of code) {
+    if (ch === '{') depth++;
+    else if (ch === '}') depth--;
+  }
+  return depth;
+}
+
 export function parseRhaiScript(script: string): ParseResult {
   try {
     const lines = script.split('\n');
@@ -215,6 +226,10 @@ export function parseRhaiScript(script: string): ParseResult {
     let currentDeviceBlock: DeviceBlock | null = null;
     let currentModifierLayer: ModifierLayer | null = null;
     let lineNumber = 0;
+    // Depth of a user-defined `fn name(...) { ... }` body. The visual editor
+    // does not model functions, so their statements must not surface as
+    // mappings; the patcher keeps the text untouched.
+    let fnDepth = 0;
 
     for (const line of lines) {
       lineNumber++;
@@ -222,6 +237,11 @@ export function parseRhaiScript(script: string): ParseResult {
 
       // Skip empty lines
       if (!trimmed) continue;
+
+      if (fnDepth > 0 || /^fn\s+\w+\s*\(/.test(trimmed)) {
+        fnDepth += countBraces(trimmed);
+        continue;
+      }
 
       // Extract comments
       const commentMatch = trimmed.match(/^\/\/(.*)$/);
