@@ -261,3 +261,36 @@ fn test_run_scenario_reports_the_real_engine_output() {
     // mapping resolves that to Escape.
     assert_eq!(result.output[0].key, "Escape");
 }
+
+fn device_block_krx() -> NamedTempFile {
+    write_krx(vec![DeviceConfig {
+        identifier: DeviceIdentifier {
+            pattern: "My Board".to_string(),
+        },
+        mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+    }])
+}
+
+/// Regression: `simulate --events` could not name a device, so a profile
+/// made of `device_start("<name>")` blocks silently passed every key through.
+#[test]
+fn test_events_routed_to_a_named_device_hit_its_block() {
+    let mut engine = SimulationEngine::new(device_block_krx().path()).unwrap();
+    let mut sequence = SimulationEngine::parse_event_dsl("press:A,release:A", 0).unwrap();
+
+    let unrouted = engine.replay(&sequence).unwrap();
+    assert_eq!(unrouted[0].key, "A", "no device -> no block -> passthrough");
+    assert!(engine.unrouted_input_warning(&sequence).is_some());
+
+    sequence.route_unassigned_to("my board");
+    let routed = engine.replay(&sequence).unwrap();
+    assert_eq!(routed[0].key, "B");
+    assert!(engine.unrouted_input_warning(&sequence).is_none());
+}
+
+#[test]
+fn test_no_warning_when_a_wildcard_block_exists() {
+    let engine = SimulationEngine::new(passthrough_krx().path()).unwrap();
+    let sequence = SimulationEngine::parse_event_dsl("press:A,release:A", 0).unwrap();
+    assert!(engine.unrouted_input_warning(&sequence).is_none());
+}

@@ -49,6 +49,17 @@ pub struct EventSequence {
     pub seed: u64,
 }
 
+impl EventSequence {
+    /// Attributes every event that names no device to `device` (the
+    /// inline DSL cannot name one, and a profile whose blocks are all
+    /// `device_start("<name>")` only remaps events from a matching device).
+    pub fn route_unassigned_to(&mut self, device: &str) {
+        for event in self.events.iter_mut().filter(|e| e.device_id.is_none()) {
+            event.device_id = Some(device.to_string());
+        }
+    }
+}
+
 /// Result of running a scenario
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScenarioResult {

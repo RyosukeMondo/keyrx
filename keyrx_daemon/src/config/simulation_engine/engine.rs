@@ -33,6 +33,27 @@ impl SimulationEngine {
         })
     }
 
+    /// A warning when `sequence` has events without a device but the config
+    /// has no `device_start("*")` block: those events match no block, pass
+    /// through unchanged, and the run would otherwise look like "the
+    /// profile does nothing".
+    pub fn unrouted_input_warning(&self, sequence: &EventSequence) -> Option<String> {
+        let has_unrouted = sequence.events.iter().any(|e| e.device_id.is_none());
+        let has_wildcard = self.devices.iter().any(|d| d.identifier.pattern == "*");
+        (has_unrouted && !has_wildcard && !self.devices.is_empty()).then(|| {
+            let patterns: Vec<&str> = self
+                .devices
+                .iter()
+                .map(|d| d.identifier.pattern.as_str())
+                .collect();
+            format!(
+                "warning: events without a device match no device_start block ({}), so they \
+                 pass through unchanged; pass --device <name> to simulate a keyboard",
+                patterns.join(", ")
+            )
+        })
+    }
+
     /// Load event sequence from JSON file.
     pub fn load_events_from_file(path: &Path) -> Result<EventSequence, SimulationError> {
         // Check file size

@@ -26,6 +26,12 @@ pub struct SimulateArgs {
     #[arg(long, conflicts_with = "events")]
     events_file: Option<PathBuf>,
 
+    /// Device the events come from, matched against `device_start` patterns
+    /// (name, serial, path or id). Events without one only match a
+    /// `device_start("*")` block.
+    #[arg(long)]
+    device: Option<String>,
+
     /// Seed for deterministic behavior.
     #[arg(long, default_value = "0")]
     seed: u64,
@@ -54,13 +60,20 @@ pub fn execute(args: SimulateArgs) -> Result<(), Box<dyn std::error::Error>> {
     let mut engine = SimulationEngine::new(&krx_path)?;
 
     // Load event sequence
-    let sequence = if let Some(events_file) = args.events_file {
+    let mut sequence = if let Some(events_file) = args.events_file {
         SimulationEngine::load_events_from_file(&events_file)?
     } else if let Some(events_dsl) = args.events {
         SimulationEngine::parse_event_dsl(&events_dsl, args.seed)?
     } else {
         return Err("Either --events or --events-file must be specified".into());
     };
+
+    if let Some(device) = &args.device {
+        sequence.route_unassigned_to(device);
+    }
+    if let Some(warning) = engine.unrouted_input_warning(&sequence) {
+        eprintln!("{warning}");
+    }
 
     // Run simulation
     let result = engine.replay(&sequence);
