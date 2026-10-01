@@ -1,4 +1,4 @@
-use rhai::{Engine, EvalAltResult, Scope};
+use rhai::{Engine, EvalAltResult, NativeCallContext, Scope};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -7,7 +7,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use crate::error::ParseError;
 use keyrx_core::config::{ConfigRoot, DeviceConfig, Metadata, Version};
 
-use keyrx_core::config::{BaseKeyMapping, Condition};
+use keyrx_core::config::{BaseKeyMapping, Condition, KeyMapping};
+use keyrx_core::parser::scopes::{Line, MappingScopes};
 
 /// Parser state shared across Rhai custom functions
 #[derive(Debug, Clone, Default)]
@@ -17,12 +18,50 @@ pub struct ParserState {
     /// Stack of (Condition, mappings) pairs being collected for conditional blocks
     /// When non-empty, map() adds to the top of this stack instead of current_device
     pub conditional_stack: Vec<(Condition, Vec<BaseKeyMapping>)>,
+    /// Duplicate-key / unclosed-block bookkeeping (shared with keyrx_core's parser)
+    pub scopes: MappingScopes,
 }
 
 impl ParserState {
     pub fn new() -> Self {
         Self::default()
     }
+
+    /// Adds `mapping` to the innermost open scope: the current conditional
+    /// block, else the current device. `func` names the DSL function for the
+    /// error when no `device_start` is open. A source key already mapped in
+    /// that scope is an error naming both lines.
+    pub fn push_mapping(
+        &mut self,
+        mapping: BaseKeyMapping,
+        func: &str,
+        line: Line,
+    ) -> Result<(), Box<EvalAltResult>> {
+        if self.current_device.is_none() {
+            return Err(format!("{}() must be called inside a device_start() block", func).into());
+        }
+        self.scopes.record(mapping.source_key(), line)?;
+        if let Some((_condition, mappings)) = self.conditional_stack.last_mut() {
+            mappings.push(mapping);
+        } else if let Some(device) = self.current_device.as_mut() {
+            device.mappings.push(KeyMapping::Base(mapping));
+        }
+        Ok(())
+    }
+}
+
+/// Runs `f` on the shared parser state (a poisoned lock still holds valid
+/// state: no function panics while holding it).
+pub fn with_state<T>(state: &Arc<Mutex<ParserState>>, f: impl FnOnce(&mut ParserState) -> T) -> T {
+    let mut guard = state
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    f(&mut guard)
+}
+
+/// The source line of the DSL call being run, when Rhai knows it.
+pub fn call_line(ctx: &NativeCallContext) -> Line {
+    ctx.call_position().line()
 }
 
 /// Main parser for Rhai DSL
@@ -140,6 +179,16 @@ impl Parser {
                 line: 0,
                 column: 0,
                 message: "Unclosed device() block".to_string(),
+                import_chain: Vec::new(),
+            });
+        }
+
+        if let Err(message) = state.scopes.check_all_closed() {
+            return Err(ParseError::SyntaxError {
+                file: source_path.to_path_buf(),
+                line: 0,
+                column: 0,
+                message,
                 import_chain: Vec::new(),
             });
         }

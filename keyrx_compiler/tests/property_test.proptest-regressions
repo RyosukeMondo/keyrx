@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 8fed131f70a3da40c3e856c1eb0d916191a29654e69a9884ed2af1ffa42d780f # shrinks to script = "device_start(\"*\");\nwhen_not_start(\"MD_00\");\nmap(\"VK_RShift\", with_alt(\"VK_A\"));\ntap_hold(\"VK_RShift\", \"VK_A\", \"MD_00\", 100);\nwhen_not_end();\ndevice_end();"

@@ -246,6 +246,17 @@ pub fn process_event_for_identities(
 
     // For RELEASE events: Check if we have a tracked press mapping
     // This ensures releases match their presses even if mapping changed
+    if !is_press && state.tap_hold_processor_ref().is_active(input_keycode) {
+        // A tap-hold key's release belongs to the tap-hold that saw its
+        // press, whatever the layer maps the key to now: otherwise a layer
+        // change while it is held strands its HOLD (a real modifier stays
+        // down, a custom modifier stays set).
+        let ts = event.timestamp_us();
+        let outputs = state
+            .tap_hold_processor()
+            .process_release(input_keycode, ts);
+        return convert_tap_hold_outputs(outputs, state, ts);
+    }
     if !is_press {
         // A tracked press is released as it was pressed - including a key
         // that passed through as itself - however the layer changed since
@@ -274,7 +285,11 @@ pub fn process_event_for_identities(
         // Check if any tap-hold keys are pending and this isn't a tap-hold key itself
         let is_tap_hold_key = matches!(
             mapping,
-            Some(BaseKeyMapping::TapHold { .. } | BaseKeyMapping::HoldOnly { .. })
+            Some(
+                BaseKeyMapping::TapHold { .. }
+                    | BaseKeyMapping::HoldOnly { .. }
+                    | BaseKeyMapping::TapHoldKey { .. }
+            )
         );
         if !is_tap_hold_key && state.tap_hold_processor_ref().has_pending_keys() {
             // Trigger permissive hold for all pending keys
@@ -375,6 +390,27 @@ pub fn process_event_for_identities(
             };
 
             // Convert TapHoldOutput to KeyEvent and apply state changes
+            convert_tap_hold_outputs(outputs, state, timestamp)
+        }
+        BaseKeyMapping::TapHoldKey {
+            from,
+            tap,
+            hold,
+            threshold_ms,
+        } => {
+            let processor = state.tap_hold_processor();
+            if !processor.is_tap_hold_key(*from) {
+                processor.register_tap_hold(
+                    *from,
+                    TapHoldConfig::with_hold_key(*tap, *hold, *threshold_ms),
+                );
+            }
+            let timestamp = event.timestamp_us();
+            let outputs = if event.is_press() {
+                processor.process_press(*from, timestamp)
+            } else {
+                processor.process_release(*from, timestamp)
+            };
             convert_tap_hold_outputs(outputs, state, timestamp)
         }
         BaseKeyMapping::ModifiedOutput {
@@ -512,9 +548,9 @@ pub fn resolve_pending_as_hold(state: &mut DeviceState, timestamp_us: u64) -> Ve
 /// - KeyEvent outputs are converted to KeyEvent structs
 /// - Modifier activation/deactivation updates DeviceState
 fn convert_tap_hold_outputs(
-    outputs: arrayvec::ArrayVec<TapHoldOutput, 4>,
+    outputs: arrayvec::ArrayVec<TapHoldOutput, { crate::runtime::tap_hold::MAX_OUTPUT_EVENTS }>,
     state: &mut DeviceState,
-    _timestamp: u64,
+    timestamp: u64,
 ) -> Vec<KeyEvent> {
     let mut events = Vec::new();
 
@@ -537,6 +573,12 @@ fn convert_tap_hold_outputs(
             }
             TapHoldOutput::DeactivateModifier { modifier_id } => {
                 state.clear_modifier(modifier_id);
+            }
+            TapHoldOutput::PressHoldKey { key } => {
+                events.push(KeyEvent::press(key).with_timestamp(timestamp));
+            }
+            TapHoldOutput::ReleaseHoldKey { key } => {
+                events.push(KeyEvent::release(key).with_timestamp(timestamp));
             }
         }
     }

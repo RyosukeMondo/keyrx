@@ -92,27 +92,57 @@ fn test_tap_hold_rejects_tap_without_vk_prefix() {
     );
 }
 
-/// Test tap_hold() rejects hold without MD_ prefix
+/// tap_hold() hold must be MD_xx (layer) or VK_xx (real key); a bare name is rejected
 #[test]
-fn test_tap_hold_rejects_hold_without_md_prefix() {
+fn test_tap_hold_rejects_hold_without_prefix() {
     let mut parser = Parser::new();
     let script = r#"
         device_start("Test");
-        tap_hold("Space", "VK_Space", "VK_LShift", 200);
+        tap_hold("Space", "VK_Space", "LShift", 200);
         device_end();
     "#;
 
-    let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
+    let err_msg = parser
+        .parse_string(script, &PathBuf::from("test.rhai"))
+        .expect_err("bare hold must fail")
+        .to_string();
     assert!(
-        result.is_err(),
-        "Should have failed - hold must have MD_ prefix"
-    );
-
-    let err_msg = result.unwrap_err().to_string();
-    assert!(
-        err_msg.contains("MD_") || err_msg.contains("hold"),
-        "Error should mention MD_ prefix requirement for hold: {}",
+        err_msg.contains("MD_") && err_msg.contains("VK_"),
+        "Error should name both accepted prefixes: {}",
         err_msg
+    );
+}
+
+/// tap_hold() with a REAL key hold: Caps = Esc on tap, Ctrl on hold
+#[test]
+fn test_tap_hold_with_real_modifier_hold() {
+    let mut parser = Parser::new();
+    let script = r#"
+        device_start("Test");
+        tap_hold("CapsLock", "VK_Escape", "VK_LCtrl", 200);
+        hold_only("Tab", "VK_LShift");
+        device_end();
+    "#;
+
+    let config = parser
+        .parse_string(script, &PathBuf::from("test.rhai"))
+        .expect("real-key hold must compile");
+    assert_eq!(
+        config.devices[0].mappings,
+        vec![
+            KeyMapping::Base(BaseKeyMapping::TapHoldKey {
+                from: KeyCode::CapsLock,
+                tap: Some(KeyCode::Escape),
+                hold: KeyCode::LCtrl,
+                threshold_ms: 200,
+            }),
+            KeyMapping::Base(BaseKeyMapping::TapHoldKey {
+                from: KeyCode::Tab,
+                tap: None,
+                hold: KeyCode::LShift,
+                threshold_ms: 200,
+            }),
+        ]
     );
 }
 

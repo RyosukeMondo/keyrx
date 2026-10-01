@@ -14,8 +14,10 @@ pub fn register_device_function(engine: &mut Engine, state: Arc<Mutex<ParserStat
             let mut state = state_clone_start.lock().unwrap();
 
             if let Some(device) = state.current_device.take() {
+                state.scopes.check_all_closed()?;
                 state.devices.push(device);
             }
+            state.scopes = Default::default();
 
             state.current_device = Some(DeviceConfig {
                 identifier: DeviceIdentifier {
@@ -35,6 +37,7 @@ pub fn register_device_function(engine: &mut Engine, state: Arc<Mutex<ParserStat
         let mut state = state_clone_end.lock().unwrap();
 
         if let Some(device) = state.current_device.take() {
+            state.scopes.check_all_closed()?;
             state.devices.push(device);
             Ok(())
         } else {

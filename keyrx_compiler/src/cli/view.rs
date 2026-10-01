@@ -154,6 +154,19 @@ fn get_base_mapping_info(base: &BaseKeyMapping) -> (KeyCode, String, &'static st
             format!("M{:X}/{}ms", hold_modifier, threshold_ms),
             "holdonly",
         ),
+        BaseKeyMapping::TapHoldKey {
+            from, tap, hold, ..
+        } => {
+            let hold = keycode_to_label(hold);
+            match tap {
+                Some(tap) => (
+                    *from,
+                    format!("{}/{}", keycode_to_label(tap), hold),
+                    "taphold",
+                ),
+                None => (*from, format!("-/{}", hold), "holdonly"),
+            }
+        }
         BaseKeyMapping::ModifiedOutput {
             from,
             to,

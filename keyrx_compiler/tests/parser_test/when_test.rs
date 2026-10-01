@@ -271,9 +271,9 @@ fn test_when_requires_device_context() {
     );
 }
 
-/// Test unclosed when block (auto-closed by device_end, mappings inside are lost)
+/// An unclosed when block is an error that names the line it was opened on
 #[test]
-fn test_unclosed_when_block_auto_closes() {
+fn test_unclosed_when_block_is_an_error() {
     let mut parser = Parser::new();
     let script = r#"
         device_start("Test");
@@ -282,19 +282,58 @@ fn test_unclosed_when_block_auto_closes() {
         device_end();
     "#;
 
-    let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
-    // Unclosed when blocks are auto-closed when device_end is called
-    // but mappings inside are discarded
+    let err = parser
+        .parse_string(script, &PathBuf::from("test.rhai"))
+        .expect_err("unclosed when_start must not compile")
+        .to_string();
+    assert!(err.contains("never closed"), "{err}");
     assert!(
-        result.is_ok(),
-        "Should auto-close when block: {:?}",
-        result.err()
+        err.contains("line 3"),
+        "should name the opening line: {err}"
     );
+}
 
-    let config = result.unwrap();
-    assert_eq!(config.devices.len(), 1);
-    // The when block was auto-closed but mappings inside were lost
-    assert_eq!(config.devices[0].mappings.len(), 0);
+/// Unclosed at end of script (no device_end either) is also reported
+#[test]
+fn test_unclosed_when_block_at_end_of_script_is_an_error() {
+    let mut parser = Parser::new();
+    let script = "device_start(\"Test\");\nwhen_start(\"MD_00\");\nmap(\"A\", \"VK_B\");\n";
+    let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
+    assert!(result.is_err());
+}
+
+/// The same source key twice in one scope is an error naming both lines
+#[test]
+fn test_duplicate_source_key_in_scope_is_an_error() {
+    let mut parser = Parser::new();
+    let script =
+        "device_start(\"Test\");\nmap(\"A\", \"VK_B\");\nmap(\"VK_A\", \"VK_C\");\ndevice_end();\n";
+    let err = parser
+        .parse_string(script, &PathBuf::from("test.rhai"))
+        .expect_err("duplicate mapping must not compile")
+        .to_string();
+    assert!(err.contains("Duplicate mapping"), "{err}");
+    assert!(err.contains("line 2") && err.contains("line 3"), "{err}");
+}
+
+/// Layers may override the base: same key in different scopes is fine
+#[test]
+fn test_same_key_in_different_scopes_is_allowed() {
+    let mut parser = Parser::new();
+    let script = r#"
+        device_start("Test");
+        map("H", "VK_H");
+        when_start("MD_00");
+        map("H", "VK_Left");
+        when_end();
+        when_start("MD_01");
+        map("H", "VK_Home");
+        when_end();
+        device_end();
+    "#;
+    parser
+        .parse_string(script, &PathBuf::from("test.rhai"))
+        .expect("distinct scopes may map the same key");
 }
 
 /// Test when_end without when_start

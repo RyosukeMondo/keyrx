@@ -58,6 +58,34 @@ pub enum BaseKeyMapping {
 
     /// Sequence output (one key press → multiple keys typed in order)
     Sequence { from: KeyCode, keys: Vec<KeyCode> } = 6,
+
+    /// Tap/hold where HOLD presses a REAL key (typically a physical modifier
+    /// such as LCtrl) for as long as the key is held: Caps = Esc on tap,
+    /// Ctrl on hold; home-row mods. `tap: None` suppresses the tap (the
+    /// `hold_only` form).
+    TapHoldKey {
+        from: KeyCode,
+        tap: Option<KeyCode>,
+        hold: KeyCode,
+        threshold_ms: u16,
+    } = 7,
+}
+
+impl BaseKeyMapping {
+    /// The physical key that triggers this mapping (SSOT for "which key does
+    /// this mapping consume"; platform key-blocking and lookup tables use it).
+    pub fn source_key(&self) -> KeyCode {
+        match self {
+            BaseKeyMapping::Simple { from, .. }
+            | BaseKeyMapping::Modifier { from, .. }
+            | BaseKeyMapping::Lock { from, .. }
+            | BaseKeyMapping::TapHold { from, .. }
+            | BaseKeyMapping::HoldOnly { from, .. }
+            | BaseKeyMapping::ModifiedOutput { from, .. }
+            | BaseKeyMapping::Sequence { from, .. }
+            | BaseKeyMapping::TapHoldKey { from, .. } => *from,
+        }
+    }
 }
 
 /// Key mapping configuration with recursive conditional support
@@ -394,6 +422,20 @@ mod tests {
             BaseKeyMapping::Sequence {
                 from: KeyCode::Semicolon,
                 keys: alloc::vec![KeyCode::Y, KeyCode::A],
+            },
+            // Discriminant 7
+            BaseKeyMapping::TapHoldKey {
+                from: KeyCode::CapsLock,
+                tap: Some(KeyCode::Escape),
+                hold: KeyCode::LCtrl,
+                threshold_ms: 200,
+            },
+            // Discriminant 7, tap suppressed
+            BaseKeyMapping::TapHoldKey {
+                from: KeyCode::CapsLock,
+                tap: None,
+                hold: KeyCode::LCtrl,
+                threshold_ms: 200,
             },
         ];
 

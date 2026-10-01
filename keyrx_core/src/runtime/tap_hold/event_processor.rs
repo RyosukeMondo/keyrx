@@ -29,7 +29,27 @@ macro_rules! log_event {
 /// Tap: 2 events (press + release of tap key)
 /// Hold activation: 0 events (modifier state change only)
 /// Hold deactivation: 0 events (modifier state change only)
-pub const MAX_OUTPUT_EVENTS: usize = 4;
+///
+/// A timeout / permissive-hold pass can resolve several pending keys at once,
+/// each producing one output; the capacity must cover them so a key-hold
+/// press is never dropped (a dropped release would leave a modifier stuck).
+pub const MAX_OUTPUT_EVENTS: usize = 8;
+
+/// What starts HOLD: the real key's press, or the custom modifier.
+fn hold_start(modifier_id: u8, key: Option<KeyCode>) -> TapHoldOutput {
+    match key {
+        Some(key) => TapHoldOutput::PressHoldKey { key },
+        None => TapHoldOutput::activate_modifier(modifier_id),
+    }
+}
+
+/// What ends HOLD: the real key's release, or the custom modifier's.
+fn hold_end(modifier_id: u8, key: Option<KeyCode>) -> TapHoldOutput {
+    match key {
+        Some(key) => TapHoldOutput::ReleaseHoldKey { key },
+        None => TapHoldOutput::deactivate_modifier(modifier_id),
+    }
+}
 
 /// Tap-hold event processor.
 ///
@@ -108,6 +128,12 @@ impl<const N: usize> TapHoldProcessor<N> {
     /// Gets the tap-hold configuration for a key.
     pub fn get_config(&self, key: KeyCode) -> Option<&TapHoldConfig> {
         self.configs.iter().find(|(k, _)| *k == key).map(|(_, c)| c)
+    }
+
+    /// True while `key` is pending or held as a tap-hold key (its release
+    /// must reach this processor whatever the layer now maps it to).
+    pub fn is_active(&self, key: KeyCode) -> bool {
+        self.pending.contains(key)
     }
 
     /// Checks if a key is a registered tap-hold key.
@@ -249,10 +275,8 @@ impl<const N: usize> TapHoldProcessor<N> {
                         elapsed,
                         state.threshold_us()
                     );
-                    let _ =
-                        outputs.try_push(TapHoldOutput::activate_modifier(state.hold_modifier()));
-                    let _ =
-                        outputs.try_push(TapHoldOutput::deactivate_modifier(state.hold_modifier()));
+                    let _ = outputs.try_push(hold_start(state.hold_modifier(), state.hold_key()));
+                    let _ = outputs.try_push(hold_end(state.hold_modifier(), state.hold_key()));
                 } else if state.config().is_tap_suppressed() {
                     // hold_only: tap does nothing
                     log_event!(
@@ -285,7 +309,7 @@ impl<const N: usize> TapHoldProcessor<N> {
                     elapsed,
                     state.hold_modifier()
                 );
-                let _ = outputs.try_push(TapHoldOutput::deactivate_modifier(state.hold_modifier()));
+                let _ = outputs.try_push(hold_end(state.hold_modifier(), state.hold_key()));
                 self.pending.remove(key);
             }
         }
@@ -321,7 +345,7 @@ impl<const N: usize> TapHoldProcessor<N> {
                 current_time,
                 timeout.hold_modifier
             );
-            let _ = outputs.try_push(TapHoldOutput::activate_modifier(timeout.hold_modifier));
+            let _ = outputs.try_push(hold_start(timeout.hold_modifier, timeout.hold_key));
         }
 
         outputs
@@ -402,7 +426,7 @@ impl<const N: usize> TapHoldProcessor<N> {
                 result.key,
                 result.hold_modifier
             );
-            let _ = outputs.try_push(TapHoldOutput::activate_modifier(result.hold_modifier));
+            let _ = outputs.try_push(hold_start(result.hold_modifier, result.hold_key));
         }
         outputs
     }

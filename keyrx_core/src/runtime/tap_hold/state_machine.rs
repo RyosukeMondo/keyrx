@@ -124,6 +124,11 @@ impl TapHoldState {
         self.config.hold_modifier()
     }
 
+    /// The real key HOLD presses, if any (see `TapHoldConfig::hold_key`).
+    pub const fn hold_key(&self) -> Option<KeyCode> {
+        self.config.hold_key()
+    }
+
     /// Returns the threshold in microseconds.
     pub const fn threshold_us(&self) -> u64 {
         self.config.threshold_us()

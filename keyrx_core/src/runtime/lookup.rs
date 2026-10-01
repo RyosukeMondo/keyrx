@@ -255,15 +255,7 @@ impl KeyLookup {
     ///
     /// The input KeyCode if the mapping has one, None otherwise
     fn extract_input_key(mapping: &BaseKeyMapping) -> Option<KeyCode> {
-        match mapping {
-            BaseKeyMapping::Simple { from, .. } => Some(*from),
-            BaseKeyMapping::Modifier { from, .. } => Some(*from),
-            BaseKeyMapping::Lock { from, .. } => Some(*from),
-            BaseKeyMapping::TapHold { from, .. } => Some(*from),
-            BaseKeyMapping::HoldOnly { from, .. } => Some(*from),
-            BaseKeyMapping::ModifiedOutput { from, .. } => Some(*from),
-            BaseKeyMapping::Sequence { from, .. } => Some(*from),
-        }
+        Some(mapping.source_key())
     }
 }
 

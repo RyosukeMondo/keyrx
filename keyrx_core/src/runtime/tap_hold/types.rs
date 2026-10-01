@@ -75,6 +75,9 @@ pub struct TapHoldConfig {
     threshold_us: u64,
     /// Whether tap output is suppressed (hold_only mode)
     tap_suppressed: bool,
+    /// When set, HOLD presses this real key (e.g. `LCtrl`) instead of
+    /// activating the custom modifier `hold_modifier`.
+    hold_key: Option<KeyCode>,
 }
 
 impl TapHoldConfig {
@@ -105,7 +108,30 @@ impl TapHoldConfig {
             hold_modifier,
             threshold_us,
             tap_suppressed: false,
+            hold_key: None,
         }
+    }
+
+    /// A tap-hold whose HOLD presses the real key `hold` while the physical
+    /// key stays down. `tap: None` suppresses the tap (hold-only).
+    pub const fn with_hold_key(tap: Option<KeyCode>, hold: KeyCode, threshold_ms: u16) -> Self {
+        let (tap_key, tap_suppressed) = match tap {
+            Some(key) => (key, false),
+            None => (KeyCode::A, true), // Dummy: unused when suppressed
+        };
+        Self {
+            tap_key,
+            hold_modifier: 0,
+            threshold_us: threshold_ms as u64 * 1000,
+            tap_suppressed,
+            hold_key: Some(hold),
+        }
+    }
+
+    /// The real key HOLD presses, if this is a key-hold (not a custom
+    /// modifier) tap-hold.
+    pub const fn hold_key(&self) -> Option<KeyCode> {
+        self.hold_key
     }
 
     /// Creates a config from milliseconds threshold.
@@ -149,6 +175,7 @@ impl TapHoldConfig {
             hold_modifier,
             threshold_us,
             tap_suppressed: true,
+            hold_key: None,
         }
     }
 
@@ -188,6 +215,16 @@ pub enum TapHoldOutput {
     DeactivateModifier {
         /// The modifier ID to deactivate
         modifier_id: u8,
+    },
+    /// HOLD began: press this real key (a key-hold tap-hold)
+    PressHoldKey {
+        /// The key to press
+        key: KeyCode,
+    },
+    /// HOLD ended: release this real key (a key-hold tap-hold)
+    ReleaseHoldKey {
+        /// The key to release
+        key: KeyCode,
     },
 }
 

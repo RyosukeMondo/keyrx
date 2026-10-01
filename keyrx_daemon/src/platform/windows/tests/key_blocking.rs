@@ -134,26 +134,12 @@ mod tests {
     fn extract_from_mapping(mapping: &KeyMapping, keys: &mut HashSet<KeyCode>) {
         match mapping {
             KeyMapping::Base(base) => {
-                let key = match base {
-                    BaseKeyMapping::Simple { from, .. } => *from,
-                    BaseKeyMapping::Modifier { from, .. } => *from,
-                    BaseKeyMapping::Lock { from, .. } => *from,
-                    BaseKeyMapping::TapHold { from, .. } => *from,
-                    BaseKeyMapping::HoldOnly { from, .. } => *from,
-                    BaseKeyMapping::ModifiedOutput { from, .. } => *from,
-                };
+                let key = base.source_key();
                 keys.insert(key);
             }
             KeyMapping::Conditional { mappings, .. } => {
                 for base in mappings {
-                    let key = match base {
-                        BaseKeyMapping::Simple { from, .. } => *from,
-                        BaseKeyMapping::Modifier { from, .. } => *from,
-                        BaseKeyMapping::Lock { from, .. } => *from,
-                        BaseKeyMapping::TapHold { from, .. } => *from,
-                        BaseKeyMapping::HoldOnly { from, .. } => *from,
-                        BaseKeyMapping::ModifiedOutput { from, .. } => *from,
-                    };
+                    let key = base.source_key();
                     keys.insert(key);
                 }
             }

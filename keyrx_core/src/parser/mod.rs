@@ -21,6 +21,7 @@
 // Always available - no external dependencies
 pub mod builders;
 pub mod error;
+pub mod scopes;
 pub mod validators;
 
 #[cfg(test)]
@@ -111,9 +112,7 @@ impl Parser {
         }
 
         // Check for unclosed conditional blocks
-        if !state.conditional_stack.is_empty() {
-            return Err("Unclosed when_start() block - missing when_end()".to_string());
-        }
+        state.scopes.check_all_closed()?;
 
         // Calculate SHA256 hash of source script
         let mut hasher = Sha256::new();

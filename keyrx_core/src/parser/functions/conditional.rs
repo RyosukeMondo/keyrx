@@ -4,14 +4,15 @@
 //! when_device_start(), when_device_end() functions.
 
 use crate::config::{Condition, ConditionItem, KeyMapping};
-use crate::parser::state::ParserState;
+use crate::parser::scopes::Line;
+use crate::parser::state::{call_line, ParserState};
 use crate::parser::validators::parse_condition_string;
 use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
-use rhai::{Array, Engine, EvalAltResult};
+use rhai::{Array, Engine, EvalAltResult, NativeCallContext};
 use spin::Mutex;
 
 /// Register conditional functions with the Rhai engine.
@@ -20,10 +21,10 @@ pub fn register_when_functions(engine: &mut Engine, state: Arc<Mutex<ParserState
     let state_clone_single = Arc::clone(&state);
     engine.register_fn(
         "when_start",
-        move |cond: &str| -> Result<(), Box<EvalAltResult>> {
+        move |ctx: NativeCallContext, cond: &str| -> Result<(), Box<EvalAltResult>> {
             let condition =
                 parse_condition_string(cond).map_err(|e| format!("Invalid condition: {}", e))?;
-            start_conditional_block(&state_clone_single, condition)
+            start_conditional_block(&state_clone_single, condition, call_line(&ctx))
         },
     );
 
@@ -31,7 +32,7 @@ pub fn register_when_functions(engine: &mut Engine, state: Arc<Mutex<ParserState
     let state_clone_multi = Arc::clone(&state);
     engine.register_fn(
         "when_start",
-        move |conds: Array| -> Result<(), Box<EvalAltResult>> {
+        move |ctx: NativeCallContext, conds: Array| -> Result<(), Box<EvalAltResult>> {
             let mut condition_items = Vec::new();
             for cond_dyn in conds {
                 let cond_str = cond_dyn
@@ -53,7 +54,11 @@ pub fn register_when_functions(engine: &mut Engine, state: Arc<Mutex<ParserState
                     _ => return Err("Only single conditions allowed in array".into()),
                 }
             }
-            start_conditional_block(&state_clone_multi, Condition::AllActive(condition_items))
+            start_conditional_block(
+                &state_clone_multi,
+                Condition::AllActive(condition_items),
+                call_line(&ctx),
+            )
         },
     );
 
@@ -67,7 +72,7 @@ pub fn register_when_functions(engine: &mut Engine, state: Arc<Mutex<ParserState
     let state_clone_not = Arc::clone(&state);
     engine.register_fn(
         "when_not_start",
-        move |cond: &str| -> Result<(), Box<EvalAltResult>> {
+        move |ctx: NativeCallContext, cond: &str| -> Result<(), Box<EvalAltResult>> {
             let condition =
                 parse_condition_string(cond).map_err(|e| format!("Invalid condition: {}", e))?;
             let item = match condition {
@@ -77,7 +82,11 @@ pub fn register_when_functions(engine: &mut Engine, state: Arc<Mutex<ParserState
                 Condition::InputLanguage(lang) => ConditionItem::InputLanguage(lang),
                 _ => return Err("Only single conditions allowed in when_not".into()),
             };
-            start_conditional_block(&state_clone_not, Condition::NotActive(alloc::vec![item]))
+            start_conditional_block(
+                &state_clone_not,
+                Condition::NotActive(alloc::vec![item]),
+                call_line(&ctx),
+            )
         },
     );
 
@@ -91,13 +100,14 @@ pub fn register_when_functions(engine: &mut Engine, state: Arc<Mutex<ParserState
     let state_clone_device = Arc::clone(&state);
     engine.register_fn(
         "when_device_start",
-        move |pattern: &str| -> Result<(), Box<EvalAltResult>> {
+        move |ctx: NativeCallContext, pattern: &str| -> Result<(), Box<EvalAltResult>> {
             if pattern.is_empty() {
                 return Err("Device pattern cannot be empty".into());
             }
             start_conditional_block(
                 &state_clone_device,
                 Condition::DeviceMatches(pattern.to_string()),
+                call_line(&ctx),
             )
         },
     );
@@ -116,6 +126,7 @@ pub fn register_when_functions(engine: &mut Engine, state: Arc<Mutex<ParserState
 fn start_conditional_block(
     state: &Arc<Mutex<ParserState>>,
     condition: Condition,
+    line: Line,
 ) -> Result<(), Box<EvalAltResult>> {
     let mut state = state.lock();
     if state.current_device.is_none() {
@@ -124,6 +135,7 @@ fn start_conditional_block(
 
     // Push (condition, empty mappings Vec) onto the stack
     state.conditional_stack.push((condition, Vec::new()));
+    state.scopes.open_block(line);
 
     Ok(())
 }
@@ -136,6 +148,7 @@ fn end_conditional_block(state: &Arc<Mutex<ParserState>>) -> Result<(), Box<Eval
         .conditional_stack
         .pop()
         .ok_or("when_end() called without matching when_start()")?;
+    state.scopes.close_block();
 
     // Create the Conditional mapping and add it to the current device or outer conditional
     let conditional_mapping = KeyMapping::Conditional {

@@ -70,7 +70,32 @@ pub fn build_modified_map(
     })
 }
 
-/// Build a tap-hold mapping.
+/// What a tap-hold/hold-only key does while held.
+enum HoldTarget {
+    /// `MD_xx`: activate a custom modifier (layer).
+    Modifier(u8),
+    /// `VK_xx`: press this real key (e.g. `VK_LCtrl`) for the duration.
+    Key(KeyCode),
+}
+
+fn parse_hold_target(func: &str, hold: &str) -> Result<HoldTarget, String> {
+    if hold.starts_with("MD_") {
+        let id = parse_modifier_id(hold).map_err(|e| format!("Invalid hold modifier: {}", e))?;
+        Ok(HoldTarget::Modifier(id))
+    } else if hold.starts_with("VK_") {
+        let key = parse_virtual_key(hold).map_err(|e| format!("Invalid hold key: {}", e))?;
+        Ok(HoldTarget::Key(key))
+    } else {
+        Err(format!(
+            "{} hold parameter must start with MD_ (custom modifier/layer) or VK_ \
+             (a real key such as VK_LCtrl), got: {}",
+            func, hold
+        ))
+    }
+}
+
+/// Build a tap-hold mapping. `hold` is `MD_xx` (custom modifier) or `VK_xx`
+/// (a real key pressed while held, e.g. `VK_LCtrl`).
 pub fn build_tap_hold(
     key: &str,
     tap: &str,
@@ -87,40 +112,39 @@ pub fn build_tap_hold(
     }
     let tap_key = parse_virtual_key(tap).map_err(|e| format!("Invalid tap key: {}", e))?;
 
-    if !hold.starts_with("MD_") {
-        return Err(format!(
-            "tap_hold hold parameter must have MD_ prefix, got: {}",
-            hold
-        ));
-    }
-    let hold_modifier =
-        parse_modifier_id(hold).map_err(|e| format!("Invalid hold modifier: {}", e))?;
-
-    Ok(BaseKeyMapping::TapHold {
-        from: from_key,
-        tap: tap_key,
-        hold_modifier,
-        threshold_ms,
+    Ok(match parse_hold_target("tap_hold", hold)? {
+        HoldTarget::Modifier(hold_modifier) => BaseKeyMapping::TapHold {
+            from: from_key,
+            tap: tap_key,
+            hold_modifier,
+            threshold_ms,
+        },
+        HoldTarget::Key(hold) => BaseKeyMapping::TapHoldKey {
+            from: from_key,
+            tap: Some(tap_key),
+            hold,
+            threshold_ms,
+        },
     })
 }
 
-/// Build a hold-only mapping (tap suppressed).
+/// Build a hold-only mapping (tap suppressed). `hold` is `MD_xx` or `VK_xx`
+/// as for [`build_tap_hold`].
 pub fn build_hold_only(key: &str, hold: &str, threshold_ms: u16) -> Result<BaseKeyMapping, String> {
     let from_key = parse_physical_key(key).map_err(|e| format!("Invalid key: {}", e))?;
 
-    if !hold.starts_with("MD_") {
-        return Err(format!(
-            "hold_only hold parameter must have MD_ prefix, got: {}",
-            hold
-        ));
-    }
-    let hold_modifier =
-        parse_modifier_id(hold).map_err(|e| format!("Invalid hold modifier: {}", e))?;
-
-    Ok(BaseKeyMapping::HoldOnly {
-        from: from_key,
-        hold_modifier,
-        threshold_ms,
+    Ok(match parse_hold_target("hold_only", hold)? {
+        HoldTarget::Modifier(hold_modifier) => BaseKeyMapping::HoldOnly {
+            from: from_key,
+            hold_modifier,
+            threshold_ms,
+        },
+        HoldTarget::Key(hold) => BaseKeyMapping::TapHoldKey {
+            from: from_key,
+            tap: None,
+            hold,
+            threshold_ms,
+        },
     })
 }
 

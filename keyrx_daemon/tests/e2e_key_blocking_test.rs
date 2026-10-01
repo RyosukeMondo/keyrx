@@ -142,15 +142,7 @@ fn extract_and_block(
 
     match mapping {
         KeyMapping::Base(base) => {
-            let source_key = match base {
-                BaseKeyMapping::Simple { from, .. } => *from,
-                BaseKeyMapping::Modifier { from, .. } => *from,
-                BaseKeyMapping::Lock { from, .. } => *from,
-                BaseKeyMapping::TapHold { from, .. } => *from,
-                BaseKeyMapping::HoldOnly { from, .. } => *from,
-                BaseKeyMapping::ModifiedOutput { from, .. } => *from,
-                BaseKeyMapping::Sequence { from, .. } => *from,
-            };
+            let source_key = base.source_key();
 
             if let Some(scan_code) = keycode_to_scancode(source_key) {
                 blocker.block_key(scan_code);

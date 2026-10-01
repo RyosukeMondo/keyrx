@@ -137,6 +137,7 @@ pub fn mapping_type_name(mapping: &BaseKeyMapping) -> &'static str {
         BaseKeyMapping::HoldOnly { .. } => "hold_only",
         BaseKeyMapping::ModifiedOutput { .. } => "modified_output",
         BaseKeyMapping::Sequence { .. } => "sequence",
+        BaseKeyMapping::TapHoldKey { .. } => "tap_hold",
     }
 }
 

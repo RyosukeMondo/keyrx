@@ -153,20 +153,12 @@ impl WindowsPlatform {
         blocker: &key_blocker::KeyBlocker,
         blocked_count: &mut usize,
     ) {
-        use keyrx_core::config::{BaseKeyMapping, KeyMapping};
+        use keyrx_core::config::KeyMapping;
 
         match mapping {
             KeyMapping::Base(base) => {
                 // Extract the source key from base mapping
-                let source_key = match base {
-                    BaseKeyMapping::Simple { from, .. } => *from,
-                    BaseKeyMapping::Modifier { from, .. } => *from,
-                    BaseKeyMapping::Lock { from, .. } => *from,
-                    BaseKeyMapping::TapHold { from, .. } => *from,
-                    BaseKeyMapping::HoldOnly { from, .. } => *from,
-                    BaseKeyMapping::ModifiedOutput { from, .. } => *from,
-                    BaseKeyMapping::Sequence { from, .. } => *from,
-                };
+                let source_key = base.source_key();
 
                 // Convert to scan code and block it
                 if let Some(scan_code) = keycode::keycode_to_scancode(source_key) {

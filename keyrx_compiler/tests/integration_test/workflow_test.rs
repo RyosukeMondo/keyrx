@@ -445,12 +445,18 @@ fn test_workflow_large_config_many_mappings() {
     // Generate large configuration with many mappings
     let mut config_content = String::from("device_start(\"Test Device\");\n");
 
-    // Add 100 simple mappings
-    for i in 0..100 {
+    // Add 60 simple mappings on distinct source keys (a key may be mapped
+    // only once per scope).
+    let keys: Vec<String> = ('A'..='Z')
+        .map(|c| c.to_string())
+        .chain((1..=24).map(|i| format!("F{}", i)))
+        .chain((0..=9).map(|i| format!("Num{}", i)))
+        .collect();
+    for (i, key) in keys.iter().enumerate() {
         config_content.push_str(&format!(
-            "map(\"VK_F{}\", \"VK_F{}\");\n",
-            (i % 24) + 1,
-            ((i + 1) % 24) + 1
+            "map(\"{}\", \"VK_{}\");\n",
+            key,
+            keys[(i + 1) % keys.len()]
         ));
     }
 
@@ -473,7 +479,7 @@ fn test_workflow_large_config_many_mappings() {
     assert_eq!(config.devices.len(), 1);
     assert_eq!(
         config.devices[0].mappings.len(),
-        100,
-        "Should have 100 mappings"
+        60,
+        "Should have 60 mappings"
     );
 }

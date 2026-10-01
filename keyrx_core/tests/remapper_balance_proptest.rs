@@ -64,6 +64,28 @@ fn remapper() -> Remapper {
                 }],
             ),
             KeyMapping::modified_output(KeyCode::F22, KeyCode::C, false, true, false, false),
+            // Real-key holds: Tab = Enter on tap / LCtrl on hold, Backspace
+            // = LShift on hold only. Tab is remapped in the MD_00 layer, so
+            // a layer change while it is held must not strand LCtrl.
+            KeyMapping::Base(BaseKeyMapping::TapHoldKey {
+                from: KeyCode::Tab,
+                tap: Some(KeyCode::Enter),
+                hold: KeyCode::LCtrl,
+                threshold_ms: 200,
+            }),
+            KeyMapping::Base(BaseKeyMapping::TapHoldKey {
+                from: KeyCode::Backspace,
+                tap: None,
+                hold: KeyCode::LShift,
+                threshold_ms: 150,
+            }),
+            KeyMapping::conditional(
+                Condition::ModifierActive(0),
+                vec![BaseKeyMapping::Simple {
+                    from: KeyCode::Tab,
+                    to: KeyCode::Delete,
+                }],
+            ),
         ],
     );
     let dev2 = block(
@@ -82,7 +104,7 @@ fn remapper() -> Remapper {
     Remapper::from_blocks(&[dev1, dev2])
 }
 
-const KEYS: [KeyCode; 16] = [
+const KEYS: [KeyCode; 18] = [
     KeyCode::A,
     KeyCode::Z,
     KeyCode::X,
@@ -99,6 +121,8 @@ const KEYS: [KeyCode; 16] = [
     KeyCode::LCtrl,
     KeyCode::E,
     KeyCode::Escape,
+    KeyCode::Tab,
+    KeyCode::Backspace,
 ];
 
 fn identities(id: &str) -> Vec<String> {
@@ -144,7 +168,7 @@ proptest! {
 
     #[test]
     fn typing_leaves_no_output_key_stuck_or_swallowed(
-        ops in proptest::collection::vec((any::<bool>(), 0usize..16, 0u64..400), 1..120)
+        ops in proptest::collection::vec((any::<bool>(), 0usize..18, 0u64..400), 1..120)
     ) {
         let mut remapper = remapper();
         let (mut inputs, end) = stream(&ops);

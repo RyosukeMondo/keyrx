@@ -180,6 +180,17 @@ pub(crate) fn convert_archived_base_mapping(archived: &ArchivedBaseKeyMapping) -
             hold_modifier: *hold_modifier,
             threshold_ms: *threshold_ms,
         },
+        ArchivedBaseKeyMapping::TapHoldKey {
+            from,
+            tap,
+            hold,
+            threshold_ms,
+        } => BaseKeyMapping::TapHoldKey {
+            from: convert_archived_keycode(from),
+            tap: tap.as_ref().map(convert_archived_keycode),
+            hold: convert_archived_keycode(hold),
+            threshold_ms: *threshold_ms,
+        },
         ArchivedBaseKeyMapping::ModifiedOutput {
             from,
             to,

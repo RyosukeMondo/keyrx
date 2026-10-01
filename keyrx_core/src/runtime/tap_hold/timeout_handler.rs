@@ -17,6 +17,8 @@ pub struct TimeoutResult {
     pub key: KeyCode,
     /// The hold modifier to activate
     pub hold_modifier: u8,
+    /// The real key to press instead of a modifier, for key-hold tap-holds
+    pub hold_key: Option<KeyCode>,
 }
 
 /// Registry for tracking multiple concurrent tap-hold keys.
@@ -225,6 +227,7 @@ impl<const N: usize> PendingKeyRegistry<N> {
                 let _ = results.try_push(TimeoutResult {
                     key: state.key(),
                     hold_modifier: state.hold_modifier(),
+                    hold_key: state.hold_key(),
                 });
             }
         }
@@ -257,6 +260,7 @@ impl<const N: usize> PendingKeyRegistry<N> {
                 let _ = results.try_push(TimeoutResult {
                     key: state.key(),
                     hold_modifier: state.hold_modifier(),
+                    hold_key: state.hold_key(),
                 });
             }
         }

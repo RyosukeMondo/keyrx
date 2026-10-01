@@ -157,9 +157,9 @@ fn test_when_not_requires_device_context() {
     );
 }
 
-/// Test unclosed when_not block (auto-closed by device_end, mappings inside are lost)
+/// An unclosed when_not block is an error
 #[test]
-fn test_unclosed_when_not_block_auto_closes() {
+fn test_unclosed_when_not_block_is_an_error() {
     let mut parser = Parser::new();
     let script = r#"
         device_start("Test");
@@ -169,18 +169,13 @@ fn test_unclosed_when_not_block_auto_closes() {
     "#;
 
     let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
-    // Unclosed when_not blocks are auto-closed when device_end is called
-    // but mappings inside are discarded
+    let err = result
+        .expect_err("unclosed when_not must not compile")
+        .to_string();
     assert!(
-        result.is_ok(),
-        "Should auto-close when_not block: {:?}",
-        result.err()
+        err.contains("never closed") && err.contains("line 3"),
+        "{err}"
     );
-
-    let config = result.unwrap();
-    assert_eq!(config.devices.len(), 1);
-    // The when_not block was auto-closed but mappings inside were lost
-    assert_eq!(config.devices[0].mappings.len(), 0);
 }
 
 /// Test when_not_end without when_not_start

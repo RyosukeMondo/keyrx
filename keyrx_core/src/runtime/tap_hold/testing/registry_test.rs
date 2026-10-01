@@ -394,6 +394,7 @@ fn test_registry_timeout_result_fields() {
     let result = TimeoutResult {
         key: KeyCode::CapsLock,
         hold_modifier: 5,
+        hold_key: None,
     };
 
     assert_eq!(result.key, KeyCode::CapsLock);
