@@ -431,6 +431,13 @@ impl<const N: usize> TapHoldProcessor<N> {
         outputs
     }
 
+    /// Whether a pending key lets typed keys decide it (permissive hold).
+    pub fn has_permissive_pending(&self) -> bool {
+        self.pending
+            .pending_keys()
+            .any(|s| s.config().is_permissive())
+    }
+
     /// Checks if there are any keys in pending state.
     ///
     /// Useful for determining whether permissive hold logic should be invoked.

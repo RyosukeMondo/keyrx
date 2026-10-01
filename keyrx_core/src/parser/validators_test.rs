@@ -4,7 +4,7 @@
 //! condition parsing, fuzzy suggestions, QMK aliases, and international keys.
 
 extern crate alloc;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -164,6 +164,28 @@ fn test_unknown_key_suggests_alternatives() {
         }
         other => panic!("Expected UnknownKey, got: {other:?}"),
     }
+}
+
+fn suggestions_for(name: &str) -> Vec<String> {
+    match parse_key_name(name).unwrap_err() {
+        ParseError::UnknownKey { suggestions, .. } => suggestions,
+        other => panic!("Expected UnknownKey, got: {other:?}"),
+    }
+}
+
+#[test]
+fn test_unrelated_names_get_no_suggestions() {
+    // Previously suggested Home, Copy and E.
+    assert!(suggestions_for("Nope").is_empty());
+    assert!(suggestions_for("XYZZY").is_empty());
+    assert!(suggestions_for("Q9").is_empty());
+}
+
+#[test]
+fn test_near_typos_are_suggested() {
+    assert!(suggestions_for("Escpae").contains(&"Escape".to_string()));
+    assert!(suggestions_for("Spce").contains(&"Space".to_string()));
+    assert!(suggestions_for("Ente").contains(&"Enter".to_string()));
 }
 
 #[test]

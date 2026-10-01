@@ -9,6 +9,7 @@ use keyrx_core::config::{ConfigRoot, DeviceConfig, Metadata, Version};
 
 use keyrx_core::config::{BaseKeyMapping, Condition, KeyMapping};
 use keyrx_core::parser::scopes::{Line, MappingScopes};
+use keyrx_core::parser::usage;
 
 /// Parser state shared across Rhai custom functions
 #[derive(Debug, Clone, Default)]
@@ -82,25 +83,7 @@ impl Parser {
         engine.set_max_expr_depths(100, 100);
         engine.set_max_call_levels(100);
 
-        crate::parser::functions::map::register_map_function(&mut engine, Arc::clone(&state));
-        crate::parser::functions::tap_hold::register_tap_hold_function(
-            &mut engine,
-            Arc::clone(&state),
-        );
-        crate::parser::functions::hold_only::register_hold_only_function(
-            &mut engine,
-            Arc::clone(&state),
-        );
-        crate::parser::functions::conditional::register_when_functions(
-            &mut engine,
-            Arc::clone(&state),
-        );
-        crate::parser::functions::sequence::register_sequence_function(
-            &mut engine,
-            Arc::clone(&state),
-        );
-        crate::parser::functions::modifiers::register_modifier_functions(&mut engine);
-        crate::parser::functions::device::register_device_function(&mut engine, Arc::clone(&state));
+        crate::parser::functions::register_dsl(&mut engine, &state);
         crate::parser::functions::import::register_import_function(
             &mut engine,
             Arc::clone(&state),
@@ -174,11 +157,15 @@ impl Parser {
         #[allow(clippy::unwrap_used)]
         let state = self.state.lock().unwrap();
         if state.current_device.is_some() {
+            let message =
+                state.scopes.check_device_closed().err().unwrap_or_else(|| {
+                    "device_start() is never closed: add device_end();".to_string()
+                });
             return Err(ParseError::SyntaxError {
                 file: source_path.to_path_buf(),
-                line: 0,
-                column: 0,
-                message: "Unclosed device() block".to_string(),
+                line: state.scopes.open_device_line().flatten().unwrap_or(0),
+                column: 1,
+                message,
                 import_chain: Vec::new(),
             });
         }
@@ -220,10 +207,22 @@ impl Parser {
             file: path.to_path_buf(),
             line: position.line().unwrap_or(0),
             column: position.position().unwrap_or(0),
-            message: err.to_string(),
+            message: friendly_message(&err),
             import_chain: Vec::new(),
         }
     }
+}
+
+/// An evaluation error as a user-facing message: a wrong-arity call to a
+/// DSL function says what the function needs, and Rhai's own prefixes and
+/// position suffix (reported separately) are dropped.
+fn friendly_message(err: &EvalAltResult) -> String {
+    if let EvalAltResult::ErrorFunctionNotFound(signature, _) = err {
+        if let Some(message) = usage::explain_function_not_found(signature) {
+            return message;
+        }
+    }
+    usage::clean_rhai_message(&err.to_string())
 }
 
 /// Timestamp embedded in the .krx metadata.

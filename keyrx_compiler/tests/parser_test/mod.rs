@@ -10,6 +10,7 @@ pub use std::path::PathBuf;
 
 // Declare test modules
 mod devices_test;
+mod diagnostics_test;
 mod key_naming_test;
 mod maps_test;
 mod modifiers_test;

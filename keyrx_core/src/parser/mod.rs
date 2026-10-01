@@ -22,6 +22,8 @@
 pub mod builders;
 pub mod error;
 pub mod scopes;
+mod suggest;
+pub mod usage;
 pub mod validators;
 
 #[cfg(test)]
@@ -52,6 +54,22 @@ use spin::Mutex;
 use crate::config::{ConfigRoot, Metadata, Version};
 #[cfg(feature = "wasm")]
 use state::ParserState;
+
+/// An evaluation error as a user-facing message (see [`usage`]).
+#[cfg(feature = "wasm")]
+fn friendly_message(err: &rhai::EvalAltResult) -> String {
+    if let rhai::EvalAltResult::ErrorFunctionNotFound(signature, _) = err {
+        if let Some(message) = usage::explain_function_not_found(signature) {
+            return message;
+        }
+    }
+    let line = err.position().line();
+    let text = usage::clean_rhai_message(&err.to_string());
+    match line {
+        Some(line) => format!("line {line}: {text}"),
+        None => text,
+    }
+}
 
 /// Main parser for Rhai DSL.
 #[cfg(feature = "wasm")]
@@ -96,7 +114,7 @@ impl Parser {
         let mut scope = Scope::new();
         self.engine
             .run_with_scope(&mut scope, script)
-            .map_err(|e| format!("Parse error: {}", e))?;
+            .map_err(|e| format!("Parse error: {}", friendly_message(&e)))?;
 
         // Finalize the configuration
         self.finalize_config(script)
@@ -108,7 +126,9 @@ impl Parser {
 
         // Check for unclosed device block
         if state.current_device.is_some() {
-            return Err("Unclosed device_start() block - missing device_end()".to_string());
+            return Err(state.scopes.check_device_closed().err().unwrap_or_else(|| {
+                "Unclosed device_start() block - missing device_end()".to_string()
+            }));
         }
 
         // Check for unclosed conditional blocks

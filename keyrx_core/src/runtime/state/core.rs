@@ -10,6 +10,7 @@ use alloc::sync::Arc;
 use arrayvec::ArrayVec;
 
 use crate::config::{ImeState, KeyCode};
+use crate::runtime::one_shot::OneShots;
 use crate::runtime::state::shared::{SharedModifierState, SharedState};
 use crate::runtime::tap_hold::{TapHoldProcessor, DEFAULT_MAX_PENDING};
 
@@ -63,6 +64,8 @@ pub struct DeviceState {
         ArrayVec<(KeyCode, ArrayVec<KeyCode, MAX_OUTPUT_KEYS_PER_INPUT>), MAX_PRESSED_KEYS>,
     /// Current IME state, updated by daemon before event processing
     ime_state: ImeState,
+    /// Sticky-modifier keys (`one_shot`), per device like the tap-holds.
+    one_shots: OneShots,
 }
 
 impl DeviceState {
@@ -90,6 +93,7 @@ impl DeviceState {
             tap_hold: TapHoldProcessor::new(),
             pressed_keys: ArrayVec::new(),
             ime_state: ImeState::default(),
+            one_shots: OneShots::default(),
         }
     }
 
@@ -332,6 +336,11 @@ impl DeviceState {
     /// * `input` - The physical key that was released
     pub fn clear_press(&mut self, input: KeyCode) {
         self.pressed_keys.retain(|(k, _)| *k != input);
+    }
+
+    /// The device's one-shot (sticky) modifier keys.
+    pub fn one_shots(&mut self) -> &mut OneShots {
+        &mut self.one_shots
     }
 
     /// Clears all pressed key tracking (for testing or emergency reset)

@@ -473,7 +473,9 @@ fn test_compile_honours_source_date_epoch() {
         .arg(&out)
         .assert()
         .success()
-        .stderr(predicate::str::contains("Compilation timestamp: 1700000000"));
+        .stderr(predicate::str::contains(
+            "Compilation timestamp: 1700000000",
+        ));
 }
 
 #[test]

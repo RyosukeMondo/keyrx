@@ -74,23 +74,7 @@ pub fn register_import_function(
             import_engine.set_max_call_levels(100);
 
             // Register all the same functions
-            crate::parser::functions::map::register_map_function(
-                &mut import_engine,
-                Arc::clone(&import_state),
-            );
-            crate::parser::functions::tap_hold::register_tap_hold_function(
-                &mut import_engine,
-                Arc::clone(&import_state),
-            );
-            crate::parser::functions::conditional::register_when_functions(
-                &mut import_engine,
-                Arc::clone(&import_state),
-            );
-            crate::parser::functions::modifiers::register_modifier_functions(&mut import_engine);
-            crate::parser::functions::device::register_device_function(
-                &mut import_engine,
-                Arc::clone(&import_state),
-            );
+            crate::parser::functions::register_dsl(&mut import_engine, &import_state);
 
             // Register import function recursively
             register_import_function(

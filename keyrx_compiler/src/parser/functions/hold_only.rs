@@ -30,8 +30,12 @@ pub fn register_hold_only_function(engine: &mut Engine, state: Arc<Mutex<ParserS
               hold: &str,
               threshold_ms: i64|
               -> Result<(), Box<EvalAltResult>> {
-            let mapping = builders::build_hold_only(key, hold, threshold_ms as u16)
-                .map_err(|e| -> Box<EvalAltResult> { e.into() })?;
+            let mapping = builders::build_hold_only(
+                key,
+                hold,
+                builders::threshold_ms("hold_only", threshold_ms)?,
+            )
+            .map_err(|e| -> Box<EvalAltResult> { e.into() })?;
             with_state(&state_3arg, |s| {
                 s.push_mapping(mapping, "hold_only", call_line(&ctx))
             })

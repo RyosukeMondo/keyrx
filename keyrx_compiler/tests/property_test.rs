@@ -694,35 +694,34 @@ fn when_not_block_strategy() -> impl Strategy<Value = String> {
         })
 }
 
-/// Strategy for generating random device blocks with statements
-fn device_block_strategy() -> impl Strategy<Value = String> {
-    (
+/// Strategy for one device block with the given pattern.
+fn device_block_strategy(pattern: &'static str) -> impl Strategy<Value = String> {
+    prop::collection::vec(
         prop_oneof![
-            Just("*".to_string()),
-            Just("USB Keyboard".to_string()),
-            Just("Laptop Keyboard".to_string()),
+            rhai_statement_strategy(),
+            conditional_block_strategy(),
+            when_not_block_strategy(),
         ],
-        prop::collection::vec(
-            prop_oneof![
-                rhai_statement_strategy(),
-                conditional_block_strategy(),
-                when_not_block_strategy(),
-            ],
-            1..10,
-        ),
+        1..10,
     )
-        .prop_map(|(pattern, statements)| {
-            format!(
-                "device_start(\"{}\");\n{}\ndevice_end();",
-                pattern,
-                statements.join("\n")
-            )
-        })
+    .prop_map(move |statements| {
+        format!(
+            "device_start(\"{}\");\n{}\ndevice_end();",
+            pattern,
+            statements.join("\n")
+        )
+    })
 }
 
-/// Strategy for generating complete valid Rhai scripts
+/// Strategy for generating complete valid Rhai scripts. Each pattern is used
+/// by at most one block: a repeated `device_start` pattern is a compile error.
 fn rhai_script_strategy() -> impl Strategy<Value = String> {
-    prop::collection::vec(device_block_strategy(), 1..5).prop_map(|blocks| blocks.join("\n\n"))
+    prop::sample::subsequence(vec!["*", "USB Keyboard", "Laptop Keyboard"], 1..=3).prop_flat_map(
+        |patterns| {
+            let blocks: Vec<_> = patterns.into_iter().map(device_block_strategy).collect();
+            blocks.prop_map(|blocks| blocks.join("\n\n"))
+        },
+    )
 }
 
 // ============================================================================

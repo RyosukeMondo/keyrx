@@ -238,6 +238,19 @@ pub fn process_event_for_identities(
     state: &mut DeviceState,
     identities: &[&str],
 ) -> Vec<KeyEvent> {
+    let ts = event.timestamp_us();
+    let mut outputs = process_mapped(event, lookup, state, identities);
+    // Typing consumes latched one-shot modifiers (see `runtime::one_shot`).
+    state.one_shots().after_outputs(&mut outputs, ts);
+    outputs
+}
+
+fn process_mapped(
+    event: KeyEvent,
+    lookup: &KeyLookup,
+    state: &mut DeviceState,
+    identities: &[&str],
+) -> Vec<KeyEvent> {
     use crate::config::BaseKeyMapping;
 
     // Cache event properties before event is potentially moved
@@ -246,6 +259,12 @@ pub fn process_event_for_identities(
 
     // For RELEASE events: Check if we have a tracked press mapping
     // This ensures releases match their presses even if mapping changed
+    if !is_press && state.one_shots().is_tracked(input_keycode) {
+        // A one-shot key's release belongs to the press that started it.
+        return state
+            .one_shots()
+            .on_release(input_keycode, event.timestamp_us());
+    }
     if !is_press && state.tap_hold_processor_ref().is_active(input_keycode) {
         // A tap-hold key's release belongs to the tap-hold that saw its
         // press, whatever the layer maps the key to now: otherwise a layer
@@ -289,6 +308,7 @@ pub fn process_event_for_identities(
                 BaseKeyMapping::TapHold { .. }
                     | BaseKeyMapping::HoldOnly { .. }
                     | BaseKeyMapping::TapHoldKey { .. }
+                    | BaseKeyMapping::TapHoldKeyTimeoutOnly { .. }
             )
         );
         if !is_tap_hold_key && state.tap_hold_processor_ref().has_pending_keys() {
@@ -398,20 +418,32 @@ pub fn process_event_for_identities(
             hold,
             threshold_ms,
         } => {
-            let processor = state.tap_hold_processor();
-            if !processor.is_tap_hold_key(*from) {
-                processor.register_tap_hold(
-                    *from,
-                    TapHoldConfig::with_hold_key(*tap, *hold, *threshold_ms),
-                );
-            }
-            let timestamp = event.timestamp_us();
-            let outputs = if event.is_press() {
-                processor.process_press(*from, timestamp)
+            let config = TapHoldConfig::with_hold_key(*tap, *hold, *threshold_ms);
+            process_tap_hold_key(&event, *from, config, state)
+        }
+        BaseKeyMapping::TapHoldKeyTimeoutOnly {
+            from,
+            tap,
+            hold,
+            threshold_ms,
+        } => {
+            let config =
+                TapHoldConfig::with_hold_key(*tap, *hold, *threshold_ms).without_permissive_hold();
+            process_tap_hold_key(&event, *from, config, state)
+        }
+        BaseKeyMapping::OneShot {
+            from,
+            modifier,
+            timeout_ms,
+        } => {
+            let ts = event.timestamp_us();
+            if is_press {
+                state
+                    .one_shots()
+                    .on_press(*from, *modifier, *timeout_ms, ts)
             } else {
-                processor.process_release(*from, timestamp)
-            };
-            convert_tap_hold_outputs(outputs, state, timestamp)
+                state.one_shots().on_release(*from, ts)
+            }
         }
         BaseKeyMapping::ModifiedOutput {
             to,
@@ -483,7 +515,12 @@ pub fn process_event_for_identities(
     // A sequence types its keys complete (press+release pairs) on the press;
     // recording them would replay their releases when the trigger key comes
     // up - key-ups for keys that are not down.
-    let is_sequence = matches!(mapping, BaseKeyMapping::Sequence { .. });
+    // A one-shot key's modifier is released by the one-shot state, not by
+    // the generic press tracking.
+    let is_sequence = matches!(
+        mapping,
+        BaseKeyMapping::Sequence { .. } | BaseKeyMapping::OneShot { .. }
+    );
     if is_press && !result.is_empty() && !is_sequence {
         // Collect ALL press event keycodes from the result
         let output_keys: alloc::vec::Vec<KeyCode> = result
@@ -535,7 +572,31 @@ pub fn process_event_for_identities(
 /// ```
 pub fn check_tap_hold_timeouts(current_time_us: u64, state: &mut DeviceState) -> Vec<KeyEvent> {
     let outputs = state.tap_hold_processor().check_timeouts(current_time_us);
-    convert_tap_hold_outputs(outputs, state, current_time_us)
+    let mut events = convert_tap_hold_outputs(outputs, state, current_time_us);
+    // Unused one-shot latches share the clock: release the expired ones.
+    events.extend(state.one_shots().expire(current_time_us));
+    events
+}
+
+/// Registers (once) and feeds one press/release of a `TapHoldKey`-style
+/// mapping to the tap-hold processor.
+fn process_tap_hold_key(
+    event: &KeyEvent,
+    from: KeyCode,
+    config: TapHoldConfig,
+    state: &mut DeviceState,
+) -> Vec<KeyEvent> {
+    let processor = state.tap_hold_processor();
+    if !processor.is_tap_hold_key(from) {
+        processor.register_tap_hold(from, config);
+    }
+    let timestamp = event.timestamp_us();
+    let outputs = if event.is_press() {
+        processor.process_press(from, timestamp)
+    } else {
+        processor.process_release(from, timestamp)
+    };
+    convert_tap_hold_outputs(outputs, state, timestamp)
 }
 
 /// Resolves every pending tap-hold key of `state` as HOLD (permissive hold:

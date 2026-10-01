@@ -2,13 +2,15 @@
 //! keyrx_compiler's std parser): where each source key was first mapped, and
 //! where each `when_start`-style block was opened.
 //!
-//! Two lints live here so they cannot drift between the parsers:
+//! Three lints live here so they cannot drift between the parsers:
 //! - a source key mapped twice in the SAME scope (the device's top level, or
 //!   one conditional block) is an error - the second mapping would be dead;
-//! - a block opened and never closed is reported at the line it was opened.
+//! - a block opened and never closed is reported at the line it was opened;
+//! - a `device_start` pattern used twice is an error: a device is routed to
+//!   the FIRST matching block, so the second block would be dead.
 
 use alloc::format;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use hashbrown::HashMap;
 
@@ -28,6 +30,11 @@ struct Block {
 pub struct MappingScopes {
     device: HashMap<KeyCode, Line>,
     blocks: Vec<Block>,
+    /// Every `device_start` pattern seen so far (lowercased: matching is
+    /// case-insensitive) and the line it was opened at.
+    patterns: HashMap<String, Line>,
+    /// Pattern and line of the `device_start` that is still open.
+    open_device: Option<(String, Line)>,
 }
 
 fn at(line: Line) -> String {
@@ -35,9 +42,47 @@ fn at(line: Line) -> String {
 }
 
 impl MappingScopes {
-    /// A new `device_start`: the device's top-level scope is empty again.
-    pub fn start_device(&mut self) {
+    /// A new `device_start(pattern)` at `line`: the device's top-level scope
+    /// is empty again. An error naming both lines if an earlier block used
+    /// the same pattern.
+    pub fn start_device(&mut self, pattern: &str, line: Line) -> Result<(), String> {
         self.device.clear();
+        self.blocks.clear();
+        if let Some(first) = self.patterns.get(&pattern.to_lowercase()) {
+            return Err(format!(
+                "Duplicate device_start(\"{pattern}\"): the same pattern is already used{} and \
+                 this block{} would never be reached, because a device is routed to the first \
+                 block that matches it. Put all mappings for \"{pattern}\" in one block.",
+                at(*first),
+                at(line),
+            ));
+        }
+        self.patterns.insert(pattern.to_lowercase(), line);
+        self.open_device = Some((pattern.to_string(), line));
+        Ok(())
+    }
+
+    /// The current `device_start` block was closed.
+    pub fn end_device(&mut self) {
+        self.open_device = None;
+    }
+
+    /// The line of the `device_start` that is still open, if any.
+    pub fn open_device_line(&self) -> Option<Line> {
+        self.open_device.as_ref().map(|(_, line)| *line)
+    }
+
+    /// An error naming the `device_start` that is still open at end of
+    /// script, with the line it was opened at.
+    pub fn check_device_closed(&self) -> Result<(), String> {
+        match &self.open_device {
+            None => Ok(()),
+            Some((pattern, line)) => Err(format!(
+                "device_start(\"{pattern}\"){} is never closed: add device_end(); after its \
+                 last mapping",
+                at(*line)
+            )),
+        }
     }
 
     /// A conditional block was opened at `line`.
@@ -115,8 +160,28 @@ mod tests {
         s.open_block(Some(5));
         s.record(KeyCode::A, Some(6)).unwrap();
         s.close_block();
-        s.start_device();
+        s.start_device("*", Some(7)).unwrap();
         s.record(KeyCode::A, Some(8)).unwrap();
+    }
+
+    #[test]
+    fn duplicate_device_pattern_names_both_lines_ignoring_case() {
+        let mut s = MappingScopes::default();
+        s.start_device("Kbd*", Some(1)).unwrap();
+        s.end_device();
+        s.start_device("other", Some(5)).unwrap();
+        let err = s.start_device("KBD*", Some(9)).unwrap_err();
+        assert!(err.contains("line 1") && err.contains("line 9"), "{err}");
+    }
+
+    #[test]
+    fn unclosed_device_reports_pattern_and_line() {
+        let mut s = MappingScopes::default();
+        s.start_device("K", Some(3)).unwrap();
+        let err = s.check_device_closed().unwrap_err();
+        assert!(err.contains("\"K\"") && err.contains("line 3"), "{err}");
+        s.end_device();
+        assert!(s.check_device_closed().is_ok());
     }
 
     #[test]

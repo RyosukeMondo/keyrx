@@ -191,6 +191,26 @@ pub(crate) fn convert_archived_base_mapping(archived: &ArchivedBaseKeyMapping) -
             hold: convert_archived_keycode(hold),
             threshold_ms: *threshold_ms,
         },
+        ArchivedBaseKeyMapping::TapHoldKeyTimeoutOnly {
+            from,
+            tap,
+            hold,
+            threshold_ms,
+        } => BaseKeyMapping::TapHoldKeyTimeoutOnly {
+            from: convert_archived_keycode(from),
+            tap: tap.as_ref().map(convert_archived_keycode),
+            hold: convert_archived_keycode(hold),
+            threshold_ms: *threshold_ms,
+        },
+        ArchivedBaseKeyMapping::OneShot {
+            from,
+            modifier,
+            timeout_ms,
+        } => BaseKeyMapping::OneShot {
+            from: convert_archived_keycode(from),
+            modifier: convert_archived_keycode(modifier),
+            timeout_ms: *timeout_ms,
+        },
         ArchivedBaseKeyMapping::ModifiedOutput {
             from,
             to,

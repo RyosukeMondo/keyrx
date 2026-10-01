@@ -225,9 +225,33 @@ pub enum KeyCode {
     Iso102nd = 0x320,
 }
 
+impl KeyCode {
+    /// Whether this is one of the eight physical modifier keys
+    /// (`LShift`..`RMeta`).
+    pub const fn is_modifier(self) -> bool {
+        matches!(
+            self,
+            KeyCode::LShift
+                | KeyCode::RShift
+                | KeyCode::LCtrl
+                | KeyCode::RCtrl
+                | KeyCode::LAlt
+                | KeyCode::RAlt
+                | KeyCode::LMeta
+                | KeyCode::RMeta
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_is_modifier() {
+        assert!(KeyCode::LShift.is_modifier() && KeyCode::RMeta.is_modifier());
+        assert!(!KeyCode::A.is_modifier() && !KeyCode::CapsLock.is_modifier());
+    }
 
     #[test]
     fn test_keycode_has_all_expected_variants() {

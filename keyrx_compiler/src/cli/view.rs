@@ -154,7 +154,19 @@ fn get_base_mapping_info(base: &BaseKeyMapping) -> (KeyCode, String, &'static st
             format!("M{:X}/{}ms", hold_modifier, threshold_ms),
             "holdonly",
         ),
+        BaseKeyMapping::OneShot {
+            from,
+            modifier,
+            timeout_ms,
+        } => (
+            *from,
+            format!("1x {}/{}ms", keycode_to_label(modifier), timeout_ms),
+            "taphold",
+        ),
         BaseKeyMapping::TapHoldKey {
+            from, tap, hold, ..
+        }
+        | BaseKeyMapping::TapHoldKeyTimeoutOnly {
             from, tap, hold, ..
         } => {
             let hold = keycode_to_label(hold);

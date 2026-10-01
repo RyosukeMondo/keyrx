@@ -78,6 +78,9 @@ pub struct TapHoldConfig {
     /// When set, HOLD presses this real key (e.g. `LCtrl`) instead of
     /// activating the custom modifier `hold_modifier`.
     hold_key: Option<KeyCode>,
+    /// Whether keys typed while pending can decide HOLD (permissive hold);
+    /// when `false` only the threshold does.
+    permissive: bool,
 }
 
 impl TapHoldConfig {
@@ -109,6 +112,7 @@ impl TapHoldConfig {
             threshold_us,
             tap_suppressed: false,
             hold_key: None,
+            permissive: true,
         }
     }
 
@@ -125,7 +129,20 @@ impl TapHoldConfig {
             threshold_us: threshold_ms as u64 * 1000,
             tap_suppressed,
             hold_key: Some(hold),
+            permissive: true,
         }
+    }
+
+    /// This config with permissive hold turned off: typed keys never decide
+    /// it, only its threshold does.
+    pub const fn without_permissive_hold(mut self) -> Self {
+        self.permissive = false;
+        self
+    }
+
+    /// Whether keys typed while pending can decide HOLD.
+    pub const fn is_permissive(&self) -> bool {
+        self.permissive
     }
 
     /// The real key HOLD presses, if this is a key-hold (not a custom
@@ -176,6 +193,7 @@ impl TapHoldConfig {
             threshold_us,
             tap_suppressed: true,
             hold_key: None,
+            permissive: true,
         }
     }
 

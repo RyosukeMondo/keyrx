@@ -1,14 +1,14 @@
 use keyrx_core::config::{DeviceConfig, DeviceIdentifier};
-use rhai::{Engine, EvalAltResult};
+use rhai::{Engine, EvalAltResult, NativeCallContext};
 use std::sync::{Arc, Mutex};
 
-use crate::parser::core::ParserState;
+use crate::parser::core::{call_line, ParserState};
 
 pub fn register_device_function(engine: &mut Engine, state: Arc<Mutex<ParserState>>) {
     let state_clone_start = Arc::clone(&state);
     engine.register_fn(
         "device_start",
-        move |pattern: &str| -> Result<(), Box<EvalAltResult>> {
+        move |ctx: NativeCallContext, pattern: &str| -> Result<(), Box<EvalAltResult>> {
             // SAFETY: Mutex cannot be poisoned - no panic paths while lock is held
             #[allow(clippy::unwrap_used)]
             let mut state = state_clone_start.lock().unwrap();
@@ -17,7 +17,7 @@ pub fn register_device_function(engine: &mut Engine, state: Arc<Mutex<ParserStat
                 state.scopes.check_all_closed()?;
                 state.devices.push(device);
             }
-            state.scopes = Default::default();
+            state.scopes.start_device(pattern, call_line(&ctx))?;
 
             state.current_device = Some(DeviceConfig {
                 identifier: DeviceIdentifier {
@@ -38,6 +38,7 @@ pub fn register_device_function(engine: &mut Engine, state: Arc<Mutex<ParserStat
 
         if let Some(device) = state.current_device.take() {
             state.scopes.check_all_closed()?;
+            state.scopes.end_device();
             state.devices.push(device);
             Ok(())
         } else {

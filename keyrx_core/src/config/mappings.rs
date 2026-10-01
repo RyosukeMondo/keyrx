@@ -69,6 +69,28 @@ pub enum BaseKeyMapping {
         hold: KeyCode,
         threshold_ms: u16,
     } = 7,
+
+    /// Sticky ("one-shot") modifier: a quick TAP latches the real modifier
+    /// key `modifier` (e.g. `LShift`) down for the NEXT key press only; HOLD
+    /// acts as the plain modifier key. `timeout_ms` releases an unused latch
+    /// after that long (0 = until used).
+    OneShot {
+        from: KeyCode,
+        modifier: KeyCode,
+        timeout_ms: u16,
+    } = 8,
+
+    /// [`BaseKeyMapping::TapHoldKey`] without permissive hold: keys typed
+    /// while it is down never decide it. It becomes HOLD only when its
+    /// threshold passes; released earlier it is a TAP, however the typing
+    /// overlapped. For fast typists whose rolled `f` + `c` must not become
+    /// Ctrl+C.
+    TapHoldKeyTimeoutOnly {
+        from: KeyCode,
+        tap: Option<KeyCode>,
+        hold: KeyCode,
+        threshold_ms: u16,
+    } = 9,
 }
 
 impl BaseKeyMapping {
@@ -83,7 +105,9 @@ impl BaseKeyMapping {
             | BaseKeyMapping::HoldOnly { from, .. }
             | BaseKeyMapping::ModifiedOutput { from, .. }
             | BaseKeyMapping::Sequence { from, .. }
-            | BaseKeyMapping::TapHoldKey { from, .. } => *from,
+            | BaseKeyMapping::TapHoldKey { from, .. }
+            | BaseKeyMapping::OneShot { from, .. }
+            | BaseKeyMapping::TapHoldKeyTimeoutOnly { from, .. } => *from,
         }
     }
 }
@@ -434,6 +458,19 @@ mod tests {
             BaseKeyMapping::TapHoldKey {
                 from: KeyCode::CapsLock,
                 tap: None,
+                hold: KeyCode::LCtrl,
+                threshold_ms: 200,
+            },
+            // Discriminant 8
+            BaseKeyMapping::OneShot {
+                from: KeyCode::CapsLock,
+                modifier: KeyCode::LShift,
+                timeout_ms: 3000,
+            },
+            // Discriminant 9
+            BaseKeyMapping::TapHoldKeyTimeoutOnly {
+                from: KeyCode::F,
+                tap: Some(KeyCode::F),
                 hold: KeyCode::LCtrl,
                 threshold_ms: 200,
             },

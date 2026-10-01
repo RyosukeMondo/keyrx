@@ -115,7 +115,9 @@ fn print_summary(config: &keyrx_core::config::ConfigRoot) {
                     keyrx_core::config::BaseKeyMapping::Lock { .. } => lock += 1,
                     keyrx_core::config::BaseKeyMapping::TapHold { .. } => tap_hold += 1,
                     keyrx_core::config::BaseKeyMapping::HoldOnly { .. } => tap_hold += 1,
-                    keyrx_core::config::BaseKeyMapping::TapHoldKey { .. } => tap_hold += 1,
+                    keyrx_core::config::BaseKeyMapping::TapHoldKey { .. }
+                    | keyrx_core::config::BaseKeyMapping::TapHoldKeyTimeoutOnly { .. }
+                    | keyrx_core::config::BaseKeyMapping::OneShot { .. } => tap_hold += 1,
                     keyrx_core::config::BaseKeyMapping::ModifiedOutput { .. } => {
                         modified_output += 1
                     }

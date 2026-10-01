@@ -30,6 +30,7 @@ pub mod device_pattern;
 pub mod event;
 pub mod held_outputs;
 pub mod lookup;
+pub mod one_shot;
 pub mod permissive_hold;
 pub mod remapper;
 pub mod state;

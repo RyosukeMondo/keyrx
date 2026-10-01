@@ -111,6 +111,15 @@ fn parse_hold_target(func: &str, hold: &str) -> Result<HoldTarget, String> {
     }
 }
 
+/// Validates a tap/hold threshold in milliseconds. Zero would make every
+/// press a HOLD, and a wider value would silently wrap in the `u16` field.
+pub fn threshold_ms(func: &str, ms: i64) -> Result<u16, String> {
+    u16::try_from(ms)
+        .ok()
+        .filter(|&ms| ms > 0)
+        .ok_or_else(|| format!("{func} threshold_ms must be between 1 and 65535, got {ms}"))
+}
+
 /// Build a tap-hold mapping. `hold` is `MD_xx` (custom modifier) or `VK_xx`
 /// (a real key pressed while held, e.g. `VK_LCtrl`).
 pub fn build_tap_hold(
@@ -142,6 +151,64 @@ pub fn build_tap_hold(
             hold,
             threshold_ms,
         },
+    })
+}
+
+/// [`build_tap_hold`] for a `VK_` hold key without permissive hold (see
+/// [`BaseKeyMapping::TapHoldKeyTimeoutOnly`]). `MD_` holds are rejected:
+/// they are layers, and a layer must be decided by the keys typed in it.
+pub fn build_tap_hold_timeout_only(
+    key: &str,
+    tap: &str,
+    hold: &str,
+    threshold_ms: u16,
+) -> Result<BaseKeyMapping, String> {
+    match build_tap_hold(key, tap, hold, threshold_ms)? {
+        BaseKeyMapping::TapHoldKey {
+            from,
+            tap,
+            hold,
+            threshold_ms,
+        } => Ok(BaseKeyMapping::TapHoldKeyTimeoutOnly {
+            from,
+            tap,
+            hold,
+            threshold_ms,
+        }),
+        _ => Err(format!(
+            "tap_hold_timeout_only hold parameter must be a real key (VK_...), got: {hold}"
+        )),
+    }
+}
+
+/// Build a one-shot (sticky) modifier. `modifier` must be a physical
+/// modifier written `VK_...` (`VK_LShift`, `VK_RCtrl`, ...); `timeout_ms`
+/// 0 means the latch lasts until the next key press.
+pub fn build_one_shot(
+    key: &str,
+    modifier: &str,
+    timeout_ms: i64,
+) -> Result<BaseKeyMapping, String> {
+    let from = input_key("key", key)?;
+    if !modifier.starts_with("VK_") {
+        return Err(format!(
+            "one_shot modifier must be a physical modifier key written VK_LShift, VK_LCtrl, \
+             VK_LAlt, VK_LMeta (or the R- forms), got: {modifier}"
+        ));
+    }
+    let modifier = parse_virtual_key(modifier).map_err(|e| format!("Invalid modifier: {e}"))?;
+    if !modifier.is_modifier() {
+        return Err(format!(
+            "one_shot modifier must be a physical modifier (Shift, Ctrl, Alt, Meta), got: {modifier:?}"
+        ));
+    }
+    let timeout_ms = u16::try_from(timeout_ms).map_err(|_| {
+        format!("one_shot timeout_ms must be between 0 (no timeout) and 65535, got {timeout_ms}")
+    })?;
+    Ok(BaseKeyMapping::OneShot {
+        from,
+        modifier,
+        timeout_ms,
     })
 }
 

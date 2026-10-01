@@ -86,6 +86,26 @@ fn remapper() -> Remapper {
                     to: KeyCode::Delete,
                 }],
             ),
+            // Accessibility: sticky modifiers (with and without a timeout)
+            // and a tap-hold that typing cannot decide. They share LShift /
+            // LCtrl with the physical keys and the other mappings, so the
+            // output reference counts are exercised too.
+            KeyMapping::Base(BaseKeyMapping::OneShot {
+                from: KeyCode::F20,
+                modifier: KeyCode::LShift,
+                timeout_ms: 0,
+            }),
+            KeyMapping::Base(BaseKeyMapping::OneShot {
+                from: KeyCode::F21,
+                modifier: KeyCode::LCtrl,
+                timeout_ms: 300,
+            }),
+            KeyMapping::Base(BaseKeyMapping::TapHoldKeyTimeoutOnly {
+                from: KeyCode::D,
+                tap: Some(KeyCode::D),
+                hold: KeyCode::LAlt,
+                threshold_ms: 200,
+            }),
         ],
     );
     let dev2 = block(
@@ -104,7 +124,7 @@ fn remapper() -> Remapper {
     Remapper::from_blocks(&[dev1, dev2])
 }
 
-const KEYS: [KeyCode; 18] = [
+const KEYS: [KeyCode; 21] = [
     KeyCode::A,
     KeyCode::Z,
     KeyCode::X,
@@ -123,6 +143,9 @@ const KEYS: [KeyCode; 18] = [
     KeyCode::Escape,
     KeyCode::Tab,
     KeyCode::Backspace,
+    KeyCode::F20,
+    KeyCode::F21,
+    KeyCode::D,
 ];
 
 fn identities(id: &str) -> Vec<String> {
@@ -168,7 +191,7 @@ proptest! {
 
     #[test]
     fn typing_leaves_no_output_key_stuck_or_swallowed(
-        ops in proptest::collection::vec((any::<bool>(), 0usize..18, 0u64..400), 1..120)
+        ops in proptest::collection::vec((any::<bool>(), 0usize..21, 0u64..400), 1..120)
     ) {
         let mut remapper = remapper();
         let (mut inputs, end) = stream(&ops);

@@ -4,7 +4,8 @@
 //! A tap-hold key is undecided (pending) from its press until one of:
 //! - it is released first → **tap** (its tap key is typed),
 //! - a key pressed after it is also released while it is still down (a
-//!   complete tap "inside" it) → **hold** (its modifier/layer applies),
+//!   complete tap "inside" it) → **hold** (its modifier/layer applies) -
+//!   except for `tap_hold_timeout_only` keys, which ignore typing entirely,
 //! - its threshold passes → **hold** (see [`crate::runtime::Remapper::tick`]).
 //!
 //! Keys pressed while it is pending are buffered and replayed, in order, once
@@ -98,9 +99,15 @@ fn step(
         .iter()
         .any(|b| b.is_press() && b.keycode() == key)
     {
-        // A key pressed inside it was released while it is still down.
-        out.extend(resolve_pending_as_hold(ctx.state, event.timestamp_us()));
-        replay_front(ctx, queue, Some(event));
+        if ctx.state.tap_hold_processor_ref().has_permissive_pending() {
+            // A key pressed inside it was released while it is still down.
+            out.extend(resolve_pending_as_hold(ctx.state, event.timestamp_us()));
+            replay_front(ctx, queue, Some(event));
+        } else {
+            // Timeout-only tap-hold: typing never decides it. Keep the
+            // release behind its press until the tap-hold is decided.
+            ctx.buffer.push(event);
+        }
     } else {
         // A key pressed before the tap-hold key: its press is already out.
         out.extend(run(ctx, event));
