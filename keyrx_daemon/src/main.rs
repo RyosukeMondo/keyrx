@@ -50,9 +50,9 @@ struct Cli {
 enum Commands {
     /// Start the daemon with the specified configuration file.
     ///
-    /// Linux emergency stop: if the keyboard stops responding, hold Left Ctrl
-    /// + Right Ctrl + Escape (or, with one hand, hold Escape alone for 3
-    /// seconds) to release every keyboard and stop the daemon.
+    /// Linux emergency stop: if the keyboard stops responding, hold
+    /// Left Ctrl + Right Ctrl + Escape (or, with one hand, hold Escape alone
+    /// for 3 seconds) to release every keyboard and stop the daemon.
     Run {
         /// Path to the .krx configuration file compiled by keyrx_compiler.
         /// If not specified, uses the active profile from the keyrx config
