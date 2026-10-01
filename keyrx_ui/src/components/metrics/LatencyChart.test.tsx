@@ -302,8 +302,9 @@ describe('LatencyChart', () => {
       const chartData = JSON.parse(
         chart.getAttribute('data-chart-data') || '[]'
       );
-      expect(chartData[0].latency).toBe(0.01);
-      expect(chartData[1].latency).toBe(0.001);
+      // Sub-millisecond data is plotted in µs so the line is not flattened
+      expect(chartData[0].latency).toBeCloseTo(10);
+      expect(chartData[1].latency).toBeCloseTo(1);
     });
 
     it('handles zero latency values', () => {
@@ -420,18 +421,18 @@ describe('formatLatency', () => {
   });
 
   it('formats very small latencies correctly', () => {
-    expect(formatLatency(0.001)).toBe('0.00ms');
-    expect(formatLatency(0.01)).toBe('0.01ms');
-    expect(formatLatency(0.1)).toBe('0.10ms');
+    expect(formatLatency(0.001)).toBe('1µs');
+    expect(formatLatency(0.01)).toBe('10µs');
+    expect(formatLatency(0.1)).toBe('100µs');
   });
 
   it('formats very large latencies correctly', () => {
     expect(formatLatency(999.99)).toBe('999.99ms');
-    expect(formatLatency(1000.5)).toBe('1000.50ms');
+    expect(formatLatency(1000.5)).toBe('1.00s');
   });
 
   it('formats zero latency', () => {
-    expect(formatLatency(0)).toBe('0.00ms');
+    expect(formatLatency(0)).toBe('0µs');
   });
 
   it('rounds correctly', () => {

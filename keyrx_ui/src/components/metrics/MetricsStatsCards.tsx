@@ -1,3 +1,4 @@
+import { formatLatencyUs } from '@/utils/latencyFormat';
 import React from 'react';
 import { Card } from '../Card';
 import { Activity, Clock, Zap, Cpu } from 'lucide-react';
@@ -38,23 +39,19 @@ export const MetricsStatsCards: React.FC<MetricsStatsCardsProps> = ({
   eventCount,
   connected: _connected,
 }) => {
-  // Calculate statistics from latency stats (convert microseconds to milliseconds)
+  // Latency stats arrive in microseconds; the formatter picks µs / ms / s.
   const stats = React.useMemo(() => {
     if (!latencyStats) {
       return { avg: 0, min: 0, max: 0 };
     }
-
     return {
-      avg: latencyStats.avg / 1000,
-      min: latencyStats.min / 1000,
-      max: latencyStats.max / 1000,
+      avg: latencyStats.avg,
+      min: latencyStats.min,
+      max: latencyStats.max,
     };
   }, [latencyStats]);
 
-  // Format latency value with units
-  const formatLatency = (latency: number): string => {
-    return `${latency.toFixed(2)}ms`;
-  };
+  const formatLatency = formatLatencyUs;
 
   return (
     <section

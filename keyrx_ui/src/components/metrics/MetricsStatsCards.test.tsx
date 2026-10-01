@@ -108,7 +108,7 @@ describe('MetricsStatsCards', () => {
 
       // Values are in microseconds, should be converted to milliseconds
       expect(screen.getByText('1.50ms')).toBeInTheDocument(); // average
-      expect(screen.getByText('0.50ms')).toBeInTheDocument(); // min
+      expect(screen.getByText('500µs')).toBeInTheDocument(); // min
       expect(screen.getByText('5.00ms')).toBeInTheDocument(); // max
       expect(screen.getByText('50')).toBeInTheDocument(); // event count
     });
@@ -165,8 +165,8 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      const zeroValues = screen.getAllByText('0.00ms');
-      expect(zeroValues).toHaveLength(3); // 3 latency cards show 0.00ms
+      const zeroValues = screen.getAllByText('0µs');
+      expect(zeroValues).toHaveLength(3); // 3 latency cards show 0µs
       expect(screen.getByText('0')).toBeInTheDocument(); // event count card
     });
 
@@ -219,9 +219,10 @@ describe('MetricsStatsCards', () => {
         />
       );
 
-      const smallValues = screen.getAllByText('0.01ms');
-      expect(smallValues).toHaveLength(2); // avg and max both round to 0.01ms
-      expect(screen.getByText('0.00ms')).toBeInTheDocument(); // min (rounded down)
+      // Microsecond values are shown in µs, never rounded to "0.00ms"
+      expect(screen.getByText('5µs')).toBeInTheDocument(); // avg
+      expect(screen.getByText('10µs')).toBeInTheDocument(); // max
+      expect(screen.getByText('1µs')).toBeInTheDocument(); // min
     });
 
     it('handles very large latency values', () => {

@@ -148,7 +148,7 @@ export const MonitorPage: React.FC = () => {
         e.keyCode,
         e.input ?? '',
         e.output ?? '',
-        e.latency.toFixed(2),
+        e.latency.toFixed(3),
         e.deviceName ?? e.deviceId ?? '',
         e.mappingType ?? '',
       ].join(','),

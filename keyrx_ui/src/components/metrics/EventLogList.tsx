@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { VariableSizeList as List } from 'react-window';
+import { formatLatencyMs } from '@/utils/latencyFormat';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 
 /**
@@ -144,7 +145,7 @@ export const EventLogList: React.FC<EventLogListProps> = ({
 
   // Format latency for display
   const formatLatency = (latency: number): string => {
-    return `${latency.toFixed(2)}ms`;
+    return formatLatencyMs(latency);
   };
 
   // Format key code for display
