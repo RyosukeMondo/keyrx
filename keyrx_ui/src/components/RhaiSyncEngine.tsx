@@ -197,6 +197,9 @@ export function useRhaiSyncEngine(
   useEffect(() => {
     // Create new AbortController for this mount
     abortControllerRef.current = new AbortController();
+    // Re-arm on every mount: React StrictMode (dev) runs mount -> cleanup ->
+    // mount, and the cleanup below would otherwise leave the engine dead.
+    isMountedRef.current = true;
 
     return () => {
       isMountedRef.current = false;

@@ -129,7 +129,7 @@ export function useASTRebuild({
       if (!device) return;
 
       deviceBlocks.push({
-        pattern: device.serial || device.name,
+        pattern: device.pattern ?? (device.serial || device.name),
         mappings: buildBaseMappings(),
         layers: buildLayers(),
         startLine: 0,

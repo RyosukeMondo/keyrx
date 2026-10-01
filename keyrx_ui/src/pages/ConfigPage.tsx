@@ -425,6 +425,7 @@ const ConfigPage: React.FC = () => {
           <div className={activeTab === 'edit' ? '' : 'hidden'}>
             <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6">
               <EditTab
+                key={selectedProfileName}
                 selectedProfileName={selectedProfileName}
                 profileConfig={profileConfig}
                 syncEngine={syncEngine}

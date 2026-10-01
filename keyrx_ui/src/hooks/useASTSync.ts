@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useDevices } from '@/hooks/useDevices';
 import type { KeyMapping } from '@/types';
+import { buildScopes, scopeMatchesBlock } from '@/utils/deviceScopes';
 import type { KeyMapping as RhaiKeyMapping } from '@/utils/rhaiParser';
 
 interface UseASTSyncProps {
@@ -108,8 +109,11 @@ export function useASTSync({
   selectedDevices,
 }: UseASTSyncProps) {
   const { data: devicesData } = useDevices();
-  // Track last processed AST to prevent infinite loops
-  const lastASTRef = useRef<object | null>(null);
+  // Track the last processed (AST, selection, devices) triple to prevent
+  // infinite loops. The AST alone is not enough: the selection and the
+  // connected-device list arrive after the AST and must re-project it,
+  // otherwise the editor stays empty until the AST object changes.
+  const lastInputRef = useRef<{ ast: object; signature: string } | null>(null);
 
   useEffect(() => {
     // Only sync when state is idle (parsing complete)
@@ -118,9 +122,14 @@ export function useASTSync({
     const ast = syncEngine.getAST();
     if (!ast) return;
 
-    // Skip if we've already processed this exact AST instance
-    if (lastASTRef.current === ast) return;
-    lastASTRef.current = ast;
+    const signature = JSON.stringify([
+      globalSelected,
+      selectedDevices,
+      (devicesData ?? []).map((d) => [d.id, d.name, d.serial, d.path]),
+    ]);
+    const last = lastInputRef.current;
+    if (last && last.ast === ast && last.signature === signature) return;
+    lastInputRef.current = { ast, signature };
 
     // Build layer-aware mappings: Map<layerId, Map<keyCode, KeyMapping>>
     const layerMappings = new Map<string, Map<string, KeyMapping>>();
@@ -170,22 +179,21 @@ export function useASTSync({
 
     // Process device-specific mappings for selected devices
     if (selectedDevices.length > 0) {
+      const connected = devicesData ?? [];
+      const scopes = buildScopes(
+        ast.deviceBlocks.map((block) => block.pattern),
+        connected
+      );
       ast.deviceBlocks.forEach((block) => {
-        // Special handling for wildcard pattern "*" - applies to all devices
-        const isWildcard = block.pattern === '*';
-
-        // Check if this device block matches any selected device
-        const matchesSelectedDevice = isWildcard
-          ? selectedDevices.includes('disconnected-*') ||
-            selectedDevices.length > 0
-          : (devicesData?.some((device) => {
-              const isSelected = selectedDevices.includes(device.id);
-              const matchesPattern =
-                block.pattern === device.serial ||
-                block.pattern === device.name ||
-                block.pattern === device.id;
-              return isSelected && matchesPattern;
-            }) ?? false);
+        // Wildcard pattern "*" applies to all devices; any other pattern is
+        // resolved with the daemon's glob rule (see utils/devicePattern).
+        const matchesSelectedDevice =
+          block.pattern === '*' ||
+          scopes.some(
+            (scope) =>
+              selectedDevices.includes(scope.id) &&
+              scopeMatchesBlock(scope, connected, block.pattern)
+          );
 
         if (matchesSelectedDevice) {
           // Add base mappings

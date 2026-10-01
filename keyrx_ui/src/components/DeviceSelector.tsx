@@ -12,6 +12,10 @@ export interface Device {
   serial?: string;
   connected?: boolean;
   layout?: string;
+  /** `device_start(...)` pattern this scope stands for, if it came from a profile. */
+  pattern?: string;
+  /** Names of connected devices the pattern currently matches (pattern scopes only). */
+  matchedNames?: string[];
 }
 
 interface DeviceSelectorProps {
