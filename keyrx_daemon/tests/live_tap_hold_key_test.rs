@@ -38,7 +38,9 @@ impl Harness {
     fn start() -> Self {
         let dir = TempDir::new().unwrap();
         let manager = ProfileManager::new(dir.path().to_path_buf()).expect("profile manager");
-        manager.create("hrm", ProfileTemplate::Blank).expect("create");
+        manager
+            .create("hrm", ProfileTemplate::Blank)
+            .expect("create");
         manager.set_config("hrm", CONFIG).expect("config");
         assert!(manager.activate("hrm").expect("activate").success);
 
