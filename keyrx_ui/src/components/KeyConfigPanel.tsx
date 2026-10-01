@@ -310,6 +310,7 @@ export function KeyConfigPanel({
                   <div className="mt-3">
                     <input
                       type="range"
+                      aria-label={t('kc.holdAction')}
                       min="0"
                       max="255"
                       value={
@@ -337,10 +338,14 @@ export function KeyConfigPanel({
 
               {/* Threshold */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="hold-threshold"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
                   {t('kc.threshold', { ms: threshold })}
                 </label>
                 <input
+                  id="hold-threshold"
                   type="range"
                   min="50"
                   max="500"
