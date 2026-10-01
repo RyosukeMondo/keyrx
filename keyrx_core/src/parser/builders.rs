@@ -16,12 +16,29 @@ use alloc::vec::Vec;
 /// Maximum number of keys in a sequence mapping
 pub const MAX_SEQUENCE_LENGTH: usize = 8;
 
+/// Parses the physical key a mapping consumes (what the user presses).
+///
+/// THE key-naming rule: INPUT keys are bare names (`"CapsLock"`; a `VK_`
+/// prefix is tolerated and means the same key), OUTPUT keys must carry
+/// `VK_`, and `MD_`/`LK_` name custom modifier/lock states that can only be
+/// outputs. `label` names the argument in the error.
+fn input_key(label: &str, s: &str) -> Result<KeyCode, String> {
+    if s.starts_with("MD_") || s.starts_with("LK_") {
+        return Err(format!(
+            "Invalid {}: '{}' is a custom modifier/lock, which can only be an output; \
+             the key you press must be a physical key name such as \"CapsLock\"",
+            label, s
+        ));
+    }
+    parse_physical_key(s).map_err(|e| format!("Invalid {}: {}", label, e))
+}
+
 /// Build a simple key remap, modifier, or lock mapping based on the `to` prefix.
 /// - `VK_` prefix: Simple remap
 /// - `MD_` prefix: Modifier
 /// - `LK_` prefix: Lock
 pub fn build_map(from: &str, to: &str) -> Result<BaseKeyMapping, String> {
-    let from_key = parse_physical_key(from).map_err(|e| format!("Invalid 'from' key: {}", e))?;
+    let from_key = input_key("'from' key", from)?;
 
     if to.starts_with("VK_") {
         let to_key = parse_virtual_key(to).map_err(|e| format!("Invalid 'to' key: {}", e))?;
@@ -59,7 +76,7 @@ pub fn build_modified_map(
     alt: bool,
     win: bool,
 ) -> Result<BaseKeyMapping, String> {
-    let from_key = parse_physical_key(from).map_err(|e| format!("Invalid 'from' key: {}", e))?;
+    let from_key = input_key("'from' key", from)?;
     Ok(BaseKeyMapping::ModifiedOutput {
         from: from_key,
         to: to_key,
@@ -102,7 +119,7 @@ pub fn build_tap_hold(
     hold: &str,
     threshold_ms: u16,
 ) -> Result<BaseKeyMapping, String> {
-    let from_key = parse_physical_key(key).map_err(|e| format!("Invalid key: {}", e))?;
+    let from_key = input_key("key", key)?;
 
     if !tap.starts_with("VK_") {
         return Err(format!(
@@ -131,7 +148,7 @@ pub fn build_tap_hold(
 /// Build a hold-only mapping (tap suppressed). `hold` is `MD_xx` or `VK_xx`
 /// as for [`build_tap_hold`].
 pub fn build_hold_only(key: &str, hold: &str, threshold_ms: u16) -> Result<BaseKeyMapping, String> {
-    let from_key = parse_physical_key(key).map_err(|e| format!("Invalid key: {}", e))?;
+    let from_key = input_key("key", key)?;
 
     Ok(match parse_hold_target("hold_only", hold)? {
         HoldTarget::Modifier(hold_modifier) => BaseKeyMapping::HoldOnly {
@@ -150,7 +167,7 @@ pub fn build_hold_only(key: &str, hold: &str, threshold_ms: u16) -> Result<BaseK
 
 /// Build a sequence mapping (one key → multiple keys typed in order).
 pub fn build_sequence(key: &str, output_keys: &[String]) -> Result<BaseKeyMapping, String> {
-    let from_key = parse_physical_key(key).map_err(|e| format!("Invalid key: {}", e))?;
+    let from_key = input_key("key", key)?;
 
     if output_keys.is_empty() {
         return Err("Sequence must have at least one output key".into());
