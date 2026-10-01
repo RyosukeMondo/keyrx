@@ -181,7 +181,7 @@ async fn handle_websocket(mut socket: WebSocket, event_tx: broadcast::Sender<Dae
                             DaemonEvent::Error { sequence, .. } => *sequence,
                         };
 
-                        log::debug!("WebSocket {} received daemon event seq={}: {:?}",
+                        log::trace!("WebSocket {} received daemon event seq={}: {:?}",
                             client_id,
                             seq,
                             match &event {
@@ -210,7 +210,7 @@ async fn handle_websocket(mut socket: WebSocket, event_tx: broadcast::Sender<Dae
                                 return;
                             }
                         }
-                        log::debug!("WebSocket {} successfully sent ordered events to client", client_id);
+                        log::trace!("WebSocket {} successfully sent ordered events to client", client_id);
                     }
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
                         // FIX MEM-003: Handle slow client backpressure

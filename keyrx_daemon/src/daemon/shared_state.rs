@@ -209,6 +209,15 @@ impl DaemonSharedState {
         *self.config_error.write().expect("RwLock poisoned") = error;
     }
 
+    /// Records why the requested configuration is not live, stamped with the
+    /// local time so a status read hours later still says when it happened.
+    /// The ONE way a failed load (startup, reload, file-watcher recompile)
+    /// reaches `config_error` on every transport.
+    pub fn report_config_error(&self, detail: impl std::fmt::Display) {
+        let at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+        self.set_config_error(Some(format!("{detail} (at {at})")));
+    }
+
     /// The daemon's own output keyboard, once it exists.
     pub fn get_output_device(&self) -> Option<OutputDeviceInfo> {
         self.output_device.read().expect("RwLock poisoned").clone()

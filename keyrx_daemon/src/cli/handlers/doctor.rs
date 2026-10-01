@@ -276,7 +276,8 @@ fn check_daemon_running() -> Check {
             "daemon",
             false,
             format!(
-                "running but NO config is live ({error}); {device_count} device(s) grabbed - \
+                "running, but the last config change did not load ({error}); {device_count} device(s) \
+                 grabbed (the previous config stays live; with none, no keyboard is grabbed) - \
                  fix the profile or activate another"
             ),
         ),

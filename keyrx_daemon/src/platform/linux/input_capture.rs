@@ -432,10 +432,11 @@ impl EvdevInput {
     fn queue_synced(&mut self, synced: SyncOutput) {
         if synced.overflows > 0 {
             self.overflows += synced.overflows;
-            log::warn!(
-                "Keyboard '{}' lost input events (kernel buffer overflow / SYN_DROPPED) {} time(s); \
-                 resynced from the key state and released {} stale key(s). \
-                 Input arrived faster than it could be processed.",
+            // Per-device detail stays at debug; the event loop logs one
+            // rate-limited summary (see `daemon::overflow_log`).
+            log::debug!(
+                "Keyboard '{}' lost input events (SYN_DROPPED) {} time(s); resynced and \
+                 released {} stale key(s)",
                 self.name(),
                 synced.overflows,
                 synced.released

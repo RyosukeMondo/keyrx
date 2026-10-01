@@ -59,6 +59,7 @@ pub mod event_broadcaster;
 pub mod event_loop;
 pub mod live_config;
 pub mod metrics;
+pub mod overflow_log;
 pub mod platform_runners;
 pub mod platform_setup;
 pub mod remapping_state;
@@ -450,7 +451,7 @@ fn reload_remapping(
         state
     });
     if let Err(e) = &result {
-        shared_state.set_config_error(Some(format!("failed to load {source:?}: {e}")));
+        shared_state.report_config_error(format!("failed to load {source:?}: {e}"));
     }
     // Success or not, the request has been dealt with: waiters (activate)
     // re-read the published profile to tell which.
