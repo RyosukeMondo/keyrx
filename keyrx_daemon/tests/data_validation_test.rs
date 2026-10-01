@@ -397,7 +397,7 @@ fn val_004_validate_krx_format() {
     let krx_path = temp_dir.path().join("config.krx");
 
     // Valid magic bytes
-    let mut valid = b"KRX\0".to_vec();
+    let mut valid = keyrx_compiler::serialize::KRX_MAGIC.to_vec();
     valid.extend_from_slice(&[0; 100]);
     fs::write(&krx_path, valid).unwrap();
     assert!(validate_krx_format(&krx_path).is_ok());

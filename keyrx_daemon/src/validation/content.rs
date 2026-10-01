@@ -220,10 +220,8 @@ pub fn validate_krx_format<P: AsRef<Path>>(path: P) -> ValidationResult<()> {
         ));
     }
 
-    // Check magic bytes (KRX format: "KRX\0" = [0x4B, 0x52, 0x58, 0x00])
-    // Note: Adjust these bytes based on actual keyrx_compiler format
-    const MAGIC: &[u8] = b"KRX\0";
-    if !bytes.starts_with(MAGIC) {
+    // The compiler owns the format; never restate its magic here.
+    if !bytes.starts_with(&keyrx_compiler::serialize::KRX_MAGIC) {
         return Err(ValidationError::InvalidBinaryFormat(
             "Invalid magic bytes - not a valid .krx file".to_string(),
         ));
@@ -374,7 +372,7 @@ mod tests {
         let krx_path = temp_dir.path().join("test.krx");
 
         // Valid magic bytes
-        let mut valid_content = b"KRX\0".to_vec();
+        let mut valid_content = keyrx_compiler::serialize::KRX_MAGIC.to_vec();
         valid_content.extend_from_slice(&[0; 100]); // Padding
         fs::write(&krx_path, valid_content).unwrap();
         assert!(validate_krx_format(&krx_path).is_ok());
@@ -386,6 +384,23 @@ mod tests {
         // File too short
         fs::write(&krx_path, b"KR").unwrap();
         assert!(validate_krx_format(&krx_path).is_err());
+    }
+
+    #[test]
+    fn test_validate_krx_format_accepts_real_compiled_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let rhai = temp_dir.path().join("real.rhai");
+        fs::write(
+            &rhai,
+            r#"device_start("*"); map("VK_A", "VK_B"); device_end();"#,
+        )
+        .unwrap();
+        let (bytes, _) = crate::config::profile_compiler::ProfileCompiler::new()
+            .build(&rhai)
+            .expect("fixture compiles");
+        let krx = temp_dir.path().join("real.krx");
+        fs::write(&krx, bytes).unwrap();
+        assert!(validate_krx_format(&krx).is_ok());
     }
 
     #[test]
