@@ -96,6 +96,7 @@ struct StatusResponse {
     uptime_secs: u64,
     active_profile: Option<String>,
     device_count: usize,
+    input_overflows: u64,
 }
 
 async fn get_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> {
@@ -107,6 +108,7 @@ async fn get_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> 
         uptime_secs: status.uptime_secs,
         active_profile: status.active_profile,
         device_count: status.device_count,
+        input_overflows: status.input_overflows,
     })
 }
 

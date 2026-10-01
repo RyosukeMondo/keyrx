@@ -7,12 +7,14 @@ use std::os::fd::{AsRawFd, BorrowedFd};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use evdev::{Device, InputEventKind};
+use evdev::raw_stream::RawDevice;
+use evdev::InputEventKind;
 
 use keyrx_core::runtime::event::KeyEvent;
 
 use crate::platform::{DeviceError, InputDevice};
 
+use super::input_sync::{kernel_keys, DropSync, SyncOutput};
 use super::keycode_map::evdev_to_keycode;
 
 /// A single `(type, code, value)` triple this daemon could not turn into a
@@ -86,8 +88,9 @@ const ENODEV: i32 = 19;
 /// # Ok::<(), keyrx_daemon::platform::DeviceError>(())
 /// ```
 pub struct EvdevInput {
-    /// The underlying evdev device handle.
-    device: Device,
+    /// The underlying evdev device handle. Deliberately the *raw* stream:
+    /// `SYN_DROPPED` is handled by [`DropSync`], not by the evdev crate.
+    device: RawDevice,
     /// Whether we have exclusive (grabbed) access to the device.
     grabbed: bool,
     /// Path to the device node (for identification).
@@ -98,6 +101,13 @@ pub struct EvdevInput {
     /// passthrough items keep their position relative to the key events
     /// around them.
     pending: VecDeque<PendingCapture>,
+    /// Keeps the events strictly press/release-balanced across kernel
+    /// buffer overflows (`SYN_DROPPED`).
+    sync: DropSync,
+    /// When [`EvdevInput::verify_idle_keys`] last asked the kernel.
+    last_idle_check: std::time::Instant,
+    /// Overflows resynced since the last [`EvdevInput::take_overflows`].
+    overflows: u64,
 }
 
 impl EvdevInput {
@@ -141,7 +151,7 @@ impl EvdevInput {
     /// }
     /// ```
     pub fn open(path: &Path) -> Result<Self, DeviceError> {
-        let device = Device::open(path).map_err(|e| {
+        let device = RawDevice::open(path).map_err(|e| {
             let path_str = path.display().to_string();
             match e.kind() {
                 std::io::ErrorKind::NotFound => {
@@ -161,6 +171,9 @@ impl EvdevInput {
             grabbed: false,
             path: path.to_path_buf(),
             pending: VecDeque::new(),
+            sync: DropSync::new(),
+            last_idle_check: std::time::Instant::now(),
+            overflows: 0,
         })
     }
 
@@ -181,18 +194,18 @@ impl EvdevInput {
     /// # Example
     ///
     /// ```no_run
-    /// use evdev::Device;
+    /// use evdev::raw_stream::RawDevice;
     /// use keyrx_daemon::platform::linux::EvdevInput;
     ///
     /// // Open device with evdev directly
-    /// let evdev_device = Device::open("/dev/input/event0")?;
+    /// let evdev_device = RawDevice::open("/dev/input/event0")?;
     ///
     /// // Wrap in EvdevInput
     /// let input = EvdevInput::from_device(evdev_device);
     /// println!("Device: {}", input.name());
     /// # Ok::<(), std::io::Error>(())
     /// ```
-    pub fn from_device(device: Device) -> Self {
+    pub fn from_device(device: RawDevice) -> Self {
         // Try to get the device path, falling back to empty if unavailable
         let path = device
             .physical_path()
@@ -207,6 +220,9 @@ impl EvdevInput {
             grabbed: false,
             path,
             pending: VecDeque::new(),
+            sync: DropSync::new(),
+            last_idle_check: std::time::Instant::now(),
+            overflows: 0,
         }
     }
 
@@ -306,7 +322,7 @@ impl EvdevInput {
     /// This allows direct access to evdev functionality not exposed
     /// through the `EvdevInput` interface.
     #[must_use]
-    pub fn device(&self) -> &Device {
+    pub fn device(&self) -> &RawDevice {
         &self.device
     }
 
@@ -314,7 +330,7 @@ impl EvdevInput {
     ///
     /// This allows direct access to evdev functionality not exposed
     /// through the `EvdevInput` interface.
-    pub fn device_mut(&mut self) -> &mut Device {
+    pub fn device_mut(&mut self) -> &mut RawDevice {
         &mut self.device
     }
 }
@@ -363,6 +379,12 @@ impl EvdevInput {
 /// # Ok::<(), DeviceError>(())
 /// ```
 impl EvdevInput {
+    /// Number of kernel buffer overflows (`SYN_DROPPED`) this device has
+    /// resynced from since the last call; resets the count.
+    pub fn take_overflows(&mut self) -> u64 {
+        std::mem::take(&mut self.overflows)
+    }
+
     /// Borrowed fd for `poll(2)` across devices.
     pub fn poll_fd(&self) -> BorrowedFd<'_> {
         // SAFETY: `self.device` owns this fd and outlives the returned borrow.
@@ -372,12 +394,54 @@ impl EvdevInput {
     /// Reads everything the kernel has buffered (non-blocking) and queues
     /// it, in order. Returns `Ok` with nothing queued when idle.
     fn read_available(&mut self) -> Result<(), DeviceError> {
-        let events = match self.device.fetch_events() {
+        let fetched = self
+            .device
+            .fetch_events()
+            .map(|events| events.collect::<Vec<_>>());
+        let raw = match fetched {
             Ok(events) => events,
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                self.verify_idle_keys();
+                return Ok(());
+            }
             Err(e) => return Err(DeviceError::Io(e)),
         };
-        for event in events {
+        let device = &self.device;
+        let synced = self.sync.process(raw, || kernel_keys(device));
+        self.queue_synced(synced);
+        Ok(())
+    }
+
+    /// Idle check: the kernel can lose a device's tail events without a
+    /// `SYN_DROPPED` ever reaching us (seen under floods), which would leave
+    /// a key believed held forever. With nothing left to read, any key we
+    /// still report as held that the kernel says is up is stale and gets
+    /// released. Throttled, and free while no key is held.
+    fn verify_idle_keys(&mut self) {
+        const EVERY: std::time::Duration = std::time::Duration::from_millis(50);
+        if !self.sync.has_held() || self.last_idle_check.elapsed() < EVERY {
+            return;
+        }
+        self.last_idle_check = std::time::Instant::now();
+        let device = &self.device;
+        let synced = self.sync.release_stale(|| kernel_keys(device));
+        self.queue_synced(synced);
+    }
+
+    /// Counts/logs overflows in `synced` and queues its events.
+    fn queue_synced(&mut self, synced: SyncOutput) {
+        if synced.overflows > 0 {
+            self.overflows += synced.overflows;
+            log::warn!(
+                "Keyboard '{}' lost input events (kernel buffer overflow / SYN_DROPPED) {} time(s); \
+                 resynced from the key state and released {} stale key(s). \
+                 Input arrived faster than it could be processed.",
+                self.name(),
+                synced.overflows,
+                synced.released
+            );
+        }
+        for event in synced.events {
             match event.kind() {
                 InputEventKind::Synchronization(_) | InputEventKind::Misc(_) => continue,
                 InputEventKind::Key(key) => {
@@ -420,7 +484,6 @@ impl EvdevInput {
                 }
             }
         }
-        Ok(())
     }
 
     /// Like [`InputDevice::next_event`], but returns the next queued item
@@ -438,7 +501,7 @@ impl EvdevInput {
 
 /// Puts the device fd in non-blocking mode so one idle keyboard can never
 /// stall reads from the others; waiting is done with `poll(2)` instead.
-fn set_nonblocking(device: &Device) -> Result<(), DeviceError> {
+fn set_nonblocking(device: &RawDevice) -> Result<(), DeviceError> {
     use nix::fcntl::{fcntl, FcntlArg, OFlag};
     let fd = device.as_raw_fd();
     let flags = fcntl(fd, FcntlArg::F_GETFL).map_err(|e| DeviceError::Io(e.into()))?;
@@ -634,7 +697,7 @@ mod tests {
         // Try to open the first available event device
         for i in 0..20 {
             let path = format!("/dev/input/event{}", i);
-            if let Ok(device) = evdev::Device::open(&path) {
+            if let Ok(device) = RawDevice::open(&path) {
                 let input = EvdevInput::from_device(device);
 
                 // Verify the device was wrapped correctly

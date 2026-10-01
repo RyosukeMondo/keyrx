@@ -85,6 +85,10 @@ impl Platform for HeldOutputs {
     fn take_devices_changed(&mut self) -> bool {
         self.inner.take_devices_changed()
     }
+
+    fn take_input_overflows(&mut self) -> u64 {
+        self.inner.take_input_overflows()
+    }
 }
 
 #[cfg(test)]

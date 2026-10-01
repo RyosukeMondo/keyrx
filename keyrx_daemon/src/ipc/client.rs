@@ -167,6 +167,7 @@ mod tests {
             uptime_secs,
             active_profile: Some(profile.to_string()),
             device_count: 1,
+            input_overflows: 0,
         }
     }
 

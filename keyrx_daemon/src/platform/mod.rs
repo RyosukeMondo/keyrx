@@ -304,6 +304,15 @@ pub trait Platform: Send + Sync {
     fn take_devices_changed(&mut self) -> bool {
         false
     }
+
+    /// Returns how many times an input device overflowed the kernel's
+    /// event buffer (`SYN_DROPPED`) since the last call, and resets the
+    /// count. The platform has already resynced by then; the event loop
+    /// only records the number so it shows up in status. Platforms without
+    /// that failure mode keep the default of 0.
+    fn take_input_overflows(&mut self) -> u64 {
+        0
+    }
 }
 
 /// Creates a platform-specific implementation of the Platform trait.

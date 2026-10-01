@@ -12,12 +12,14 @@ mod device_discovery;
 mod emergency_stop;
 mod hotplug;
 mod input_capture;
+mod input_sync;
 mod keycode_map;
 mod output_injection;
 pub mod tray;
 pub(crate) mod uinput_device;
 
 // Re-export public types
+pub use emergency_stop::CHORD_TEXT as EMERGENCY_CHORD_TEXT;
 pub use input_capture::EvdevInput;
 pub use output_injection::UinputOutput;
 pub use tray::LinuxSystemTray;
@@ -521,6 +523,14 @@ impl crate::platform::Platform for LinuxPlatform {
 
     fn take_devices_changed(&mut self) -> bool {
         std::mem::take(&mut self.devices_changed)
+    }
+
+    fn take_input_overflows(&mut self) -> u64 {
+        self.device_manager.as_mut().map_or(0, |dm| {
+            dm.devices_mut()
+                .map(|device| device.input_mut().take_overflows())
+                .sum()
+        })
     }
 
     fn capture_input(

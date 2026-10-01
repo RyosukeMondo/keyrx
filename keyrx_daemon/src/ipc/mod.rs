@@ -31,12 +31,22 @@ pub enum IpcRequest {
     GetState,
     /// Get latency metrics (min, avg, max, p95, p99)
     GetLatencyMetrics,
+    /// Get the keyboards the daemon currently has captured
+    GetDevices,
     /// Get tail of recent events (last N events)
     GetEventsTail { count: usize },
     /// Clear the recent-events ring buffer
     ClearEvents,
     /// Activate a profile by name (test mode only)
     ActivateProfile { name: String },
+}
+
+/// A keyboard the running daemon has captured (grabbed).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CapturedDevice {
+    pub id: String,
+    pub name: String,
+    pub path: String,
 }
 
 /// IPC response types sent from daemon to CLI
@@ -49,7 +59,12 @@ pub enum IpcResponse {
         uptime_secs: u64,
         active_profile: Option<String>,
         device_count: usize,
+        /// Kernel input-buffer overflows (`SYN_DROPPED`) recovered from.
+        #[serde(default)]
+        input_overflows: u64,
     },
+    /// Keyboards the daemon currently has captured
+    Devices { devices: Vec<CapturedDevice> },
     /// Current state (255-bit modifier/lock state)
     State { state: Vec<bool> },
     /// Latency metrics in microseconds
@@ -142,6 +157,7 @@ mod tests {
             uptime_secs: 3600,
             active_profile: Some("default".to_string()),
             device_count: 2,
+            input_overflows: 0,
         };
         let json = serde_json::to_string(&resp).unwrap();
         let deserialized: IpcResponse = serde_json::from_str(&json).unwrap();
