@@ -62,7 +62,7 @@ fn test_atomic_write_no_corruption() {
     registry.register(device).unwrap();
     registry.save().unwrap();
 
-    let tmp_path = path.with_extension("tmp");
+    let tmp_path = path.with_extension("json.part");
     assert!(
         !tmp_path.exists(),
         "Temp file should be removed after atomic rename"

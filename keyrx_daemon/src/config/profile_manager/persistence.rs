@@ -32,14 +32,16 @@ impl ProfileManager {
         let content = serde_json::to_string_pretty(&metadata)
             .map_err(|e| ProfileError::InvalidMetadata(e.to_string()))?;
 
-        fs::write(&active_file, content).map_err(|e| {
-            log::warn!(
-                "Failed to persist active profile to {:?}: {}",
-                active_file,
-                e
-            );
-            ProfileError::IoError(e)
-        })?;
+        crate::config::atomic_file::write_atomic(&active_file, content.as_bytes()).map_err(
+            |e| {
+                log::warn!(
+                    "Failed to persist active profile to {:?}: {}",
+                    active_file,
+                    e
+                );
+                ProfileError::IoError(e)
+            },
+        )?;
 
         log::info!(
             "Persisted active profile '{}' with metadata to {:?}",

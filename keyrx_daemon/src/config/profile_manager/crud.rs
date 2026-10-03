@@ -41,7 +41,7 @@ impl ProfileManager {
         // Generate template content
         let content = template.source();
 
-        fs::write(&rhai_path, content)?;
+        crate::config::atomic_file::write_atomic(&rhai_path, content.as_bytes())?;
 
         let metadata = self.load_profile_metadata(name)?;
         profiles.insert(name.to_string(), metadata.clone());

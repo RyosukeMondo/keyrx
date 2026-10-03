@@ -162,7 +162,7 @@ impl ProfileCompiler {
         krx_path: &Path,
     ) -> Result<Vec<String>, CompilationError> {
         let (bytes, warnings) = self.build(rhai_path)?;
-        write_atomically(krx_path, &bytes)?;
+        super::atomic_file::write_atomic(krx_path, &bytes)?; // readers never see a half-written .krx
         for warning in &warnings {
             log::warn!("{}: {warning}", rhai_path.display());
         }
@@ -237,18 +237,6 @@ impl ProfileCompiler {
 
         Ok(())
     }
-}
-
-/// Writes `bytes` to `path` through a sibling file and a rename, so a reader
-/// (the daemon, the file watcher) never sees a half-written `.krx`.
-fn write_atomically(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
-    let mut part = path.as_os_str().to_owned();
-    part.push(".part");
-    let part = std::path::PathBuf::from(part);
-    std::fs::write(&part, bytes)?;
-    std::fs::rename(&part, path).inspect_err(|_| {
-        let _ = std::fs::remove_file(&part);
-    })
 }
 
 impl Default for ProfileCompiler {

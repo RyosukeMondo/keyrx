@@ -3,6 +3,7 @@
 //! This module provides components for managing device metadata,
 //! profiles, layouts, and configuration generation.
 
+pub mod atomic_file;
 pub mod device;
 pub mod device_registry;
 pub mod layout_manager;

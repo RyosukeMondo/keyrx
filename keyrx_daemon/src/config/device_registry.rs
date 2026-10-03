@@ -156,14 +156,11 @@ impl DeviceRegistry {
             std::fs::create_dir_all(parent).map_err(|e| RegistryError::IOError(e.kind()))?;
         }
 
-        let tmp_path = self.path.with_extension("tmp");
-
         let json = serde_json::to_string_pretty(&self.devices)
             .map_err(|e| RegistryError::CorruptedRegistry(e.to_string()))?;
 
-        std::fs::write(&tmp_path, json).map_err(|e| RegistryError::IOError(e.kind()))?;
-
-        std::fs::rename(&tmp_path, &self.path).map_err(|e| RegistryError::IOError(e.kind()))?;
+        crate::config::atomic_file::write_atomic(&self.path, json.as_bytes())
+            .map_err(|e| RegistryError::IOError(e.kind()))?;
 
         log::debug!("Saved device registry to {:?}", self.path);
         Ok(())

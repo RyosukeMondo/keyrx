@@ -304,7 +304,7 @@ impl ProfileManager {
         // rejected save never touches the real `.rhai`/`.krx` pair.
         let temp_rhai_path = profile.rhai_path.with_extension("rhai.tmp");
         let temp_krx_path = profile.krx_path.with_extension("krx.tmp");
-        fs::write(&temp_rhai_path, content)?;
+        crate::config::atomic_file::write_atomic(&temp_rhai_path, content.as_bytes())?;
 
         if let Err(e) = self
             .compiler
