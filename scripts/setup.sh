@@ -374,7 +374,7 @@ setup_linux() {
     # Create and add user to uinput group
     if ! getent group uinput > /dev/null 2>&1; then
         log_info "Creating 'uinput' group..."
-        sudo groupadd -f uinput
+        sudo groupadd -r -f uinput
     fi
 
     if ! groups | grep -q "uinput"; then

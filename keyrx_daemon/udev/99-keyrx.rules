@@ -13,7 +13,10 @@
 #      sudo udevadm trigger
 #
 #   3. Create uinput group (if not exists):
-#      sudo groupadd -f uinput
+#      sudo groupadd -r -f uinput
+#      (-r makes it a system group: udev is deprecating device-node ownership by
+#      non-system groups, after which a normal-GID group would leave /dev/uinput
+#      root-only at boot and the daemon unable to start.)
 #
 #   4. Add your user to the required groups:
 #      sudo usermod -aG input $USER

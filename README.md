@@ -456,7 +456,7 @@ sudo cp keyrx_daemon/udev/99-keyrx.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
 # Add user to required groups
-sudo groupadd -f uinput
+sudo groupadd -r -f uinput
 sudo usermod -aG input,uinput $USER
 
 # Log out and back in for changes to take effect

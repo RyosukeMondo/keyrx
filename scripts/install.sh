@@ -260,17 +260,17 @@ if [[ "$INSTALL_UDEV" == true ]]; then
             # Create groups if they don't exist
             if ! getent group input >/dev/null; then
                 if [[ "$INSTALL_MODE" == "system" ]]; then
-                    groupadd input
+                    groupadd -r input
                 else
-                    sudo groupadd input
+                    sudo groupadd -r input
                 fi
             fi
 
             if ! getent group uinput >/dev/null; then
                 if [[ "$INSTALL_MODE" == "system" ]]; then
-                    groupadd uinput
+                    groupadd -r uinput
                 else
-                    sudo groupadd uinput
+                    sudo groupadd -r uinput
                 fi
             fi
 
