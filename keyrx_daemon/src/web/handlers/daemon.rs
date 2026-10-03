@@ -18,7 +18,10 @@ pub struct RestartResult {
 
 /// Restart the daemon process.
 ///
-/// This performs a full process restart using exec() on Unix or spawn+exit on Windows.
+/// Under systemd (`INVOCATION_ID` set) the process exits with a non-zero code so
+/// `Restart=on-failure` brings the unit back; spawning a copy there would leave
+/// the unit "inactive (success)" and the keyboard unremapped. Otherwise the
+/// process image is replaced with `exec()` (Unix) or a copy is spawned (Windows).
 /// The WebSocket connection will be lost and the client should reconnect.
 pub async fn restart_daemon(_params: Value) -> Result<Value, RpcError> {
     log::info!("Daemon restart requested via RPC");
@@ -39,9 +42,35 @@ pub async fn restart_daemon(_params: Value) -> Result<Value, RpcError> {
     serde_json::to_value(result).map_err(|e| RpcError::internal_error(e.to_string()))
 }
 
+/// Exit code used to ask a supervisor for a restart (EX_TEMPFAIL).
+const RESTART_EXIT_CODE: i32 = 75;
+
+/// How a restart request is carried out.
+#[derive(Debug, PartialEq, Eq)]
+enum RestartStrategy {
+    /// Exit non-zero and let the supervisor (systemd) restart us.
+    ExitForSupervisor(i32),
+    /// Replace/respawn the process ourselves.
+    Reexec,
+}
+
+/// Pure decision: are we supervised by systemd?
+fn restart_strategy(invocation_id: Option<&str>) -> RestartStrategy {
+    match invocation_id {
+        Some(id) if !id.is_empty() => RestartStrategy::ExitForSupervisor(RESTART_EXIT_CODE),
+        _ => RestartStrategy::Reexec,
+    }
+}
+
 /// Perform the actual process restart
 fn perform_restart() {
     log::info!("Performing daemon restart...");
+
+    let invocation = std::env::var("INVOCATION_ID").ok();
+    if let RestartStrategy::ExitForSupervisor(code) = restart_strategy(invocation.as_deref()) {
+        log::info!("Supervised by systemd; exiting with {code} so the unit restarts");
+        std::process::exit(code);
+    }
 
     let exe = match std::env::current_exe() {
         Ok(path) => path,
@@ -55,8 +84,15 @@ fn perform_restart() {
 
     log::info!("Restarting with: {:?} {:?}", exe, args);
 
-    // Spawn new process and exit current one (cleaner than exec)
-    // This ensures all resources are properly released
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        // exec() only returns on failure.
+        let err = std::process::Command::new(&exe).args(&args).exec();
+        log::error!("Failed to exec new daemon process: {}", err);
+    }
+
+    #[cfg(not(unix))]
     match std::process::Command::new(&exe).args(&args).spawn() {
         Ok(_) => {
             log::info!("New daemon process spawned, exiting current process");
@@ -65,5 +101,24 @@ fn perform_restart() {
         Err(e) => {
             log::error!("Failed to spawn new daemon process: {}", e);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn systemd_invocation_exits_nonzero_for_restart() {
+        assert_eq!(
+            restart_strategy(Some("abc123")),
+            RestartStrategy::ExitForSupervisor(75)
+        );
+    }
+
+    #[test]
+    fn unsupervised_or_empty_invocation_reexecs() {
+        assert_eq!(restart_strategy(None), RestartStrategy::Reexec);
+        assert_eq!(restart_strategy(Some("")), RestartStrategy::Reexec);
     }
 }
