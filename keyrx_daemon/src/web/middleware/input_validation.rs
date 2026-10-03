@@ -221,65 +221,6 @@ fn contains_command_injection(s: &str) -> bool {
         || s.contains("%00") // Null byte
 }
 
-/// Validate profile name for safe filesystem usage
-pub fn validate_profile_name(name: &str, max_length: usize) -> Result<(), String> {
-    // 1. Check length
-    if name.is_empty() {
-        return Err("Profile name cannot be empty".to_string());
-    }
-    if name.len() > max_length {
-        return Err(format!(
-            "Profile name too long: {} characters (max: {})",
-            name.len(),
-            max_length
-        ));
-    }
-
-    // 2. Check for valid characters (alphanumeric, dash, underscore only)
-    if !name
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
-    {
-        return Err(
-            "Profile name can only contain letters, numbers, dash, and underscore".to_string(),
-        );
-    }
-
-    // 3. Check for path traversal
-    if contains_path_traversal(name) {
-        return Err("Profile name contains invalid patterns".to_string());
-    }
-
-    // 4. Check for reserved names
-    if is_reserved_name(name) {
-        return Err(format!("'{}' is a reserved name", name));
-    }
-
-    Ok(())
-}
-
-/// Check if name is a reserved system name
-fn is_reserved_name(name: &str) -> bool {
-    matches!(
-        name.to_lowercase().as_str(),
-        "con"
-            | "prn"
-            | "aux"
-            | "nul"
-            | "com1"
-            | "com2"
-            | "com3"
-            | "com4"
-            | "lpt1"
-            | "lpt2"
-            | "lpt3"
-            | "."
-            | ".."
-            | "default"
-            | "system"
-    )
-}
-
 /// Validate file path to ensure it's within base directory
 pub fn validate_file_path(base: &Path, user_path: &str) -> Result<std::path::PathBuf, String> {
     // 1. Check for traversal patterns
@@ -349,33 +290,6 @@ mod tests {
         assert!(contains_command_injection("test%0als"));
         assert!(!contains_command_injection("normal text"));
         assert!(!contains_command_injection("file-name_123"));
-    }
-
-    #[test]
-    fn test_validate_profile_name() {
-        // Valid names
-        assert!(validate_profile_name("my-profile", 50).is_ok());
-        assert!(validate_profile_name("test_123", 50).is_ok());
-        assert!(validate_profile_name("Profile-Name_1", 50).is_ok());
-
-        // Invalid: empty
-        assert!(validate_profile_name("", 50).is_err());
-
-        // Invalid: too long
-        assert!(validate_profile_name("a".repeat(100).as_str(), 50).is_err());
-
-        // Invalid: special characters
-        assert!(validate_profile_name("test@profile", 50).is_err());
-        assert!(validate_profile_name("test profile", 50).is_err());
-        assert!(validate_profile_name("test/profile", 50).is_err());
-
-        // Invalid: path traversal
-        assert!(validate_profile_name("../secret", 50).is_err());
-
-        // Invalid: reserved names
-        assert!(validate_profile_name("con", 50).is_err());
-        assert!(validate_profile_name("aux", 50).is_err());
-        assert!(validate_profile_name("..", 50).is_err());
     }
 
     #[test]
