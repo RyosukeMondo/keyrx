@@ -58,6 +58,26 @@ fn mutual_import_is_an_error_not_a_stack_overflow() {
 }
 
 #[test]
+fn load_cannot_reach_outside_the_scripts_directory() {
+    let outer = TempDir::new().unwrap();
+    fs::write(outer.path().join("secret.rhai"), "let leaked = 1;").unwrap();
+    let inner = outer.path().join("profiles");
+    fs::create_dir(&inner).unwrap();
+    for path in ["../secret.rhai", "/etc/hostname", "a/../../secret.rhai"] {
+        let script = inner.join("main.rhai");
+        fs::write(&script, format!("load(\"{path}\");")).unwrap();
+        let err = Parser::new().parse_script(&script).unwrap_err().to_string();
+        assert!(err.contains("stay inside"), "{path}: {err}");
+    }
+    // Subdirectories are fine.
+    fs::create_dir(inner.join("lib")).unwrap();
+    fs::write(inner.join("lib/ok.rhai"), "").unwrap();
+    let script = inner.join("main.rhai");
+    fs::write(&script, "load(\"lib/ok.rhai\"); load(\"./lib/ok.rhai\");").unwrap();
+    Parser::new().parse_script(&script).unwrap();
+}
+
+#[test]
 fn import_chain_depth_is_bounded() {
     let dir = TempDir::new().unwrap();
     for i in 0..100 {

@@ -32,6 +32,25 @@ impl ImportResolver {
         import_path: &str,
         base_dir: &Path,
     ) -> Result<PathBuf, ParseError> {
+        // A script may only pull in files from its own directory tree or the
+        // stdlib: an absolute path or `..` would let a profile (which the web
+        // API accepts from clients) execute any readable file as Rhai, and the
+        // resulting error text quotes its contents.
+        let escapes = Path::new(import_path).components().any(|component| {
+            !matches!(
+                component,
+                std::path::Component::Normal(_) | std::path::Component::CurDir
+            )
+        });
+        if escapes {
+            return Err(ParseError::SourceUnreadable {
+                path: PathBuf::from(import_path),
+                reason: "load() paths must be relative and stay inside the script's directory \
+                         (no absolute paths and no '..')"
+                    .to_string(),
+            });
+        }
+
         let mut searched_paths = Vec::new();
 
         // 1. Try relative to base directory
