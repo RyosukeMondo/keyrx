@@ -53,6 +53,13 @@ pub(super) async fn create_profile(
     })))
 }
 
+/// A profile whose activation/reload reports `success: false` has a problem
+/// the caller can fix (its source does not compile): a client error carrying
+/// the compiler message, not a server fault.
+fn failed_result_error(error: Option<String>, fallback: &str) -> ApiError {
+    ApiError::BadRequest(error.unwrap_or_else(|| fallback.to_string()))
+}
+
 /// POST /api/profiles/:name/activate - Activate profile
 pub(super) async fn activate_profile(
     State(state): State<Arc<AppState>>,
@@ -72,9 +79,7 @@ pub(super) async fn activate_profile(
             .map_err(profile_error_to_api_error)?;
 
         if !result.success {
-            return Err(ApiError::InternalError(
-                result.error.unwrap_or_else(|| "Unknown error".to_string()),
-            ));
+            return Err(failed_result_error(result.error, "Unknown error"));
         }
 
         // Reload simulation service with the new profile
@@ -116,11 +121,7 @@ pub(super) async fn reload_active_profile(
         .map_err(profile_error_to_api_error)?;
 
     if !result.success {
-        return Err(ApiError::InternalError(
-            result
-                .error
-                .unwrap_or_else(|| "Compilation failed".to_string()),
-        ));
+        return Err(failed_result_error(result.error, "Compilation failed"));
     }
 
     // If recompiled (ProfileService already asked the daemon to reload)

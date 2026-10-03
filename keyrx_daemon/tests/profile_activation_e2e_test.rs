@@ -538,3 +538,32 @@ async fn test_concurrent_activations_are_serialized() {
         "Exactly one profile should be marked active after concurrent activations"
     );
 }
+
+/// A profile whose source does not compile is a client error (400) carrying
+/// the compiler message, for both activation and reload - not a 500.
+#[tokio::test]
+#[serial]
+async fn test_activating_uncompilable_profile_is_400_with_compile_error() {
+    let app = TestApp::new().await;
+    let profiles_dir = app.config_path().join("profiles");
+    std::fs::create_dir_all(&profiles_dir).unwrap();
+    std::fs::write(profiles_dir.join("broken.rhai"), "this is not ( valid rhai").unwrap();
+    app.rescan_profiles();
+
+    let response = app.post("/api/profiles/broken/activate", &json!({})).await;
+    let status = response.status();
+    let body = response.text().await.unwrap();
+
+    assert_eq!(
+        status, 400,
+        "uncompilable profile must be 400, body: {body}"
+    );
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(json["success"], false);
+    assert!(
+        json["error"]["message"]
+            .as_str()
+            .is_some_and(|m| !m.is_empty()),
+        "error body must carry the compile error: {body}"
+    );
+}
