@@ -62,6 +62,8 @@ pub fn run_daemon(
         return run_test_mode(config_dir);
     }
 
+    super::ensure_no_other_daemon().map_err(|m| (ExitCode::RuntimeError as i32, m))?;
+
     log::info!("Starting keyrx daemon from {source:?}");
 
     // Create platform instance
@@ -180,7 +182,7 @@ pub fn run_daemon(
 
     // Serve the same read model over IPC for the `status|state|metrics` CLI.
     // Best-effort; the daemon runs regardless.
-    super::start_production_ipc_server(&container, daemon_query);
+    let _ipc = super::start_production_ipc_server(&container, daemon_query);
 
     // Run the daemon event loop with tray polling
     let running = daemon.running_flag();
@@ -230,7 +232,6 @@ pub fn run_daemon(
 
     // Wait for daemon thread to finish
     let joined = result.join();
-    super::remove_production_ipc_endpoint();
     match joined {
         Ok(daemon_result) => daemon_result.map_err(daemon_error_to_exit)?,
         Err(panic_payload) => {

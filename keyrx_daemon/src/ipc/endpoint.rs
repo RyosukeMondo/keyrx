@@ -76,6 +76,17 @@ impl IpcEndpoint {
         }
     }
 
+    /// True when a daemon is accepting connections on this endpoint right now
+    /// (a socket file nobody listens on is stale, not live). Pipes cannot be
+    /// probed without side effects; they report false and rely on the bind.
+    pub(crate) fn probe_live(&self) -> bool {
+        #[cfg(unix)]
+        if let Self::SocketFile(path) = self {
+            return std::os::unix::net::UnixStream::connect(path).is_ok();
+        }
+        false
+    }
+
     /// Clears a stale socket file before binding, but refuses to take over
     /// one a running daemon still answers on (a second daemon would orphan
     /// it). No-op for pipes: a pipe someone still owns makes the bind fail.
@@ -86,8 +97,7 @@ impl IpcEndpoint {
         if !path.exists() {
             return Ok(());
         }
-        #[cfg(unix)]
-        if std::os::unix::net::UnixStream::connect(path).is_ok() {
+        if self.probe_live() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::AddrInUse,
                 format!(
@@ -221,6 +231,20 @@ mod tests {
         let err = endpoint.prepare_bind().unwrap_err();
         assert_eq!(err.kind(), ErrorKind::AddrInUse);
         assert!(path.exists(), "a live daemon's socket must not be removed");
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn probe_tells_a_live_daemon_from_a_stale_socket() {
+        let dir = tempfile::tempdir().unwrap();
+        let live = dir.path().join("live.sock");
+        let _listener = std::os::unix::net::UnixListener::bind(&live).unwrap();
+        assert!(IpcEndpoint::SocketFile(live).probe_live());
+
+        let stale = dir.path().join("stale.sock");
+        drop(std::os::unix::net::UnixListener::bind(&stale).unwrap());
+        assert!(!IpcEndpoint::SocketFile(stale).probe_live());
+        assert!(!IpcEndpoint::SocketFile(dir.path().join("none.sock")).probe_live());
     }
 
     #[test]

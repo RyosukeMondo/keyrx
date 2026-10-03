@@ -86,7 +86,7 @@ pub fn run_daemon(
         Arc::clone(&daemon_query),
     ));
     // Best-effort; the daemon runs regardless.
-    super::start_production_ipc_server(&container, daemon_query);
+    let _ipc = super::start_production_ipc_server(&container, daemon_query);
 
     let actual_port = instance::find_available_port(configured_port);
     let port_note = port_change_note(configured_port, actual_port);
@@ -109,7 +109,6 @@ pub fn run_daemon(
     message_loop::run(&mut daemon, &daemon_state, tray.as_ref(), &web_ui_url);
 
     instance::cleanup_pid_file(&config_dir);
-    super::remove_production_ipc_endpoint();
     Ok(())
 }
 
