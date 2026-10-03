@@ -45,7 +45,14 @@ async function apiFetch<T>(
       return {} as T;
     }
 
-    const data: ApiResponse<T> = await response.json();
+    // An error from a proxy or size limit may not be JSON; report its status,
+    // not "Unexpected token <".
+    const data: ApiResponse<T> = await response.json().catch(() => {
+      if (response.ok) throw new Error('The daemon sent an invalid response');
+      return {
+        error: `Request failed: ${response.status} ${response.statusText}`,
+      } as ApiResponse<T>;
+    });
 
     if (!response.ok) {
       // Extract error message from object or string
