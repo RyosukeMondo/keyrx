@@ -117,6 +117,20 @@ pub enum DaemonError {
     RuntimeError(String),
 }
 
+impl DaemonError {
+    /// The process exit code this error maps to (single rule for every runner).
+    pub fn exit_code(&self) -> ExitCode {
+        match self {
+            Self::Config(_) => ExitCode::ConfigError,
+            Self::PermissionError(_) => ExitCode::PermissionError,
+            Self::Platform(e) if e.is_permission_denied() => ExitCode::PermissionError,
+            Self::Platform(_) | Self::SignalError(_) | Self::RuntimeError(_) => {
+                ExitCode::RuntimeError
+            }
+        }
+    }
+}
+
 /// Exit codes for daemon termination.
 ///
 /// These codes follow Unix conventions and are documented in the requirements.
@@ -601,6 +615,37 @@ mod tests {
         let platform_err = PlatformError::DeviceNotFound("test device".to_string());
         let daemon_err = DaemonError::Platform(platform_err);
         assert!(daemon_err.to_string().contains("platform error"));
+    }
+
+    #[test]
+    fn platform_errors_map_to_exit_codes_by_variant_not_text() {
+        use crate::platform::PlatformError;
+        let code = |e: PlatformError| DaemonError::Platform(e).exit_code();
+        assert_eq!(
+            code(PlatformError::PermissionDenied("x".into())),
+            ExitCode::PermissionError
+        );
+        assert_eq!(
+            code(PlatformError::Io(io::Error::from(
+                io::ErrorKind::PermissionDenied
+            ))),
+            ExitCode::PermissionError
+        );
+        // Text mentioning "permission" must not be misclassified.
+        assert_eq!(
+            code(PlatformError::InitializationFailed {
+                reason: "permission-less setup failed".into()
+            }),
+            ExitCode::RuntimeError
+        );
+        assert_eq!(
+            code(PlatformError::DeviceNotFound("k".into())),
+            ExitCode::RuntimeError
+        );
+        assert_eq!(
+            DaemonError::PermissionError("p".into()).exit_code(),
+            ExitCode::PermissionError
+        );
     }
 
     #[test]

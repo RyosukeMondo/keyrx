@@ -155,5 +155,17 @@ pub enum PlatformError {
     EmergencyStop,
 }
 
+impl PlatformError {
+    /// True when the failure is an access/permission problem (the user must
+    /// fix group membership or privileges), as opposed to a runtime fault.
+    pub fn is_permission_denied(&self) -> bool {
+        match self {
+            Self::PermissionDenied(_) | Self::DeviceAccess { .. } => true,
+            Self::Io(e) => e.kind() == std::io::ErrorKind::PermissionDenied,
+            _ => false,
+        }
+    }
+}
+
 /// Convenience type alias for Results using PlatformError.
 pub type Result<T> = std::result::Result<T, PlatformError>;

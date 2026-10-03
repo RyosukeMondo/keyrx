@@ -248,23 +248,7 @@ fn wire_suspended_flag(daemon_state: &Arc<DaemonSharedState>) {
 
 /// Converts a DaemonError to an exit code and message.
 fn daemon_error_to_exit(error: crate::daemon::DaemonError) -> (i32, String) {
-    use crate::daemon::DaemonError;
-
-    match &error {
-        DaemonError::Config(_) => (ExitCode::ConfigError as i32, error.to_string()),
-        DaemonError::PermissionError(_) => (ExitCode::PermissionError as i32, error.to_string()),
-        DaemonError::Platform(plat_err) => {
-            // Check if it's a permission error
-            if plat_err.to_string().contains("permission")
-                || plat_err.to_string().contains("Permission")
-            {
-                (ExitCode::PermissionError as i32, error.to_string())
-            } else {
-                (ExitCode::ConfigError as i32, error.to_string())
-            }
-        }
-        _ => (ExitCode::RuntimeError as i32, error.to_string()),
-    }
+    (error.exit_code().into(), error.to_string())
 }
 
 #[cfg(test)]
