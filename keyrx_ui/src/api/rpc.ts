@@ -119,6 +119,27 @@ export class RpcClient {
   }
 
   /**
+   * Import a `.krx` / `.rhai` layout as a new profile (same service as
+   * `POST /api/profiles/import`).
+   *
+   * @param name - Name of the new profile
+   * @param format - Kind of file in `contentBase64`
+   * @param contentBase64 - The file's bytes, standard base64
+   * @throws Error if the name is taken or the file is invalid
+   */
+  async importProfile(
+    name: string,
+    format: 'krx' | 'rhai',
+    contentBase64: string
+  ): Promise<void> {
+    return this.api.command<void>('import_profile', {
+      name,
+      format,
+      contentBase64,
+    });
+  }
+
+  /**
    * Rename a profile.
    *
    * @param oldName - Current name of the profile

@@ -34,6 +34,7 @@ export type RpcMethod =
   | 'activate_profile'
   | 'delete_profile'
   | 'duplicate_profile'
+  | 'import_profile'
   | 'rename_profile'
   | 'rename_device'
   | 'set_scope_device'
