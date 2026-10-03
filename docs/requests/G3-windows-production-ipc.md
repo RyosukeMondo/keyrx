@@ -190,3 +190,19 @@ When you next sync, please check:
   check whether `platform/emergency.rs` is meant to be shared with the Windows
   hook and that the Windows chord behaviour is unchanged.
 
+
+## Addendum (2026-10-03): web/unit changes that touch Windows
+
+- **Static files** (`web/static_files.rs`): a missing file path (anything with
+  an extension, e.g. a stale hashed `assets/*.js` chunk after an upgrade) is a
+  real `404`, not `index.html`/200; only extension-less SPA routes fall back to
+  `index.html`. The UI reloads once when a lazy chunk is gone. Check the
+  Windows-embedded UI behaves the same and the tray's "Open Web UI" still works.
+- **Import endpoint**: `POST /api/profiles/import` (`web/api/profiles/`) backs
+  the UI's "Load layout from file" (`.krx` or `.rhai`; a `.krx` is decompiled
+  to Rhai source). It is platform independent; just confirm a profile imported
+  on Windows lands in the Windows profile dir and appears in `profiles list`.
+- **systemd unit** (`keyrx_daemon/systemd/keyrx-user.service`) is Linux only:
+  `StartLimitIntervalSec=0`, `KillMode=process`, `RestartSteps`/
+  `RestartMaxDelaySec`. Nothing to port; the Windows equivalent is the
+  scheduled task / service restart policy, which should likewise never give up.
