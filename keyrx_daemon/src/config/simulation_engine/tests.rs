@@ -294,3 +294,27 @@ fn test_no_warning_when_a_wildcard_block_exists() {
     let sequence = SimulationEngine::parse_event_dsl("press:A,release:A", 0).unwrap();
     assert!(engine.unrouted_input_warning(&sequence).is_none());
 }
+
+/// A profile's stale or old-format `.krx` is rebuilt from its `.rhai` (the
+/// same rule the daemon uses at startup) instead of failing the simulation.
+#[test]
+fn test_simulation_rebuilds_an_unreadable_krx_from_the_profile_source() {
+    let dir = tempfile::tempdir().unwrap();
+    let krx = dir.path().join("p.krx");
+    std::fs::write(&krx, b"compiled by some other release").unwrap();
+    std::fs::write(
+        dir.path().join("p.rhai"),
+        "device_start(\"*\");\nmap(\"VK_A\", \"VK_B\");\ndevice_end();\n",
+    )
+    .unwrap();
+
+    assert!(SimulationEngine::new(&krx).is_ok());
+
+    // No source to rebuild from: still the load error.
+    let orphan = dir.path().join("orphan.krx");
+    std::fs::write(&orphan, b"garbage").unwrap();
+    assert!(matches!(
+        SimulationEngine::new(&orphan),
+        Err(SimulationError::LoadError(_))
+    ));
+}

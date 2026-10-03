@@ -28,8 +28,7 @@ use keyrx_core::config::DeviceConfig;
 use log::info;
 
 use super::DaemonError;
-use crate::config::profile_compiler::ProfileCompiler;
-use crate::config_loader::load_config;
+use crate::config_loader::{load_config, rebuild_if_stale};
 
 /// Where the daemon should take its configuration from.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -118,30 +117,10 @@ impl LiveConfig {
     }
 
     /// Loads profile `name`, first rebuilding its `.krx` from the `.rhai`
-    /// source when the `.krx` is missing, unreadable (e.g. written by an
-    /// older release with another format) or older than the source. The
-    /// `.rhai` is the profile; the `.krx` is a cache of it, so an upgrade or
-    /// a `git checkout` must not leave the keyboard unremapped until someone
-    /// re-activates the profile by hand.
+    /// source when needed (see [`rebuild_if_stale`]).
     fn load_profile(&self, name: &str) -> Result<LoadedConfig, DaemonError> {
         let krx = self.profile_krx_path(name);
-        let rhai = krx.with_extension("rhai");
-        let usable = load_config(&krx).is_ok();
-        if rhai.is_file() && (!usable || source_is_newer(&rhai, &krx)) {
-            match ProfileCompiler::new().compile_profile(&rhai, &krx) {
-                Ok(_) => info!("Rebuilt {} from {}", krx.display(), rhai.display()),
-                Err(e) if usable => log::warn!(
-                    "{} does not compile ({e}); keeping the previously compiled profile",
-                    rhai.display()
-                ),
-                Err(e) => {
-                    return Err(DaemonError::RuntimeError(format!(
-                        "profile '{name}' cannot be compiled from {}: {e}",
-                        rhai.display()
-                    )))
-                }
-            }
-        }
+        rebuild_if_stale(&krx)?;
         load_krx(&krx, Some(name.to_string()))
     }
 
@@ -157,15 +136,6 @@ impl LiveConfig {
             _ => a == b,
         };
         same(path, &self.profile_krx_path(name)).then(|| name.to_string())
-    }
-}
-
-/// True when `source` was modified after `compiled` (or `compiled`'s time is unknown).
-fn source_is_newer(source: &Path, compiled: &Path) -> bool {
-    let modified = |p: &Path| fs::metadata(p).and_then(|m| m.modified());
-    match (modified(source), modified(compiled)) {
-        (Ok(source), Ok(compiled)) => source > compiled,
-        _ => false,
     }
 }
 

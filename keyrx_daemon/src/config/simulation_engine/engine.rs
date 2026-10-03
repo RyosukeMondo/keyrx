@@ -26,6 +26,8 @@ pub struct SimulationEngine {
 impl SimulationEngine {
     /// Create a new simulation engine from a KRX file.
     pub fn new(krx_path: &Path) -> Result<Self, SimulationError> {
+        crate::config_loader::rebuild_if_stale(krx_path)
+            .map_err(|e| SimulationError::LoadError(e.to_string()))?;
         let config = crate::config_loader::load_config(krx_path)
             .map_err(|e| SimulationError::LoadError(e.to_string()))?;
         Ok(Self {

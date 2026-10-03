@@ -8,6 +8,7 @@ use std::path::Path;
 
 use keyrx_core::config::ConfigRoot;
 
+use crate::config::profile_compiler::ProfileCompiler;
 use crate::error::ConfigError;
 
 /// Loads and validates a .krx configuration file.
@@ -84,6 +85,56 @@ pub fn load_config<P: AsRef<Path>>(path: P) -> Result<ConfigRoot, ConfigError> {
     };
 
     Ok(config)
+}
+
+/// Rebuilds `krx` from the `.rhai` source next to it when the `.krx` is
+/// missing, unreadable (e.g. written by an older release with another
+/// format) or older than the source. The `.rhai` is the profile and the
+/// `.krx` a cache of it, so an upgrade or a `git checkout` must not leave a
+/// profile unusable until someone recompiles it by hand. Every consumer of a
+/// profile's `.krx` (daemon startup/reload, `simulate`) goes through this.
+///
+/// A source that does not compile keeps a still-loadable previous `.krx`;
+/// without one it is an error saying why. No sibling `.rhai`: nothing to do.
+///
+/// # Errors
+/// `ConfigError::ParseError` when a needed rebuild fails and no usable
+/// `.krx` exists.
+pub fn rebuild_if_stale(krx: &Path) -> Result<(), ConfigError> {
+    let rhai = krx.with_extension("rhai");
+    if !rhai.is_file() {
+        return Ok(());
+    }
+    let usable = load_config(krx).is_ok();
+    if usable && !source_is_newer(&rhai, krx) {
+        return Ok(());
+    }
+    match ProfileCompiler::new().compile_profile(&rhai, krx) {
+        Ok(_) => {
+            log::info!("Rebuilt {} from {}", krx.display(), rhai.display());
+            Ok(())
+        }
+        Err(e) if usable => {
+            log::warn!(
+                "{} does not compile ({e}); keeping the previously compiled profile",
+                rhai.display()
+            );
+            Ok(())
+        }
+        Err(e) => Err(ConfigError::ParseError {
+            path: krx.to_path_buf(),
+            reason: format!("cannot be compiled from {}: {e}", rhai.display()),
+        }),
+    }
+}
+
+/// True when `source` was modified after `compiled` (false if either time is unknown).
+fn source_is_newer(source: &Path, compiled: &Path) -> bool {
+    let modified = |p: &Path| std::fs::metadata(p).and_then(|m| m.modified());
+    match (modified(source), modified(compiled)) {
+        (Ok(source), Ok(compiled)) => source > compiled,
+        _ => false,
+    }
 }
 
 #[cfg(test)]
