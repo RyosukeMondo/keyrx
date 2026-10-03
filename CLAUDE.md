@@ -1,9 +1,5 @@
 # KeyRx Project Configuration
 
-## Project Overview
-
-KeyRx is a keyboard remapping system with a 4-crate Rust workspace + React/TypeScript UI.
-
 ## Rules
 
 - Do what has been asked; nothing more, nothing less
@@ -11,17 +7,6 @@ KeyRx is a keyboard remapping system with a 4-crate Rust workspace + React/TypeS
 - ALWAYS prefer editing existing files over creating new ones
 - NEVER proactively create documentation files (*.md) or README files
 - NEVER save working files, text/mds, or tests to the root folder
-
-## File Organization
-
-Save files in appropriate subdirectories:
-- `keyrx_core/src/` - Core library (no_std, platform-agnostic)
-- `keyrx_compiler/src/` - Config compiler
-- `keyrx_daemon/src/` - Daemon + web server (axum)
-- `keyrx_daemon/tests/` - Integration/e2e tests
-- `keyrx_ui/src/` - React frontend
-- `scripts/` - Build/test automation
-- `docs/` - Documentation (only when requested)
 
 ## Workflow
 
@@ -40,4 +25,4 @@ Save files in appropriate subdirectories:
 
 ## Full Reference
 
-See `.claude/CLAUDE.md` for complete development guide (architecture, naming, troubleshooting, shared utilities).
+See `.claude/CLAUDE.md` for the development guide (Linux host notes, critical constraints, shared utilities).

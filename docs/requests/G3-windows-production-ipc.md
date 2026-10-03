@@ -199,8 +199,8 @@ When you next sync, please check:
   `index.html`. The UI reloads once when a lazy chunk is gone. Check the
   Windows-embedded UI behaves the same and the tray's "Open Web UI" still works.
 - **Import endpoint**: `POST /api/profiles/import` (`web/api/profiles/`) backs
-  the UI's "Load layout from file" (`.krx` or `.rhai`; a `.krx` is decompiled
-  to Rhai source). It is platform independent; just confirm a profile imported
+  the UI's "Load layout from file" (`.krx` or `.rhai`; the new
+  profile is not activated). It is platform independent; just confirm a profile imported
   on Windows lands in the Windows profile dir and appears in `profiles list`.
 - **systemd unit** (`keyrx_daemon/systemd/keyrx-user.service`) is Linux only:
   `StartLimitIntervalSec=0`, `KillMode=process`, `RestartSteps`/
