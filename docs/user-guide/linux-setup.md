@@ -725,9 +725,18 @@ A tap, a sequence or a remapped tap reaches the output as a press and a
 release a few microseconds apart. Games and tools that read key state once per
 frame can miss a pulse that short. keyrx therefore keeps an output key down for
 at least **5 ms**: only a release that would follow its press by less than that
-is held back until the time has passed. Longer holds are not delayed, order is
-preserved (anything emitted after a held-back release waits behind it, at most
-5 ms), and a profile switch or shutdown flushes everything at once.
+is held back until the time has passed. Longer holds are not delayed, and a
+profile switch or shutdown flushes everything at once.
+
+The hold is per key: while a tapped key waits out its 5 ms, the next
+*different* key goes down at once (the same rollover fast typing produces), so
+a burst of taps is not slowed to one key per 5 ms. Everything else keeps its
+order: presses never reorder, releases leave in the order they arrived, a key
+is never pressed again before its own release, and modifiers (Shift, Ctrl,
+Alt, Meta) never overtake and are never overtaken, so every key sees exactly
+the modifier state it had on input. What remains bounded by the hold is
+repeating the *same* key (at most about 200 taps/s at 5 ms) and runs that
+alternate modifiers with other keys.
 
 | Setting | Flag | Environment | `settings.json` |
 |---|---|---|---|

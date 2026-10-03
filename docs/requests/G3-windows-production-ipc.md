@@ -170,7 +170,7 @@ When you next sync, please check:
   (`SOURCE_DATE_EPOCH` or 0 for the timestamp). Run
   `cargo test -p keyrx_core` and check the Windows hook still produces correct
   Shift/Ctrl for a home-row mod and a one-shot Shift.
-- **Min key-down decorator** (`platform/min_key_down.rs`, default 5 ms, flag
+- **Min key-down decorator** (`platform/min_key_down/`, default 5 ms, flag
   `--min-key-down-ms`, env `KEYRX_MIN_KEY_DOWN_MS`, `settings.json`): it is
   applied in `daemon/mod.rs` (`MinKeyDown::new(platform, ..)`) around whatever
   `Platform` the daemon was given. Confirm the Windows runner builds its
