@@ -65,7 +65,11 @@ pub fn load_config<P: AsRef<Path>>(path: P) -> Result<ConfigRoot, ConfigError> {
     }
 
     // Read file bytes
-    let bytes = std::fs::read(path_ref).map_err(ConfigError::Io)?;
+    let bytes =
+        keyrx_compiler::serialize::read_krx(path_ref).map_err(|e| ConfigError::ParseError {
+            path: path_ref.to_path_buf(),
+            reason: e.to_string(),
+        })?;
 
     // Validate (magic, version, hash, rkyv structure), then copy out of the
     // archive so the bytes can be freed.

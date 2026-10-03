@@ -89,6 +89,9 @@ pub fn format_error_user_friendly(error: &ParseError) -> String {
             msg.push_str("\nHelp: Make sure the file exists and the path is correct.");
             msg
         }
+        ParseError::SourceUnreadable { path, reason } => {
+            format!("Cannot use {} as a script: {}", path.display(), reason)
+        }
         ParseError::CircularImport { chain } => {
             let mut msg = String::from("Circular import detected:\n");
             for (i, path) in chain.iter().enumerate() {

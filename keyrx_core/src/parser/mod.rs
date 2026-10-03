@@ -21,6 +21,7 @@
 // Always available - no external dependencies
 pub mod builders;
 pub mod error;
+pub mod limits;
 pub mod scopes;
 mod suggest;
 pub mod usage;
@@ -86,9 +87,9 @@ impl Parser {
         let state = Arc::new(Mutex::new(ParserState::new()));
 
         // Set resource limits
-        engine.set_max_operations(100_000);
-        engine.set_max_expr_depths(100, 100);
-        engine.set_max_call_levels(100);
+        engine.set_max_operations(limits::MAX_OPERATIONS);
+        engine.set_max_expr_depths(limits::MAX_EXPR_DEPTH, limits::MAX_EXPR_DEPTH);
+        engine.set_max_call_levels(limits::MAX_CALL_LEVELS);
 
         // Register all DSL functions
         functions::device::register_device_functions(&mut engine, Arc::clone(&state));
@@ -113,7 +114,7 @@ impl Parser {
         // Run the script
         let mut scope = Scope::new();
         self.engine
-            .run_with_scope(&mut scope, script)
+            .run_with_scope(&mut scope, limits::strip_bom(script))
             .map_err(|e| format!("Parse error: {}", friendly_message(&e)))?;
 
         // Finalize the configuration

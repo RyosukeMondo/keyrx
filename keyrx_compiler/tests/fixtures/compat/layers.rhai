@@ -1,0 +1,10 @@
+device_start("rfz*");
+map("VK_F13", "MD_00");
+when_start("MD_00");
+map("VK_F14", "VK_C");
+when_end();
+when_start(["MD_00","MD_01"]);
+map("VK_F15", "VK_D");
+when_end();
+map("VK_F14", "VK_B");
+device_end();

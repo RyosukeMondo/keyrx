@@ -46,7 +46,7 @@ pub(super) async fn get_debug_state(State(state): State<Arc<AppState>>) -> Json<
 fn count_mappings_for_profile(state: &AppState, name: &str) -> usize {
     let profiles_dir = state.profile_service.profile_manager().profiles_dir();
     let krx_path = profiles_dir.join(format!("{name}.krx"));
-    let Ok(data) = std::fs::read(&krx_path) else {
+    let Ok(data) = keyrx_compiler::serialize::read_krx(&krx_path) else {
         return 0;
     };
     let Ok(archived) = keyrx_compiler::serialize::deserialize(&data) else {

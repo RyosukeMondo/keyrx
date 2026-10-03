@@ -112,6 +112,12 @@ pub fn format_error(error: &ParseError, _file: &Path, source: &str) -> String {
             import_chain,
         } => format_import_not_found_error(path, searched_paths, import_chain),
         ParseError::CircularImport { chain } => format_circular_import_error(chain),
+        ParseError::SourceUnreadable { path, reason } => format!(
+            "{} cannot use {} as a script: {}\n",
+            "Error:".red().bold(),
+            path.display(),
+            reason
+        ),
         ParseError::ResourceLimitExceeded {
             limit_type,
             import_chain,

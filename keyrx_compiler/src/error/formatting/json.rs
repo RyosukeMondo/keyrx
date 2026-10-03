@@ -136,6 +136,13 @@ fn format_remaining_error_json(error: &ParseError) -> String {
             })
             .to_string()
         }
+        ParseError::SourceUnreadable { path, reason } => serde_json::json!({
+            "error_code": "E010",
+            "error_type": "SourceUnreadable",
+            "message": format!("Cannot use {} as a script: {}", path.display(), reason),
+            "suggestion": "Save the file as UTF-8, under the size limit, and make sure it is readable"
+        })
+        .to_string(),
         ParseError::CircularImport { chain } => {
             serde_json::json!({
                 "error_code": "E008",

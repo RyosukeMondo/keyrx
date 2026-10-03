@@ -103,8 +103,8 @@ fn validate_config_file(path: &Path) -> Result<(), (i32, String)> {
             path.display()
         )));
     }
-    let bytes =
-        std::fs::read(path).map_err(|e| err(format!("Error: Cannot read config file: {e}")))?;
+    let bytes = keyrx_compiler::serialize::read_krx(path)
+        .map_err(|e| err(format!("Error: Cannot read config file: {e}")))?;
     keyrx_compiler::serialize::deserialize(&bytes)
         .map_err(|e| err(format!("Error: Invalid config file: {e}")))?;
     Ok(())

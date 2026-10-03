@@ -4,7 +4,6 @@
 //! from .krx binary files.
 
 use std::fmt;
-use std::fs;
 use std::io;
 use std::path::Path;
 
@@ -70,7 +69,8 @@ impl From<io::Error> for HashError {
 #[allow(dead_code)] // Will be used when integrated into main.rs in task 17
 pub fn handle_hash(file: &Path, verify: bool) -> Result<(), HashError> {
     // Read the .krx file
-    let bytes = fs::read(file)?;
+    let bytes = crate::serialize::read_krx(file)
+        .map_err(|e| HashError::from(io::Error::other(e.to_string())))?;
 
     // Minimum size is 48 bytes (header)
     const MIN_SIZE: usize = 48;
@@ -124,6 +124,7 @@ mod tests {
     use super::*;
     use crate::parser::Parser;
     use crate::serialize::serialize;
+    use std::fs;
     use std::io::Write;
     use tempfile::NamedTempFile;
 

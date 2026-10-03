@@ -88,6 +88,10 @@ impl fmt::Display for ParseError {
                 Ok(())
             }
 
+            ParseError::SourceUnreadable { path, reason } => {
+                write!(f, "Cannot use {} as a script: {}", path.display(), reason)
+            }
+
             ParseError::CircularImport { chain } => {
                 writeln!(f, "Circular import detected:")?;
                 for (i, path) in chain.iter().enumerate() {
@@ -131,12 +135,19 @@ impl fmt::Display for DeserializeError {
         match self {
             DeserializeError::InvalidMagic { expected, got } => write!(
                 f,
-                "Invalid magic bytes: expected {:?}, got {:?}",
+                "Invalid magic bytes: expected {:?}, got {:?}. This is not a compiled .krx \
+                 file; compile your .rhai source with `keyrx_compiler compile <file.rhai>`",
                 expected, got
             ),
 
             DeserializeError::VersionMismatch { expected, got } => {
-                write!(f, "Version mismatch: expected {}, got {}", expected, got)
+                write!(
+                    f,
+                    "Version mismatch: expected {}, got {}. The file was compiled by an \
+                     incompatible keyrx version; recompile it from its .rhai source with \
+                     `keyrx_compiler compile <file.rhai>`",
+                    expected, got
+                )
             }
 
             DeserializeError::HashMismatch { expected, computed } => {
@@ -160,7 +171,12 @@ impl fmt::Display for DeserializeError {
 
             DeserializeError::CorruptedData(msg) => write!(f, "Corrupted data: {}", msg),
 
-            DeserializeError::RkyvError(msg) => write!(f, "Deserialization error: {}", msg),
+            DeserializeError::RkyvError(msg) => write!(
+                f,
+                "Deserialization error: {}. If the file came from another keyrx version, \
+                 recompile it from its .rhai source",
+                msg
+            ),
 
             DeserializeError::IoError(msg) => write!(f, "I/O error: {}", msg),
         }

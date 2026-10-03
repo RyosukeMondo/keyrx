@@ -21,6 +21,9 @@ pub struct ParserState {
     pub conditional_stack: Vec<(Condition, Vec<BaseKeyMapping>)>,
     /// Duplicate-key / unclosed-block bookkeeping (shared with keyrx_core's parser)
     pub scopes: MappingScopes,
+    /// Files being evaluated right now, outermost first (the main script,
+    /// then each `load()` below it). Detects import cycles and bounds depth.
+    pub import_stack: Vec<PathBuf>,
 }
 
 impl ParserState {
@@ -65,6 +68,61 @@ pub fn call_line(ctx: &NativeCallContext) -> Line {
     ctx.call_position().line()
 }
 
+/// Applies the shared resource limits (`keyrx_core::parser::limits`) to an
+/// engine. The main script and every `load()`ed file use this one function.
+pub fn apply_limits(engine: &mut Engine) {
+    use keyrx_core::parser::limits;
+    engine.set_max_operations(limits::MAX_OPERATIONS);
+    engine.set_max_expr_depths(limits::MAX_EXPR_DEPTH, limits::MAX_EXPR_DEPTH);
+    engine.set_max_call_levels(limits::MAX_CALL_LEVELS);
+}
+
+/// Reads a script: bounded size, valid UTF-8, no byte-order mark. The one
+/// reader for the main file and imports, so every failure says what is wrong
+/// with the file instead of pretending it was not found.
+pub fn read_source(path: &Path) -> Result<String, ParseError> {
+    use keyrx_core::parser::limits;
+    let unreadable = |reason: String| ParseError::SourceUnreadable {
+        path: path.to_path_buf(),
+        reason,
+    };
+    let metadata = std::fs::metadata(path).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            ParseError::ImportNotFound {
+                path: path.to_path_buf(),
+                searched_paths: vec![path.to_path_buf()],
+                import_chain: Vec::new(),
+            }
+        } else {
+            unreadable(e.to_string())
+        }
+    })?;
+    if !metadata.is_file() {
+        return Err(unreadable("not a regular file".to_string()));
+    }
+    if metadata.len() > limits::MAX_SOURCE_BYTES {
+        return Err(unreadable(format!(
+            "{} bytes is over the {} byte limit for a script",
+            metadata.len(),
+            limits::MAX_SOURCE_BYTES
+        )));
+    }
+    let bytes = std::fs::read(path).map_err(|e| unreadable(e.to_string()))?;
+    let text = String::from_utf8(bytes).map_err(|e| {
+        unreadable(format!(
+            "not valid UTF-8 (invalid byte at offset {})",
+            e.utf8_error().valid_up_to()
+        ))
+    })?;
+    Ok(limits::strip_bom(&text).to_string())
+}
+
+/// `path` made absolute and symlink-free when possible, so the same file
+/// reached two ways is recognised as one.
+pub fn canonical_or_same(path: &Path) -> PathBuf {
+    std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+}
+
 /// Main parser for Rhai DSL
 pub struct Parser {
     pub engine: Engine,
@@ -79,9 +137,7 @@ impl Parser {
         let state = Arc::new(Mutex::new(ParserState::new()));
         let source_file = Arc::new(Mutex::new(PathBuf::new()));
 
-        engine.set_max_operations(10_000);
-        engine.set_max_expr_depths(100, 100);
-        engine.set_max_call_levels(100);
+        apply_limits(&mut engine);
 
         crate::parser::functions::register_dsl(&mut engine, &state);
         crate::parser::functions::import::register_import_function(
@@ -105,11 +161,10 @@ impl Parser {
             *self.source_file.lock().unwrap() = path.to_path_buf();
         }
 
-        let script = std::fs::read_to_string(path).map_err(|_e| ParseError::ImportNotFound {
-            path: path.to_path_buf(),
-            searched_paths: vec![path.to_path_buf()],
-            import_chain: Vec::new(),
-        })?;
+        let script = read_source(path)?;
+        with_state(&self.state, |state| {
+            state.import_stack = vec![canonical_or_same(path)];
+        });
 
         self.parse_string(&script, path)
     }

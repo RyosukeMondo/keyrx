@@ -70,6 +70,10 @@ pub enum ParseError {
         import_chain: Vec<ImportStep>,
     },
 
+    /// The script exists but cannot be used as a script (unreadable, not
+    /// UTF-8, too large, not a file).
+    SourceUnreadable { path: PathBuf, reason: String },
+
     /// Circular import detected.
     CircularImport { chain: Vec<PathBuf> },
 

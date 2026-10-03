@@ -20,6 +20,37 @@ pub const KRX_VERSION: u32 = 1;
 #[allow(dead_code)] // Will be used by CLI in task 18
 pub const HEADER_SIZE: usize = 48;
 
+/// Largest `.krx` file anything will read into memory. A config with
+/// 100 000 mappings is about 1.2 MB, so this is generous; it exists so a
+/// huge or hostile file is refused from its size alone, before it is read.
+pub const KRX_MAX_BYTES: u64 = 32 * 1024 * 1024;
+
+/// Reads a `.krx` file for [`deserialize`], refusing anything over
+/// [`KRX_MAX_BYTES`] without reading it. The ONE way every caller (daemon,
+/// `verify`, `hash`) gets the bytes.
+///
+/// # Errors
+/// `DeserializeError::IoError` when the file cannot be read, is not a
+/// regular file, or is larger than [`KRX_MAX_BYTES`].
+pub fn read_krx(path: &std::path::Path) -> Result<Vec<u8>, DeserializeError> {
+    let metadata = std::fs::metadata(path)?;
+    if !metadata.is_file() {
+        return Err(DeserializeError::IoError(format!(
+            "{} is not a regular file",
+            path.display()
+        )));
+    }
+    if metadata.len() > KRX_MAX_BYTES {
+        return Err(DeserializeError::IoError(format!(
+            "{} is {} bytes, over the {} byte limit for a .krx file (is it really a compiled config?)",
+            path.display(),
+            metadata.len(),
+            KRX_MAX_BYTES
+        )));
+    }
+    Ok(std::fs::read(path)?)
+}
+
 /// Serializes a ConfigRoot to the .krx binary format.
 ///
 /// The .krx format consists of:

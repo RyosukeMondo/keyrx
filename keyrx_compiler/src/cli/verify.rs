@@ -21,7 +21,7 @@ pub enum VerifyError {
 impl fmt::Display for VerifyError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::DeserializeError(err) => write!(f, "Deserialization error: {:?}", err),
+            Self::DeserializeError(err) => write!(f, "Deserialization error: {}", err),
             Self::IoError(err) => write!(f, "I/O error: {}", err),
         }
     }
@@ -54,7 +54,7 @@ pub fn handle_verify(file: &Path) -> Result<(), VerifyError> {
     use crate::serialize::deserialize;
 
     // Read .krx file bytes
-    let bytes = std::fs::read(file)?;
+    let bytes = crate::serialize::read_krx(file)?;
 
     // Attempt to deserialize (which performs all validation)
     match deserialize(&bytes) {
