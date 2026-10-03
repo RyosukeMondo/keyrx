@@ -359,3 +359,101 @@ fn failed_reload_keeps_the_previous_config_and_reports_the_error() {
     assert!(reload_remapping(&mut platform, &mut live, &shared).is_ok());
     assert_eq!(shared.get_config_error(), None);
 }
+
+const RHAI: &str = "device_start(\"*\");\nmap(\"VK_A\", \"VK_B\");\ndevice_end();\n";
+
+fn write_source(dir: &Path, name: &str, source: &str) -> PathBuf {
+    let profiles = dir.join("profiles");
+    fs::create_dir_all(&profiles).unwrap();
+    let path = profiles.join(format!("{name}.rhai"));
+    fs::write(&path, source).unwrap();
+    path
+}
+
+fn live_for(dir: &Path, name: &str) -> LiveConfig {
+    set_active(dir, name);
+    LiveConfig::new(dir.to_path_buf())
+}
+
+#[test]
+fn active_profile_without_krx_is_compiled_from_its_source() {
+    let dir = TempDir::new().unwrap();
+    write_source(dir.path(), "p", RHAI);
+    let live = live_for(dir.path(), "p");
+
+    let loaded = live.load(&ConfigSource::ActiveProfile).unwrap().unwrap();
+    assert_eq!(
+        first_mapping_output(&loaded),
+        KeyMapping::simple(KeyCode::A, KeyCode::B)
+    );
+}
+
+/// The upgrade path: a `.krx` from a release with another format version
+/// must be rebuilt, not leave the daemon with no config live.
+#[test]
+fn active_profile_with_unreadable_krx_is_rebuilt_from_its_source() {
+    let dir = TempDir::new().unwrap();
+    write_source(dir.path(), "p", RHAI);
+    let krx = write_profile(dir.path(), "p", KeyCode::C, KeyCode::D);
+    let mut bytes = fs::read(&krx).unwrap();
+    bytes[4..8].copy_from_slice(&99u32.to_le_bytes()); // future/past format version
+    fs::write(&krx, bytes).unwrap();
+    let live = live_for(dir.path(), "p");
+
+    let loaded = live.load(&ConfigSource::ActiveProfile).unwrap().unwrap();
+    assert_eq!(
+        first_mapping_output(&loaded),
+        KeyMapping::simple(KeyCode::A, KeyCode::B)
+    );
+}
+
+#[test]
+fn source_edited_after_compiling_wins_over_the_stale_krx() {
+    let dir = TempDir::new().unwrap();
+    let krx = write_profile(dir.path(), "p", KeyCode::C, KeyCode::D);
+    let rhai = write_source(dir.path(), "p", RHAI);
+    let later = fs::metadata(&krx).unwrap().modified().unwrap() + std::time::Duration::from_secs(5);
+    fs::File::options()
+        .write(true)
+        .open(&rhai)
+        .unwrap()
+        .set_modified(later)
+        .unwrap();
+    let live = live_for(dir.path(), "p");
+
+    let loaded = live.load(&ConfigSource::ActiveProfile).unwrap().unwrap();
+    assert_eq!(
+        first_mapping_output(&loaded),
+        KeyMapping::simple(KeyCode::A, KeyCode::B)
+    );
+}
+
+#[test]
+fn broken_new_source_keeps_a_good_krx_but_not_a_bad_one() {
+    let dir = TempDir::new().unwrap();
+    let krx = write_profile(dir.path(), "p", KeyCode::C, KeyCode::D);
+    let rhai = write_source(dir.path(), "p", "device_start(");
+    let later = fs::metadata(&krx).unwrap().modified().unwrap() + std::time::Duration::from_secs(5);
+    fs::File::options()
+        .write(true)
+        .open(&rhai)
+        .unwrap()
+        .set_modified(later)
+        .unwrap();
+    let live = live_for(dir.path(), "p");
+
+    // The previous compile still works: keep remapping with it.
+    let loaded = live.load(&ConfigSource::ActiveProfile).unwrap().unwrap();
+    assert_eq!(
+        first_mapping_output(&loaded),
+        KeyMapping::simple(KeyCode::C, KeyCode::D)
+    );
+
+    // No usable krx and a source that does not compile: say why.
+    fs::write(&krx, b"garbage").unwrap();
+    let err = live
+        .load(&ConfigSource::ActiveProfile)
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("cannot be compiled"), "{err}");
+}

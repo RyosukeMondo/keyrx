@@ -374,7 +374,12 @@ pub async fn serve(
     state: Arc<AppState>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let app = create_app(event_tx, state).await;
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
+        format!(
+            "cannot listen on {addr}: {e} (is another keyrx_daemon or program using the port? \
+             choose another with KEYRX_PORT); the web UI and REST API are unavailable"
+        )
+    })?;
 
     // Use into_make_service_with_connect_info to provide ConnectInfo extension
     axum::serve(
