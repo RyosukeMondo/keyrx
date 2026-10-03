@@ -35,6 +35,7 @@ fn profile_name_regex() -> &'static Regex {
 /// Rules:
 /// - Length: 1-64 characters
 /// - Allowed characters: alphanumeric (a-zA-Z0-9), dash (-), underscore (_)
+/// - Rejected: a leading dash or underscore
 /// - Rejected: Windows reserved names (con, prn, aux, etc.)
 /// - Rejected: Path traversal patterns (., ..)
 /// - Rejected: Empty strings or whitespace-only strings
@@ -98,6 +99,14 @@ pub fn validate_profile_name(name: &str) -> ValidationResult<()> {
     if !profile_name_regex().is_match(name) {
         return Err(ValidationError::InvalidProfileName(
             "Name can only contain alphanumeric characters, dashes, and underscores".to_string(),
+        ));
+    }
+
+    // A leading dash reads as a command-line flag and a leading underscore is
+    // reserved for internal files, so neither starts a profile name.
+    if name.starts_with(['-', '_']) {
+        return Err(ValidationError::InvalidProfileName(
+            "Name cannot start with a dash or underscore".to_string(),
         ));
     }
 

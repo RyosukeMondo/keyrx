@@ -521,3 +521,21 @@ fn test_all_fixes_integration() {
     let result = manager.activate("nonexistent");
     assert!(matches!(result, Err(ProfileError::NotFound(_))));
 }
+
+/// What the directory scan lists is exactly what the name rule lets you
+/// manage: a hand-dropped `my profile.rhai` or `-x.rhai` used to be listed
+/// but then rejected by activate/delete/rename, and could not be removed.
+#[test]
+fn test_scan_lists_only_names_the_rule_accepts() {
+    let (temp, manager) = setup_test_manager();
+    let dir = manager.profiles_dir().to_path_buf();
+    for name in ["ok", "also_ok-1", "with space", "-dash", "_under", "日本語"] {
+        std::fs::write(dir.join(format!("{name}.rhai")), "").unwrap();
+    }
+    manager.scan_profiles().unwrap();
+
+    let mut listed: Vec<String> = manager.list().into_iter().map(|p| p.name).collect();
+    listed.sort();
+    assert_eq!(listed, ["also_ok-1", "ok"]);
+    drop(temp);
+}

@@ -119,6 +119,13 @@ impl ProfileManager {
 
             if path.extension().and_then(|s| s.to_str()) == Some("rhai") {
                 if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
+                    if let Err(e) = Self::validate_name(name) {
+                        log::warn!(
+                            "Ignoring {}: not a valid profile name ({e})",
+                            path.display()
+                        );
+                        continue;
+                    }
                     match self.load_profile_metadata(name) {
                         Ok(metadata) => {
                             profiles.insert(name.to_string(), metadata);
@@ -166,38 +173,14 @@ impl ProfileManager {
     /// Validate profile name.
     /// PROF-002: Enhanced validation with strict regex-like rules.
     pub fn validate_name(name: &str) -> Result<(), ProfileError> {
-        if name.is_empty() {
-            return Err(ProfileError::InvalidName(
-                "Name cannot be empty".to_string(),
-            ));
-        }
-
-        if name.len() > 64 {
-            return Err(ProfileError::InvalidName(format!(
-                "Name too long (max 64 chars, got {})",
-                name.len()
-            )));
-        }
-
-        // Allow only alphanumeric, dash, underscore (^[a-zA-Z0-9_-]{1,64}$)
-        if !name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
-        {
-            return Err(ProfileError::InvalidName(
-                "Name can only contain ASCII alphanumeric characters, dashes, and underscores"
-                    .to_string(),
-            ));
-        }
-
-        // Reject names starting with dash or underscore
-        if name.starts_with('-') || name.starts_with('_') {
-            return Err(ProfileError::InvalidName(
-                "Name cannot start with dash or underscore".to_string(),
-            ));
-        }
-
-        Ok(())
+        // The ONE rule for profile names (REST, RPC, CLI and the directory
+        // scan all use it), so what is listed is always what can be managed.
+        crate::validation::profile_name::validate_profile_name(name).map_err(|e| {
+            ProfileError::InvalidName(match e {
+                crate::validation::ValidationError::InvalidProfileName(message) => message,
+                other => other.to_string(),
+            })
+        })
     }
 
     /// List all profiles.
