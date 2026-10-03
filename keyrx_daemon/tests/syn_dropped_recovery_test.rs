@@ -11,7 +11,7 @@
 
 #![cfg(target_os = "linux")]
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use keyrx_core::config::KeyCode;
 use keyrx_core::runtime::KeyEvent;
@@ -70,9 +70,21 @@ fn daemon_recovers_after_an_input_buffer_overflow() {
     // 20k events, far more than the kernel keeps per reader.
     flood(&mut h, 10_000);
 
-    // Let the daemon work through whatever it kept, then look.
-    std::thread::sleep(Duration::from_millis(1500));
+    // Let the daemon work through whatever it kept: wait until its output
+    // has been quiet for a while (a condition, not a fixed sleep - how long
+    // the drain takes depends on host load), then look.
     h.reopen_capture();
+    let started = Instant::now();
+    let drained = h
+        .capture
+        .collect_events(Duration::from_millis(300))
+        .expect("capture");
+    assert!(
+        started.elapsed() < Duration::from_secs(60),
+        "the daemon was still emitting {} events after {:?}",
+        drained.len(),
+        started.elapsed()
+    );
 
     assert_eq!(
         held_on_output(&h),

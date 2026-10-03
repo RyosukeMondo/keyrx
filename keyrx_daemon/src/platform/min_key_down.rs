@@ -16,6 +16,14 @@
 //! - a profile switch and shutdown flush every deferred release at once;
 //! - the deferred release is serviced by the event loop's capture tick, which
 //!   this decorator shortens (see [`Platform::set_input_wait_limit`]).
+//!
+//! A release's deadline is derived from ONE fact: when its key's press really
+//! went out on the output ([`MinKeyDown::down_since`]). Nothing scheduled is
+//! stored, so no stale schedule can push a release into the future. (An
+//! earlier design stored per-key "scheduled press" times and recomputed queued
+//! deadlines from them; under a burst with repeated keys a release picked up
+//! the time of its key's NEXT queued press, deadlines ran away and the output
+//! froze with a key held down.)
 
 use std::collections::{HashMap, VecDeque};
 use std::time::{Duration, Instant};
@@ -31,20 +39,14 @@ pub const DEFAULT_MIN_KEY_DOWN: Duration = Duration::from_millis(5);
 /// Largest allowed minimum: beyond this typing visibly lags.
 pub const MAX_MIN_KEY_DOWN: Duration = Duration::from_millis(200);
 
-/// An event waiting for its turn.
-struct Queued {
-    due: Instant,
-    event: KeyEvent,
-}
-
 /// A [`Platform`] that keeps every injected key down for at least `min`.
 pub struct MinKeyDown {
     inner: Box<dyn Platform>,
     min: Duration,
-    /// Events held back, oldest first, with non-decreasing due times.
-    queue: VecDeque<Queued>,
-    /// When each key was (or is scheduled to be) pressed on the output.
-    pressed_at: HashMap<KeyCode, Instant>,
+    /// Events held back, oldest first.
+    queue: VecDeque<KeyEvent>,
+    /// Keys down on the output, with the time their press actually went out.
+    down_since: HashMap<KeyCode, Instant>,
 }
 
 impl MinKeyDown {
@@ -53,84 +55,79 @@ impl MinKeyDown {
             inner,
             min,
             queue: VecDeque::new(),
-            pressed_at: HashMap::new(),
+            down_since: HashMap::new(),
         }
     }
 
-    /// Injects `event` (or queues it behind a deferred release) at `now`.
+    /// Queues `event` and emits everything that may go out at `now`. Returns
+    /// the first injection failure, if any (later events are still tried).
     fn inject_at(&mut self, event: KeyEvent, now: Instant) -> PlatformResult<()> {
-        self.flush_at(now);
-        let key = event.keycode();
-        if event.is_press() {
-            if self.queue.is_empty() {
-                self.pressed_at.insert(key, now);
-                return self.inner.inject_output(event);
-            }
-            let due = self.queue.back().map_or(now, |q| q.due);
-            self.pressed_at.insert(key, due);
-            self.queue.push_back(Queued { due, event });
-            return Ok(());
-        }
-        let after_press = self.pressed_at.get(&key).map(|t| *t + self.min);
-        let after_queue = self.queue.back().map(|q| q.due);
-        match after_press.into_iter().chain(after_queue).max() {
-            Some(due) if due > now => {
-                self.queue.push_back(Queued { due, event });
-                Ok(())
-            }
-            _ => self.inner.inject_output(event),
-        }
+        self.queue.push_back(event);
+        self.flush_at(now)
     }
 
-    /// Injects every queued event whose time has come, in order.
-    fn flush_at(&mut self, now: Instant) {
-        while self.queue.front().is_some_and(|q| q.due <= now) {
-            let Some(item) = self.queue.pop_front() else {
+    /// When `event` may go out: a press at once, a release a full minimum
+    /// after its key's real press (at once if that press is not known).
+    fn due(&self, event: &KeyEvent) -> Option<Instant> {
+        if event.is_press() {
+            return None;
+        }
+        self.down_since.get(&event.keycode()).map(|t| *t + self.min)
+    }
+
+    /// Emits every queued event whose time has come, in order.
+    fn flush_at(&mut self, now: Instant) -> PlatformResult<()> {
+        let mut result = Ok(());
+        while let Some(front) = self.queue.front() {
+            if self.due(front).is_some_and(|due| due > now) {
+                break;
+            }
+            let Some(event) = self.queue.pop_front() else {
                 break;
             };
-            if item.event.is_press() {
-                // It went out later than scheduled; its release must still
-                // wait a full minimum after the REAL press.
-                self.pressed_at.insert(item.event.keycode(), now);
-                self.reschedule();
-            }
-            if let Err(e) = self.inner.inject_output(item.event) {
-                log::warn!("Failed to inject a deferred key event: {e}");
+            let emitted = self.emit(event, now);
+            if result.is_ok() {
+                result = emitted;
             }
         }
+        result
+    }
+
+    /// Injects `event` and records the output key state it creates.
+    fn emit(&mut self, event: KeyEvent, now: Instant) -> PlatformResult<()> {
+        if event.is_press() {
+            self.down_since.insert(event.keycode(), now);
+        } else {
+            self.down_since.remove(&event.keycode());
+        }
+        self.inner.inject_output(event)
     }
 
     /// Injects everything still queued, immediately and in order.
     fn flush_all(&mut self) {
-        while let Some(item) = self.queue.pop_front() {
-            if let Err(e) = self.inner.inject_output(item.event) {
+        let now = Instant::now();
+        while let Some(event) = self.queue.pop_front() {
+            if let Err(e) = self.emit(event, now) {
                 log::warn!("Failed to inject a deferred key event: {e}");
             }
-        }
-    }
-
-    /// Recomputes queued due times after a press went out late, keeping them
-    /// non-decreasing and each release a full minimum after its press.
-    fn reschedule(&mut self) {
-        let mut prev: Option<Instant> = None;
-        for item in &mut self.queue {
-            let key = item.event.keycode();
-            let mut due = prev.map_or(item.due, |p| item.due.max(p));
-            if item.event.is_press() {
-                self.pressed_at.insert(key, due);
-            } else if let Some(t) = self.pressed_at.get(&key) {
-                due = due.max(*t + self.min);
-            }
-            item.due = due;
-            prev = Some(due);
         }
     }
 
     /// Time until the oldest queued event is due.
     fn next_due_in(&self, now: Instant) -> Option<Duration> {
-        self.queue
-            .front()
-            .map(|q| q.due.saturating_duration_since(now))
+        let front = self.queue.front()?;
+        Some(
+            self.due(front)
+                .map_or(Duration::ZERO, |due| due.saturating_duration_since(now)),
+        )
+    }
+
+    /// Like [`Self::flush_at`], logging a failure instead of returning it
+    /// (the capture path has no caller that could act on it).
+    fn flush_logged(&mut self, now: Instant) {
+        if let Err(e) = self.flush_at(now) {
+            log::warn!("Failed to inject a deferred key event: {e}");
+        }
     }
 }
 
@@ -140,11 +137,11 @@ impl Platform for MinKeyDown {
     }
 
     fn capture_input(&mut self) -> PlatformResult<KeyEvent> {
-        self.flush_at(Instant::now());
+        self.flush_logged(Instant::now());
         let limit = self.next_due_in(Instant::now());
         self.inner.set_input_wait_limit(limit);
         let result = self.inner.capture_input();
-        self.flush_at(Instant::now());
+        self.flush_logged(Instant::now());
         result
     }
 
@@ -255,9 +252,9 @@ mod tests {
         press(&mut p, KeyCode::A, t);
         release(&mut p, KeyCode::A, ms(t, 0));
         assert_eq!(got(&log), vec![(KeyCode::A, true)], "release is held back");
-        p.flush_at(ms(t, 4));
+        p.flush_at(ms(t, 4)).unwrap();
         assert_eq!(got(&log).len(), 1, "still inside the window");
-        p.flush_at(ms(t, 5));
+        p.flush_at(ms(t, 5)).unwrap();
         assert_eq!(got(&log), vec![(KeyCode::A, true), (KeyCode::A, false)]);
     }
 
@@ -284,12 +281,12 @@ mod tests {
         press(&mut p, KeyCode::B, ms(t, 1)); // must not overtake A's release
         release(&mut p, KeyCode::B, ms(t, 1));
         assert_eq!(got(&log), vec![(KeyCode::A, true)]);
-        p.flush_at(ms(t, 5));
+        p.flush_at(ms(t, 5)).unwrap();
         assert_eq!(
             got(&log),
             vec![(KeyCode::A, true), (KeyCode::A, false), (KeyCode::B, true)]
         );
-        p.flush_at(ms(t, 10));
+        p.flush_at(ms(t, 10)).unwrap();
         assert_eq!(got(&log).last(), Some(&(KeyCode::B, false)));
         assert_eq!(got(&log).len(), 4);
     }
@@ -309,11 +306,11 @@ mod tests {
         release(&mut p, KeyCode::A, t); // A up due t+5
         press(&mut p, KeyCode::B, t); // due t+5 (behind A up)
         release(&mut p, KeyCode::B, t); // due t+10 (B must be down 5 ms)
-        p.flush_at(ms(t, 8)); // loop was late: A up + B down go out at t+8
+        p.flush_at(ms(t, 8)).unwrap(); // loop was late: A up + B down go out at t+8
         assert_eq!(got(&log).len(), 3);
-        p.flush_at(ms(t, 10));
+        p.flush_at(ms(t, 10)).unwrap();
         assert_eq!(got(&log).len(), 3, "B up must wait until t+13");
-        p.flush_at(ms(t, 13));
+        p.flush_at(ms(t, 13)).unwrap();
         assert_eq!(got(&log).len(), 4);
     }
 
@@ -341,14 +338,148 @@ mod tests {
             press(&mut p, KeyCode::A, t);
             release(&mut p, KeyCode::A, t);
         }
-        p.flush_at(ms(t, 5));
-        p.flush_at(ms(t, 10));
+        p.flush_at(ms(t, 5)).unwrap();
+        p.flush_at(ms(t, 10)).unwrap();
         let events = got(&log);
         assert_eq!(events.iter().filter(|e| e.1).count(), 2);
         assert_eq!(events.iter().filter(|e| !e.1).count(), 2);
         for pair in events.chunks(2) {
             assert_eq!(pair[0], (KeyCode::A, true));
         }
+    }
+
+    /// Regression: a release used to take its deadline from its key's NEXT
+    /// queued press once any other press flushed, so under a burst deadlines
+    /// ran away and the output froze with a key held (the SYN_DROPPED live
+    /// test caught it as a key stuck DOWN).
+    #[test]
+    fn a_queued_release_waits_for_its_own_press_not_the_next_one() {
+        let (mut p, log, t) = rig();
+        press(&mut p, KeyCode::A, t);
+        release(&mut p, KeyCode::A, t); // A up due t+5; all below queue behind it
+        press(&mut p, KeyCode::K, t);
+        press(&mut p, KeyCode::X, t);
+        release(&mut p, KeyCode::K, t);
+        release(&mut p, KeyCode::X, t);
+        press(&mut p, KeyCode::K, t); // K's NEXT press, still queued
+        release(&mut p, KeyCode::K, t);
+        p.flush_at(ms(t, 6)).unwrap(); // A up, K down, X down at t+6
+        assert_eq!(got(&log).len(), 4);
+        p.flush_at(ms(t, 11)).unwrap();
+        assert_eq!(
+            got(&log)[4..],
+            [(KeyCode::K, false), (KeyCode::X, false), (KeyCode::K, true)],
+            "K up is due 5 ms after K's first press, not after its second"
+        );
+        p.flush_at(ms(t, 16)).unwrap();
+        assert_eq!(got(&log).len(), 8);
+    }
+
+    /// Recorder that timestamps each injected event with a shared fake clock.
+    struct Timed(
+        Arc<Mutex<Instant>>,
+        Arc<Mutex<Vec<(KeyCode, bool, Instant)>>>,
+    );
+
+    impl Platform for Timed {
+        fn initialize(&mut self) -> PlatformResult<()> {
+            Ok(())
+        }
+        fn capture_input(&mut self) -> PlatformResult<KeyEvent> {
+            Err(super::super::PlatformError::NoInput)
+        }
+        fn inject_output(&mut self, event: KeyEvent) -> PlatformResult<()> {
+            let now = *self.0.lock().unwrap();
+            self.1
+                .lock()
+                .unwrap()
+                .push((event.keycode(), event.is_press(), now));
+            Ok(())
+        }
+        fn list_devices(&self) -> PlatformResult<Vec<DeviceInfo>> {
+            Ok(Vec::new())
+        }
+        fn shutdown(&mut self) -> PlatformResult<()> {
+            Ok(())
+        }
+    }
+
+    /// Floods `taps` rolled-over taps over `keys` (each key pressed before
+    /// the previous one is released, as in fast typing or a resync), one
+    /// every 100 us - far faster than the minimum allows - then ticks the
+    /// fake clock 1 ms at a time until drained and returns the output.
+    fn flood_and_drain(keys: &[KeyCode], taps: usize) -> (Vec<(KeyCode, bool, Instant)>, Instant) {
+        let clock = Arc::new(Mutex::new(Instant::now()));
+        let log = Arc::default();
+        let timed = Timed(Arc::clone(&clock), Arc::clone(&log));
+        let mut p = MinKeyDown::new(Box::new(timed), MIN);
+        let t = *clock.lock().unwrap();
+        let mut now = t;
+        let key = |i: usize| keys[(i * 3) % keys.len()];
+        for i in 0..taps {
+            now = t + Duration::from_micros(100 * i as u64);
+            *clock.lock().unwrap() = now;
+            press(&mut p, key(i), now);
+            if i > 0 {
+                release(&mut p, key(i - 1), now);
+            }
+        }
+        release(&mut p, key(taps - 1), now);
+        for _ in 0..(taps as u64 * 50) {
+            if p.queue.is_empty() {
+                break;
+            }
+            now += Duration::from_millis(1);
+            *clock.lock().unwrap() = now;
+            p.flush_at(now).unwrap();
+        }
+        assert!(
+            p.queue.is_empty(),
+            "queue never drained: {} left",
+            p.queue.len()
+        );
+        let out = log.lock().unwrap().clone();
+        (out, t)
+    }
+
+    /// Every key alternates press/release, each down at least `MIN`, and
+    /// ends up released.
+    fn assert_well_formed(out: &[(KeyCode, bool, Instant)], taps: usize) {
+        assert_eq!(out.len(), taps * 2);
+        let mut down: HashMap<KeyCode, Instant> = HashMap::new();
+        for (key, is_press, at) in out {
+            if *is_press {
+                assert!(down.insert(*key, *at).is_none(), "{key:?} pressed twice");
+            } else {
+                let since = down.remove(key).expect("release without press");
+                assert!(*at >= since + MIN, "{key:?} down for less than the minimum");
+            }
+        }
+        assert!(down.is_empty(), "keys left down: {down:?}");
+    }
+
+    #[test]
+    fn a_burst_of_repeated_keys_drains_completely_and_in_bounded_time() {
+        let keys = [
+            KeyCode::A,
+            KeyCode::S,
+            KeyCode::D,
+            KeyCode::F,
+            KeyCode::Escape,
+            KeyCode::J,
+            KeyCode::K,
+            KeyCode::L,
+        ];
+        let taps = 500;
+        let (out, t) = flood_and_drain(&keys, taps);
+        assert_well_formed(&out, taps);
+        let last = out.last().map(|e| e.2).unwrap();
+        // Strictly ordered output: one minimum per tap, plus a few ticks.
+        assert!(
+            last <= t + MIN * taps as u32 + Duration::from_millis(10),
+            "drain took {:?}",
+            last - t
+        );
     }
 
     #[test]
