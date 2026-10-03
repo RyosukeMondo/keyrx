@@ -55,6 +55,7 @@ fn start_mock_ipc_server(socket_path: PathBuf) -> thread::JoinHandle<()> {
                         input_overflows: 0,
                         config_error: None,
                         output_device: None,
+                        web_server: keyrx_daemon::web_server_status::WebServerStatus::Up,
                     },
                     IpcRequest::GetDevices => IpcResponse::Devices { devices: vec![] },
                     IpcRequest::GetState => IpcResponse::State {

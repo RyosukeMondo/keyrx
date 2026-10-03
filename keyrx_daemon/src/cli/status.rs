@@ -6,6 +6,7 @@
 use crate::ipc::client::IpcClient;
 use crate::ipc::{DaemonIpc, IpcEndpoint, IpcRequest, IpcResponse};
 use crate::platform::OutputDeviceInfo;
+use crate::web_server_status::WebServerStatus;
 use clap::Args;
 use serde::Serialize;
 
@@ -34,6 +35,7 @@ struct StatusOutput {
     config_error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     output_device: Option<OutputDeviceInfo>,
+    web_server: WebServerStatus,
 }
 
 /// Execute the status command.
@@ -53,6 +55,7 @@ pub fn execute(args: StatusArgs) -> Result<(), Box<dyn std::error::Error>> {
             input_overflows,
             config_error,
             output_device,
+            web_server,
         } => {
             let output = StatusOutput {
                 running,
@@ -62,6 +65,7 @@ pub fn execute(args: StatusArgs) -> Result<(), Box<dyn std::error::Error>> {
                 input_overflows,
                 config_error,
                 output_device,
+                web_server,
             };
             if args.json {
                 println!("{}", serde_json::to_string_pretty(&output)?);
@@ -97,6 +101,7 @@ fn print_human_output(status: StatusOutput) {
         status.active_profile.unwrap_or_else(|| "None".to_string())
     );
     println!("  Device Count:   {}", status.device_count);
+    println!("  Web server:     {}", status.web_server.describe());
     if let Some(out) = status.output_device {
         println!(
             "  Output device:  {} ({})",
@@ -130,6 +135,7 @@ mod tests {
             input_overflows: 0,
             config_error: None,
             output_device: None,
+            web_server: WebServerStatus::Up,
         };
         let json = serde_json::to_string(&output).unwrap();
         assert!(json.contains("\"running\":true"));
@@ -148,6 +154,7 @@ mod tests {
             input_overflows: 0,
             config_error: None,
             output_device: None,
+            web_server: WebServerStatus::Starting,
         };
         let json = serde_json::to_string(&output).unwrap();
         assert!(json.contains("\"running\":false"));

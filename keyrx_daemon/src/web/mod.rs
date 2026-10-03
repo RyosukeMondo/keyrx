@@ -34,6 +34,7 @@ use crate::services::{
     SimulationService,
 };
 use crate::web::subscriptions::SubscriptionManager;
+use crate::web_server_status::WebServerStatus;
 
 use crate::web::rpc_types::ServerMessage;
 
@@ -373,20 +374,38 @@ pub async fn serve(
     event_tx: broadcast::Sender<DaemonEvent>,
     state: Arc<AppState>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let daemon_state = state.daemon_state.clone();
+    let publish = |status: WebServerStatus| {
+        if let Some(ds) = &daemon_state {
+            ds.set_web_server_status(status);
+        }
+    };
     let app = create_app(event_tx, state).await;
-    let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
-        format!(
-            "cannot listen on {addr}: {e} (is another keyrx_daemon or program using the port? \
-             choose another with KEYRX_PORT); the web UI and REST API are unavailable"
-        )
-    })?;
+    let listener = match tokio::net::TcpListener::bind(addr).await {
+        Ok(listener) => listener,
+        Err(e) => {
+            let msg = format!(
+                "cannot listen on {addr}: {e} (is another keyrx_daemon or program using the \
+                 port? choose another with KEYRX_PORT); the web UI and REST API are unavailable"
+            );
+            publish(WebServerStatus::Failed { error: msg.clone() });
+            return Err(msg.into());
+        }
+    };
+    publish(WebServerStatus::Up);
 
     // Use into_make_service_with_connect_info to provide ConnectInfo extension
-    axum::serve(
+    let served = axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .await?;
+    .await;
+    if let Err(e) = &served {
+        publish(WebServerStatus::Failed {
+            error: format!("web server stopped: {e}"),
+        });
+    }
+    served?;
 
     Ok(())
 }
@@ -535,5 +554,43 @@ mod tests {
             Some(daemon_state),
         );
         assert!(state_some.has_daemon_state());
+    }
+
+    #[tokio::test]
+    async fn bind_failure_is_published_in_status_and_success_is_up() {
+        use crate::container::ServiceContainerBuilder;
+
+        let dir = tempfile::tempdir().unwrap();
+        let container = ServiceContainerBuilder::new(dir.path().to_path_buf())
+            .build()
+            .unwrap();
+        let query = Arc::new(DaemonQueryService::new(
+            Arc::new(DaemonSharedState::new(
+                Arc::new(AtomicBool::new(true)),
+                None,
+                PathBuf::new(),
+                0,
+            )),
+            Arc::new(DaemonTelemetry::new()),
+        ));
+        let state = Arc::new(AppState::from_container_with_daemon(
+            container,
+            Arc::clone(&query),
+        ));
+        assert_eq!(query.get_status().web_server, WebServerStatus::Starting);
+
+        // Occupy a port, then ask serve() to bind the same one.
+        let taken = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = taken.local_addr().unwrap();
+        let (tx, _rx) = broadcast::channel(4);
+        let result = serve(addr, tx, state).await;
+
+        assert!(result.is_err(), "bind on a taken port must fail");
+        match query.get_status().web_server {
+            WebServerStatus::Failed { error } => {
+                assert!(error.contains("cannot listen"), "{error}")
+            }
+            other => panic!("expected Failed, got {other:?}"),
+        }
     }
 }

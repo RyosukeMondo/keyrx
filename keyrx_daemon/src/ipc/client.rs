@@ -170,6 +170,7 @@ mod tests {
             input_overflows: 0,
             config_error: None,
             output_device: None,
+            web_server: crate::web_server_status::WebServerStatus::Up,
         }
     }
 

@@ -60,6 +60,7 @@ impl DaemonQueryService {
             input_overflows: self.daemon_state.input_overflow_count(),
             config_error: self.daemon_state.get_config_error(),
             output_device: self.daemon_state.get_output_device(),
+            web_server: self.daemon_state.get_web_server_status(),
         }
     }
 
@@ -162,6 +163,9 @@ pub struct StatusInfo {
     /// The daemon's own virtual output keyboard (name and device node), so
     /// tools capture the right device instead of guessing by name.
     pub output_device: Option<crate::platform::OutputDeviceInfo>,
+    /// Whether the web server is serving. A failure (port taken) is
+    /// non-fatal for remapping, so this is how it becomes visible.
+    pub web_server: crate::web_server_status::WebServerStatus,
 }
 
 #[cfg(test)]
@@ -195,6 +199,23 @@ mod tests {
                 input_overflows: 0,
                 config_error: None,
                 output_device: None,
+                web_server: crate::web_server_status::WebServerStatus::Starting,
+            }
+        );
+    }
+
+    #[test]
+    fn test_get_status_reports_web_server_failure() {
+        use crate::web_server_status::WebServerStatus;
+        let (svc, _) = make_test_service();
+        svc.shared_state()
+            .set_web_server_status(WebServerStatus::Failed {
+                error: "address in use".into(),
+            });
+        assert_eq!(
+            svc.get_status().web_server,
+            WebServerStatus::Failed {
+                error: "address in use".into()
             }
         );
     }

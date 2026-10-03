@@ -25,3 +25,4 @@ pub mod services;
 pub mod validation;
 pub mod version;
 pub mod web;
+pub mod web_server_status;

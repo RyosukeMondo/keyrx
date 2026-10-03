@@ -27,6 +27,7 @@ pub(super) async fn get_debug_state(State(state): State<Arc<AppState>>) -> Json<
         "active_profile": status.active_profile, "device_count": status.device_count, "input_overflows": status.input_overflows,
         "config_error": status.config_error,
         "output_device": status.output_device,
+        "web_server": status.web_server,
         "mapping_count": mapping_count,
         "suspended": state.daemon_state.as_ref().map(|d| d.is_suspended()),
     });

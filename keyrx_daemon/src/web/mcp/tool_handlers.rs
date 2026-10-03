@@ -162,6 +162,7 @@ pub fn get_status(state: &AppState) -> Result<String, String> {
         "inputOverflows": s.input_overflows,
         "configError": s.config_error,
         "outputDevice": s.output_device,
+        "webServer": s.web_server,
     })
     .to_string())
 }

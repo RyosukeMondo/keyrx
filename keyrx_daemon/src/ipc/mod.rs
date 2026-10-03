@@ -69,6 +69,10 @@ pub enum IpcResponse {
         /// The daemon's own output keyboard (name, `/dev/input` node).
         #[serde(default, skip_serializing_if = "Option::is_none")]
         output_device: Option<crate::platform::OutputDeviceInfo>,
+        /// Whether the web server is serving (its failure does not stop
+        /// remapping).
+        #[serde(default)]
+        web_server: crate::web_server_status::WebServerStatus,
     },
     /// Keyboards the daemon currently has captured
     Devices { devices: Vec<CapturedDevice> },
@@ -167,6 +171,7 @@ mod tests {
             input_overflows: 0,
             config_error: None,
             output_device: None,
+            web_server: crate::web_server_status::WebServerStatus::Up,
         };
         let json = serde_json::to_string(&resp).unwrap();
         let deserialized: IpcResponse = serde_json::from_str(&json).unwrap();

@@ -36,6 +36,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 
 use crate::platform::OutputDeviceInfo;
+use crate::web_server_status::WebServerStatus;
 
 /// Thread-safe shared state for daemon-to-web-server communication on Windows.
 ///
@@ -144,6 +145,10 @@ pub struct DaemonSharedState {
     /// `/dev/input` node), published once the platform has created it, so
     /// every transport can tell instances apart without guessing a name.
     output_device: Arc<RwLock<Option<OutputDeviceInfo>>>,
+
+    /// Whether the web server is serving. Its failure is non-fatal (remapping
+    /// continues) but must be visible in status on every transport.
+    web_server: Arc<RwLock<WebServerStatus>>,
 }
 
 impl DaemonSharedState {
@@ -195,6 +200,7 @@ impl DaemonSharedState {
             reloads_serviced: Arc::default(),
             config_error: Arc::default(),
             output_device: Arc::default(),
+            web_server: Arc::default(),
         }
     }
 
@@ -216,6 +222,16 @@ impl DaemonSharedState {
     pub fn report_config_error(&self, detail: impl std::fmt::Display) {
         let at = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
         self.set_config_error(Some(format!("{detail} (at {at})")));
+    }
+
+    /// Whether the web server is up, still starting, or failed (and why).
+    pub fn get_web_server_status(&self) -> WebServerStatus {
+        self.web_server.read().expect("RwLock poisoned").clone()
+    }
+
+    /// Publishes the web server's state (written by `web::serve`).
+    pub fn set_web_server_status(&self, status: WebServerStatus) {
+        *self.web_server.write().expect("RwLock poisoned") = status;
     }
 
     /// The daemon's own output keyboard, once it exists.
