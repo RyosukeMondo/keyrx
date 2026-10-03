@@ -269,7 +269,11 @@ impl LinuxPlatform {
     /// (no event was ready), so it never adds latency to the hot path.
     fn rescan_if_hotplugged(&mut self) {
         let changed = self.hotplug.as_ref().is_some_and(HotplugWatcher::drain);
-        if !changed {
+        let retry_due = self
+            .device_manager
+            .as_ref()
+            .is_some_and(DeviceManager::failure_retry_due);
+        if !changed && !retry_due {
             return;
         }
         let configs = self.active_configs.clone();

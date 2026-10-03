@@ -16,6 +16,8 @@
 use crate::platform::DeviceError;
 
 #[cfg(target_os = "linux")]
+mod failure_log;
+#[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
 mod linux_enum;

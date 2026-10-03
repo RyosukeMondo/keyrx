@@ -5,12 +5,14 @@
 //! provides pattern matching for selecting devices based on configuration.
 
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
-use log::{info, warn};
+use log::{debug, info, warn};
 
 use keyrx_core::config::DeviceConfig;
 use keyrx_core::runtime::{DeviceState, KeyLookup};
 
+use super::failure_log::{FailureTracker, Loudness, HOTPLUG_GRACE};
 use super::linux_enum::enumerate_keyboards;
 use super::{DiscoveryError, KeyboardInfo};
 use crate::platform::linux::EvdevInput;
@@ -101,6 +103,11 @@ impl ManagedDevice {
 
 pub struct DeviceManager {
     devices: Vec<ManagedDevice>,
+    failures: FailureTracker,
+    /// Paths enumerated by the previous reconcile; `None` before the first.
+    /// A path in here is not a fresh node, so it gets no udev grace period
+    /// (nor does anything present at startup).
+    seen_paths: Option<std::collections::HashSet<std::path::PathBuf>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -128,7 +135,15 @@ impl DeviceManager {
     pub fn empty() -> Self {
         Self {
             devices: Vec::new(),
+            failures: FailureTracker::default(),
+            seen_paths: None,
         }
+    }
+
+    /// True when a hotplugged node has been failing past the grace period
+    /// without having been reported yet: a rescan now would warn about it.
+    pub fn failure_retry_due(&self) -> bool {
+        self.failures.retry_due(Instant::now())
     }
 
     /// Discovers and grabs every keyboard matching `configs`. Fails if none
@@ -247,55 +262,75 @@ impl DeviceManager {
             }
         });
 
-        let managed_paths: std::collections::HashSet<std::path::PathBuf> =
+        let (added, denied) = self.grab_new(&current_keyboards, configs);
+        self.seen_paths = Some(current_keyboards.iter().map(|k| k.path.clone()).collect());
+
+        Ok(RefreshResult {
+            added,
+            removed,
+            denied,
+        })
+    }
+
+    /// Opens and grabs every unmanaged keyboard that matches `configs`.
+    /// Returns `(added, denied)`. Failures are logged per
+    /// [`super::failure_log`]: transient ones on fresh nodes stay at debug.
+    fn grab_new(&mut self, keyboards: &[KeyboardInfo], configs: &[DeviceConfig]) -> (usize, usize) {
+        let managed: std::collections::HashSet<std::path::PathBuf> =
             self.devices.iter().map(|d| d.info.path.clone()).collect();
-        let mut added = 0;
-        let mut denied = 0;
-        let mut busy = 0;
-        for info in &current_keyboards {
-            if managed_paths.contains(&info.path) {
+        let now = Instant::now();
+        let (mut added, mut denied, mut busy, mut permission) = (0, 0, 0, 0);
+        let mut failing: Vec<&std::path::Path> = Vec::new();
+        for info in keyboards {
+            if managed.contains(&info.path) {
                 continue;
             }
             let Some((idx, config)) = first_match(info, configs) else {
                 continue;
             };
-            match EvdevInput::open(&info.path) {
-                Ok(mut input) => match input.grab() {
-                    Ok(()) => {
-                        info!("Grabbed keyboard '{}' ({})", info.name, info.path.display());
-                        self.devices
-                            .push(ManagedDevice::new(info.clone(), input, config, idx));
-                        added += 1;
-                    }
-                    Err(e) => {
-                        if is_grabbed_elsewhere(&e) {
-                            busy += 1;
-                            warn!(
-                                "Matched keyboard '{}' ({}) is already grabbed by another \
-                                 process (EBUSY): {e}",
-                                info.name,
-                                info.path.display()
-                            );
-                        } else {
-                            warn!(
-                                "Matched keyboard '{}' ({}) but could not grab it: {e}",
-                                info.name,
-                                info.path.display()
-                            );
-                        }
-                        denied += 1;
-                    }
-                },
-                Err(e) => {
-                    warn!(
-                        "Matched keyboard '{}' ({}) but could not open it: {e}",
-                        info.name,
-                        info.path.display()
-                    );
-                    denied += 1;
+            let attempt = EvdevInput::open(&info.path)
+                .map_err(|e| ("open", e))
+                .and_then(|mut input| match input.grab() {
+                    Ok(()) => Ok(input),
+                    Err(e) => Err(("grab", e)),
+                });
+            let (stage, e) = match attempt {
+                Ok(input) => {
+                    info!("Grabbed keyboard '{}' ({})", info.name, info.path.display());
+                    self.devices
+                        .push(ManagedDevice::new(info.clone(), input, config, idx));
+                    added += 1;
+                    continue;
                 }
+                Err(failure) => failure,
+            };
+            denied += 1;
+            failing.push(&info.path);
+            let fresh = self
+                .seen_paths
+                .as_ref()
+                .is_some_and(|seen| !seen.contains(&info.path));
+            let grace = if fresh { HOTPLUG_GRACE } else { Duration::ZERO };
+            let ebusy = is_grabbed_elsewhere(&e);
+            let msg = format!(
+                "Matched keyboard '{}' ({}) but could not {stage} it{}: {e}",
+                info.name,
+                info.path.display(),
+                if ebusy {
+                    " (already grabbed, EBUSY)"
+                } else {
+                    ""
+                }
+            );
+            if self.failures.record(&info.path, now, grace) == Loudness::Warn {
+                warn!("{msg}");
+                busy += usize::from(ebusy);
+                permission += usize::from(is_permission_denied(&e));
+            } else {
+                debug!("{msg} (transient? retrying on the next device change)");
             }
         }
+        self.failures.retain_failing(&failing);
         if busy > 0 {
             warn!(
                 "{busy} matched keyboard(s) are already grabbed by another process - usually \
@@ -303,21 +338,14 @@ impl DeviceManager {
                  kmonad/keyd/interception. Stop it, or narrow this device_start pattern."
             );
         }
-        if denied > busy {
+        if permission > 0 {
             warn!(
-                "{} matched keyboard(s) could not be opened/grabbed. If this is a permission \
-                 issue: {}, then log out and back in (or run \
-                 `keyrx_daemon doctor`).",
-                denied - busy,
+                "{permission} matched keyboard(s) could not be opened: permission denied. \
+                 Fix: {}, then log out and back in (or run `keyrx_daemon doctor`).",
                 crate::permission_advice::join_group_command("input")
             );
         }
-
-        Ok(RefreshResult {
-            added,
-            removed,
-            denied,
-        })
+        (added, denied)
     }
 
     /// Releases and removes a device by id. Used when its fd errors on read
@@ -373,6 +401,15 @@ impl DeviceManager {
 
 /// `EVIOCGRAB` fails with `EBUSY` when another process already holds the
 /// device. That is not a permissions problem and must not be reported as one.
+fn is_permission_denied(error: &crate::platform::DeviceError) -> bool {
+    use crate::platform::DeviceError;
+    match error {
+        DeviceError::PermissionDenied(_) => true,
+        DeviceError::Io(e) => e.kind() == std::io::ErrorKind::PermissionDenied,
+        _ => false,
+    }
+}
+
 fn is_grabbed_elsewhere(error: &crate::platform::DeviceError) -> bool {
     const EBUSY: i32 = 16;
     matches!(error, crate::platform::DeviceError::Io(e) if e.raw_os_error() == Some(EBUSY))
