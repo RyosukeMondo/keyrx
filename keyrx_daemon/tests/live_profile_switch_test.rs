@@ -210,7 +210,10 @@ fn broken_active_profile_grabs_nothing_until_a_good_one_is_activated() {
     let dir = TempDir::new().unwrap();
     let manager = profiles(dir.path());
     assert!(manager.activate("a").expect("activate a").success);
+    // Broken beyond repair: a corrupt .krx alone is rebuilt from the source
+    // at startup (the upgrade path), so the source must be broken too.
     std::fs::write(dir.path().join("profiles/a.krx"), b"corrupt").unwrap();
+    std::fs::write(dir.path().join("profiles/a.rhai"), "device_start(").unwrap();
 
     let mut h = Harness::start_expecting("broken", ConfigSource::ActiveProfile, dir.path(), 0);
     assert_eq!(h.shared.get_active_profile(), None);
