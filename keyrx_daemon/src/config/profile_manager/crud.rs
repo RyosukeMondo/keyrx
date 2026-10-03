@@ -209,8 +209,29 @@ impl ProfileManager {
         Ok(())
     }
 
-    /// Import a profile from a file.
+    /// Import a profile from a source file (see [`Self::import_source`]).
     pub fn import(&self, src: &Path, name: &str) -> Result<ProfileMetadata, ProfileError> {
+        let source = fs::read_to_string(src)?;
+        self.import_source(name, &source, None)
+    }
+
+    /// Creates profile `name` from Rhai `source`, compiled BEFORE anything is
+    /// published: a source that does not compile (or, when `expected` is
+    /// given, does not compile to exactly those device mappings) leaves no
+    /// `.rhai`/`.krx` behind. Both files are written atomically, so a crash
+    /// never leaves a listed profile without its compiled form.
+    ///
+    /// # Errors
+    ///
+    /// `InvalidName`, `ProfileLimitExceeded`, `AlreadyExists` (checked first,
+    /// so a name collision is reported whatever the content), `Compilation`,
+    /// or `InvalidLayout` when the compiled result differs from `expected`.
+    pub fn import_source(
+        &self,
+        name: &str,
+        source: &str,
+        expected: Option<&[keyrx_core::config::DeviceConfig]>,
+    ) -> Result<ProfileMetadata, ProfileError> {
         Self::validate_name(name)?;
         self.refresh();
 
@@ -222,16 +243,51 @@ impl ProfileManager {
             return Err(ProfileError::ProfileLimitExceeded);
         }
 
-        let dest_rhai = self.rhai_path(name);
-        if dest_rhai.exists() {
+        let (rhai_path, krx_path) = (self.rhai_path(name), self.krx_path(name));
+        if profiles.contains_key(name) || rhai_path.exists() || krx_path.exists() {
             return Err(ProfileError::AlreadyExists(name.to_string()));
         }
 
-        fs::copy(src, &dest_rhai)?;
+        let tmp_rhai = rhai_path.with_extension("rhai.tmp");
+        let tmp_krx = krx_path.with_extension("krx.tmp");
+        let staged = self.stage_import(source, expected, [&tmp_rhai, &tmp_krx], &rhai_path);
+        let published = staged.and_then(|()| {
+            fs::rename(&tmp_krx, &krx_path)?;
+            fs::rename(&tmp_rhai, &rhai_path).map_err(|e| {
+                let _ = fs::remove_file(&krx_path);
+                e.into()
+            })
+        });
+        let _ = fs::remove_file(&tmp_rhai);
+        let _ = fs::remove_file(&tmp_krx);
+        published?;
 
         let metadata = self.load_profile_metadata(name)?;
         profiles.insert(name.to_string(), metadata.clone());
-
         Ok(metadata)
+    }
+
+    fn stage_import(
+        &self,
+        source: &str,
+        expected: Option<&[keyrx_core::config::DeviceConfig]>,
+        [tmp_rhai, tmp_krx]: [&Path; 2],
+        final_rhai: &Path,
+    ) -> Result<(), ProfileError> {
+        crate::config::atomic_file::write_atomic(tmp_rhai, source.as_bytes())?;
+        self.compiler
+            .compile_profile(tmp_rhai, tmp_krx)
+            .map_err(|e| ProfileError::Compilation(e.naming_file(tmp_rhai, final_rhai)))?;
+        if let Some(expected) = expected {
+            let compiled = crate::config_loader::load_config(tmp_krx)
+                .map_err(|e| ProfileError::InvalidLayout(e.to_string()))?;
+            if compiled.devices != expected {
+                return Err(ProfileError::InvalidLayout(
+                    "the layout could not be converted to Rhai without changing its mappings"
+                        .to_string(),
+                ));
+            }
+        }
+        Ok(())
     }
 }

@@ -23,6 +23,7 @@ use content::{
     get_active_profile, get_profile_config, list_profiles, set_profile_config, validate_profile,
     validate_source,
 };
+use lifecycle::import_profile;
 use lifecycle::{
     activate_profile, create_profile, delete_profile, duplicate_profile, reload_active_profile,
     rename_profile,
@@ -37,6 +38,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/profiles/active", get(get_active_profile))
         .route("/profiles/active/reload", post(reload_active_profile))
         .route("/profiles/validate", post(validate_source))
+        .route("/profiles/import", post(import_profile))
         // More specific routes first (with path suffix)
         .route("/profiles/:name/activate", post(activate_profile))
         .route("/profiles/:name/validate", post(validate_profile))
@@ -72,6 +74,9 @@ fn profile_error_to_api_error(err: ProfileError) -> ApiError {
         }
         ProfileError::ActivationInProgress(name) => {
             ApiError::Conflict(format!("Profile '{}' is already being activated", name))
+        }
+        ProfileError::InvalidLayout(msg) => {
+            ApiError::BadRequest(format!("Invalid layout file: {}", msg))
         }
         ProfileError::InvalidMetadata(msg) => {
             ApiError::BadRequest(format!("Invalid metadata: {}", msg))

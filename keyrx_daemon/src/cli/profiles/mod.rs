@@ -38,8 +38,12 @@ pub async fn execute(args: ProfilesArgs, service: &ProfileService) -> DaemonResu
         ProfilesCommands::Export { name, output } => {
             handlers_io::handle_export(service, &name, &output, args.json).await
         }
-        ProfilesCommands::Import { input, name } => {
-            handlers_io::handle_import(service, &input, &name, args.json).await
+        ProfilesCommands::Import {
+            input,
+            name,
+            activate,
+        } => {
+            handlers_io::handle_import(service, &input, name.as_deref(), activate, args.json).await
         }
     }
 }

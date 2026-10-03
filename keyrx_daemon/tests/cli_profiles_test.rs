@@ -329,7 +329,11 @@ fn test_profiles_import() {
 
     // Create a source file
     let source_path = temp_dir.path().join("source.rhai");
-    fs::write(&source_path, "layer(\"base\", #{});").unwrap();
+    fs::write(
+        &source_path,
+        "device_start(\"*\");\nmap(\"A\", \"VK_B\");\ndevice_end();\n",
+    )
+    .unwrap();
 
     // Import it
     profiles_cmd(&temp_dir)
@@ -348,6 +352,45 @@ fn test_profiles_import() {
         .join("profiles")
         .join("imported.rhai");
     assert!(imported_path.exists());
+}
+
+#[test]
+fn test_profiles_import_krx_converts_and_defaults_the_name() {
+    let temp_dir = TempDir::new().unwrap();
+    let krx = concat!(env!("CARGO_MANIFEST_DIR"), "/../uat_tests/test5_vim.krx");
+
+    profiles_cmd(&temp_dir)
+        .args(["profiles", "import", krx])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("test5_vim"))
+        .stdout(predicate::str::contains("Converted"));
+
+    let profiles = temp_dir.path().join("keyrx").join("profiles");
+    let source = fs::read_to_string(profiles.join("test5_vim.rhai")).unwrap();
+    assert!(source.contains("when_start(\"MD_00\");"), "{source}");
+    assert!(profiles.join("test5_vim.krx").exists());
+}
+
+#[test]
+fn test_profiles_import_rejects_a_corrupt_krx_and_stores_nothing() {
+    let temp_dir = TempDir::new().unwrap();
+    let bad = temp_dir.path().join("bad.krx");
+    fs::write(
+        &bad,
+        b"definitely not a krx file, but long enough to have a header....",
+    )
+    .unwrap();
+
+    profiles_cmd(&temp_dir)
+        .args(["profiles", "import"])
+        .arg(&bad)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("not a valid .krx"));
+
+    let profiles = temp_dir.path().join("keyrx").join("profiles");
+    assert_eq!(fs::read_dir(profiles).map(|d| d.count()).unwrap_or(0), 0);
 }
 
 #[test]

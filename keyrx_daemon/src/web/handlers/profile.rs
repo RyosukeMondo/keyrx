@@ -492,3 +492,35 @@ mod tests {
         assert!(validate_profile_name("/root").is_err());
     }
 }
+
+/// Import a `.krx` / `.rhai` layout as a new profile (same service call and
+/// result as `POST /api/profiles/import`).
+pub async fn import_profile(
+    profile_service: &ProfileService,
+    params: Value,
+) -> Result<Value, RpcError> {
+    use crate::config::ProfileError;
+    let params: crate::services::ImportLayoutRequest = serde_json::from_value(params)
+        .map_err(|e| RpcError::invalid_params(format!("Invalid parameters: {}", e)))?;
+    validate_profile_name(&params.name)?;
+    let bytes = params
+        .decode()
+        .map_err(|e| RpcError::invalid_params(e.to_string()))?;
+
+    log::info!("RPC: import_profile name={}", params.name);
+
+    let imported = profile_service
+        .import_layout(&params.name, params.format, bytes)
+        .await
+        .map_err(|e| match e {
+            ProfileError::AlreadyExists(_)
+            | ProfileError::InvalidLayout(_)
+            | ProfileError::Compilation(_)
+            | ProfileError::InvalidName(_) => RpcError::invalid_params(e.to_string()),
+            other => RpcError::new(
+                INTERNAL_ERROR,
+                format!("Failed to import profile: {}", other),
+            ),
+        })?;
+    Ok(imported.to_wire(&profile_service.profile_manager().profiles_dir()))
+}
