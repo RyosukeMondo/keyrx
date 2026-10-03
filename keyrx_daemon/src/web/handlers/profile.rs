@@ -462,37 +462,6 @@ pub async fn set_profile_config(state: &AppState, params: Value) -> Result<Value
     }))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_validate_profile_name_valid() {
-        assert!(validate_profile_name("my-profile").is_ok());
-        assert!(validate_profile_name("profile_123").is_ok());
-        assert!(validate_profile_name("Test").is_ok());
-    }
-
-    #[test]
-    fn test_validate_profile_name_empty() {
-        assert!(validate_profile_name("").is_err());
-    }
-
-    #[test]
-    fn test_validate_profile_name_path_traversal() {
-        assert!(validate_profile_name("../etc/passwd").is_err());
-        assert!(validate_profile_name("..").is_err());
-        assert!(validate_profile_name("test/../profile").is_err());
-    }
-
-    #[test]
-    fn test_validate_profile_name_path_separators() {
-        assert!(validate_profile_name("test/profile").is_err());
-        assert!(validate_profile_name("test\\profile").is_err());
-        assert!(validate_profile_name("/root").is_err());
-    }
-}
-
 /// Import a `.krx` / `.rhai` layout as a new profile (same service call and
 /// result as `POST /api/profiles/import`).
 pub async fn import_profile(
@@ -523,4 +492,35 @@ pub async fn import_profile(
             ),
         })?;
     Ok(imported.to_wire(&profile_service.profile_manager().profiles_dir()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_profile_name_valid() {
+        assert!(validate_profile_name("my-profile").is_ok());
+        assert!(validate_profile_name("profile_123").is_ok());
+        assert!(validate_profile_name("Test").is_ok());
+    }
+
+    #[test]
+    fn test_validate_profile_name_empty() {
+        assert!(validate_profile_name("").is_err());
+    }
+
+    #[test]
+    fn test_validate_profile_name_path_traversal() {
+        assert!(validate_profile_name("../etc/passwd").is_err());
+        assert!(validate_profile_name("..").is_err());
+        assert!(validate_profile_name("test/../profile").is_err());
+    }
+
+    #[test]
+    fn test_validate_profile_name_path_separators() {
+        assert!(validate_profile_name("test/profile").is_err());
+        assert!(validate_profile_name("test\\profile").is_err());
+        assert!(validate_profile_name("/root").is_err());
+    }
 }

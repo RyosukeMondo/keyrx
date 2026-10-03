@@ -66,6 +66,7 @@ fn get_routes_list() -> Value {
         "devices/:device_id",
         "devices/:device_id/layout",
         "profiles",
+        "profiles/import",
         "profiles/:name",
         "profiles/:name/config",
         "profiles/:name/activate",
