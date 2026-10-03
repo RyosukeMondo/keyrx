@@ -126,7 +126,7 @@ describe('API Client Error Handling', () => {
       }
     });
 
-    it('should handle JSON parse errors', async () => {
+    it('reports the HTTP status when an error body is not JSON', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 500,
@@ -141,7 +141,10 @@ describe('API Client Error Handling', () => {
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiError);
-        expect((error as ApiError).message).toBe('Invalid JSON');
+        expect((error as ApiError).statusCode).toBe(500);
+        expect((error as ApiError).message).toBe(
+          'Request failed: 500 Internal Server Error'
+        );
       }
     });
   });

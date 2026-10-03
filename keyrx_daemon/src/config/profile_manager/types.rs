@@ -180,4 +180,9 @@ pub enum ProfileError {
 
     #[error("Invalid metadata: {0}")]
     InvalidMetadata(String),
+
+    /// A layout file that cannot be imported (corrupt, wrong type, too
+    /// large, or not convertible without changing its mappings).
+    #[error("Invalid layout file: {0}")]
+    InvalidLayout(String),
 }

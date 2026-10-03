@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
 import * as profileApi from '../api/profiles';
 import type { ProfileMetadata, Template } from '../types';
+import type { LayoutFormat } from '../utils/layoutFile';
 
 /**
  * Fetch all profiles with React Query caching
@@ -44,15 +45,40 @@ export function useCreateProfile() {
     mutationFn: ({ name, template }: { name: string; template: Template }) =>
       profileApi.createProfile(name, template),
 
-    // Invalidate and refetch profiles list after creation
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.profiles });
-    },
+    // Refetch the list BEFORE the caller selects the new profile: ConfigPage
+    // bounces a selection that is not in the list back to the first profile.
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.profiles }),
 
     // Also refetch on error - profile might exist but cache is stale
     onError: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.profiles });
     },
+  });
+}
+
+/** Import a .krx/.rhai file as a new profile; refreshes the profile list. */
+export function useImportProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      name,
+      format,
+      bytes,
+    }: {
+      name: string;
+      format: LayoutFormat;
+      bytes: Uint8Array;
+    }) => profileApi.importProfile(name, format, bytes),
+    // Never retried (a replayed upload could double-create), and the dialog
+    // shows its own inline error instead of the global toast.
+    retry: false,
+    meta: { suppressGlobalError: true },
+    // Same ordering rule as useCreateProfile: the list must contain the new
+    // profile before the caller selects it.
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.profiles }),
   });
 }
 

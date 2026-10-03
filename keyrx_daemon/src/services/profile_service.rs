@@ -609,58 +609,6 @@ impl ProfileService {
         Ok(())
     }
 
-    /// Imports a profile from a file.
-    ///
-    /// # Arguments
-    ///
-    /// * `src` - Source file path
-    /// * `name` - Name for the imported profile
-    ///
-    /// # Returns
-    ///
-    /// Information about the imported profile.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ProfileError::InvalidName`] if name is invalid.
-    /// Returns [`ProfileError::AlreadyExists`] if profile exists.
-    /// Returns [`ProfileError::IoError`] if file operation fails.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// # use std::sync::Arc;
-    /// # use std::path::{Path, PathBuf};
-    /// # use keyrx_daemon::config::ProfileManager;
-    /// # use keyrx_daemon::services::ProfileService;
-    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let manager = Arc::new(ProfileManager::new(PathBuf::from("./config"))?);
-    /// let service = ProfileService::new(manager);
-    /// let profile = service.import_profile(Path::new("/tmp/config.rhai"), "imported").await?;
-    /// println!("Imported profile: {}", profile.name);
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn import_profile(
-        &self,
-        src: &Path,
-        name: &str,
-    ) -> Result<ProfileInfo, ProfileError> {
-        log::info!("Importing profile from {:?} as '{}'", src, name);
-
-        let manager = Arc::clone(&self.profile_manager);
-        let src_owned = src.to_path_buf();
-        let name_owned = name.to_string();
-
-        let metadata = tokio::task::spawn_blocking(move || manager.import(&src_owned, &name_owned))
-            .await
-            .map_err(|e| ProfileError::LockError(format!("Task join error: {}", e)))??;
-
-        log::info!("Profile imported successfully");
-
-        Ok(ProfileInfo::from_metadata(metadata, None))
-    }
-
     /// Gets the currently active profile name.
     ///
     /// # Returns

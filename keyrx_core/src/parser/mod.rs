@@ -20,6 +20,7 @@
 
 // Always available - no external dependencies
 pub mod builders;
+pub mod decompile;
 pub mod error;
 pub mod limits;
 pub mod scopes;

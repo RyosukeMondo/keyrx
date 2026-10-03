@@ -4,7 +4,7 @@ use super::output::{ProfileCreatedOutput, ProfileInfo, ProfileListOutput, Succes
 use crate::cli::common::output_error;
 use crate::config::profile_manager::ProfileError;
 use crate::error::{CliError, DaemonResult};
-use crate::services::ProfileService;
+use crate::services::{LayoutFormat, ProfileService, MAX_LAYOUT_BYTES};
 use std::path::Path;
 
 /// Handle the `list` subcommand.
@@ -110,15 +110,53 @@ pub(super) async fn handle_export(
     }
 }
 
+/// Reads a layout file, refusing oversized ones before loading them.
+fn read_layout(input: &Path) -> Result<Vec<u8>, ProfileError> {
+    let len = std::fs::metadata(input)?.len();
+    if len > MAX_LAYOUT_BYTES as u64 {
+        return Err(ProfileError::InvalidLayout(format!(
+            "the file is {len} bytes; the limit is {MAX_LAYOUT_BYTES} bytes"
+        )));
+    }
+    Ok(std::fs::read(input)?)
+}
+
 /// Handle the `import` subcommand.
 pub(super) async fn handle_import(
     service: &ProfileService,
     input: &Path,
-    name: &str,
+    name: Option<&str>,
+    activate: bool,
     json: bool,
 ) -> DaemonResult<()> {
-    match service.import_profile(input, name).await {
-        Ok(profile) => {
+    let name = name
+        .map(str::to_string)
+        .or_else(|| {
+            input
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .map(str::to_string)
+        })
+        .unwrap_or_default();
+    let imported = async {
+        let format = LayoutFormat::from_path(input)?;
+        let bytes = read_layout(input)?;
+        service.import_layout(&name, format, bytes).await
+    }
+    .await;
+    match imported {
+        Ok(imported) => {
+            let profile = &imported.profile;
+            if activate {
+                if let Err(e) = service.activate_profile(&profile.name).await {
+                    output_error(
+                        &format!("Imported '{}' but could not activate it: {}", name, e),
+                        3001,
+                        json,
+                    );
+                    return Err(CliError::Reported.into());
+                }
+            }
             if json {
                 let output = ProfileCreatedOutput {
                     success: true,
@@ -132,7 +170,16 @@ pub(super) async fn handle_import(
                 );
             } else {
                 println!("✓ Profile '{}' imported from {}", name, input.display());
+                if imported.converted {
+                    println!("  Converted from .krx to editable Rhai (comments are not stored in a .krx)");
+                }
+                for warning in &imported.warnings {
+                    println!("  Warning: {warning}");
+                }
                 println!("  Layers: {}", profile.layer_count);
+                if activate {
+                    println!("  Activated");
+                }
             }
             Ok(())
         }
@@ -145,7 +192,11 @@ pub(super) async fn handle_import(
             Err(CliError::Reported.into())
         }
         Err(ProfileError::AlreadyExists(name)) => {
-            output_error(&format!("Profile '{}' already exists", name), 1015, json);
+            output_error(
+                &format!("Profile '{}' already exists; pass a different name", name),
+                1015,
+                json,
+            );
             Err(CliError::Reported.into())
         }
         Err(e) => {

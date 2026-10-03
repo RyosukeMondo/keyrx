@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { Plus, FileUp, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import {
   useProfiles,
   useCreateProfile,
@@ -14,6 +14,7 @@ import { Modal } from '@/components/Modal';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { ProfileSidebarItem } from './ProfileSidebarItem';
+import { ImportLayoutDialog } from './ImportLayoutDialog';
 
 export interface ProfileSidebarProps {
   selectedProfileName: string;
@@ -96,6 +97,9 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   const [newDescription, setNewDescription] = useState('');
   const [template, setTemplate] = useState<ProfileTemplate>(ProfileTemplate.Blank);
   const [nameError, setNameError] = useState('');
+
+  // --- import (load layout from file) ---
+  const [importOpen, setImportOpen] = useState(false);
 
   // --- delete modal state ---
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -223,6 +227,15 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             </button>
             <button
               type="button"
+              aria-label={t('import.open')}
+              title={t('import.open')}
+              onClick={() => setImportOpen(true)}
+              className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+            >
+              <FileUp size={16} />
+            </button>
+            <button
+              type="button"
               aria-label={t('prof.collapse')}
               title={t('prof.collapse')}
               onClick={onToggleCollapse}
@@ -266,6 +279,15 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               ))}
         </div>
       </div>
+
+      {importOpen && (
+        <ImportLayoutDialog
+          open
+          onClose={() => setImportOpen(false)}
+          existingNames={profiles.map((p) => p.name)}
+          onImported={onSelectProfile}
+        />
+      )}
 
       {/* Create Profile Modal */}
       <Modal open={createOpen} onClose={resetCreateModal} title={t('prof.createTitle')}>

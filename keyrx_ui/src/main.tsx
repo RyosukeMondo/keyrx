@@ -9,8 +9,10 @@ import './styles/tokens.css';
 import './index.css';
 import App from './App.tsx';
 import { applyDocumentLanguage } from './i18n';
+import { installStaleBuildRecovery } from './utils/lazyWithReload';
 
 applyDocumentLanguage();
+installStaleBuildRecovery();
 
 // Enable axe-core accessibility testing in development
 if (import.meta.env.DEV) {

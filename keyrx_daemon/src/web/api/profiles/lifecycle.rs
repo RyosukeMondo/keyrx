@@ -9,6 +9,7 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 
 use crate::config::profile_manager::ProfileTemplate;
+use crate::services::ImportLayoutRequest;
 use crate::web::api::error::ApiError;
 use crate::web::api::validation::validate_profile_name;
 use crate::web::AppState;
@@ -231,4 +232,22 @@ pub(super) async fn rename_profile(
             "krxPath": krx_path_str,
         }
     })))
+}
+
+/// POST /api/profiles/import - Import a `.krx` or `.rhai` layout as a new
+/// profile (not activated). 409 when the name is taken, 400 for an invalid,
+/// corrupt or oversized file; nothing is stored on error.
+pub(super) async fn import_profile(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<ImportLayoutRequest>,
+) -> Result<Json<Value>, ApiError> {
+    validate_profile_name(&payload.name)?;
+    let bytes = payload.decode().map_err(profile_error_to_api_error)?;
+    let imported = state
+        .profile_service
+        .import_layout(&payload.name, payload.format, bytes)
+        .await
+        .map_err(profile_error_to_api_error)?;
+    let profiles_dir = state.profile_service.profile_manager().profiles_dir();
+    Ok(Json(imported.to_wire(&profiles_dir)))
 }

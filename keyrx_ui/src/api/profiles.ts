@@ -10,6 +10,7 @@ import {
   ActivationRpcResultSchema,
 } from './schemas';
 import type { z } from 'zod';
+import { bytesToBase64, type LayoutFormat } from '../utils/layoutFile';
 import type { ProfileMetadata, Template, ActivationResult } from '../types';
 
 interface CreateProfileRequest {
@@ -96,6 +97,39 @@ export async function createProfile(
   // Validate the returned profile info
   validateApiResponse(ProfileRpcInfoSchema, response, 'POST /api/profiles');
   return { success: true };
+}
+
+/** What the daemon reports after importing a layout file. */
+export interface ImportResult {
+  name: string;
+  /** True when Rhai was generated from a compiled .krx. */
+  converted: boolean;
+  warnings: string[];
+}
+
+/**
+ * Import a `.krx` / `.rhai` file as a NEW profile (POST /api/profiles/import).
+ * Rejects with ApiError: 409 when the name is taken, 400 for a bad file.
+ */
+export async function importProfile(
+  name: string,
+  format: LayoutFormat,
+  bytes: Uint8Array
+): Promise<ImportResult> {
+  const response = await apiClient.post<{
+    profile: { name: string };
+    converted: boolean;
+    warnings?: string[];
+  }>('/api/profiles/import', {
+    name,
+    format,
+    contentBase64: bytesToBase64(bytes),
+  });
+  return {
+    name: response.profile.name,
+    converted: response.converted,
+    warnings: response.warnings ?? [],
+  };
 }
 
 /**

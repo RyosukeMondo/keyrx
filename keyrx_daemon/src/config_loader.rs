@@ -72,18 +72,25 @@ pub fn load_config<P: AsRef<Path>>(path: P) -> Result<ConfigRoot, ConfigError> {
             reason: e.to_string(),
         })?;
 
-    // Validate (magic, version, hash, rkyv structure), then copy out of the
-    // archive so the bytes can be freed.
-    let archived =
-        keyrx_compiler::serialize::deserialize(&bytes).map_err(|e| ConfigError::ParseError {
-            path: path_ref.to_path_buf(),
-            reason: e.to_string(),
-        })?;
+    parse_config_bytes(&bytes).map_err(|reason| ConfigError::ParseError {
+        path: path_ref.to_path_buf(),
+        reason,
+    })
+}
+
+/// Validates `.krx` bytes (magic, version, hash, rkyv structure) and copies
+/// the configuration out of the archive. The ONE validator: file loading,
+/// profile import over REST/RPC and the CLI all go through it.
+///
+/// # Errors
+///
+/// A human-readable reason when the bytes are not a valid `.krx`.
+pub fn parse_config_bytes(bytes: &[u8]) -> Result<ConfigRoot, String> {
+    let archived = keyrx_compiler::serialize::deserialize(bytes).map_err(|e| e.to_string())?;
     let config: ConfigRoot = match rkyv::Deserialize::deserialize(archived, &mut rkyv::Infallible) {
         Ok(config) => config,
         Err(infallible) => match infallible {},
     };
-
     Ok(config)
 }
 

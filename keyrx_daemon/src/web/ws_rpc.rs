@@ -282,6 +282,7 @@ async fn handle_command(
         "activate_profile" => profile::activate_profile(state, params).await,
         "delete_profile" => profile::delete_profile(&state.profile_service, params).await,
         "duplicate_profile" => profile::duplicate_profile(&state.profile_service, params).await,
+        "import_profile" => profile::import_profile(&state.profile_service, params).await,
         "rename_profile" => profile::rename_profile(&state.profile_service, params).await,
         "set_profile_config" => profile::set_profile_config(state, params).await,
         "rename_device" => device::rename_device(state, params).await,

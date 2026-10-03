@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
@@ -6,11 +6,12 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { LayoutPreviewProvider } from './contexts/LayoutPreviewContext';
 import { ToastProvider } from './components/ToastProvider';
 import { WasmProvider } from './contexts/WasmContext';
+import { lazyWithReload } from './utils/lazyWithReload';
 
 // Lazy load page components for code splitting
-const ConfigPage = lazy(() => import('./pages/ConfigPage'));
-const DevicesPage = lazy(() => import('./pages/DevicesPage'));
-const MonitorPage = lazy(() => import('./pages/MonitorPage'));
+const ConfigPage = lazyWithReload(() => import('./pages/ConfigPage'));
+const DevicesPage = lazyWithReload(() => import('./pages/DevicesPage'));
+const MonitorPage = lazyWithReload(() => import('./pages/MonitorPage'));
 
 function App() {
   return (

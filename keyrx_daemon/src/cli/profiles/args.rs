@@ -66,13 +66,19 @@ pub(super) enum ProfilesCommands {
         output: PathBuf,
     },
 
-    /// Import a profile from a file.
+    /// Import a layout file (.krx compiled layout or .rhai source) as a new
+    /// profile. A .krx is converted to Rhai so it can be edited; nothing is
+    /// stored if the file is invalid.
     Import {
-        /// Input file path.
+        /// Input file path (.krx or .rhai).
         input: PathBuf,
 
-        /// Profile name.
-        name: String,
+        /// Profile name (default: the file name without its extension).
+        name: Option<String>,
+
+        /// Make the imported profile the active one.
+        #[arg(long)]
+        activate: bool,
     },
 }
 
