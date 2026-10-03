@@ -306,9 +306,10 @@ impl DeviceManager {
         if denied > busy {
             warn!(
                 "{} matched keyboard(s) could not be opened/grabbed. If this is a permission \
-                 issue: sudo usermod -aG input $USER, then log out and back in (or run \
+                 issue: {}, then log out and back in (or run \
                  `keyrx_daemon doctor`).",
-                denied - busy
+                denied - busy,
+                crate::permission_advice::join_group_command("input")
             );
         }
 

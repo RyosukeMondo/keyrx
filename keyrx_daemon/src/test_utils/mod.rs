@@ -33,7 +33,7 @@
 //!
 //! # To run E2E tests, ensure uinput access is configured:
 //! # Option 1: Add user to uinput group (recommended, persistent)
-//! sudo usermod -aG uinput $USER
+//! sudo groupadd -r -f uinput && sudo usermod -aG uinput $USER
 //! # Log out and back in, then run tests normally
 //!
 //! # Option 2: Temporarily grant access (session only)
@@ -313,7 +313,7 @@ pub enum VirtualDeviceError {
     ///
     /// Add your user to the `input` group:
     /// ```bash
-    /// sudo usermod -aG input $USER
+    /// sudo groupadd -r -f input && sudo usermod -aG input $USER
     /// # Log out and back in for changes to take effect
     /// ```
     ///
@@ -382,9 +382,11 @@ impl VirtualDeviceError {
     pub fn uinput_permission_denied() -> Self {
         VirtualDeviceError::PermissionDenied {
             message: "cannot access /dev/uinput".to_string(),
-            fix_instruction: "Add your user to the 'uinput' group: sudo usermod -aG uinput $USER\n\
-                              Then log out and back in (or run: newgrp uinput)"
-                .to_string(),
+            fix_instruction: format!(
+                "Add your user to the 'uinput' group: {}\n\
+                 Then log out and back in (or run: newgrp uinput)",
+                crate::permission_advice::join_group_command("uinput")
+            ),
         }
     }
 
@@ -392,9 +394,11 @@ impl VirtualDeviceError {
     pub fn evdev_permission_denied(device_path: &str) -> Self {
         VirtualDeviceError::PermissionDenied {
             message: format!("cannot access {device_path}"),
-            fix_instruction: "Add your user to the 'input' group: sudo usermod -aG input $USER\n\
-                              Then log out and back in."
-                .to_string(),
+            fix_instruction: format!(
+                "Add your user to the 'input' group: {}\n\
+                 Then log out and back in.",
+                crate::permission_advice::join_group_command("input")
+            ),
         }
     }
 

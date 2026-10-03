@@ -34,7 +34,7 @@ use super::uinput_device;
 ///
 /// Then add your user to the `uinput` group:
 /// ```sh
-/// sudo groupadd -f uinput
+/// sudo groupadd -r -f uinput
 /// sudo usermod -aG uinput $USER
 /// # Log out and back in for changes to take effect
 /// ```
@@ -99,7 +99,7 @@ impl UinputOutput {
     ///     Ok(device) => println!("Created virtual device: {}", device.name()),
     ///     Err(DeviceError::PermissionDenied(msg)) => {
     ///         eprintln!("Permission denied: {}", msg);
-    ///         eprintln!("Try: sudo groupadd -f uinput && sudo usermod -aG uinput $USER");
+    ///         eprintln!("Try: sudo groupadd -r -f uinput && sudo usermod -aG uinput $USER");
     ///     }
     ///     Err(e) => eprintln!("Error: {}", e),
     /// }
@@ -111,18 +111,17 @@ impl UinputOutput {
         // silently dropped just because it has no `KeyCode` (H6).
         let device = uinput_device::create_full_capability_device(name).map_err(|e| {
             if e.kind() == std::io::ErrorKind::PermissionDenied {
-                DeviceError::PermissionDenied(
+                DeviceError::PermissionDenied(format!(
                     "cannot access /dev/uinput: permission denied.\n\
-                    To fix this, either:\n\
-                    1. Run as root, OR\n\
-                    2. Create udev rules:\n\
-                       echo 'KERNEL==\"uinput\", MODE=\"0660\", GROUP=\"uinput\"' | \\\n\
-                       sudo tee /etc/udev/rules.d/99-keyrx.rules\n\
-                       sudo groupadd -f uinput\n\
-                       sudo usermod -aG uinput $USER\n\
-                       (log out and back in)"
-                        .to_string(),
-                )
+                        To fix this, either:\n\
+                        1. Run as root, OR\n\
+                        2. Create udev rules:\n\
+                           echo 'KERNEL==\"uinput\", MODE=\"0660\", GROUP=\"uinput\"' | \\\n\
+                           sudo tee /etc/udev/rules.d/99-keyrx.rules\n\
+                           {}\n\
+                           (log out and back in)",
+                    crate::permission_advice::join_group_command("uinput")
+                ))
             } else {
                 DeviceError::Io(std::io::Error::other(format!(
                     "failed to create uinput device: {}",

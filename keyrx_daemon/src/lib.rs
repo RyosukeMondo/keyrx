@@ -19,6 +19,7 @@ pub mod device_manager;
 pub mod error;
 pub mod ipc;
 pub mod macro_recorder;
+pub mod permission_advice;
 pub mod platform;
 pub mod services;
 pub mod validation;

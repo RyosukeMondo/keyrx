@@ -84,7 +84,10 @@ pub fn handle_validate(config_path: &Path) -> Result<(), (i32, String)> {
         println!();
         println!("To fix permission issues, either:");
         println!("  - Run as root (for testing only)");
-        println!("  - Add your user to the 'input' group: sudo usermod -aG input $USER");
+        println!(
+            "  - Add your user to the 'input' group: {}",
+            crate::permission_advice::join_group_command("input")
+        );
         println!("  - Install the udev rules: see docs/user-guide/linux-setup.md");
         return Ok(());
     }

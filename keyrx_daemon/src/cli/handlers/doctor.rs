@@ -97,8 +97,9 @@ fn check_group_membership(group: &'static str, needed_for: &str) -> Check {
             group_check_name(group),
             false,
             format!(
-                "not a member (needed for {needed_for}) - run: sudo usermod -aG {group} $USER, \
-                 then log out and back in"
+                "not a member (needed for {needed_for}) - run: {}, \
+                 then log out and back in",
+                crate::permission_advice::join_group_command(group)
             ),
         )
     }

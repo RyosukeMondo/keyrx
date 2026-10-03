@@ -67,7 +67,10 @@ pub fn handle_list_devices(all: bool) -> Result<(), (i32, String)> {
              the daemon cannot grab a device it matches unless it can open it, so its keys \
              will not be remapped."
         );
-        println!("  Fix: sudo usermod -aG input $USER, then log out and back in.");
+        println!(
+            "  Fix: {}, then log out and back in.",
+            crate::permission_advice::join_group_command("input")
+        );
         println!("  Check everything at once: keyrx_daemon doctor");
     }
     println!();
