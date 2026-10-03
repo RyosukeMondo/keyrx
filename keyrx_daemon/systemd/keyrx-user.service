@@ -82,10 +82,13 @@ Documentation=https://github.com/keyrx/keyrx
 # EMERGENCY STOP: hold Left Ctrl + Right Ctrl + Escape (works on the raw keys,
 # stops the daemon cleanly, which systemd does not restart).
 
-# Limit restart attempts to prevent restart loops
-# Max 5 restarts within 30 seconds before giving up
-StartLimitIntervalSec=30
-StartLimitBurst=5
+# Never give up restarting. A start can fail simply because the machine is not
+# ready yet (e.g. /dev/uinput still owned by root:root until udev has applied
+# the rules, or the 'uinput' group not yet effective), and a rate limit that
+# trips after 5 failures in 30 s would leave the keyboard unremapped until the
+# user notices and restarts the unit by hand. The restart delay below grows
+# instead, so a permanent failure costs one log line every 10 s, not a loop.
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -95,12 +98,24 @@ Type=simple
 # %h expands to user's home directory
 ExecStart=%h/.local/bin/keyrx_daemon run
 
+# On stop/restart signal only the daemon itself, not everything in the unit's
+# cgroup. The tray's "Open Web UI" runs `xdg-open`, which can start the user's
+# browser as a child that systemd then counts as part of this unit; with the
+# default KillMode=control-group, `systemctl --user restart keyrx` would close
+# that browser and all its tabs.
+KillMode=process
+
 # Reload configuration on SIGHUP (systemctl --user reload keyrx)
 ExecReload=/bin/kill -HUP $MAINPID
 
-# Restart policy
+# Restart policy: retry after any non-zero exit (a clean exit, such as the
+# emergency stop, is deliberately NOT restarted). The delay starts at 1 s and
+# steps up to 10 s over 5 restarts (needs systemd 254+; older versions ignore
+# the two keys with a warning and keep a flat 1 s delay).
 Restart=on-failure
 RestartSec=1
+RestartSteps=5
+RestartMaxDelaySec=10
 
 # Debug logging: `run --debug` turns on keyrx's own debug output (never the
 # names of the keys you type; that needs the separate, privacy-sensitive
