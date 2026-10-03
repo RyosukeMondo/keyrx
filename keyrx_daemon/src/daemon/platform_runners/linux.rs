@@ -380,9 +380,47 @@ fn run_test_mode(config_dir: PathBuf) -> Result<(), (i32, String)> {
     })
 }
 
-/// Opens a URL in the default web browser.
+/// Program and arguments that open `url` in the default browser.
+///
+/// With `detach_from_service` the browser runs in its own transient systemd
+/// scope: a child left in the keyrx service cgroup would be killed together
+/// with the daemon on restart (taking the user's whole browser with it).
+fn browser_command(url: &str, detach_from_service: bool) -> (&'static str, Vec<String>) {
+    if detach_from_service {
+        (
+            "systemd-run",
+            ["--user", "--scope", "--collect", "-q", "xdg-open", url]
+                .map(String::from)
+                .to_vec(),
+        )
+    } else {
+        ("xdg-open", vec![url.to_string()])
+    }
+}
+
+/// True when `program` is an executable file in one of the `PATH` directories.
+fn on_path(program: &str) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    std::env::var_os("PATH").is_some_and(|paths| {
+        std::env::split_paths(&paths).any(|dir| {
+            std::fs::metadata(dir.join(program))
+                .map(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+                .unwrap_or(false)
+        })
+    })
+}
+
+/// Opens a URL in the default web browser, outside the daemon's cgroup when
+/// systemd is available. The child is reaped from a helper thread.
 fn open_browser(url: &str) -> Result<(), Box<dyn std::error::Error>> {
-    std::process::Command::new("xdg-open").arg(url).spawn()?;
+    let under_systemd = std::env::var_os("INVOCATION_ID").is_some();
+    let (program, args) = browser_command(url, under_systemd && on_path("systemd-run"));
+    let mut child = std::process::Command::new(program).args(args).spawn()?;
+    std::thread::spawn(move || match child.wait() {
+        Ok(status) if !status.success() => log::warn!("browser launcher exited with {status}"),
+        Ok(_) => {}
+        Err(e) => log::warn!("failed to reap browser launcher: {e}"),
+    });
     Ok(())
 }
 
@@ -399,4 +437,33 @@ fn show_about_dialog() {
 /// Converts a DaemonError to an exit code and message.
 fn daemon_error_to_exit(error: crate::daemon::DaemonError) -> (i32, String) {
     (error.exit_code().into(), error.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn browser_is_detached_into_its_own_scope_under_systemd() {
+        let (prog, args) = browser_command("http://x/", true);
+        assert_eq!(prog, "systemd-run");
+        assert_eq!(
+            args,
+            [
+                "--user",
+                "--scope",
+                "--collect",
+                "-q",
+                "xdg-open",
+                "http://x/"
+            ]
+        );
+    }
+
+    #[test]
+    fn browser_falls_back_to_plain_xdg_open() {
+        let (prog, args) = browser_command("http://x/", false);
+        assert_eq!(prog, "xdg-open");
+        assert_eq!(args, ["http://x/"]);
+    }
 }
