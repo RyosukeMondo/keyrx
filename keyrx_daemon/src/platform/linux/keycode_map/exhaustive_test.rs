@@ -239,3 +239,21 @@ fn test_all_keycodes_uinput_mapping_is_total() {
         let _ = keycode_to_uinput_key(keycode);
     }
 }
+
+/// The code the daemon actually writes for a `KeyCode` (via the `uinput`
+/// crate's enum) must be the code the daemon reads it back from
+/// (`keycode_to_evdev`): two tables that disagree type a different key than
+/// the one the layout names.
+#[test]
+fn test_uinput_codes_equal_evdev_codes() {
+    use uinput::event::Code as _;
+    let mismatches: Vec<String> = ALL_KEYCODES
+        .iter()
+        .filter_map(|&k| {
+            let out = i32::from(keycode_to_evdev(k));
+            let wrote = keycode_to_uinput_key(k).code();
+            (out != wrote).then(|| format!("{k:?}: evdev {out} but uinput writes {wrote}"))
+        })
+        .collect();
+    assert!(mismatches.is_empty(), "{mismatches:#?}");
+}

@@ -175,7 +175,7 @@ pub fn keycode_to_uinput_key(keycode: KeyCode) -> Keyboard {
         KeyCode::AppMyComputer => Keyboard::Misc(Misc::Computer),
 
         // Additional keys (use Misc enum)
-        KeyCode::Menu => Keyboard::Misc(Misc::Menu),
+        KeyCode::Menu => Keyboard::Misc(Misc::Compose),
         KeyCode::Help => Keyboard::Misc(Misc::Help),
         KeyCode::Select => Keyboard::Misc(Misc::Select),
         KeyCode::Execute => Keyboard::Misc(Misc::Open),
