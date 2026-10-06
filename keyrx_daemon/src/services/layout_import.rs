@@ -130,6 +130,56 @@ pub(crate) fn import_blocking(
     })
 }
 
+/// Scopes a Rhai layout written for every keyboard to one device: each
+/// `device_start("*")` becomes `device_start("<pattern>")`, so a sample such as
+/// `examples/user_layout.rhai` can be installed for one real keyboard without
+/// hand-editing it.
+///
+/// # Errors
+///
+/// `InvalidLayout` for an empty or unquotable `pattern`, or when the source
+/// has no `device_start("*")` to scope (it is never silently left unscoped).
+pub fn scope_rhai_to_device(source: &str, pattern: &str) -> Result<String, ProfileError> {
+    if pattern.trim().is_empty()
+        || pattern
+            .chars()
+            .any(|c| c == '"' || c == '\\' || c.is_control())
+    {
+        return Err(ProfileError::InvalidLayout(format!(
+            "invalid device pattern {pattern:?}: must be non-empty, without quotes, backslashes or control characters"
+        )));
+    }
+    const WILDCARD: &str = "device_start(\"*\")";
+    if !source.contains(WILDCARD) {
+        return Err(ProfileError::InvalidLayout(
+            "the layout has no device_start(\"*\") to scope to a device".into(),
+        ));
+    }
+    Ok(source.replace(WILDCARD, &format!("device_start(\"{pattern}\")")))
+}
+
+#[cfg(test)]
+mod scope_tests {
+    use super::scope_rhai_to_device;
+
+    #[test]
+    fn rewrites_every_wildcard_block() {
+        let src = "device_start(\"*\");\nmap(\"A\",\"VK_B\");\ndevice_start(\"*\");\n";
+        let out = scope_rhai_to_device(src, "USB Keyboard").unwrap();
+        assert_eq!(out.matches("device_start(\"USB Keyboard\")").count(), 2);
+        assert!(!out.contains("\"*\""));
+    }
+
+    #[test]
+    fn refuses_to_leave_a_layout_unscoped_or_inject_code() {
+        assert!(scope_rhai_to_device("device_start(\"X\");", "k").is_err());
+        let src = "device_start(\"*\");";
+        for bad in ["", "  ", "a\"b", "a\\b", "a\nb"] {
+            assert!(scope_rhai_to_device(src, bad).is_err(), "{bad:?}");
+        }
+    }
+}
+
 /// The wire form of an import request, shared by REST (`POST
 /// /api/profiles/import`) and WS-RPC (`import_profile`) so they cannot drift.
 #[derive(Debug, Clone, Deserialize)]

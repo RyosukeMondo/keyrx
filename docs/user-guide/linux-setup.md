@@ -317,6 +317,19 @@ in later. Use the name shown by `keyrx_daemon list-devices`, e.g.
 `device_start("USB Keyboard");`, and check it with
 `keyrx_daemon validate --config ~/.config/keyrx/profiles/my.krx`.
 
+A sample written for every keyboard (`device_start("*")`, e.g.
+`examples/user_layout.rhai`, the daily JIS/Dvorak layout) can be installed
+scoped to one keyboard in a single step, keeping the source editable:
+
+```bash
+keyrx_daemon profiles import examples/user_layout.rhai user-layout --device "USB Keyboard"
+keyrx_daemon validate --config ~/.config/keyrx/profiles/user-layout.krx
+keyrx_daemon profiles activate user-layout    # the service follows the active profile, also at boot
+```
+
+`scripts/verify/live_user_layout.py` proves that layout end to end on a
+scratch daemon and a virtual keyboard (it never touches your real keyboard).
+
 **3. Enable and start:**
 
 ```bash

@@ -425,3 +425,49 @@ fn test_profiles_help() {
         .stdout(predicate::str::contains("export"))
         .stdout(predicate::str::contains("import"));
 }
+
+/// `profiles import --device` installs a `device_start("*")` sample scoped to
+/// one keyboard (the daily layout must never grab every keyboard on the box).
+#[test]
+fn test_profiles_import_device_scopes_a_wildcard_layout() {
+    let temp_dir = TempDir::new().unwrap();
+    let sample = temp_dir.path().join("sample.rhai");
+    fs::write(
+        &sample,
+        "device_start(\"*\");\nmap(\"A\", \"VK_B\");\ndevice_end();\n",
+    )
+    .unwrap();
+
+    profiles_cmd(&temp_dir)
+        .args(["profiles", "import"])
+        .arg(&sample)
+        .args(["scoped", "--device", "USB Keyboard"])
+        .assert()
+        .success();
+
+    let stored = fs::read_to_string(temp_dir.path().join("keyrx/profiles/scoped.rhai")).unwrap();
+    assert!(
+        stored.contains("device_start(\"USB Keyboard\")"),
+        "{stored}"
+    );
+    assert!(!stored.contains("device_start(\"*\")"), "{stored}");
+}
+
+#[test]
+fn test_profiles_import_device_refuses_a_layout_it_cannot_scope() {
+    let temp_dir = TempDir::new().unwrap();
+    let sample = temp_dir.path().join("pinned.rhai");
+    fs::write(
+        &sample,
+        "device_start(\"Other\");\nmap(\"A\", \"VK_B\");\ndevice_end();\n",
+    )
+    .unwrap();
+
+    profiles_cmd(&temp_dir)
+        .args(["profiles", "import"])
+        .arg(&sample)
+        .args(["pinned", "--device", "USB Keyboard"])
+        .assert()
+        .failure();
+    assert!(!temp_dir.path().join("keyrx/profiles/pinned.rhai").exists());
+}

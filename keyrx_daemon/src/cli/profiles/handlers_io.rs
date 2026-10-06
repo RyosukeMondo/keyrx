@@ -4,6 +4,7 @@ use super::output::{ProfileCreatedOutput, ProfileInfo, ProfileListOutput, Succes
 use crate::cli::common::output_error;
 use crate::config::profile_manager::ProfileError;
 use crate::error::{CliError, DaemonResult};
+use crate::services::layout_import::scope_rhai_to_device;
 use crate::services::{LayoutFormat, ProfileService, MAX_LAYOUT_BYTES};
 use std::path::Path;
 
@@ -121,14 +122,26 @@ fn read_layout(input: &Path) -> Result<Vec<u8>, ProfileError> {
     Ok(std::fs::read(input)?)
 }
 
+/// What `profiles import` was asked to do.
+pub(super) struct ImportRequest<'a> {
+    pub input: &'a Path,
+    pub name: Option<&'a str>,
+    pub activate: bool,
+    pub device: Option<&'a str>,
+}
+
 /// Handle the `import` subcommand.
 pub(super) async fn handle_import(
     service: &ProfileService,
-    input: &Path,
-    name: Option<&str>,
-    activate: bool,
+    request: ImportRequest<'_>,
     json: bool,
 ) -> DaemonResult<()> {
+    let ImportRequest {
+        input,
+        name,
+        activate,
+        device,
+    } = request;
     let name = name
         .map(str::to_string)
         .or_else(|| {
@@ -140,7 +153,17 @@ pub(super) async fn handle_import(
         .unwrap_or_default();
     let imported = async {
         let format = LayoutFormat::from_path(input)?;
-        let bytes = read_layout(input)?;
+        let mut bytes = read_layout(input)?;
+        if let Some(pattern) = device {
+            if format != LayoutFormat::Rhai {
+                return Err(ProfileError::InvalidLayout(
+                    "--device scopes Rhai source; a .krx already names its devices".into(),
+                ));
+            }
+            let source = String::from_utf8(bytes)
+                .map_err(|_| ProfileError::InvalidLayout("the file is not UTF-8 text".into()))?;
+            bytes = scope_rhai_to_device(&source, pattern)?.into_bytes();
+        }
         service.import_layout(&name, format, bytes).await
     }
     .await;

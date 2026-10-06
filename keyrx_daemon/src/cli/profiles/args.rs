@@ -79,6 +79,12 @@ pub(super) enum ProfilesCommands {
         /// Make the imported profile the active one.
         #[arg(long)]
         activate: bool,
+
+        /// Scope a .rhai layout written for every keyboard (`device_start("*")`)
+        /// to the device matching PATTERN (glob on name/id/serial/path), e.g.
+        /// --device "USB Keyboard". Refused for a layout with no `device_start("*")`.
+        #[arg(long, value_name = "PATTERN")]
+        device: Option<String>,
     },
 }
 

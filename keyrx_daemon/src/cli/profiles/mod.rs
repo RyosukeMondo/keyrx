@@ -42,8 +42,15 @@ pub async fn execute(args: ProfilesArgs, service: &ProfileService) -> DaemonResu
             input,
             name,
             activate,
+            device,
         } => {
-            handlers_io::handle_import(service, &input, name.as_deref(), activate, args.json).await
+            let request = handlers_io::ImportRequest {
+                input: &input,
+                name: name.as_deref(),
+                activate,
+                device: device.as_deref(),
+            };
+            handlers_io::handle_import(service, request, args.json).await
         }
     }
 }
