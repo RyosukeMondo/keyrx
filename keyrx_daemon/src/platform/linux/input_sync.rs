@@ -73,13 +73,22 @@ impl DropSync {
         !self.held.is_empty()
     }
 
-    /// Releases every held key the kernel says is up. Only valid when the
-    /// device has nothing left to read (the caller just got `WouldBlock`):
-    /// then the kernel state cannot be ahead of the events we have seen,
-    /// except by an event landing this very instant - and the alternation
-    /// filter in [`Self::process`] absorbs that one. Does nothing mid-packet
-    /// or if the key state cannot be read.
-    pub(crate) fn release_stale(
+    /// Idle reconciliation against the kernel's real key state. Only valid
+    /// when the device has nothing left to read (the caller just got
+    /// `WouldBlock`). Does nothing mid-packet or if the key state cannot be
+    /// read.
+    ///
+    /// `EVIOCGKEY` is not a passive read: the kernel copies the key bitmap
+    /// AND flushes every pending `EV_KEY` event from this client's buffer in
+    /// one step (so the state is consistent with what is left to read). A
+    /// key event that lands between our last read and the ioctl is therefore
+    /// gone, and only the returned state shows its effect. So both
+    /// directions are repaired from that state: a key we think is held but
+    /// the kernel says is up gets a synthetic release, and a key the kernel
+    /// says is down that we never saw pressed gets a synthetic press (its
+    /// real release then arrives balanced). Dropping the press instead made
+    /// a keystroke typed exactly when the check ran vanish.
+    pub(crate) fn reconcile_idle(
         &mut self,
         mut kernel_keys: impl FnMut() -> io::Result<BTreeSet<u16>>,
     ) -> SyncOutput {
@@ -91,7 +100,8 @@ impl DropSync {
             return out;
         };
         let stale: Vec<u16> = self.held.difference(&actual).copied().collect();
-        if stale.is_empty() {
+        let missed: Vec<u16> = actual.difference(&self.held).copied().collect();
+        if stale.is_empty() && missed.is_empty() {
             return out;
         }
         out.overflows = 1;
@@ -100,6 +110,11 @@ impl DropSync {
             self.held.remove(&code);
             out.events
                 .push(InputEvent::new_now(EventType::KEY, code, 0));
+        }
+        for code in missed {
+            self.held.insert(code);
+            out.events
+                .push(InputEvent::new_now(EventType::KEY, code, 1));
         }
         out
     }
@@ -302,12 +317,26 @@ mod tests {
         let mut sync = DropSync::new();
         sync.process([key(A, 1), key(S, 1), report()], keys(&[]));
         // The kernel says only S is still down and there is nothing to read.
-        let out = sync.release_stale(keys(&[S]));
+        let out = sync.reconcile_idle(keys(&[S]));
         assert_eq!(pairs(&out), vec![(A, 0)]);
         assert_eq!(out.overflows, 1);
         assert!(sync.held().contains(&S));
         // Nothing stale left: a second check is a no-op.
-        assert!(sync.release_stale(keys(&[S])).events.is_empty());
+        assert!(sync.reconcile_idle(keys(&[S])).events.is_empty());
+    }
+
+    #[test]
+    fn a_press_flushed_by_the_idle_check_is_not_lost() {
+        // A is held; B's press lands between our last read and EVIOCGKEY, so
+        // the ioctl flushed it from the buffer and only the state shows it.
+        let mut sync = DropSync::new();
+        sync.process([key(A, 1), report()], keys(&[]));
+        let out = sync.reconcile_idle(keys(&[A, S]));
+        assert_eq!(pairs(&out), vec![(S, 1)]);
+        assert!(sync.held().contains(&S));
+        // Its real release is balanced, not an orphan.
+        let out = sync.process([key(S, 0), report()], keys(&[]));
+        assert_eq!(pairs(&out), vec![(S, 0)]);
     }
 
     #[test]
@@ -315,7 +344,7 @@ mod tests {
         let mut sync = DropSync::new();
         sync.process([key(A, 1), report()], keys(&[]));
         sync.process([key(S, 1)], keys(&[])); // packet not closed yet
-        assert!(sync.release_stale(keys(&[])).events.is_empty());
+        assert!(sync.reconcile_idle(keys(&[])).events.is_empty());
     }
 
     #[test]

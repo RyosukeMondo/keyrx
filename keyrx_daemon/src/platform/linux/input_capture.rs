@@ -414,9 +414,11 @@ impl EvdevInput {
 
     /// Idle check: the kernel can lose a device's tail events without a
     /// `SYN_DROPPED` ever reaching us (seen under floods), which would leave
-    /// a key believed held forever. With nothing left to read, any key we
-    /// still report as held that the kernel says is up is stale and gets
-    /// released. Throttled, and free while no key is held.
+    /// a key believed held forever. With nothing left to read, the keys we
+    /// report as held are reconciled with the kernel's real key state (see
+    /// [`DropSync::reconcile_idle`]: the ioctl itself flushes the buffer, so
+    /// it repairs missed presses too). Throttled, and free while no key is
+    /// held.
     fn verify_idle_keys(&mut self) {
         const EVERY: std::time::Duration = std::time::Duration::from_millis(50);
         if !self.sync.has_held() || self.last_idle_check.elapsed() < EVERY {
@@ -424,7 +426,7 @@ impl EvdevInput {
         }
         self.last_idle_check = std::time::Instant::now();
         let device = &self.device;
-        let synced = self.sync.release_stale(|| kernel_keys(device));
+        let synced = self.sync.reconcile_idle(|| kernel_keys(device));
         self.queue_synced(synced);
     }
 
@@ -860,6 +862,50 @@ mod tests {
             "{second:?}"
         );
         assert!(matches!(input.next_event(), Err(DeviceError::EndOfStream)));
+    }
+
+    /// Regression (found by a live stress run that lost ~1 key in 2000 tap-hold
+    /// combos): `EVIOCGKEY`, which the idle check issues while a key is held,
+    /// also FLUSHES the client's pending key events. A press that landed
+    /// between our last read and that ioctl vanished and its release arrived
+    /// as an orphan. The idle check must turn the flushed press back into a
+    /// press.
+    #[test]
+    fn idle_key_state_check_does_not_swallow_a_key_that_just_landed() {
+        crate::skip_if_no_uinput!();
+        use crate::test_utils::output_capture::OutputCapture;
+        use crate::test_utils::VirtualKeyboard;
+        use keyrx_core::config::KeyCode;
+        use std::time::{Duration, Instant};
+
+        let mut keyboard = VirtualKeyboard::create("idle-check-flush-test").unwrap();
+        std::thread::sleep(Duration::from_millis(250));
+        let path = OutputCapture::find_by_name(keyboard.name(), Duration::from_secs(5))
+            .unwrap()
+            .device_path()
+            .to_path_buf();
+        let mut input = EvdevInput::open(&path).unwrap();
+
+        keyboard.inject(KeyEvent::press(KeyCode::A)).unwrap();
+        std::thread::sleep(Duration::from_millis(30));
+        assert_eq!(input.next_event().unwrap().keycode(), KeyCode::A);
+
+        // S lands after our last read; the idle check (EVIOCGKEY) runs next.
+        keyboard.inject(KeyEvent::press(KeyCode::S)).unwrap();
+        std::thread::sleep(Duration::from_millis(30));
+        input.last_idle_check = Instant::now() - Duration::from_secs(1);
+        input.verify_idle_keys();
+
+        let seen = input.next_event().expect("the flushed press is replayed");
+        assert!(
+            seen.is_press() && seen.keycode() == KeyCode::S,
+            "S press lost to the idle check: {seen:?}"
+        );
+        keyboard.inject(KeyEvent::release(KeyCode::S)).unwrap();
+        keyboard.inject(KeyEvent::release(KeyCode::A)).unwrap();
+        std::thread::sleep(Duration::from_millis(30));
+        let rest: Vec<_> = std::iter::from_fn(|| input.next_event().ok()).collect();
+        assert_eq!(rest.len(), 2, "both releases balanced: {rest:?}");
     }
 
     /// Releasing the grab of an unplugged device is not an error: the kernel
